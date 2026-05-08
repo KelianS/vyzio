@@ -1,6 +1,6 @@
-# Vyzio — Spécifications Fonctionnelles
+# Vyzio — Spécifications Fonctionnelles (V2)
 
-> Version 0.1 — Mai 2026 — Document vivant, en cours de rédaction
+> Version 0.2 — Mai 2026 — Focus sécurité, grand public non-tech
 
 ---
 
@@ -14,9 +14,8 @@
 6. [Système de notifications](#6-système-de-notifications)
 7. [Stockage et rétention](#7-stockage-et-rétention)
 8. [Dashboard de gestion](#8-dashboard-de-gestion)
-9. [API de gestion](#9-api-de-gestion)
-10. [Sécurité et confidentialité](#10-sécurité-et-confidentialité)
-11. [Contraintes et limites](#11-contraintes-et-limites)
+9. [Sécurité et confidentialité](#9-sécurité-et-confidentialité)
+10. [MVP - Scope et limites](#10-mvp---scope-et-limites)
 
 ---
 
@@ -24,99 +23,103 @@
 
 ### 1.1 Description générale
 
-Vyzio est un système de surveillance domestique local qui ingère des flux vidéo depuis des caméras IP, analyse les images en temps réel via un moteur IA embarqué, et notifie l'utilisateur d'événements pertinents (visage connu, visage inconnu, mouvement, intrusion).
+Vyzio est un système de surveillance domestique **local-first, clef-en-main**, qui ingère des flux vidéo depuis des caméras IP, analyse en temps réel via IA embarquée (reconnaissance faciale), et notifie l'utilisateur d'événements pertinents.
+
+**Philosophie :** Une chose bien = surveillance simple + reconnaisance faciale. Pas 10 features, 1 feature excellente.
 
 ### 1.2 Composants principaux
 
 | Composant | Rôle |
 |---|---|
-| **Camera Service** | Ingestion des flux RTSP/ONVIF |
-| **Core Engine** | Détection de mouvement, détection et reconnaissance faciale |
-| **Storage Service** | Enregistrement vidéo, métadonnées, profils |
-| **Notification Service** | Envoi des alertes push mobile |
-| **API Service** | Interface REST pour le dashboard et les apps |
-| **Dashboard** | Interface web de gestion |
+| **Camera Service** | Ingestion flux RTSP/ONVIF |
+| **Core Engine** | Détection mouvement + reconnaissance faciale IA |
+| **Storage Service** | Enregistrement vidéo + métadonnées |
+| **Notification Service** | Push mobile (FCM) |
+| **API Service** | REST pour dashboard |
+| **Dashboard Web** | Interface ultra-simple (5 écrans) |
 
 ### 1.3 Flux de données global
 
 ```
-Caméra IP
-  └─► Camera Service (RTSP/ONVIF)
-        └─► Core Engine
-              ├─► Détection de mouvement
-              └─► Détection faciale
-                    ├─► Reconnaissance → Profil connu → Notification "X est arrivé"
-                    └─► Pas de match → Notification "Visage inconnu"
-                          └─► Storage Service (clip vidéo + métadonnées)
-                                └─► Dashboard / API
+Caméra IP (RTSP/ONVIF)
+  └─► Camera Service
+        └─► Motion Detection (frame diff)
+              └─► Si mouvement :
+                    └─► Face Detection (RetinaFace)
+                          ├─► Visage reconnu → Notification "X est arrivé"
+                          └─► Visage inconnu → Notification + clip + Dashboard
+                                └─► Storage (vidéo + metadata)
+                                    └─► Dashboard / API
 ```
 
 ---
 
 ## 2. Modes de déploiement
 
-### 2.1 DIY (Self-hosted)
+### 2.1 Deployment matériel (PRINCIPAL)
 
-- Déploiement via **Docker Compose** sur machine de l'utilisateur (PC, NAS, serveur Linux)
-- L'utilisateur fournit sa propre machine et ses caméras
-- Configuration initiale via le dashboard web
-- Mise à jour manuelle via `docker compose pull && docker compose up -d`
-- Données : 100 % locales, aucune communication sortante par défaut
+- **Mini-PC** avec stack pré-installée
+- **Plug & Play :** branche sur réseau, accède à l'UI depuis navigateur
+- **Découverte caméras automatique** via ONVIF
+- **Mises à jour OTA** (Over-The-Air)
+- **Données 100% locales** sur l'appareil
+- **Support français inclus**
 
-**Prérequis minimaux :**
-- CPU : x86_64 ou ARM64, 4 cœurs recommandés
-- RAM : 4 Go minimum, 8 Go recommandé
-- Stockage : dépend de la rétention vidéo souhaitée
-- OS : Linux (recommandé), Windows avec Docker Desktop
-- Réseau : accès local aux caméras IP
+### 2.2 Deployment cloud
 
-### 2.2 Vyzio Hub
+- Infrastructure sur data center local
+- Utilisateur configure caméras depuis dashboard
+- Flux vidéo transité chiffré
+- Abonnement en ligne
+- Données stockées chiffrées dans infrastructure
 
-- Mini-PC livré par Vyzio, pré-configuré avec la stack Docker Compose
-- Plug & Play : l'utilisateur branche le Hub sur son réseau, accède au dashboard depuis son navigateur
-- Mises à jour OTA (Over-The-Air) via le service de mise à jour Vyzio
-- Données : 100 % locales, sur le Hub
+### 2.3 Deployment self-hosted (DIY)
 
-### 2.3 Vyzio Cloud
-
-- Hébergé sur infrastructure française gérée par Vyzio
-- Déployé sur **Kubernetes**, architecture multi-tenant
-- L'utilisateur configure ses caméras depuis le dashboard ; les flux transitent de manière chiffrée vers l'infrastructure Vyzio
-- Modèle d'abonnement mensuel
-- Les clips vidéo et métadonnées sont stockés dans l'infrastructure Vyzio, avec chiffrement au repos
+- **Docker Compose** sur machine utilisateur (PC, NAS, Linux)
+- Installation manuelle, config YAML
+- Pour makers / tech-aware
+- Données 100% locales, aucune communication sortante par défaut
 
 ---
 
 ## 3. Intégration caméras
 
-### 3.1 Protocoles supportés
+### 3.1 Protocoles supportés (MVP)
 
 | Protocole | Support | Notes |
 |---|:---:|---|
-| RTSP | Obligatoire | Ingestion du flux vidéo brut |
-| ONVIF | Obligatoire | Découverte réseau, PTZ, configuration |
-| HTTP MJPEG | Optionnel | Compatibilité caméras bas de gamme |
+| RTSP | ✓ Obligatoire | Ingestion flux vidéo |
+| ONVIF | ✓ Obligatoire | Découverte réseau, configuration |
+| HTTP MJPEG | ✗ V2 | Compatibilité bas de gamme |
 
-### 3.2 Ajout d'une caméra
+### 3.2 Marques caméras certifiées (MVP)
 
-1. L'utilisateur saisit l'URL RTSP ou lance une découverte ONVIF sur le réseau local
-2. Vyzio teste la connexion et affiche un aperçu du flux
-3. L'utilisateur nomme la caméra et définit sa position (ex. "Entrée", "Jardin")
-4. La caméra est enregistrée et la surveillance démarre automatiquement
+**Cible V1 : 5-10 marques testées et garanties**
 
-### 3.3 Gestion des flux
+- Marques standards PoE (très répandues)
+- Marques standards réseau
+- Marques standards WiFi
+- Autres sur demande
 
-- Reconnexion automatique en cas de perte du flux (backoff exponentiel)
-- Support des flux H.264 et H.265
-- Résolution : de 480p à 4K (traitement IA adapté selon les ressources disponibles)
-- Framerate d'analyse IA configurable (par défaut : 5 fps pour l'analyse, flux complet pour l'enregistrement)
+**Approche :** Certification veut dire "on a testé 10 fois, ça marche, on support"
 
-### 3.4 Zones de détection
+### 3.3 Ajout d'une caméra (UX)
 
-- L'utilisateur peut définir des **zones polygonales** sur l'image de chaque caméra
-- La détection (mouvement, visage) n'est déclenchée qu'à l'intérieur des zones actives
-- Plusieurs zones par caméra, nommables indépendamment
-- Chaque zone peut avoir des plages horaires d'activation différentes
+**Pour grand public (Hub/Cloud) :**
+1. Dashboard dit "Connecter une caméra?"
+2. Scan ONVIF réseau local automatique
+3. Utilisateur sélectionne caméra dans liste
+4. Dashboard teste la connexion
+5. "Bravo! Ça marche. Nommez cette caméra" (ex. "Porte d'entrée")
+6. Caméra opérationnelle, surveillance démarre
+
+**Pas de :** URL RTSP manuelle, port custom, codec négociation, etc.
+
+### 3.4 Résolution & framerate
+
+- **Ingestion :** 480p à 2K (adaptée ressources Hub)
+- **Analyse IA :** 5 fps par défaut (configurable)
+- **Enregistrement :** Full quality du flux source (H.264/H.265)
 
 ---
 
@@ -125,67 +128,64 @@ Caméra IP
 ### 4.1 Étapes du pipeline
 
 ```
-Frame vidéo
-  └─► 1. Détection de mouvement (légère, frame diff ou MOG2)
-        └─► Si mouvement détecté :
-              └─► 2. Détection de visages (YOLO / MTCNN / RetinaFace)
-                    └─► Si visage(s) détecté(s) :
-                          └─► 3. Extraction d'embeddings (InsightFace / DeepFace)
-                                └─► 4. Comparaison avec la base de profils (distance cosinus)
-                                      ├─► Score > seuil → Personne identifiée
-                                      └─► Score < seuil → Visage inconnu
+Frame vidéo (résolution native)
+  └─► 1. Motion Detection (frame differencing)
+        └─► Si mouvement:
+              └─► 2. Face Detection (RetinaFace @ 5fps)
+                    └─► Si face(s) détecté(s):
+                          └─► 3. Face Embedding (InsightFace)
+                                └─► 4. Vector search (cosinus distance)
+                                      ├─► Score > 0.6 → Match! Profil identifié
+                                      └─► Score < 0.6 → Visage inconnu
+                                            └─► Notification + clip + Dashboard
 ```
 
 ### 4.2 Détection de mouvement
 
-- Algorithme léger (frame differencing ou MOG2) pour éviter de solliciter l'IA à chaque frame
-- Sensibilité configurable par zone
-- Sert de pré-filtre avant l'analyse IA
+- **Algorithme :** Frame differencing (léger CPU)
+- **Sensibilité :** Configurable par zone
+- **Rôle :** Pré-filtre avant IA (évite overload)
 
 ### 4.3 Détection faciale
 
-- Bibliothèque privilégiée : **InsightFace** (RetinaFace) ou **MTCNN**
-- Seuil de confiance configurable (par défaut : 0.85)
-- Plusieurs visages détectables par frame
+- **Modèle :** RetinaFace (via InsightFace)
+- **Seuil confiance :** 0.85 (configurable)
+- **Multi-face :** Support plusieurs visages par frame
+- **GPU :** Support optionnel NVIDIA (CUDA) / Apple Silicon (MPS), fallback CPU
 
 ### 4.4 Reconnaissance faciale
 
-- Extraction d'un vecteur d'embedding (512 dimensions) par visage détecté
-- Comparaison avec les embeddings stockés en base (distance cosinus)
-- Seuil de reconnaissance configurable (par défaut : 0.6)
-- En cas de doute (score proche du seuil), l'événement est marqué "incertain" et l'utilisateur peut confirmer
-
-### 4.5 Accélération matérielle
-
-- Support GPU NVIDIA via CUDA (optionnel, détection automatique)
-- Support Apple Silicon (MPS) — optionnel
-- Fallback CPU si aucun GPU disponible
-- Sur Vyzio Hub : adaptation selon le matériel embarqué
+- **Embedding :** 512 dims (InsightFace)
+- **Comparaison :** Cosinus distance vs profils stockés
+- **Seuil reconnaissance :** 0.60 (configurable)
+- **Incertitude :** Score proche seuil = "uncertain", user peut confirmer
 
 ---
 
 ## 5. Gestion des profils
 
-### 5.1 Profil d'une personne
+### 5.1 Un profil = une personne
 
 Chaque profil contient :
-- Nom (obligatoire)
-- Photo(s) de référence (1 minimum, plusieurs recommandées pour la précision)
-- Embeddings calculés à partir des photos (stockés en base, pas les photos brutes)
-- Catégorie : `Foyer` / `Connu` / `Livraison` / `Animaux` / `Autre`
-- Comportement d'alerte associé (notifier, notifier discrètement, ignorer)
+- **Nom** (obligatoire) — "Alice", "Livreur", "Chat", etc.
+- **Photos** (1+ minimum) — user upload via dashboard
+- **Embeddings** (calculés) — stockés en DB, pas les photos brutes
+- **Catégorie** — Foyer / Connu / Livraison / Animaux / Autre
+- **Alerte associée** — Notifier / Silencieux / Ignorer
 
-### 5.2 Ajout d'un profil
+### 5.2 Création d'un profil (UX pour non-tech)
 
-1. L'utilisateur upload une ou plusieurs photos via le dashboard
-2. Vyzio détecte et valide que chaque photo contient exactement un visage visible
-3. Les embeddings sont calculés et stockés
-4. Le profil est actif immédiatement
+1. Dashboard : "Ajouter une personne?"
+2. User upload 1-3 photos (facile format: JPG/PNG)
+3. Vyzio valide qu'il y a UNE face claire par photo
+4. Si OK : "Nommez cette personne"
+5. Profil actif immédiatement
 
 ### 5.3 Amélioration continue
 
-- Lorsqu'un visage connu est détecté avec un score élevé, l'utilisateur peut valider la reconnaissance depuis la notification
-- Les validations peuvent enrichir la base d'embeddings du profil (opt-in)
+- User peut "confirmer" une reconnaissance depuis notification
+- Confirmations optionnelles enrichissent les embeddings du profil
+- Feedback utilisateur = amélioration over time
 
 ---
 
@@ -193,34 +193,34 @@ Chaque profil contient :
 
 ### 6.1 Types d'événements notifiés
 
-| Événement | Contenu de la notification |
+| Événement | Contenu notification |
 |---|---|
-| Personne connue détectée | Nom + photo du clip + caméra source |
-| Visage inconnu détecté | "Visage inconnu" + photo du clip + caméra source |
-| Mouvement sans visage | "Mouvement détecté" + caméra + zone (si activé) |
-| Perte de flux caméra | Alerte technique : "Caméra X inaccessible" |
-| Retour en ligne | "Caméra X de nouveau disponible" |
+| **Personne connue** | Nom + photo clip + caméra + timestamp |
+| **Visage inconnu** | "Visage inconnu" + photo + caméra + timestamp |
+| **Mouvement seul** | "Mouvement détecté" + caméra (optionnel) |
+| **Perte de flux** | Alerte technique "Caméra X inaccessible" |
+| **Retour en ligne** | "Caméra X de nouveau disponible" |
 
-### 6.2 Canaux de notification
+### 6.2 Canaux
 
-- **Push mobile** (prioritaire) — via FCM (Firebase Cloud Messaging) pour Android/iOS
-  - Mode DIY/Hub : les notifications transitent par le serveur Vyzio uniquement pour la livraison push (pas d'image)
-  - Les images restent locales et sont accessibles via lien deep-link vers le dashboard local
-- **Webhook** — pour intégrations tierces (Home Assistant, n8n, etc.)
-- **Email** — optionnel, configurable
+- **Push mobile** (prioritaire) — FCM (Firebase Cloud Messaging)
+  - Hub/DIY : notifications via serveur Vyzio pour livraison FCM seulement (pas image)
+  - Images restent locales, accessible via lien deep-link dashboard
+- **Webhook** — Pour intégrations (Home Assistant, n8n, etc.)
+- **Email** — Optionnel, configurable
 
-### 6.3 Règles de notification
+### 6.3 Règles anti-spam
 
-- Anti-spam : délai minimum configurable entre deux notifications du même type sur la même caméra (par défaut : 30 secondes)
-- Plages horaires : possibilité de désactiver les notifications sur certaines plages
-- Par profil : chaque profil peut avoir un comportement différent (notifier, silencieux, bloquer)
-- Mode "Ne pas déranger" : suspension globale des notifications
+- **Délai minimum** entre deux notifications même type même caméra : 30s (configurable)
+- **Plages horaires** : Possibilité désactiver notif sur plages (ex. 22h-8h)
+- **Par profil** : Chaque personne peut avoir alerte différente
+- **Mode "Ne pas déranger"** : Suspension globale notif
 
-### 6.4 Comportement offline
+### 6.4 Offline
 
-- Si la connexion internet est indisponible, les événements sont mis en file d'attente
-- Les notifications sont envoyées dès que la connectivité est rétablie
-- La surveillance locale continue sans interruption
+- Si Internet down : événements queued localement
+- Notifications envoyées dès reconnexion
+- Surveillance locale continue sans interruption
 
 ---
 
@@ -228,150 +228,163 @@ Chaque profil contient :
 
 ### 7.1 Base de données
 
-- **PostgreSQL** — unique système de base de données pour tous les modes de déploiement
-- Schéma principal :
-  - `cameras` — configuration des caméras
-  - `profiles` — personnes enregistrées + embeddings
-  - `events` — historique des événements détectés
-  - `clips` — références aux fichiers vidéo
-  - `zones` — zones de détection par caméra
-  - `notifications` — log des notifications envoyées
-  - `users` — comptes d'accès au dashboard
+- **Unique DB:** SQLite pour DIY/Hub, PostgreSQL pour Cloud
+- Schéma simplifié pour MVP :
+  - `cameras` — configuration caméras
+  - `profiles` — personnes + embeddings
+  - `events` — historique détections
+  - `clips` — références fichiers vidéo
+  - `notifications` — log notifications envoyées
 
 ### 7.2 Enregistrements vidéo
 
-- Format : **MP4 (H.264)** — compatibilité maximale
-- Enregistrement déclenché sur événement (motion / visage)
-- Durée du clip : configurable (par défaut : 30s avant + 30s après l'événement)
-- Enregistrement continu optionnel (haute consommation disque)
-- Stockage local dans un volume Docker dédié
+- **Format :** MP4 H.264 (compatibilité max)
+- **Déclenchement :** Sur événement (motion / face)
+- **Durée clip :** 30s avant + 30s après (configurable)
+- **Enregistrement continu** optionnel (consomme beaucoup)
+- **Stockage :** Volume Docker dédié
 
 ### 7.3 Politique de rétention
 
-- Configurable par l'utilisateur :
-  - Durée maximale de rétention (par défaut : 30 jours)
-  - Espace disque maximum alloué (par défaut : 50 Go)
-- Suppression automatique des clips les plus anciens lorsque la limite est atteinte
-- Les événements en base sont conservés séparément des clips vidéo (plus légers)
+- **Hub :** Configurable par utilisateur (ex. "Garder 30 jours")
+- **Cloud :** Selon plan (7/30/90 jours)
+- **Auto-suppression :** Après seuil, vidéos anciennes supprimées
 
 ---
 
 ## 8. Dashboard de gestion
 
-### 8.1 Accès
+### 8.1 Principes de design
 
-- Interface web responsive, accessible depuis le réseau local (DIY/Hub) ou via internet (Cloud)
-- Authentification : login/mot de passe + option 2FA (TOTP)
-- Support multi-utilisateurs avec rôles : `Admin` / `Viewer`
+**Pour NON-TECH = ultra-simple = 5 écrans majeurs**
 
-### 8.2 Fonctionnalités
+1. **Accueil** — Statut système, derniers événements
+2. **Caméras** — Liste caméras, flux live, zones
+3. **Personnes** — Profils + photos
+4. **Historique** — Timeline événements avec clips
+5. **Paramètres** — Notifications, caméras, réseau
 
-#### Vue principale — Live
-- Grille de flux en direct de toutes les caméras
-- Indicateur d'état par caméra (actif, hors ligne, en alerte)
-- Overlay des zones de détection configurées
+### 8.2 Écran 1 : Accueil
 
-#### Historique des événements
-- Timeline des événements par date/caméra/type
-- Vignette + clip associé pour chaque événement
-- Filtres : type d'événement, caméra, profil, plage de dates
-- Possibilité de marquer un événement (confirmé, faux positif)
+- **État système :** "Tout va bien" ou "⚠️ Caméra X inaccessible"
+- **Événements d'aujourd'hui :** "Alice est arrivée (09:32)" + photo
+- **Quick access :** "Voir les visages inconnus"
 
-#### Gestion des caméras
-- Ajout / suppression / renommage de caméras
-- Configuration par caméra : zones de détection, sensibilité, plages horaires
-- Test de connexion et aperçu du flux
+### 8.3 Écran 2 : Caméras live
 
-#### Gestion des profils
-- Ajout / modification / suppression de profils
-- Upload de photos de référence
-- Visualisation des événements associés à un profil
+- **Liste caméras** (thumbnail live)
+- **Click sur caméra :** Live + zones de détection
+- **Zones :** Rectangles dessinables sur image
 
-#### Paramètres de notifications
-- Configuration par canal (push, webhook, email)
-- Règles d'anti-spam et plages horaires
-- Gestion du mode "Ne pas déranger"
+### 8.4 Écran 3 : Profils
 
-#### Paramètres système
-- Politique de rétention vidéo
-- Statut des services (CPU, RAM, disque)
-- Gestion des utilisateurs et des accès
+- **Liste personnes** (photo + nom + dernier vu)
+- **Edit profil :** Upload photos, nom, catégorie
+- **Delete profil**
 
----
+### 8.5 Écran 4 : Historique
 
-## 9. API de gestion
+- **Timeline :** Événements par jour
+- **Click événement :** Clip vidéo + face détecté
+- **Filter :** Par personne, par caméra
 
-### 9.1 Description générale
+### 8.6 Écran 5 : Paramètres
 
-- API **REST** (JSON) exposée par le service API
-- Authentification par **JWT** (Bearer token)
-- Base URL : `http(s)://<host>/api/v1`
-- Versionnée dès le départ (`/v1`)
-
-### 9.2 Ressources principales
-
-| Ressource | Endpoints clés |
-|---|---|
-| Auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` |
-| Cameras | `GET /cameras`, `POST /cameras`, `GET /cameras/:id`, `PUT /cameras/:id`, `DELETE /cameras/:id` |
-| Profiles | `GET /profiles`, `POST /profiles`, `GET /profiles/:id`, `PUT /profiles/:id`, `DELETE /profiles/:id` |
-| Events | `GET /events`, `GET /events/:id`, `PATCH /events/:id` |
-| Clips | `GET /clips/:id`, `GET /clips/:id/stream` |
-| Zones | `GET /cameras/:id/zones`, `POST /cameras/:id/zones`, `PUT /zones/:id`, `DELETE /zones/:id` |
-| Notifications | `GET /notifications/settings`, `PUT /notifications/settings` |
-| System | `GET /system/status`, `GET /system/health` |
-
-### 9.3 Webhooks sortants
-
-- L'API peut émettre des webhooks configurables sur chaque type d'événement
-- Payload JSON standardisé avec : type, timestamp, camera_id, profile_id (si connu), clip_url
+- **Notifications :** On/off par type + sensibilité
+- **Caméras :** Ajouter, retirer, tester
+- **Réseau/DNS :** Basics pour non-tech
+- **Backup :** Export simples (settings, pas vidéos)
 
 ---
 
-## 10. Sécurité et confidentialité
+## 9. Sécurité et confidentialité
 
-### 10.1 Principes fondamentaux
+### 9.1 Principes
 
-- **Aucune image ne quitte le réseau local** en mode DIY/Hub sans action explicite de l'utilisateur
-- Les embeddings faciaux sont stockés localement, jamais envoyés à des tiers
-- Le mode Cloud implique un transit chiffré ; engagement contractuel de non-exploitation des données
+- **Local-first :** Données jamais quittent l'appareil sauf utilisateur l'autorise
+- **Chiffrement :** TLS pour toute communication (DIY)
+- **Auth simple :** Code PIN / password (pas OAuth)
 
-### 10.2 Sécurité technique
+### 9.2 Hub (local)
 
-- Toutes les communications API en **HTTPS** (TLS 1.2+)
-- Mots de passe hashés avec **bcrypt** (coût ≥ 12)
-- Tokens JWT avec expiration courte (15 min) + refresh token (30 jours, révocable)
-- Headers de sécurité HTTP : HSTS, CSP, X-Frame-Options, etc.
-- Rate limiting sur les endpoints d'authentification
-- Logs d'accès conservés (sans données personnelles)
+- Réseau local seulement (pas port 80 ouvert internet)
+- Accès via IP locale ou DNS local (.local)
+- Auth : code PIN 4-6 chiffres
 
-### 10.3 Conformité RGPD
+### 9.3 Cloud
 
-- Les données biométriques (embeddings) sont des données sensibles au sens du RGPD
-- Consentement explicite requis avant l'enregistrement d'un profil
-- Droit à l'effacement : suppression complète d'un profil (embeddings + événements associés) via le dashboard
-- Pas de partage de données avec des tiers sans consentement
+- TLS 1.3 chiffrage flux
+- Données stockées chiffrées (AES-256)
+- Pas de clé centrale = chiffrement côté user
+- RGPD compliance : droit à l'oubli, export data
+
+### 9.4 Pas dans MVP
+
+- ❌ OAuth / Google / Facebook login
+- ❌ Cloud storage optionnel
+- ❌ Partage vidéos publiques
+- ❌ Export API (V2)
 
 ---
 
-## 11. Contraintes et limites
+## 10. MVP - Scope et limites
 
-### 11.1 Contraintes techniques
+### 10.1 MVP = V1 objectif
 
-- La reconnaissance faciale nécessite un visage suffisamment visible (≥ 80x80 pixels, angle < 45°)
-- Latence cible entre détection et notification : < 5 secondes
-- Charge CPU en mode analyse continue : à surveiller, recommandation d'un CPU dédié pour > 4 caméras
-- PostgreSQL doit rester accessible en permanence pour le fonctionnement du système
+**What's in :**
+✓ 1-10 caméras max par utilisateur  
+✓ 5-10 profils max  
+✓ 5 écrans dashboard  
+✓ Reconnaissance faciale + notifications  
+✓ Stockage vidéo local (7-30 jours)  
+✓ Push mobile (FCM)  
+✓ Support 5-10 marques caméras  
 
-### 11.2 Limites connues
+**What's NOT in :**
+✗ Home Assistant intégration  
+✗ Jellyfin  
+✗ PTZ (pan/tilt/zoom) caméras  
+✗ Détection d'objets (person/car/animal)  
+✗ Détection intrusion avancée  
+✗ Machine learning training  
+✗ API B2B  
+✗ Multi-user / accounts  
+✗ Mobile app native  
 
-- Pas de reconnaissance dans l'obscurité totale (dépend de la caméra — caméras IR compatibles)
-- Jumeaux identiques : limite inhérente aux systèmes de reconnaissance faciale
-- Performances dégradées si le matériel hôte est sous-dimensionné (DIY sur vieille machine)
+### 10.2 Limites acceptées pour V1
 
-### 11.3 Hors scope (v1)
+- **Hardware Hub :** Intel N100/N150 seulement (pas ARM Raspberry Pi pour V1)
+- **Caméras :** RTSP/ONVIF seulement, pas proprietary APIs
+- **Résilience :** Internet down = local ok, cloud = down
+- **Scalabilité :** Single-user local setup, pas multi-tenancy DIY
+- **Support caméras :** 5-10 marques certified, autres "best effort"
 
-- Reconnaissance de plaques d'immatriculation
-- Détection de comportements (chute, agression)
-- Intégration alarme physique
-- Application mobile native (v1 = webapp responsive)
+### 10.3 Quand on veut plus = V2
+
+- Jellyfin intégration (for media)
+- Home Assistant (for home automation)
+- Mobile app native
+- Multi-caméra scaling (>10)
+- PTZ support
+- Et cetera
+
+---
+
+## Annexe: Roadmap technique
+
+### M0-M3 : Développement core
+- Frigate intégration + wrapper
+- Face detection/recognition (InsightFace)
+- DB schema, API skeleton
+- Dashboard base (5 écrans)
+
+### M3-M4 : UX & Bêta
+- Polir UX pour non-tech (itérations)
+- Support pour bêta users
+- Bug fixes, perf tuning
+
+### M4-M6 : MVP public
+- Derniers bug fixes
+- DIY repo public
+- Hub production ready
+- Cloud beta launch

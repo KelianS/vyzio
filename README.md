@@ -1,4 +1,4 @@
-# Vyzio
+﻿# Vyzio
 
 > **Votre maison surveille. Vos données restent chez vous.**
 
@@ -6,13 +6,13 @@
 
 ## Vision
 
-Ring envoie vos images chez Amazon. Nest les stocke chez Google. Arlo vend un abonnement pour accéder à vos propres enregistrements.
+Ring, Nest, Arlo : la surveillance cloud devient la norme. Vos images chez Amazon, Google, Arlo. Abonnement obligatoire. Dépendance totale à internet.
 
 **Vyzio prend le contre-pied radical.**
 
-Vyzio est une solution de surveillance domestique **autonome, résiliente et privacy-first**, conçue pour le grand public. Grâce à l'intelligence artificielle embarquée, Vyzio reconnaît les visages, identifie les personnes connues, et vous notifie en temps réel sur votre téléphone — avec la photo et le nom de la personne si elle est enregistrée. Tout cela sans qu'un seul octet de vos images ne quitte votre réseau local... sauf si vous en décidez autrement.
+Vyzio est une solution de surveillance domestique **prête à brancher, sans technicité, sans abonnement**, conçue pour les familles qui en ont assez de la complexité. Grâce à l'IA embarquée, Vyzio reconnaît les visages, identifie les personnes connues, et vous notifie en temps réel — tout cela localement, sans que vos images ne quittent votre maison.
 
-La surveillance intelligente ne devrait pas exiger de faire confiance à une entreprise tierce avec les images de votre domicile et de votre famille.
+**Vyzio, c'est Frigate sans les technicitures.** Pour quelqu'un qui veut juste que ça marche. Avec du support français si ça casse.
 
 ---
 
@@ -30,16 +30,20 @@ La surveillance intelligente ne devrait pas exiger de faire confiance à une ent
 
 ## Trois façons d'utiliser Vyzio
 
-Vyzio s'adapte à votre profil, de l'utilisateur le plus tech-savvy au plus novice.
+Vyzio s'adapte à votre préférence : matériel, cloud ou open source.
 
-### DIY — Open Source
-Pour les makers et les technophiles. Installez Vyzio sur votre propre machine (PC, NAS, serveur), configurez vos caméras, et gardez un contrôle total. **100 % gratuit, 100 % open source.** La communauté est au cœur du projet.
+### Offering Matériel — Plug & Play, pour grand public
+Une **petite boîte, zéro installation**, branchée sur votre réseau. Détection automatique de vos caméras IP existantes, configuration entièrement guidée, et c'est fini. 
 
-### Vyzio Hub — Clef en main, privacy garantie
-Vous ne voulez pas gérer un serveur. Vyzio vous fournit un **mini-PC dédié, pré-configuré**, prêt à brancher chez vous. Installation à domicile disponible en option. Vos données restent sur votre machine, dans votre foyer. Zéro abonnement obligatoire.
+Si quelque chose se casse, vous appelez du support français. C'est ça, le produit.
 
-### Vyzio Cloud — Sans matériel, sans friction
-Pas de serveur, pas de configuration. Vyzio héberge la solution pour vous via un abonnement mensuel, sur une infrastructure française. Compatible avec vos caméras IP existantes. Idéal pour une mise en route rapide, avec un engagement fort sur la confidentialité des données.
+Installation à domicile disponible en option.
+
+### Offering Cloud — Pas de matériel, abonnement en ligne
+Pas d'envie de brancher une boîte ? Nous gérons la solution pour vous via un abonnement, sur infrastructure française. Vos caméras communiquent en chiffré. Mêmes garanties privacy.
+
+### Offering Open Source — Pour les makers
+Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'est pour les gens qui savent ce qu'ils font — pas de support inclus.
 
 ---
 
@@ -52,7 +56,7 @@ Pas de serveur, pas de configuration. Vyzio héberge la solution pour vous via u
 | Fonctionne sans internet | ✗ | ✓ |
 | Open Source | ✗ | ✓ |
 | Compatible caméras IP tierces | Limité | ✓ |
-| Abonnement obligatoire | ✓ | Non (DIY / Hub) |
+| Abonnement obligatoire | ✓ | Non (Matériel / Open Source) |
 
 ---
 
@@ -86,5 +90,5 @@ Vyzio est un projet open source. Les contributions sont bienvenues sur :
 
 ## Documentation
 
-- [Spécifications fonctionnelles](SPECS.md)
-- [Business Plan](BUSINESS_PLAN.md)
+- [Spécifications fonctionnelles](docs/SPECS.md)
+- [Business Plan](docs/BUSINESS_PLAN.md)

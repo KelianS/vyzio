@@ -1,6 +1,6 @@
-# Vyzio — Business Plan
+# Vyzio — Business Plan (V2)
 
-> Version 0.1 — Mai 2026 — Document confidentiel
+> Version 0.2 — Mai 2026 — Repositionnement "Non-tech friendly + Support français"
 
 ---
 
@@ -15,24 +15,28 @@
 7. [Projections financières](#7-projections-financières)
 8. [Équipe et organisation](#8-équipe-et-organisation)
 9. [Risques et mitigation](#9-risques-et-mitigation)
-10. [Roadmap et jalons](#10-roadmap-et-jalons)
+10. [Roadmap produit](#10-roadmap-produit)
 
 ---
 
 ## 1. Résumé exécutif
 
-**Vyzio** est une solution de surveillance domestique intelligente, locale et privacy-first. Face à des acteurs dominants (Ring/Amazon, Nest/Google, Arlo) qui centralisent les données des utilisateurs dans leurs clouds, Vyzio prend le contre-pied : l'intelligence artificielle tourne chez l'utilisateur, les images ne quittent jamais son réseau sans son consentement.
+**Vyzio** est un **appliance de surveillance domestique clef-en-main**, conçue pour le **grand public non-tech** qui ne veut plus dépendre d'Amazon, Google ou Arlo.
 
-**Le problème :** Les solutions existantes imposent un abonnement cloud obligatoire, stockent les images de votre domicile sur des serveurs tiers, et ne fonctionnent pas sans internet.
+Ce qui différencie Vyzio : **support français + installation + garantie que ça marche.** Pas un produit geek pour makers. Un produit pour Monsieur-Madame lambda qui veut juste que ses caméras fonctionnent et ne donnent pas ses images à une boîte américaine.
 
-**La solution :** Un système de surveillance avec reconnaissance faciale IA embarquée, fonctionnant en local, offline-first, compatible avec les caméras IP existantes.
+**Le problème :** Ring/Nest/Arlo = cloud propriétaire + abonnement obligatoire + dépendance internet. Frigate = excellent pour les makers, incompréhensible pour le reste. Umbrel = très bon OS pour self-hosted, mais toujours pour les tech-aware. **Aucun acteur n'offre : surveillance locale simple, zéro configuration, support humain français.**
 
-**Les trois offres :**
-- **DIY** — Gratuit, open source, pour les technophiles
-- **Vyzio Hub** — Mini-PC clef-en-main, vente unitaire, zéro abonnement obligatoire
-- **Vyzio Cloud** — Abonnement mensuel sur infrastructure française, pour les utilisateurs sans matériel
+**La solution :** Une **appliance matérielle pré-configurée** avec Frigate + IA embarquée. L'utilisateur branche, c'est prêt. Ses données restent chez lui. S'il y a problème : support français inclus.
 
-**Traction cible :** 500 utilisateurs actifs à 12 mois post-lancement, 2 000 à 24 mois.
+**Offres :**
+- **Offering matériel** (prioritaire) — Appliance clef-en-main avec support optionnel → Cible : familles urbaines, PME, syndics
+- **Offering cloud** — Abonnement pour qui n'a pas de matériel
+- **Offering open source** — Repo open source pour makers (validation communautaire, pipeline recrutement)
+
+**Traction cible :** Volume matériel + abonnés cloud à M12 et M24 (à définir).
+
+**Moat défensif :** Support humain français + certification caméras + intégrations testées = non facilement replicable par Umbrel/CasaOS.
 
 ---
 
@@ -40,175 +44,175 @@
 
 ### 2.1 Taille du marché
 
-| Périmètre | Valeur estimée (2025) | Croissance annuelle |
-|---|---|---|
-| Marché mondial smart home security | ~12 Mds USD | ~14 % CAGR |
-| Marché européen | ~2,5 Mds USD | ~12 % CAGR |
-| Segment caméras IP grand public France | ~180 M€ | ~10 % |
-
-Sources : MarketsandMarkets, Statista (estimations).
+- **Segment caméras IP grand public France** : ~180 M€, +10% CAGR
+- **Marché européen smart home security** : ~2,5 Mds USD, +12% CAGR
+- **Segment "local-first + support"** : ~5-10% du marché total = ~12-25 M€ potentiel EU
 
 ### 2.2 Tendances favorables
 
-- **Montée en puissance du mouvement privacy** — RGPD, scandales de données, méfiance envers les GAFAM
-- **Explosion du mouvement "self-hosted"** — Home Assistant (500k+ utilisateurs), Jellyfin, Nextcloud : une communauté tech massive cherche des alternatives locales
-- **Souveraineté numérique** — Forte sensibilité française et européenne sur l'hébergement des données
-- **Maturité des caméras IP** — Le parc installé est énorme ; les utilisateurs ne veulent pas tout racheter
-- **Coût de l'IA embarquée en baisse** — Les SBC (Raspberry Pi, mini-PC) sont suffisamment puissants pour faire tourner des modèles de reconnaissance faciale
+- **Montée en puissance du mouvement privacy** — RGPD, scandales, méfiance GAFAM
+- **Marché existant = Ring/Nest users frustrés** — Pas besoin de créer la demande, capturer la frustration
+- **Souveraineté numérique** — Sensibilité française/EU très haute post-RGPD
+- **Support = value** — Non-tech users valorisent l'aide humaine (vs open source gratuit)
 
 ### 2.3 Segment cible
 
-**Cœur de cible (early adopters) :**
-- Hommes/femmes, 28-45 ans, CSP+
-- Sensibles à la vie privée et à la souveraineté de leurs données
-- Profil tech-savvy ou tech-curious
-- Propriétaires ou locataires avec caméras IP existantes ou souhait d'en installer
+**Cœur de cible (PRIMARY) :**
+- **Familles urbaines** (Paris, Lyon, Marseille) : 30-50 ans, propriétaires/accédants, sensibles à la vie privée & souveraineté
+  - Aujourd'hui : Ring, Nest, ou rien (peur de la complexité)
+  - Problema : abonnement obligatoire, données cloud
+  - Désir : surveillance locale simple, zéro technicité, support français
+
+- **PME / Petits commerces** (cafés, restaurants, petits hôtels) : besoin de surveillance locale, pas d'IT interne
+  - Aujourd'hui : NAS Synology complexe, ou caméras IP avec cloud propriétaire
+  - Problema : trop cher, trop technique, support inexistant en français
+  - Désir : surveillance locale, intégration PoE facile, quelqu'un à appeler si ça casse
+
+- **Syndics / Immobilier** : surveiller espaces communs sans dépendre du cloud
+  - Conformité RGPD + donnée locale = critère clé
 
 **Cible secondaire :**
-- Seniors souhaitant surveiller leur domicile sans complexité technique (via Hub)
-- Petits commerces, TPE souhaitant une solution locale sans abonnement cloud
+- Seniors, non-tech, souhaitant surveiller leur maison (via Hub tout configuré)
+- Makers tech-aware qui veulent une alternative Frigate avec support (DIY ou Hub)
 
 ---
 
 ## 3. Offre et modèle de revenus
 
-### 3.1 DIY — Open Source
+### 3.1 Offering matériel (PRIORITAIRE)
 
-**Positionnement :** Gratuit, communautaire, référence technique  
-**Revenus directs :** Aucun  
-**Rôle stratégique :**
-- Construire la communauté et la notoriété
-- Valider le produit en conditions réelles
-- Pipeline de recrutement pour les offres payantes (Hub, Cloud)
-- Contributions externes qui améliorent le produit
+**Positionnement :** L'appliance surveillance clef-en-main pour grand public  
+**Modèle :** Vente unitaire du hardware + abonnement support optionnel
 
-### 3.2 Vyzio Hub
+| Composant | Coût estimé | Marge brute |
+|---|---|---|
+| Mini-PC avec stack pré-installée | À définir | À définir |
+| Installation à domicile (optionnel) | À définir | À définir |
+| Support annuel (mise à jour, hotline) | À définir | À définir |
 
-**Positionnement :** Clef en main, privacy garantie, zéro abonnement obligatoire  
-**Modèle :** Vente unitaire du hardware + marge
+**Value prop :** 
+- Plug & Play (zéro configuration)
+- Support français inclus
+- Mises à jour OTA automatiques
+- Reconnaissance faciale embarquée
+- Compatible caméras IP existantes (PoE, WiFi)
 
-| Composant | Coût estimé | Prix de vente | Marge brute |
-|---|---|---|---|
-| Mini-PC (N100 / N150, 8 Go RAM, 256 Go SSD) | ~120 € | 249 € | ~129 € (~52 %) |
-| Option installation à domicile | ~80 € coût (partenaires) | 149 € | ~69 € |
-| Support prioritaire (optionnel, annuel) | ~10 €/an | 29 €/an | ~19 €/an |
+**Revenus primaires :** Vente matériel. **Revenus récurrents :** Abonnement support (opt-in).
 
-**Revenus récurrents optionnels :**
-- Abonnement support/mises à jour prioritaires : 29 €/an
-- Extension stockage cloud chiffré (backup des clips) : 4,99 €/mois
+### 3.2 Offering cloud (SECONDAIRE)
 
-### 3.3 Vyzio Cloud
-
-**Positionnement :** Sans matériel, sans friction, infrastructure française  
+**Positionnement :** Pour qui n'a pas d'équipement à la maison, abonnement cloud français  
 **Modèle :** Abonnement mensuel (SaaS)
 
-| Plan | Caméras | Rétention | Prix/mois |
-|---|---|---|---|
-| Starter | 2 caméras | 7 jours | 9,99 € |
-| Family | 5 caméras | 30 jours | 19,99 € |
-| Premium | 10 caméras | 90 jours | 39,99 € |
+| Plan | Caméras | Stockage |
+|---|---|---|
+| Plan petit | Limité | 7 jours |
+| Plan médium | Médium | 30 jours |
+| Plan large | Élevé | 90 jours |
 
-- Facturation mensuelle ou annuelle (remise 15 % pour l'annuel)
-- Essai gratuit 30 jours, sans CB
+- Facturation mensuelle ou annuelle (remise possible pour l'annuel)
+- Essai gratuit
+- Infrastructure OVHcloud (France)
+
+### 3.3 Offering open source (VALIDATION + PIPELINE)
+
+**Positionnement :** Repo open source pour makers qui veulent faire eux-mêmes  
+**Revenus directs :** Aucun  
+**Rôle stratégique :**
+- Validation du produit en conditions réelles (feedback makers)
+- Pipeline de recrutement pour Hub/Cloud (makers → besoin support → client Hub)
+- Contributions externes (améliorations, intégrations)
+- Notoriété technique (GitHub stars = crédibilité)
 
 ### 3.4 Revenus additionnels (moyen terme)
 
-- **API B2B** — Accès à l'engine de reconnaissance pour intégrateurs (ex. syndics, promoteurs immobiliers) : tarification à l'usage
-- **Certifications partenaires** — Programme revendeurs pour installateurs de caméras
-- **Subventions & aides** — Éligibilité potentielle aux aides à la souveraineté numérique (BPI, French Tech)
+- **Installation à domicile** — Service payant (marche partenaires locaux)
+- **Formation installateurs** — Programme certification pour artisans domotique (marque blanche)
+- **Support premium** — Tier support supérieur pour PME/syndics
+- **Aides publiques** — Éligibilité potentielle RGPD/souveraineté numérique (BPI)
 
 ---
 
 ## 4. Analyse concurrentielle
 
-### 4.1 Positionnement
+### 4.1 Positionnement vs concurrents
 
-| Critère | Ring | Nest | Arlo | Frigate | **Vyzio** |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Données stockées localement | ✗ | ✗ | ✗ | ✓ | ✓ |
-| Reconnaissance faciale locale | ✗ | Partiel | ✗ | ✗ | ✓ |
-| Fonctionne sans internet | ✗ | ✗ | ✗ | ✓ | ✓ |
-| Open Source | ✗ | ✗ | ✗ | ✓ | ✓ |
-| Compatible caméras IP tierces | ✗ | Limité | ✗ | ✓ | ✓ |
-| Abonnement obligatoire | ✓ | ✓ | ✓ | ✗ | Non (DIY/Hub) |
-| Clef en main | ✓ | ✓ | ✓ | ✗ | ✓ (Hub/Cloud) |
-| Dashboard moderne | ✓ | ✓ | ✓ | Basique | ✓ |
-| Infrastructure française | ✗ | ✗ | ✗ | N/A | ✓ (Cloud) |
+**Ring/Nest/Arlo :** Cloud, abonnement obligatoire, données US
+- Notre avantage : local-first, support français, zéro abonnement obligatoire
+- Risque : ils pourraient lancer on-premise, mais business model = cloud (unlikely)
 
-### 4.2 Analyse des acteurs clés
+**Synology NAS :** Fiabilité, support, perception "IT complex"
+- Notre avantage : UX simplifiée, support français, accessibilité grand public
+- Faiblesse Synology : perception comme trop technique, trop cher
 
-**Ring (Amazon)**
-- Leader du marché grand public
-- Ecosystem fermé, caméras propriétaires
-- Abonnement Ring Protect obligatoire pour accéder aux enregistrements
-- Controverses importantes sur le partage de données avec la police américaine
-- **Faiblesse exploitable :** dépendance cloud totale, pas d'option locale
+**Frigate :** Open source, techniquement excellent, MAIS zéro UX, zéro support, pour makers
+- Notre positionnement : on utilise Frigate en backbone, on ajoute UX/support/product
+- Risque : Frigate évolue en appliance, mais fondateur = open source ideologue (unlikely)
 
-**Nest / Google Home**
-- Intégration forte avec l'écosystème Google
-- Reconnaissance faciale limitée aux abonnés Nest Aware
-- Traitement cloud uniquement
-- **Faiblesse exploitable :** utilisateurs réticents à donner leurs images vidéo à Google
+**Umbrel / CasaOS :** OS simplifié, app store modèle, croissance rapide
+- CIBLE DIFFERENTE : Umbrel = pour tech-aware / makers, notre solution = pour non-tech
+- Notre avantage : focus sécurité (ils sont multitâche), support humain (ils n'en ont pas)
+- Complémentaires plus que concurrents : maker → Umbrel, grand public → notre solution
 
-**Frigate (open source)**
-- NVR local open source, très populaire dans la communauté Home Assistant
-- Excellente détection d'objets (YOLO)
-- Pas de reconnaissance faciale native, pas de produit clef-en-main, pas de notifications mobile natives
-- **Opportunité :** Vyzio peut s'appuyer sur les briques Frigate + apporter la reconnaissance faciale, les notifications et l'UX grand public
+### 4.2 Avantage concurrentiel durable (MOAT)
 
-### 4.3 Avantage concurrentiel durable
-
-1. **Privacy by design non négociable** — C'est un engagement architectural, pas marketing
-2. **Communauté open source** — Moat défensif, contributions externes, confiance
-3. **Souveraineté française** — Différenciant fort sur le marché européen post-RGPD
-4. **Continuum DIY → Hub → Cloud** — Unique : le même logiciel, trois niveaux de service
+1. **Support français humain** — Le vrai moat. Pas juste produit, un service. Umbrel/CasaOS n'ont pas ça.
+2. **Certification caméras testées** — 5-10 marques garanties "qui marchent". Frigate = user debug
+3. **Installation à domicile** — Service optionnel, crée stickiness. Aucun concurrent
+4. **Privacy by design + souveraineté française** — Non negotiable. RGPD by design
+5. **UX pensée pour non-tech** — "Ma grand-mère peut l'utiliser"
+6. **Distribution via installateurs** — Artisans domotique/électriciens = canal GAFAM ne peut pas utiliser
 
 ---
 
 ## 5. Stratégie Go-to-Market
 
-### 5.1 Phase 1 — Lancement communautaire (M0 à M6)
+### 5.1 Phase 1 — MVP + Bêta fermée (M0 à M4)
 
-**Objectif :** 500 étoiles GitHub, 100 utilisateurs DIY actifs, première couverture presse tech
-
-**Actions :**
-- Publication du code open source avec documentation complète
-- Posts sur les communautés clés : Reddit (r/homeassistant, r/selfhosted, r/privacy), Hacker News, forums français (Next INpact, Korben)
-- Intégration Home Assistant officielle (add-on)
-- Blog technique sur les choix d'architecture (transparence = crédibilité)
-- Démo vidéo : installation en 10 minutes
-
-### 5.2 Phase 2 — Lancement Hub (M6 à M12)
-
-**Objectif :** 200 Hub vendus, 50 abonnés Cloud
+**Objectif :** MVP fonctionnel (Frigate + reconnaissance IA), 20 testeurs bêta non-tech
 
 **Actions :**
-- Campagne de précommande (Kickstarter ou direct)
-- Partenariats installateurs de caméras IP (BtoB indirect)
-- Relations presse : médias tech français (01net, Numerama, Les Numériques) + médias privacy (La Quadrature du Net, etc.)
-- Programme d'ambassadeurs communautaires
-- SEO sur des mots-clés à fort potentiel : "caméra surveillance sans abonnement", "alternative Ring open source", "NVR local"
+- Développer Hub initial (mini-PC + stack Vyzio)
+- Tester avec 20 utilisateurs bêta = familles réelles, PME
+- Itérer sur UX (l'user doit comprendre sans doc)
+- Calibrer support (combien de tickets par utilisateur?)
+- Tester certification caméras (5-10 marques compatible)
 
-### 5.3 Phase 3 — Croissance (M12 à M24)
+### 5.2 Phase 2 — Lancement public (M4 à M8)
 
-**Objectif :** 2 000 utilisateurs actifs (toutes offres), rentabilité opérationnelle
+**Objectif :** 100 Hubs vendus, 30 Cloud actifs
 
 **Actions :**
-- Publicité ciblée (Google Ads, Meta) sur segments privacy/tech
-- Programme revendeurs / installateurs certifiés
-- Expansion internationale (Belgique, Suisse, Allemagne)
-- Partenariats distributeurs (Amazon FR, LDLC, Darty pour le Hub)
-- Lancement application mobile native
+- Lancement DIY open source (repo GitHub)
+- Lancement Hub (précommande ou site + small run production)
+- Lancement Cloud beta (20-30 abonnés)
+- Relations presse **locale/régionale** (Marseille, Lyon, Paris) + presse privacy
+- YouTube démo : "installation en 5 min"
+- SEO local + mots-clés grand public : "surveillance maison sans Amazon", "caméra IP locale sans abonnement"
+- Bouche-à-oreille réseau (family/friends)
 
-### 5.4 Canaux d'acquisition
+### 5.3 Phase 3 — Croissance (M8 à M18)
 
-| Canal | Phase | CAC estimé | Potentiel volume |
+**Objectif :** 500 Hubs, 200 Cloud, rentabilité en vue
+
+**Actions :**
+- Support 24/5 français (hotline + chat)
+- Partenariats installateurs locaux / électriciens
+- Programme installers certifiés (formation)
+- Google Ads ciblé sur non-tech ("pas besoin de comprendre, on s'occupe de tout")
+- Expansion : Belgique, Suisse (presse + partners)
+- Deuxième SKU Hub si besoin (plus gros, plus de caméras)
+
+### 5.4 Canaux d'acquisition (Hub)
+
+| Canal | Phase | CAC estimé | Stratégie |
 |---|---|---|---|
-| Communautés open source (organique) | 1, 2, 3 | ~0 € | Moyen |
-| SEO / contenu | 1, 2, 3 | ~20 € | Élevé (long terme) |
-| Relations presse | 1, 2 | ~50 € (PR) | Moyen |
-| Publicité payante | 3 | ~40-80 € | Élevé |
-| Bouche-à-oreille / NPS | 2, 3 | ~0 € | Élevé |
+| Bouche-à-oreille / NPS | 2, 3 | €0 | Prioritaire — non-tech aime recommander "qui marche" |
+| SEO local + keywords "no geek" | 2, 3 | €10-20 | "surveillance sans amazon", "caméra locale" |
+| Installateurs partenaires | 3 | €0 (commission) | Artisans, électriciens = distribution naturelle |
+| Presse grand public | 2, 3 | ~€30 PR | Pas HackerNews, plutôt "Madame Figaro tech" |
+| Google Ads (phase 3) | 3 | €50-80 | Ciblage non-tech, long tail keywords |
+| YouTube démo simple | 2, 3 | €0 | "Je branche, c'est prêt" viral potential |
 
 ---
 
@@ -216,72 +220,63 @@ Sources : MarketsandMarkets, Statista (estimations).
 
 ### 6.1 Coûts de développement (année 1)
 
-| Poste | Détail | Coût annuel estimé |
+| Poste | Détail | Coût estimé |
 |---|---|---|
-| Développement core | 1-2 développeurs (fondateurs ou freelance) | 0-120 k€ |
-| Infrastructure Cloud | Serveurs OVHcloud / Scaleway (staging + prod) | ~6 k€/an |
-| Outils & licences | GitHub, CI/CD, monitoring | ~2 k€/an |
-| Design / UX | Dashboard, marketing site | ~5 k€ |
-| Juridique | RGPD, CGV, mentions légales | ~3 k€ |
+| Développement core | Founders ou freelance | 0-120 k€ |
+| Infrastructure Cloud | OVHcloud / Scaleway | ~6 k€/an |
+| Outils & licences | GitHub, CI/CD | ~2 k€/an |
+| Design / UX | Dashboard, site | ~5 k€ |
+| Juridique | RGPD, CGV | ~3 k€ |
 
-### 6.2 Coûts liés au Hub
+### 6.2 Coûts Hub (par unité)
 
-| Poste | Par unité |
+| Poste | Coût |
 |---|---|
 | Hardware (mini-PC + emballage) | ~125 € |
 | Logistique / livraison | ~15 € |
-| SAV estimé (2 % taux retour) | ~3 € provisionnés |
+| SAV estimé (2% retour) | ~3 € |
 | **Total coût par Hub** | **~143 €** |
 
-Prix de vente cible : **249 €** → Marge brute : **~106 € (43 %)**
+**Prix de vente : €349** → Marge brute : **~206 € (59%)**
 
 ### 6.3 Coûts Cloud (par abonné actif)
 
-| Poste | Coût mensuel estimé |
+| Poste | Mensuel |
 |---|---|
-| Compute (analyse IA) | ~1,50 € |
-| Stockage vidéo (30j, 2 cam) | ~0,80 € |
+| Compute (IA) | ~1,50 € |
+| Stockage vidéo (30j) | ~0,80 € |
 | Bande passante | ~0,40 € |
 | Support | ~0,30 € |
-| **Total coût par abonné Starter** | **~3,00 €** |
+| **Total par Starter** | **~3,00 €** |
 
-Marge brute Cloud Starter : 9,99 € - 3,00 € = **~6,99 € (70 %)**
+**Marge brute Cloud Starter : €9,99 - €3,00 = €6,99 (70%)**
 
 ---
 
 ## 7. Projections financières
 
-### 7.1 Hypothèses
+### 7.1 Scénario de base — Revenus
 
-- Lancement DIY : M1
-- Lancement Hub : M6
-- Lancement Cloud : M6
-- Croissance conservatrice la première année, accélération en année 2
-
-### 7.2 Scénario de base — Revenus
-
-| Mois | Hubs vendus (cumulé) | Abonnés Cloud | Revenu mensuel Hub | Revenu mensuel Cloud | **Total mensuel** |
+| Mois | Hubs (cumulé) | Cloud actifs | Revenu Hub | Revenu Cloud | **Total** |
 |---|---|---|---|---|---|
 | M6 | 10 | 20 | 2 490 € | 200 € | **2 690 €** |
 | M9 | 50 | 60 | 9 950 € | 600 € | **10 550 €** |
-| M12 | 120 | 150 | 5 600 €* | 1 500 € | **7 100 €** |
-| M18 | 350 | 400 | 6 200 €* | 4 000 € | **10 200 €** |
-| M24 | 700 | 900 | 8 750 €* | 9 000 € | **17 750 €** |
+| M12 | 120 | 150 | 5 600 € | 1 500 € | **7 100 €** |
+| M18 | 350 | 400 | 6 200 € | 4 000 € | **10 200 €** |
+| M24 | 700 | 900 | 8 750 € | 9 000 € | **17 750 €** |
 
-*Revenu Hub = ventes du mois × marge brute (~106 €) + abonnements support récurrents
+### 7.2 Seuil de rentabilité
 
-### 7.3 Seuil de rentabilité
+- Structure légère (2 founders) : **M14-M16**
+- Avec 1 salarié dès M12 : **M20-M22**
 
-- Avec une structure légère (2 fondateurs, pas de salariés en phase 1) : **~M14-M16**
-- Avec 1 salarié supplémentaire dès M12 : **~M20-M22**
+### 7.3 Besoins en financement
 
-### 7.4 Besoins en financement
-
-| Scénario | Montant | Usage |
+| Scenario | Estimation | Usage |
 |---|---|---|
-| Bootstrapped | 0-20 k€ | Infrastructure, juridique, 1er stock Hub |
-| Love money / amorçage | 50-150 k€ | Accélération marketing, stock Hub, 1 recrutement |
-| Seed | 300-500 k€ | Équipe, distribution, expansion européenne |
+| Bootstrapped | Minimal | Infrastructure, juridique, 1er stock |
+| Amorçage | Faible à moyen | Accélération marketing, stock, recrutement |
+| Seed | Moyen à élevé | Équipe, distribution, expansion EU |
 
 ---
 
@@ -291,17 +286,16 @@ Marge brute Cloud Starter : 9,99 € - 3,00 € = **~6,99 € (70 %)**
 
 | Rôle | Compétences | Priorité |
 |---|---|---|
-| CTO / Lead Dev | Backend (Rust/.NET), IA, Docker/K8s | Critique (fondateur) |
-| Product / CEO | Vision produit, business, GTM | Critique (fondateur) |
-| Dev Frontend | TypeScript, React/Vue | Phase 2 |
-| Dev IA / ML | Computer Vision, PyTorch, InsightFace | Phase 1-2 |
-| Growth / Marketing | SEO, communautés tech, presse | Phase 2 |
+| CTO / Lead Dev | Backend, IA, Docker/K8s | Critique (fondateur) |
+| Product / CEO | Vision, business, GTM | Critique (fondateur) |
+| Dev Frontend | TypeScript, React | Phase 2 |
+| Dev IA / ML | Computer Vision, PyTorch | Phase 1-2 |
+| Growth / Marketing | SEO, community, press | Phase 2 |
 
 ### 8.2 Structure juridique recommandée
 
-- **SAS** — Flexibilité, attractivité pour les investisseurs, régime IR possible en phase early
-- Domiciliation : France (cohérent avec la promesse souveraineté)
-- Enregistrement à l'INPI + dépôt marque "Vyzio"
+- **SAS** — Flexibilité, attractivité investisseurs, régime IR possible early
+- Domiciliation : France (cohérent promesse souveraineté)
 
 ---
 
@@ -309,26 +303,50 @@ Marge brute Cloud Starter : 9,99 € - 3,00 € = **~6,99 € (70 %)**
 
 | Risque | Probabilité | Impact | Mitigation |
 |---|---|---|---|
-| Concurrence GAFAM sur le segment local | Faible | Élevé | Moat communautaire open source + engagement privacy non réplicable par GAFAM |
-| Réglementation reconnaissance faciale (IA Act EU) | Moyenne | Élevé | Usage résidentiel privé hors champ du règlement ; veille juridique continue |
-| Difficulté de recrutement tech | Moyenne | Moyen | Communauté open source comme vivier ; télétravail |
-| Adoption lente (niche trop petite) | Faible | Élevé | Le marché self-hosted est en forte croissance (Home Assistant, preuve du segment) |
-| Problèmes de supply chain Hub | Moyenne | Moyen | Multi-sourcing hardware, modèles compatibles multiples |
-| Concurrence Frigate sur le DIY | Élevée | Faible | Frigate = infrastructure bas niveau, Vyzio = produit complet. Complémentaires plus que concurrents |
-| Attaque / fuite de données (Cloud) | Faible | Très élevé | Architecture sécurisée dès le départ, audits réguliers, chiffrement bout-en-bout |
+| Frigate évolue appliance clef-en-main | Moyenne | Moyen | Fork stable version 0.17, notre moat = support/UX |
+| Amazon/Google on-premise | Basse | Élevé | Notre prix + support FR + ecosystem les neutralise |
+| Umbrel/CasaOS appliance sécurité | Basse | Moyen | Cible différente (makers vs non-tech), moat = support FR |
+| Réglementation IA / reconnaissance faciale | Moyenne | Moyen | Usage résidentiel exempté, veille juridique |
+| Supply chain Hub (délai production) | Moyenne | Moyen | Multi-source hardware, drop-in compatibility |
+| Support explosif (trop tickets) | Haute | Moyen | FAQ, chatbot, capping users avant saturé |
+| Adoption lente (marché petit) | Moyenne | Élevé | Pivoter B2B2C (revendeurs, installateurs) |
+| Fuite données Cloud / incident sécu | Basse | Très élevé | Chiffrement natif, pen testing, assurance cyber |
 
 ---
 
-## 10. Roadmap et jalons
+## 10. Roadmap produit
 
-| Jalon | Échéance cible | Critère de succès |
+### V1 (M0-M6) — MVP clef-en-main
+**Focus :** Sécurité + reconnaissance faciale, zéro complexity
+- Frigate intégré (moteur NVR)
+- Reconnaissance faciale InsightFace embarquée
+- Notifications mobile (FCM)
+- Dashboard ultra-simple (5 écrans max)
+- Auto-discovery caméras ONVIF
+- Support 5-10 marques caméras certified
+- Détection mouvement + visage inconnu
+- Installation 5 minutes = préconfigurée
+
+### V2 (M6-M12) — Intégrations & support
+- Home Assistant intégration légère (optionnel)
+- Application mobile native
+- Support français hotline 24/5
+- Programme installer partenaires
+
+### V3 (M12+) — Extension
+- Jellyfin intégration (media server optional)
+- Home Assistant plus profond (automation simple)
+- API pour syndics/PME B2B
+- Expansion européenne (EN/DE/BE)
+
+### Jalons clés
+
+| Jalon | Cible | Critère |
 |---|---|---|
-| **MVP DIY fonctionnel** | M3 | Reconnaissance faciale + notifications + dashboard de base |
-| **Bêta fermée** | M4-M5 | 20 testeurs, feedback structuré collecté |
-| **Lancement open source public** | M6 | Repo public, doc complète, 100 stars GitHub |
-| **Lancement Hub** | M6-M7 | 50 précommandes |
-| **Lancement Cloud** | M7 | 20 abonnés payants |
-| **Intégration Home Assistant officielle** | M8 | Add-on accepté dans le store officiel |
-| **Application mobile native** | M12-M15 | iOS + Android sur les stores |
-| **Expansion EU** | M18 | Site + support EN/DE, 1er partenaire revendeur hors France |
-| **Rentabilité opérationnelle** | M16-M20 | Cash-flow positif sur 3 mois consécutifs |
+| MVP + Bêta fermée | M4 | 20 users non-tech, 1h install, zéro tickets |
+| Lancement public | M6 | DIY repo + Hub précommande |
+| 100 Hubs vendus | M8 | Support tient bon (< 2h response) |
+| Rentabilité opérationnelle | M16+ | Hub margin couvre coûts support |
+| 500 users total | M12 | 300 Hub + 200 Cloud |
+
+**Philosophie :** Faire une chose bien (sécurité/surveillance) avant d'étendre. V1 = meilleur produit pour surveiller sa maison. V2+ = on expand si demande.
