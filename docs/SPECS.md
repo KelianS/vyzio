@@ -65,15 +65,7 @@ Caméra IP (RTSP/ONVIF)
 - **Données 100% locales** sur l'appareil
 - **Support français inclus**
 
-### 2.2 Deployment cloud
-
-- Infrastructure sur data center local
-- Utilisateur configure caméras depuis dashboard
-- Flux vidéo transité chiffré
-- Abonnement en ligne
-- Données stockées chiffrées dans infrastructure
-
-### 2.3 Deployment self-hosted (DIY)
+### 2.2 Deployment self-hosted (DIY)
 
 - **Docker Compose** sur machine utilisateur (PC, NAS, Linux)
 - Installation manuelle, config YAML

@@ -28,9 +28,9 @@ Vyzio est une solution de surveillance domestique **prête à brancher, sans tec
 
 ---
 
-## Trois façons d'utiliser Vyzio
+## Deux façons d'utiliser Vyzio
 
-Vyzio s'adapte à votre préférence : matériel, cloud ou open source.
+Vyzio s'adapte à votre profil : appliance clef-en-main ou open source.
 
 ### Offering Matériel — Plug & Play, pour grand public
 Une **petite boîte, zéro installation**, branchée sur votre réseau. Détection automatique de vos caméras IP existantes, configuration entièrement guidée, et c'est fini. 
@@ -38,9 +38,6 @@ Une **petite boîte, zéro installation**, branchée sur votre réseau. Détecti
 Si quelque chose se casse, vous appelez du support français. C'est ça, le produit.
 
 Installation à domicile disponible en option.
-
-### Offering Cloud — Pas de matériel, abonnement en ligne
-Pas d'envie de brancher une boîte ? Nous gérons la solution pour vous via un abonnement, sur infrastructure française. Vos caméras communiquent en chiffré. Mêmes garanties privacy.
 
 ### Offering Open Source — Pour les makers
 Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'est pour les gens qui savent ce qu'ils font — pas de support inclus.
@@ -56,7 +53,7 @@ Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'e
 | Fonctionne sans internet | ✗ | ✓ |
 | Open Source | ✗ | ✓ |
 | Compatible caméras IP tierces | Limité | ✓ |
-| Abonnement obligatoire | ✓ | Non (Matériel / Open Source) |
+| Abonnement obligatoire | ✓ | Non |
 
 ---
 

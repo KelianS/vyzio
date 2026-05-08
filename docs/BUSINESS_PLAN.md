@@ -31,10 +31,9 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 
 **Offres :**
 - **Offering matériel** (prioritaire) — Appliance clef-en-main avec support optionnel → Cible : familles urbaines, PME, syndics
-- **Offering cloud** — Abonnement pour qui n'a pas de matériel
 - **Offering open source** — Repo open source pour makers (validation communautaire, pipeline recrutement)
 
-**Traction cible :** Volume matériel + abonnés cloud à M12 et M24 (à définir).
+**Traction cible :** Volume matériel à M12 et M24 (à définir).
 
 **Moat défensif :** Support humain français + certification caméras + intégrations testées = non facilement replicable par Umbrel/CasaOS.
 
@@ -99,22 +98,7 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 
 **Revenus primaires :** Vente matériel. **Revenus récurrents :** Abonnement support (opt-in).
 
-### 3.2 Offering cloud (SECONDAIRE)
-
-**Positionnement :** Pour qui n'a pas d'équipement à la maison, abonnement cloud français  
-**Modèle :** Abonnement mensuel (SaaS)
-
-| Plan | Caméras | Stockage |
-|---|---|---|
-| Plan petit | Limité | 7 jours |
-| Plan médium | Médium | 30 jours |
-| Plan large | Élevé | 90 jours |
-
-- Facturation mensuelle ou annuelle (remise possible pour l'annuel)
-- Essai gratuit
-- Infrastructure OVHcloud (France)
-
-### 3.3 Offering open source (VALIDATION + PIPELINE)
+### 3.2 Offering open source (VALIDATION + PIPELINE)
 
 **Positionnement :** Repo open source pour makers qui veulent faire eux-mêmes  
 **Revenus directs :** Aucun  
@@ -124,7 +108,7 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 - Contributions externes (améliorations, intégrations)
 - Notoriété technique (GitHub stars = crédibilité)
 
-### 3.4 Revenus additionnels (moyen terme)
+### 3.3 Revenus additionnels (moyen terme)
 
 - **Installation à domicile** — Service payant (marche partenaires locaux)
 - **Formation installateurs** — Programme certification pour artisans domotique (marque blanche)
@@ -304,13 +288,12 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 | Risque | Probabilité | Impact | Mitigation |
 |---|---|---|---|
 | Frigate évolue appliance clef-en-main | Moyenne | Moyen | Fork stable version 0.17, notre moat = support/UX |
-| Amazon/Google on-premise | Basse | Élevé | Notre prix + support FR + ecosystem les neutralise |
+| Amazon/Google on-premise local | Basse | Élevé | Notre prix + support FR + ecosystem les neutralise |
 | Umbrel/CasaOS appliance sécurité | Basse | Moyen | Cible différente (makers vs non-tech), moat = support FR |
 | Réglementation IA / reconnaissance faciale | Moyenne | Moyen | Usage résidentiel exempté, veille juridique |
-| Supply chain Hub (délai production) | Moyenne | Moyen | Multi-source hardware, drop-in compatibility |
+| Supply chain hardware (délai production) | Moyenne | Moyen | Multi-source hardware, drop-in compatibility |
 | Support explosif (trop tickets) | Haute | Moyen | FAQ, chatbot, capping users avant saturé |
-| Adoption lente (marché petit) | Moyenne | Élevé | Pivoter B2B2C (revendeurs, installateurs) |
-| Fuite données Cloud / incident sécu | Basse | Très élevé | Chiffrement natif, pen testing, assurance cyber |
+| Adoption lente (marché petit) | Moyenne | Élevé | Pivoter B2B2C (revendeurs, installateurs) avant rupture |
 
 ---
 
