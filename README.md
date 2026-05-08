@@ -39,7 +39,7 @@ Pour les makers et les technophiles. Installez Vyzio sur votre propre machine (P
 Vous ne voulez pas gérer un serveur. Vyzio vous fournit un **mini-PC dédié, pré-configuré**, prêt à brancher chez vous. Installation à domicile disponible en option. Vos données restent sur votre machine, dans votre foyer. Zéro abonnement obligatoire.
 
 ### Vyzio Cloud — Sans matériel, sans friction
-Pas de serveur, pas de configuration. Vyzio héberge le compute pour vous via un abonnement mensuel. Compatible avec vos caméras IP existantes. Idéal pour une mise en route rapide, avec un engagement fort sur la confidentialité des données.
+Pas de serveur, pas de configuration. Vyzio héberge la solution pour vous via un abonnement mensuel, sur une infrastructure française. Compatible avec vos caméras IP existantes. Idéal pour une mise en route rapide, avec un engagement fort sur la confidentialité des données.
 
 ---
 
