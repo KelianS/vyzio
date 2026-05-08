@@ -209,6 +209,8 @@ Chaque profil contient :
 
 > **En tant qu'utilisateur**, je veux recevoir une notification push sur mon téléphone avec la photo et le nom de la personne détectée, afin de savoir immédiatement qui est à ma porte.
 
+> **En tant qu'utilisateur**, je veux voir la photo de la détection directement dans ma notification, même lorsque je suis hors de chez moi (hors réseau local), afin de pouvoir réagir immédiatement sans devoir me connecter au dashboard.
+
 > **En tant qu'utilisateur**, je veux pouvoir désactiver les notifications la nuit, afin de ne pas être réveillé par des alertes de personnes connues.
 
 > **En tant qu'utilisateur**, je veux être alerté si une caméra devient inaccessible, afin de détecter une coupure réseau ou une tentative de sabotage.
@@ -229,7 +231,10 @@ Chaque profil contient :
 
 - **Push mobile** (prioritaire) — FCM (Firebase Cloud Messaging) pour Android et iOS
   - Les notifications push transitent via les serveurs FCM pour la livraison uniquement
-  - Les images/clips restent locaux, accessibles via deep-link vers le dashboard
+  - La photo de détection (thumbnail du visage, JPEG redimensionné) est incluse dans la notification
+  - Deux modes selon la configuration d'accès distant (voir §6.6) :
+    - **Mode local-only** : deep-link vers le dashboard, photo visible uniquement sur le réseau local
+    - **Mode accès distant activé** : URL signée éphémère (TTL 5 min) pointant vers l'appliance exposée via tunnel sécurisé
 - **Webhook** — Pour intégrations tierces (Home Assistant, n8n, Zapier, etc.)
 - **Email** — Optionnel, configurable
 
@@ -245,6 +250,30 @@ Chaque profil contient :
 - Si Internet est indisponible, les événements sont mis en file locale
 - Les notifications sont envoyées dès que la connexion est rétablie
 - La surveillance locale continue sans interruption
+
+### 6.6 Accès distant aux photos de détection
+
+Par défaut, le système est 100 % local. L'accès aux photos hors réseau local est une fonctionnalité **opt-in** qui nécessite une configuration explicite de l'utilisateur.
+
+**Deux mécanismes supportés :**
+
+**Option A — Tunnel sécurisé (recommandé)**
+- L'utilisateur configure un tunnel Cloudflare Tunnel ou Tailscale depuis le dashboard
+- L'appliance devient accessible depuis Internet via une URL HTTPS dédiée (ex. `https://vyzio-xxxx.trycloudflare.com`)
+- La photo est servie directement depuis l'appliance via une **URL signée éphémère** (token HMAC, TTL 5 minutes)
+- La photo ne transite jamais par un serveur tiers — seule la requête HTTP passe par le tunnel
+- Aucun stockage externe : la photo reste sur l'appliance
+
+**Option B — VPN (auto-hébergé)**
+- L'utilisateur gère son propre VPN (WireGuard, OpenVPN) pour accéder au réseau local à distance
+- Vyzio n'a pas de dépendance supplémentaire — le dashboard local reste accessible normalement via le VPN
+- Configuration entièrement à la charge de l'utilisateur
+
+**Contraintes communes aux deux options :**
+- La photo transmise dans la notification est un **thumbnail** JPEG ≤ 100 KB (visage + contexte, résolution 400×300 max)
+- L'URL de la photo expire automatiquement après 5 minutes — passé ce délai, la photo reste consultable uniquement depuis le dashboard
+- L'accès distant ne concerne que les thumbnails d'événements, pas les clips vidéo ni les flux live
+- La désactivation du tunnel/VPN remet le système en mode local-only sans perte de données
 
 ---
 
