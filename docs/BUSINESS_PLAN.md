@@ -1,4 +1,4 @@
-# Vyzio — Business Plan (V2)
+# Business Plan (V2)
 
 > Version 0.2 — Mai 2026 — Repositionnement "Non-tech friendly + Support français"
 
@@ -21,9 +21,9 @@
 
 ## 1. Résumé exécutif
 
-**Vyzio** est un **appliance de surveillance domestique clef-en-main**, conçue pour le **grand public non-tech** qui ne veut plus dépendre d'Amazon, Google ou Arlo.
+Une **appliance de surveillance domestique clef-en-main**, conçue pour le **grand public non-tech** qui ne veut plus dépendre d'Amazon, Google ou Arlo.
 
-Ce qui différencie Vyzio : **support français + installation + garantie que ça marche.** Pas un produit geek pour makers. Un produit pour Monsieur-Madame lambda qui veut juste que ses caméras fonctionnent et ne donnent pas ses images à une boîte américaine.
+Ce qui nous différencie : **support français + installation + garantie que ça marche.** Pas un produit geek pour makers. Un produit pour Monsieur-Madame lambda qui veut juste que ses caméras fonctionnent et ne donnent pas ses images à une boîte américaine.
 
 **Le problème :** Ring/Nest/Arlo = cloud propriétaire + abonnement obligatoire + dépendance internet. Frigate = excellent pour les makers, incompréhensible pour le reste. Umbrel = très bon OS pour self-hosted, mais toujours pour les tech-aware. **Aucun acteur n'offre : surveillance locale simple, zéro configuration, support humain français.**
 
@@ -71,8 +71,8 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
   - Conformité RGPD + donnée locale = critère clé
 
 **Cible secondaire :**
-- Seniors, non-tech, souhaitant surveiller leur maison (via Hub tout configuré)
-- Makers tech-aware qui veulent une alternative Frigate avec support (DIY ou Hub)
+- Seniors, non-tech, souhaitant surveiller leur maison sans complexité technique
+- Makers tech-aware qui veulent une alternative Frigate — via l'open source ou l'appliance
 
 ---
 
@@ -104,7 +104,7 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 **Revenus directs :** Aucun  
 **Rôle stratégique :**
 - Validation du produit en conditions réelles (feedback makers)
-- Pipeline de recrutement pour Hub/Cloud (makers → besoin support → client Hub)
+- Pipeline de recrutement (makers → besoin support → client appliance)
 - Contributions externes (améliorations, intégrations)
 - Notoriété technique (GitHub stars = crédibilité)
 
@@ -156,7 +156,7 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 **Objectif :** MVP fonctionnel (Frigate + reconnaissance IA), 20 testeurs bêta non-tech
 
 **Actions :**
-- Développer Hub initial (mini-PC + stack Vyzio)
+- Développer Hub initial (mini-PC + stack)
 - Tester avec 20 utilisateurs bêta = familles réelles, PME
 - Itérer sur UX (l'user doit comprendre sans doc)
 - Calibrer support (combien de tickets par utilisateur?)
@@ -164,12 +164,11 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 
 ### 5.2 Phase 2 — Lancement public (M4 à M8)
 
-**Objectif :** 100 Hubs vendus, 30 Cloud actifs
+**Objectif :** 100 appliances vendues
 
 **Actions :**
-- Lancement DIY open source (repo GitHub)
-- Lancement Hub (précommande ou site + small run production)
-- Lancement Cloud beta (20-30 abonnés)
+- Lancement open source (repo GitHub)
+- Lancement appliance (précommande ou site + small run production)
 - Relations presse **locale/régionale** (Marseille, Lyon, Paris) + presse privacy
 - YouTube démo : "installation en 5 min"
 - SEO local + mots-clés grand public : "surveillance maison sans Amazon", "caméra IP locale sans abonnement"
@@ -177,7 +176,7 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 
 ### 5.3 Phase 3 — Croissance (M8 à M18)
 
-**Objectif :** 500 Hubs, 200 Cloud, rentabilité en vue
+**Objectif :** 500 appliances vendues, rentabilité en vue
 
 **Actions :**
 - Support 24/5 français (hotline + chat)
@@ -207,33 +206,18 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 | Poste | Détail | Coût estimé |
 |---|---|---|
 | Développement core | Founders ou freelance | 0-120 k€ |
-| Infrastructure Cloud | OVHcloud / Scaleway | ~6 k€/an |
+| Infrastructure (OTA, notifs) | OVHcloud / Scaleway | ~6 k€/an |
 | Outils & licences | GitHub, CI/CD | ~2 k€/an |
 | Design / UX | Dashboard, site | ~5 k€ |
 | Juridique | RGPD, CGV | ~3 k€ |
 
-### 6.2 Coûts Hub (par unité)
+### 6.2 Coûts appliance (par unité)
 
 | Poste | Coût |
 |---|---|
-| Hardware (mini-PC + emballage) | ~125 € |
-| Logistique / livraison | ~15 € |
-| SAV estimé (2% retour) | ~3 € |
-| **Total coût par Hub** | **~143 €** |
-
-**Prix de vente : €349** → Marge brute : **~206 € (59%)**
-
-### 6.3 Coûts Cloud (par abonné actif)
-
-| Poste | Mensuel |
-|---|---|
-| Compute (IA) | ~1,50 € |
-| Stockage vidéo (30j) | ~0,80 € |
-| Bande passante | ~0,40 € |
-| Support | ~0,30 € |
-| **Total par Starter** | **~3,00 €** |
-
-**Marge brute Cloud Starter : €9,99 - €3,00 = €6,99 (70%)**
+| Hardware (mini-PC + emballage) | À définir |
+| Logistique / livraison | À définir |
+| SAV estimé | À définir |
 
 ---
 
@@ -241,13 +225,10 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 
 ### 7.1 Scénario de base — Revenus
 
-| Mois | Hubs (cumulé) | Cloud actifs | Revenu Hub | Revenu Cloud | **Total** |
-|---|---|---|---|---|---|
-| M6 | 10 | 20 | 2 490 € | 200 € | **2 690 €** |
-| M9 | 50 | 60 | 9 950 € | 600 € | **10 550 €** |
-| M12 | 120 | 150 | 5 600 € | 1 500 € | **7 100 €** |
-| M18 | 350 | 400 | 6 200 € | 4 000 € | **10 200 €** |
-| M24 | 700 | 900 | 8 750 € | 9 000 € | **17 750 €** |
+Projections à définir une fois le pricing fixé. Sources de revenu :
+- **Vente appliance** (revenu unitaire one-shot)
+- **Abonnement support** (revenu récurrent optionnel)
+- **Service installation** (revenu one-shot, partenaires)
 
 ### 7.2 Seuil de rentabilité
 
@@ -326,10 +307,9 @@ Ce qui différencie Vyzio : **support français + installation + garantie que ç
 
 | Jalon | Cible | Critère |
 |---|---|---|
-| MVP + Bêta fermée | M4 | 20 users non-tech, 1h install, zéro tickets |
-| Lancement public | M6 | DIY repo + Hub précommande |
-| 100 Hubs vendus | M8 | Support tient bon (< 2h response) |
-| Rentabilité opérationnelle | M16+ | Hub margin couvre coûts support |
-| 500 users total | M12 | 300 Hub + 200 Cloud |
+| Bêta fermée | M4 | 20 users non-tech, installation < 1h, zéro tickets support |
+| Lancement public | M6 | Open source public + appliance en précommande |
+| 100 unités vendues | M8 | Support tient bon (< 2h réponse) |
+| 500 unités vendues | M12+ | Cash-flow positif sur 3 mois consécutifs |
 
 **Philosophie :** Faire une chose bien (sécurité/surveillance) avant d'étendre. V1 = meilleur produit pour surveiller sa maison. V2+ = on expand si demande.
