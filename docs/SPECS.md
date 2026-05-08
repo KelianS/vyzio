@@ -229,14 +229,30 @@ Chaque profil contient :
 
 ### 6.3 Canaux de notification
 
-- **Push mobile** (prioritaire) — FCM (Firebase Cloud Messaging) pour Android et iOS
-  - Les notifications push transitent via les serveurs FCM pour la livraison uniquement
-  - La photo de détection (thumbnail du visage, JPEG redimensionné) est incluse dans la notification
-  - Deux modes selon la configuration d'accès distant (voir §6.6) :
-    - **Mode local-only** : deep-link vers le dashboard, photo visible uniquement sur le réseau local
-    - **Mode accès distant activé** : URL signée éphémère (TTL 5 min) pointant vers l'appliance exposée via tunnel sécurisé
-- **Webhook** — Pour intégrations tierces (Home Assistant, n8n, Zapier, etc.)
-- **Email** — Optionnel, configurable
+L'utilisateur configure au moins un canal depuis le dashboard. Plusieurs canaux peuvent être actifs simultanément.
+
+- **Telegram Bot** (recommandé — prioritaire) — Bot Telegram personnel de l'utilisateur
+  - Setup en 30 secondes via @BotFather, sans compétence technique
+  - La photo de détection est incluse **nativement** dans le message — visible immédiatement hors réseau local sans aucune configuration supplémentaire
+  - La photo transite par les serveurs Telegram (compromis explicite, opt-in)
+  - Compatible iOS, Android, desktop, navigateur
+
+- **Discord webhook** — Pour les utilisateurs disposant d'un serveur Discord
+  - Photo incluse nativement dans le message (embed)
+  - Configuration en 2 clics (webhook URL)
+
+- **Push mobile natif** — FCM (Firebase Cloud Messaging) pour Android et iOS
+  - Notification système (verrouillage, centre de notifications)
+  - Photo visible hors réseau uniquement si un tunnel est configuré (voir §6.6)
+  - Recommandé en complément de Telegram pour les utilisateurs souhaitant les notifications système
+
+- **ntfy** — Alternative 100% auto-hébergeable (zéro dépendance tiers)
+  - Photo incluse via attachment
+  - Pour utilisateurs avancés refusant tout service tiers
+
+- **Webhook générique** — Pour intégrations tierces (Home Assistant, n8n, Zapier, etc.)
+
+- **Email** — Optionnel, photo en pièce jointe
 
 ### 6.4 Règles de notification
 

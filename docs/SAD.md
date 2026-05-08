@@ -15,11 +15,11 @@
    - [ADR-02 — Langage principal : .NET 10](#adr-02--langage-principal--net-10)
    - [ADR-03 — Worker de reconnaissance faciale : Python isolé](#adr-03--worker-de-reconnaissance-faciale--python-isolé)
    - [ADR-04 — Communication Frigate → Vyzio : MQTT + API REST Frigate](#adr-04--communication-frigate--vyzio--mqtt--api-rest-frigate)
-   - [ADR-05 — Communication inter-services Vyzio : MediatR](#adr-05--communication-inter-services-vyzio--mediatr)
-   - [ADR-06 — Base de données : SQLite + EF Core](#adr-06--base-de-données--sqlite--ef-core)
+   - [ADR-05 — Communication inter-services Vyzio : MediatR + MQTT](#adr-05--communication-inter-services-vyzio--mediatr--mqtt)
+   - [ADR-06 — Base de données : PostgreSQL vs SQLite](#adr-06--base-de-données--postgresql-vs-sqlite)
    - [ADR-07 — API : ASP.NET Core](#adr-07--api--aspnet-core)
    - [ADR-08 — Dashboard : React + TypeScript](#adr-08--dashboard--react--typescript)
-   - [ADR-09 — Notifications push : FCM + URLs signées pour accès distant](#adr-09--notifications-push--fcm--urls-signées-pour-accès-distant)
+   - [ADR-09 — Notifications : Telegram (prioritaire) + FCM + canaux alternatifs](#adr-09--notifications--telegram-prioritaire--fcm--canaux-alternatifs)
    - [ADR-10 — Authentification : JWT + bcrypt](#adr-10--authentification--jwt--bcrypt)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
@@ -375,75 +375,120 @@ public class FrigateAdapter : IHostedService
 
 ---
 
-### ADR-05 — Communication inter-services Vyzio : MediatR
+### ADR-05 — Communication inter-services Vyzio : MediatR + MQTT
 
 #### Contexte
 
-Les handlers Vyzio (reconnaissance, storage, notification) doivent réagir aux mêmes événements de façon découplée et testable.
+Les handlers Vyzio (reconnaissance, storage, notification) doivent réagir aux mêmes événements de façon découplée et testable. Trois options ont été sérieusement considérées : MediatR (in-process), MQTT (déjà présent via Frigate) et Redis Streams.
 
 #### Options comparées
 
-| Solution | Complexité | In-process | Testabilité | Standard .NET |
-|---|:---:|:---:|:---:|:---:|
-| **MediatR** | ✅ Faible | ✅ | ✅ | ✅ |
-| System.Threading.Channels | ✅ Minimal | ✅ | ✅ | ✅ |
-| Redis Pub/Sub | ⚠️ +1 process | ❌ | ⚠️ | ⚠️ |
-| gRPC inter-services | ⚠️ | ❌ | ⚠️ | ⚠️ |
+| Solution | Complexité | Dépendance infra | Persistance events | Testabilité | Continuité Frigate |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **MediatR** (in-process) | ✅ Nulle | ✅ Aucune | ❌ Non | ✅ | ❌ |
+| **MQTT** (Mosquitto embarqué Frigate) | ✅ Faible | ✅ Déjà présent | ⚠️ QoS 1 | ⚠️ | ✅ |
+| **Redis Streams** | ⚠️ +1 process | ❌ | ✅ Oui | ⚠️ | ❌ |
+| gRPC streaming inter-services | ⚠️ | ❌ | ❌ | ⚠️ | ❌ |
+| System.Threading.Channels | ✅ | ✅ Aucune | ❌ | ✅ | ❌ |
+
+**Analyse MQTT** : Mosquitto est déjà embarqué dans Frigate et tourne sur le réseau Docker interne. Utiliser MQTT pour les événements inter-services Vyzio assure une continuité technologique et permet à des intégrateurs tiers (Home Assistant, n8n) de souscrire aux événements Vyzio sans configuration supplémentaire. MQTT QoS 1 garantit la livraison au moins une fois.
+
+**Analyse Redis Streams** : offre la persistance (replay d'événements), les groupes de consommateurs et l'at-least-once delivery robuste. C'est la solution la plus solide si les services Vyzio deviennent des processus distincts. Overhead : ~30 MB RAM + 1 conteneur.
+
+**Analyse MediatR** : parfait pour un monolith .NET in-process. Zéro overhead, testable sans infrastructure. Limite : si un service crash, les events en vol sont perdus.
 
 #### Décision
 
-**MediatR** pour le bus d'événements interne Vyzio. `System.Threading.Channels` pour les flux haute fréquence (frames entre FrigateAdapter et Face Worker).
+**Architecture hybride en deux couches** :
+
+**Couche 1 — In-process (MediatR)** : orchestration synchrone des handlers dans le processus Vyzio Core. Rapide, sans latence réseau, testable unitairement.
+
+**Couche 2 — MQTT (Mosquitto Frigate)** : publication des événements domaine Vyzio sur des topics dédiés, en parallèle de MediatR. Permet l'intégration tierce et la persistance légère.
+
+```
+Topics MQTT publiés par Vyzio (en sus des topics Frigate) :
+vyzio/events/face_recognized   → { profile, confidence, camera, timestamp }
+vyzio/events/face_unknown      → { camera, thumbnail_url, timestamp }
+vyzio/events/camera_status     → { camera, status }
+```
 
 ```csharp
-// Un événement, plusieurs handlers en parallèle
+// MediatR pour l'orchestration interne
 public record PersonDetectedEvent(string FrigateEventId, string CameraName, byte[] Thumbnail)
     : INotification;
 
-// Chaque handler est indépendant et testable unitairement
+// Handlers en parallèle — chacun testable indépendamment
 public class FaceRecognitionHandler : INotificationHandler<PersonDetectedEvent> { ... }
 public class StorageHandler         : INotificationHandler<PersonDetectedEvent> { ... }
-public class NotificationHandler    : INotificationHandler<PersonDetectedEvent> { ... }
+public class MqttPublisherHandler   : INotificationHandler<PersonDetectedEvent> { ... } // publie sur MQTT
 ```
+
+**Redis Streams** est documenté comme option de montée en charge si l'architecture évolue vers des services distincts (hors scope v1).
 
 #### Conséquences
 
-- ✅ Pattern CQRS/Mediator standard .NET — familier, bien documenté
-- ✅ Handlers testables sans infrastructure (mock `IMediator`)
-- ⚠️ In-process uniquement — suffisant pour l'appliance mono-nœud (hors scope multi-nœuds)
+- ✅ MediatR : zéro overhead in-process, handlers testables sans infrastructure
+- ✅ MQTT : continuité avec Frigate, intégrations tierces (Home Assistant, n8n) sans configuration supplémentaire
+- ✅ Mosquitto déjà présent — zéro dépendance additionnelle
+- ✅ Topics Vyzio séparés des topics Frigate — pas de collision
+- ⚠️ MQTT QoS 1 : livraison at-least-once, pas exactly-once — acceptable pour des notifications
 
 ---
 
-### ADR-06 — Base de données : SQLite + EF Core
+### ADR-06 — Base de données : PostgreSQL vs SQLite
 
 #### Contexte
 
-Vyzio stocke : profils + embeddings, événements de reconnaissance, règles de notification, sessions. Charge faible (1 utilisateur, quelques événements par minute).
+Vyzio stocke : profils + embeddings, événements de reconnaissance, règles de notification, sessions. La préférence exprimée est PostgreSQL, avec SQLite comme option pour les déploiements contraints.
 
 #### Options comparées
 
-| Critère | SQLite + EF Core | PostgreSQL | LiteDB |
+| Critère | PostgreSQL + EF Core | SQLite + EF Core | LiteDB |
 |---|:---:|:---:|:---:|
-| Zéro configuration | ✅ | ❌ | ✅ |
 | EF Core support officiel | ✅ | ✅ | ❌ |
 | Migrations EF Core | ✅ | ✅ | ❌ |
-| Empreinte RAM | ✅ Minimale | ❌ ~50 MB | ✅ |
-| Sauvegarde | ✅ `cp fichier` | ⚠️ | ✅ |
-| Appliance embarquée | ✅ | ❌ | ✅ |
+| Concurrence multi-writers | ✅ | ⚠️ WAL (1 writer) | ✅ |
+| Robustesse / ACID complet | ✅ | ✅ | ✅ |
+| Requêtes avancées / JSON ops | ✅ | ⚠️ | ❌ |
+| Empreinte RAM | ⚠️ ~50 MB | ✅ Minimale | ✅ |
+| Configuration | ⚠️ Processus dédié | ✅ Aucune | ✅ |
+| Sauvegarde | ✅ `pg_dump` / WAL archiving | ✅ `cp fichier` | ✅ |
+| Appliance mini-PC (8 GB RAM) | ✅ Acceptable | ✅ Idéal | ✅ |
+| Appliance Raspberry Pi (4 GB) | ⚠️ Serré | ✅ | ✅ |
+
+**Pour PostgreSQL** : meilleure robustesse en écriture concurrente, opérateurs JSON natifs (utiles pour les settings et zones polygonales), outils d'administration connus (`pgAdmin`, `psql`), écosystème de sauvegarde mature. C'est la base de référence pour un projet qui évolue.
+
+**Pour SQLite** : zéro administration, fichier unique, idéal pour les déploiements embarqués contraints (Raspberry Pi, NAS). EF Core abstrait les deux de façon transparente — le code métier ne change pas.
 
 #### Décision
 
-**SQLite en mode WAL** + **EF Core** (requêtes typées, migrations automatiques au démarrage).
+**Architecture dual-provider avec EF Core** : le code Vyzio est identique quelle que soit la base. Le provider est configuré via `vyzio.yml` :
 
-Les embeddings (512 × float32 = 2 KB/profil) sont stockés en BLOB. Au démarrage, le Profile Service les charge tous en mémoire. La comparaison cosinus est vectorisée avec `System.Numerics.Tensors` — aucune requête SQL au moment de la reconnaissance.
+```yaml
+# vyzio.yml
+database:
+  provider: postgres          # 'postgres' | 'sqlite'
+  connection_string: "Host=localhost;Database=vyzio;Username=vyzio;Password=..."
+  # Pour SQLite : connection_string: "Data Source=/data/vyzio.db"
+```
 
-**Note** : Frigate possède sa propre base SQLite pour ses événements vidéo. Vyzio ne la lit jamais directement — uniquement via l'API Frigate.
+**Profil par défaut selon le déploiement** :
+- **Appliance hardware** (mini-PC livré) → **PostgreSQL** : ressources suffisantes, robustesse maximale, administration facilitée
+- **Self-hosted Docker sur Raspberry Pi / NAS** → **SQLite** : zéro overhead, plug & play
+- **Self-hosted Docker sur PC/serveur** → **PostgreSQL** recommandé
+
+PostgreSQL est embarqué dans le Docker Compose via l'image officielle `postgres:17-alpine` (~80 MB image, ~50 MB RAM).
+
+Les embeddings sont stockés en `BYTEA` (PostgreSQL) ou `BLOB` (SQLite) — même approche dans les deux cas : chargement en mémoire au démarrage, comparaison SIMD sans requête SQL.
 
 #### Conséquences
 
-- ✅ Fichier unique, sauvegardable avec `cp`
-- ✅ EF Core Migrations appliquées automatiquement au démarrage (`MigrateAsync`)
-- ✅ Comparaison cosinus SIMD sur 1 000 profils : < 1ms
-- ⚠️ Un seul writer SQLite simultané — largement suffisant
+- ✅ EF Core abstrait le provider — le code métier est identique
+- ✅ PostgreSQL par défaut sur appliance : robuste, connu, outillé
+- ✅ SQLite disponible pour les déploiements contraints sans modification du code
+- ✅ Migration SQLite → PostgreSQL possible via `pg_loader` ou export/import EF Core
+- ⚠️ PostgreSQL ajoute ~50 MB RAM et un conteneur Docker — acceptable sur mini-PC 8 GB, serré sur Pi 4 4 GB
+- ⚠️ Frigate continue d'utiliser sa propre SQLite — les deux bases sont indépendantes
 
 ---
 
@@ -535,31 +580,71 @@ Pas de SSR (Next.js) : SEO non pertinent sur réseau local, et évite un process
 
 ---
 
-### ADR-09 — Notifications push : FCM + URLs signées pour accès distant
+### ADR-09 — Notifications : Telegram (prioritaire) + FCM + canaux alternatifs
 
 #### Contexte
 
-FCM/APNs sont inévitables pour les notifications push mobiles. Une exigence (specs §6.6) demande que la **photo soit visible hors réseau local** sans violer le principe local-first.
+L'exigence clé est de recevoir la **photo de détection directement dans la notification**, y compris hors réseau local. Les canaux de messagerie (Telegram, WhatsApp, etc.) ont été explicitement proposés comme alternative aux notifications push classiques (FCM).
 
-#### Problème : rendre une image locale accessible hors réseau
+#### Comparatif des canaux de messagerie avec support image natif
 
-| Approche | Image reste locale | Complexité | Setup |
-|---|:---:|:---:|:---:|
-| **Tunnel sécurisé** (Cloudflare Tunnel / Tailscale) | ✅ | ⚠️ | ⚠️ Compte requis |
-| **VPN** (WireGuard) | ✅ | ❌ | ❌ Trop complexe grand public |
-| **Relay serveur Vyzio** | ❌ Image sur nos serveurs | ⚠️ | ✅ |
-| **Base64 dans FCM** | ✅ | ✅ | ✅ |
+| Canal | Image native | Setup utilisateur | Compte tiers requis | Open source | Confidentialité image |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Telegram Bot** | ✅ sendPhoto API | ✅ Minimal (1 commande) | ✅ Telegram | ✅ Bot API | ⚠️ Image sur serveurs Telegram |
+| **WhatsApp Business API** | ✅ | ❌ Très complexe + payant | ✅ Meta | ❌ | ❌ Meta |
+| **Signal** | ✅ | ❌ Pas d'API bot officielle | ✅ | ✅ | ✅ E2E |
+| **Discord webhook** | ✅ | ✅ Minimal | ✅ Discord | ❌ | ⚠️ Image sur CDN Discord |
+| **Matrix (Element)** | ✅ | ⚠️ Moyen | ✅ (self-hostable) | ✅ | ✅ Si auto-hébergé |
+| **FCM + tunnel** | ✅ Via URL signée | ⚠️ Tunnel à configurer | ✅ Google | ✅ | ✅ Image reste locale |
+| **ntfy** | ✅ Attachment | ✅ (app ntfy) | Non (self-host) | ✅ | ✅ Si auto-hébergé |
 
-**Base64 FCM** : payload limité à 4 096 octets. Un thumbnail JPEG 400×300 fait ~15–40 KB. Impossible.
-**Relay Vyzio** : viole le principe privacy-first. Écarté.
+**WhatsApp** : API officielle complexe, payante, réservée aux entreprises. Bibliothèques non officielles contre les CGU. Écarté.
+
+**Signal** : pas d'API bot officielle publique. Écarté (pour l'instant).
+
+**Telegram** : Bot API officielle, gratuite, documentée. `sendPhoto` envoie une image JPEG directement dans le message — l'image transite par les serveurs Telegram mais n'est pas exposée publiquement (lien privé par channel ID + token). Setup en 30 secondes avec `@BotFather`. C'est la solution qui résout le plus simplement l'exigence "voir la photo hors réseau".
 
 #### Décision
 
-Architecture à deux niveaux :
+**Canal prioritaire : Telegram Bot**
 
-**Niveau 1 (toujours actif)** : FCM avec payload texte + champ `image_url` optionnel.
+Telegram résout nativement le problème de l'image hors réseau : la photo est envoyée directement dans le message, visible instantanément sur n'importe quel appareil sans tunnel ni URL signée.
 
-**Niveau 2 (opt-in)** : Cloudflare Tunnel ou Tailscale configurés depuis le dashboard. L'image est servie **directement depuis l'appliance** via une URL signée HMAC-SHA256 (TTL 5 min). Cloudflare agit comme proxy HTTPS transparent, ne stocke pas l'image.
+```
+Setup utilisateur (30 secondes) :
+1. Ouvrir Telegram → chercher @BotFather
+2. /newbot → récupérer le token
+3. Démarrer une conversation avec son bot → récupérer le chat_id
+4. Saisir token + chat_id dans le dashboard Vyzio
+```
+
+Intégration .NET via l'API HTTP Telegram (pas de SDK lourd nécessaire) :
+
+```csharp
+// Envoi photo + caption via Telegram Bot API
+var url = $"https://api.telegram.org/bot{_token}/sendPhoto";
+using var form = new MultipartFormDataContent();
+form.Add(new StringContent(_chatId), "chat_id");
+form.Add(new ByteArrayContent(thumbnailJpeg), "photo", "detection.jpg");
+form.Add(new StringContent(caption), "caption");  // "Alice est arrivée • Porte d'entrée • 09:32"
+form.Add(new StringContent("HTML"), "parse_mode");
+await _http.PostAsync(url, form);
+```
+
+**Confidentialité** : la photo transite par les serveurs Telegram. C'est un compromis explicite opt-in : l'utilisateur choisit Telegram en connaissance de cause. Les embeddings et données biométriques ne transitent jamais.
+
+**Canaux complémentaires supportés** (configurables indépendamment) :
+
+| Canal | Usage | Image hors réseau |
+|---|---|:---:|
+| **Telegram** | Principal — grand public | ✅ Natif |
+| **Discord webhook** | Utilisateurs gaming/tech | ✅ Natif |
+| **FCM (push natif)** | Utilisateurs souhaitant notification système iOS/Android | ✅ Via URL signée + tunnel |
+| **ntfy** | Utilisateurs privacy-first sans Telegram | ✅ Via attachment |
+| **Webhook générique** | Intégrations (Home Assistant, n8n) | ✅ URL signée |
+| **Email** | Fallback | ✅ Image en pièce jointe |
+
+**URL signée HMAC** (maintenue pour FCM, webhook et ntfy) :
 
 ```csharp
 public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
@@ -573,16 +658,14 @@ public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
 }
 ```
 
-La route `/api/events/{id}/thumbnail` valide la signature et l'expiration **sans JWT** — FCM peut charger l'image directement.
-
-**ntfy** disponible comme alternative 100% auto-hébergeable (zéro Google/Apple).
-
 #### Conséquences
 
-- ✅ Mode défaut : aucune donnée ne sort du réseau
-- ✅ Mode tunnel : image reste sur l'appliance, Cloudflare est proxy transparent
-- ✅ URL signée TTL 5min → pas d'accès permanent si URL interceptée
-- ⚠️ Tunnel nécessite un compte Cloudflare ou Tailscale — opt-in documenté
+- ✅ Telegram : photo visible hors réseau sans aucune configuration tunnel — le cas d'usage principal est résolu simplement
+- ✅ Setup Telegram en 30 secondes, accessible au grand public
+- ✅ Discord : alternative naturelle pour les utilisateurs déjà sur Discord
+- ✅ FCM + ntfy maintenus pour les utilisateurs préférant les notifications système ou zéro tiers
+- ⚠️ Telegram : la photo transite par leurs serveurs — compromis documenté et opt-in explicite
+- ⚠️ FCM seul : nécessite un tunnel pour voir la photo hors réseau — plus complexe à configurer
 
 ---
 
@@ -840,17 +923,19 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (Face Worker) : **< 100ms** total.
 | Langage principal | **.NET 10 (C#)** | Rust | Vélocité + écosystème cohérent (ASP.NET, EF Core, SignalR) |
 | Worker IA | **Python 3.12** (isolé) | .NET ONNX seul | InsightFace n'existe qu'en Python |
 | Transport IA | **gRPC** | HTTP/REST | Contrat typé Protobuf |
-| Bus événements | **MediatR** | System.Threading.Channels | CQRS standard .NET |
-| Base de données | **SQLite + EF Core** | PostgreSQL | Embarqué, zéro administration |
+| Bus événements interne | **MediatR** + MQTT (Mosquitto Frigate) | Redis Streams | In-process + continuité Frigate |
+| Base de données (appliance) | **PostgreSQL 17** | SQLite | Robustesse, outillage |
+| Base de données (Pi/NAS) | **SQLite** | PostgreSQL | Zéro overhead embarqué |
 | API | **ASP.NET Core Minimal APIs** | FastAPI (Python) | Cohérence stack .NET |
 | WebSocket | **SignalR** | WebSocket brut | Reconnexion auto |
 | Dashboard | **React 19 + TypeScript** | SvelteKit | Pool contributeurs, écosystème UI |
 | UI components | **Shadcn/ui + Tailwind** | Material UI | Accessibilité, personnalisable sans designer |
 | Canvas zones | **React-Konva** | Fabric.js | Intégration React native |
-| Notifications push | **FCM + ntfy** (alt.) | APNs direct | Android + iOS |
+| Notification principale | **Telegram Bot** | FCM | Image native hors réseau, setup 30s |
+| Notification alternative | **Discord / FCM / ntfy / Email** | WhatsApp (écarté) | Selon préférence utilisateur |
 | Auth | **JWT + bcrypt + refresh tokens** | OAuth2/Keycloak | Local-first |
 | TLS | **Certificat auto-signé** | Let's Encrypt | Fonctionne hors-ligne |
-| Accès distant images | **Cloudflare Tunnel / Tailscale** (opt-in) | Relay Vyzio | Image reste sur l'appliance |
+| Accès distant images | **URL signée HMAC** + tunnel opt-in | Relay Vyzio | Image reste sur l'appliance |
 
 ---
 
