@@ -1,1028 +1,894 @@
 # Vyzio — Software Architecture Document (SAD)
 
-> Mai 2026 — v1.0 — Document vivant
+> Mai 2026 — v2.0 — Document vivant
 
 ---
 
 ## Table des matières
 
 1. [Introduction et périmètre](#1-introduction-et-périmètre)
-2. [Contraintes et principes directeurs](#2-contraintes-et-principes-directeurs)
-3. [Vue d'ensemble de l'architecture](#3-vue-densemble-de-larchitecture)
-4. [Décisions d'architecture (ADR)](#4-décisions-darchitecture-adr)
-   - [ADR-01 — Langage principal : Python](#adr-01--langage-principal--python)
-   - [ADR-02 — Communication inter-services : bus d'événements interne](#adr-02--communication-inter-services--bus-dévénements-interne)
-   - [ADR-03 — Ingestion vidéo : FFmpeg + PyAV](#adr-03--ingestion-vidéo--ffmpeg--pyav)
-   - [ADR-04 — Pipeline IA : InsightFace](#adr-04--pipeline-ia--insightface)
-   - [ADR-05 — Base de données : SQLite](#adr-05--base-de-données--sqlite)
-   - [ADR-06 — API : FastAPI](#adr-06--api--fastapi)
-   - [ADR-07 — Dashboard : SvelteKit](#adr-07--dashboard--sveltekit)
-   - [ADR-08 — Notifications push : FCM via serveur relay minimal](#adr-08--notifications-push--fcm-via-serveur-relay-minimal)
-   - [ADR-09 — Stockage vidéo : fichiers MP4 sur disque local](#adr-09--stockage-vidéo--fichiers-mp4-sur-disque-local)
+2. [Positionnement vis-à-vis de Frigate](#2-positionnement-vis-à-vis-de-frigate)
+3. [Contraintes et principes directeurs](#3-contraintes-et-principes-directeurs)
+4. [Vue d'ensemble de l'architecture](#4-vue-densemble-de-larchitecture)
+5. [Décisions d'architecture (ADR)](#5-décisions-darchitecture-adr)
+   - [ADR-01 — S'appuyer sur Frigate plutôt que réimplémenter le pipeline vidéo](#adr-01--sappuyer-sur-frigate-plutôt-que-réimplémenter-le-pipeline-vidéo)
+   - [ADR-02 — Langage principal : .NET 10](#adr-02--langage-principal--net-10)
+   - [ADR-03 — Worker de reconnaissance faciale : Python isolé](#adr-03--worker-de-reconnaissance-faciale--python-isolé)
+   - [ADR-04 — Communication Frigate → Vyzio : MQTT + API REST Frigate](#adr-04--communication-frigate--vyzio--mqtt--api-rest-frigate)
+   - [ADR-05 — Communication inter-services Vyzio : MediatR](#adr-05--communication-inter-services-vyzio--mediatr)
+   - [ADR-06 — Base de données : SQLite + EF Core](#adr-06--base-de-données--sqlite--ef-core)
+   - [ADR-07 — API : ASP.NET Core](#adr-07--api--aspnet-core)
+   - [ADR-08 — Dashboard : React + TypeScript](#adr-08--dashboard--react--typescript)
+   - [ADR-09 — Notifications push : FCM + URLs signées pour accès distant](#adr-09--notifications-push--fcm--urls-signées-pour-accès-distant)
    - [ADR-10 — Authentification : JWT + bcrypt](#adr-10--authentification--jwt--bcrypt)
-5. [Architecture des services](#5-architecture-des-services)
-   - [5.1 Camera Service](#51-camera-service)
-   - [5.2 Core Engine](#52-core-engine)
-   - [5.3 Storage Service](#53-storage-service)
-   - [5.4 Notification Service](#54-notification-service)
-   - [5.5 API Service](#55-api-service)
-   - [5.6 Dashboard Web](#56-dashboard-web)
-6. [Modèle de données](#6-modèle-de-données)
-7. [Architecture de déploiement](#7-architecture-de-déploiement)
-8. [Sécurité](#8-sécurité)
-9. [Performances et scalabilité](#9-performances-et-scalabilité)
-10. [Risques et mitigations](#10-risques-et-mitigations)
+6. [Architecture des services](#6-architecture-des-services)
+7. [Modèle de données](#7-modèle-de-données)
+8. [Architecture de déploiement](#8-architecture-de-déploiement)
+9. [Sécurité](#9-sécurité)
+10. [Performances et scalabilité](#10-performances-et-scalabilité)
+11. [Risques et mitigations](#11-risques-et-mitigations)
 
 ---
 
 ## 1. Introduction et périmètre
 
-Ce document décrit les décisions d'architecture du système **Vyzio**, une solution de surveillance domestique local-first. Il justifie chaque choix technique en le comparant aux alternatives, en tenant compte des contraintes spécifiques du projet :
+Ce document décrit les décisions d'architecture du système **Vyzio**, un produit de surveillance domestique local-first destiné à un public non-technicien.
 
-- Exécution sur mini-PC embarqué (ressources limitées)
-- Absence de connexion cloud obligatoire
-- Public non-technique (installation simple)
-- Privacy by design (aucune donnée biométrique ne sort du réseau)
-- Deux cibles de déploiement : appliance hardware et self-hosted Docker
+**Philosophie centrale** : ne pas réinventer ce qui existe et fonctionne. Vyzio est une **couche produit au-dessus de Frigate** — il apporte l'expérience utilisateur, la reconnaissance faciale, les profils nommés et les notifications intelligentes. Frigate apporte l'ingestion vidéo, la détection de mouvement et l'enregistrement. L'effort de développement est concentré sur la vraie valeur ajoutée.
 
 ### Audience
 
-Ce document est destiné aux ingénieurs contribuant au projet. Il présuppose des connaissances en Python, systèmes distribués, vision par ordinateur et sécurité applicative.
+Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, architecture événementielle, notions de machine learning (pour le worker Python).
 
 ---
 
-## 2. Contraintes et principes directeurs
+## 2. Positionnement vis-à-vis de Frigate
 
-### 2.1 Contraintes fermes
+### 2.1 Ce que Frigate fait — et que Vyzio NE réimplémente PAS
+
+| Fonctionnalité | Prise en charge par |
+|---|---|
+| Ingestion flux RTSP / ONVIF / MJPEG | **Frigate** |
+| Découverte caméras ONVIF | **Frigate** |
+| Détection de mouvement | **Frigate** |
+| Détection de présence humaine (TFLite / OpenVINO / Coral) | **Frigate** |
+| Enregistrement vidéo MP4 + clips événementiels | **Frigate** |
+| Politique de rétention des clips | **Frigate** |
+| Support accélération matérielle (Coral TPU, GPU, VAAPI) | **Frigate** |
+| API REST et MQTT events | **Frigate** (consommé par Vyzio) |
+| Aperçu live des caméras (HLS / MJPEG) | **Frigate** (proxyfié par Vyzio) |
+
+### 2.2 Ce que Frigate ne fait PAS — valeur ajoutée de Vyzio
+
+| Fonctionnalité | Vyzio |
+|---|---|
+| **Reconnaissance faciale** (qui est cette personne ?) | ✅ Face Recognition Worker |
+| **Profils nommés** (Alice, livreur, inconnu) + comportements d'alerte | ✅ Vyzio Core |
+| **Notifications push intelligentes** (nom + photo, règles horaires) | ✅ Notification Service |
+| **Accès distant aux photos** via tunnel sécurisé | ✅ Vyzio Core |
+| **UI grand public** : onboarding guidé, interface mobile-first | ✅ Dashboard React |
+| **Packaging all-in-one** : livré prêt à brancher, zéro configuration technique | ✅ Docker Compose / Appliance |
+| **Support français** et documentation non-technicienne | ✅ Produit |
+
+### 2.3 Dépendance à Frigate — risques et mitigations
+
+| Risque | Probabilité | Mitigation |
+|---|:---:|---|
+| Breaking change API Frigate | Faible (API stable v0.12+) | Couche d'abstraction `FrigateAdapter` versionnée |
+| Arrêt du projet Frigate | Très faible (communauté active, HA intégration) | Architecture permet de remplacer Frigate par autre backend MQTT/REST |
+| Bug Frigate impactant Vyzio | Moyen | Tests d'intégration sur contrat MQTT/REST, pas sur les internals Frigate |
+
+---
+
+## 3. Contraintes et principes directeurs
+
+### 3.1 Contraintes fermes
 
 | # | Contrainte | Source |
 |---|---|---|
-| C1 | Les données biométriques (embeddings, frames) ne doivent jamais quitter le réseau local | Specs §9.2 |
-| C2 | Le système doit fonctionner sans connexion Internet | Specs §6.5 |
-| C3 | L'appliance tourne sur un mini-PC (ex. Intel NUC, Raspberry Pi 5) | Specs §2.1 |
+| C1 | Les données biométriques (embeddings, frames) ne quittent jamais le réseau local | Specs §9.2 |
+| C2 | Le système fonctionne sans connexion Internet | Specs §6.5 |
+| C3 | Déploiement sur mini-PC (Intel NUC, Raspberry Pi 5, NAS) | Specs §2.1 |
 | C4 | Installation plug & play sans technicité | Specs §2.1 |
-| C5 | Support RTSP, ONVIF, HTTP MJPEG | Specs §3.2 |
-| C6 | Reconnaissance faciale < 2s après détection de mouvement (cible) | Specs §4.1 |
-| C7 | Pas de dépendance à un service cloud tiers pour les fonctions critiques | Specs §9.2 |
+| C5 | Support RTSP, ONVIF, HTTP MJPEG | Délégué à Frigate |
+| C6 | Reconnaissance faciale < 2s après détection de mouvement | Specs §4.1 |
+| C7 | Pas de dépendance cloud pour les fonctions critiques | Specs §9.2 |
+| C8 | Stack .NET 10 + TypeScript (sauf IA — voir ADR-03) | `.instructions.md` |
 
-### 2.2 Principes directeurs
+### 3.2 Principes directeurs
 
-- **Local-first** : toute fonctionnalité de surveillance est opérationnelle hors-ligne.
-- **Faible couplage** : chaque service peut être arrêté, redémarré, ou remplacé sans impacter les autres, sauf le Core Engine (critique).
-- **Cohérence éventuelle** : on privilégie la disponibilité à la cohérence stricte (un événement peut arriver en doublon plutôt que d'être perdu).
-- **Minimalisme** : pas de dépendances externes non nécessaires — chaque bibliothèque doit gagner sa place.
-- **Observabilité** : les logs structurés (JSON) permettent de diagnostiquer sans accès interactif à la machine.
-
----
-
-## 3. Vue d'ensemble de l'architecture
-
-### 3.1 Style architectural
-
-Vyzio adopte une **architecture orientée services à déploiement monorepo**, organisée autour d'un **bus d'événements interne** (non réseau, voir ADR-02). Ce n'est ni un monolithe strict, ni des microservices distribués — c'est un **modulith** : des services clairement délimités, qui s'exécutent dans le même processus ou en processus séparés légers selon le profil de déploiement.
-
-Ce choix est motivé par la contrainte C3 (ressources limitées) et C4 (simplicité de déploiement) : un broker réseau externe (Kafka, RabbitMQ) serait disproportionné.
-
-### 3.2 Diagramme de contexte (C4 Level 1)
-
-```
-┌────────────────────────────────────────────────────────────┐
-│  Réseau local de l'utilisateur                             │
-│                                                            │
-│  ┌─────────────┐    RTSP/ONVIF    ┌──────────────────────┐ │
-│  │  Caméras IP │ ───────────────► │      Vyzio           │ │
-│  └─────────────┘                  │    (mini-PC /        │ │
-│                                   │     Docker)          │ │
-│  ┌─────────────┐    HTTP(S)       │                      │ │
-│  │  Navigateur │ ◄──────────────► │  Dashboard + API     │ │
-│  └─────────────┘                  └──────────────────────┘ │
-└────────────────────────────────────────────────────────────┘
-                                           │
-                                    FCM (push uniquement,
-                                    pas de données visuelles)
-                                           │
-                              ┌────────────▼────────────┐
-                              │  Téléphone (Android/iOS) │
-                              └──────────────────────────┘
-```
-
-### 3.3 Diagramme des conteneurs (C4 Level 2)
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Vyzio Runtime                                                      │
-│                                                                     │
-│  ┌──────────────────┐   frames   ┌──────────────────────────────┐  │
-│  │  Camera Service  │──────────►│         Core Engine           │  │
-│  │  (RTSP/ONVIF/    │           │  ┌──────────────────────────┐ │  │
-│  │   MJPEG reader)  │           │  │  Motion Detector         │ │  │
-│  └──────────────────┘           │  └────────────┬─────────────┘ │  │
-│                                 │               │ si mouvement   │  │
-│  ┌──────────────────┐           │  ┌────────────▼─────────────┐ │  │
-│  │  Storage Service │◄──────────│  │  Face Detector           │ │  │
-│  │  (vidéo + SQLite)│  events   │  │  (RetinaFace)            │ │  │
-│  └──────────────────┘           │  └────────────┬─────────────┘ │  │
-│                                 │               │ si visage(s)   │  │
-│  ┌──────────────────┐           │  ┌────────────▼─────────────┐ │  │
-│  │ Notification     │◄──────────│  │  Face Recognizer         │ │  │
-│  │ Service          │  events   │  │  (InsightFace embeddings) │ │  │
-│  └──────────────────┘           │  └──────────────────────────┘ │  │
-│                                 └──────────────────────────────┘  │
-│  ┌──────────────────┐                                              │
-│  │  API Service     │◄──── HTTP REST ◄──── Dashboard Web (SPA)    │
-│  │  (FastAPI)       │                                              │
-│  └──────────────────┘                                             │
-│                                                                     │
-│  ══════════════════════ Bus d'événements interne ════════════════  │
-│         (asyncio Queue / Redis Streams selon déploiement)          │
-└─────────────────────────────────────────────────────────────────────┘
-```
+- **Ne pas réinventer Frigate** : toute fonctionnalité couverte par Frigate est déléguée.
+- **Python confiné** : Python est limité à un seul service isolé (Face Recognition Worker), sans accès direct à la base de données ni au bus d'événements principal.
+- **Faible couplage Frigate/Vyzio** : Vyzio consomme Frigate via ses interfaces publiques (MQTT + REST), pas ses internals.
+- **Local-first** : aucune image ni donnée biométrique ne sort du réseau sans opt-in explicite.
+- **Orienté produit** : les décisions techniques servent l'expérience grand public, pas l'exhaustivité technique.
 
 ---
 
-## 4. Décisions d'architecture (ADR)
+## 4. Vue d'ensemble de l'architecture
+
+### 4.1 Diagramme de contexte (C4 Level 1)
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Réseau local de l'utilisateur                                 │
+│                                                                │
+│  ┌─────────────┐  RTSP/ONVIF  ┌──────────────────────────────┐│
+│  │  Caméras IP │────────────► │         Vyzio                ││
+│  └─────────────┘              │  (Frigate + couche produit)  ││
+│                               │                              ││
+│  ┌─────────────┐  HTTP(S)     │  Dashboard + API             ││
+│  │  Navigateur │◄───────────► │                              ││
+│  └─────────────┘              └──────────────────────────────┘│
+└────────────────────────────────────────────────────────────────┘
+                                          │
+                                   FCM (push uniquement —
+                                   payload texte + URL signée)
+                                          │
+                             ┌────────────▼───────────┐
+                             │  Téléphone (Android/iOS)│
+                             └─────────────────────────┘
+```
+
+### 4.2 Diagramme des conteneurs (C4 Level 2)
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Vyzio Runtime (Docker Compose / Appliance)                              │
+│                                                                          │
+│  ┌─────────────────────────────────────────┐                            │
+│  │  Frigate  (Python — NON MODIFIÉ)        │                            │
+│  │  - Ingestion RTSP/ONVIF/MJPEG           │                            │
+│  │  - Détection mouvement + personnes      │                            │
+│  │  - Enregistrement clips MP4             │                            │
+│  │  - API REST :5000  /  MQTT :1883        │                            │
+│  └──────────┬─────────────────┬────────────┘                            │
+│             │ MQTT events     │ REST (clips, live HLS)                  │
+│             ▼                 ▼                                          │
+│  ┌────────────────────────────────────────────────────────────────┐     │
+│  │  Vyzio Core  (.NET 10)                                         │     │
+│  │                                                                │     │
+│  │  ┌──────────────────┐  gRPC  ┌──────────────────────────────┐ │     │
+│  │  │  FrigateAdapter  │───────►│  Face Recognition Worker     │ │     │
+│  │  │  (MQTT consumer  │◄───────│  (Python 3.12 isolé)         │ │     │
+│  │  │  + REST client)  │        │  InsightFace + ONNX Runtime   │ │     │
+│  │  └────────┬─────────┘        └──────────────────────────────┘ │     │
+│  │           │ MediatR (INotification)                            │     │
+│  │           ▼                                                    │     │
+│  │  ┌──────────────────┐  ┌─────────────────┐  ┌──────────────┐ │     │
+│  │  │  Profile Service │  │  Notification   │  │  Storage     │ │     │
+│  │  │  (profils,       │  │  Service        │  │  Service     │ │     │
+│  │  │   embeddings)    │  │  (FCM, webhook) │  │  (events DB) │ │     │
+│  │  └──────────────────┘  └─────────────────┘  └──────────────┘ │     │
+│  └──────────────────────────────┬───────────────────────────────┘      │
+│                                 │ HTTP REST + WebSocket (SignalR)        │
+│  ┌──────────────────────────────▼───────────────────────────────────┐   │
+│  │  Vyzio API  (ASP.NET Core — .NET 10)                             │   │
+│  └──────────────────────────────┬───────────────────────────────────┘   │
+│                                 │ HTTPS                                  │
+│  ┌──────────────────────────────▼───────────────────────────────────┐   │
+│  │  Vyzio Dashboard  (React 19 + TypeScript — build statique)       │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5. Décisions d'architecture (ADR)
 
 Chaque ADR suit le format : **Contexte → Options comparées → Décision → Conséquences**.
 
 ---
 
-### ADR-01 — Langage principal : Python
+### ADR-01 — S'appuyer sur Frigate plutôt que réimplémenter le pipeline vidéo
 
 #### Contexte
 
-Le Core Engine repose sur des bibliothèques de vision par ordinateur et de machine learning (InsightFace, OpenCV, RetinaFace). Le choix du langage principal conditionne la facilité d'intégration de ces bibliothèques et la vélocité de développement.
+Le pipeline d'ingestion vidéo (RTSP/ONVIF, décodage H.264/H.265, détection de mouvement, détection de personnes, enregistrement) est un problème difficile et bien résolu. Réimplémenter ce pipeline représenterait des mois de développement pour un résultat inférieur, sans constituer la valeur ajoutée de Vyzio.
 
 #### Options comparées
 
-| Critère | Python 3.11+ | Go | Rust | Node.js |
-|---|:---:|:---:|:---:|:---:|
-| Écosystème ML/CV | ✅ Excellent (PyTorch, InsightFace, OpenCV) | ⚠️ Limité (bindings C) | ⚠️ Émergent | ❌ Inexistant |
-| Performance brute | ⚠️ GIL (contournable async/multiprocess) | ✅ Natif | ✅ Natif | ⚠️ I/O seulement |
-| Ressources mémoire | ⚠️ Élevé | ✅ Faible | ✅ Très faible | ⚠️ Moyen |
-| Vitesse de dev | ✅ | ⚠️ | ❌ Lent | ✅ |
-| Opérabilité sur mini-PC | ✅ (optimisable) | ✅ | ✅ | ⚠️ |
-| Maturité bibliothèques vidéo | ✅ | ⚠️ | ⚠️ | ❌ |
+| Solution | Maturité | Détection personne | ONVIF | Accélération HW | API extensible | Licence |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Frigate** | ✅ v0.14, actif | ✅ TFLite/OpenVINO/Coral | ✅ | ✅ VAAPI/NVDEC/Coral | ✅ MQTT + REST | MIT |
+| **Shinobi** | ✅ | ⚠️ Basique | ✅ | ⚠️ | ⚠️ API limitée | CC |
+| **ZoneMinder** | ✅ Ancien | ⚠️ | ✅ | ⚠️ | ⚠️ API complexe | GPL |
+| **MotionEye** | ⚠️ Peu actif | ❌ | ⚠️ | ❌ | ❌ | GPL |
+| **Réimplémentation custom** | ❌ | ❌ À construire | ❌ | ❌ | ✅ Total | — |
+
+**Frigate** se distingue par :
+- Son intégration **MQTT native** : chaque détection publie un événement structuré consommable sans polling
+- Son **API REST documentée** pour les clips, thumbnails et flux live HLS
+- Sa **communauté active** (45k+ GitHub stars) et son intégration Home Assistant
+- Son support d'**accélérateurs IA dédiés** (Coral Edge TPU, Intel OpenVINO, NVIDIA) — détection temps réel même sur Raspberry Pi
+- Sa **configuration YAML simple**, déjà familière de l'écosystème domotique
 
 #### Décision
 
-**Python 3.11+** pour l'ensemble des services backend.
+**Frigate est le moteur d'ingestion vidéo et de détection de Vyzio.** Il est embarqué tel quel dans le Docker Compose et l'appliance, sans modification de son code source. Vyzio interagit avec Frigate exclusivement via ses interfaces publiques (MQTT + REST API).
 
-La contrainte absolue est l'écosystème ML : InsightFace, RetinaFace, PyTorch n'existent pas en dehors de Python avec une maturité suffisante. Écrire des services annexes dans un autre langage (Go pour l'API, par exemple) fragmenterait la stack sans gain net compte tenu de la taille du projet.
-
-Le GIL est contourné en isolant le Core Engine dans **des processus séparés** (`multiprocessing`) plutôt que des threads, ce qui est la pratique standard pour le ML Python.
+La configuration Frigate (`config.yml`) est **générée et gérée par Vyzio** — l'utilisateur ne touche jamais ce fichier directement. L'onboarding Vyzio écrit cette configuration via l'assistant du dashboard.
 
 #### Conséquences
 
-- ✅ Un seul écosystème à maîtriser pour les contributeurs
-- ✅ Intégration directe des modèles IA sans FFI
-- ⚠️ Consommation mémoire plus élevée → imposer un budget mémoire par service (voir §9)
-- ⚠️ GIL → architecture multiprocessus obligatoire pour le Core Engine
+- ✅ Pipeline vidéo production-ready dès le jour 1
+- ✅ Support matériel (Coral, GPU, CPU) sans développement additionnel
+- ✅ Mises à jour Frigate bénéficient à Vyzio automatiquement
+- ✅ Développement concentré sur la vraie valeur ajoutée (reconnaissance faciale, UX)
+- ⚠️ Dépendance à un projet tiers — mitigée par la couche d'abstraction `FrigateAdapter`
+- ⚠️ Frigate est en Python — isolé dans son conteneur, aucune dépendance transitive sur la stack Vyzio
 
 ---
 
-### ADR-02 — Communication inter-services : bus d'événements interne
+### ADR-02 — Langage principal : .NET 10
 
 #### Contexte
 
-Les services doivent communiquer des événements (frame avec mouvement, visage détecté, événement à stocker, notification à envoyer). Le couplage entre services doit être minimal pour permettre de tester, redémarrer ou remplacer un service indépendamment.
+Les services Vyzio (orchestration, API, notifications, profils) doivent être implémentés dans un langage performant, typé et adapté aux contraintes embarquées. Les instructions du projet définissent .NET ou Rust comme priorités.
 
 #### Options comparées
 
-| Solution | Complexité opérationnelle | Latence | Persistance | Adapté mini-PC |
+| Critère | .NET 10 (C#) | Rust | Go | Python |
 |---|:---:|:---:|:---:|:---:|
-| **asyncio Queue (in-process)** | ✅ Nulle | ✅ Minimale | ❌ Non | ✅ |
-| **Redis Streams** | ⚠️ Faible (+1 process) | ✅ Faible | ✅ Oui | ✅ |
-| **RabbitMQ** | ❌ Élevée | ⚠️ Faible | ✅ Oui | ❌ Trop lourd |
-| **Kafka** | ❌ Très élevée | ⚠️ Faible | ✅ Oui | ❌ Incompatible |
-| **ZeroMQ** | ⚠️ Moyenne | ✅ Très faible | ❌ Non | ✅ |
-| **gRPC streaming** | ⚠️ Moyenne | ✅ Faible | ❌ Non | ✅ |
+| Productivité / vélocité | ✅ Élevée | ⚠️ Courbe d'apprentissage | ✅ Bonne | ✅ Élevée |
+| Performance | ✅ Excellente (AOT, SIMD) | ✅ Maximale | ✅ Bonne | ❌ GIL |
+| Consommation mémoire (NativeAOT) | ✅ ~50 MB | ✅ ~5 MB | ✅ ~15 MB | ❌ ~150 MB+ |
+| Écosystème embarqué arm64 | ✅ NativeAOT cross-compile | ✅ | ✅ | ⚠️ |
+| ONNX Runtime bindings officiels | ✅ Microsoft | ❌ Non officiel | ❌ | ✅ |
+| ORM + migrations | ✅ EF Core | ❌ sqlx (no migrations) | ⚠️ GORM | ✅ Alembic |
+| WebSocket / SignalR | ✅ Natif ASP.NET | ✅ tungstenite | ✅ | ✅ |
+| Pool de contributeurs | ✅ Large | ⚠️ Niche | ✅ | ✅ |
+
+**Rust** est écarté non pour des raisons de performance, mais de **vélocité** : EF Core + ASP.NET Core + SignalR forment un écosystème cohérent sans assembler des primitives bas niveau. Pour un projet produit avec une équipe de taille réduite, Rust alourdirait le delivery sans bénéfice justifié ici.
 
 #### Décision
 
-**Architecture à deux niveaux** :
+**.NET 10 (C#)** pour tous les services Vyzio.
 
-1. **Profil appliance (monolith process)** : `asyncio.Queue` interne — latence nulle, zéro overhead.
-2. **Profil Docker Compose (multi-process)** : **Redis Streams** — persistance légère, reconnexion automatique, consommateur unique par groupe.
+- **NativeAOT** en production : démarrage < 100ms, pas de JIT, empreinte réduite
+- **System.Numerics.Tensors** pour les opérations SIMD sur les embeddings (comparaison cosinus)
+- **Microsoft.ML.OnnxRuntime** disponible si des modèles légers s'avèrent utiles en complément du worker Python
 
-Redis est déjà une dépendance naturelle pour le cache de sessions API. Son overhead (~30 MB RAM) est acceptable. Les Streams offrent un historique court utile pour rejouer des événements si un service redémarre.
+#### Conséquences
 
-L'interface de publication (`EventBus`) est **abstraite** derrière un protocole commun afin que les services ne sachent pas s'ils communiquent via Queue ou Redis.
+- ✅ Stack cohérente : ASP.NET Core + EF Core + SignalR + MediatR dans un seul écosystème
+- ✅ NativeAOT → binaires autonomes, pas de runtime installé sur l'appliance
+- ✅ arm64 supporté nativement → Raspberry Pi 5, Apple Silicon
+- ⚠️ Python reste nécessaire pour InsightFace — strictement confiné (ADR-03)
 
-```python
-# Interface commune — les services ne connaissent que ça
-class EventBus(Protocol):
-    async def publish(self, topic: str, payload: dict) -> None: ...
-    async def subscribe(self, topic: str) -> AsyncIterator[dict]: ...
+---
+
+### ADR-03 — Worker de reconnaissance faciale : Python isolé
+
+#### Contexte
+
+La reconnaissance faciale (InsightFace, ArcFace, RetinaFace) repose sur un écosystème Python sans équivalent mature dans d'autres langages. C'est la **seule justification de Python** dans le projet.
+
+#### Pourquoi Python est inévitable ici
+
+| Besoin | Python | .NET | Notes |
+|---|:---:|:---:|---|
+| InsightFace (pipeline complet) | ✅ Officiel | ❌ | Preprocessing + inférence + postprocessing intégrés |
+| ONNX Runtime (inférence seule) | ✅ | ✅ Microsoft | Possible en .NET mais perd le pipeline InsightFace |
+| RetinaFace detection | ✅ | ❌ | Modèle ONNX exportable, pipeline non |
+
+**Option étudiée** : exporter les modèles en ONNX et les inférer depuis .NET. Cette approche couvre le calcul d'embedding mais perd le pipeline de preprocessing InsightFace (détection, crop, alignement facial, normalisation). Réimplémenter ce pipeline en C# représente un risque de régression de précision non acceptable pour un produit grand public.
+
+**Python reste, mais strictement isolé :**
+
+```
+Face Recognition Worker (Python 3.12)
+├── Exposé uniquement en gRPC local (port non publié hors Docker network)
+├── Aucun accès à SQLite Vyzio
+├── Aucun accès au bus MediatR
+├── Interface unique : Recognize(image) → embeddings + bboxes
+└── Stateless — pas de persistance locale
+```
+
+Le worker est un **microservice de calcul pur**. Toute logique métier (comparer avec les profils, décider connu/inconnu/incertain, persister) reste dans le Core .NET.
+
+#### Transport : gRPC
+
+| Option | Latence locale | Contrat typé | Complexité |
+|---|:---:|:---:|:---:|
+| **gRPC** | ✅ < 2ms | ✅ Protobuf | ⚠️ Proto à maintenir |
+| HTTP/REST (JSON) | ✅ < 5ms | ⚠️ OpenAPI | ✅ Minimal |
+| Unix socket | ✅ < 1ms | ❌ | ⚠️ |
+
+**gRPC** retenu : contrat Protobuf typé des deux côtés (.NET + Python), performance optimale, streaming disponible pour batches futurs.
+
+```protobuf
+service FaceRecognition {
+  rpc Recognize (RecognizeRequest) returns (RecognizeResponse);
+  rpc ComputeEmbedding (EmbeddingRequest) returns (EmbeddingResponse);
+}
+message RecognizeRequest  { bytes image_jpeg = 1; }
+message RecognizeResponse { repeated FaceResult faces = 1; }
+message FaceResult {
+  repeated float embedding = 1;  // 512 dims ArcFace
+  BoundingBox    bbox       = 2;
+  float          confidence = 3;
+}
 ```
 
 #### Conséquences
 
-- ✅ Faible couplage entre services — chaque service ne connaît que les topics qu'il écoute/publie
-- ✅ Testabilité — l'`EventBus` est mockable sans infrastructure
-- ✅ Scalabilité progressive — passer de Queue à Redis est transparent pour le code métier
-- ⚠️ Redis doit être disponible en mode Docker avant les autres services (health check requis)
+- ✅ Python confiné sans accès aux données — surface d'attaque minimale
+- ✅ Worker remplaçable sans toucher au Core .NET (contrat gRPC stable)
+- ✅ Scalable indépendamment si GPU disponible
+- ⚠️ Dépendance Python dans le Docker Compose — documentée, isolée, acceptée
 
 ---
 
-### ADR-03 — Ingestion vidéo : FFmpeg + PyAV
+### ADR-04 — Communication Frigate → Vyzio : MQTT + API REST Frigate
 
 #### Contexte
 
-Le Camera Service doit lire des flux RTSP, ONVIF (qui est une couche de gestion au-dessus de RTSP) et HTTP MJPEG depuis des caméras IP, décoder les frames, et les transmettre au Core Engine.
+Frigate publie nativement ses événements de détection sur MQTT et expose une API REST. Vyzio doit consommer ces événements pour déclencher la reconnaissance faciale.
 
-#### Options comparées
+#### Topics MQTT Frigate utilisés
 
-| Solution | RTSP | MJPEG | H.265 | CPU overhead | Maturité |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **OpenCV VideoCapture** | ✅ | ✅ | ✅ | ⚠️ (software) | ✅ |
-| **PyAV (FFmpeg bindings)** | ✅ | ✅ | ✅ | ✅ (hwaccel) | ✅ |
-| **GStreamer (Python)** | ✅ | ✅ | ✅ | ✅ (hwaccel) | ⚠️ Complexe |
-| **aiortsp (async RTSP)** | ✅ | ❌ | ⚠️ | ✅ | ⚠️ Immature |
+```
+frigate/events            → Création/mise à jour d'une détection (person, car, etc.)
+frigate/{camera}/motion   → État du mouvement (true/false)
+frigate/stats             → Santé système Frigate
+```
 
-**Pour la découverte ONVIF** :
-
-| Solution | Discovery | PTZ | Auth | Maturité |
-|---|:---:|:---:|:---:|:---:|
-| **onvif-zeep** | ✅ | ✅ | ✅ | ✅ |
-| **python-onvif** | ✅ | ✅ | ⚠️ | ⚠️ |
-| **WS-Discovery manuel** | ✅ | ❌ | ❌ | ❌ |
-
-#### Décision
-
-- **PyAV** (wrapping FFmpeg) pour le décodage vidéo : accès aux filtres FFmpeg, support hardware acceleration (VAAPI Linux, VideoToolbox macOS, NVDEC NVIDIA), et décodage séparé du rendu.
-- **onvif-zeep** pour la découverte ONVIF et la gestion PTZ.
-- Chaque caméra tourne dans son **propre thread asyncio** avec reconnexion automatique (backoff exponentiel, délai max 60s).
-
-La découverte réseau ONVIF utilise WS-Discovery (multicast UDP 239.255.255.250:3702) isolé dans un coroutine dédié pour ne pas bloquer le reste.
-
-#### Conséquences
-
-- ✅ Support natif H.264/H.265 avec décodage hardware sur la plupart des mini-PC Intel
-- ✅ Reconnexion automatique robuste
-- ⚠️ PyAV nécessite FFmpeg système installé — packagé dans le Dockerfile
-- ⚠️ La découverte ONVIF est non fiable sur certains firmwares de caméras — prévoir le fallback URL RTSP manuelle
-
----
-
-### ADR-04 — Pipeline IA : InsightFace
-
-#### Contexte
-
-Le pipeline IA comprend deux étapes distinctes : la détection faciale (localiser les visages dans une frame) et la reconnaissance faciale (identifier à qui appartient le visage). Les specs imposent RetinaFace pour la détection et InsightFace pour les embeddings.
-
-#### Options comparées — Détection faciale
-
-| Modèle | Précision | Vitesse (CPU) | Vitesse (GPU) | Multi-visage |
-|---|:---:|:---:|:---:|:---:|
-| **RetinaFace (InsightFace)** | ✅ Excellente | ⚠️ ~200ms/frame | ✅ ~15ms | ✅ |
-| **MTCNN** | ✅ Bonne | ⚠️ ~150ms | ✅ ~10ms | ✅ |
-| **YuNet (OpenCV)** | ⚠️ Correcte | ✅ ~30ms | N/A | ✅ |
-| **MediaPipe Face** | ⚠️ Correcte | ✅ ~20ms | N/A | ✅ |
-| **Haar Cascade** | ❌ Faible | ✅ ~10ms | N/A | ✅ |
-
-**YuNet** (OpenCV DNN) est une alternative sérieuse pour les déploiements CPU-only : 30ms/frame vs 200ms pour RetinaFace. Un **profil configurable** permettra de choisir le détecteur selon les ressources disponibles.
-
-#### Options comparées — Reconnaissance (embedding)
-
-| Modèle | Dims | Précision (LFW) | Taille | Backend |
-|---|:---:|:---:|:---:|:---:|
-| **InsightFace ArcFace R100** | 512 | 99.8% | 248 MB | ONNX/PyTorch |
-| **InsightFace ArcFace R50** | 512 | 99.7% | 166 MB | ONNX/PyTorch |
-| **FaceNet (facenet-pytorch)** | 128/512 | 99.6% | 89 MB | PyTorch |
-| **DeepFace** | variable | 99.5% | variable | Multi-backend |
-| **dlib face_recognition** | 128 | 99.4% | 22 MB | dlib |
+Exemple de payload `frigate/events` :
+```json
+{
+  "type": "new",
+  "after": {
+    "id": "1715000000.123-abc",
+    "camera": "front_door",
+    "label": "person",
+    "score": 0.92,
+    "thumbnail": "/api/events/1715000000.123-abc/thumbnail.jpg",
+    "has_clip": true,
+    "start_time": 1715000000.123
+  }
+}
+```
 
 #### Décision
 
-- **Détection** : RetinaFace via InsightFace (conforme aux specs), avec fallback YuNet pour mode CPU-only configurable.
-- **Reconnaissance** : InsightFace ArcFace R50 — compromis optimal taille/précision. R100 est disponible en option pour appliances avec GPU.
-- Backend inférence : **ONNX Runtime** (portable, supporte CUDA, CoreML, DirectML, CPU) — évite de dépendre de PyTorch en production.
+- **MQTT** (Mosquitto, embarqué dans Frigate) pour les événements temps réel
+- **API REST Frigate** pour : thumbnails, clips, configuration caméras, flux live HLS
 
-Le pipeline tourne à **5 fps** (configurable), uniquement sur les frames où un mouvement a été détecté (pré-filtre frame differencing).
+Le `FrigateAdapter` est la **seule classe du codebase qui connaît Frigate**. Il traduit les événements Frigate en événements du domaine Vyzio et les publie via MediatR. Le reste du Core ignore que Frigate existe.
 
-#### Estimation ressources (CPU-only, Intel NUC i5)
-
-| Étape | Temps moyen | CPU |
-|---|---|---|
-| Frame differencing | ~2ms | <5% |
-| RetinaFace detection | ~180ms | ~40% |
-| ArcFace R50 embedding | ~50ms | ~20% |
-| Cosinus similarity (100 profils) | <1ms | <1% |
-| **Total pipeline** | **~230ms** | **~60%** |
-
-Avec GPU (NVIDIA) : < 30ms total.
-
-#### Conséquences
-
-- ✅ Pipeline entièrement local, aucune API externe
-- ✅ ONNX Runtime portable sur CPU/GPU/Apple Silicon sans recompilation
-- ⚠️ 180ms/frame en CPU-only → le mode 5fps est justifié (budget 200ms/frame)
-- ⚠️ Premier chargement des modèles : ~3-5s → accepté au démarrage du service
-
----
-
-### ADR-05 — Base de données : SQLite
-
-#### Contexte
-
-Le système doit stocker : configuration des caméras, profils et embeddings, historique des événements, références aux clips vidéo, logs des notifications. Les besoins en concurrence sont faibles (1 utilisateur, accès majoritairement en lecture).
-
-#### Options comparées
-
-| Critère | SQLite | PostgreSQL | MongoDB | DuckDB |
-|---|:---:|:---:|:---:|:---:|
-| Zéro configuration | ✅ | ❌ | ❌ | ✅ |
-| ACID | ✅ | ✅ | ⚠️ | ✅ |
-| Embeddings vectoriels (1:N) | ⚠️ (BLOB ou sqlite-vec) | ⚠️ (pgvector) | ✅ | ⚠️ |
-| Concurrence multi-writers | ❌ WAL mode limité | ✅ | ✅ | ❌ |
-| Taille en RAM | ✅ Minimale | ❌ ~50 MB | ❌ ~200 MB | ✅ |
-| Adapté appliance mini-PC | ✅ | ⚠️ | ❌ | ✅ |
-| Sauvegarde simple | ✅ (cp fichier) | ⚠️ pg_dump | ⚠️ mongodump | ✅ |
-
-#### Décision
-
-**SQLite en mode WAL** pour toutes les données relationnelles.
-
-La charge d'écriture est faible : quelques événements par minute au plus. SQLite en WAL supporte les lectures concurrentes. C'est le seul choix raisonnable pour une appliance embarquée sans processus PostgreSQL.
-
-Pour les **embeddings vectoriels** (comparaison cosinus), deux approches :
-1. **Stockage dans SQLite** (BLOB) + **comparaison en Python** (numpy) — suffisant pour ≤ 10 000 embeddings.
-2. **sqlite-vec** (extension C) si le catalogue dépasse 10 000 profils — peu probable en usage domestique.
-
-Le seuil de 10 000 profils est largement au-dessus des besoins réels (< 100 personnes connues). La comparaison numpy en mémoire est donc la bonne approche.
-
-#### Schéma principal
-
-```sql
--- Résumé des tables (détail en §6)
-cameras        -- config + état de connexion
-profiles       -- personnes + embeddings (BLOB float32)
-events         -- détections avec score de confiance
-clips          -- références fichiers vidéo
-notifications  -- log envoi
-sessions       -- sessions API authentifiées
+```csharp
+// Seule classe couplée à Frigate
+public class FrigateAdapter : IHostedService
+{
+    // Souscrit MQTT frigate/events
+    // Transforme FrigateEvent → PersonDetectedEvent (domaine Vyzio)
+    // Publie via IMediator.Publish()
+}
 ```
 
 #### Conséquences
 
-- ✅ Aucun processus de base de données à gérer — fichier unique sauvegardable
-- ✅ Transactions ACID pour la cohérence des événements
-- ✅ Migrations simples avec Alembic
-- ⚠️ Pas adapté si le système était multi-tenant ou multi-nœud (hors scope)
+- ✅ Couplage limité à une seule classe — migration vers autre backend vidéo possible
+- ✅ MQTT Mosquitto inclus dans Frigate — zéro dépendance supplémentaire
+- ⚠️ Format MQTT Frigate peut évoluer — versionner le `FrigateAdapter`
 
 ---
 
-### ADR-06 — API : FastAPI
+### ADR-05 — Communication inter-services Vyzio : MediatR
 
 #### Contexte
 
-L'API REST sert le dashboard web et permettra des intégrations tierces (webhooks sortants, Home Assistant, etc.). Elle doit être asynchrone pour ne pas bloquer lors des accès à SQLite ou lors de la diffusion des flux vidéo live (SSE/WebSocket).
+Les handlers Vyzio (reconnaissance, storage, notification) doivent réagir aux mêmes événements de façon découplée et testable.
 
 #### Options comparées
 
-| Critère | FastAPI | Flask | Django REST | aiohttp | Litestar |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Async natif | ✅ | ❌ | ❌ | ✅ | ✅ |
-| Schema validation | ✅ Pydantic | ⚠️ Manuel | ✅ DRF | ⚠️ Manuel | ✅ |
-| WebSocket / SSE | ✅ | ⚠️ | ⚠️ | ✅ | ✅ |
-| OpenAPI auto-généré | ✅ | ❌ | ⚠️ | ❌ | ✅ |
-| Overhead mémoire | ✅ Faible | ✅ Faible | ❌ Élevé | ✅ Faible | ✅ Faible |
-| Maturité/communauté | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-
-#### Décision
-
-**FastAPI** avec **Uvicorn** (ASGI). L'OpenAPI auto-généré est précieux pour documenter l'API d'intégration (Home Assistant, webhooks). Pydantic v2 assure la validation des entrées et la sérialisation.
-
-**Diffusion vidéo live** : SSE (Server-Sent Events) pour le flux d'événements en temps réel ; WebSocket pour le flux JPEG des caméras live (MJPEG over WebSocket), compatible avec les proxies NGINX sans configuration spéciale.
-
-#### Routes principales (résumé)
-
-```
-GET  /api/cameras              Liste des caméras
-POST /api/cameras              Ajout d'une caméra
-GET  /api/cameras/{id}/stream  WebSocket flux live
-GET  /api/profiles             Liste des profils
-POST /api/profiles             Création d'un profil
-GET  /api/events               Historique (filtrable)
-GET  /api/events/stream        SSE flux en temps réel
-GET  /api/clips/{id}           Téléchargement clip vidéo
-POST /api/auth/login           Authentification
-GET  /api/settings             Configuration système
-```
-
-#### Conséquences
-
-- ✅ Documentation API interactive (Swagger UI) pour les intégrateurs
-- ✅ Async end-to-end : pas de threads bloquants pour les opérations I/O
-- ⚠️ Uvicorn en mode single-worker sur appliance (pas de Gunicorn multi-workers) — suffisant pour 1 utilisateur
-
----
-
-### ADR-07 — Dashboard : SvelteKit
-
-#### Contexte
-
-Le dashboard est une SPA (Single Page Application) accessible depuis un navigateur mobile ou desktop sur le réseau local. Il doit afficher des flux vidéo live, permettre le dessin de zones polygonales sur des images, et rester léger pour un chargement rapide sur réseau local potentiellement limité.
-
-#### Options comparées
-
-| Critère | SvelteKit | React + Vite | Vue 3 + Vite | Angular | HTMX |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Bundle size | ✅ Très faible | ⚠️ Moyen | ⚠️ Moyen | ❌ Élevé | ✅ Minimal |
-| Réactivité fine | ✅ Compile-time | ⚠️ Virtual DOM | ⚠️ Virtual DOM | ⚠️ | ❌ |
-| Canvas / WebGL | ✅ | ✅ | ✅ | ✅ | ❌ |
-| WebSocket natif | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| Complexité | ✅ Faible | ⚠️ Moyenne | ⚠️ Moyenne | ❌ Élevée | ✅ Faible |
-| SSR (optionnel) | ✅ | ✅ | ✅ | ✅ | N/A |
-
-**HTMX** a été écarté : le dessin de zones polygonales interactives sur canvas et la gestion des flux vidéo WebSocket requièrent du JavaScript riche que HTMX ne couvre pas.
-
-#### Décision
-
-**SvelteKit** avec rendu SPA (adapter-static). Le build produit des fichiers statiques servis directement par FastAPI (`StaticFiles`), éliminant un serveur Node.js en production.
-
-Pour les zones de détection polygonales : **Konva.js** (canvas 2D) — léger, sans dépendance framework.
-
-#### Conséquences
-
-- ✅ Bundle final < 100 KB gzippé → chargement rapide même sur Wi-Fi domestique lent
-- ✅ Pas de processus Node.js en production — serveur statique FastAPI suffit
-- ✅ Konva.js couvre tous les besoins de dessin interactif (polygones, drag, redimensionnement)
-- ⚠️ SvelteKit moins connu que React → courbe d'apprentissage pour nouveaux contributeurs
-
----
-
-### ADR-08 — Notifications push : FCM via serveur relay minimal
-
-#### Contexte
-
-Les notifications push vers Android et iOS nécessitent inévitablement un intermédiaire : Apple (APNs) et Google (FCM) exigent un serveur tiers enregistré pour router les messages. C'est la seule sortie réseau non évitable du système.
-
-Une nouvelle exigence (specs §6.6) demande que **la photo de détection soit visible dans la notification depuis l'extérieur du réseau local**. Cela crée une tension directe avec le principe local-first : la photo est stockée sur l'appliance, inaccessible par défaut depuis Internet.
-
-#### Problème : comment rendre une photo locale accessible hors réseau ?
-
-Quatre familles de solutions ont été évaluées :
-
-| Approche | Confidentialité | Complexité | Photo hors-réseau | Dépendance tiers |
+| Solution | Complexité | In-process | Testabilité | Standard .NET |
 |---|:---:|:---:|:---:|:---:|
-| **A — Tunnel sécurisé** (Cloudflare Tunnel / Tailscale) | ✅ Photo reste sur appliance | ⚠️ Setup utilisateur | ✅ Via URL signée | ⚠️ Cloudflare/Tailscale |
-| **B — VPN utilisateur** (WireGuard) | ✅ | ❌ Complexe | ✅ (réseau étendu) | ✅ Aucune |
-| **C — Relay serveur Vyzio** (upload thumbnail temporaire) | ⚠️ Photo transite par nos serveurs | ⚠️ Infra à gérer | ✅ | ❌ Serveur Vyzio requis |
-| **D — Embed base64 dans FCM** | ✅ | ✅ | ✅ | ✅ FCM seul |
-| **E — Notification sans image** (deep-link uniquement) | ✅ | ✅ | ❌ | ✅ FCM seul |
-
-**Option D — Embed base64 dans FCM** : le payload de données FCM est limité à **4 096 octets**. Un thumbnail JPEG de 400×300 pixels compressé à qualité basse représente ~15–40 KB — bien au-delà de la limite. Cette option est **techniquement impossible** pour des images de qualité utilisable.
-
-**Option C — Relay Vyzio** : viole le principe local-first (images biométriques sur nos serveurs) et crée une dépendance à notre infrastructure. Écarté.
-
-**Option B — VPN** : solution la plus privée mais trop complexe pour le grand public (cible appliance). Maintenue comme option avancée documentée.
-
-**Option A — Tunnel sécurisé** : la photo est servie **directement depuis l'appliance** via une URL HTTPS éphémère. Seule la requête HTTP transite par le tunnel (Cloudflare) — pas de stockage tiers. Le tunnel agit comme un proxy inverse, pas comme un stockage.
+| **MediatR** | ✅ Faible | ✅ | ✅ | ✅ |
+| System.Threading.Channels | ✅ Minimal | ✅ | ✅ | ✅ |
+| Redis Pub/Sub | ⚠️ +1 process | ❌ | ⚠️ | ⚠️ |
+| gRPC inter-services | ⚠️ | ❌ | ⚠️ | ⚠️ |
 
 #### Décision
 
-**Architecture à deux couches** :
+**MediatR** pour le bus d'événements interne Vyzio. `System.Threading.Channels` pour les flux haute fréquence (frames entre FrigateAdapter et Face Worker).
 
-**Couche 1 — Livraison push (toujours actif)** : FCM pour Android/iOS, ntfy en alternative.
-- Le payload FCM contient : type d'événement, nom, caméra, timestamp
-- Le champ `image` FCM pointe vers une **URL signée HMAC-SHA256** hébergée sur l'appliance (valide 5 min)
-- Si aucun accès distant n'est configuré, ce champ est absent → pas d'image dans la notification (dégradation gracieuse)
+```csharp
+// Un événement, plusieurs handlers en parallèle
+public record PersonDetectedEvent(string FrigateEventId, string CameraName, byte[] Thumbnail)
+    : INotification;
 
-**Couche 2 — Accès distant (opt-in, specs §6.6)** :
-
-- **Mode Tunnel (recommandé)** : intégration Cloudflare Tunnel ou Tailscale configurée depuis le dashboard. Le Notification Service génère des URLs signées pointant vers le domaine du tunnel.
-- **Mode VPN** : l'utilisateur gère son propre VPN, Vyzio ne fait rien de spécial.
-
-**Génération des URLs signées** :
-
-```python
-import hmac, hashlib, time, base64
-
-def signed_thumbnail_url(event_id: str, base_url: str, secret: str, ttl: int = 300) -> str:
-    expires = int(time.time()) + ttl
-    msg = f"{event_id}:{expires}".encode()
-    sig = hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
-    return f"{base_url}/api/events/{event_id}/thumbnail?expires={expires}&sig={sig}"
+// Chaque handler est indépendant et testable unitairement
+public class FaceRecognitionHandler : INotificationHandler<PersonDetectedEvent> { ... }
+public class StorageHandler         : INotificationHandler<PersonDetectedEvent> { ... }
+public class NotificationHandler    : INotificationHandler<PersonDetectedEvent> { ... }
 ```
-
-La route `/api/events/{id}/thumbnail` vérifie la signature et l'expiration **sans** nécessiter de JWT — ce qui permet à FCM de charger l'image directement sans session authentifiée, tout en restant sécurisé contre la devinette d'URLs.
-
-**ntfy** est proposé en alternative pour les utilisateurs souhaitant zéro dépendance cloud : ntfy peut s'auto-héberger et supporte l'attachment d'images via son protocole.
-
-**Comportement hors-ligne** : une table `notification_queue` dans SQLite stocke les notifications en attente et les envoie dès que la connectivité FCM est rétablie.
 
 #### Conséquences
 
-- ✅ En mode local-only (défaut) : aucune image ne sort du réseau — comportement inchangé
-- ✅ En mode tunnel : la photo reste sur l'appliance, Cloudflare ne la stocke pas
-- ✅ URL signée avec expiration : pas de fuite d'accès permanente même si l'URL est interceptée
-- ✅ Dégradation gracieuse : si le tunnel est arrêté, la notification est envoyée sans image (pas d'erreur)
-- ⚠️ Nécessite un projet Firebase enregistré → documenté dans le guide de déploiement
-- ⚠️ Cloudflare Tunnel requiert un compte Cloudflare gratuit (ou Tailscale) — documenté comme prérequis opt-in
-- ⚠️ La livraison FCM peut être retardée si Internet est intermittent — acceptable (§6.5 des specs)
+- ✅ Pattern CQRS/Mediator standard .NET — familier, bien documenté
+- ✅ Handlers testables sans infrastructure (mock `IMediator`)
+- ⚠️ In-process uniquement — suffisant pour l'appliance mono-nœud (hors scope multi-nœuds)
 
 ---
 
-### ADR-09 — Stockage vidéo : fichiers MP4 sur disque local
+### ADR-06 — Base de données : SQLite + EF Core
 
 #### Contexte
 
-Les clips vidéo déclenchés par événements doivent être stockés, consultables depuis le dashboard, et soumis à une politique de rétention automatique.
+Vyzio stocke : profils + embeddings, événements de reconnaissance, règles de notification, sessions. Charge faible (1 utilisateur, quelques événements par minute).
 
 #### Options comparées
 
-| Approche | Complexité | Compatibilité | Rétention auto | Recherche |
-|---|:---:|:---:|:---:|:---:|
-| **Fichiers MP4 sur disque** | ✅ Minimale | ✅ Universelle | ✅ cron/scheduler | ⚠️ Via SQLite |
-| **MinIO (object storage)** | ❌ Élevée | ✅ | ✅ lifecycle policies | ✅ |
-| **Frigate-like segments HLS** | ⚠️ Moyenne | ✅ | ✅ | ⚠️ |
-| **Base de données BLOB** | ❌ Inadapté | ✅ | ✅ | ✅ |
+| Critère | SQLite + EF Core | PostgreSQL | LiteDB |
+|---|:---:|:---:|:---:|
+| Zéro configuration | ✅ | ❌ | ✅ |
+| EF Core support officiel | ✅ | ✅ | ❌ |
+| Migrations EF Core | ✅ | ✅ | ❌ |
+| Empreinte RAM | ✅ Minimale | ❌ ~50 MB | ✅ |
+| Sauvegarde | ✅ `cp fichier` | ⚠️ | ✅ |
+| Appliance embarquée | ✅ | ❌ | ✅ |
 
 #### Décision
 
-**Fichiers MP4 sur volume dédié**, avec convention de nommage `{camera_id}/{YYYY-MM-DD}/{event_id}.mp4`.
+**SQLite en mode WAL** + **EF Core** (requêtes typées, migrations automatiques au démarrage).
 
-- La table `clips` dans SQLite stocke la référence (chemin relatif, durée, taille, event_id)
-- La rétention automatique est gérée par un **scheduler asyncio** (APScheduler) qui s'exécute quotidiennement et supprime les fichiers + entrées SQLite au-delà du seuil configuré
-- Le serving des clips au dashboard se fait via une route FastAPI `GET /api/clips/{id}` avec streaming HTTP (`StreamingResponse`) et vérification d'authentification
+Les embeddings (512 × float32 = 2 KB/profil) sont stockés en BLOB. Au démarrage, le Profile Service les charge tous en mémoire. La comparaison cosinus est vectorisée avec `System.Numerics.Tensors` — aucune requête SQL au moment de la reconnaissance.
+
+**Note** : Frigate possède sa propre base SQLite pour ses événements vidéo. Vyzio ne la lit jamais directement — uniquement via l'API Frigate.
 
 #### Conséquences
 
-- ✅ Aucune dépendance supplémentaire — compatibilité maximale avec tout NAS/disque
-- ✅ Les clips sont lisibles directement sur le disque si nécessaire
-- ✅ Sauvegarde simple (rsync, cp)
-- ⚠️ Pas de déduplication ou compression intelligente — l'espace disque dépend du volume d'événements
+- ✅ Fichier unique, sauvegardable avec `cp`
+- ✅ EF Core Migrations appliquées automatiquement au démarrage (`MigrateAsync`)
+- ✅ Comparaison cosinus SIMD sur 1 000 profils : < 1ms
+- ⚠️ Un seul writer SQLite simultané — largement suffisant
+
+---
+
+### ADR-07 — API : ASP.NET Core
+
+#### Contexte
+
+L'API sert le dashboard React, les webhooks et les intégrations tierces. Elle doit exposer des flux temps réel et proxyfier les ressources Frigate avec authentification.
+
+#### Décision
+
+**ASP.NET Core (.NET 10) — Minimal APIs** avec :
+- **SignalR** pour le hub WebSocket événements temps réel → dashboard
+- **SSE** via `IAsyncEnumerable` pour les flux légers (état caméras)
+- **Scalar** pour la documentation OpenAPI
+- Proxy authentifié devant Frigate : clips et flux live HLS redirigés depuis l'API Frigate après vérification du JWT Vyzio — Frigate n'est jamais exposé directement
+
+#### Routes principales
+
+```
+GET    /api/cameras                  → Config + état (via Frigate REST)
+POST   /api/cameras                  → Ajout (écrit frigate.yml + reload)
+GET    /api/cameras/{id}/live        → Proxy HLS Frigate (auth Vyzio)
+
+GET    /api/profiles
+POST   /api/profiles                 → Upload photo → gRPC → embedding
+DELETE /api/profiles/{id}
+
+GET    /api/events                   → Paginé, filtrable
+GET    /api/events/{id}/thumbnail    → Proxy Frigate + URL signée (accès distant)
+WS     /hubs/events                  → SignalR hub push temps réel
+
+GET    /api/clips/{id}               → Proxy clip MP4 Frigate (auth Vyzio)
+
+POST   /api/auth/login
+POST   /api/auth/refresh
+DELETE /api/auth/logout
+
+GET    /api/settings
+PATCH  /api/settings
+```
+
+#### Conséquences
+
+- ✅ Stack 100% .NET — logs unifiés, DI partagé, même pipeline middleware
+- ✅ SignalR gère la reconnexion WebSocket automatiquement côté client
+- ✅ Frigate jamais exposé directement — Vyzio est le proxy authentifié obligatoire
+- ⚠️ Proxy clips vidéo : utiliser `HttpClient` en streaming pour éviter le buffering mémoire
+
+---
+
+### ADR-08 — Dashboard : React + TypeScript
+
+#### Contexte
+
+Le dashboard est l'interface grand public. Il doit être mobile-first, accessible à des non-techniciens, et gérer des interactions complexes (zones polygonales, flux vidéo, onboarding guidé).
+
+#### Options comparées
+
+| Critère | React + TypeScript | SvelteKit | Vue 3 | Angular |
+|---|:---:|:---:|:---:|:---:|
+| Maturité / écosystème | ✅ Dominant | ⚠️ Croissant | ✅ | ✅ Entreprise |
+| Pool contributeurs open source | ✅ Maximum | ⚠️ | ✅ | ⚠️ |
+| Bibliothèques UI (Shadcn, Radix) | ✅ React-first | ⚠️ Portages | ✅ | ✅ |
+| TypeScript (instructions projet) | ✅ | ✅ | ✅ | ✅ |
+| Bundle size | ⚠️ Moyen (tree-shakeable) | ✅ Très faible | ⚠️ | ❌ |
+| Tests (Vitest + Testing Library) | ✅ Standard | ✅ | ✅ | ⚠️ |
+
+SvelteKit offre un bundle plus léger mais React est le choix le plus défendable pour un projet open source : pool de contributeurs maximal et écosystème UI le plus riche pour construire une interface accessible sans designer dédié.
+
+#### Décision
+
+**React 19 + TypeScript + Vite** (SPA, build statique servi par ASP.NET Core).
+
+- **Tanstack Query** — gestion requêtes/cache serveur
+- **Tanstack Router** — routing typé TypeScript
+- **Shadcn/ui + Tailwind CSS** — composants accessibles, mobile-first
+- **React-Konva** — dessin de zones polygonales sur les aperçus caméra
+- **@microsoft/signalr** — client SignalR pour les événements temps réel
+
+Pas de SSR (Next.js) : SEO non pertinent sur réseau local, et évite un processus Node.js en production.
+
+#### Conséquences
+
+- ✅ Communauté React maximale pour les contributions
+- ✅ Shadcn/ui : composants qualité prod sans designer
+- ✅ Build statique servi par ASP.NET Core `StaticFiles` — pas de Node.js en production
+- ⚠️ Bundle plus lourd que SvelteKit — sans impact sur réseau local (latence < 1ms)
+
+---
+
+### ADR-09 — Notifications push : FCM + URLs signées pour accès distant
+
+#### Contexte
+
+FCM/APNs sont inévitables pour les notifications push mobiles. Une exigence (specs §6.6) demande que la **photo soit visible hors réseau local** sans violer le principe local-first.
+
+#### Problème : rendre une image locale accessible hors réseau
+
+| Approche | Image reste locale | Complexité | Setup |
+|---|:---:|:---:|:---:|
+| **Tunnel sécurisé** (Cloudflare Tunnel / Tailscale) | ✅ | ⚠️ | ⚠️ Compte requis |
+| **VPN** (WireGuard) | ✅ | ❌ | ❌ Trop complexe grand public |
+| **Relay serveur Vyzio** | ❌ Image sur nos serveurs | ⚠️ | ✅ |
+| **Base64 dans FCM** | ✅ | ✅ | ✅ |
+
+**Base64 FCM** : payload limité à 4 096 octets. Un thumbnail JPEG 400×300 fait ~15–40 KB. Impossible.
+**Relay Vyzio** : viole le principe privacy-first. Écarté.
+
+#### Décision
+
+Architecture à deux niveaux :
+
+**Niveau 1 (toujours actif)** : FCM avec payload texte + champ `image_url` optionnel.
+
+**Niveau 2 (opt-in)** : Cloudflare Tunnel ou Tailscale configurés depuis le dashboard. L'image est servie **directement depuis l'appliance** via une URL signée HMAC-SHA256 (TTL 5 min). Cloudflare agit comme proxy HTTPS transparent, ne stocke pas l'image.
+
+```csharp
+public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
+{
+    var expires = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
+    var message = $"{eventId}:{expires}";
+    var sig = HMACSHA256.HashData(
+        Encoding.UTF8.GetBytes(_secret),
+        Encoding.UTF8.GetBytes(message));
+    return $"{baseUrl}/api/events/{eventId}/thumbnail?expires={expires}&sig={Convert.ToHexString(sig).ToLower()}";
+}
+```
+
+La route `/api/events/{id}/thumbnail` valide la signature et l'expiration **sans JWT** — FCM peut charger l'image directement.
+
+**ntfy** disponible comme alternative 100% auto-hébergeable (zéro Google/Apple).
+
+#### Conséquences
+
+- ✅ Mode défaut : aucune donnée ne sort du réseau
+- ✅ Mode tunnel : image reste sur l'appliance, Cloudflare est proxy transparent
+- ✅ URL signée TTL 5min → pas d'accès permanent si URL interceptée
+- ⚠️ Tunnel nécessite un compte Cloudflare ou Tailscale — opt-in documenté
 
 ---
 
 ### ADR-10 — Authentification : JWT + bcrypt
 
-#### Contexte
-
-Le dashboard doit être protégé par mot de passe. L'authentification doit fonctionner hors-ligne (pas de service d'identité externe). Le risque principal est l'accès non autorisé depuis le réseau local.
-
-#### Options comparées
-
-| Approche | Complexité | Hors-ligne | Sécurité |
-|---|:---:|:---:|:---:|
-| **JWT + bcrypt (stateless)** | ✅ | ✅ | ✅ |
-| Sessions côté serveur (SQLite) | ✅ | ✅ | ✅ |
-| OAuth2 (Authentik, Keycloak) | ❌ | ⚠️ | ✅ |
-| mTLS certificats | ❌ | ✅ | ✅ |
-| Pas d'auth (réseau local only) | ✅ | ✅ | ❌ |
-
 #### Décision
 
-**JWT à courte durée de vie (15 min) + refresh token (7 jours, stocké en SQLite)** avec mot de passe hashé bcrypt (cost factor 12).
+**JWT access token (15 min) + refresh token révocable (7 jours, stocké SQLite)** avec bcrypt cost factor 12, implémenté via `Microsoft.AspNetCore.Authentication.JwtBearer`.
 
-Le refresh token est **révocable** (table `sessions` en SQLite) : logout = suppression du refresh token. Cela corrige la principale faiblesse des JWT stateless.
-
-TLS est assuré par un **certificat auto-signé** généré au premier démarrage (ou Let's Encrypt via DNS challenge pour les utilisateurs avancés).
-
-#### Conséquences
-
-- ✅ Authentification entièrement locale sans dépendance externe
-- ✅ Logout effectif grâce aux refresh tokens révocables
-- ✅ Résistant aux attaques brute-force : rate limiting sur `/api/auth/login` (5 tentatives / 15 min)
-- ⚠️ Certificat auto-signé → avertissement navigateur au premier accès — documenté dans l'onboarding
+- Logout = suppression du refresh token en base → révocation effective
+- Rate limiting login : 5 tentatives / 15 min par IP (`AspNetCoreRateLimit`)
+- TLS : certificat auto-signé généré au premier démarrage (Trust On First Use)
 
 ---
 
-## 5. Architecture des services
+## 6. Architecture des services
 
-### 5.1 Camera Service
-
-**Responsabilité** : connexion et maintien des flux vidéo de chaque caméra, découverte ONVIF, transmission des frames au Core Engine.
+### 6.1 Responsabilités
 
 ```
-CameraService
-├── ONVIFDiscovery          # WS-Discovery multicast UDP
-├── CameraConnection[]      # Une instance par caméra
-│   ├── RTSPReader          # PyAV: lecture + décodage frames
-│   ├── ReconnectManager    # Backoff exponentiel (1s → 60s)
-│   └── ZoneFilter          # Masquage des zones inactives
-└── FramePublisher          # Publie sur EventBus (topic: "frames")
+Frigate                           → Vidéo brut, détection, clips
+FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer)
+Face Recognition Worker (Python)  → Calcul embeddings uniquement (gRPC server)
+Profile Service (.NET)            → CRUD profils + comparaison cosinus SIMD
+Notification Service (.NET)       → Règles + envoi FCM/webhook/email
+Storage Service (.NET)            → Persistance événements enrichis (EF Core)
+API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
+Dashboard (React + TS)            → UI grand public
 ```
 
-**Interface publiée sur le bus** :
+### 6.2 Flux complet : détection → notification
 
-```python
-# Topic: "frames"
-{
-  "camera_id": "cam_01",
-  "timestamp": 1746700000.123,
-  "frame": <numpy array HxWx3>,  # uniquement in-process
-  "frame_ref": "shared_mem_key"  # en mode multi-process
-}
 ```
+1. Frigate détecte une personne
+   └─► MQTT: frigate/events { label: "person", thumbnail: "...", camera: "front_door" }
 
-**Isolation** : en mode multi-process, les frames ne sont pas sérialisées dans Redis (trop volumineuses). Un **shared memory buffer** (`multiprocessing.shared_memory`) est utilisé, et le bus transmet uniquement la clé de référence.
+2. FrigateAdapter (.NET)
+   └─► Télécharge thumbnail via Frigate REST API
+   └─► Publie: IMediator.Publish(new PersonDetectedEvent(...))
+
+3. Handlers MediatR (parallèles) :
+
+   FaceRecognitionHandler
+   └─► gRPC → Face Worker → embeddings[]
+   └─► Profile Service : cosinus similarity vs embeddings mémoire
+   └─► Résultat : { profile: "Alice", confidence: 0.82 } → FACE_RECOGNIZED
+   └─► Publie: FaceRecognizedEvent
+
+   StorageHandler
+   └─► EF Core INSERT recognition_events (type, profile_id, confidence, thumbnail)
+
+   NotificationHandler (sur FaceRecognizedEvent)
+   └─► RuleEngine : Alice → notify, heure active, pas de rate-limit
+   └─► Génère URL signée thumbnail (si tunnel configuré)
+   └─► FCM : "Alice est arrivée • Porte d'entrée • 09:32"
+   └─► SignalR : push vers dashboard ouvert
+```
 
 ---
 
-### 5.2 Core Engine
+## 7. Modèle de données
 
-**Responsabilité** : pipeline de détection et reconnaissance. Composant le plus critique du système.
+### 7.1 Périmètre
 
-```
-CoreEngine
-├── MotionDetector          # Frame differencing par caméra
-├── FaceDetector            # RetinaFace / YuNet (configurable)
-├── FaceRecognizer          # ArcFace R50 ONNX + cosinus similarity
-├── EmbeddingStore          # Cache numpy des embeddings en mémoire
-└── EventPublisher          # Publie les événements détectés
-```
+Vyzio gère uniquement ses propres données (profils, événements enrichis, notifications, sessions). Les clips et événements vidéo bruts restent dans la base Frigate — Vyzio y accède uniquement via l'API REST Frigate.
 
-**États d'un événement de détection** :
-
-```
-MOTION_DETECTED
-  └─► FACE_DETECTED (si visage)
-        ├─► FACE_RECOGNIZED (score > 0.6)  → profil_id + score
-        ├─► FACE_UNCERTAIN (0.5 < score ≤ 0.6) → profil candidat
-        └─► FACE_UNKNOWN (score < 0.5)    → inconnu
-```
-
-**Cache des embeddings** : au démarrage, le Core Engine charge tous les embeddings depuis SQLite dans un tableau numpy en mémoire (< 1 MB pour 100 profils × 512 dims). La comparaison cosinus est une opération matricielle instantanée.
-
-**Isolation GPU** : le worker d'inférence tourne dans un processus dédié pour éviter les conflits de contexte CUDA avec le reste du système.
-
----
-
-### 5.3 Storage Service
-
-**Responsabilité** : écriture des événements en base, enregistrement des clips vidéo, rétention automatique.
-
-```
-StorageService
-├── EventWriter             # INSERT events + clips dans SQLite
-├── VideoRecorder           # FFmpeg subprocess : enregistre MP4
-├── RetentionScheduler      # APScheduler : nettoyage quotidien
-└── DiskMonitor             # Alerte si espace < seuil configuré
-```
-
-**Enregistrement d'un clip** :
-Le VideoRecorder démarre l'enregistrement dès réception d'un événement `FACE_*` ou `MOTION_DETECTED`, en capturant N secondes **avant** l'événement (buffer circulaire de frames en mémoire, configurable, défaut 30s) et N secondes après.
-
----
-
-### 5.4 Notification Service
-
-**Responsabilité** : envoi des notifications selon les règles configurées.
-
-```
-NotificationService
-├── RuleEngine              # Évalue si une notif doit être envoyée
-│   ├── RateLimiter         # Délai min entre notifs (par caméra/type)
-│   ├── ScheduleChecker     # Plages horaires actives
-│   └── ProfileBehavior     # Notifier / Silencieux / Ignorer
-├── FCMChannel              # Envoi push Android/iOS
-├── WebhookChannel          # HTTP POST vers URL externe
-├── EmailChannel            # SMTP optionnel
-└── NotificationQueue       # SQLite queue pour mode hors-ligne
-```
-
-**Découplage** : le Notification Service ne connaît pas le Core Engine. Il consomme uniquement les événements publiés sur le bus. Les règles (plages horaires, profil silencieux) sont évaluées localement.
-
----
-
-### 5.5 API Service
-
-**Responsabilité** : interface REST pour le dashboard et les intégrateurs, streaming des flux live.
-
-Toutes les routes nécessitent un JWT valide, sauf `/api/auth/login` et le health check `/api/health`.
-
-**Streaming** :
-- `GET /api/cameras/{id}/stream` → WebSocket, envoie des frames JPEG à ~10fps (configurable, distinct du pipeline IA)
-- `GET /api/events/stream` → SSE, pousse les événements en temps réel
-
-La diffusion des frames live est un flux JPEG indépendant du pipeline IA (lecture directe PyAV, pas de détection) pour ne pas interférer avec la charge de traitement.
-
----
-
-### 5.6 Dashboard Web
-
-**Responsabilité** : interface utilisateur (SPA SvelteKit, build statique servi par FastAPI).
-
-**Architecture frontend** :
-
-```
-Dashboard
-├── /                       # Vue Accueil — état système + événements récents
-├── /cameras                # Vue Caméras — liste + live
-├── /cameras/{id}           # Live plein écran + zones de détection (Konva.js)
-├── /people                 # Vue Personnes — profils
-├── /history                # Vue Historique — timeline événements
-└── /settings               # Vue Paramètres — config globale
-```
-
-**Communication** :
-- REST classique pour les opérations CRUD
-- WebSocket pour les flux vidéo live
-- SSE pour les événements en temps réel (EventSource API)
-
----
-
-## 6. Modèle de données
-
-### 6.1 Schéma SQLite complet
+### 7.2 Schéma SQLite Vyzio (EF Core)
 
 ```sql
--- Caméras
-CREATE TABLE cameras (
-    id          TEXT PRIMARY KEY,        -- UUID
-    name        TEXT NOT NULL,
-    protocol    TEXT NOT NULL,           -- 'rtsp' | 'onvif' | 'mjpeg'
-    url         TEXT NOT NULL,           -- URL de connexion
-    username    TEXT,
-    password    TEXT,                    -- stocké chiffré (Fernet)
-    status      TEXT DEFAULT 'offline',  -- 'online' | 'offline' | 'error'
-    fps_ai      INTEGER DEFAULT 5,
-    created_at  REAL NOT NULL
-);
-
--- Zones de détection par caméra
-CREATE TABLE detection_zones (
-    id          TEXT PRIMARY KEY,
-    camera_id   TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
-    name        TEXT NOT NULL,
-    polygon     TEXT NOT NULL,           -- JSON [[x,y], ...]
-    active      INTEGER DEFAULT 1,
-    schedule    TEXT                     -- JSON plages horaires
-);
-
--- Profils de personnes
 CREATE TABLE profiles (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    category    TEXT DEFAULT 'other',   -- 'household'|'known'|'delivery'|'pet'|'other'
-    alert_mode  TEXT DEFAULT 'notify',  -- 'notify'|'silent'|'ignore'
-    embedding   BLOB,                   -- numpy float32 array sérialisé
-    embedding_count INTEGER DEFAULT 0, -- nb de photos utilisées
-    last_seen   REAL,
-    created_at  REAL NOT NULL
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    category        TEXT NOT NULL DEFAULT 'other',   -- household|known|delivery|pet|other
+    alert_mode      TEXT NOT NULL DEFAULT 'notify',  -- notify|silent|ignore
+    embedding       BLOB,                            -- float32[512]
+    embedding_count INTEGER NOT NULL DEFAULT 0,
+    last_seen_at    TEXT,
+    created_at      TEXT NOT NULL
 );
 
--- Événements de détection
-CREATE TABLE events (
-    id          TEXT PRIMARY KEY,
-    camera_id   TEXT NOT NULL REFERENCES cameras(id),
-    event_type  TEXT NOT NULL,           -- 'motion'|'face_known'|'face_unknown'|'face_uncertain'
-    profile_id  TEXT REFERENCES profiles(id),
-    confidence  REAL,                    -- score cosinus (0-1)
-    face_bbox   TEXT,                    -- JSON [x, y, w, h]
-    face_image  BLOB,                    -- thumbnail JPEG du visage détecté
-    timestamp   REAL NOT NULL,
-    clip_id     TEXT REFERENCES clips(id)
+CREATE TABLE recognition_events (
+    id                TEXT PRIMARY KEY,
+    frigate_event_id  TEXT NOT NULL,     -- référence Frigate (pour proxy clips/thumbnails)
+    camera_name       TEXT NOT NULL,
+    recognition_type  TEXT NOT NULL,     -- face_known|face_unknown|face_uncertain|motion_only
+    profile_id        TEXT REFERENCES profiles(id),
+    confidence        REAL,
+    face_thumbnail    BLOB,              -- JPEG ≤ 100KB, copie locale
+    occurred_at       TEXT NOT NULL,
+    notified          INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX idx_events_timestamp ON events(timestamp DESC);
-CREATE INDEX idx_events_camera    ON events(camera_id, timestamp DESC);
+CREATE INDEX idx_events_occurred ON recognition_events(occurred_at DESC);
+CREATE INDEX idx_events_profile  ON recognition_events(profile_id, occurred_at DESC);
 
--- Clips vidéo
-CREATE TABLE clips (
-    id          TEXT PRIMARY KEY,
-    camera_id   TEXT NOT NULL REFERENCES cameras(id),
-    path        TEXT NOT NULL,           -- chemin relatif fichier MP4
-    duration    REAL NOT NULL,           -- secondes
-    size_bytes  INTEGER,
-    created_at  REAL NOT NULL,
-    expires_at  REAL                     -- NULL = illimité
-);
-
--- Notifications envoyées
 CREATE TABLE notifications (
-    id          TEXT PRIMARY KEY,
-    event_id    TEXT REFERENCES events(id),
-    channel     TEXT NOT NULL,           -- 'fcm'|'webhook'|'email'
-    status      TEXT DEFAULT 'pending',  -- 'pending'|'sent'|'failed'
-    sent_at     REAL,
-    error       TEXT
+    id            TEXT PRIMARY KEY,
+    event_id      TEXT NOT NULL REFERENCES recognition_events(id),
+    channel       TEXT NOT NULL,         -- fcm|webhook|email|ntfy
+    status        TEXT NOT NULL DEFAULT 'pending',
+    sent_at       TEXT,
+    error_message TEXT
 );
 
--- Sessions authentifiées (refresh tokens)
 CREATE TABLE sessions (
-    id          TEXT PRIMARY KEY,        -- refresh token (UUID)
-    user_hash   TEXT NOT NULL,           -- hash SHA-256 du token pour invalidation rapide
-    created_at  REAL NOT NULL,
-    expires_at  REAL NOT NULL,
-    revoked     INTEGER DEFAULT 0
+    id         TEXT PRIMARY KEY,         -- refresh token
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked    INTEGER NOT NULL DEFAULT 0
 );
 
--- Configuration clé-valeur
 CREATE TABLE settings (
-    key         TEXT PRIMARY KEY,
-    value       TEXT NOT NULL            -- JSON
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL                  -- JSON
 );
-```
-
-### 6.2 Stockage des embeddings
-
-Les embeddings sont stockés en BLOB SQLite (numpy `float32`, 512 dimensions = **2048 bytes par profil**). Pour 1000 profils : ~2 MB, trivial.
-
-Au démarrage du Core Engine :
-```python
-# Chargement en mémoire (< 1ms pour 100 profils)
-rows = db.execute("SELECT id, embedding FROM profiles").fetchall()
-profile_ids = [r["id"] for r in rows]
-embeddings = np.vstack([np.frombuffer(r["embedding"], dtype=np.float32) for r in rows])
-# Shape: (N_profiles, 512)
 ```
 
 ---
 
-## 7. Architecture de déploiement
+## 8. Architecture de déploiement
 
-### 7.1 Profil Appliance (mini-PC)
-
-```
-mini-PC (Ubuntu Server 24.04 LTS)
-├── systemd units
-│   ├── vyzio-core.service      # Core Engine (processus principal)
-│   ├── vyzio-api.service       # FastAPI + Uvicorn
-│   └── vyzio-redis.service     # Redis (mode Docker ou binaire)
-├── /opt/vyzio/
-│   ├── venv/                   # Python virtualenv
-│   ├── static/                 # Build SvelteKit
-│   └── config.yaml             # Configuration utilisateur
-└── /var/vyzio/
-    ├── db.sqlite               # Base de données
-    ├── clips/                  # Clips vidéo MP4
-    └── logs/                   # Logs JSON structurés
-```
-
-**Démarrage** : `vyzio-core` démarre en premier et expose un health endpoint interne. `vyzio-api` attend ce health check via `ExecStartPre` systemd avant de démarrer.
-
-**Mises à jour OTA** : script systemd-timer qui pull la nouvelle image Docker (ou tarball Python), effectue les migrations Alembic, et redémarre les services. Rollback automatique en cas d'échec des migrations.
-
-### 7.2 Profil Self-hosted (Docker Compose)
+### 8.1 Docker Compose (self-hosted)
 
 ```yaml
-# docker-compose.yml (résumé)
 services:
-  core:
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    volumes:
+      - ./config/frigate.yml:/config/config.yml
+      - ./data/frigate:/media/frigate
+    devices:
+      - /dev/dri:/dev/dri               # Intel VAAPI (optionnel)
+      - /dev/bus/usb:/dev/bus/usb       # Coral USB (optionnel)
+    ports:
+      - "127.0.0.1:5000:5000"           # API Frigate — local uniquement
+      - "127.0.0.1:1883:1883"           # MQTT — local uniquement
+
+  face-worker:
+    image: vyzio/face-worker
+    expose: ["50051"]                   # gRPC — interne Docker uniquement
+    volumes:
+      - ./data/models:/models
+    deploy:
+      resources:
+        limits: { memory: 1G }
+
+  vyzio:
     image: vyzio/core
     volumes:
-      - ./data/db:/data/db
-      - ./data/clips:/data/clips
-      - ./config.yaml:/config.yaml
-    devices:
-      - /dev/dri:/dev/dri  # GPU Intel VAAPI (optionnel)
+      - ./data/vyzio:/data
+      - ./config/vyzio.yml:/config/vyzio.yml
+    ports:
+      - "8443:8443"                     # HTTPS — seul port exposé utilisateur
+    environment:
+      FRIGATE_API_URL: http://frigate:5000
+      FRIGATE_MQTT_HOST: frigate
+      FACE_WORKER_GRPC: http://face-worker:50051
     depends_on:
-      redis: { condition: service_healthy }
-
-  api:
-    image: vyzio/api
-    ports: ["8443:8443"]  # HTTPS uniquement
-    volumes:
-      - ./data/db:/data/db
-      - ./data/clips:/data/clips
-    depends_on:
-      core: { condition: service_healthy }
-
-  redis:
-    image: redis:7-alpine
-    command: redis-server --save "" --maxmemory 64mb
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      frigate: { condition: service_healthy }
+      face-worker: { condition: service_started }
 ```
 
-**Pas de service frontend séparé** : le build SvelteKit est packagé dans l'image `api` et servi par FastAPI.
+**Un seul port exposé à l'utilisateur** : `8443`. Frigate n'est jamais accessible directement depuis le réseau.
+
+### 8.2 Onboarding guidé (zéro fichier YAML pour l'utilisateur)
+
+```
+Dashboard Vyzio — Assistant de configuration
+  Étape 1 : Scan réseau → liste caméras ONVIF détectées
+  Étape 2 : Sélection + test connexion + aperçu live
+  Étape 3 : Nommage ("Porte d'entrée") + zones de détection (canvas)
+            → Vyzio génère frigate.yml + docker compose restart frigate
+  Étape 4 : Ajout premier profil (upload photo)
+  Étape 5 : Test notification push
+  → Surveillance active
+```
 
 ---
 
-## 8. Sécurité
+## 9. Sécurité
 
-### 8.1 Threat model
+### 9.1 Threat model
 
 | Menace | Surface | Mitigation |
 |---|---|---|
-| Accès non autorisé au dashboard | Réseau local | Authentification JWT + TLS |
-| Interception du trafic vidéo | Réseau local | TLS sur toutes les communications |
-| Exfiltration de données biométriques | API / stockage | Auth requise sur tous les endpoints, embeddings non exposés via API |
-| Brute-force mot de passe | POST /auth/login | Rate limiting 5 req/15min par IP |
-| Injection SQL | API | Requêtes paramétrées (SQLAlchemy), pas de SQL dynamique |
-| Credentials caméra en clair | Base de données | Chiffrement Fernet (clé dérivée du mot de passe système) |
-| Log poisoning | Logs JSON | Sanitisation des champs libres avant logging |
-| Accès physique à l'appareil | Disque | Recommandation chiffrement disque (LUKS) dans la doc |
+| Accès non autorisé au dashboard | Réseau local | JWT + TLS, rate limiting |
+| Accès direct API Frigate | Réseau local | Frigate lié à `127.0.0.1`, non routable hors Docker |
+| Exfiltration embeddings | API Vyzio | Embeddings jamais inclus dans les réponses API |
+| Interception thumbnail hors réseau | FCM / Tunnel | URL signée HMAC TTL 5min + HTTPS |
+| Injection via EF Core | API | Requêtes paramétrées uniquement, zéro SQL brut |
+| Credentials caméra en clair | SQLite | Chiffrement via `Microsoft.AspNetCore.DataProtection` |
+| Brute-force login | POST /api/auth/login | Rate limiting 5 req/15min/IP |
 
-### 8.2 Flux de données sensibles
+### 9.2 Isolation réseau
 
 ```
-Embeddings facials
-  ├─► Stockés UNIQUEMENT dans SQLite (BLOB chiffré avec SQLCipher optionnel)
-  ├─► Chargés en RAM uniquement par le Core Engine
-  ├─► JAMAIS exposés via l'API (non inclus dans les réponses JSON)
-  └─► JAMAIS transmis via FCM
-
-Thumbnails de visages (face_image dans events)
-  ├─► Stockés en BLOB SQLite
-  ├─► Exposés UNIQUEMENT via API authentifiée (GET /api/events/{id}/face)
-  └─► JAMAIS transmis via FCM
-
-Credentials caméras (url, username, password)
-  ├─► Stockés chiffrés dans SQLite (Fernet)
-  ├─► Exposés via API sans le champ password (masqué "***")
-  └─► Utilisés uniquement par le Camera Service
+Internet (optionnel)
+  └─► Cloudflare Tunnel ──► 8443 (HTTPS Vyzio)
+                                        │
+Réseau local                            │
+  └─► Navigateur ──► 8443 (HTTPS) ─► Vyzio API
+                                        │
+Docker internal network (non routable depuis l'extérieur)
+  ├── vyzio ──► frigate:5000    (HTTP REST)
+  ├── vyzio ──► frigate:1883    (MQTT)
+  └── vyzio ──► face-worker:50051 (gRPC)
 ```
-
-### 8.3 TLS
-
-Certificat auto-signé généré au premier démarrage (2048-bit RSA, validité 10 ans). L'utilisateur peut remplacer par un certificat Let's Encrypt. Le hash du certificat est affiché lors de la configuration initiale pour vérification manuelle (Trust On First Use).
 
 ---
 
-## 9. Performances et scalabilité
+## 10. Performances et scalabilité
 
-### 9.1 Budget ressources — Appliance mini-PC (Intel NUC i5, 8 GB RAM)
+### 10.1 Budget ressources — Intel NUC i5, 8 GB RAM
 
-| Service | RAM cible | CPU moyen | CPU pic |
-|---|---|---|---|
-| Camera Service (4 caméras) | 200 MB | 5% | 15% |
-| Core Engine (CPU-only) | 800 MB | 30% | 70% |
-| Storage Service | 100 MB | 3% | 10% |
-| Notification Service | 50 MB | <1% | 2% |
-| API Service | 150 MB | 2% | 10% |
-| Redis | 64 MB | <1% | 2% |
-| **Total** | **~1.4 GB** | **~41%** | **~109%** (pics non simultanés) |
+| Conteneur | RAM cible | Notes |
+|---|---|---|
+| Frigate | 400–800 MB | Variable : nb caméras, modèle IA |
+| Face Worker (Python + InsightFace) | 600 MB–1 GB | ArcFace R50 ONNX chargé en mémoire |
+| Vyzio Core + API (.NET 10 NativeAOT) | ~150 MB | NativeAOT réduit significativement l'empreinte |
+| **Total** | **~1.5 GB** | ~6.5 GB libres |
 
-**Limite pratique** : 4 caméras en analyse IA simultanée en CPU-only. Pour davantage de caméras, le framerate IA est réduit automatiquement ou un GPU est recommandé.
+### 10.2 Latence pipeline reconnaissance (CPU-only)
 
-### 9.2 Scalabilité verticale
+| Étape | Responsable | Temps estimé |
+|---|---|---|
+| Détection personne | Frigate TFLite | ~50ms |
+| MQTT → gRPC dispatch | FrigateAdapter .NET | ~5ms |
+| RetinaFace + ArcFace R50 (ONNX) | Face Worker Python | ~250ms |
+| Cosinus similarity 100 profils | Profile Service SIMD | < 1ms |
+| FCM push | Notification Service | ~200ms réseau |
+| **Total perçu** | | **~500ms** |
 
-Le système est conçu pour une appliance unique. La scalabilité horizontale (multi-nœuds) est hors scope. La scalabilité verticale s'opère via :
-- Ajout d'un GPU (NVIDIA CUDA ou Intel Arc) → réduction de 90% du temps d'inférence
-- Augmentation RAM → davantage de caméras simultanées
-- SSD NVMe → amélioration des performances d'écriture des clips
-
-### 9.3 Framerate adaptatif
-
-Le Core Engine surveille le temps de traitement moyen par frame et ajuste dynamiquement le framerate d'analyse (entre 1 et 10 fps) pour rester sous un budget de 200ms/frame. Les paramètres utilisateur sont les valeurs **cibles**, pas des limites strictes.
+Avec **Coral Edge TPU** (Frigate) + **GPU** (Face Worker) : **< 100ms** total.
 
 ---
 
-## 10. Risques et mitigations
+## 11. Risques et mitigations
 
 | Risque | Probabilité | Impact | Mitigation |
 |---|:---:|:---:|---|
-| InsightFace — faux positifs (visage inconnu reconnu comme connu) | Moyen | Élevé | Seuil configurable, mode "incertain" à confirmer, enrichissement progressif des embeddings |
-| Caméra incompatible ONVIF | Élevé | Faible | Fallback RTSP manuel documenté, liste de compatibilité maintenue |
-| Espace disque saturé | Moyen | Moyen | Monitoring disque + alertes dashboard + politique de rétention stricte |
-| FCM indisponible | Faible | Moyen | Queue locale, livraison différée, canaux alternatifs (webhook, ntfy) |
-| Vulnérabilité dans les dépendances IA (InsightFace, PyAV) | Faible | Élevé | Scan automatique (pip-audit en CI), mises à jour OTA régulières |
-| Mini-PC non compatible GPU | Moyen | Moyen | Pipeline CPU-only fonctionnel, framerate adaptatif, YuNet comme détecteur alternatif |
-| Perte de données (crash pendant écriture clip) | Faible | Moyen | Écriture atomique (fichier temporaire + rename), WAL SQLite |
+| Breaking change API/MQTT Frigate | Faible | Moyen | `FrigateAdapter` versionné, tests contrat MQTT |
+| Arrêt projet Frigate | Très faible | Élevé | Architecture découplée — `FrigateAdapter` remplaçable |
+| Faux positif reconnaissance faciale | Moyen | Élevé | Seuil configurable, mode "incertain", confirmation depuis notification |
+| Caméra incompatible Frigate | Moyen | Faible | Frigate supporte >200 modèles + fallback RTSP manuel |
+| Face Worker — dépendance InsightFace | Faible | Élevé | Contrat gRPC stable, worker remplaçable sans toucher Core |
+| Espace disque saturé (clips Frigate) | Moyen | Moyen | Politique rétention Frigate configurée par Vyzio + alertes dashboard |
+| Performance CPU sans GPU | Moyen | Moyen | ~500ms acceptable, recommandation Coral TPU documentée |
 
 ---
 
 ## Annexe A — Synthèse des choix technologiques
 
-| Composant | Technologie choisie | Principale alternative écartée | Raison principale du choix |
+| Composant | Technologie | Alternative écartée | Raison |
 |---|---|---|---|
-| Langage backend | Python 3.11 | Go | Écosystème ML incontournable |
-| Bus d'événements | asyncio.Queue / Redis Streams | RabbitMQ | Légèreté, zéro configuration |
-| Ingestion vidéo | PyAV (FFmpeg) | OpenCV VideoCapture | Hardware acceleration |
-| Découverte ONVIF | onvif-zeep | python-onvif | Maturité, support WS-Discovery |
-| Détection faciale | RetinaFace (InsightFace) | YuNet | Précision (YuNet = fallback CPU) |
-| Reconnaissance faciale | ArcFace R50 (ONNX) | FaceNet | Précision/taille optimale |
-| Runtime inférence | ONNX Runtime | PyTorch | Portabilité multi-accélérateur |
-| Base de données | SQLite (WAL) | PostgreSQL | Embarqué, zéro administration |
-| API REST | FastAPI + Uvicorn | Flask | Async natif, OpenAPI auto |
-| Dashboard | SvelteKit | React + Vite | Bundle size, réactivité compile-time |
-| Canvas interactif | Konva.js | Fabric.js | Légèreté |
-| Notifications push | FCM | Unified Push / ntfy | Support Android + iOS natif |
-| Authentification | JWT + bcrypt + refresh tokens | OAuth2 (Keycloak) | Local-first, zéro dépendance |
-| Scheduler | APScheduler | Celery Beat | Légèreté, pas de broker |
-| TLS | Certificat auto-signé | Let's Encrypt | Fonctionne hors-ligne |
+| Pipeline vidéo | **Frigate** (open source) | Réimplémentation custom | Ne pas réinventer ce qui existe |
+| Langage principal | **.NET 10 (C#)** | Rust | Vélocité + écosystème cohérent (ASP.NET, EF Core, SignalR) |
+| Worker IA | **Python 3.12** (isolé) | .NET ONNX seul | InsightFace n'existe qu'en Python |
+| Transport IA | **gRPC** | HTTP/REST | Contrat typé Protobuf |
+| Bus événements | **MediatR** | System.Threading.Channels | CQRS standard .NET |
+| Base de données | **SQLite + EF Core** | PostgreSQL | Embarqué, zéro administration |
+| API | **ASP.NET Core Minimal APIs** | FastAPI (Python) | Cohérence stack .NET |
+| WebSocket | **SignalR** | WebSocket brut | Reconnexion auto |
+| Dashboard | **React 19 + TypeScript** | SvelteKit | Pool contributeurs, écosystème UI |
+| UI components | **Shadcn/ui + Tailwind** | Material UI | Accessibilité, personnalisable sans designer |
+| Canvas zones | **React-Konva** | Fabric.js | Intégration React native |
+| Notifications push | **FCM + ntfy** (alt.) | APNs direct | Android + iOS |
+| Auth | **JWT + bcrypt + refresh tokens** | OAuth2/Keycloak | Local-first |
+| TLS | **Certificat auto-signé** | Let's Encrypt | Fonctionne hors-ligne |
+| Accès distant images | **Cloudflare Tunnel / Tailscale** (opt-in) | Relay Vyzio | Image reste sur l'appliance |
 
 ---
 
-## Annexe B — Dépendances Python (principales)
+## Annexe B — Structure du monorepo
 
-```toml
-# pyproject.toml (extrait)
-[tool.poetry.dependencies]
-python          = "^3.11"
-# Vidéo
-av              = "^12.0"      # PyAV (FFmpeg bindings)
-onvif-zeep      = "^0.2"
-# IA
-insightface     = "^0.7"
-onnxruntime     = "^1.17"      # CPU ; onnxruntime-gpu pour CUDA
-numpy           = "^1.26"
-# API
-fastapi         = "^0.111"
-uvicorn         = {extras=["standard"], version="^0.29"}
-pydantic        = "^2.7"
-# Base de données
-sqlalchemy      = "^2.0"       # ORM + migrations via Alembic
-aiosqlite       = "^0.20"      # Driver async SQLite
-alembic         = "^1.13"
-# Notifications
-redis           = "^5.0"
-apscheduler     = "^3.10"
-httpx           = "^0.27"      # Webhook + FCM HTTP v1 API
-cryptography    = "^42.0"      # Fernet (chiffrement credentials)
-bcrypt          = "^4.1"
-python-jose     = "^3.3"       # JWT
+```
+vyzio/
+├── services/
+│   ├── vyzio/                     # .NET 10 (C#)
+│   │   ├── Vyzio.Core/            # Domaine, MediatR handlers, services métier
+│   │   ├── Vyzio.Api/             # ASP.NET Core Minimal APIs + SignalR
+│   │   ├── Vyzio.Infrastructure/  # EF Core, SQLite, FCM, FrigateAdapter
+│   │   └── Vyzio.Tests/           # xUnit + Testcontainers
+│   │
+│   └── face-worker/               # Python 3.12 — gRPC server InsightFace
+│       ├── server.py
+│       ├── recognizer.py
+│       └── pyproject.toml
+│
+├── dashboard/                     # React 19 + TypeScript
+│   ├── src/
+│   │   ├── routes/                # Tanstack Router
+│   │   ├── components/            # Shadcn/ui + composants métier
+│   │   ├── hooks/                 # Tanstack Query
+│   │   └── lib/signalr.ts
+│   └── vite.config.ts
+│
+├── proto/
+│   └── face_recognition.proto     # Contrat gRPC partagé .NET ↔ Python
+│
+├── config/
+│   ├── frigate.yml.template       # Généré par l'onboarding Vyzio
+│   └── vyzio.yml
+│
+├── docker-compose.yml
+├── docker-compose.appliance.yml
+└── docs/
+    ├── SPECS.md
+    ├── SAD.md
+    └── BUSINESS_PLAN.md
 ```
