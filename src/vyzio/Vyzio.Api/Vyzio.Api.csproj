@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Vyzio.Core\Vyzio.Core.csproj" />
     <ProjectReference Include="..\Vyzio.Infrastructure\Vyzio.Infrastructure.csproj" />
+    <ProjectReference Include="..\Vyzio.Application\Vyzio.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
