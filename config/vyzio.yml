@@ -1,0 +1,2 @@
+database:
+  connection_string: Data Source=./data/vyzio.db

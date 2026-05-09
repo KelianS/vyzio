@@ -1,0 +1,26 @@
+mqtt:
+  host: 127.0.0.1
+  port: 1883
+
+detectors:
+  cpu1:
+    type: cpu
+
+cameras:
+  test_camera:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://replace-me-with-your-stream
+          roles:
+            - detect
+            - record
+    detect:
+      enabled: true
+      fps: 5
+    record:
+      enabled: true
+      retain:
+        days: 7
+    snapshots:
+      enabled: true

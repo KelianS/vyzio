@@ -1,0 +1,47 @@
+services:
+  vyzio-api:
+    build:
+      context: .
+      dockerfile: src/vyzio/Vyzio.Api/Dockerfile
+    container_name: vyzio-api
+    depends_on:
+      - face-worker
+      - frigate
+    environment:
+      ASPNETCORE_URLS: http://+:8443
+      VYZIO_CONFIG_PATH: /app/config/vyzio.yml
+    volumes:
+      - ./config:/app/config:ro
+      - vyzio-data:/app/data
+    networks:
+      - vyzio-net
+    ports:
+      - "8443:8443"
+
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: vyzio-frigate
+    privileged: true
+    shm_size: "512mb"
+    volumes:
+      - ./config/frigate.yml.template:/config/config.yml:ro
+      - frigate-data:/media/frigate
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - vyzio-net
+
+  face-worker:
+    build:
+      context: .
+      dockerfile: src/face-worker/Dockerfile
+    container_name: vyzio-face-worker
+    networks:
+      - vyzio-net
+
+networks:
+  vyzio-net:
+    driver: bridge
+
+volumes:
+  frigate-data:
+  vyzio-data:
