@@ -13,5 +13,15 @@ public class VyzioRuntimeSettings
     public sealed class FrigateSettings
     {
         public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
+        public string ApiBaseUrl { get; init; } = "http://frigate:5000";
+        public MqttSettings Mqtt { get; init; } = new();
+    }
+
+    public sealed class MqttSettings
+    {
+        public string Host { get; init; } = "mqtt";
+        public int Port { get; init; } = 1883;
+        public string Topic { get; init; } = "frigate/events";
+        public string ClientId { get; init; } = "vyzio-api";
     }
 }

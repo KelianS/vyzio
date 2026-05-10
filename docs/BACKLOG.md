@@ -104,10 +104,10 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P2.2 — FrigateAdapter minimal
 
 **Taches :**
-- [ ] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
-- [ ] Convertir les signaux Frigate en evenements Vyzio comprehensibles
-- [ ] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
-- [ ] Journaliser proprement les erreurs d'integration
+- [x] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
+- [x] Convertir les signaux Frigate en evenements Vyzio comprehensibles
+- [x] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
+- [x] Journaliser proprement les erreurs d'integration
 
 **Criteres d'acceptation :**
 - Une detection Frigate pertinente devient observable cote Vyzio

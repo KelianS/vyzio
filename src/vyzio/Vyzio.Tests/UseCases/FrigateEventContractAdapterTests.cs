@@ -69,8 +69,8 @@ public class FrigateEventContractAdapterTests
                 0.88f,
                 1715353200,
                 null,
-                hasClip: false,
-                hasSnapshot: true,
+                HasClip: false,
+                HasSnapshot: true,
                 EnteredZones: ["gate", "driveway"]));
 
         var ok = sut.TryAdapt(envelope, out var consumedEvent);
@@ -126,8 +126,8 @@ public class FrigateEventContractAdapterTests
                 0.72f,
                 1715353200,
                 null,
-                hasClip: false,
-                hasSnapshot: false,
+                HasClip: false,
+                HasSnapshot: false,
                 EnteredZones: null));
 
         var ok = sut.TryAdapt(envelope, out var consumedEvent);

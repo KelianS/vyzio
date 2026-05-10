@@ -30,11 +30,21 @@ public static class VyzioConfigLoader
             },
             Frigate = new VyzioRuntimeSettings.FrigateSettings
             {
+                ApiBaseUrl = string.IsNullOrWhiteSpace(root.Frigate.ApiBaseUrl)
+                    ? "http://frigate:5000"
+                    : root.Frigate.ApiBaseUrl.TrimEnd('/'),
                 RetainedLabels = root.Frigate.RetainedLabels
                     .Where(label => !string.IsNullOrWhiteSpace(label))
                     .Select(label => label.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray()
+                    .ToArray(),
+                Mqtt = new VyzioRuntimeSettings.MqttSettings
+                {
+                    Host = string.IsNullOrWhiteSpace(root.Frigate.Mqtt.Host) ? "mqtt" : root.Frigate.Mqtt.Host,
+                    Port = root.Frigate.Mqtt.Port <= 0 ? 1883 : root.Frigate.Mqtt.Port,
+                    Topic = string.IsNullOrWhiteSpace(root.Frigate.Mqtt.Topic) ? "frigate/events" : root.Frigate.Mqtt.Topic,
+                    ClientId = string.IsNullOrWhiteSpace(root.Frigate.Mqtt.ClientId) ? "vyzio-api" : root.Frigate.Mqtt.ClientId
+                }
             }
         };
     }
@@ -52,6 +62,16 @@ public static class VyzioConfigLoader
 
     private sealed class FrigateConfig
     {
+        public string ApiBaseUrl { get; init; } = string.Empty;
         public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
+        public MqttConfig Mqtt { get; init; } = new();
+    }
+
+    private sealed class MqttConfig
+    {
+        public string Host { get; init; } = string.Empty;
+        public int Port { get; init; }
+        public string Topic { get; init; } = string.Empty;
+        public string ClientId { get; init; } = string.Empty;
     }
 }
