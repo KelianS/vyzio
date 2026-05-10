@@ -143,9 +143,9 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P3.2 — Notifications utiles
 
 **Taches :**
-- [ ] Implementer Telegram comme premier canal retenu par la strategie produit
-- [ ] Limiter le scope aux notifications a forte valeur
-- [ ] Ajouter les regles minimales de reduction du bruit
+- [x] Implementer Telegram comme premier canal retenu par la strategie produit
+- [x] Limiter le scope aux notifications a forte valeur
+- [x] Ajouter les regles minimales de reduction du bruit
 
 **Criteres d'acceptation :**
 - Une detection prioritaire genere une notification intelligible

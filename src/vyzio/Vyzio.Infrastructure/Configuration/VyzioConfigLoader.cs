@@ -45,6 +45,17 @@ public static class VyzioConfigLoader
                     Topic = string.IsNullOrWhiteSpace(root.Frigate.Mqtt.Topic) ? "frigate/events" : root.Frigate.Mqtt.Topic,
                     ClientId = string.IsNullOrWhiteSpace(root.Frigate.Mqtt.ClientId) ? "vyzio-api" : root.Frigate.Mqtt.ClientId
                 }
+            },
+            Notifications = new VyzioRuntimeSettings.NotificationsSettings
+            {
+                MinimumConfidence = root.Notifications.MinimumConfidence is < 0 or > 1
+                    ? 0.75f
+                    : root.Notifications.MinimumConfidence,
+                Telegram = new VyzioRuntimeSettings.TelegramSettings
+                {
+                    BotToken = root.Notifications.Telegram.BotToken?.Trim() ?? string.Empty,
+                    ChatId = root.Notifications.Telegram.ChatId?.Trim() ?? string.Empty
+                }
             }
         };
     }
@@ -53,6 +64,7 @@ public static class VyzioConfigLoader
     {
         public DatabaseConfig Database { get; init; } = new();
         public FrigateConfig Frigate { get; init; } = new();
+        public NotificationsConfig Notifications { get; init; } = new();
     }
 
     private sealed class DatabaseConfig
@@ -73,5 +85,17 @@ public static class VyzioConfigLoader
         public int Port { get; init; }
         public string Topic { get; init; } = string.Empty;
         public string ClientId { get; init; } = string.Empty;
+    }
+
+    private sealed class NotificationsConfig
+    {
+        public float MinimumConfidence { get; init; } = 0.75f;
+        public TelegramConfig Telegram { get; init; } = new();
+    }
+
+    private sealed class TelegramConfig
+    {
+        public string BotToken { get; init; } = string.Empty;
+        public string ChatId { get; init; } = string.Empty;
     }
 }
