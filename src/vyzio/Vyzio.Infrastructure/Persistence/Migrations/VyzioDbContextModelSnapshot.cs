@@ -93,7 +93,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("profiles", (string)null);
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.ObservedEvent", b =>
+            modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT")
@@ -195,10 +195,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("sessions", (string)null);
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.ObservedEvent", b =>
+            modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>
                 {
                     b.HasOne("Vyzio.Core.Entities.Profile", "Profile")
-                        .WithMany("ObservedEvents")
+                        .WithMany("DetectionEvents")
                         .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_observed_events_profiles_profile_id");
@@ -208,7 +208,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Vyzio.Core.Entities.Profile", b =>
                 {
-                    b.Navigation("ObservedEvents");
+                    b.Navigation("DetectionEvents");
                 });
 #pragma warning restore 612, 618
         }

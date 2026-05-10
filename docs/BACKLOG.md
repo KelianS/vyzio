@@ -92,10 +92,10 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P2.1 — Contrat d'entree Frigate
 
 **Taches :**
-- [ ] Definir les evenements Frigate reellement consommes par Vyzio
-- [ ] Creer un modele d'entree limite au MVP
-- [ ] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
-- [ ] Ajouter des tests de deserialisation et d'adaptation
+- [x] Definir les evenements Frigate reellement consommes par Vyzio
+- [x] Creer un modele d'entree limite au MVP
+- [x] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
+- [x] Ajouter des tests de deserialisation et d'adaptation
 
 **Criteres d'acceptation :**
 - Le contrat utile est explicite
@@ -104,10 +104,10 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P2.2 — FrigateAdapter minimal
 
 **Taches :**
-- [ ] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
-- [ ] Convertir les signaux Frigate en evenements Vyzio comprehensibles
-- [ ] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
-- [ ] Journaliser proprement les erreurs d'integration
+- [x] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
+- [x] Convertir les signaux Frigate en evenements Vyzio comprehensibles
+- [x] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
+- [x] Journaliser proprement les erreurs d'integration
 
 **Criteres d'acceptation :**
 - Une detection Frigate pertinente devient observable cote Vyzio
@@ -116,9 +116,9 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P2.3 — Contrat interne Vyzio
 
 **Taches :**
-- [ ] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
-- [ ] Eviter de modeliser des canaux non utilises a court terme
-- [ ] Documenter le contrat dans un document dedie si necessaire
+- [x] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
+- [x] Eviter de modeliser des canaux non utilises a court terme
+- [x] Documenter le contrat dans un document dedie si necessaire
 
 **Criteres d'acceptation :**
 - Les evenements internes sont limites et stables

@@ -1,2 +1,12 @@
+frigate:
+  api_base_url: http://frigate:5000
+  mqtt:
+    host: mqtt
+    port: 1883
+    topic: frigate/events
+    client_id: vyzio-api
+  retained_labels:
+    - person
+
 database:
   connection_string: Data Source=./data/vyzio.db

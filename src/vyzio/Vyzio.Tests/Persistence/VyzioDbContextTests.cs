@@ -57,13 +57,13 @@ public class VyzioDbContextTests : IDisposable
     }
 
     [Fact]
-    public void ObservedEvent_cascade_deletes_with_profile()
+    public void DetectionEvent_cascade_deletes_with_profile()
     {
         var profile = new Profile { Name = "Bob" };
         _db.Profiles.Add(profile);
         _db.SaveChanges();
 
-        _db.ObservedEvents.Add(new ObservedEvent
+        _db.DetectionEvents.Add(new DetectionEvent
         {
             FrigateEventId = "frigate-001",
             Lifecycle = "new",
@@ -76,13 +76,13 @@ public class VyzioDbContextTests : IDisposable
         _db.Profiles.Remove(profile);
         _db.SaveChanges();
 
-        Assert.Equal(0, _db.ObservedEvents.Count());
+        Assert.Equal(0, _db.DetectionEvents.Count());
     }
 
     [Fact]
     public void FrigateEventId_unique_index_prevents_duplicates()
     {
-        _db.ObservedEvents.Add(new ObservedEvent
+        _db.DetectionEvents.Add(new DetectionEvent
         {
             FrigateEventId = "dup-001",
             Lifecycle = "new",
@@ -91,7 +91,7 @@ public class VyzioDbContextTests : IDisposable
         });
         _db.SaveChanges();
 
-        _db.ObservedEvents.Add(new ObservedEvent
+        _db.DetectionEvents.Add(new DetectionEvent
         {
             FrigateEventId = "dup-001",
             Lifecycle = "update",
