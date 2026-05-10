@@ -106,13 +106,13 @@ Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien s
 
 | # | Contrainte | Source |
 |---|---|---|
-| C1 | Les données biométriques (embeddings, frames) ne quittent jamais le réseau local | Specs §9.2 |
-| C2 | Le système fonctionne sans connexion Internet | Specs §6.5 |
-| C3 | Déploiement sur mini-PC (Intel NUC, Raspberry Pi 5, NAS) | Specs §2.1 |
-| C4 | Installation plug & play sans technicité | Specs §2.1 |
+| C1 | Les données biométriques (embeddings, frames) ne quittent jamais le réseau local | Specs §8.2 |
+| C2 | Le système fonctionne sans connexion Internet | Specs §5.3 |
+| C3 | Déploiement sur mini-PC (Intel NUC, Raspberry Pi 5, NAS) | Specs §1.3 |
+| C4 | Installation plug & play sans technicité | Specs §1.3 |
 | C5 | Support RTSP, ONVIF, HTTP MJPEG | Délégué à Frigate |
-| C6 | Reconnaissance faciale < 2s après détection de mouvement | Specs §4.1 |
-| C7 | Pas de dépendance cloud pour les fonctions critiques | Specs §9.2 |
+| C6 | Reconnaissance faciale < 2s après détection de mouvement | Contrainte d'architecture dérivée des objectifs produit |
+| C7 | Pas de dépendance cloud pour les fonctions critiques | Specs §8.2 |
 | C8 | Stack cible : .NET 10 + TypeScript (runtime principal) | `.instructions.md` |
 
 ### 3.2 Principes directeurs

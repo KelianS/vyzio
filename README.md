@@ -68,7 +68,7 @@ Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'e
 
 ## Statut du projet
 
-> ⚠️ Vyzio est actuellement en **phase de conception**. Ce dépôt contient la vision, les spécifications fonctionnelles et la roadmap technique. Le développement actif commence prochainement.
+> ⚠️ Vyzio est actuellement en **phase de conception**. Ce dépôt contient la vision du produit, les spécifications fonctionnelles, les décisions d'architecture et le plan de reprise. Le développement actif reprend une fois ces documents alignés.
 
 Les contributions sur la vision, les cas d'usage et les spécifications sont les bienvenues dès maintenant.
 
@@ -88,4 +88,6 @@ Vyzio est un projet open source. Les contributions sont bienvenues sur :
 ## Documentation
 
 - [Spécifications fonctionnelles](docs/SPECS.md)
+- [Architecture logicielle](docs/SAD.md)
+- [Backlog de reprise](docs/BACKLOG.md)
 - [Business Plan](docs/BUSINESS_PLAN.md)
