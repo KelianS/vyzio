@@ -1,0 +1,23 @@
+{
+  "type": "update",
+  "before": {
+    "id": "frigate-evt-202",
+    "camera": "driveway",
+    "label": "car",
+    "top_score": 0.73,
+    "start_time": 1715353200,
+    "has_clip": false,
+    "has_snapshot": true,
+    "entered_zones": ["gate"]
+  },
+  "after": {
+    "id": "frigate-evt-202",
+    "camera": "driveway",
+    "label": "car",
+    "top_score": 0.88,
+    "start_time": 1715353260,
+    "has_clip": false,
+    "has_snapshot": true,
+    "entered_zones": ["gate", "driveway"]
+  }
+}

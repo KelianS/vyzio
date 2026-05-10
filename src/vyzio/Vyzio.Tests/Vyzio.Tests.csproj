@@ -28,4 +28,10 @@
     <ProjectReference Include="..\Vyzio.Application\Vyzio.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Contracts\Fixtures\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

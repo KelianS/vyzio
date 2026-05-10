@@ -1,0 +1,11 @@
+{
+  "type": "new",
+  "after": {
+    "id": "frigate-evt-299",
+    "label": "person",
+    "top_score": 0.91,
+    "start_time": 1715353200,
+    "has_clip": true,
+    "has_snapshot": true
+  }
+}

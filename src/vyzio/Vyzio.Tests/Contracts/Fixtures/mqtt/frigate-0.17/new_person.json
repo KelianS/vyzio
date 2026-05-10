@@ -1,0 +1,15 @@
+{
+  "type": "new",
+  "after": {
+    "id": "frigate-evt-201",
+    "camera": "front_door",
+    "label": "person",
+    "top_score": 0.98,
+    "start_time": 1715353200,
+    "has_clip": true,
+    "has_snapshot": true,
+    "entered_zones": ["porch"],
+    "zones": ["porch"],
+    "current_zones": ["porch"]
+  }
+}
