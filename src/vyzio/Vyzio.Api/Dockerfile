@@ -1,11 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY src/vyzio/Vyzio.sln ./src/vyzio/Vyzio.sln
-COPY src/vyzio/Vyzio.Api/Vyzio.Api.csproj ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj
-COPY src/vyzio/Vyzio.Core/Vyzio.Core.csproj ./src/vyzio/Vyzio.Core/Vyzio.Core.csproj
+# Copy only production csproj files to leverage Docker layer cache for restore
+COPY src/vyzio/Vyzio.Core/Vyzio.Core.csproj               ./src/vyzio/Vyzio.Core/Vyzio.Core.csproj
+COPY src/vyzio/Vyzio.Application/Vyzio.Application.csproj ./src/vyzio/Vyzio.Application/Vyzio.Application.csproj
 COPY src/vyzio/Vyzio.Infrastructure/Vyzio.Infrastructure.csproj ./src/vyzio/Vyzio.Infrastructure/Vyzio.Infrastructure.csproj
-RUN dotnet restore ./src/vyzio/Vyzio.sln
+COPY src/vyzio/Vyzio.Api/Vyzio.Api.csproj                 ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj
+# Restore only the API project (excludes Tests, not needed in production image)
+RUN dotnet restore ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj
 
 COPY src/vyzio ./src/vyzio
 RUN dotnet publish ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj -c Release -o /app/publish

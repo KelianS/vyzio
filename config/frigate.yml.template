@@ -20,7 +20,5 @@ cameras:
       fps: 5
     record:
       enabled: true
-      retain:
-        days: 7
     snapshots:
       enabled: true
