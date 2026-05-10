@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
 using Vyzio.Api.Endpoints;
+using Vyzio.Api.Integration.Frigate;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.DependencyInjection;
 using Vyzio.Infrastructure.Persistence;
@@ -12,7 +13,13 @@ var configPath = builder.Configuration["VYZIO_CONFIG_PATH"]
 
 var runtimeSettings = VyzioConfigLoader.Load(configPath);
 builder.Services.AddVyzioInfrastructure(runtimeSettings);
-builder.Services.AddVyzioApplication();
+builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels);
+builder.Services.AddHttpClient<IFrigateRestClient, FrigateRestClient>(client =>
+{
+	client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
+builder.Services.AddScoped<FrigateAdapter>();
+builder.Services.AddHostedService<FrigateMqttIngressService>();
 
 var app = builder.Build();
 
