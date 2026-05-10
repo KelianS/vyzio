@@ -12,7 +12,7 @@ var configPath = builder.Configuration["VYZIO_CONFIG_PATH"]
 
 var runtimeSettings = VyzioConfigLoader.Load(configPath);
 builder.Services.AddVyzioInfrastructure(runtimeSettings);
-builder.Services.AddVyzioApplication();
+builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels);
 
 var app = builder.Build();
 

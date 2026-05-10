@@ -27,6 +27,14 @@ public static class VyzioConfigLoader
                 ConnectionString = string.IsNullOrWhiteSpace(root.Database.ConnectionString)
                     ? "Data Source=./data/vyzio.db"
                     : root.Database.ConnectionString
+            },
+            Frigate = new VyzioRuntimeSettings.FrigateSettings
+            {
+                RetainedLabels = root.Frigate.RetainedLabels
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .Select(label => label.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray()
             }
         };
     }
@@ -34,10 +42,16 @@ public static class VyzioConfigLoader
     private sealed class RootConfig
     {
         public DatabaseConfig Database { get; init; } = new();
+        public FrigateConfig Frigate { get; init; } = new();
     }
 
     private sealed class DatabaseConfig
     {
         public string ConnectionString { get; init; } = string.Empty;
+    }
+
+    private sealed class FrigateConfig
+    {
+        public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
     }
 }

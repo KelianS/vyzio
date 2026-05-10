@@ -92,10 +92,10 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P2.1 — Contrat d'entree Frigate
 
 **Taches :**
-- [ ] Definir les evenements Frigate reellement consommes par Vyzio
-- [ ] Creer un modele d'entree limite au MVP
-- [ ] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
-- [ ] Ajouter des tests de deserialisation et d'adaptation
+- [x] Definir les evenements Frigate reellement consommes par Vyzio
+- [x] Creer un modele d'entree limite au MVP
+- [x] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
+- [x] Ajouter des tests de deserialisation et d'adaptation
 
 **Criteres d'acceptation :**
 - Le contrat utile est explicite
