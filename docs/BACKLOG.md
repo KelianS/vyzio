@@ -134,7 +134,7 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 **Taches :**
 - [ ] Exposer uniquement les parcours MVP prioritaires
-- [ ] Separer lecture/ecriture de facon simple et testable
+- [x] Separer lecture/ecriture de facon simple et testable
 - [ ] Eviter les endpoints non relies a un parcours utilisateur clair
 
 **Criteres d'acceptation :**
@@ -154,33 +154,12 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P3.3 — Hub Vyzio simplifie
 
 **Taches :**
-- [ ] Definir l'UI minimale necessaire pour un utilisateur non-tech
-- [ ] Eviter de reconstruire l'integralite des ecrans Frigate
-- [ ] Conserver un acces avance vers Frigate hors parcours nominal
+- [x] Definir l'UI minimale necessaire pour un utilisateur non-tech
+- [x] Eviter de reconstruire l'integralite des ecrans Frigate
+- [x] Conserver un acces avance vers Frigate hors parcours nominal
 
 **Criteres d'acceptation :**
 - Le parcours MVP fonctionne sans imposer l'UI Frigate comme interface principale
-
----
-
-## Hors chemin critique
-
-Ces sujets restent possibles mais ne font pas partie du chemin nominal actuel :
-
-- worker dedie de reconnaissance faciale hors Frigate ;
-- protocole inter-services specialise de type gRPC ;
-- UI 100 % custom couvrant toutes les fonctions avancees de Frigate ;
-- multi-base de donnees des le MVP ;
-- acces distant complet avant validation du parcours local.
-
-Ils ne reviennent dans le backlog qu'apres nouvelle decision documentaire dans les SPECS et/ou le SAD.
-
----
-
-## Ordre de travail recommande a partir de maintenant
-
-1. Considere P0 comme cloturee.
-2. Reprendre P1, une story a la fois, en conservant le cadrage SPECS/SAD valide.
 
 ---
 
