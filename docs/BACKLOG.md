@@ -64,8 +64,8 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P1.2 — Configuration Frigate maitrisee
 
 **Taches :**
-- [ ] Valider un `frigate.yml` minimal compatible avec la version cible
-- [ ] Documenter ce qui est gere par Vyzio et ce qui reste purement Frigate
+- [x] Valider un `frigate.yml` minimal compatible avec la version cible
+- [x] Documenter ce qui est gere par Vyzio et ce qui reste purement Frigate
 - [ ] Verifier l'integration d'un flux de test sans bricolage excessif
 
 **Criteres d'acceptation :**

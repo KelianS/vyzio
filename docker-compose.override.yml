@@ -1,4 +1,8 @@
 services:
+  mqtt:
+    ports:
+      - "127.0.0.1:1883:1883"
+
   frigate:
     # Expose the Frigate web UI only for local development and troubleshooting.
     ports:

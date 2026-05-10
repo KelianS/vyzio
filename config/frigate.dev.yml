@@ -2,6 +2,10 @@
 # This file exists to boot a minimal local runtime before Vyzio generates
 # and manages the effective Frigate configuration in the product flow.
 
+mqtt:
+  host: mqtt
+  port: 1883
+
 database:
   path: /media/frigate/frigate.db
 
