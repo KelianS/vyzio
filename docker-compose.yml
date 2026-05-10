@@ -1,5 +1,6 @@
 services:
   vyzio-api:
+    # Minimal Vyzio API runtime for local development.
     build:
       context: .
       dockerfile: src/vyzio/Vyzio.Api/Dockerfile
@@ -15,11 +16,24 @@ services:
     networks:
       - vyzio-net
     ports:
-      - "8443:8443"
+      - "127.0.0.1:8443:8443"
+
+  mqtt:
+    # Dedicated MQTT broker used by Frigate and later by Vyzio integration.
+    image: eclipse-mosquitto:2
+    container_name: vyzio-mqtt
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - vyzio-net
 
   frigate:
+    # Frigate stays embedded as the video runtime and is configured by a
+    # development-only fallback file until Vyzio manages the effective config.
     image: ghcr.io/blakeblackshear/frigate:stable
     container_name: vyzio-frigate
+    depends_on:
+      - mqtt
     privileged: true
     shm_size: "512mb"
     volumes:

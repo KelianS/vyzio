@@ -3,8 +3,11 @@
 # and manages the effective Frigate configuration in the product flow.
 
 mqtt:
-  host: 127.0.0.1
+  host: mqtt
   port: 1883
+
+database:
+  path: /media/frigate/frigate.db
 
 detectors:
   cpu1:
@@ -12,17 +15,14 @@ detectors:
 
 cameras:
   test_camera:
-    enabled: true
+    # Keep the sample camera disabled by default so `docker compose up`
+    # boots a clean baseline even before a real RTSP stream is configured.
+    enabled: false
     ffmpeg:
       inputs:
         - path: rtsp://replace-me-with-your-stream
           roles:
             - detect
-            - record
     detect:
       enabled: true
       fps: 5
-    record:
-      enabled: true
-    snapshots:
-      enabled: true

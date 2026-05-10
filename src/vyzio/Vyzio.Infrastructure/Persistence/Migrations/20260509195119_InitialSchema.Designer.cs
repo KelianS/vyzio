@@ -118,10 +118,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("frigate_event_id");
 
-                    b.Property<bool>("Notified")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("notified");
-
                     b.Property<bool>("HasClip")
                         .HasColumnType("INTEGER")
                         .HasColumnName("has_clip");
@@ -200,24 +196,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasName("pk_sessions");
 
                     b.ToTable("sessions", (string)null);
-                });
-
-            modelBuilder.Entity("Vyzio.Core.Entities.Setting", b =>
-                {
-                    b.Property<string>("Key")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("key");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("value");
-
-                    b.HasKey("Key")
-                        .HasName("pk_settings");
-
-                    b.ToTable("settings", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.ObservedEvent", b =>
