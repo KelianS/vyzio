@@ -168,21 +168,24 @@ Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien s
 │             │ MQTT events     │ REST (clips, live HLS)                  │
 │             ▼                 ▼                                          │
 │  ┌────────────────────────────────────────────────────────────────┐     │
-│  │  Vyzio Core  (.NET 10)                                         │     │
+│  │  Vyzio Backend  (.NET 10)                                      │     │
 │  │                                                                │     │
-│  │  ┌──────────────────┐                                          │     │
-│  │  │  FrigateAdapter  │                                          │     │
-│  │  │  (MQTT consumer  │                                          │     │
-│  │  │  + REST client)  │                                          │     │
-│  │  └────────┬─────────┘                                          │     │
-│  │           │ MQTT (vyzio/events/*)                               │     │
-│  │           ▼                                                    │     │
 │  │  ┌──────────────────┐  ┌─────────────────┐  ┌──────────────┐ │     │
-│  │  │  FaceRecognition │  │  Notification   │  │  Storage     │ │     │
-│  │  │  Service         │  │  Service        │  │  Service     │ │     │
-│  │  │  (profils,       │  │  (Telegram,     │  │  (events DB) │ │     │
-│  │  │   embeddings)    │  │   FCM, webhook) │  │              │ │     │
-│  │  └──────────────────┘  └─────────────────┘  └──────────────┘ │     │
+│  │  │  FrigateAdapter  │  │ Profile & Rules │  │  Storage     │ │     │
+│  │  │  (MQTT consumer  │  │ Service         │  │  Service     │ │     │
+│  │  │  + REST client)  │  │ (mapping,       │  │  (events DB) │ │     │
+│  │  └────────┬─────────┘  │ schedules,      │  └──────────────┘ │     │
+│  │           │            │ priorities)     │                   │     │
+│  │           │            └────────┬────────┘                   │     │
+│  │           │ MQTT (vyzio/events/*)         │                  │     │
+│  │           └──────────────────────┬────────┘                  │     │
+│  │                                  ▼                           │     │
+│  │                         ┌─────────────────┐                  │     │
+│  │                         │  Notification   │                  │     │
+│  │                         │  Service        │                  │     │
+│  │                         │ (Telegram,      │                  │     │
+│  │                         │  FCM, webhook)  │                  │     │
+│  │                         └─────────────────┘                  │     │
 │  └──────────────────────────────┬───────────────────────────────┘      │
 │                                 │ HTTP REST + WebSocket (SignalR)        │
 │  ┌──────────────────────────────▼───────────────────────────────────┐   │
@@ -269,8 +272,8 @@ Les services Vyzio (orchestration, API, notifications, profils) doivent être im
 **.NET 10 (C#)** pour tous les services Vyzio.
 
 - **NativeAOT** en production : démarrage < 100ms, pas de JIT, empreinte réduite
-- **System.Numerics.Tensors** pour les opérations SIMD sur les embeddings (comparaison cosinus)
-- **Microsoft.ML.OnnxRuntime** disponible si des modèles légers s'avèrent utiles en complément du worker Python
+- **ASP.NET Core + EF Core + MQTT client** pour garder une stack unique du domaine jusqu'aux intégrations
+- **SignalR** pour pousser les événements enrichis vers le dashboard en temps réel
 
 #### Conséquences
 
@@ -351,7 +354,7 @@ message FaceResult {
 
 #### Contexte
 
-Frigate publie nativement ses événements de détection sur MQTT et expose une API REST. Vyzio doit consommer ces événements pour déclencher la reconnaissance faciale.
+Frigate publie nativement ses événements de détection et d'enrichissement sur MQTT et expose une API REST. Vyzio doit consommer ces événements pour appliquer ses règles métier, persister les événements utiles et déclencher les notifications.
 
 #### Topics MQTT Frigate utilisés
 
@@ -382,15 +385,15 @@ Exemple de payload `frigate/events` :
 - **MQTT** (Mosquitto, embarqué dans Frigate) pour les événements temps réel
 - **API REST Frigate** pour : thumbnails, clips, configuration caméras, flux live HLS
 
-Le `FrigateAdapter` est la **seule classe du codebase qui connaît Frigate**. Il traduit les événements Frigate en événements du domaine Vyzio et les publie sur les topics MQTT Vyzio. Le reste du Core souscrit à ces topics indépendamment.
+Le `FrigateAdapter` est le **seul composant d'infrastructure couplé à Frigate**. Il traduit les événements Frigate en événements du domaine Vyzio et les publie sur les topics MQTT Vyzio. Le reste des composants consomme uniquement les événements normalisés Vyzio.
 
 ```csharp
-// Seule classe couplée à Frigate
+// Seul composant couplé à Frigate
 public class FrigateAdapter : IHostedService
 {
     // Souscrit MQTT frigate/events
-    // Transforme FrigateEvent → PersonDetectedEvent (domaine Vyzio)
-    // Publie via IMediator.Publish()
+  // Transforme FrigateEvent → DetectionEnrichedEvent (domaine Vyzio)
+  // Publie via un bus d'événements Vyzio (MQTT)
 }
 ```
 
@@ -406,7 +409,7 @@ public class FrigateAdapter : IHostedService
 
 #### Contexte
 
-Les services Vyzio (reconnaissance, storage, notification) doivent réagir aux mêmes événements de façon découplée. MediatR est explicitement écarté.
+Les composants Vyzio (règles métier, storage, notification) doivent réagir aux mêmes événements de façon découplée. MediatR est explicitement écarté.
 
 #### Options comparées
 
@@ -414,21 +417,21 @@ Les services Vyzio (reconnaissance, storage, notification) doivent réagir aux m
 |---|:---:|:---:|:---:|:---:|:---:|
 | **MQTT** (Mosquitto Frigate) | ✅ Faible | ✅ Déjà présent | ⚠️ QoS 1 | ✅ | ✅ |
 | **Redis Streams** | ⚠️ +1 conteneur | ❌ | ✅ Oui | ❌ | ⚠️ |
-| System.Threading.Channels | ✅ Nulle | ✅ Aucune | ❌ | ❌ | ❌ |
+| HTTP callbacks internes | ⚠️ | ✅ | ❌ | ⚠️ | ❌ |
 | MediatR | ❌ Écarté | ✅ | ❌ | ❌ | ❌ |
 | gRPC streaming | ⚠️ | ❌ | ❌ | ❌ | ❌ |
 
 **MQTT** : Mosquitto tourne déjà dans le conteneur Frigate sur le réseau Docker interne. L'utiliser pour les événements Vyzio évite toute dépendance supplémentaire, assure la continuité technologique avec Frigate, et expose gratuitement les événements Vyzio aux intégrateurs tiers (Home Assistant, n8n, Zapier) sur les mêmes topics. QoS 1 garantit la livraison at-least-once.
 
-**Redis Streams** : persistance robuste, groupes de consommateurs, replay d'événements. Solution préférable si les services Vyzio deviennent des processus distincts. Overhead : ~30 MB + 1 conteneur. Retenu comme **option v2** si le besoin de persistance forte se confirme.
+**Redis Streams** : persistance robuste, groupes de consommateurs, replay d'événements. Solution préférable si les composants Vyzio deviennent plusieurs processus distincts. Overhead : ~30 MB + 1 conteneur. Retenu comme **option v2** si le besoin de persistance forte se confirme.
 
-**System.Threading.Channels** : utilisé en complément pour les flux haute fréquence strictement in-process (pipeline frames FrigateAdapter → Face Worker), où passer par MQTT serait disproportioné.
+**HTTP callbacks internes** : solution simple mais plus couplée, moins naturelle pour exposer les événements Vyzio aux intégrations tierces et moins cohérente avec Frigate.
 
 #### Décision
 
-**MQTT (Mosquitto Frigate) pour tous les événements métier.** `System.Threading.Channels` uniquement pour les flux de frames internes haute fréquence.
+**MQTT (Mosquitto Frigate) pour tous les événements métier.**
 
-Le `FrigateAdapter` souscrit aux topics Frigate et publie des événements Vyzio sur des topics dédiés. Chaque service Vyzio (FaceRecognitionService, StorageService, NotificationService) souscrit indépendamment aux topics qui le concernent.
+Le `FrigateAdapter` souscrit aux topics Frigate et publie des événements Vyzio sur des topics dédiés. Chaque composant Vyzio (ProfileRulesService, StorageService, NotificationService) souscrit indépendamment aux topics qui le concernent.
 
 ```
 Topics MQTT Frigate (consommés par FrigateAdapter) :
@@ -436,9 +439,8 @@ frigate/events                    → détections Frigate
 frigate/{camera}/motion           → état mouvement
 
 Topics MQTT Vyzio (publiés par Vyzio, consommés par ses propres services + tiers) :
-vyzio/events/face_recognized      → { profile_id, name, confidence, camera, timestamp }
-vyzio/events/face_unknown         → { camera, thumbnail_url_signed, timestamp }
-vyzio/events/face_uncertain       → { profile_candidate, confidence, camera, timestamp }
+vyzio/events/detection_enriched   → { frigate_event_id, camera, label, sub_label, confidence, occurred_at }
+vyzio/events/notification_ready   → { event_id, profile_id, priority, channels }
 vyzio/events/camera_status        → { camera, status: online|offline|error }
 ```
 
@@ -448,24 +450,24 @@ public class FrigateAdapter : IHostedService
 {
     public async Task HandleFrigateEventAsync(FrigateEvent e)
     {
-        // Traitement (téléchargement thumbnail, etc.)
-        await _mqttClient.PublishAsync("vyzio/events/raw_detection", payload);
+    // Normalisation (camera, label, sub_label, score, liens Frigate)
+    await _mqttClient.PublishAsync("vyzio/events/detection_enriched", payload);
     }
 }
 
-// FaceRecognitionService : souscrit et publie le résultat
-public class FaceRecognitionService : IHostedService
+// ProfileRulesService : applique le mapping produit et prépare les actions
+public class ProfileRulesService : IHostedService
 {
-    // Souscrit : vyzio/events/raw_detection
-    // Appelle Face Worker (gRPC)
-    // Publie : vyzio/events/face_recognized | face_unknown | face_uncertain
+  // Souscrit : vyzio/events/detection_enriched
+  // Mappe sub_label Frigate vers un profil Vyzio, évalue les règles
+  // Publie : vyzio/events/notification_ready
 }
 
 // NotificationService : souscrit aux événements enrichis
 public class NotificationService : IHostedService
 {
-    // Souscrit : vyzio/events/face_recognized, vyzio/events/face_unknown
-    // Applique RuleEngine → envoie Telegram / FCM / webhook
+  // Souscrit : vyzio/events/notification_ready
+  // Envoie Telegram / FCM / webhook
 }
 ```
 
@@ -476,7 +478,7 @@ public class NotificationService : IHostedService
 - ✅ Zéro dépendance supplémentaire — Mosquitto est déjà dans Frigate
 - ✅ Continuité avec Frigate — une seule technologie de messagerie dans le système
 - ✅ Intégrations tierces (Home Assistant, n8n) nativement exposées sur les topics Vyzio
-- ✅ Services Vyzio découplés — chaque service souscrit uniquement aux topics qu'il consomme
+- ✅ Composants Vyzio découplés — chacun souscrit uniquement aux topics qu'il consomme
 - ✅ Testabilité : un broker MQTT léger (Mosquitto en container test) remplace le mock
 - ⚠️ MQTT QoS 1 : at-least-once, pas exactly-once — les services doivent être idempotents sur réception
 - ⚠️ Pas de persistance native des événements en vol si le broker redémarre — mitigé par QoS 1 et sessions persistantes
@@ -487,7 +489,7 @@ public class NotificationService : IHostedService
 
 #### Contexte
 
-Vyzio stocke : profils + embeddings, événements de reconnaissance, règles de notification, sessions.
+Vyzio stocke : profils produit, mapping avec les identités Frigate, événements de reconnaissance, règles de notification et sessions.
 
 #### Options comparées
 
@@ -510,7 +512,7 @@ database:
 - Zéro infrastructure supplémentaire : pas de conteneur dédié, pas de processus séparé
 - Sauvegarde triviale : `cp vyzio.db vyzio.db.bak`
 - EF Core + `EFCore.NamingConventions` (snake_case) + migrations automatiques au démarrage
-- Les embeddings sont stockés en `BLOB` : chargement en mémoire au démarrage, comparaison SIMD sans requête SQL
+- Les données biométriques calculées par Frigate restent dans Frigate ; Vyzio stocke uniquement les métadonnées métier et les références nécessaires à l'orchestration produit
 - WAL mode activé pour la concurrence lecture/écriture
 
 #### Conséquences
@@ -553,7 +555,7 @@ POST   /api/cameras                  → Ajout (écrit frigate.yml + reload)
 GET    /api/cameras/{id}/live        → Proxy HLS Frigate (auth Vyzio)
 
 GET    /api/profiles
-POST   /api/profiles                 → Upload photo → gRPC → embedding
+POST   /api/profiles                 → Upload photo → sync bibliothèque Frigate + métadonnées Vyzio
 DELETE /api/profiles/{id}
 
 GET    /api/events                   → Paginé, filtrable
@@ -771,7 +773,7 @@ Vyzio adopte une **stratégie UX en deux couches** :
 ```
 Frigate                           → Vidéo brut, détection, clips
 FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer)
-Profile & Rules Service (.NET)    → Profils produit, règles d'alertes, politiques
+Profile & Rules Service (.NET)    → Profils produit, mapping identités Frigate, règles d'alertes
 Notification Service (.NET)       → Règles + envoi FCM/webhook/email
 Storage Service (.NET)            → Persistance événements enrichis (EF Core)
 API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
@@ -785,20 +787,23 @@ Dashboard / Hub (React + TS)      → UI grand public guidée
    └─► MQTT: frigate/events { label: "person", thumbnail: "...", camera: "front_door" }
 
 2. FrigateAdapter (.NET) — souscrit frigate/events
-   └─► Télécharge thumbnail via Frigate REST API
-   └─► Publie MQTT: vyzio/events/raw_detection { frigate_event_id, camera, thumbnail_b64 }
+  └─► Normalise l'événement Frigate (label, sub_label, score, thumbnail)
+  └─► Publie MQTT: vyzio/events/detection_enriched { frigate_event_id, camera, label, sub_label, confidence }
 
 3. Services Vyzio (souscripteurs MQTT indépendants, en parallèle) :
 
   Mode par défaut (Frigate natif) :
-  └─► Frigate publie des objets enrichis (`sub_label`, face/LPR) sur MQTT
-  └─► Vyzio applique ses règles métier (priorités, plages horaires, profils)
+  └─► Frigate publie des objets enrichis (sub_label, face/LPR) sur MQTT
+  └─► Vyzio mappe l'identité Frigate vers ses profils produit puis applique ses règles métier
 
-    StorageService — souscrit vyzio/events/face_recognized | face_unknown | face_uncertain
+   StorageService — souscrit vyzio/events/detection_enriched
    └─► EF Core INSERT recognition_events
 
-   NotificationService — souscrit vyzio/events/face_recognized | face_unknown
-   └─► RuleEngine : Alice → notify, heure active, pas de rate-limit
+  ProfileRulesService — souscrit vyzio/events/detection_enriched
+  └─► RuleEngine : Alice → notify, heure active, pas de rate-limit
+  └─► Publie vyzio/events/notification_ready
+
+  NotificationService — souscrit vyzio/events/notification_ready
    └─► Telegram sendPhoto : "Alice est arrivée • Porte d'entrée • 09:32" + photo
    └─► SignalR : push vers dashboard ouvert
 ```
@@ -819,8 +824,7 @@ CREATE TABLE profiles (
     name            TEXT NOT NULL,
     category        TEXT NOT NULL DEFAULT 'other',   -- household|known|delivery|pet|other
     alert_mode      TEXT NOT NULL DEFAULT 'notify',  -- notify|silent|ignore
-    embedding       BLOB,                            -- float32[512]
-    embedding_count INTEGER NOT NULL DEFAULT 0,
+  frigate_label   TEXT,                            -- identifiant reconnu côté Frigate
     last_seen_at    TEXT,
     created_at      TEXT NOT NULL
 );
@@ -842,7 +846,7 @@ CREATE INDEX idx_events_profile  ON recognition_events(profile_id, occurred_at D
 CREATE TABLE notifications (
     id            TEXT PRIMARY KEY,
     event_id      TEXT NOT NULL REFERENCES recognition_events(id),
-    channel       TEXT NOT NULL,         -- fcm|webhook|email|ntfy
+  channel       TEXT NOT NULL,         -- telegram|discord|fcm|webhook|email|ntfy
     status        TEXT NOT NULL DEFAULT 'pending',
     sent_at       TEXT,
     error_message TEXT
@@ -920,7 +924,7 @@ Dashboard Vyzio — Assistant de configuration
 |---|---|---|
 | Accès non autorisé au dashboard | Réseau local | JWT + TLS, rate limiting |
 | Accès direct API Frigate | Réseau local | Frigate lié à `127.0.0.1`, non routable hors Docker |
-| Exfiltration embeddings | API Vyzio | Embeddings jamais inclus dans les réponses API |
+| Exfiltration données biométriques Frigate | API Vyzio | Vyzio ne stocke pas d'embeddings ; seules des métadonnées métier sont exposées |
 | Interception thumbnail hors réseau | FCM / Tunnel | URL signée HMAC TTL 5min + HTTPS |
 | Injection via EF Core | API | Requêtes paramétrées uniquement, zéro SQL brut |
 | Credentials caméra en clair | SQLite | Chiffrement via `Microsoft.AspNetCore.DataProtection` |
@@ -990,7 +994,7 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence 
 | Pipeline vidéo | **Frigate** (open source) | Réimplémentation custom | Ne pas réinventer ce qui existe |
 | Langage principal | **.NET 10 (C#)** | Rust | Vélocité + écosystème cohérent (ASP.NET, EF Core, SignalR) |
 | Face recognition (par défaut) | **Frigate natif** | Worker custom obligatoire | Réduction de dette, maintenance simplifiée |
-| Bus événements | **MQTT** (Mosquitto Frigate) + Channels (flux frames) | MediatR (écarté), Redis Streams (v2) | Zéro dépendance, continuité Frigate |
+| Bus événements | **MQTT** (Mosquitto Frigate) | MediatR (écarté), Redis Streams (v2) | Zéro dépendance, continuité Frigate |
 | Base de données | **SQLite** | PostgreSQL | Zéro infra, plug & play, fichier unique |
 | API | **ASP.NET Core Minimal APIs** | FastAPI (Python) | Cohérence stack .NET |
 | WebSocket | **SignalR** | WebSocket brut | Reconnexion auto |
@@ -1011,9 +1015,10 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence 
 vyzio/
 ├── services/
 │   ├── vyzio/                     # .NET 10 (C#)
-│   │   ├── Vyzio.Core/            # Domaine, services métier, MQTT subscribers
+│   │   ├── Vyzio.Core/            # Entités domaine + interfaces (ports)
+│   │   ├── Vyzio.Application/     # Use cases métier
 │   │   ├── Vyzio.Api/             # ASP.NET Core Minimal APIs + SignalR
-│   │   ├── Vyzio.Infrastructure/  # EF Core, PostgreSQL/SQLite, Telegram, FrigateAdapter
+│   │   ├── Vyzio.Infrastructure/  # EF Core, SQLite, Telegram, MQTT, FrigateAdapter
 │   │   └── Vyzio.Tests/           # xUnit + Testcontainers
 │
 ├── dashboard/                     # React 19 + TypeScript
