@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
-[Table("recognition_events")]
-public class RecognitionEvent
+[Table("observed_events")]
+public class ObservedEvent
 {
     [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -12,26 +12,28 @@ public class RecognitionEvent
     [Required, MaxLength(100)]
     public required string FrigateEventId { get; set; }
 
-    [Required, MaxLength(200)]
-    public required string CameraName { get; set; }
+    [Required, MaxLength(20)]
+    public required string Lifecycle { get; set; }
 
-    /// <summary>Frigate-derived event category consumed by Vyzio rules.</summary>
+    [Required, MaxLength(200)]
+    public required string Camera { get; set; }
+
     [Required, MaxLength(50)]
-    public required string RecognitionType { get; set; }
+    public required string Label { get; set; }
+
+    [MaxLength(200)]
+    public string? Identity { get; set; }
 
     [MaxLength(100)]
     public string? ProfileId { get; set; }
 
-    [MaxLength(200)]
-    public string? ProfileName { get; set; }
-
     public float? Confidence { get; set; }
-
-    public byte[]? ThumbnailJpeg { get; set; }
 
     public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
 
-    public bool Notified { get; set; }
+    public bool HasClip { get; set; }
+
+    public bool HasSnapshot { get; set; }
 
     [ForeignKey(nameof(ProfileId))]
     public Profile? Profile { get; set; }

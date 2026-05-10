@@ -93,17 +93,17 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("profiles", (string)null);
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.RecognitionEvent", b =>
+            modelBuilder.Entity("Vyzio.Core.Entities.ObservedEvent", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
-                    b.Property<string>("CameraName")
+                    b.Property<string>("Camera")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")
-                        .HasColumnName("camera_name");
+                        .HasColumnName("camera");
 
                     b.Property<float?>("Confidence")
                         .HasColumnType("REAL")
@@ -119,6 +119,31 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("notified");
 
+                    b.Property<bool>("HasClip")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("has_clip");
+
+                    b.Property<bool>("HasSnapshot")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("has_snapshot");
+
+                    b.Property<string>("Identity")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("identity");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("lifecycle");
+
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("occurred_at");
@@ -128,23 +153,8 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("profile_id");
 
-                    b.Property<string>("ProfileName")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("profile_name");
-
-                    b.Property<string>("RecognitionType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("recognition_type");
-
-                    b.Property<byte[]>("ThumbnailJpeg")
-                        .HasColumnType("BLOB")
-                        .HasColumnName("thumbnail_jpeg");
-
                     b.HasKey("Id")
-                        .HasName("pk_recognition_events");
+                        .HasName("pk_observed_events");
 
                     b.HasIndex("FrigateEventId")
                         .IsUnique()
@@ -156,7 +166,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProfileId", "OccurredAt")
                         .HasDatabaseName("idx_events_profile");
 
-                    b.ToTable("recognition_events", (string)null);
+                    b.ToTable("observed_events", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
@@ -207,20 +217,20 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("settings", (string)null);
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.RecognitionEvent", b =>
+            modelBuilder.Entity("Vyzio.Core.Entities.ObservedEvent", b =>
                 {
                     b.HasOne("Vyzio.Core.Entities.Profile", "Profile")
-                        .WithMany("RecognitionEvents")
+                        .WithMany("ObservedEvents")
                         .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_recognition_events_profiles_profile_id");
+                        .HasConstraintName("fk_observed_events_profiles_profile_id");
 
                     b.Navigation("Profile");
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.Profile", b =>
                 {
-                    b.Navigation("RecognitionEvents");
+                    b.Navigation("ObservedEvents");
                 });
 #pragma warning restore 612, 618
         }

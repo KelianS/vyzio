@@ -52,17 +52,18 @@ public class VyzioDbContextTests : IDisposable
     }
 
     [Fact]
-    public void RecognitionEvent_cascade_deletes_with_profile()
+    public void ObservedEvent_cascade_deletes_with_profile()
     {
         var profile = new Profile { Name = "Bob" };
         _db.Profiles.Add(profile);
         _db.SaveChanges();
 
-        _db.RecognitionEvents.Add(new RecognitionEvent
+        _db.ObservedEvents.Add(new ObservedEvent
         {
             FrigateEventId = "frigate-001",
-            CameraName = "front_door",
-            RecognitionType = "face_known",
+            Lifecycle = "new",
+            Camera = "front_door",
+            Label = "person",
             ProfileId = profile.Id
         });
         _db.SaveChanges();
@@ -70,25 +71,27 @@ public class VyzioDbContextTests : IDisposable
         _db.Profiles.Remove(profile);
         _db.SaveChanges();
 
-        Assert.Equal(0, _db.RecognitionEvents.Count());
+        Assert.Equal(0, _db.ObservedEvents.Count());
     }
 
     [Fact]
     public void FrigateEventId_unique_index_prevents_duplicates()
     {
-        _db.RecognitionEvents.Add(new RecognitionEvent
+        _db.ObservedEvents.Add(new ObservedEvent
         {
             FrigateEventId = "dup-001",
-            CameraName = "front_door",
-            RecognitionType = "face_unknown"
+            Lifecycle = "new",
+            Camera = "front_door",
+            Label = "dog"
         });
         _db.SaveChanges();
 
-        _db.RecognitionEvents.Add(new RecognitionEvent
+        _db.ObservedEvents.Add(new ObservedEvent
         {
             FrigateEventId = "dup-001",
-            CameraName = "front_door",
-            RecognitionType = "face_unknown"
+            Lifecycle = "update",
+            Camera = "front_door",
+            Label = "dog"
         });
 
         Assert.Throws<DbUpdateException>(() => _db.SaveChanges());

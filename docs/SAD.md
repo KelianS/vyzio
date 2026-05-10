@@ -908,28 +908,29 @@ CREATE TABLE profiles (
     name            TEXT NOT NULL,
     category        TEXT NOT NULL DEFAULT 'other',   -- household|known|delivery|pet|other
     alert_mode      TEXT NOT NULL DEFAULT 'notify',  -- notify|silent|ignore
-  frigate_label   TEXT,                            -- identifiant reconnu côté Frigate
     last_seen_at    TEXT,
     created_at      TEXT NOT NULL
 );
 
-CREATE TABLE recognition_events (
+CREATE TABLE observed_events (
     id                TEXT PRIMARY KEY,
     frigate_event_id  TEXT NOT NULL,     -- référence Frigate (pour proxy clips/thumbnails)
-    camera_name       TEXT NOT NULL,
-    recognition_type  TEXT NOT NULL,     -- face_known|face_unknown|face_uncertain|motion_only
+  lifecycle         TEXT NOT NULL,     -- new|update|end
+  camera            TEXT NOT NULL,
+  label             TEXT NOT NULL,     -- person|dog|car|...
+  identity          TEXT,              -- sub_label Frigate si disponible
     profile_id        TEXT REFERENCES profiles(id),
     confidence        REAL,
-    face_thumbnail    BLOB,              -- JPEG ≤ 100KB, copie locale
     occurred_at       TEXT NOT NULL,
-    notified          INTEGER NOT NULL DEFAULT 0
+  has_clip          INTEGER NOT NULL DEFAULT 0,
+  has_snapshot      INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX idx_events_occurred ON recognition_events(occurred_at DESC);
-CREATE INDEX idx_events_profile  ON recognition_events(profile_id, occurred_at DESC);
+CREATE INDEX idx_events_occurred ON observed_events(occurred_at DESC);
+CREATE INDEX idx_events_profile  ON observed_events(profile_id, occurred_at DESC);
 
 CREATE TABLE notifications (
     id            TEXT PRIMARY KEY,
-    event_id      TEXT NOT NULL REFERENCES recognition_events(id),
+  event_id      TEXT NOT NULL REFERENCES observed_events(id),
   channel       TEXT NOT NULL,         -- telegram|discord|fcm|webhook|email|ntfy
     status        TEXT NOT NULL DEFAULT 'pending',
     sent_at       TEXT,

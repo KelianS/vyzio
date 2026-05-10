@@ -63,13 +63,13 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 ### Etat actuel de P0
 
-- **US-P0.1** : essentiellement realisee via l'audit de reprise et la cartographie des surfaces utiles.
-- **US-P0.2** : largement engagee ; le repo a ete nettoye, le narratif Frigate-first a ete aligne, et le runtime de dev a ete clarifie.
-- **US-P0.3** : a finaliser dans ce backlog pour verrouiller les checkpoints, acter le reste a faire, puis faire une revue humaine de sortie.
+- **US-P0.1** : realisee ; la cartographie de l'existant a permis de qualifier les surfaces utiles et les ecarts majeurs.
+- **US-P0.2** : realisee ; le repo a ete nettoye, le narratif Frigate-first a ete aligne, et le runtime de dev a ete clarifie.
+- **US-P0.3** : realisee ; les checkpoints ont ete poses et la revue humaine de sortie a ete faite.
 
-**Blocage restant avant sortie de P0 :**
+**Statut de phase :**
 
-- faire une revue humaine finale du depot et du plan avant reouverture des stories feature.
+- P0 peut etre consideree comme cloturee.
 
 ### US-P0.1 — Cartographier l'existant utile
 
@@ -85,7 +85,7 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 **Preuve actuelle :**
 
-- `docs/REPRISE_AUDIT.md` sert de synthese de reprise et de cartographie de l'existant.
+- La cartographie de reprise a ete integree puis consolidee dans le backlog, le SAD et l'etat actuel du repo.
 
 ### US-P0.2 — Nettoyage structurel complet
 
@@ -115,7 +115,7 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 - [x] Reordonner le travail selon la valeur produit et les dependances reelles
 - [x] Distinguer clairement `MVP`, `post-MVP` et `options etudiees`
 - [x] Definir les checkpoints de validation par phase
-- [ ] Faire une revue humaine avant reprise du code feature
+- [x] Faire une revue humaine avant reprise du code feature
 
 **Criteres d'acceptation :**
 - Le backlog peut servir de reference de pilotage
@@ -125,7 +125,6 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 #### Checkpoint de sortie P0
 
-- `docs/REPRISE_AUDIT.md` est valide comme synthese de reprise.
 - Le repo ne contient plus de composant vide, ambigu ou contradictoire dans le chemin nominal.
 - Le runtime minimal restant est valide sur une machine equipee de Docker (`docker compose config` puis `docker compose up`).
 - Le backlog de reprise est relu et valide humainement avant reouverture des stories feature.
@@ -289,9 +288,8 @@ Ils ne reviennent dans le backlog qu'apres nouvelle decision documentaire dans l
 
 ## Ordre de travail recommande a partir de maintenant
 
-1. Valider ensemble la sortie documentaire de P0 (`BACKLOG` + `REPRISE_AUDIT`).
-2. Faire la revue humaine finale de sortie P0.
-3. Reprendre ensuite seulement P1, une story a la fois.
+1. Considere P0 comme cloturee.
+2. Reprendre P1, une story a la fois, en conservant le cadrage SPECS/SAD valide.
 
 ---
 

@@ -71,25 +71,26 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "recognition_events",
+                name: "observed_events",
                 columns: table => new
                 {
                     id = table.Column<string>(type: "TEXT", nullable: false),
                     frigate_event_id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    camera_name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    recognition_type = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    lifecycle = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    camera = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    label = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    identity = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     profile_id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    profile_name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     confidence = table.Column<float>(type: "REAL", nullable: true),
-                    thumbnail_jpeg = table.Column<byte[]>(type: "BLOB", nullable: true),
                     occurred_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    notified = table.Column<bool>(type: "INTEGER", nullable: false)
+                    has_clip = table.Column<bool>(type: "INTEGER", nullable: false),
+                    has_snapshot = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_recognition_events", x => x.id);
+                    table.PrimaryKey("pk_observed_events", x => x.id);
                     table.ForeignKey(
-                        name: "fk_recognition_events_profiles_profile_id",
+                        name: "fk_observed_events_profiles_profile_id",
                         column: x => x.profile_id,
                         principalTable: "profiles",
                         principalColumn: "id",
@@ -98,17 +99,17 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "idx_events_occurred",
-                table: "recognition_events",
+                table: "observed_events",
                 column: "occurred_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_events_profile",
-                table: "recognition_events",
+                table: "observed_events",
                 columns: new[] { "profile_id", "occurred_at" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_events_frigate_event_id",
-                table: "recognition_events",
+                table: "observed_events",
                 column: "frigate_event_id",
                 unique: true);
         }
@@ -120,7 +121,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                 name: "notifications");
 
             migrationBuilder.DropTable(
-                name: "recognition_events");
+                name: "observed_events");
 
             migrationBuilder.DropTable(
                 name: "sessions");

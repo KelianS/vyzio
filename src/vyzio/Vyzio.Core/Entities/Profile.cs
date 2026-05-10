@@ -22,5 +22,5 @@ public class Profile
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    public ICollection<RecognitionEvent> RecognitionEvents { get; set; } = [];
+    public ICollection<ObservedEvent> ObservedEvents { get; set; } = [];
 }
