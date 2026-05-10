@@ -9,7 +9,7 @@ namespace Vyzio.Tests.UseCases;
 
 public class FrigateAdapterTests
 {
-    private readonly IObservedEventRepository _observedEvents = Substitute.For<IObservedEventRepository>();
+    private readonly IDetectionEventRepository _detectionEvents = Substitute.For<IDetectionEventRepository>();
     private readonly IFrigateRestClient _restClient = Substitute.For<IFrigateRestClient>();
     private readonly ILogger<FrigateAdapter> _logger = Substitute.For<ILogger<FrigateAdapter>>();
 
@@ -23,8 +23,8 @@ public class FrigateAdapterTests
         var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-101", "person"));
 
         Assert.True(processed);
-        await _observedEvents.Received(1).AddAsync(
-            Arg.Is<ObservedEvent>(evt =>
+        await _detectionEvents.Received(1).AddAsync(
+            Arg.Is<DetectionEvent>(evt =>
                 evt.FrigateEventId == "frigate-evt-101"
                 && evt.Label == "person"
                 && evt.Camera == "front_door"
@@ -39,7 +39,7 @@ public class FrigateAdapterTests
     public async Task ProcessMessageAsync_updates_existing_event_without_creating_duplicate()
     {
         var sut = CreateSut(["person"]);
-        var existing = new ObservedEvent
+        var existing = new DetectionEvent
         {
             FrigateEventId = "frigate-evt-102",
             Lifecycle = "new",
@@ -47,7 +47,7 @@ public class FrigateAdapterTests
             Label = "person"
         };
 
-        _observedEvents.GetByFrigateEventIdAsync("frigate-evt-102", Arg.Any<CancellationToken>())
+        _detectionEvents.GetByFrigateEventIdAsync("frigate-evt-102", Arg.Any<CancellationToken>())
             .Returns(existing);
         _restClient.TryGetIdentityAsync("frigate-evt-102", Arg.Any<CancellationToken>())
             .Returns("Bob");
@@ -55,15 +55,15 @@ public class FrigateAdapterTests
         var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-102", "person", lifecycle: "update", hasClip: false));
 
         Assert.True(processed);
-        await _observedEvents.Received(1).UpdateAsync(
-            Arg.Is<ObservedEvent>(evt =>
+        await _detectionEvents.Received(1).UpdateAsync(
+            Arg.Is<DetectionEvent>(evt =>
                 evt.FrigateEventId == "frigate-evt-102"
                 && evt.Lifecycle == "update"
                 && evt.Identity == "Bob"
                 && !evt.HasClip
                 && evt.HasSnapshot),
             Arg.Any<CancellationToken>());
-        await _observedEvents.DidNotReceive().AddAsync(Arg.Any<ObservedEvent>(), Arg.Any<CancellationToken>());
+        await _detectionEvents.DidNotReceive().AddAsync(Arg.Any<DetectionEvent>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -74,8 +74,8 @@ public class FrigateAdapterTests
         var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-103", "cat"));
 
         Assert.False(processed);
-        await _observedEvents.DidNotReceive().GetByFrigateEventIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await _observedEvents.DidNotReceive().AddAsync(Arg.Any<ObservedEvent>(), Arg.Any<CancellationToken>());
+        await _detectionEvents.DidNotReceive().GetByFrigateEventIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _detectionEvents.DidNotReceive().AddAsync(Arg.Any<DetectionEvent>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -88,15 +88,15 @@ public class FrigateAdapterTests
         var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-104", "person"));
 
         Assert.True(processed);
-        await _observedEvents.Received(1).AddAsync(
-            Arg.Is<ObservedEvent>(evt => evt.FrigateEventId == "frigate-evt-104" && evt.Identity == null),
+        await _detectionEvents.Received(1).AddAsync(
+            Arg.Is<DetectionEvent>(evt => evt.FrigateEventId == "frigate-evt-104" && evt.Identity == null),
             Arg.Any<CancellationToken>());
     }
 
     private FrigateAdapter CreateSut(IEnumerable<string> retainedLabels)
         => new(
             new FrigateEventContractAdapter(new FrigateLabelFilter(retainedLabels)),
-            _observedEvents,
+            _detectionEvents,
             _restClient,
             _logger);
 

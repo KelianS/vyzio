@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Vyzio.Core.Entities;
 
 [Table("observed_events")]
-public class ObservedEvent
+public class DetectionEvent
 {
     [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString("N");

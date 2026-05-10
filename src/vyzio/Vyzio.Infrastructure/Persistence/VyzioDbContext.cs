@@ -6,16 +6,16 @@ namespace Vyzio.Infrastructure.Persistence;
 public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContext(options)
 {
     public DbSet<Profile> Profiles => Set<Profile>();
-    public DbSet<ObservedEvent> ObservedEvents => Set<ObservedEvent>();
+    public DbSet<DetectionEvent> DetectionEvents => Set<DetectionEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Session> Sessions => Set<Session>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ObservedEvent>(e =>
+        modelBuilder.Entity<DetectionEvent>(e =>
         {
             e.HasOne(ev => ev.Profile)
-             .WithMany(p => p.ObservedEvents)
+             .WithMany(p => p.DetectionEvents)
              .HasForeignKey(ev => ev.ProfileId)
              .OnDelete(DeleteBehavior.Cascade);
 

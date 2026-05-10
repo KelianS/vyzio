@@ -8,7 +8,7 @@ namespace Vyzio.Api.Integration.Frigate;
 
 public sealed class FrigateAdapter(
     FrigateEventContractAdapter contractAdapter,
-    IObservedEventRepository observedEvents,
+    IDetectionEventRepository detectionEvents,
     IFrigateRestClient restClient,
     ILogger<FrigateAdapter> logger)
 {
@@ -21,17 +21,17 @@ public sealed class FrigateAdapter(
 
         try
         {
-            var existing = await observedEvents.GetByFrigateEventIdAsync(consumedEvent.FrigateEventId, ct);
+            var existing = await detectionEvents.GetByFrigateEventIdAsync(consumedEvent.FrigateEventId, ct);
             var identity = await TryResolveIdentityAsync(consumedEvent, existing?.Identity, ct);
 
             if (existing is null)
             {
-                await observedEvents.AddAsync(ToObservedEvent(consumedEvent, identity), ct);
+                await detectionEvents.AddAsync(ToDetectionEvent(consumedEvent, identity), ct);
                 return true;
             }
 
             ApplyUpdate(existing, consumedEvent, identity);
-            await observedEvents.UpdateAsync(existing, ct);
+            await detectionEvents.UpdateAsync(existing, ct);
             return true;
         }
         catch (Exception ex)
@@ -66,7 +66,7 @@ public sealed class FrigateAdapter(
         }
     }
 
-    private static ObservedEvent ToObservedEvent(FrigateConsumedEvent consumedEvent, string? identity)
+    private static DetectionEvent ToDetectionEvent(FrigateConsumedEvent consumedEvent, string? identity)
         => new()
         {
             FrigateEventId = consumedEvent.FrigateEventId,
@@ -80,7 +80,7 @@ public sealed class FrigateAdapter(
             HasSnapshot = consumedEvent.HasSnapshot
         };
 
-    private static void ApplyUpdate(ObservedEvent existing, FrigateConsumedEvent consumedEvent, string? identity)
+    private static void ApplyUpdate(DetectionEvent existing, FrigateConsumedEvent consumedEvent, string? identity)
     {
         existing.Lifecycle = consumedEvent.Lifecycle;
         existing.Camera = consumedEvent.Camera;
