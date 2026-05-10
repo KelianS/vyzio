@@ -1,0 +1,29 @@
+# Mock-stream Frigate config used for local development and future end-to-end
+# transport tests. It replaces the fallback dev config only when
+# docker-compose.mock.yml is enabled.
+
+mqtt:
+  host: mqtt
+  port: 1883
+
+database:
+  path: /media/frigate/frigate.db
+
+detectors:
+  cpu1:
+    type: cpu
+
+cameras:
+  test_camera:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://mediamtx:8554/test-camera
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+    detect:
+      enabled: true
+      fps: 5
+      width: 1280
+      height: 720

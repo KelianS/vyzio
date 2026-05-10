@@ -31,11 +31,16 @@ public class VyzioDbContextTests : IDisposable
     }
 
     [Fact]
-    public void Schema_creates_all_tables()
+    public void Schema_creates_retained_mvp_tables()
     {
-        _db.Settings.Add(new Setting { Key = "test", Value = "ok" });
+        _db.Sessions.Add(new Session
+        {
+            UserId = "user-001",
+            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1)
+        });
         _db.SaveChanges();
-        Assert.Equal(1, _db.Settings.Count());
+
+        Assert.Equal(1, _db.Sessions.Count());
     }
 
     [Fact]

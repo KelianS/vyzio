@@ -59,18 +59,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "settings",
-                columns: table => new
-                {
-                    key = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    value = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_settings", x => x.key);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "observed_events",
                 columns: table => new
                 {
@@ -125,9 +113,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "sessions");
-
-            migrationBuilder.DropTable(
-                name: "settings");
 
             migrationBuilder.DropTable(
                 name: "profiles");
