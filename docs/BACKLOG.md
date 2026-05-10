@@ -1,400 +1,264 @@
-# Vyzio — Backlog d'implémentation
+# Vyzio — Backlog de reprise
 
-> Mai 2026 — Document vivant  
-> Référence : [SPECS.md](./SPECS.md) · [SAD.md](./SAD.md)
-
----
-
-## Principes d'ordonnancement
-
-1. **Frigate d'abord** — le pipeline vidéo est le fondement de tout le reste
-2. **Bus MQTT ensuite** — la colonne vertébrale des événements
-3. **IA au centre** — la reconnaissance faciale est la valeur ajoutée différenciante
-4. **API + Dashboard en dernier** — une fois le backend solide
+> Mai 2026 — plan de remise a plat avant reprise du developpement
+> References : [SPECS.md](./SPECS.md) · [SAD.md](./SAD.md) · [README.md](../README.md)
 
 ---
 
-## Vue d'ensemble des épiques
+## Objectif de ce backlog
 
-| # | Épique | Dépendances | Priorité |
-|---|---|---|:---:|
-| E1 | Infrastructure & Frigate | — | 🔴 Critique |
-| E2 | FrigateAdapter + Bus MQTT | E1 | 🔴 Critique |
-| E3 | Face Recognition Worker (Python) | E1 | 🔴 Critique |
-| E4 | Profile Service + Reconnaissance | E2, E3 | 🔴 Critique |
-| E5 | Storage Service | E2 | 🟠 Haute |
-| E6 | Notification Service | E4 | 🟠 Haute |
-| E7 | API REST + SignalR | E4, E5, E6 | 🟠 Haute |
-| E8 | Dashboard React | E7 | 🟡 Moyenne |
-| E9 | Authentification & Sécurité | E7 | 🟠 Haute |
-| E10 | Accès distant & Tunnels | E6, E9 | 🟡 Moyenne |
-| E11 | Packaging & Déploiement | Tous | 🟡 Moyenne |
+Ce document remplace le backlog d'implementation precedent.
+
+Il sert a remettre le projet sous controle avant d'ecrire de nouvelles fonctionnalites. Le depot contient deja plusieurs scaffolds techniques, mais une partie d'entre eux a ete creee avant consolidation de la strategie produit et de l'architecture cible.
+
+La priorite immediate n'est donc **pas** d'accelerer le delivery. La priorite est de :
+
+1. realigner le depot sur le SAD retenu ;
+2. supprimer ou isoler les pistes non retenues par defaut ;
+3. definir un ordre d'execution sobre et verifiable ;
+4. reviewer ce plan ensemble avant toute nouvelle feature.
 
 ---
 
-## E1 — Infrastructure & Frigate
+## Regles de reprise
 
-> **Objectif** : un environnement Docker Compose fonctionnel avec Frigate accessible et configuré, base de données Vyzio initialisée.
-
-### US-1.1 — Structure du monorepo
-
-**En tant que** développeur, je veux une structure de dépôt cohérente avec les répertoires définis dans le SAD, afin de travailler dans un environnement organisé dès le départ.
-
-**Tâches :**
-- [ ] Créer la structure `services/vyzio/`, `services/face-worker/`, `dashboard/`, `proto/`, `config/`, `docs/`
-- [ ] Initialiser la solution .NET 10 : `Vyzio.Core`, `Vyzio.Api`, `Vyzio.Infrastructure`, `Vyzio.Tests`
-- [ ] Initialiser le projet React + TypeScript + Vite dans `dashboard/`
-- [ ] Initialiser le projet Python `face-worker/` avec `pyproject.toml` (uv ou poetry)
-- [ ] Ajouter `.gitignore`, `README.md` racine, `CONTRIBUTING.md`
-
-**Critères d'acceptation :**
-- `dotnet build` passe sans erreur
-- `npm run dev` démarre le dashboard
-- La structure correspond à l'Annexe B du SAD
+1. **Pas de nouvelle feature tant que la phase 0 n'est pas closee.**
+2. **Frigate reste le moteur de video-surveillance.** Vyzio n'implemente pas ce que Frigate couvre deja correctement.
+3. **Le worker Python n'est pas une brique par defaut.** Il reste documente comme option etudiee, pas comme dependance MVP.
+4. **Chaque etape doit produire un artefact de validation** : document, test, check runtime ou demonstration reproductible.
+5. **Le code existant peut etre supprime ou simplifie** s'il ne sert pas le plan retenu.
 
 ---
 
-### US-1.2 — Docker Compose de base
+## Diagnostic de depart
 
-**En tant que** développeur, je veux un `docker-compose.yml` fonctionnel incluant Frigate, Mosquitto et PostgreSQL, afin de démarrer l'environnement complet en une seule commande.
+### Constats
 
-**Tâches :**
-- [ ] Ajouter le service `frigate` (image `ghcr.io/blakeblackshear/frigate:stable`)
-- [ ] Ajouter le service `postgres` (image `postgres:17-alpine`)
-- [ ] Configurer le réseau Docker interne `vyzio-net` (non exposé à l'extérieur)
-- [ ] Exposer uniquement le port `8443` (Vyzio API) depuis l'hôte
-- [ ] Lier Frigate sur `127.0.0.1:5000` (non routable depuis l'extérieur du Docker)
-- [ ] Configurer les volumes : `frigate-data`, `postgres-data`, `vyzio-config`
-- [ ] Ajouter le service `face-worker` (build local) sur le réseau interne uniquement
-- [ ] Ajouter un `docker-compose.override.yml` pour le dev (hot-reload, ports exposés pour debug)
+- Le backlog precedent etait oriente vers une execution prematuree.
+- Le depot contient deja des scaffolds `dashboard`, `face-worker`, `.NET API`, migrations et compose.
+- Une partie de ces elements ne correspond plus a la strategie retenue dans le SAD.
+- Le risque principal est de continuer a empiler du code sur une base mal cadree.
 
-**Critères d'acceptation :**
-- `docker compose up` démarre tous les services sans erreur
-- Frigate UI accessible sur `localhost:5000` depuis l'hôte (dev uniquement)
-- PostgreSQL accessible depuis le service `vyzio` sur le réseau interne
+### Decision operative
+
+La reprise se fait en **4 phases**, avec une **phase 0 bloquante** de cadrage et nettoyage.
 
 ---
 
-### US-1.3 — Configuration Frigate de base
+## Vue d'ensemble
 
-**En tant que** développeur, je veux un template `frigate.yml` minimal valide, afin de valider que Frigate ingère correctement un flux RTSP de test.
-
-**Tâches :**
-- [ ] Créer `config/frigate.yml.template` avec la structure de base (MQTT, détecteurs, caméras placeholder)
-- [ ] Configurer MQTT dans Frigate (broker : `localhost:1883`, inclus dans Frigate)
-- [ ] Configurer un détecteur CPU par défaut (`detector: cpu`)
-- [ ] Valider avec une caméra de test (flux RTSP public ou `ffmpeg` dummy stream)
-- [ ] Documenter les variables à substituer lors de l'onboarding
-
-**Critères d'acceptation :**
-- Frigate démarre et se connecte au broker MQTT
-- Les événements `frigate/events` apparaissent sur MQTT lors d'une détection
-- Les thumbnails sont générés et accessibles via `GET http://frigate:5000/api/{event_id}/thumbnail.jpg`
-
-**Références SAD :** ADR-01, §8.2
+| Phase | Nom | But | Sortie attendue | Statut cible |
+|---|---|---|---|---|
+| P0 | Reprise en main | Nettoyer, aligner, figer les priorites | Depot coherent + plan valide | Bloquant |
+| P1 | Fondations runtime | Stabiliser Frigate + config + persistance minimale | Environnement de base fiable | Ensuite |
+| P2 | Integration Vyzio ↔ Frigate | Consommer les evenements Frigate proprement | Contrat d'evenements valide | Ensuite |
+| P3 | Experience produit | API metier, notifications, UI simplifiee | Parcours utilisateur MVP | Ensuite |
 
 ---
 
-### US-1.4 — Base de données Vyzio + migrations EF Core
+## P0 — Reprise en main
 
-**En tant que** développeur, je veux que le schéma Vyzio soit créé automatiquement au démarrage via EF Core Migrations, afin de ne pas gérer le DDL manuellement.
+> **Gate absolu** : tant que cette phase n'est pas validee, on ne construit aucune nouvelle fonctionnalite produit.
 
-**Tâches :**
-- [ ] Configurer EF Core dans `Vyzio.Infrastructure` avec dual-provider (PostgreSQL / SQLite)
-- [ ] Lire le provider depuis `vyzio.yml` (`database.provider`)
-- [ ] Créer les entités EF Core : `Profile`, `RecognitionEvent`, `Notification`, `Session`, `Setting`
-- [ ] Générer la migration initiale `InitialSchema`
-- [ ] Appliquer les migrations automatiquement au démarrage (`MigrateAsync()`)
-- [ ] Ajouter les index définis dans le SAD (§7.2)
-- [ ] Ajouter un `docker-compose.override.yml` qui expose PostgreSQL sur `5432` pour le dev
+### US-P0.1 — Revue du depot existant
 
-**Critères d'acceptation :**
-- `dotnet ef database update` crée le schéma complet
-- Le schéma correspond exactement au §7.2 du SAD
-- Les migrations s'appliquent automatiquement au démarrage du service Vyzio
-- Le switch SQLite ↔ PostgreSQL fonctionne via `vyzio.yml` sans changer le code
+**En tant que** porteur technique du projet, je veux inventorier ce qui est deja present et ce qui doit etre conserve, afin d'eviter de repartir sur des hypotheses implicites.
 
-**Références SAD :** ADR-06, §7.2
+**Taches :**
+- [ ] Lister les composants presents dans le depot : API, infrastructure, tests, dashboard, face-worker, proto, compose, config
+- [ ] Identifier pour chaque composant son statut : `a conserver`, `a simplifier`, `a retirer`, `a geler`
+- [ ] Verifier les ecarts entre code existant et decisions du SAD
+- [ ] Consigner les ecarts majeurs dans une section de synthese du backlog ou d'un document de reprise
 
----
+**Criteres d'acceptation :**
+- Le statut de chaque composant existant est explicite
+- Les zones de dette ou d'incoherence sont visibles sans lire tout le code
 
-## E2 — FrigateAdapter + Bus MQTT
+### US-P0.2 — Nettoyage structurel du depot
 
-> **Objectif** : Vyzio consomme les événements Frigate via MQTT et les publie sur les topics Vyzio.
+**En tant que** developpeur, je veux que le depot n'expose plus de dependances contraires au plan retenu, afin que la base de travail soit lisible et honnete.
 
-### US-2.1 — Client MQTT Vyzio
+**Taches :**
+- [ ] Retirer du runtime par defaut toute dependance au `face-worker`
+- [ ] Supprimer ou neutraliser les morceaux purement scaffoldes qui suggerent une architecture non retenue
+- [ ] Conserver uniquement les composants utiles a la trajectoire MVP retenue
+- [ ] Garder les alternatives etudiees dans la documentation, pas dans le chemin critique runtime
 
-**En tant que** service Vyzio, je veux me connecter au broker MQTT de Frigate, afin de consommer ses événements et publier les miens.
+**Criteres d'acceptation :**
+- `docker-compose.yml` reflete l'architecture cible par defaut
+- Le chemin d'execution par defaut n'impose aucun composant non retenu
+- Le depot est plus simple a comprendre qu'avant nettoyage
 
-**Tâches :**
-- [ ] Ajouter le package `MQTTnet` dans `Vyzio.Infrastructure`
-- [ ] Implémenter `IMqttBusService` : connect, subscribe, publish, reconnexion automatique
-- [ ] Configurer la connexion via `vyzio.yml` (`mqtt.host`, `mqtt.port`)
-- [ ] Enregistrer le service comme `IHostedService` dans le DI
-- [ ] Tester la connexion avec un simple subscriber sur `frigate/#`
+### US-P0.3 — Plan d'attaque valide
 
-**Critères d'acceptation :**
-- Le service se connecte au broker au démarrage
-- Reconnexion automatique en cas de perte de connexion (backoff exponentiel)
-- Les logs indiquent clairement l'état de connexion
+**En tant que** equipe produit/technique, nous voulons un ordre d'execution revu et assume, afin de reprendre le developpement sans reouvrir le debat a chaque tache.
 
----
+**Taches :**
+- [ ] Reordonner les travaux selon la valeur produit et les dependances reelles
+- [ ] Distinguer clairement : `MVP`, `post-MVP`, `options etudiees`
+- [ ] Definir les checkpoints de validation par phase
+- [ ] Faire une revue humaine du plan avant reprise du code feature
 
-### US-2.2 — FrigateAdapter : consommation des événements Frigate
+**Criteres d'acceptation :**
+- Le backlog peut etre relu seul et servir de reference operative
+- Les frontieres MVP / hors MVP sont explicites
 
-**En tant que** FrigateAdapter, je veux souscrire aux topics `frigate/events` et `frigate/{camera}/motion`, afin de détecter les événements de présence humaine.
+### Gate de sortie P0
 
-**Tâches :**
-- [ ] Implémenter `FrigateAdapter : IHostedService` dans `Vyzio.Infrastructure`
-- [ ] Désérialiser les payloads MQTT Frigate en `FrigateEvent` (type, label, camera, snapshot_path, thumbnail_path, start_time)
-- [ ] Filtrer uniquement les événements `label == "person"` et `type == "new"`
-- [ ] Télécharger le thumbnail via `GET http://frigate:5000/api/{event_id}/thumbnail.jpg` (HttpClient)
-- [ ] Transformer en `RawDetectionEvent` (domaine Vyzio) et publier sur `vyzio/events/raw_detection`
-- [ ] Logger les événements reçus et publiés
+La phase P0 est terminee seulement si :
 
-**Critères d'acceptation :**
-- Quand Frigate publie une détection `person`, Vyzio publie sur `vyzio/events/raw_detection`
-- Le thumbnail est inclus en base64 dans le payload
-- Les événements non-pertinents (car, dog, etc.) sont ignorés
-- L'adapter est la **seule** classe couplée à Frigate dans la codebase
-
-**Références SAD :** ADR-04, §6.2
+- le backlog de reprise est valide ensemble ;
+- le runtime par defaut est aligne sur le SAD ;
+- aucun composant non retenu n'est encore place au coeur du chemin nominal.
 
 ---
 
-### US-2.3 — Topics MQTT Vyzio : contrat et documentation
+## P1 — Fondations runtime
 
-**En tant que** développeur, je veux que les topics MQTT Vyzio soient documentés et validés, afin que tous les services puissent s'y souscrire de façon fiable.
+> **But** : obtenir une base d'execution minimale, fiable et conforme au positionnement Frigate-first.
 
-**Tâches :**
-- [ ] Documenter les topics dans `docs/MQTT_TOPICS.md` (payload JSON + schéma)
-- [ ] Créer des constantes typées `VyzioTopics` dans `Vyzio.Core`
-- [ ] Créer les records/DTOs correspondants aux payloads de chaque topic
+### US-P1.1 — Compose minimal et coherent
 
-**Topics à implémenter :**
-```
-vyzio/events/raw_detection      → { frigate_event_id, camera, thumbnail_b64, timestamp }
-vyzio/events/face_recognized    → { profile_id, name, confidence, camera, thumbnail_b64, timestamp }
-vyzio/events/face_unknown       → { camera, thumbnail_b64, timestamp }
-vyzio/events/face_uncertain     → { profile_candidate_id, confidence, camera, thumbnail_b64, timestamp }
-vyzio/events/camera_status      → { camera, status: online|offline|error }
-```
+**Taches :**
+- [ ] Stabiliser `docker-compose.yml` autour des seuls services retenus par defaut
+- [ ] Clarifier les volumes, ports et reseaux
+- [ ] Documenter ce qui est requis pour un boot local de developpement
 
-**Critères d'acceptation :**
-- Tous les payloads sont désérialisables sans erreur
-- Les constantes de topics sont utilisées partout (zéro string hardcodée)
+**Criteres d'acceptation :**
+- `docker compose up` demarre la base retenue sans service optionnel parasite
+- Les roles de chaque service sont comprehensibles au premier coup d'oeil
 
----
+### US-P1.2 — Configuration Frigate maitrisee
 
-## E3 — Face Recognition Worker (Python)
+**Taches :**
+- [ ] Valider un `frigate.yml` minimal compatible version cible
+- [ ] Documenter les parties generees par Vyzio et les parties purement Frigate
+- [ ] Verifier qu'un flux de test peut etre integre sans bricolage excessif
 
-> **Objectif** : un service gRPC Python qui reçoit une image JPEG et retourne les embeddings + bounding boxes.
+**Criteres d'acceptation :**
+- Frigate demarre avec une config valide
+- Les hypotheses de configuration sont documentees
 
-### US-3.1 — Contrat Protobuf partagé
+### US-P1.3 — Persistance Vyzio minimale
 
-**En tant que** développeur, je veux un fichier `.proto` unique partagé entre .NET et Python, afin que les deux services parlent le même langage sans désynchronisation.
+**Taches :**
+- [ ] Garder uniquement les entites et tables utiles au MVP reel
+- [ ] Confirmer le provider par defaut et la strategie de migration
+- [ ] Verifier que le demarrage API applique les migrations sans logique parasite
 
-**Tâches :**
-- [ ] Créer `proto/face_recognition.proto` avec les messages définis dans l'ADR-03
-- [ ] Configurer la génération de code .NET depuis le `.proto` (`Grpc.Tools`)
-- [ ] Configurer la génération de code Python depuis le `.proto` (`grpcio-tools`)
-- [ ] Ajouter la génération de code dans les build steps CI
-
-**Références SAD :** ADR-03
+**Criteres d'acceptation :**
+- La persistence minimale est comprise et testable
+- Le schema en place ne simule pas encore des features non construites
 
 ---
 
-### US-3.2 — Serveur gRPC Python (Face Worker)
+## P2 — Integration Vyzio vers Frigate
 
-**En tant que** service Python, je veux exposer un serveur gRPC sur le port `50051`, afin que Vyzio Core puisse m'envoyer des images à analyser.
+> **But** : construire la premiere vraie couture produit sans derivation prematuree vers des services secondaires.
 
-**Tâches :**
-- [ ] Initialiser le projet Python avec `uv` : `insightface`, `onnxruntime`, `grpcio`, `grpcio-tools`, `Pillow`, `numpy`
-- [ ] Implémenter `server.py` : serveur gRPC asyncio, écoute sur `0.0.0.0:50051`
-- [ ] Implémenter `recognizer.py` : chargement InsightFace (`buffalo_l` ou `buffalo_s` selon CPU), méthodes `detect_faces()` et `compute_embedding()`
-- [ ] Implémenter le handler `Recognize(image_jpeg)` → `RecognizeResponse`
-- [ ] Implémenter le handler `ComputeEmbedding(image_jpeg)` → `EmbeddingResponse`
-- [ ] Gérer les erreurs (pas de visage détecté, image corrompue)
-- [ ] Health check gRPC (`grpc_health_checking`)
-- [ ] Dockerfile multi-stage : build + image production slim
+### US-P2.1 — Contrat d'evenements Frigate entrant
 
-**Critères d'acceptation :**
-- `Recognize()` retourne les embeddings (512 dims) et bounding boxes pour chaque visage détecté
-- `ComputeEmbedding()` retourne l'embedding d'un visage seul (pour la création de profil)
-- Seuil de confiance par défaut : 0.85 (configurable via env var)
-- Le worker démarre en < 30s (chargement du modèle)
-- Le worker est **stateless** : pas de connexion DB, pas de connexion MQTT
+**Taches :**
+- [ ] Definir les evenements Frigate reellement consommes par Vyzio
+- [ ] Creer un modele d'entree limite aux besoins MVP
+- [ ] Ajouter des tests de deserialisation ou d'adaptation
 
-**Références SAD :** ADR-03, §4.4
+**Criteres d'acceptation :**
+- Le contrat Frigate utile au MVP est explicite
+- Vyzio ne depend pas de payloads implicites ou de strings dispersees
 
----
+### US-P2.2 — FrigateAdapter minimal
 
-### US-3.3 — Client gRPC .NET → Face Worker
+**Taches :**
+- [ ] Consommer MQTT et/ou REST Frigate via une seule couche d'adaptation
+- [ ] Convertir les signaux Frigate en evenements Vyzio comprehensibles
+- [ ] Journaliser clairement les erreurs d'integration
 
-**En tant que** service .NET, je veux appeler le Face Worker via gRPC, afin de déléguer le calcul d'embeddings sans dépendre de Python directement.
+**Criteres d'acceptation :**
+- Une detection Frigate pertinente est visible cote Vyzio
+- Le couplage a Frigate reste localise
 
-**Tâches :**
-- [ ] Ajouter `Grpc.Net.Client` dans `Vyzio.Infrastructure`
-- [ ] Implémenter `IFaceRecognitionClient` (interface dans `Vyzio.Core`)
-- [ ] Implémenter `GrpcFaceRecognitionClient` dans `Vyzio.Infrastructure`
-- [ ] Configurer l'endpoint via `vyzio.yml` (`face_worker.grpc_endpoint`)
-- [ ] Retry policy : 3 tentatives avec backoff (Polly)
-- [ ] Timeout : 5s par requête
+### US-P2.3 — Contrat interne Vyzio
 
-**Critères d'acceptation :**
-- Un test d'intégration appelle le worker avec une image de test et reçoit des embeddings valides
-- Les erreurs gRPC sont gérées proprement (worker indisponible → exception métier)
+**Taches :**
+- [ ] Definir les evenements internes Vyzio necessaires au MVP
+- [ ] Eviter de modeliser des canaux non utilises a court terme
+- [ ] Documenter le contrat dans un document dedie
+
+**Criteres d'acceptation :**
+- Les evenements internes ont un nommage stable et limite
+- Le contrat est reutilisable par API, notifications et UI
 
 ---
 
-## E4 — Profile Service + Face Recognition Service
+## P3 — Experience produit MVP
 
-> **Objectif** : gestion CRUD des profils, calcul et stockage des embeddings, comparaison cosinus SIMD pour l'identification.
+> **But** : materialiser la valeur Vyzio la ou Frigate ne suffit pas seul pour un public non-tech.
 
-### US-4.1 — Profile Service : CRUD des profils
+### US-P3.1 — API metier minimale
 
-**En tant que** service, je veux créer, lire, mettre à jour et supprimer des profils de personnes, afin de maintenir la base de référence pour la reconnaissance.
+**Taches :**
+- [ ] Exposer uniquement les parcours MVP prioritaires
+- [ ] Separer lecture/ecriture de facon simple et testable
+- [ ] Eviter les endpoints de confort non relies a un parcours utilisateur clair
 
-**Tâches :**
-- [ ] Implémenter `IProfileService` dans `Vyzio.Core`
-- [ ] `CreateProfile(name, category, alertMode, imageJpeg[])` → valide que chaque image contient exactement 1 visage (via gRPC), calcule les embeddings, persiste
-- [ ] `GetProfile(id)`, `ListProfiles()`, `UpdateProfile(id, ...)`, `DeleteProfile(id)`
-- [ ] La suppression efface les embeddings + tous les `RecognitionEvent` associés (RGPD)
-- [ ] Les photos brutes ne sont **pas** persistées après calcul des embeddings
-- [ ] Chargement de tous les embeddings en mémoire au démarrage pour la comparaison SIMD
+**Criteres d'acceptation :**
+- L'API sert un parcours produit identifiable
 
-**Critères d'acceptation :**
-- Un profil créé avec une photo valide est reconnaissable dans le pipeline de détection
-- La suppression d'un profil supprime en cascade tous ses événements
-- Les photos brutes ne sont jamais stockées sur disque
+### US-P3.2 — Notifications utiles
 
-**Références SAD :** §5.2, §5.3, §9.4
+**Taches :**
+- [ ] Implementer le premier canal retenu par la strategie produit
+- [ ] Limiter le scope aux notifications a forte valeur
+- [ ] Ajouter les regles de bruit minimum
 
----
+**Criteres d'acceptation :**
+- Une detection prioritaire genere une notification intelligible
 
-### US-4.2 — Face Recognition Service : pipeline de reconnaissance
+### US-P3.3 — Hub Vyzio simplifie
 
-**En tant que** service, je veux souscrire aux événements `vyzio/events/raw_detection`, analyser les visages, et publier le résultat (connu/inconnu/incertain), afin de déclencher les notifications appropriées.
+**Taches :**
+- [ ] Definir l'UI minimale necessaire pour un utilisateur non-tech
+- [ ] Eviter de reconstruire l'integralite des ecrans Frigate
+- [ ] Conserver un acces avance vers Frigate hors parcours nominal
 
-**Tâches :**
-- [ ] Implémenter `FaceRecognitionService : IHostedService` dans `Vyzio.Core`
-- [ ] Souscrire MQTT `vyzio/events/raw_detection`
-- [ ] Pour chaque événement : appeler `IFaceRecognitionClient.Recognize(thumbnail)`
-- [ ] Pour chaque visage détecté : calculer la similarité cosinus vs tous les embeddings en mémoire (`System.Numerics.Tensors`)
-- [ ] Seuil > 0.60 → `face_recognized`, entre 0.50 et 0.60 → `face_uncertain`, < 0.50 → `face_unknown`
-- [ ] Publier le résultat sur le topic MQTT approprié
-- [ ] Si plusieurs visages dans la frame : traiter chacun indépendamment
-- [ ] Gérer l'idempotence (même `frigate_event_id` reçu deux fois)
-
-**Critères d'acceptation :**
-- Alice détectée → `vyzio/events/face_recognized` publié avec son `profile_id` et `confidence`
-- Inconnu détecté → `vyzio/events/face_unknown` publié
-- Score proche du seuil → `vyzio/events/face_uncertain`
-- Latence totale (thumbnail reçu → MQTT publié) < 500ms sur CPU seul
-
-**Références SAD :** §4.2, §4.5, §6.2
+**Criteres d'acceptation :**
+- Le parcours MVP peut se faire sans exposer l'UI Frigate comme interface principale
 
 ---
 
-### US-4.3 — Confirmation / correction depuis notification
+## Hors chemin critique
 
-**En tant qu'** utilisateur, je veux confirmer ou corriger une reconnaissance depuis la notification, afin d'améliorer la précision au fil du temps.
+Les sujets suivants sont **etudies mais non retenus dans le chemin nominal actuel** :
 
-**Tâches :**
-- [ ] Endpoint API `POST /api/events/{id}/confirm` (confirme le profil identifié)
-- [ ] Endpoint API `POST /api/events/{id}/correct` (associe un autre profil)
-- [ ] Quand confirmation : ajouter le thumbnail comme référence additionnelle pour l'embedding (opt-in)
-- [ ] Boutons inline dans la notification Telegram (callback queries)
+- Worker Python dedie pour la reconnaissance faciale
+- gRPC inter-services pour l'IA
+- UI 100 % custom couvrant toutes les fonctions avancees de Frigate
+- Multi-base de donnees des le MVP
+- Acces distant complet et tunnels avant validation du parcours local
 
-**Critères d'acceptation :**
-- Une confirmation enrichit les embeddings du profil concerné
-- Une correction met à jour l'événement et peut enrichir le bon profil
-
-**Références SAD :** §5.4, §4.1
+Ils pourront revenir plus tard via ADR ou backlog post-MVP si un besoin concret l'impose.
 
 ---
 
-## E5 — Storage Service
+## Ordre de travail recommande a partir de maintenant
 
-> **Objectif** : persistance de tous les événements enrichis (reconnaissance, statut caméra, notifications envoyées).
-
-### US-5.1 — Persistance des événements de reconnaissance
-
-**En tant que** service, je veux persister chaque événement de reconnaissance dans la base de données, afin de constituer l'historique consultable depuis le dashboard.
-
-**Tâches :**
-- [ ] Implémenter `StorageService : IHostedService` dans `Vyzio.Core`
-- [ ] Souscrire MQTT : `vyzio/events/face_recognized`, `face_unknown`, `face_uncertain`
-- [ ] Insérer un `RecognitionEvent` en base pour chaque événement reçu
-- [ ] Stocker le thumbnail JPEG en base (ou sur le filesystem selon la config)
-- [ ] Idempotence : vérifier l'existence via `frigate_event_id` avant insertion
-
-**Critères d'acceptation :**
-- Chaque détection est persistée en moins de 100ms
-- Le dashboard peut lire l'historique paginé sans requête N+1
+1. Valider ensemble ce backlog de reprise.
+2. Finir le nettoyage structurel du depot.
+3. Verifier que la base runtime restante demarre proprement.
+4. Reprendre ensuite seulement la phase P1, une story a la fois.
 
 ---
 
-### US-5.2 — Politique de rétention automatique
+## Definition of done pour une story
 
-**En tant qu'** utilisateur, je veux que les événements au-delà de la durée de rétention configurée soient supprimés automatiquement, afin de ne pas saturer le stockage.
+Une story n'est pas consideree comme terminee si un seul des points suivants manque :
 
-**Tâches :**
-- [ ] Lire la durée de rétention depuis `settings` (ex. 30 jours)
-- [ ] Job de nettoyage quotidien (HostedService / BackgroundService)
-- [ ] Supprimer les `RecognitionEvent` plus anciens que la durée configurée
-- [ ] Logger le nombre d'événements supprimés
-- [ ] Alerter (dashboard) si l'espace disque dépasse 80%
-
-**Références SAD :** §7.4
-
----
-
-## E6 — Notification Service
-
-> **Objectif** : envoi des notifications via Telegram (prioritaire), Discord, FCM, ntfy, webhook, email.
-
-### US-6.1 — Notification Service : orchestrateur
-
-**En tant que** service, je veux souscrire aux événements de reconnaissance et décider quelles notifications envoyer selon les règles configurées, afin d'éviter les alertes intempestives.
-
-**Tâches :**
-- [ ] Implémenter `NotificationService : IHostedService` dans `Vyzio.Core`
-- [ ] Souscrire MQTT : `vyzio/events/face_recognized`, `face_unknown`, `camera_status`
-- [ ] Implémenter `RuleEngine` : vérifier `alert_mode` du profil, plages horaires, rate-limit (30s par défaut)
-- [ ] Dispatcher vers les `INotificationChannel` configurés
-- [ ] Logger chaque notification envoyée dans la table `notifications`
-- [ ] Gérer la file locale si Internet est indisponible (retry à la reconnexion)
-
-**Critères d'acceptation :**
-- Mode `silent` → aucune notification envoyée
-- Mode `ignore` → aucun événement créé
-- Rate-limit respecté (pas deux notifications du même type sur la même caméra en < 30s)
-- Plages horaires respectées
-
-**Références SAD :** §6.4, ADR-09
-
----
-
-### US-6.2 — Canal Telegram Bot
-
-**En tant qu'** utilisateur, je veux recevoir les alertes sur Telegram avec la photo de détection, afin de voir immédiatement qui est à ma porte.
-
-**Tâches :**
-- [ ] Implémenter `TelegramNotificationChannel : INotificationChannel`
-- [ ] Appeler `sendPhoto` API Telegram avec le thumbnail JPEG
-- [ ] Caption : `"{Nom} est arrivé·e • {Caméra} • {HH:mm}"` (ou "Visage inconnu" si inconnu)
-- [ ] Boutons inline (Telegram `InlineKeyboardMarkup`) : "✅ Confirmer" / "❌ Corriger" pour les événements `face_uncertain`
-- [ ] Gérer les réponses de callback Telegram (webhook ou polling long)
-- [ ] Configurer via `settings` : `telegram.bot_token`, `telegram.chat_id`
-- [ ] Test de connexion depuis le dashboard ("Envoyer un message de test")
-
-**Critères d'acceptation :**
-- Message reçu sur Telegram avec la photo visible dans les 3s après détection
-- La photo est visible hors réseau local sans configuration supplémentaire
-- Les boutons de confirmation fonctionnent
-
-**Références SAD :** ADR-09, §6.3
+- objectif metier clair ;
+- code minimal et lisible ;
+- test ou verification executable adaptee ;
+- impact documentaire mis a jour si necessaire ;
+- absence de dependance implicite a une option non retenue.
 
 ---
 

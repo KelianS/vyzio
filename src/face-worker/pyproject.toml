@@ -1,7 +1,7 @@
 [project]
 name = "vyzio-face-worker"
 version = "0.1.0"
-description = "Face worker scaffold for Vyzio"
+description = "Experimental face worker option for Vyzio; not part of the default runtime"
 requires-python = ">=3.12"
 dependencies = [
   "grpcio>=1.71.0",

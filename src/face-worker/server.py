@@ -1,11 +1,12 @@
-"""Epic 1 scaffold server.
+"""Experimental face-worker stub.
 
-The real gRPC implementation is planned in Epic 3.
+This component is intentionally out of the default runtime path.
+It remains only as an explored option while the repository is being reset.
 """
 
 
 def main() -> None:
-    print("Vyzio face-worker scaffold is ready.")
+    print("Vyzio face-worker is an experimental option and is not used by default.")
 
 
 if __name__ == "__main__":

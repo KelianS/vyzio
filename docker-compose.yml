@@ -5,7 +5,6 @@ services:
       dockerfile: src/vyzio/Vyzio.Api/Dockerfile
     container_name: vyzio-api
     depends_on:
-      - face-worker
       - frigate
     environment:
       ASPNETCORE_URLS: http://+:8443
@@ -27,14 +26,6 @@ services:
       - ./config/frigate.yml.template:/config/config.yml:ro
       - frigate-data:/media/frigate
       - /etc/localtime:/etc/localtime:ro
-    networks:
-      - vyzio-net
-
-  face-worker:
-    build:
-      context: .
-      dockerfile: src/face-worker/Dockerfile
-    container_name: vyzio-face-worker
     networks:
       - vyzio-net
 
