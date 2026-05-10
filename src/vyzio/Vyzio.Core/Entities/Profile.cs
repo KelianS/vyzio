@@ -18,10 +18,6 @@ public class Profile
     [Required, MaxLength(50)]
     public string AlertMode { get; set; } = "notify"; // notify|silent|ignore
 
-    public byte[]? Embedding { get; set; }
-
-    public int EmbeddingCount { get; set; }
-
     public DateTimeOffset? LastSeenAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

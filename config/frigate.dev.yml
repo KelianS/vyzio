@@ -1,3 +1,7 @@
+# Development-only Frigate config.
+# This file exists to boot a minimal local runtime before Vyzio generates
+# and manages the effective Frigate configuration in the product flow.
+
 mqtt:
   host: 127.0.0.1
   port: 1883

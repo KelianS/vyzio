@@ -15,7 +15,7 @@ public class RecognitionEvent
     [Required, MaxLength(200)]
     public required string CameraName { get; set; }
 
-    /// <summary>face_known | face_unknown | face_uncertain | motion_only</summary>
+    /// <summary>Frigate-derived event category consumed by Vyzio rules.</summary>
     [Required, MaxLength(50)]
     public required string RecognitionType { get; set; }
 

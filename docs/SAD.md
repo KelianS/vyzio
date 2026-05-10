@@ -1030,7 +1030,7 @@ vyzio/
 │   └── vite.config.ts
 │
 ├── config/
-│   ├── frigate.yml.template       # Généré par l'onboarding Vyzio
+│   ├── frigate.dev.yml            # Fallback de developpement avant config geree par Vyzio
 │   └── vyzio.yml
 │
 ├── docker-compose.yml

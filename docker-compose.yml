@@ -23,7 +23,9 @@ services:
     privileged: true
     shm_size: "512mb"
     volumes:
-      - ./config/frigate.yml.template:/config/config.yml:ro
+      # Development runtime only: this sample config is replaced later by
+      # a Vyzio-managed Frigate config in the nominal product flow.
+      - ./config/frigate.dev.yml:/config/config.yml:ro
       - frigate-data:/media/frigate
       - /etc/localtime:/etc/localtime:ro
     networks:

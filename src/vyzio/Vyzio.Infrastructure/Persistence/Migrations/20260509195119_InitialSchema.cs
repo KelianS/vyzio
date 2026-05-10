@@ -35,8 +35,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     category = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     alert_mode = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    embedding = table.Column<byte[]>(type: "BLOB", nullable: true),
-                    embedding_count = table.Column<int>(type: "INTEGER", nullable: false),
                     last_seen_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
                 },

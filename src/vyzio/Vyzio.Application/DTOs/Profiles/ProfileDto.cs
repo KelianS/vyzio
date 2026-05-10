@@ -7,7 +7,6 @@ public sealed record ProfileDto(
     string Name,
     string Category,
     string AlertMode,
-    int EmbeddingCount,
     DateTimeOffset? LastSeenAt,
     DateTimeOffset CreatedAt)
 {
@@ -16,7 +15,6 @@ public sealed record ProfileDto(
         p.Name,
         p.Category,
         p.AlertMode,
-        p.EmbeddingCount,
         p.LastSeenAt,
         p.CreatedAt);
 }

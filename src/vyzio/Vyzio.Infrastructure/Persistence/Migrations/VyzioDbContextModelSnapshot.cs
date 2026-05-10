@@ -77,14 +77,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
-                    b.Property<byte[]>("Embedding")
-                        .HasColumnType("BLOB")
-                        .HasColumnName("embedding");
-
-                    b.Property<int>("EmbeddingCount")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("embedding_count");
-
                     b.Property<DateTimeOffset?>("LastSeenAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_seen_at");
