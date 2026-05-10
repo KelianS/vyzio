@@ -72,6 +72,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux etre alerte lorsqu'un visage inconnu apparait, afin de pouvoir reagir vite.
 
+> **En tant qu'utilisateur**, je veux choisir quels types de detection doivent generer des evenements utiles, afin d'adapter le systeme a mon contexte (personnes, animaux, vehicules, etc.).
+
 > **En tant qu'utilisateur**, je veux eviter les alertes inutiles, afin que le systeme reste credibile au quotidien.
 
 > **En tant qu'utilisateur**, je veux pouvoir confirmer ou corriger une reconnaissance, afin d'ameliorer la qualite du systeme dans le temps.
@@ -79,6 +81,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 ### 3.2 Regles fonctionnelles
 
 - la surveillance doit distinguer au minimum les evenements prioritaires des evenements de bruit ;
+- l'utilisateur doit pouvoir configurer les types de detection Frigate pris en compte dans le flux produit ;
+- la configuration doit permettre au minimum d'activer ou desactiver des categories comme les personnes, animaux ou vehicules selon les capacites fournies par Frigate ;
 - un evenement reconnu doit indiquer la camera, l'heure et l'identite estimee si disponible ;
 - un evenement incertain doit pouvoir etre presente comme tel, sans sur-promettre une certitude ;
 - l'utilisateur doit pouvoir corriger une reconnaissance depuis un parcours simple ;

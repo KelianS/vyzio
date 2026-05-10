@@ -18,7 +18,7 @@ Il ne redefinit ni la strategie produit ni l'architecture cible. Il qualifie l'e
 - Le depot contient deja une base backend .NET exploitable et coherente avec la Clean Architecture.
 - Le dashboard existe mais reste volontairement en mode placeholder ; il doit etre conserve puis gele tant que les parcours MVP ne sont pas rouverts.
 - Le runtime nominal est bien recentre sur `frigate` + `vyzio-api`, avec une configuration de developpement Frigate maintenant explicite.
-- Les principaux ecarts restants sont documentaires et structurels : vocabulaire encore ambigu dans certains docs, artefacts generes presents localement, et contrat d'evenements backend encore a resserrer autour de Frigate.
+- Les principaux ecarts restants sont documentaires et structurels : vocabulaire encore ambigu dans certains docs, artefacts generes presents localement, et declinaison code du contrat d'evenements Frigate encore a implementer.
 
 ---
 
@@ -26,9 +26,9 @@ Il ne redefinit ni la strategie produit ni l'architecture cible. Il qualifie l'e
 
 | Surface | Role constate | Statut | Ecart principal | Action de reprise |
 |---|---|---|---|---|
-| `src/vyzio/Vyzio.Core` | Entites et interfaces domaine | **A conserver** | Le profil a ete simplifie, mais le contrat d'evenements reste encore oriente `RecognitionEvent` | Requalifier progressivement les evenements autour du contrat Frigate retenu |
+| `src/vyzio/Vyzio.Core` | Entites et interfaces domaine | **A conserver** | Le profil a ete simplifie, mais le contrat code reste encore oriente `RecognitionEvent` | Requalifier progressivement les evenements autour du contrat Frigate retenu |
 | `src/vyzio/Vyzio.Application` | Use cases backend | **A conserver** | Slice `Profiles` present mais scope encore partiel | Garder comme base de reference pour les prochains use cases |
-| `src/vyzio/Vyzio.Infrastructure` | EF Core + config runtime | **A conserver** | Persistance minimale utile, avec un schema deja allegé mais encore centre sur `RecognitionEvent` | Revoir le contrat d'evenements a l'aune de l'integration Frigate retenue en P2 |
+| `src/vyzio/Vyzio.Infrastructure` | EF Core + config runtime | **A conserver** | Persistance minimale utile, avec un schema deja allegé mais encore centre sur `RecognitionEvent` | Revoir la declinaison code du contrat d'evenements a l'aune de l'integration Frigate retenue en P2 |
 | `src/vyzio/Vyzio.Api` | Minimal API + migrations au boot | **A conserver** | Surface saine mais tres amont par rapport au MVP complet | Conserver sans etendre avant verrouillage du contrat Frigate |
 | `src/vyzio/Vyzio.Tests` | Unit + integration tests | **A conserver** | Structure plus lisible apres renommage, reste a etendre quand les nouveaux use cases arriveront | Garder comme base de validation de reference |
 | `src/dashboard` | Hub frontend minimal | **A geler** | UI placeholder assumee | Conserver la base Vite/React sans rouvrir de chantier UI avant P3 |
@@ -89,20 +89,20 @@ Il ne redefinit ni la strategie produit ni l'architecture cible. Il qualifie l'e
 
 - Garder ce fichier comme fallback de developpement jusqu'a la mise en place de la generation de config par Vyzio.
 
-### 4. Simplification du modele de donnees MVP
+### 4. Declinaison code du contrat d'evenements MVP
 
 **Constat**
 
 - Les champs d'embedding ont ete retires du profil.
-- Le contrat d'evenements reste encore nomme du point de vue `RecognitionEvent` et devra etre resserre dans la suite de P0/P1.
+- Le contrat minimal Frigate a ete fige dans le SAD, mais le code n'en porte pas encore toute la terminologie cible.
 
 **Impact**
 
-- Le risque a baisse, mais le schema peut encore suggerer une couche d'evenements trop specifique a Vyzio.
+- Le risque documentaire est maintenant leve, mais l'implementation devra encore s'aligner sur ce contrat minimal.
 
 **Action**
 
-- Continuer la requalification du schema autour des identites, mappings Frigate, evenements consommes et decisions de notification.
+- Requalifier progressivement le schema et les DTO autour des identites, mappings Frigate, evenements consommes et decisions de notification.
 
 ### 5. Gel explicite du dashboard
 
@@ -140,7 +140,7 @@ Il ne redefinit ni la strategie produit ni l'architecture cible. Il qualifie l'e
 1. Aligner `README.md` avec le SAD pour supprimer l'ambiguite de positionnement.
 2. Nettoyer localement les artefacts generes (`bin`, `obj`, `dist`, `node_modules`) pour relire le depot proprement.
 3. Nettoyer localement les artefacts generes (`bin`, `obj`, `dist`, `node_modules`) pour relire le depot proprement.
-4. Continuer a resserrer le contrat d'evenements backend autour des evenements Frigate reellement consommes.
+4. Decliner en code le contrat d'evenements backend autour des evenements Frigate reellement consommes.
 5. Garder le dashboard gele tant que les parcours MVP ne sont pas rouverts.
 
 ---

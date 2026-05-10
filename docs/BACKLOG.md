@@ -69,8 +69,6 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 **Blocage restant avant sortie de P0 :**
 
-- valider sur une machine avec Docker disponible que le runtime minimal restant se charge proprement ;
-- figer le contrat minimal vise pour les evenements Frigate consommes par Vyzio ;
 - faire une revue humaine finale du depot et du plan avant reouverture des stories feature.
 
 ### US-P0.1 — Cartographier l'existant utile
@@ -105,6 +103,9 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 - `README.md` et `docs/SAD.md` sont alignes sur le positionnement Frigate-first.
 - Le runtime de dev utilise `config/frigate.dev.yml` comme fallback explicite.
+- Le runtime minimal a ete valide via WSL / Docker : `docker compose config`, `docker compose up -d`, API `http://localhost:8443/health` OK, UI/API Frigate OK.
+- Le conteneur orphelin `vyzio-face-worker` a ete supprime de l'environnement Docker local.
+- Le contrat minimal d'entree Frigate est fige dans `docs/SAD.md` : topic retenu, champs requis, champs optionnels et normalisation minimale.
 - Le dashboard a ete gele sans reliquats de scaffold visibles.
 - Le modele `Profile` ne porte plus de stockage d'embeddings.
 
@@ -203,6 +204,7 @@ La phase P0 est terminee seulement si :
 **Taches :**
 - [ ] Definir les evenements Frigate reellement consommes par Vyzio
 - [ ] Creer un modele d'entree limite au MVP
+- [ ] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
 - [ ] Ajouter des tests de deserialisation et d'adaptation
 
 **Criteres d'acceptation :**
@@ -214,6 +216,7 @@ La phase P0 est terminee seulement si :
 **Taches :**
 - [ ] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
 - [ ] Convertir les signaux Frigate en evenements Vyzio comprehensibles
+- [ ] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
 - [ ] Journaliser proprement les erreurs d'integration
 
 **Criteres d'acceptation :**
@@ -287,10 +290,8 @@ Ils ne reviennent dans le backlog qu'apres nouvelle decision documentaire dans l
 ## Ordre de travail recommande a partir de maintenant
 
 1. Valider ensemble la sortie documentaire de P0 (`BACKLOG` + `REPRISE_AUDIT`).
-2. Verifier sur une machine avec Docker que `docker compose config` puis `docker compose up` demarrent bien le runtime minimal restant.
-3. Figer le contrat minimal d'evenements Frigate reellement consommes par Vyzio avant ouverture de P1.3/P2.1.
-4. Faire la revue humaine finale de sortie P0.
-5. Reprendre ensuite seulement P1, une story a la fois.
+2. Faire la revue humaine finale de sortie P0.
+3. Reprendre ensuite seulement P1, une story a la fois.
 
 ---
 
