@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Profiles;
 
@@ -13,6 +14,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton(new FrigateLabelFilter(retainedFrigateLabels));
         services.AddSingleton<FrigateEventContractAdapter>();
+        services.AddSingleton<DetectionEventContractProjector>();
 
         // Profile use cases
         services.AddScoped<CreateProfileUseCase>();

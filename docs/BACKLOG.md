@@ -116,9 +116,9 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P2.3 — Contrat interne Vyzio
 
 **Taches :**
-- [ ] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
-- [ ] Eviter de modeliser des canaux non utilises a court terme
-- [ ] Documenter le contrat dans un document dedie si necessaire
+- [x] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
+- [x] Eviter de modeliser des canaux non utilises a court terme
+- [x] Documenter le contrat dans un document dedie si necessaire
 
 **Criteres d'acceptation :**
 - Les evenements internes sont limites et stables
