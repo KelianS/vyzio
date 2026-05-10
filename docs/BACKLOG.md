@@ -46,115 +46,6 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 ---
 
-## Vue d'ensemble
-
-| Phase | Nom | But | Sortie attendue | Statut cible |
-|---|---|---|---|---|
-| P0 | Reprise en main | Nettoyer, aligner, figer les priorites | Depot coherent + plan valide | Bloquant |
-| P1 | Fondations runtime | Stabiliser Frigate + config + persistance minimale | Environnement de base fiable | Ensuite |
-| P2 | Integration Vyzio ↔ Frigate | Consommer et transformer les evenements Frigate proprement | Contrat d'evenements valide | Ensuite |
-| P3 | Experience produit MVP | API metier, notifications, hub simplifie | Parcours utilisateur MVP | Ensuite |
-
----
-
-## P0 — Reprise en main
-
-> Gate absolu : aucune feature produit ne redemarre tant que cette phase n'est pas terminee.
-
-### Etat actuel de P0
-
-- **US-P0.1** : realisee ; la cartographie de l'existant a permis de qualifier les surfaces utiles et les ecarts majeurs.
-- **US-P0.2** : realisee ; le repo a ete nettoye, le narratif Frigate-first a ete aligne, et le runtime de dev a ete clarifie.
-- **US-P0.3** : realisee ; les checkpoints ont ete poses et la revue humaine de sortie a ete faite.
-
-**Statut de phase :**
-
-- P0 peut etre consideree comme cloturee.
-
-### US-P0.1 — Cartographier l'existant utile
-
-**Taches :**
-- [x] Lister les composants reellement presents dans le depot : API, application, infrastructure, tests, dashboard, compose, config, docs
-- [x] Qualifier chaque composant : `a conserver`, `a simplifier`, `a retirer`, `a geler`
-- [x] Identifier les ecarts entre code present et architecture retenue
-- [x] Produire une synthese de reprise exploitable sans relire tout le repo
-
-**Criteres d'acceptation :**
-- Le statut de chaque surface existante est explicite
-- Les incoherences majeures sont visibles rapidement
-
-**Preuve actuelle :**
-
-- La cartographie de reprise a ete integree puis consolidee dans le backlog, le SAD et l'etat actuel du repo.
-
-### US-P0.2 — Nettoyage structurel complet
-
-**Taches :**
-- [x] Retirer les reliquats de scaffolding non retenus
-- [x] Aligner les documents repo avec l'architecture par defaut
-- [x] Garder uniquement les composants utiles a la trajectoire MVP actuelle
-- [x] Sortir les alternatives etudiees du chemin critique du depot
-
-**Criteres d'acceptation :**
-- Le depot raconte la meme histoire dans le code, le compose et les docs
-- Aucun composant vide ou trompeur ne laisse penser qu'il fait partie du MVP
-
-**Preuves actuelles :**
-
-- `README.md` et `docs/SAD.md` sont alignes sur le positionnement Frigate-first.
-- Le runtime de dev utilise `config/frigate.dev.yml` comme fallback explicite.
-- Le runtime minimal a ete valide via WSL / Docker : `docker compose config`, `docker compose up -d`, API `http://localhost:8443/health` OK, UI/API Frigate OK.
-- Le conteneur orphelin `vyzio-face-worker` a ete supprime de l'environnement Docker local.
-- Le contrat minimal d'entree Frigate est fige dans `docs/SAD.md` : topic retenu, champs requis, champs optionnels et normalisation minimale.
-- Le dashboard a ete gele sans reliquats de scaffold visibles.
-- Le modele `Profile` ne porte plus de stockage d'embeddings.
-
-### US-P0.3 — Verrouiller le plan d'attaque
-
-**Taches :**
-- [x] Reordonner le travail selon la valeur produit et les dependances reelles
-- [x] Distinguer clairement `MVP`, `post-MVP` et `options etudiees`
-- [x] Definir les checkpoints de validation par phase
-- [x] Faire une revue humaine avant reprise du code feature
-
-**Criteres d'acceptation :**
-- Le backlog peut servir de reference de pilotage
-- Les frontieres MVP / hors MVP sont nettes
-
-### Checkpoints de validation par phase
-
-#### Checkpoint de sortie P0
-
-- Le repo ne contient plus de composant vide, ambigu ou contradictoire dans le chemin nominal.
-- Le runtime minimal restant est valide sur une machine equipee de Docker (`docker compose config` puis `docker compose up`).
-- Le backlog de reprise est relu et valide humainement avant reouverture des stories feature.
-
-#### Checkpoint d'entree P1
-
-- Le compose minimal et le fallback `config/frigate.dev.yml` sont consideres comme base de dev seulement.
-- Les chantiers P1 n'introduisent pas de nouvelle strategie hors SAD/SPECS valides.
-
-#### Checkpoint d'entree P2
-
-- Le contrat d'entree Frigate est explicite et teste.
-- Les evenements internes Vyzio ne dupliquent pas un pipeline IA deja porte par Frigate.
-
-#### Checkpoint d'entree P3
-
-- Le parcours MVP prioritaire est trace de bout en bout : evenement Frigate, regle Vyzio, notification ou exposition API, puis UI minimale.
-- Les parcours UX retenus restent limites a la valeur produit non-tech.
-
-### Gate de sortie P0
-
-La phase P0 est terminee seulement si :
-
-- le plan de reprise est valide ensemble ;
-- le runtime par defaut est aligne sur le SAD ;
-- le depot ne contient plus de composants vides ou contradictoires ;
-- les prochaines stories peuvent etre prises sans reouvrir la strategie.
-
----
-
 ## P1 — Fondations runtime
 
 > But : obtenir une base d'execution minimale, fiable et conforme au positionnement Frigate-first.
@@ -162,9 +53,9 @@ La phase P0 est terminee seulement si :
 ### US-P1.1 — Compose minimal et coherent
 
 **Taches :**
-- [ ] Stabiliser `docker-compose.yml` autour des seuls services retenus par defaut
-- [ ] Clarifier volumes, ports, reseaux et dependances
-- [ ] Documenter le boot local de developpement
+- [x] Stabiliser `docker-compose.yml` autour des seuls services retenus par defaut
+- [x] Clarifier volumes, ports, reseaux et dependances
+- [x] Documenter le boot local de developpement
 
 **Criteres d'acceptation :**
 - `docker compose up` demarre la base retenue sans service parasite

@@ -3,8 +3,17 @@
 ## Setup
 
 1. Install .NET SDK, Node.js, pnpm, and Docker.
-2. Copy and adapt configuration in config/vyzio.yml and config/frigate.yml.template.
-3. Start infrastructure with docker compose up -d.
+2. Review `config/vyzio.yml` and `config/frigate.dev.yml`.
+3. Replace the placeholder RTSP URL in `config/frigate.dev.yml` and enable `test_camera` only when you are ready to validate a real stream.
+4. Start the local runtime with `docker compose up --build`.
+5. Open `http://127.0.0.1:8443/health` for the API and `http://127.0.0.1:5000` for the Frigate UI when the override file is active.
+
+## Local runtime contract
+
+- `docker-compose.yml` is the minimal retained runtime: `vyzio-api` + `frigate`, nothing else.
+- `docker-compose.override.yml` only exposes developer-facing ports and development environment overrides.
+- `config/frigate.dev.yml` is a fallback boot config for repository reset work. It is intentionally minimal and keeps the sample camera disabled until a real stream is available.
+- MQTT is not part of the default boot path yet; it will be introduced with the Frigate integration slice that actually consumes it.
 
 ## Project layout
 
