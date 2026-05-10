@@ -1,0 +1,8 @@
+services:
+  frigate:
+    ports:
+      - "5000:5000"
+
+  vyzio-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development

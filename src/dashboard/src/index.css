@@ -1,0 +1,63 @@
+:root {
+  --text: #3c3a37;
+  --text-h: #16130f;
+  --bg: #f7f2e8;
+  --border: #d7cfc0;
+  --accent: #0e7c66;
+  --panel: rgba(255, 252, 247, 0.88);
+  --sans: "Segoe UI", "Trebuchet MS", sans-serif;
+  --heading: Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+#root {
+  width: min(1100px, calc(100% - 32px));
+  max-width: 100%;
+  margin: 24px auto;
+  text-align: center;
+  min-height: 100svh;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.7), transparent 30%),
+    linear-gradient(180deg, #f7f2e8 0%, #efe5d6 100%);
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: clamp(2.5rem, 6vw, 4.6rem);
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  margin: 0 0 18px;
+}
+h2 {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+p {
+  margin: 0;
+}
