@@ -10,8 +10,6 @@ import {
   getEventTone,
 } from './ui/formatters/hub'
 
-const quickActions = ['Consulter les evenements recents', 'Gerer les profils connus', 'Verifier les alertes Telegram'] as const
-
 function App() {
   const { data, loading, error } = useHubOverview(getHubOverview)
   const recentEvents = data?.recentEvents ?? []
@@ -23,12 +21,8 @@ function App() {
       <section className="hero-panel">
         <div className="hero-copy">
           <p className="eyebrow">Hub Vyzio</p>
-          <h1>Votre surveillance utile, sans interface technique.</h1>
-          <p className="lede">
-            Le hub centralise l'etat du systeme, les derniers evenements et les actions
-            prioritaires. Les reglages avances Frigate restent disponibles, mais hors du
-            parcours principal.
-          </p>
+          <h1>Etat, evenements, profils.</h1>
+          <p className="lede">Le strict utile, sans couche technique visible.</p>
         </div>
 
         <div className="hero-status" aria-label="Etat general du systeme">
@@ -51,22 +45,16 @@ function App() {
           </dl>
 
           {loading ? <p className="status-inline">Chargement du hub...</p> : null}
-          {error ? <p className="status-inline error">{error}</p> : null}
+          {error ? <p className="status-inline error">Connexion API impossible.</p> : null}
         </div>
       </section>
 
       <section className="hub-grid">
         <article className="panel panel-primary">
           <div className="panel-heading">
-            <p className="section-kicker">Accueil</p>
-            <h2>Actions principales</h2>
+            <p className="section-kicker">Resume</p>
+            <h2>Ce qui compte maintenant</h2>
           </div>
-
-          <ul className="action-list" aria-label="Actions principales">
-            {quickActions.map((action) => (
-              <li key={action}>{action}</li>
-            ))}
-          </ul>
 
           <div className="summary-strip" aria-label="Resume du hub">
             <article>
@@ -144,13 +132,10 @@ function App() {
         <article className="panel panel-expert" id="expert">
           <div className="panel-heading">
             <p className="section-kicker">Mode avance</p>
-            <h2>Acces Frigate hors parcours nominal</h2>
+            <h2>Frigate</h2>
           </div>
 
-          <p className="expert-copy">
-            Pour les reglages experts ou le support, Frigate reste accessible comme outil
-            avance. Le hub Vyzio ne tente pas de reconstruire l'integralite de son interface.
-          </p>
+          <p className="expert-copy">Acces reserve aux reglages experts et au support.</p>
 
           <a className="expert-link" href={dashboardRuntime.frigateBaseUrl} target="_blank" rel="noreferrer">
             Ouvrir Frigate en mode avance

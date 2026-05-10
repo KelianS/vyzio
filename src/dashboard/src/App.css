@@ -201,29 +201,9 @@
   color: var(--brand-sand);
 }
 
-.action-list,
-.principle-list,
 .profile-list {
   display: grid;
   gap: 12px;
-}
-
-.action-list,
-.principle-list {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.action-list li,
-.principle-list li {
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.64);
-}
-
-.principle-list li {
-  background: rgba(255, 250, 242, 0.08);
 }
 
 .panel-cta-row {
