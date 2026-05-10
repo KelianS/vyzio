@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Persistence;
 
-namespace Vyzio.Tests;
+namespace Vyzio.Tests.Persistence;
 
 public class VyzioDbContextTests : IDisposable
 {

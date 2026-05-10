@@ -10,7 +10,7 @@ Ring, Nest, Arlo : la surveillance cloud devient la norme. Vos images chez Amazo
 
 **Vyzio prend le contre-pied radical.**
 
-Vyzio est une solution de surveillance domestique **prête à brancher, sans technicité, sans abonnement**, conçue pour les familles qui en ont assez de la complexité. Grâce à l'IA embarquée, Vyzio reconnaît les visages, identifie les personnes connues, et vous notifie en temps réel — tout cela localement, sans que vos images ne quittent votre maison.
+Vyzio est une solution de surveillance domestique **prête à brancher, sans technicité, sans abonnement**, conçue pour les familles qui en ont assez de la complexité. En s'appuyant sur Frigate pour l'analyse vidéo locale, Vyzio rend la reconnaissance des personnes, les alertes utiles et la configuration accessibles sans exposer l'utilisateur à la complexité technique sous-jacente.
 
 **Vyzio, c'est Frigate sans les technicitures.** Pour quelqu'un qui veut juste que ça marche. Avec du support français si ça casse.
 
@@ -18,13 +18,13 @@ Vyzio est une solution de surveillance domestique **prête à brancher, sans tec
 
 ## Fonctionnalités clés
 
-- **Reconnaissance faciale IA** — Identifie les membres du foyer, les amis réguliers, les livreurs. Alerte immédiatement sur tout visage inconnu.
-- **Notifications intelligentes** — Push mobile avec photo + nom (si connu) ou alerte "visage inconnu". Pas de spam, seulement ce qui compte.
+- **Identification locale des personnes** — Frigate reconnait localement les visages et Vyzio transforme ces signaux en alertes compréhensibles.
+- **Notifications intelligentes** — Vyzio priorise les alertes et les rend lisibles pour un usage non-tech. Pas de spam, seulement ce qui compte.
 - **Compatible caméras IP existantes** — Protocoles RTSP / ONVIF. Vos caméras actuelles fonctionnent, pas besoin de tout racheter.
 - **Stockage local des enregistrements** — Vos vidéos sont archivées sur votre propre machine, pas sur le cloud d'un tiers.
 - **Offline-first & résilient** — Le système fonctionne sans connexion internet. Les notifications sont envoyées dès que le réseau est disponible.
-- **Dashboard de gestion** — Interface web pour gérer les caméras, les profils de personnes, les zones de détection et les alertes.
-- **Détection d'événements** — Mouvement, intrusion, présence prolongée. Paramétrable par zone et par plage horaire.
+- **Dashboard de gestion** — Interface web pour gérer les caméras, les profils produit, les règles métier et les alertes.
+- **Détection d'événements** — Frigate capte et publie les événements ; Vyzio les filtre, les classe et les exploite dans les parcours produit.
 
 ---
 
@@ -77,10 +77,10 @@ Les contributions sur la vision, les cas d'usage et les spécifications sont les
 ## Contribuer
 
 Vyzio est un projet open source. Les contributions sont bienvenues sur :
-- Le moteur de détection et reconnaissance (core engine)
-- Les intégrations caméras (RTSP, ONVIF, drivers)
-- Les modèles IA (reconnaissance faciale, détection d'événements)
+- L'intégration produit autour de Frigate
+- Les parcours backend (.NET) et règles métier
 - L'interface de gestion (dashboard)
+- La qualité du runtime local et de l'expérience d'installation
 - La documentation
 
 ---
