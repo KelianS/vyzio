@@ -137,13 +137,13 @@ La phase P0 est terminee seulement si :
 ### US-P1.3 — Persistance Vyzio minimale
 
 **Taches :**
-- [ ] Garder uniquement les entites et tables utiles au MVP reel
+- [ ] Garder uniquement les entites et tables utiles au MVP reel (profils produit, mapping identites Frigate, evenements, notifications, sessions)
 - [ ] Confirmer le provider par defaut et la strategie de migration
 - [ ] Verifier que le demarrage API applique les migrations sans logique parasite
 
 **Criteres d'acceptation :**
 - La persistence minimale est testable et comprise
-- Le schema ne simule pas encore des features non construites
+- Le schema ne simule pas encore des features non construites (notamment un pipeline biometrie propre a Vyzio)
 
 ---
 
@@ -165,7 +165,7 @@ La phase P0 est terminee seulement si :
 ### US-P2.2 — FrigateAdapter minimal
 
 **Taches :**
-- [ ] Consommer MQTT et/ou REST Frigate via une seule couche d'adaptation
+- [ ] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
 - [ ] Convertir les signaux Frigate en evenements Vyzio comprehensibles
 - [ ] Journaliser proprement les erreurs d'integration
 
@@ -176,13 +176,13 @@ La phase P0 est terminee seulement si :
 ### US-P2.3 — Contrat interne Vyzio
 
 **Taches :**
-- [ ] Definir les evenements internes necessaires au MVP
+- [ ] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
 - [ ] Eviter de modeliser des canaux non utilises a court terme
 - [ ] Documenter le contrat dans un document dedie si necessaire
 
 **Criteres d'acceptation :**
 - Les evenements internes sont limites et stables
-- Le contrat est reutilisable par API, notifications et UI
+- Le contrat est reutilisable par API, notifications et UI, en partant d'evenements Frigate deja enrichis
 
 ---
 
@@ -203,12 +203,13 @@ La phase P0 est terminee seulement si :
 ### US-P3.2 — Notifications utiles
 
 **Taches :**
-- [ ] Implementer le premier canal retenu par la strategie produit
+- [ ] Implementer Telegram comme premier canal retenu par la strategie produit
 - [ ] Limiter le scope aux notifications a forte valeur
 - [ ] Ajouter les regles minimales de reduction du bruit
 
 **Criteres d'acceptation :**
 - Une detection prioritaire genere une notification intelligible
+- Le premier parcours notif fonctionne sans imposer tunnel, URL signee ou configuration avancee
 
 ### US-P3.3 — Hub Vyzio simplifie
 
