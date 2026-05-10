@@ -66,7 +66,7 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 **Taches :**
 - [x] Valider un `frigate.yml` minimal compatible avec la version cible
 - [x] Documenter ce qui est gere par Vyzio et ce qui reste purement Frigate
-- [ ] Verifier l'integration d'un flux de test sans bricolage excessif
+- [x] Verifier l'integration d'un flux de test sans bricolage excessif
 
 **Criteres d'acceptation :**
 - Frigate demarre avec une configuration valide
@@ -75,9 +75,9 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P1.3 — Persistance Vyzio minimale
 
 **Taches :**
-- [ ] Garder uniquement les entites et tables utiles au MVP reel (profils produit, mapping identites Frigate, evenements, notifications, sessions)
-- [ ] Confirmer le provider par defaut et la strategie de migration
-- [ ] Verifier que le demarrage API applique les migrations sans logique parasite
+- [x] Garder uniquement les entites et tables utiles au MVP reel (profils produit, mapping identites Frigate, evenements, notifications, sessions)
+- [x] Confirmer le provider par defaut et la strategie de migration
+- [x] Verifier que le demarrage API applique les migrations sans logique parasite
 
 **Criteres d'acceptation :**
 - La persistence minimale est testable et comprise
