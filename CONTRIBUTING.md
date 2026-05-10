@@ -10,7 +10,6 @@
 
 - src/vyzio: backend (.NET)
 - src/dashboard: frontend (React + TypeScript)
-- src/face-worker: experimental option, not part of the default runtime path
 - src/proto: reserved for future inter-service contracts if a retained need appears
 - config: runtime configuration templates
 
@@ -18,6 +17,12 @@
 
 - dotnet build src/vyzio/Vyzio.sln
 - pnpm --dir src/dashboard build
+
+## Workflow
+
+The mandatory workflow is defined in the repository rules file: `.instructions.md`.
+
+Use this file as the single source of truth for sequencing documentation, implementation, tests, and user-facing docs.
 
 ## Current status
 
