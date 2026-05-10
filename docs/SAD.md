@@ -1,6 +1,6 @@
 # Vyzio — Software Architecture Document (SAD)
 
-> Mai 2026 — v2.0 — Document vivant
+> Mai 2026 — v2.1 — Document vivant
 
 ---
 
@@ -13,7 +13,7 @@
 5. [Décisions d'architecture (ADR)](#5-décisions-darchitecture-adr)
    - [ADR-01 — S'appuyer sur Frigate plutôt que réimplémenter le pipeline vidéo](#adr-01--sappuyer-sur-frigate-plutôt-que-réimplémenter-le-pipeline-vidéo)
    - [ADR-02 — Langage principal : .NET 10](#adr-02--langage-principal--net-10)
-   - [ADR-03 — Worker de reconnaissance faciale : Python isolé](#adr-03--worker-de-reconnaissance-faciale--python-isolé)
+  - [ADR-03 — Reconnaissance faciale : Frigate retenu, worker Python non retenu](#adr-03--reconnaissance-faciale--frigate-retenu-worker-python-non-retenu)
    - [ADR-04 — Communication Frigate → Vyzio : MQTT + API REST Frigate](#adr-04--communication-frigate--vyzio--mqtt--api-rest-frigate)
    - [ADR-05 — Communication inter-services Vyzio : MQTT + Channels](#adr-05--communication-inter-services-vyzio--mqtt--channels)
    - [ADR-06 — Base de données : SQLite](#adr-06--base-de-données--sqlite)
@@ -21,6 +21,7 @@
    - [ADR-08 — Dashboard : React + TypeScript](#adr-08--dashboard--react--typescript)
    - [ADR-09 — Notifications : Telegram (prioritaire) + FCM + canaux alternatifs](#adr-09--notifications--telegram-prioritaire--fcm--canaux-alternatifs)
    - [ADR-10 — Authentification : JWT + bcrypt](#adr-10--authentification--jwt--bcrypt)
+    - [ADR-11 — Stratégie UX non-tech : Hub Vyzio simplifié + Frigate avancé](#adr-11--stratégie-ux-non-tech--hub-vyzio-simplifié--frigate-avancé)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -34,11 +35,11 @@
 
 Ce document décrit les décisions d'architecture du système **Vyzio**, un produit de surveillance domestique local-first destiné à un public non-technicien.
 
-**Philosophie centrale** : ne pas réinventer ce qui existe et fonctionne. Vyzio est une **couche produit au-dessus de Frigate** — il apporte l'expérience utilisateur, la reconnaissance faciale, les profils nommés et les notifications intelligentes. Frigate apporte l'ingestion vidéo, la détection de mouvement et l'enregistrement. L'effort de développement est concentré sur la vraie valeur ajoutée.
+**Philosophie centrale** : ne pas réinventer ce qui existe et fonctionne. Vyzio est une **couche produit au-dessus de Frigate**. Frigate couvre le pipeline vidéo et de nombreux enrichissements IA. Vyzio se concentre sur l'accessibilité non-tech : installation, onboarding, configuration guidée, règles métier, notifications multi-canaux, support et packaging clef en main.
 
 ### Audience
 
-Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, architecture événementielle, notions de machine learning (pour le worker Python).
+Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, architecture événementielle.
 
 ---
 
@@ -57,17 +58,24 @@ Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, archi
 | Support accélération matérielle (Coral TPU, GPU, VAAPI) | **Frigate** |
 | API REST et MQTT events | **Frigate** (consommé par Vyzio) |
 | Aperçu live des caméras (HLS / MJPEG) | **Frigate** (proxyfié par Vyzio) |
+| Reconnaissance faciale locale | **Frigate** (v0.16+) |
+| Reconnaissance de plaques (LPR) locale | **Frigate** (v0.16+) |
+| Recherche sémantique + triggers | **Frigate** (v0.15+) |
+| Classification locale (bird, object, state) | **Frigate** (v0.16/v0.17) |
+| Audio events + transcription locale | **Frigate** |
+| Notifications WebPush natives | **Frigate** |
 
 ### 2.2 Ce que Frigate ne fait PAS — valeur ajoutée de Vyzio
 
 | Fonctionnalité | Vyzio |
 |---|---|
-| **Reconnaissance faciale** (qui est cette personne ?) | ✅ Face Recognition Worker |
-| **Profils nommés** (Alice, livreur, inconnu) + comportements d'alerte | ✅ Vyzio Core |
-| **Notifications push intelligentes** (nom + photo, règles horaires) | ✅ Notification Service |
+| **Installation plug & play** (appliance + bootstrap) | ✅ Vyzio Hub |
+| **Onboarding guidé caméras** (scan, test, nommage, zones) | ✅ Vyzio Dashboard |
+| **Profils produit et règles métier** (foyer, livreur, plages horaires, priorités) | ✅ Vyzio Core |
+| **Notifications intelligentes multi-canaux** (Telegram, Discord, ntfy, webhook, email) | ✅ Notification Service |
 | **Accès distant aux photos** via tunnel sécurisé | ✅ Vyzio Core |
-| **UI grand public** : onboarding guidé, interface mobile-first | ✅ Dashboard React |
-| **Packaging all-in-one** : livré prêt à brancher, zéro configuration technique | ✅ Docker Compose / Appliance |
+| **UI grand public** : parcours simplifié, mobile-first, termes non-techniques | ✅ Dashboard React |
+| **Packaging all-in-one** : livré prêt à brancher, zéro configuration technique | ✅ Hub + Compose / Appliance |
 | **Support français** et documentation non-technicienne | ✅ Produit |
 
 ### 2.3 Dépendance à Frigate — risques et mitigations
@@ -77,6 +85,18 @@ Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, archi
 | Breaking change API Frigate | Faible (API stable v0.12+) | Couche d'abstraction `FrigateAdapter` versionnée |
 | Arrêt du projet Frigate | Très faible (communauté active, HA intégration) | Architecture permet de remplacer Frigate par autre backend MQTT/REST |
 | Bug Frigate impactant Vyzio | Moyen | Tests d'intégration sur contrat MQTT/REST, pas sur les internals Frigate |
+
+### 2.4 Stratégie UX non-tech : comparaison
+
+Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien sans exposition aux concepts YAML, brokers, rôles `ffmpeg`, ou tuning IA.
+
+| Option | Description | Avantages | Inconvénients | Verdict |
+|---|---|---|---|---|
+| **A — Exposer uniquement l'UI Frigate** | Vendre une appliance Frigate avec branding/support minimal | Time-to-market maximal, peu de dev UI | Onboarding et configuration caméra trop techniques pour le grand public | ❌ Insuffisant pour la promesse Vyzio |
+| **B — UI Vyzio 100% custom, sans UI Frigate** | Refaire toute l'expérience, y compris fonctions avancées | Contrôle total UX | Coût très élevé, duplication de fonctionnalités Frigate, risque de retard | ❌ Trop coûteux / non aligné "ne pas réinventer" |
+| **C — Approche hybride (recommandée)** | **Hub Vyzio simplifié par défaut** + **accès Frigate avancé** (mode expert) | UX non-tech cohérente + puissance Frigate conservée + vélocité | Nécessite une bonne gouvernance des frontières UI | ✅ Meilleur compromis produit/technique |
+
+**Décision stratégique** : Vyzio adopte l'approche **hybride**. Le parcours principal passe par le Hub Vyzio (installation + onboarding + configuration simplifiée). L'UI Frigate reste disponible en mode avancé pour les utilisateurs experts et le support.
 
 ---
 
@@ -93,12 +113,14 @@ Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, archi
 | C5 | Support RTSP, ONVIF, HTTP MJPEG | Délégué à Frigate |
 | C6 | Reconnaissance faciale < 2s après détection de mouvement | Specs §4.1 |
 | C7 | Pas de dépendance cloud pour les fonctions critiques | Specs §9.2 |
-| C8 | Stack .NET 10 + TypeScript (sauf IA — voir ADR-03) | `.instructions.md` |
+| C8 | Stack cible : .NET 10 + TypeScript (runtime principal) | `.instructions.md` |
 
 ### 3.2 Principes directeurs
 
 - **Ne pas réinventer Frigate** : toute fonctionnalité couverte par Frigate est déléguée.
-- **Python confiné** : Python est limité à un seul service isolé (Face Recognition Worker), sans accès direct à la base de données ni au bus d'événements principal.
+- **Délégation pragmatique à Frigate** : les enrichissements déjà fiables dans Frigate (face, LPR, semantic search, classification, audio) sont utilisés par défaut.
+- **Choix explicites documentés** : chaque fonctionnalité suit la grille _options comparées → solution retenue → conséquences_.
+- **Worker Python dédié non retenu** : conservé uniquement comme option étudiée, pas dans l'architecture cible.
 - **Faible couplage Frigate/Vyzio** : Vyzio consomme Frigate via ses interfaces publiques (MQTT + REST), pas ses internals.
 - **Local-first** : aucune image ni donnée biométrique ne sort du réseau sans opt-in explicite.
 - **Orienté produit** : les décisions techniques servent l'expérience grand public, pas l'exhaustivité technique.
@@ -148,11 +170,11 @@ Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, archi
 │  ┌────────────────────────────────────────────────────────────────┐     │
 │  │  Vyzio Core  (.NET 10)                                         │     │
 │  │                                                                │     │
-│  │  ┌──────────────────┐  gRPC  ┌──────────────────────────────┐ │     │
-│  │  │  FrigateAdapter  │───────►│  Face Recognition Worker     │ │     │
-│  │  │  (MQTT consumer  │◄───────│  (Python 3.12 isolé)         │ │     │
-│  │  │  + REST client)  │        │  InsightFace + ONNX Runtime   │ │     │
-│  │  └────────┬─────────┘        └──────────────────────────────┘ │     │
+│  │  ┌──────────────────┐                                          │     │
+│  │  │  FrigateAdapter  │                                          │     │
+│  │  │  (MQTT consumer  │                                          │     │
+│  │  │  + REST client)  │                                          │     │
+│  │  └────────┬─────────┘                                          │     │
 │  │           │ MQTT (vyzio/events/*)                               │     │
 │  │           ▼                                                    │     │
 │  │  ┌──────────────────┐  ┌─────────────────┐  ┌──────────────┐ │     │
@@ -191,7 +213,7 @@ Le pipeline d'ingestion vidéo (RTSP/ONVIF, décodage H.264/H.265, détection de
 
 | Solution | Maturité | Détection personne | ONVIF | Accélération HW | API extensible | Licence |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Frigate** | ✅ v0.14, actif | ✅ TFLite/OpenVINO/Coral | ✅ | ✅ VAAPI/NVDEC/Coral | ✅ MQTT + REST | MIT |
+| **Frigate** | ✅ v0.17.x, actif | ✅ TFLite/OpenVINO/Coral + enrichissements | ✅ | ✅ VAAPI/NVDEC/Coral | ✅ MQTT + REST | MIT |
 | **Shinobi** | ✅ | ⚠️ Basique | ✅ | ⚠️ | ⚠️ API limitée | CC |
 | **ZoneMinder** | ✅ Ancien | ⚠️ | ✅ | ⚠️ | ⚠️ API complexe | GPL |
 | **MotionEye** | ⚠️ Peu actif | ❌ | ⚠️ | ❌ | ❌ | GPL |
@@ -255,27 +277,33 @@ Les services Vyzio (orchestration, API, notifications, profils) doivent être im
 - ✅ Stack cohérente : ASP.NET Core + EF Core + SignalR dans un seul écosystème
 - ✅ NativeAOT → binaires autonomes, pas de runtime installé sur l'appliance
 - ✅ arm64 supporté nativement → Raspberry Pi 5, Apple Silicon
-- ⚠️ Python reste nécessaire pour InsightFace — strictement confiné (ADR-03)
+- ✅ Pas de runtime Python requis dans l'architecture cible
 
 ---
 
-### ADR-03 — Worker de reconnaissance faciale : Python isolé
+### ADR-03 — Reconnaissance faciale : Frigate retenu, worker Python non retenu
 
 #### Contexte
 
-La reconnaissance faciale (InsightFace, ArcFace, RetinaFace) repose sur un écosystème Python sans équivalent mature dans d'autres langages. C'est la **seule justification de Python** dans le projet.
+Depuis Frigate 0.16+, la reconnaissance faciale locale est disponible nativement et intégrée au flux Frigate (UI, filtres, MQTT, notifications). Réimplémenter systématiquement la face recognition dans Vyzio crée une duplication coûteuse.
 
-#### Pourquoi Python est inévitable ici
+#### Options comparées
 
-| Besoin | Python | .NET | Notes |
-|---|:---:|:---:|---|
-| InsightFace (pipeline complet) | ✅ Officiel | ❌ | Preprocessing + inférence + postprocessing intégrés |
-| ONNX Runtime (inférence seule) | ✅ | ✅ Microsoft | Possible en .NET mais perd le pipeline InsightFace |
-| RetinaFace detection | ✅ | ❌ | Modèle ONNX exportable, pipeline non |
+| Option | Avantages | Inconvénients |
+|---|---|---|
+| **Face Recognition Frigate natif** | Intégration native, maintenance faible, cohérence UI/événements | Dépend des capacités Frigate et de son rythme d'évolution |
+| **Worker Python Vyzio obligatoire** | Contrôle complet pipeline IA | Coût élevé, dette de maintenance, duplication d'une feature déjà disponible |
+| **Mode hybride** (Frigate par défaut + worker optionnel) | Optimise coûts et garde une porte pour besoins avancés | Complexité de gouvernance de deux modes |
 
-**Option étudiée** : exporter les modèles en ONNX et les inférer depuis .NET. Cette approche couvre le calcul d'embedding mais perd le pipeline de preprocessing InsightFace (détection, crop, alignement facial, normalisation). Réimplémenter ce pipeline en C# représente un risque de régression de précision non acceptable pour un produit grand public.
+#### Décision
 
-**Python reste, mais strictement isolé :**
+**Solution retenue : Face Recognition native de Frigate.**
+
+Le worker Python dédié reste un **choix étudié, non retenu** en cible v1/v2 car il duplique une capacité déjà mature dans Frigate et augmente fortement la complexité d'exploitation.
+
+#### Choix étudié (non retenu)
+
+Une variante avec service Python isolé a été évaluée :
 
 ```
 Face Recognition Worker (Python 3.12)
@@ -286,17 +314,15 @@ Face Recognition Worker (Python 3.12)
 └── Stateless — pas de persistance locale
 ```
 
-Le worker est un **microservice de calcul pur**. Toute logique métier (comparer avec les profils, décider connu/inconnu/incertain, persister) reste dans le Core .NET.
+Le worker étudié était conçu comme un **microservice de calcul pur**. Toute logique métier aurait dû rester dans le Core .NET.
 
-#### Transport : gRPC
+Transport étudié pour cette option non retenue :
 
 | Option | Latence locale | Contrat typé | Complexité |
 |---|:---:|:---:|:---:|
-| **gRPC** | ✅ < 2ms | ✅ Protobuf | ⚠️ Proto à maintenir |
+| gRPC | ✅ < 2ms | ✅ Protobuf | ⚠️ Proto à maintenir |
 | HTTP/REST (JSON) | ✅ < 5ms | ⚠️ OpenAPI | ✅ Minimal |
 | Unix socket | ✅ < 1ms | ❌ | ⚠️ |
-
-**gRPC** retenu : contrat Protobuf typé des deux côtés (.NET + Python), performance optimale, streaming disponible pour batches futurs.
 
 ```protobuf
 service FaceRecognition {
@@ -314,10 +340,10 @@ message FaceResult {
 
 #### Conséquences
 
-- ✅ Python confiné sans accès aux données — surface d'attaque minimale
-- ✅ Worker remplaçable sans toucher au Core .NET (contrat gRPC stable)
-- ✅ Scalable indépendamment si GPU disponible
-- ⚠️ Dépendance Python dans le Docker Compose — documentée, isolée, acceptée
+- ✅ Réduction de la dette de réimplémentation
+- ✅ Stack opérationnelle plus simple (moins de conteneurs, moins de surfaces de panne)
+- ✅ Time-to-market meilleur pour une offre non-tech
+- ✅ Les options étudiées sont conservées dans la documentation pour réévaluation future
 
 ---
 
@@ -463,6 +489,14 @@ public class NotificationService : IHostedService
 
 Vyzio stocke : profils + embeddings, événements de reconnaissance, règles de notification, sessions.
 
+#### Options comparées
+
+| Option | Forces | Faiblesses |
+|---|---|---|
+| **SQLite** | Zéro infra, fichier unique, backup simple | Concurrence en écriture limitée |
+| PostgreSQL | Robustesse multi-process, scalabilité | Complexité d'installation et d'exploitation plus élevée |
+| MariaDB/MySQL | Écosystème large | Surcoût opérationnel non nécessaire en local-first |
+
 #### Décision
 
 **SQLite + EF Core** pour tous les déploiements.
@@ -494,6 +528,14 @@ database:
 #### Contexte
 
 L'API sert le dashboard React, les webhooks et les intégrations tierces. Elle doit exposer des flux temps réel et proxyfier les ressources Frigate avec authentification.
+
+#### Options comparées
+
+| Option | Forces | Faiblesses |
+|---|---|---|
+| **ASP.NET Core Minimal APIs** | Cohérence .NET, performance, outillage mature | Expertise .NET requise |
+| FastAPI (Python) | Vélocité rapide sur cas simples | Introduit un second runtime principal |
+| NestJS/Node | Ecosystème web riche | Moins cohérent avec le cœur .NET |
 
 #### Décision
 
@@ -668,6 +710,14 @@ public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
 
 ### ADR-10 — Authentification : JWT + bcrypt
 
+#### Options comparées
+
+| Option | Forces | Faiblesses |
+|---|---|---|
+| **JWT + refresh tokens (local)** | Local-first, autonome, simple à embarquer | Gestion sécurité à maintenir en interne |
+| OAuth2/OIDC externe | Standard entreprise | Dépendance externe, moins adapté offline |
+| Reverse-proxy auth uniquement | Simple dans certains déploiements | Moins portable pour une appliance grand public |
+
 #### Décision
 
 **JWT access token (15 min) + refresh token révocable (7 jours, stocké SQLite)** avec bcrypt cost factor 12, implémenté via `Microsoft.AspNetCore.Authentication.JwtBearer`.
@@ -678,6 +728,42 @@ public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
 
 ---
 
+### ADR-11 — Stratégie UX non-tech : Hub Vyzio simplifié + Frigate avancé
+
+#### Contexte
+
+Le besoin produit principal est l'accessibilité pour des utilisateurs non-tech. Frigate est puissant mais expose des concepts parfois complexes (configuration, flux caméra, tuning).
+
+#### Options comparées
+
+| Option | Forces | Faiblesses |
+|---|---|---|
+| UI Frigate seule | Time-to-market maximal | Trop technique pour la promesse grand public |
+| UI Vyzio 100% custom | Contrôle total UX | Coût/risque très élevé, duplication |
+| **Approche hybride** | Simplicité pour non-tech + puissance expert | Nécessite une gouvernance claire des frontières |
+
+#### Décision
+
+Vyzio adopte une **stratégie UX en deux couches** :
+
+- **Couche 1 (par défaut)** : Hub Vyzio, orienté assistant, vocabulaire non-tech, workflow guidé.
+- **Couche 2 (optionnelle)** : UI Frigate en mode avancé pour experts/support.
+
+#### Frontières produit
+
+- Vyzio Hub gère : installation, onboarding, découverte caméra, tests de flux, génération de configuration, presets simples.
+- Frigate gère : opérations avancées NVR/enrichissements, debug, tuning expert.
+- Vyzio API orchestre la cohérence entre les deux couches et protège l'accès par rôle.
+
+#### Conséquences
+
+- ✅ Répond à la promesse "clef en main" sans perdre la puissance Frigate
+- ✅ Réduit le coût de développement UI en réutilisant l'existant pertinent
+- ✅ Permet une progression utilisateur du mode simple vers expert
+- ⚠️ Exige une documentation claire des parcours simple vs avancé
+
+---
+
 ## 6. Architecture des services
 
 ### 6.1 Responsabilités
@@ -685,12 +771,11 @@ public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
 ```
 Frigate                           → Vidéo brut, détection, clips
 FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer)
-Face Recognition Worker (Python)  → Calcul embeddings uniquement (gRPC server)
-Profile Service (.NET)            → CRUD profils + comparaison cosinus SIMD
+Profile & Rules Service (.NET)    → Profils produit, règles d'alertes, politiques
 Notification Service (.NET)       → Règles + envoi FCM/webhook/email
 Storage Service (.NET)            → Persistance événements enrichis (EF Core)
 API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
-Dashboard (React + TS)            → UI grand public
+Dashboard / Hub (React + TS)      → UI grand public guidée
 ```
 
 ### 6.2 Flux complet : détection → notification
@@ -705,13 +790,11 @@ Dashboard (React + TS)            → UI grand public
 
 3. Services Vyzio (souscripteurs MQTT indépendants, en parallèle) :
 
-   FaceRecognitionService — souscrit vyzio/events/raw_detection
-   └─► gRPC → Face Worker → embeddings[]
-   └─► Comparaison cosinus vs embeddings mémoire
-   └─► Résultat : { profile: "Alice", confidence: 0.82 }
-   └─► Publie MQTT: vyzio/events/face_recognized { profile_id, name, confidence, camera, timestamp }
+  Mode par défaut (Frigate natif) :
+  └─► Frigate publie des objets enrichis (`sub_label`, face/LPR) sur MQTT
+  └─► Vyzio applique ses règles métier (priorités, plages horaires, profils)
 
-   StorageService — souscrit vyzio/events/face_recognized | face_unknown | face_uncertain
+    StorageService — souscrit vyzio/events/face_recognized | face_unknown | face_uncertain
    └─► EF Core INSERT recognition_events
 
    NotificationService — souscrit vyzio/events/face_recognized | face_unknown
@@ -798,15 +881,6 @@ services:
       - "127.0.0.1:5000:5000"           # API Frigate — local uniquement
       - "127.0.0.1:1883:1883"           # MQTT — local uniquement
 
-  face-worker:
-    image: vyzio/face-worker
-    expose: ["50051"]                   # gRPC — interne Docker uniquement
-    volumes:
-      - ./data/models:/models
-    deploy:
-      resources:
-        limits: { memory: 1G }
-
   vyzio:
     image: vyzio/core
     volumes:
@@ -817,10 +891,8 @@ services:
     environment:
       FRIGATE_API_URL: http://frigate:5000
       FRIGATE_MQTT_HOST: frigate
-      FACE_WORKER_GRPC: http://face-worker:50051
     depends_on:
       frigate: { condition: service_healthy }
-      face-worker: { condition: service_started }
 ```
 
 **Un seul port exposé à l'utilisateur** : `8443`. Frigate n'est jamais accessible directement depuis le réseau.
@@ -866,7 +938,7 @@ Réseau local                            │
 Docker internal network (non routable depuis l'extérieur)
   ├── vyzio ──► frigate:5000    (HTTP REST)
   ├── vyzio ──► frigate:1883    (MQTT)
-  └── vyzio ──► face-worker:50051 (gRPC)
+  └── composants Vyzio internes (API + services)
 ```
 
 ---
@@ -878,22 +950,20 @@ Docker internal network (non routable depuis l'extérieur)
 | Conteneur | RAM cible | Notes |
 |---|---|---|
 | Frigate | 400–800 MB | Variable : nb caméras, modèle IA |
-| Face Worker (Python + InsightFace) | 600 MB–1 GB | ArcFace R50 ONNX chargé en mémoire |
 | Vyzio Core + API (.NET 10 NativeAOT) | ~150 MB | NativeAOT réduit significativement l'empreinte |
-| **Total** | **~1.5 GB** | ~6.5 GB libres |
+| **Total** | **~0.9–1.1 GB** | Profil cible sans worker Python dédié |
 
 ### 10.2 Latence pipeline reconnaissance (CPU-only)
 
 | Étape | Responsable | Temps estimé |
 |---|---|---|
 | Détection personne | Frigate TFLite | ~50ms |
-| MQTT → gRPC dispatch | FrigateAdapter .NET | ~5ms |
-| RetinaFace + ArcFace R50 (ONNX) | Face Worker Python | ~250ms |
-| Cosinus similarity 100 profils | Profile Service SIMD | < 1ms |
+| Enrichissement face (mode par défaut) | Frigate | ~100–400ms |
+| Règles métier + dispatch notification | Vyzio | ~5–20ms |
 | FCM push | Notification Service | ~200ms réseau |
-| **Total perçu** | | **~500ms** |
+| **Total perçu (mode par défaut)** | | **~350–700ms** |
 
-Avec **Coral Edge TPU** (Frigate) + **GPU** (Face Worker) : **< 100ms** total.
+Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence perçue significativement réduite.
 
 ---
 
@@ -905,7 +975,9 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (Face Worker) : **< 100ms** total.
 | Arrêt projet Frigate | Très faible | Élevé | Architecture découplée — `FrigateAdapter` remplaçable |
 | Faux positif reconnaissance faciale | Moyen | Élevé | Seuil configurable, mode "incertain", confirmation depuis notification |
 | Caméra incompatible Frigate | Moyen | Faible | Frigate supporte >200 modèles + fallback RTSP manuel |
-| Face Worker — dépendance InsightFace | Faible | Élevé | Contrat gRPC stable, worker remplaçable sans toucher Core |
+| Dérive fonctionnelle Frigate (évolutions rapides) | Moyen | Moyen | Version pinning, matrice de compatibilité, tests de non-régression |
+| Dette de réimplémentation de features Frigate | Moyen | Élevé | Politique de délégation par défaut (ADR-03) |
+| Pression de "rebuild" de features Frigate | Moyen | Élevé | Discipline ADR : comparer options et conserver les choix non retenus |
 | Espace disque saturé (clips Frigate) | Moyen | Moyen | Politique rétention Frigate configurée par Vyzio + alertes dashboard |
 | Performance CPU sans GPU | Moyen | Moyen | ~500ms acceptable, recommandation Coral TPU documentée |
 
@@ -917,8 +989,7 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (Face Worker) : **< 100ms** total.
 |---|---|---|---|
 | Pipeline vidéo | **Frigate** (open source) | Réimplémentation custom | Ne pas réinventer ce qui existe |
 | Langage principal | **.NET 10 (C#)** | Rust | Vélocité + écosystème cohérent (ASP.NET, EF Core, SignalR) |
-| Worker IA | **Python 3.12** (isolé) | .NET ONNX seul | InsightFace n'existe qu'en Python |
-| Transport IA | **gRPC** | HTTP/REST | Contrat typé Protobuf |
+| Face recognition (par défaut) | **Frigate natif** | Worker custom obligatoire | Réduction de dette, maintenance simplifiée |
 | Bus événements | **MQTT** (Mosquitto Frigate) + Channels (flux frames) | MediatR (écarté), Redis Streams (v2) | Zéro dépendance, continuité Frigate |
 | Base de données | **SQLite** | PostgreSQL | Zéro infra, plug & play, fichier unique |
 | API | **ASP.NET Core Minimal APIs** | FastAPI (Python) | Cohérence stack .NET |
@@ -944,11 +1015,6 @@ vyzio/
 │   │   ├── Vyzio.Api/             # ASP.NET Core Minimal APIs + SignalR
 │   │   ├── Vyzio.Infrastructure/  # EF Core, PostgreSQL/SQLite, Telegram, FrigateAdapter
 │   │   └── Vyzio.Tests/           # xUnit + Testcontainers
-│   │
-│   └── face-worker/               # Python 3.12 — gRPC server InsightFace
-│       ├── server.py
-│       ├── recognizer.py
-│       └── pyproject.toml
 │
 ├── dashboard/                     # React 19 + TypeScript
 │   ├── src/
@@ -957,9 +1023,6 @@ vyzio/
 │   │   ├── hooks/                 # Tanstack Query
 │   │   └── lib/signalr.ts
 │   └── vite.config.ts
-│
-├── proto/
-│   └── face_recognition.proto     # Contrat gRPC partagé .NET ↔ Python
 │
 ├── config/
 │   ├── frigate.yml.template       # Généré par l'onboarding Vyzio
@@ -972,3 +1035,14 @@ vyzio/
     ├── SAD.md
     └── BUSINESS_PLAN.md
 ```
+
+---
+
+## Annexe C — Choix Étudiés Non Retenus
+
+| Fonctionnalité | Option non retenue | Pourquoi non retenue maintenant | Condition de réévaluation |
+|---|---|---|---|
+| Reconnaissance faciale | Worker Python dédié (InsightFace + gRPC) | Duplique Frigate, complexifie l'exploitation | Besoin métier non couvert par Frigate ou contrainte de précision spécifique |
+| API principale | FastAPI / Node | Introduit un runtime principal supplémentaire | Changement majeur d'équipe/stack |
+| Base de données | PostgreSQL | Surcoût opérationnel pour offre local-first | Passage multi-nœud / haute concurrence d'écriture |
+| UI | 100% UI custom sans Frigate | Coût et délais élevés, duplication de capacités | Besoin produit fort non atteignable via approche hybride |
