@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Vyzio.Api/Vyzio.Api.csproj" />
+  <Project Path="Vyzio.Application/Vyzio.Application.csproj" />
+  <Project Path="Vyzio.Core/Vyzio.Core.csproj" />
+  <Project Path="Vyzio.Infrastructure/Vyzio.Infrastructure.csproj" />
+  <Project Path="Vyzio.Tests/Vyzio.Tests.csproj" />
+</Solution>

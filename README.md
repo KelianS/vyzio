@@ -1,4 +1,4 @@
-# Vyzio
+﻿# Vyzio
 
 > **Votre maison surveille. Vos données restent chez vous.**
 
@@ -6,40 +6,41 @@
 
 ## Vision
 
-Ring envoie vos images chez Amazon. Nest les stocke chez Google. Arlo vend un abonnement pour accéder à vos propres enregistrements.
+Ring, Nest, Arlo : la surveillance cloud devient la norme. Vos images chez Amazon, Google, Arlo. Abonnement obligatoire. Dépendance totale à internet.
 
 **Vyzio prend le contre-pied radical.**
 
-Vyzio est une solution de surveillance domestique **autonome, résiliente et privacy-first**, conçue pour le grand public. Grâce à l'intelligence artificielle embarquée, Vyzio reconnaît les visages, identifie les personnes connues, et vous notifie en temps réel sur votre téléphone — avec la photo et le nom de la personne si elle est enregistrée. Tout cela sans qu'un seul octet de vos images ne quitte votre réseau local... sauf si vous en décidez autrement.
+Vyzio est une solution de surveillance domestique **prête à brancher, sans technicité, sans abonnement**, conçue pour les familles qui en ont assez de la complexité. En s'appuyant sur Frigate pour l'analyse vidéo locale, Vyzio rend la reconnaissance des personnes, les alertes utiles et la configuration accessibles sans exposer l'utilisateur à la complexité technique sous-jacente.
 
-La surveillance intelligente ne devrait pas exiger de faire confiance à une entreprise tierce avec les images de votre domicile et de votre famille.
+**Vyzio, c'est Frigate sans les technicitures.** Pour quelqu'un qui veut juste que ça marche. Avec du support français si ça casse.
 
 ---
 
 ## Fonctionnalités clés
 
-- **Reconnaissance faciale IA** — Identifie les membres du foyer, les amis réguliers, les livreurs. Alerte immédiatement sur tout visage inconnu.
-- **Notifications intelligentes** — Push mobile avec photo + nom (si connu) ou alerte "visage inconnu". Pas de spam, seulement ce qui compte.
+- **Identification locale des personnes** — Frigate reconnait localement les visages et Vyzio transforme ces signaux en alertes compréhensibles.
+- **Notifications intelligentes** — Vyzio priorise les alertes et les rend lisibles pour un usage non-tech. Pas de spam, seulement ce qui compte.
 - **Compatible caméras IP existantes** — Protocoles RTSP / ONVIF. Vos caméras actuelles fonctionnent, pas besoin de tout racheter.
 - **Stockage local des enregistrements** — Vos vidéos sont archivées sur votre propre machine, pas sur le cloud d'un tiers.
 - **Offline-first & résilient** — Le système fonctionne sans connexion internet. Les notifications sont envoyées dès que le réseau est disponible.
-- **Dashboard de gestion** — Interface web pour gérer les caméras, les profils de personnes, les zones de détection et les alertes.
-- **Détection d'événements** — Mouvement, intrusion, présence prolongée. Paramétrable par zone et par plage horaire.
+- **Dashboard de gestion** — Interface web pour gérer les caméras, les profils produit, les règles métier et les alertes.
+- **Détection d'événements** — Frigate capte et publie les événements ; Vyzio les filtre, les classe et les exploite dans les parcours produit.
 
 ---
 
-## Trois façons d'utiliser Vyzio
+## Deux façons d'utiliser Vyzio
 
-Vyzio s'adapte à votre profil, de l'utilisateur le plus tech-savvy au plus novice.
+Vyzio s'adapte à votre profil : appliance clef-en-main ou open source.
 
-### DIY — Open Source
-Pour les makers et les technophiles. Installez Vyzio sur votre propre machine (PC, NAS, serveur), configurez vos caméras, et gardez un contrôle total. **100 % gratuit, 100 % open source.** La communauté est au cœur du projet.
+### Offering Matériel — Plug & Play, pour grand public
+Une **petite boîte, zéro installation**, branchée sur votre réseau. Détection automatique de vos caméras IP existantes, configuration entièrement guidée, et c'est fini. 
 
-### Vyzio Hub — Clef en main, privacy garantie
-Vous ne voulez pas gérer un serveur. Vyzio vous fournit un **mini-PC dédié, pré-configuré**, prêt à brancher chez vous. Installation à domicile disponible en option. Vos données restent sur votre machine, dans votre foyer. Zéro abonnement obligatoire.
+Si quelque chose se casse, vous appelez du support français. C'est ça, le produit.
 
-### Vyzio Cloud — Sans matériel, sans friction
-Pas de serveur, pas de configuration. Vyzio héberge le compute pour vous via un abonnement mensuel. Compatible avec vos caméras IP existantes. Idéal pour une mise en route rapide, avec un engagement fort sur la confidentialité des données.
+Installation à domicile disponible en option.
+
+### Offering Open Source — Pour les makers
+Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'est pour les gens qui savent ce qu'ils font — pas de support inclus.
 
 ---
 
@@ -52,7 +53,7 @@ Pas de serveur, pas de configuration. Vyzio héberge le compute pour vous via un
 | Fonctionne sans internet | ✗ | ✓ |
 | Open Source | ✗ | ✓ |
 | Compatible caméras IP tierces | Limité | ✓ |
-| Abonnement obligatoire | ✓ | Non (DIY / Hub) |
+| Abonnement obligatoire | ✓ | Non |
 
 ---
 
@@ -67,7 +68,7 @@ Pas de serveur, pas de configuration. Vyzio héberge le compute pour vous via un
 
 ## Statut du projet
 
-> ⚠️ Vyzio est actuellement en **phase de conception**. Ce dépôt contient la vision, les spécifications fonctionnelles et la roadmap technique. Le développement actif commence prochainement.
+> ⚠️ Vyzio est actuellement en **phase de conception**. Ce dépôt contient la vision du produit, les spécifications fonctionnelles, les décisions d'architecture et le plan de reprise. Le développement actif reprend une fois ces documents alignés.
 
 Les contributions sur la vision, les cas d'usage et les spécifications sont les bienvenues dès maintenant.
 
@@ -76,15 +77,17 @@ Les contributions sur la vision, les cas d'usage et les spécifications sont les
 ## Contribuer
 
 Vyzio est un projet open source. Les contributions sont bienvenues sur :
-- Le moteur de détection et reconnaissance (core engine)
-- Les intégrations caméras (RTSP, ONVIF, drivers)
-- Les modèles IA (reconnaissance faciale, détection d'événements)
+- L'intégration produit autour de Frigate
+- Les parcours backend (.NET) et règles métier
 - L'interface de gestion (dashboard)
+- La qualité du runtime local et de l'expérience d'installation
 - La documentation
 
 ---
 
 ## Documentation
 
-- [Spécifications fonctionnelles](SPECS.md)
-- [Business Plan](BUSINESS_PLAN.md)
+- [Spécifications fonctionnelles](docs/SPECS.md)
+- [Architecture logicielle](docs/SAD.md)
+- [Backlog de reprise](docs/BACKLOG.md)
+- [Business Plan](docs/BUSINESS_PLAN.md)
