@@ -37,7 +37,12 @@ public sealed record CameraStatusDto(
     {
         if (string.Equals(camera.ValidationState, "draft", StringComparison.OrdinalIgnoreCase))
         {
-            return "Camera setup is incomplete.";
+            if (string.IsNullOrWhiteSpace(camera.StreamPath))
+            {
+                return "Camera setup is incomplete. Add the RTSP path, then run verification.";
+            }
+
+            return "Camera setup is incomplete. Run verification to confirm the stream before apply.";
         }
 
         if (string.Equals(camera.Status, "config_error", StringComparison.OrdinalIgnoreCase))

@@ -67,7 +67,7 @@ public class GetCameraStatusUseCaseTests
 
         Assert.NotNull(result);
         Assert.True(result!.NeedsAttention);
-        Assert.Equal("Camera setup is incomplete.", result.Guidance);
+        Assert.Equal("Camera setup is incomplete. Add the RTSP path, then run verification.", result.Guidance);
     }
 
     [Fact]

@@ -58,8 +58,8 @@ export function formatCameraPreview(status: CameraStatus | null): string {
   }
 
   if (status.previewAvailable) {
-    return 'Un apercu recent est disponible cote systeme.'
+    return 'Le flux a ete verifie recemment cote systeme. Aucun apercu video n\'est encore affiche dans cette page.'
   }
 
-  return 'Aucun apercu recent n\'est encore disponible.'
+  return 'Le systeme n\'a pas encore confirme recemment le flux.'
 }

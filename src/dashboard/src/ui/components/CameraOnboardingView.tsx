@@ -152,7 +152,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       sourceType: candidate.sourceType,
       streamPath: candidate.streamPath,
     })
-    setActionMessage(`Le candidat ${candidate.displayName} a ete recopie dans le formulaire.`)
+    setActionMessage(
+      candidate.streamPath
+        ? `Le candidat ${candidate.displayName} a ete recopie dans le formulaire.`
+        : `Le candidat ${candidate.displayName} a ete recopie. Completez maintenant le chemin RTSP avant verification.`,
+    )
   }
 
   return (
@@ -235,15 +239,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
           <div className="camera-discovery-results">
             {discoveryResults.length > 0 ? (
-              discoveryResults.map((candidate, index) => (
-                <button key={`${candidate.host}-${candidate.port}-${index}`} type="button" className="discovery-card" onClick={() => applyDiscoveryCandidate(index)}>
-                  <div>
-                    <h3>{candidate.displayName}</h3>
-                    <p>{candidate.host}:{candidate.port}</p>
-                  </div>
-                  <small>{candidate.note ?? candidate.discoverySource}</small>
-                </button>
-              ))
+              <>
+                <p className="camera-inline-state">
+                  Cliquez sur un candidat pour pre-remplir le formulaire, puis utilisez <strong>Ajouter au catalogue</strong>.
+                </p>
+                {discoveryResults.map((candidate, index) => (
+                  <button key={`${candidate.host}-${candidate.port}-${index}`} type="button" className="discovery-card" onClick={() => applyDiscoveryCandidate(index)}>
+                    <div>
+                      <h3>{candidate.displayName}</h3>
+                      <p>{candidate.host}:{candidate.port}</p>
+                      <p>{candidate.streamPath ?? 'Chemin RTSP a completer manuellement'}</p>
+                    </div>
+                    <div className="discovery-card-meta">
+                      <small>{candidate.note ?? candidate.discoverySource}</small>
+                      <span>Utiliser ce candidat</span>
+                    </div>
+                  </button>
+                ))}
+              </>
             ) : (
               <div className="camera-empty-state compact">
                 <h3>Decouverte assistee</h3>
@@ -268,6 +281,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <label>
               <span>Chemin RTSP</span>
               <input value={form.streamPath ?? ''} onChange={(event) => updateForm({ streamPath: event.target.value || null })} placeholder="/Streaming/Channels/101" />
+              <small className="camera-field-hint">
+                Obligatoire pour verifier le flux. Certaines cameras detectees par ONVIF ne remontent pas ce chemin automatiquement.
+              </small>
             </label>
             <label>
               <span>Utilisateur</span>

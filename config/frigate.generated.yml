@@ -1,25 +1,19 @@
-# Vyzio-managed Frigate config.
-# This file is rewritten by the camera onboarding flow.
-
 mqtt:
   host: mqtt
   port: 1883
-
 database:
   path: /media/frigate/frigate.db
-
 detectors:
   cpu1:
     type: cpu
-
 cameras:
-  dummy_camera:
-    enabled: false
+  camera_mock_docker:
+    enabled: true
     ffmpeg:
       inputs:
-        - path: rtsp://replace-me-with-your-stream
-          roles:
-            - detect
+      - path: rtsp://mediamtx:8554/test-camera
+        roles:
+        - detect
     detect:
       enabled: true
       fps: 5

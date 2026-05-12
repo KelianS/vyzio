@@ -577,6 +577,7 @@
 .camera-form-grid {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .discovery-card {
@@ -592,6 +593,10 @@
   text-align: left;
 }
 
+.discovery-card > div {
+  min-width: 0;
+}
+
 .discovery-card h3 {
   margin-bottom: 4px;
   font-size: 1rem;
@@ -600,6 +605,19 @@
 .discovery-card p,
 .discovery-card small {
   color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.discovery-card-meta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.discovery-card-meta span {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--brand-moss);
 }
 
 .camera-form-grid {
@@ -615,6 +633,7 @@
 .camera-form-grid label {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .camera-form-grid span {
@@ -623,10 +642,18 @@
 }
 
 .camera-form-grid input {
+  width: 100%;
+  box-sizing: border-box;
   min-height: 46px;
   padding: 0 14px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.84);
   color: var(--ink-strong);
+}
+
+.camera-field-hint {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
 }
