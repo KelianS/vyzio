@@ -10,3 +10,9 @@ frigate:
 
 database:
   connection_string: Data Source=./data/vyzio.db
+
+notifications:
+  minimum_confidence: 0.75
+  telegram:
+    bot_token: ""
+    chat_id: ""

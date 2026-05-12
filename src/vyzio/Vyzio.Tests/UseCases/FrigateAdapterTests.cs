@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.UseCases.Frigate;
+using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -10,6 +11,7 @@ namespace Vyzio.Tests.UseCases;
 public class FrigateAdapterTests
 {
     private readonly IDetectionEventRepository _detectionEvents = Substitute.For<IDetectionEventRepository>();
+    private readonly IDetectionNotificationDispatcher _notifications = Substitute.For<IDetectionNotificationDispatcher>();
     private readonly IFrigateRestClient _restClient = Substitute.For<IFrigateRestClient>();
     private readonly ILogger<FrigateAdapter> _logger = Substitute.For<ILogger<FrigateAdapter>>();
 
@@ -32,6 +34,9 @@ public class FrigateAdapterTests
                 && evt.Identity == "Alice"
                 && evt.HasClip
                 && evt.HasSnapshot),
+            Arg.Any<CancellationToken>());
+        await _notifications.Received(1).ExecuteAsync(
+            Arg.Is<DetectionEvent>(evt => evt.FrigateEventId == "frigate-evt-101"),
             Arg.Any<CancellationToken>());
     }
 
@@ -63,6 +68,9 @@ public class FrigateAdapterTests
                 && !evt.HasClip
                 && evt.HasSnapshot),
             Arg.Any<CancellationToken>());
+        await _notifications.Received(1).ExecuteAsync(
+            Arg.Is<DetectionEvent>(evt => evt.FrigateEventId == "frigate-evt-102"),
+            Arg.Any<CancellationToken>());
         await _detectionEvents.DidNotReceive().AddAsync(Arg.Any<DetectionEvent>(), Arg.Any<CancellationToken>());
     }
 
@@ -76,6 +84,7 @@ public class FrigateAdapterTests
         Assert.False(processed);
         await _detectionEvents.DidNotReceive().GetByFrigateEventIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _detectionEvents.DidNotReceive().AddAsync(Arg.Any<DetectionEvent>(), Arg.Any<CancellationToken>());
+        await _notifications.DidNotReceive().ExecuteAsync(Arg.Any<DetectionEvent>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -91,12 +100,16 @@ public class FrigateAdapterTests
         await _detectionEvents.Received(1).AddAsync(
             Arg.Is<DetectionEvent>(evt => evt.FrigateEventId == "frigate-evt-104" && evt.Identity == null),
             Arg.Any<CancellationToken>());
+        await _notifications.Received(1).ExecuteAsync(
+            Arg.Is<DetectionEvent>(evt => evt.FrigateEventId == "frigate-evt-104"),
+            Arg.Any<CancellationToken>());
     }
 
     private FrigateAdapter CreateSut(IEnumerable<string> retainedLabels)
         => new(
             new FrigateEventContractAdapter(new FrigateLabelFilter(retainedLabels)),
             _detectionEvents,
+            _notifications,
             _restClient,
             _logger);
 

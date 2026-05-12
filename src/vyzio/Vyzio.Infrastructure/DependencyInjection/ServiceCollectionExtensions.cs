@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
         // Repository implementations (ports → adapters)
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IDetectionEventRepository, DetectionEventRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         return services;
     }
