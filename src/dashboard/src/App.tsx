@@ -10,12 +10,66 @@ import {
   getEventTone,
 } from './ui/formatters/hub'
 
+interface SystemStatusViewModel {
+  pillTone: 'online' | 'warning' | 'degraded' | 'loading'
+  pillLabel: string
+  headline: string
+  detail: string
+}
+
+function getSystemStatusViewModel(
+  loading: boolean,
+  error: string | null,
+  systemHealthy: boolean,
+  warnings: string[],
+): SystemStatusViewModel {
+  if (loading) {
+    return {
+      pillTone: 'loading',
+      pillLabel: 'Connexion en cours',
+      headline: 'Le hub contacte votre systeme.',
+      detail: 'Les informations vont apparaitre automatiquement.',
+    }
+  }
+
+  if (error || !systemHealthy) {
+    return {
+      pillTone: 'degraded',
+      pillLabel: 'Systeme indisponible',
+      headline: 'Le hub ne recoit pas les informations du systeme.',
+      detail: 'Verifiez que le service Vyzio API est bien demarre.',
+    }
+  }
+
+  if (warnings.length > 0) {
+    return {
+      pillTone: 'warning',
+      pillLabel: 'Attention',
+      headline: 'Le systeme fonctionne, mais certaines donnees manquent encore.',
+      detail: warnings[0],
+    }
+  }
+
+  return {
+    pillTone: 'online',
+    pillLabel: 'Surveillance active',
+    headline: 'Le systeme fonctionne normalement.',
+    detail: 'Les evenements et profils recents sont disponibles dans le hub.',
+  }
+}
+
 function App() {
   const { data, loading, error } = useHubOverview(getHubOverview)
   const recentEvents = data?.recentEvents ?? []
   const recentProfiles = data?.profiles.slice(0, 3) ?? []
   const lastEvent = recentEvents[0]
   const warnings = data?.warnings ?? []
+  const systemStatus = getSystemStatusViewModel(
+    loading,
+    error,
+    data?.systemHealthy ?? false,
+    warnings,
+  )
 
   return (
     <main className="app-shell">
@@ -27,27 +81,30 @@ function App() {
         </div>
 
         <div className="hero-status" aria-label="Etat general du systeme">
-          <div className={`status-pill ${data?.systemHealthy ? 'online' : 'degraded'}`}>
-            {data?.systemHealthy ? 'Systeme operationnel' : 'Verification requise'}
+          <div className={`status-pill ${systemStatus.pillTone}`}>
+            {systemStatus.pillLabel}
+          </div>
+          <div className="status-summary">
+            <strong>{systemStatus.headline}</strong>
+            <p>{systemStatus.detail}</p>
           </div>
           <dl className="status-facts">
             <div>
-              <dt>Flux principal</dt>
-              <dd>{data?.systemHealthy ? 'API disponible' : 'API indisponible'}</dd>
+              <dt>Etat du service</dt>
+              <dd>{data?.systemHealthy ? 'Connecte' : 'Non disponible'}</dd>
             </div>
             <div>
-              <dt>Derniere alerte</dt>
+              <dt>Dernier evenement</dt>
               <dd>{lastEvent ? formatEventTime(lastEvent.occurredAt) : 'Aucune donnee'}</dd>
             </div>
             <div>
-              <dt>Canal prioritaire</dt>
-              <dd>Telegram</dd>
+              <dt>Profils visibles</dt>
+              <dd>{data?.profiles.length ?? 0}</dd>
             </div>
           </dl>
 
-          {loading ? <p className="status-inline">Chargement du hub...</p> : null}
-          {error ? <p className="status-inline error">Connexion API impossible.</p> : null}
-          {!error && warnings.map((warning) => (
+          {error ? <p className="status-inline error">Le hub ne peut pas joindre le backend pour le moment.</p> : null}
+          {!error && warnings.slice(1).map((warning) => (
             <p key={warning} className="status-inline warning">{warning}</p>
           ))}
         </div>

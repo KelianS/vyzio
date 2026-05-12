@@ -75,9 +75,33 @@
   color: #cdebd8;
 }
 
+.status-pill.loading {
+  background: rgba(217, 179, 122, 0.18);
+  color: #ffe7c2;
+}
+
+.status-pill.warning {
+  background: rgba(217, 179, 122, 0.22);
+  color: #ffe3b3;
+}
+
 .status-pill.degraded {
   background: rgba(198, 92, 61, 0.18);
   color: #ffd7cf;
+}
+
+.status-summary {
+  display: grid;
+  gap: 6px;
+}
+
+.status-summary strong {
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.status-summary p {
+  color: rgba(247, 244, 237, 0.74);
 }
 
 .status-facts {
