@@ -8,6 +8,10 @@
   }
 }
 
+.app-shell-cameras {
+  gap: 20px;
+}
+
 .hero-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
@@ -241,6 +245,11 @@
   gap: 12px;
 }
 
+.camera-list {
+  display: grid;
+  gap: 12px;
+}
+
 .panel-cta-row {
   display: flex;
   flex-wrap: wrap;
@@ -387,4 +396,237 @@
 .expert-footnote {
   font-size: 0.92rem;
   color: var(--ink-soft);
+}
+
+.cameras-grid .panel-primary {
+  grid-column: span 4;
+}
+
+.cameras-grid .panel-secondary {
+  grid-column: span 8;
+}
+
+.cameras-grid-extended .cameras-panel-list,
+.cameras-grid-extended .cameras-panel-form,
+.cameras-grid-extended .cameras-panel-detail {
+  grid-column: span 4;
+}
+
+@media (max-width: 1100px) {
+  .cameras-grid .panel-primary,
+  .cameras-grid .panel-secondary {
+    grid-column: span 6;
+  }
+
+  .cameras-grid-extended .cameras-panel-list,
+  .cameras-grid-extended .cameras-panel-form,
+  .cameras-grid-extended .cameras-panel-detail {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 720px) {
+  .cameras-grid .panel-primary,
+  .cameras-grid .panel-secondary {
+    grid-column: auto;
+  }
+
+  .cameras-grid-extended .cameras-panel-list,
+  .cameras-grid-extended .cameras-panel-form,
+  .cameras-grid-extended .cameras-panel-detail {
+    grid-column: auto;
+  }
+}
+
+.camera-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid rgba(24, 32, 29, 0.1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.68);
+  text-align: left;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.camera-card:hover,
+.camera-card.selected {
+  border-color: rgba(45, 122, 82, 0.34);
+  box-shadow: 0 12px 28px rgba(24, 32, 29, 0.08);
+  transform: translateY(-1px);
+}
+
+.camera-card.ok {
+  background: rgba(45, 122, 82, 0.08);
+}
+
+.camera-card.warning {
+  background: rgba(217, 179, 122, 0.12);
+}
+
+.camera-card.degraded {
+  background: rgba(198, 92, 61, 0.1);
+}
+
+.camera-card h3 {
+  margin-bottom: 4px;
+  font-size: 1.08rem;
+}
+
+.camera-card p {
+  color: var(--ink-soft);
+}
+
+.camera-card-meta {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.camera-card-meta span {
+  font-weight: 700;
+}
+
+.camera-card-meta small {
+  color: var(--ink-soft);
+}
+
+.camera-inline-state {
+  color: var(--ink-soft);
+}
+
+.camera-inline-state.error {
+  color: var(--alert-high);
+}
+
+.camera-detail-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.camera-detail-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .camera-detail-summary {
+    flex-direction: column;
+  }
+}
+
+.camera-detail-summary h3 {
+  margin-bottom: 6px;
+  font-size: 1.3rem;
+}
+
+.camera-detail-summary p {
+  color: var(--ink-soft);
+}
+
+.camera-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .camera-facts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.camera-facts div,
+.camera-next-actions,
+.camera-empty-state {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.camera-facts dt {
+  margin-bottom: 4px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+}
+
+.camera-facts dd {
+  margin: 0;
+}
+
+.camera-next-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.camera-next-actions p,
+.camera-empty-state p {
+  color: var(--ink-soft);
+}
+
+.camera-empty-state.compact {
+  padding: 14px;
+}
+
+.camera-discovery-results,
+.camera-form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.discovery-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(24, 32, 29, 0.1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.58);
+  text-align: left;
+}
+
+.discovery-card h3 {
+  margin-bottom: 4px;
+  font-size: 1rem;
+}
+
+.discovery-card p,
+.discovery-card small {
+  color: var(--ink-soft);
+}
+
+.camera-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .camera-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.camera-form-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.camera-form-grid span {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.camera-form-grid input {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink-strong);
 }

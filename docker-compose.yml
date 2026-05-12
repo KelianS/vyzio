@@ -11,8 +11,9 @@ services:
       ASPNETCORE_URLS: http://+:8443
       VYZIO_CONFIG_PATH: /app/config/vyzio.yml
     volumes:
-      - ./config:/app/config:ro
+      - ./config:/app/config
       - vyzio-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - vyzio-net
     ports:
@@ -37,9 +38,8 @@ services:
     privileged: true
     shm_size: "512mb"
     volumes:
-      # Development runtime only: this sample config is replaced later by
-      # a Vyzio-managed Frigate config in the nominal product flow.
-      - ./config/frigate.dev.yml:/config/config.yml:ro
+      # Vyzio owns the effective Frigate config for the nominal product flow.
+      - ./config/frigate.generated.yml:/config/config.yml:ro
       - frigate-data:/media/frigate
       - /etc/localtime:/etc/localtime:ro
     networks:

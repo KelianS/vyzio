@@ -15,6 +15,9 @@ public class VyzioRuntimeSettings
     {
         public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
         public string ApiBaseUrl { get; init; } = "http://frigate:5000";
+        public string ConfigPath { get; init; } = string.Empty;
+        public string ApplyCommand { get; init; } = string.Empty;
+        public string DatabasePath { get; init; } = "/media/frigate/frigate.db";
         public MqttSettings Mqtt { get; init; } = new();
     }
 

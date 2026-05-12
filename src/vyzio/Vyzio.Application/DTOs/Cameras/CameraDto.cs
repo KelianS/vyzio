@@ -1,0 +1,36 @@
+using Vyzio.Core.Entities;
+
+namespace Vyzio.Application.DTOs.Cameras;
+
+public sealed record CameraDto(
+    string Id,
+    string Slug,
+    string DisplayName,
+    string SourceType,
+    string Host,
+    int Port,
+    string Status,
+    string ValidationState,
+    bool IsEnabled,
+    bool PreviewAvailable,
+    bool NeedsAttention,
+    DateTimeOffset? LastReachabilityCheckAt,
+    DateTimeOffset? LastSuccessfulFrameAt,
+    string? FrigateCameraName)
+{
+    public static CameraDto From(Camera camera) => new(
+        camera.Id,
+        camera.Slug,
+        camera.DisplayName,
+        camera.SourceType,
+        camera.Host,
+        camera.Port,
+        camera.Status,
+        camera.ValidationState,
+        camera.IsEnabled,
+        camera.LastSuccessfulFrameAt.HasValue,
+        !string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase),
+        camera.LastReachabilityCheckAt,
+        camera.LastSuccessfulFrameAt,
+        camera.FrigateCameraName);
+}

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Hub;
@@ -24,6 +25,12 @@ public static class ServiceCollectionExtensions
             minimumNotificationConfidence));
         services.AddSingleton(new HubNotificationSettings(telegramNotificationsEnabled));
         services.AddSingleton<DetectionTelegramMessageFormatter>();
+        services.AddScoped<DiscoverCamerasUseCase>();
+        services.AddScoped<CreateCameraUseCase>();
+        services.AddScoped<VerifyCameraUseCase>();
+        services.AddScoped<ApplyCameraUseCase>();
+        services.AddScoped<GetCamerasUseCase>();
+        services.AddScoped<GetCameraStatusUseCase>();
         services.AddScoped<GetRecentDetectionEventsUseCase>();
         services.AddScoped<GetProfileDetectionEventsUseCase>();
         services.AddScoped<GetHubOverviewUseCase>();

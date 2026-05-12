@@ -20,6 +20,8 @@ public static class VyzioConfigLoader
 
         var root = deserializer.Deserialize<RootConfig>(yaml) ?? new RootConfig();
 
+        var configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
+
         return new VyzioRuntimeSettings
         {
             Database = new VyzioRuntimeSettings.DatabaseSettings
@@ -33,6 +35,11 @@ public static class VyzioConfigLoader
                 ApiBaseUrl = string.IsNullOrWhiteSpace(root.Frigate.ApiBaseUrl)
                     ? "http://frigate:5000"
                     : root.Frigate.ApiBaseUrl.TrimEnd('/'),
+                ConfigPath = ResolvePath(root.Frigate.ConfigPath, configDirectory, "frigate.generated.yml"),
+                ApplyCommand = root.Frigate.ApplyCommand?.Trim() ?? string.Empty,
+                DatabasePath = string.IsNullOrWhiteSpace(root.Frigate.DatabasePath)
+                    ? "/media/frigate/frigate.db"
+                    : root.Frigate.DatabasePath.Trim(),
                 RetainedLabels = root.Frigate.RetainedLabels
                     .Where(label => !string.IsNullOrWhiteSpace(label))
                     .Select(label => label.Trim())
@@ -75,6 +82,9 @@ public static class VyzioConfigLoader
     private sealed class FrigateConfig
     {
         public string ApiBaseUrl { get; init; } = string.Empty;
+        public string ConfigPath { get; init; } = string.Empty;
+        public string ApplyCommand { get; init; } = string.Empty;
+        public string DatabasePath { get; init; } = string.Empty;
         public List<string> RetainedLabels { get; init; } = [];
         public MqttConfig Mqtt { get; init; } = new();
     }
@@ -97,5 +107,16 @@ public static class VyzioConfigLoader
     {
         public string BotToken { get; init; } = string.Empty;
         public string ChatId { get; init; } = string.Empty;
+    }
+
+    private static string ResolvePath(string configuredPath, string configDirectory, string defaultFileName)
+    {
+        var path = string.IsNullOrWhiteSpace(configuredPath)
+            ? defaultFileName
+            : configuredPath.Trim();
+
+        return Path.IsPathRooted(path)
+            ? path
+            : Path.GetFullPath(Path.Combine(configDirectory, path));
     }
 }

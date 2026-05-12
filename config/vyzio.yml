@@ -1,5 +1,8 @@
 frigate:
   api_base_url: http://frigate:5000
+  config_path: ./frigate.generated.yml
+  apply_command: docker restart vyzio-frigate
+  database_path: /media/frigate/frigate.db
   mqtt:
     host: mqtt
     port: 1883
