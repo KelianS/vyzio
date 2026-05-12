@@ -75,7 +75,7 @@ public static class VyzioConfigLoader
     private sealed class FrigateConfig
     {
         public string ApiBaseUrl { get; init; } = string.Empty;
-        public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
+        public List<string> RetainedLabels { get; init; } = [];
         public MqttConfig Mqtt { get; init; } = new();
     }
 
