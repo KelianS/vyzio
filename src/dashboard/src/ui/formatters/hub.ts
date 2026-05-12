@@ -1,4 +1,5 @@
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
+import type { NotificationSummary } from '../../domain/entities/NotificationSummary'
 import type { Profile } from '../../domain/entities/Profile'
 
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
@@ -44,4 +45,16 @@ export function formatLastSeen(value: string | null): string {
   }
 
   return `Vu a ${timeFormatter.format(new Date(value))}`
+}
+
+export function formatLastNotification(value: string | null): string {
+  if (!value) {
+    return 'Aucune alerte envoyee'
+  }
+
+  return `Envoyee a ${timeFormatter.format(new Date(value))}`
+}
+
+export function formatNotificationStatus(summary: NotificationSummary): string {
+  return summary.telegramConfigured ? 'Telegram actif' : 'Telegram a configurer'
 }

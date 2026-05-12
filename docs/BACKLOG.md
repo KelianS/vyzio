@@ -133,7 +133,7 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P3.1 — API metier minimale
 
 **Taches :**
-- [ ] Exposer uniquement les parcours MVP prioritaires
+- [x] Exposer uniquement les parcours MVP prioritaires
 - [x] Separer lecture/ecriture de facon simple et testable
 - [ ] Eviter les endpoints non relies a un parcours utilisateur clair
 

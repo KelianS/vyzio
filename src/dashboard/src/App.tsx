@@ -4,8 +4,10 @@ import { useHubOverview } from './ui/hooks/useHubOverview'
 import {
   formatEventDetail,
   formatEventTime,
+  formatLastNotification,
   formatEventTitle,
   formatLastSeen,
+  formatNotificationStatus,
   formatProfileMeta,
   getEventTone,
 } from './ui/formatters/hub'
@@ -64,6 +66,7 @@ function App() {
   const recentProfiles = data?.profiles.slice(0, 3) ?? []
   const lastEvent = recentEvents[0]
   const warnings = data?.warnings ?? []
+  const notifications = data?.notifications
   const systemStatus = getSystemStatusViewModel(
     loading,
     error,
@@ -126,6 +129,10 @@ function App() {
               <strong>{data?.profiles.length ?? 0}</strong>
               <span>profils connus</span>
             </article>
+            <article>
+              <strong>{notifications?.sentCount ?? 0}</strong>
+              <span>alertes envoyees</span>
+            </article>
           </div>
 
           <div className="panel-cta-row">
@@ -135,6 +142,10 @@ function App() {
         </article>
 
         <article className="panel panel-secondary" id="events">
+            <div>
+              <dt>Notifications</dt>
+              <dd>{notifications ? formatNotificationStatus(notifications) : 'En attente'}</dd>
+            </div>
           <div className="panel-heading">
             <p className="section-kicker">Evenements</p>
             <h2>Recents et intelligibles</h2>
@@ -201,6 +212,10 @@ function App() {
           <a className="expert-link" href={dashboardRuntime.frigateBaseUrl} target="_blank" rel="noreferrer">
             Ouvrir Frigate en mode avance
           </a>
+
+          <p className="expert-footnote">
+            {notifications ? formatLastNotification(notifications.lastSentAt) : 'Aucune information disponible'}
+          </p>
         </article>
       </section>
     </main>

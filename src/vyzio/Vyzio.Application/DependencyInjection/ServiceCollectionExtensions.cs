@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
+using Vyzio.Application.UseCases.Hub;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Application.UseCases.Profiles;
 
@@ -21,9 +22,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new TelegramDetectionNotificationPolicy(
             telegramNotificationsEnabled,
             minimumNotificationConfidence));
+        services.AddSingleton(new HubNotificationSettings(telegramNotificationsEnabled));
         services.AddSingleton<DetectionTelegramMessageFormatter>();
         services.AddScoped<GetRecentDetectionEventsUseCase>();
         services.AddScoped<GetProfileDetectionEventsUseCase>();
+        services.AddScoped<GetHubOverviewUseCase>();
         services.AddScoped<IDetectionNotificationDispatcher, SendTelegramDetectionNotificationUseCase>();
 
         // Profile use cases

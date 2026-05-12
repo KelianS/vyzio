@@ -1,6 +1,8 @@
-import type { HubRepository } from '../../domain/ports/HubRepository'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
+import type { HubOverview } from '../../domain/entities/HubOverview'
+import type { NotificationSummary } from '../../domain/entities/NotificationSummary'
 import type { Profile } from '../../domain/entities/Profile'
+import type { HubRepository } from '../../domain/ports/HubRepository'
 import { fetchJson } from '../http/fetchJson'
 
 interface DetectionEventDto {
@@ -26,48 +28,65 @@ interface ProfileDto {
   createdAt: string
 }
 
-interface HealthDto {
-  status: string
+interface NotificationSummaryDto {
+  telegramConfigured: boolean
+  sentCount: number
+  lastSentAt: string | null
 }
 
 export class HttpHubRepository implements HubRepository {
   constructor(private readonly apiBaseUrl: string) {}
 
-  async getHealth(): Promise<boolean> {
-    const payload = await fetchJson<HealthDto>(`${this.apiBaseUrl}/health`)
-    return payload.status.toLowerCase() === 'ok'
+  async getOverview(): Promise<HubOverview> {
+    const payload = await fetchJson<{
+      systemHealthy: boolean
+      recentEvents: DetectionEventDto[]
+      profiles: ProfileDto[]
+      notifications: NotificationSummaryDto
+      warnings: string[]
+    }>(`${this.apiBaseUrl}/api/hub/overview`)
+
+    return {
+      systemHealthy: payload.systemHealthy,
+      recentEvents: payload.recentEvents.map(mapDetectionEvent),
+      profiles: payload.profiles.map(mapProfile),
+      notifications: mapNotificationSummary(payload.notifications),
+      warnings: payload.warnings,
+    }
   }
+}
 
-  async getRecentDetectionEvents(limit: number): Promise<DetectionEvent[]> {
-    const payload = await fetchJson<DetectionEventDto[]>(
-      `${this.apiBaseUrl}/api/detection-events/recent?limit=${limit}`,
-    )
-
-    return payload.map((event) => ({
-      eventId: event.eventId,
-      frigateEventId: event.frigateEventId,
-      lifecycle: event.lifecycle,
-      camera: event.camera,
-      label: event.label,
-      identity: event.identity,
-      profileId: event.profileId,
-      confidence: event.confidence,
-      occurredAt: event.occurredAt,
-      hasClip: event.hasClip,
-      hasSnapshot: event.hasSnapshot,
-    }))
+function mapDetectionEvent(event: DetectionEventDto): DetectionEvent {
+  return {
+    eventId: event.eventId,
+    frigateEventId: event.frigateEventId,
+    lifecycle: event.lifecycle,
+    camera: event.camera,
+    label: event.label,
+    identity: event.identity,
+    profileId: event.profileId,
+    confidence: event.confidence,
+    occurredAt: event.occurredAt,
+    hasClip: event.hasClip,
+    hasSnapshot: event.hasSnapshot,
   }
+}
 
-  async getProfiles(): Promise<Profile[]> {
-    const payload = await fetchJson<ProfileDto[]>(`${this.apiBaseUrl}/api/profiles/`)
+function mapProfile(profile: ProfileDto): Profile {
+  return {
+    id: profile.id,
+    name: profile.name,
+    category: profile.category,
+    alertMode: profile.alertMode,
+    lastSeenAt: profile.lastSeenAt,
+    createdAt: profile.createdAt,
+  }
+}
 
-    return payload.map((profile) => ({
-      id: profile.id,
-      name: profile.name,
-      category: profile.category,
-      alertMode: profile.alertMode,
-      lastSeenAt: profile.lastSeenAt,
-      createdAt: profile.createdAt,
-    }))
+function mapNotificationSummary(summary: NotificationSummaryDto): NotificationSummary {
+  return {
+    telegramConfigured: summary.telegramConfigured,
+    sentCount: summary.sentCount,
+    lastSentAt: summary.lastSentAt,
   }
 }
