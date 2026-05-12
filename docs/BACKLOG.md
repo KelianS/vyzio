@@ -135,7 +135,6 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 **Taches :**
 - [x] Exposer uniquement les parcours MVP prioritaires
 - [x] Separer lecture/ecriture de facon simple et testable
-- [ ] Eviter les endpoints non relies a un parcours utilisateur clair
 
 **Criteres d'acceptation :**
 - L'API sert un parcours produit identifiable
