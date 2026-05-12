@@ -161,6 +161,37 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 **Criteres d'acceptation :**
 - Le parcours MVP fonctionne sans imposer l'UI Frigate comme interface principale
 
+### US-P3.4 — Parcours camera guide
+
+**Taches :**
+- [x] Cadrer l'architecture cible du parcours camera et documenter le SAD
+- [ ] Ajouter une page de gestion des cameras depuis le hub
+- [ ] Introduire un referentiel camera cote Vyzio pour piloter l'UI et la generation de configuration
+- [ ] Exposer une lecture du statut camera independante des evenements de detection
+- [ ] Construire le parcours manuel complet: saisie, verification du flux, nommage, edition minimale
+- [ ] Generer la section cameras de la configuration Frigate depuis les cameras valides
+- [ ] Relancer ou recharger Frigate de facon maitrisee apres application de la configuration
+- [ ] Proposer une decouverte reseau assistee avec saisie manuelle en secours
+- [ ] Rendre visible le statut de chaque camera, la perte de flux et les actions de correction simples
+
+**Criteres d'acceptation :**
+- Une camera existante peut etre ajoutee sans edition manuelle de fichiers
+- L'utilisateur peut verifier rapidement qu'une camera est joignable, bien nommee et exploitable
+- L'indisponibilite d'une camera est visible sans diagnostic technique avance
+
+### US-P3.5 — Gestion detections et profils
+
+**Taches :**
+- [ ] Relier le CTA du hub a une page dediee couvrant detections et profils
+- [ ] Permettre la creation, la modification et la suppression de profils depuis l'interface
+- [ ] Exposer la configuration des categories de detection utiles et des politiques d'alerte associees
+- [ ] Afficher un historique recent par profil et preparer un parcours simple de correction de reconnaissance
+
+**Criteres d'acceptation :**
+- Le bouton du hub ouvre un vrai parcours produit et non une impasse
+- L'utilisateur peut gerer profils et detections depuis la meme interface
+- Les endpoints conserves sont relies a un parcours utilisateur explicite
+
 ---
 
 ## Definition of done

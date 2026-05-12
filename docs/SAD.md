@@ -21,7 +21,8 @@
    - [ADR-08 — Dashboard : React + TypeScript](#adr-08--dashboard--react--typescript)
    - [ADR-09 — Notifications : Telegram (prioritaire) + FCM + canaux alternatifs](#adr-09--notifications--telegram-prioritaire--fcm--canaux-alternatifs)
    - [ADR-10 — Authentification : JWT + bcrypt](#adr-10--authentification--jwt--bcrypt)
-    - [ADR-11 — Stratégie UX non-tech : Hub Vyzio simplifié + Frigate avancé](#adr-11--stratégie-ux-non-tech--hub-vyzio-simplifié--frigate-avancé)
+  - [ADR-11 — Stratégie UX non-tech : Hub Vyzio simplifié + Frigate avancé](#adr-11--stratégie-ux-non-tech--hub-vyzio-simplifié--frigate-avancé)
+  - [ADR-12 — Gestion des caméras pilotée par Vyzio, appliquée à Frigate](#adr-12--gestion-des-caméras-pilotée-par-vyzio-appliquée-à-frigate)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -844,6 +845,125 @@ Vyzio adopte une **stratégie UX en deux couches** :
 - ✅ Réduit le coût de développement UI en réutilisant l'existant pertinent
 - ✅ Permet une progression utilisateur du mode simple vers expert
 - ⚠️ Exige une documentation claire des parcours simple vs avancé
+
+---
+
+### ADR-12 — Gestion des caméras pilotée par Vyzio, appliquée à Frigate
+
+#### Contexte
+
+Vyzio doit offrir une gestion caméra simple pour un utilisateur non-technicien tout en conservant Frigate comme moteur vidéo et source d'exécution effective. L'utilisateur ne doit jamais modifier manuellement un fichier YAML, mais la cible technique finale reste que les caméras actives soient injectées dans la configuration Frigate puis appliquées par rechargement contrôlé de Frigate.
+
+L'architecture doit donc résoudre simultanément quatre besoins durables :
+
+- fournir un référentiel caméra intelligible côté Vyzio pour l'interface et les règles métier ;
+- permettre un parcours guidé d'ajout, de vérification et de correction ;
+- produire une configuration Frigate déterministe à partir de l'état validé côté Vyzio ;
+- appliquer cette configuration à Frigate sans exposer les détails internes au parcours utilisateur.
+
+Frigate reste responsable de l'ingestion ONVIF/RTSP/MJPEG, du pipeline vidéo, du live preview final et des détections. Vyzio reste responsable du parcours, du vocabulaire produit, de la validation et de l'orchestration de configuration.
+
+#### Décision
+
+La gestion des caméras est modélisée comme une orchestration Vyzio en quatre briques distinctes :
+
+| Brique | Rôle | Source de vérité |
+|---|---|---|
+| **Camera Catalog** | référentiel Vyzio des caméras connues, de leur nom métier, mode de connexion, état de validation et paramètres utiles à la génération de configuration | SQLite Vyzio |
+| **Camera Discovery Adapter** | découverte réseau assistée et normalisation des candidats détectés, avec fallback manuel complet | Frigate/sondage réseau + saisie utilisateur |
+| **Camera Config Writer** | génération déterministe de la section `cameras` de la configuration Frigate à partir des caméras actives validées | configuration Frigate générée par Vyzio |
+| **Camera Status Projection** | synthèse d'état exploitable par l'UI (`online`, `offline`, `degraded`, `config_error`) à partir des checks Vyzio et du retour Frigate | projection applicative Vyzio |
+
+Cette séparation permet d'éviter deux erreurs :
+
+- piloter directement l'UI depuis les concepts internes Frigate ;
+- stocker toute la vérité caméra uniquement dans du YAML difficile à valider, versionner et tester.
+
+#### Architecture cible
+
+Le flux nominal cible est le suivant :
+
+1. Vyzio découvre ou reçoit les paramètres d'une caméra.
+2. Vyzio vérifie la joignabilité et la cohérence minimale du flux.
+3. Vyzio enregistre la caméra dans son catalogue avec un statut de validation explicite.
+4. Vyzio génère la configuration Frigate complète à partir du catalogue des caméras actives.
+5. Vyzio applique cette configuration par écriture atomique du fichier cible puis déclenche un reload/restart maîtrisé de Frigate.
+6. Vyzio contrôle le retour de Frigate et met à jour un statut produit lisible pour l'utilisateur.
+
+Le dashboard ne manipule donc jamais directement `frigate.yml`. Il agit sur des ressources Vyzio ; Vyzio dérive ensuite la configuration Frigate effective.
+
+#### Contrats API cibles
+
+Les contrats externes doivent exprimer une intention produit, pas un détail d'infrastructure :
+
+```
+GET    /api/cameras                    → liste hub-friendly des caméras connues + statut synthétique
+POST   /api/cameras/discovery          → renvoie des candidats normalisés issus de la découverte réseau
+POST   /api/cameras                    → crée ou enregistre une caméra dans le catalogue Vyzio
+POST   /api/cameras/{id}/verify        → teste la connectivité et produit un aperçu exploitable
+PATCH  /api/cameras/{id}               → nommage + édition minimale
+POST   /api/cameras/{id}/apply         → régénère la configuration Frigate et applique le changement
+GET    /api/cameras/{id}/status        → détail d'état et aides à la correction
+```
+
+Principes de conception associés :
+
+- les réponses doivent employer un vocabulaire produit (`connected`, `previewAvailable`, `needsAttention`) plutôt que des codes Frigate bruts ;
+- la saisie manuelle est un chemin nominal de secours, pas une exception cachée ;
+- l'écriture de configuration doit rester atomique : génération complète puis application, jamais mutation partielle non traçable ;
+- la base Vyzio n'est pas la configuration finale exécutée par le moteur vidéo ; elle stocke la vérité métier nécessaire pour générer cette configuration ;
+- le hub et la future page caméras consomment le même contrat de statut pour éviter une divergence d'interprétation.
+
+#### Modèle de données minimal côté Vyzio
+
+Un stockage Vyzio dédié est nécessaire pour supporter la gestion métier des caméras et la projection d'état indépendamment des événements de détection.
+
+```
+CameraAggregate
+  - Id
+  - Slug
+  - DisplayName
+  - SourceType          // onvif | rtsp_manual | http_mjpeg
+  - Host
+  - Port
+  - Username (référence secrète)
+  - Password (référence secrète)
+  - StreamPath
+  - DetectionPreset
+  - Status
+  - LastReachabilityCheckAt
+  - LastSuccessfulFrameAt
+  - FrigateCameraName
+  - ValidationState
+```
+
+Les secrets caméra ne doivent pas être stockés en clair dans la projection métier. Ils restent chiffrés via la stratégie déjà retenue dans le SAD (`DataProtection`) ou référencés via un magasin interne si ce besoin grossit.
+
+#### Intégration Frigate retenue
+
+La configuration finale exécutée par Frigate est générée par Vyzio à partir du catalogue caméra validé :
+
+- Vyzio ne modifie jamais manuellement un fragment isolé côté utilisateur ; il régénère un document de configuration cohérent ;
+- la section `cameras` de Frigate est dérivée des caméras actives Vyzio ;
+- l'application du changement passe par une écriture atomique suivie d'un reload/restart contrôlé de Frigate ;
+- en cas d'échec d'application, le statut utilisateur devient `config_error` et Vyzio conserve la trace du dernier état appliqué avec succès.
+
+Le parcours reste compatible avec la stratégie "Hub Vyzio simplifié + Frigate avancé" :
+
+- **découverte** : utiliser Frigate ou un adaptateur dédié quand une capacité exploitable existe, sans dépendre d'un écran Frigate ;
+- **prévisualisation** : passer par un proxy Vyzio pour éviter d'exposer directement Frigate au dashboard ;
+- **application** : Vyzio régénère la configuration caméra Frigate à partir du catalogue, puis déclenche un reload/restart maîtrisé ;
+- **état** : Vyzio recoupe le statut applicatif avec les signaux Frigate pour afficher une information simple au lieu d'un diagnostic brut.
+
+Le point important de conception est de ne pas faire dépendre tout le parcours d'une API de découverte Frigate qui pourrait varier. L'abstraction `CameraDiscoveryAdapter` doit permettre un fallback manuel complet.
+
+#### Conséquences
+
+- ✅ Le dashboard reste découplé de la syntaxe et des contraintes internes de Frigate
+- ✅ La base Vyzio sert de référence métier, tandis que Frigate reste la cible d'exécution effective
+- ✅ L'état caméra devient un concept produit de premier ordre, au lieu d'être inféré uniquement depuis les détections
+- ⚠️ Introduit une nouvelle agrégation métier et une synchronisation explicite BD Vyzio → configuration Frigate
+- ⚠️ Le mécanisme de reload/restart Frigate doit être idempotent, observable et validé en environnement Docker réel
 
 ---
 
