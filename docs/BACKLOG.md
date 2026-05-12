@@ -133,9 +133,8 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P3.1 — API metier minimale
 
 **Taches :**
-- [ ] Exposer uniquement les parcours MVP prioritaires
-- [ ] Separer lecture/ecriture de facon simple et testable
-- [ ] Eviter les endpoints non relies a un parcours utilisateur clair
+- [x] Exposer uniquement les parcours MVP prioritaires
+- [x] Separer lecture/ecriture de facon simple et testable
 
 **Criteres d'acceptation :**
 - L'API sert un parcours produit identifiable
@@ -143,9 +142,9 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P3.2 — Notifications utiles
 
 **Taches :**
-- [ ] Implementer Telegram comme premier canal retenu par la strategie produit
-- [ ] Limiter le scope aux notifications a forte valeur
-- [ ] Ajouter les regles minimales de reduction du bruit
+- [x] Implementer Telegram comme premier canal retenu par la strategie produit
+- [x] Limiter le scope aux notifications a forte valeur
+- [x] Ajouter les regles minimales de reduction du bruit
 
 **Criteres d'acceptation :**
 - Une detection prioritaire genere une notification intelligible
@@ -154,33 +153,43 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 ### US-P3.3 — Hub Vyzio simplifie
 
 **Taches :**
-- [ ] Definir l'UI minimale necessaire pour un utilisateur non-tech
-- [ ] Eviter de reconstruire l'integralite des ecrans Frigate
-- [ ] Conserver un acces avance vers Frigate hors parcours nominal
+- [x] Definir l'UI minimale necessaire pour un utilisateur non-tech
+- [x] Eviter de reconstruire l'integralite des ecrans Frigate
+- [x] Conserver un acces avance vers Frigate hors parcours nominal
 
 **Criteres d'acceptation :**
 - Le parcours MVP fonctionne sans imposer l'UI Frigate comme interface principale
 
----
+### US-P3.4 — Parcours camera guide
 
-## Hors chemin critique
+**Taches :**
+- [x] Cadrer l'architecture cible du parcours camera et documenter le SAD
+- [ ] Ajouter une page de gestion des cameras depuis le hub
+- [ ] Introduire un referentiel camera cote Vyzio pour piloter l'UI et la generation de configuration
+- [ ] Exposer une lecture du statut camera independante des evenements de detection
+- [ ] Construire le parcours manuel complet: saisie, verification du flux, nommage, edition minimale
+- [ ] Generer la section cameras de la configuration Frigate depuis les cameras valides
+- [ ] Relancer ou recharger Frigate de facon maitrisee apres application de la configuration
+- [ ] Proposer une decouverte reseau assistee avec saisie manuelle en secours
+- [ ] Rendre visible le statut de chaque camera, la perte de flux et les actions de correction simples
 
-Ces sujets restent possibles mais ne font pas partie du chemin nominal actuel :
+**Criteres d'acceptation :**
+- Une camera existante peut etre ajoutee sans edition manuelle de fichiers
+- L'utilisateur peut verifier rapidement qu'une camera est joignable, bien nommee et exploitable
+- L'indisponibilite d'une camera est visible sans diagnostic technique avance
 
-- worker dedie de reconnaissance faciale hors Frigate ;
-- protocole inter-services specialise de type gRPC ;
-- UI 100 % custom couvrant toutes les fonctions avancees de Frigate ;
-- multi-base de donnees des le MVP ;
-- acces distant complet avant validation du parcours local.
+### US-P3.5 — Gestion detections et profils
 
-Ils ne reviennent dans le backlog qu'apres nouvelle decision documentaire dans les SPECS et/ou le SAD.
+**Taches :**
+- [ ] Relier le CTA du hub a une page dediee couvrant detections et profils
+- [ ] Permettre la creation, la modification et la suppression de profils depuis l'interface
+- [ ] Exposer la configuration des categories de detection utiles et des politiques d'alerte associees
+- [ ] Afficher un historique recent par profil et preparer un parcours simple de correction de reconnaissance
 
----
-
-## Ordre de travail recommande a partir de maintenant
-
-1. Considere P0 comme cloturee.
-2. Reprendre P1, une story a la fois, en conservant le cadrage SPECS/SAD valide.
+**Criteres d'acceptation :**
+- Le bouton du hub ouvre un vrai parcours produit et non une impasse
+- L'utilisateur peut gerer profils et detections depuis la meme interface
+- Les endpoints conserves sont relies a un parcours utilisateur explicite
 
 ---
 

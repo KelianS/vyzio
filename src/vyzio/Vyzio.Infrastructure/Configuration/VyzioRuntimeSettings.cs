@@ -4,6 +4,7 @@ public class VyzioRuntimeSettings
 {
     public DatabaseSettings Database { get; init; } = new();
     public FrigateSettings Frigate { get; init; } = new();
+    public NotificationsSettings Notifications { get; init; } = new();
 
     public sealed class DatabaseSettings
     {
@@ -23,5 +24,19 @@ public class VyzioRuntimeSettings
         public int Port { get; init; } = 1883;
         public string Topic { get; init; } = "frigate/events";
         public string ClientId { get; init; } = "vyzio-api";
+    }
+
+    public sealed class NotificationsSettings
+    {
+        public float MinimumConfidence { get; init; } = 0.75f;
+        public TelegramSettings Telegram { get; init; } = new();
+    }
+
+    public sealed class TelegramSettings
+    {
+        public string BotToken { get; init; } = string.Empty;
+        public string ChatId { get; init; } = string.Empty;
+
+        public bool IsEnabled => !string.IsNullOrWhiteSpace(BotToken) && !string.IsNullOrWhiteSpace(ChatId);
     }
 }

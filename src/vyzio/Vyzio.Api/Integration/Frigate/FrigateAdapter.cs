@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Vyzio.Application.DTOs.Frigate;
 using Vyzio.Application.UseCases.Frigate;
+using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -9,6 +10,7 @@ namespace Vyzio.Api.Integration.Frigate;
 public sealed class FrigateAdapter(
     FrigateEventContractAdapter contractAdapter,
     IDetectionEventRepository detectionEvents,
+    IDetectionNotificationDispatcher detectionNotifications,
     IFrigateRestClient restClient,
     ILogger<FrigateAdapter> logger)
 {
@@ -26,12 +28,15 @@ public sealed class FrigateAdapter(
 
             if (existing is null)
             {
-                await detectionEvents.AddAsync(ToDetectionEvent(consumedEvent, identity), ct);
+                var detectionEvent = ToDetectionEvent(consumedEvent, identity);
+                await detectionEvents.AddAsync(detectionEvent, ct);
+                await detectionNotifications.ExecuteAsync(detectionEvent, ct);
                 return true;
             }
 
             ApplyUpdate(existing, consumedEvent, identity);
             await detectionEvents.UpdateAsync(existing, ct);
+            await detectionNotifications.ExecuteAsync(existing, ct);
             return true;
         }
         catch (Exception ex)
