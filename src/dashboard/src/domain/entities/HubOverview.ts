@@ -5,4 +5,5 @@ export interface HubOverview {
   systemHealthy: boolean
   recentEvents: DetectionEvent[]
   profiles: Profile[]
+  warnings: string[]
 }

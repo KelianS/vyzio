@@ -109,6 +109,10 @@
   color: #ffd7cf;
 }
 
+.status-inline.warning {
+  color: #f3d7a4;
+}
+
 .hub-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));

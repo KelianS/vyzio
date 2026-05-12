@@ -15,6 +15,7 @@ function App() {
   const recentEvents = data?.recentEvents ?? []
   const recentProfiles = data?.profiles.slice(0, 3) ?? []
   const lastEvent = recentEvents[0]
+  const warnings = data?.warnings ?? []
 
   return (
     <main className="app-shell">
@@ -46,6 +47,9 @@ function App() {
 
           {loading ? <p className="status-inline">Chargement du hub...</p> : null}
           {error ? <p className="status-inline error">Connexion API impossible.</p> : null}
+          {!error && warnings.map((warning) => (
+            <p key={warning} className="status-inline warning">{warning}</p>
+          ))}
         </div>
       </section>
 
