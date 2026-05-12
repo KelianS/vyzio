@@ -19,7 +19,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     event_id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     channel = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    sent_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    sent_at = table.Column<DateTime>(type: "TEXT", nullable: false),
                     error_message = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -35,8 +35,8 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     category = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     alert_mode = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    last_seen_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
+                    last_seen_at = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    created_at = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,8 +49,8 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                 {
                     id = table.Column<string>(type: "TEXT", nullable: false),
                     user_id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    expires_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    created_at = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "TEXT", nullable: false),
                     revoked = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
@@ -70,7 +70,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     identity = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     profile_id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     confidence = table.Column<float>(type: "REAL", nullable: true),
-                    occurred_at = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    occurred_at = table.Column<DateTime>(type: "TEXT", nullable: false),
                     has_clip = table.Column<bool>(type: "INTEGER", nullable: false),
                     has_snapshot = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
