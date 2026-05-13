@@ -320,4 +320,129 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("tplink_tapo", candidate.VendorFamily);
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
     }
+
+    [Fact]
+    public async Task DiscoverAsync_merges_candidates_for_same_host_and_keeps_best_match()
+    {
+        using var rtspListener = new TcpListener(IPAddress.Loopback, 0);
+        rtspListener.Start();
+        using var httpListener = new TcpListener(IPAddress.Loopback, 0);
+        httpListener.Start();
+
+        var rtspPort = ((IPEndPoint)rtspListener.LocalEndpoint).Port;
+        var httpPort = ((IPEndPoint)httpListener.LocalEndpoint).Port;
+
+        var rtspServerTask = Task.Run(async () =>
+        {
+            using var client = await rtspListener.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[1024];
+            _ = await stream.ReadAsync(buffer);
+
+            var payload = "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"Tapo\"\r\n\r\n";
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await stream.WriteAsync(bytes);
+            await stream.FlushAsync();
+        });
+
+        var httpServerTask = Task.Run(async () =>
+        {
+            using (var client = await httpListener.AcceptTcpClientAsync())
+            using (var stream = client.GetStream())
+            {
+                var buffer = new byte[1024];
+                _ = await stream.ReadAsync(buffer);
+
+                var firstPayload = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
+                var firstBytes = Encoding.UTF8.GetBytes(firstPayload);
+                await stream.WriteAsync(firstBytes);
+                await stream.FlushAsync();
+            }
+
+            using var secondClient = await httpListener.AcceptTcpClientAsync();
+            using var secondStream = secondClient.GetStream();
+            var secondBuffer = new byte[1024];
+            _ = await secondStream.ReadAsync(secondBuffer);
+
+            var payload = "HTTP/1.1 200 OK\r\nServer: TP-Link Tapo\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Tapo Camera</title></head><body>Tapo</body></html>";
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await secondStream.WriteAsync(bytes);
+            await secondStream.FlushAsync();
+        });
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [rtspPort],
+                RtspPaths = ["/stream1"],
+                HttpPorts = [httpPort],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        await Task.WhenAll(rtspServerTask, httpServerTask);
+
+        var candidate = Assert.Single(result);
+        Assert.Equal("127.0.0.1", candidate.Host);
+        Assert.Equal(rtspPort, candidate.Port);
+        Assert.Equal("rtsp_describe", candidate.DiscoverySource);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        Assert.Equal("tplink_tapo", candidate.VendorFamily);
+        Assert.Contains("rtsp_responding", candidate.QualificationReasons);
+        Assert.Contains("http_camera_signature", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_orders_best_matches_first()
+    {
+        using var rtspListener = new TcpListener(IPAddress.Loopback, 0);
+        rtspListener.Start();
+
+        var rtspPort = ((IPEndPoint)rtspListener.LocalEndpoint).Port;
+
+        var rtspServerTask = Task.Run(async () =>
+        {
+            using var client = await rtspListener.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[1024];
+            _ = await stream.ReadAsync(buffer);
+
+            var payload = "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"Camera\"\r\n\r\n";
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await stream.WriteAsync(bytes);
+            await stream.FlushAsync();
+        });
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1", "c200-camera-tapo.lan"],
+                RtspPorts = [rtspPort],
+                RtspPaths = ["/stream1"],
+                HttpPorts = [],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        await rtspServerTask;
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("127.0.0.1", result[0].Host);
+        Assert.Equal("camera_confirmed", result[0].Qualification);
+        Assert.Equal("c200-camera-tapo.lan", result[1].Host);
+        Assert.Equal("camera_likely", result[1].Qualification);
+    }
 }
