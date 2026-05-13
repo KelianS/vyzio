@@ -15,8 +15,18 @@ public class AssistedCameraDiscoveryServiceTests
         listener.Start();
 
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        using var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var acceptTask = listener.AcceptTcpClientAsync(acceptCts.Token).AsTask();
+        var serverTask = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[1024];
+            _ = await stream.ReadAsync(buffer);
+
+            var payload = "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"Tapo\"\r\n\r\n";
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await stream.WriteAsync(bytes);
+            await stream.FlushAsync();
+        });
 
         var settings = new VyzioRuntimeSettings
         {
@@ -24,6 +34,7 @@ public class AssistedCameraDiscoveryServiceTests
             {
                 ProbeHosts = ["127.0.0.1"],
                 RtspPorts = [port],
+                RtspPaths = ["/stream1"],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
             }
@@ -33,13 +44,13 @@ public class AssistedCameraDiscoveryServiceTests
 
         var result = await sut.DiscoverAsync();
 
-        using var client = await acceptTask;
+        await serverTask;
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
-        Assert.Equal("network_scan", candidate.DiscoverySource);
-        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Equal("rtsp_describe", candidate.DiscoverySource);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Equal("unknown", candidate.SupportLevel);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
-        Assert.Null(candidate.StreamPath);
+        Assert.Equal("/stream1", candidate.StreamPath);
         Assert.Null(candidate.MacAddress);
     }
 
@@ -59,6 +70,7 @@ public class AssistedCameraDiscoveryServiceTests
             {
                 ProbeCidrs = ["127.0.0.1/32"],
                 RtspPorts = [port],
+                RtspPaths = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
             }
@@ -232,6 +244,50 @@ public class AssistedCameraDiscoveryServiceTests
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("onvif_unicast", candidate.DiscoverySource);
         Assert.Equal("onvif", candidate.SourceType);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        Assert.Contains("onvif_detected", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_returns_candidate_from_configured_onvif_port()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var serverTask = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[2048];
+            _ = await stream.ReadAsync(buffer);
+
+            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body>onvif</s:Body></s:Envelope>";
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await stream.WriteAsync(bytes);
+            await stream.FlushAsync();
+        });
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [],
+                HttpPorts = [],
+                OnvifPorts = [port],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+        await serverTask;
+
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
+        Assert.Equal("onvif_unicast", candidate.DiscoverySource);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
     }

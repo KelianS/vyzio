@@ -294,6 +294,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'Annonce ONVIF detectee'
       case 'http_service_detected':
         return 'Service web generique detecte'
+      case 'vendor_oui_match':
+        return 'Constructeur probable via MAC/OUI'
       case 'rtsp_responding':
         return 'Port RTSP joignable'
       case 'http_camera_signature':
@@ -309,12 +311,18 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
   }
 
+  function formatCandidateAddress(candidate: DiscoveryCandidate) {
+    return candidate.port > 0 ? `${candidate.host}:${candidate.port}` : candidate.host
+  }
+
   function formatDiscoverySource(discoverySource: string) {
     switch (discoverySource) {
       case 'onvif':
         return 'ONVIF multicast'
       case 'onvif_unicast':
         return 'ONVIF unicast'
+      case 'mac_vendor_probe':
+        return 'MAC constructeur'
       case 'rtsp_probe':
         return 'RTSP local'
       case 'network_scan':
@@ -400,7 +408,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 >
                   <div>
                     <strong>{candidate.displayName}</strong>
-                    <p>{candidate.host}:{candidate.port}</p>
+                    <p>{formatCandidateAddress(candidate)}</p>
                     <div className="camera-badge-row compact">
                       <span className={`camera-qualification-badge ${qualificationTone(candidate.qualification)}`}>
                         {formatQualificationLabel(candidate.qualification)}
@@ -475,7 +483,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <dl className="camera-summary-list">
                       <div>
                         <dt>Adresse</dt>
-                        <dd>{selectedCandidate.host}:{selectedCandidate.port}</dd>
+                        <dd>{formatCandidateAddress(selectedCandidate)}</dd>
                       </div>
                       <div>
                         <dt>Detection</dt>

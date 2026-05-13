@@ -39,11 +39,21 @@ discovery:
   rtsp_ports:
     # Ports RTSP testes pendant le scan reseau.
     - 554
+  rtsp_paths:
+    # Chemins RTSP frequents testes avec un DESCRIBE pour reperer les cameras sans interface web.
+    - /stream1
+    - /stream2
+    - /Streaming/Channels/101
+    - /live/ch00_1
   http_ports:
     # Ports web testes pour reperer les interfaces constructeur de cameras d'origine.
     - 80
     - 443
     - 8080
+  onvif_ports:
+    # Ports testes pour joindre directement un endpoint ONVIF unicast.
+    - 80
+    - 2020
   # Timeout de connexion par hote/port pendant la decouverte reseau.
   probe_timeout_ms: 250
   # Nombre maximum de probes reseau lances en parallele.

@@ -35,9 +35,19 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
 
+        foreach (var candidate in await DiscoverConfiguredOnvifCandidatesAsync(ct))
+        {
+            candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
+        }
+
         foreach (var candidate in await DiscoverConfiguredHttpCandidatesAsync(ct))
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
+        }
+
+        foreach (var candidate in await DiscoverConfiguredMacVendorCandidatesAsync(ct))
+        {
+            candidates.TryAdd($"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}", candidate);
         }
 
         return candidates.Values
@@ -220,12 +230,92 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         return results;
     }
 
+    private async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverConfiguredOnvifCandidatesAsync(CancellationToken ct)
+    {
+        var hosts = BuildConfiguredHostList();
+        if (hosts.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new List<CameraDiscoveryCandidate>();
+        using var gate = new SemaphoreSlim(settings.Discovery.MaxConcurrentProbes);
+
+        var tasks = hosts
+            .SelectMany(host => settings.Discovery.OnvifPorts.Select(port => ProbeConfiguredOnvifHostAsync(host, port, gate, ct)))
+            .ToArray();
+
+        var probed = await Task.WhenAll(tasks);
+        foreach (var candidate in probed)
+        {
+            if (candidate is not null)
+            {
+                results.Add(candidate);
+            }
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverConfiguredMacVendorCandidatesAsync(CancellationToken ct)
+    {
+        var hosts = BuildConfiguredHostList();
+        if (hosts.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new List<CameraDiscoveryCandidate>();
+
+        foreach (var host in hosts)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var macAddress = await ResolveMacAddressAsync(host, ct);
+            var vendorFamily = DetectVendorFamily(null, null, macAddress);
+            if (string.IsNullOrWhiteSpace(macAddress) || string.IsNullOrWhiteSpace(vendorFamily))
+            {
+                continue;
+            }
+
+            results.Add(BuildQualifiedCandidate(
+                $"{FormatVendorFamily(vendorFamily)} probable",
+                host,
+                0,
+                "vendor_probe",
+                null,
+                "mac_vendor_probe",
+                $"Equipement {FormatVendorFamily(vendorFamily)} detecte via l'adresse MAC {macAddress}. Les services video ne repondent pas encore ou sont desactives.",
+                macAddress,
+                ["vendor_oui_match"]));
+        }
+
+        return results;
+    }
+
     private async Task<CameraDiscoveryCandidate?> ProbeConfiguredHostAsync(string host, int port, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
 
         try
         {
+            var streamPath = await ProbeRtspPathsAsync(host, port, settings.Discovery.RtspPaths, settings.Discovery.ProbeTimeoutMs, ct);
+            if (!string.IsNullOrWhiteSpace(streamPath))
+            {
+                var resolvedMacAddress = await ResolveMacAddressAsync(host, ct);
+
+                return BuildQualifiedCandidate(
+                    ToDisplayName(host),
+                    host,
+                    port,
+                    "rtsp_manual",
+                    streamPath,
+                    "rtsp_describe",
+                    $"RTSP repond sur {host}:{port} avec un chemin exploitable ({streamPath}).",
+                        resolvedMacAddress,
+                    ["rtsp_responding"]);
+            }
+
             if (!await CanConnectAsync(host, port, settings.Discovery.ProbeTimeoutMs, ct))
             {
                 return null;
@@ -243,6 +333,37 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 $"RTSP port {port} responded during configured LAN scan. Complete the RTSP path before verification.",
                 macAddress,
                 ["rtsp_responding"]);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<CameraDiscoveryCandidate?> ProbeConfiguredOnvifHostAsync(string host, int port, SemaphoreSlim gate, CancellationToken ct)
+    {
+        await gate.WaitAsync(ct);
+
+        try
+        {
+            var probe = await ProbeOnvifUnicastEndpointAsync(host, port, settings.Discovery.ProbeTimeoutMs, ct);
+            if (probe is null)
+            {
+                return null;
+            }
+
+            var macAddress = await ResolveMacAddressAsync(host, ct);
+
+            return BuildQualifiedCandidate(
+                probe.DisplayName,
+                host,
+                port,
+                probe.SourceType,
+                null,
+                probe.DiscoverySource,
+                probe.Note,
+                macAddress,
+                probe.QualificationReasons);
         }
         finally
         {
@@ -410,6 +531,62 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
             await client.ConnectAsync(host, port, timeout.Token);
             return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string?> ProbeRtspPathsAsync(
+        string host,
+        int port,
+        IReadOnlyList<string> paths,
+        int timeoutMs,
+        CancellationToken ct)
+    {
+        foreach (var path in paths)
+        {
+            if (await CanDescribeRtspPathAsync(host, port, path, timeoutMs, ct))
+            {
+                return path;
+            }
+        }
+
+        return null;
+    }
+
+    private static async Task<bool> CanDescribeRtspPathAsync(string host, int port, string path, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            using var stream = client.GetStream();
+            var request =
+                $"DESCRIBE rtsp://{host}:{port}{path} RTSP/1.0\r\n" +
+                "CSeq: 1\r\n" +
+                "Accept: application/sdp\r\n" +
+                "User-Agent: Vyzio\r\n\r\n";
+
+            var bytes = Encoding.ASCII.GetBytes(request);
+            await stream.WriteAsync(bytes, timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var buffer = new byte[4096];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+            if (read <= 0)
+            {
+                return false;
+            }
+
+            var response = Encoding.UTF8.GetString(buffer, 0, read);
+            return response.StartsWith("RTSP/1.0 200", StringComparison.OrdinalIgnoreCase)
+                || response.StartsWith("RTSP/1.0 401", StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
@@ -745,7 +922,7 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         string? macAddress,
         IReadOnlyList<string>? primaryReasons = null)
     {
-        var vendorFamily = DetectVendorFamily(displayName, note);
+        var vendorFamily = DetectVendorFamily(displayName, note, macAddress);
         var qualificationReasons = BuildQualificationReasons(streamPath, vendorFamily, macAddress, primaryReasons);
 
         return new CameraDiscoveryCandidate(
@@ -763,11 +940,17 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             qualificationReasons);
     }
 
-    private static string? DetectVendorFamily(string displayName, string? note)
+    private static string? DetectVendorFamily(string? displayName, string? note, string? macAddress)
     {
         var fingerprint = $"{displayName} {note}".ToLowerInvariant();
+        var oui = NormalizeOui(macAddress);
 
         if (fingerprint.Contains("tapo") || fingerprint.Contains("tp-link") || fingerprint.Contains("tplink"))
+        {
+            return "tplink_tapo";
+        }
+
+        if (oui is "5C:62:8B")
         {
             return "tplink_tapo";
         }
@@ -827,6 +1010,30 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             "tplink_tapo" => "guided",
             _ => "unknown"
         };
+
+    private static string FormatVendorFamily(string vendorFamily)
+        => vendorFamily switch
+        {
+            "tplink_tapo" => "TP-Link Tapo",
+            _ => vendorFamily
+        };
+
+    private static string? NormalizeOui(string? macAddress)
+    {
+        if (string.IsNullOrWhiteSpace(macAddress))
+        {
+            return null;
+        }
+
+        var octets = macAddress
+            .Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Take(3)
+            .ToArray();
+
+        return octets.Length == 3
+            ? string.Join(':', octets).ToUpperInvariant()
+            : null;
+    }
 
     private static void AddReason(List<string> reasons, string reason)
     {

@@ -71,7 +71,18 @@ public static class VyzioConfigLoader
                     .Distinct()
                     .DefaultIfEmpty(554)
                     .ToArray(),
+                RtspPaths = root.Discovery.RtspPaths
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
+                    .Select(path => path.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .DefaultIfEmpty("/stream1")
+                    .ToArray(),
                 HttpPorts = root.Discovery.HttpPorts
+                    .Where(port => port > 0 && port <= 65535)
+                    .Distinct()
+                    .DefaultIfEmpty(80)
+                    .ToArray(),
+                OnvifPorts = root.Discovery.OnvifPorts
                     .Where(port => port > 0 && port <= 65535)
                     .Distinct()
                     .DefaultIfEmpty(80)
@@ -134,7 +145,9 @@ public static class VyzioConfigLoader
         public List<string> ProbeHosts { get; init; } = [];
         public List<string> ProbeCidrs { get; init; } = [];
         public List<int> RtspPorts { get; init; } = [];
+        public List<string> RtspPaths { get; init; } = [];
         public List<int> HttpPorts { get; init; } = [];
+        public List<int> OnvifPorts { get; init; } = [];
         public int ProbeTimeoutMs { get; init; } = 250;
         public int MaxConcurrentProbes { get; init; } = 32;
     }
