@@ -53,6 +53,31 @@ public static class VyzioConfigLoader
                     ClientId = string.IsNullOrWhiteSpace(root.Frigate.Mqtt.ClientId) ? "vyzio-api" : root.Frigate.Mqtt.ClientId
                 }
             },
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                AutoDetectLocalCidrs = root.Discovery.AutoDetectLocalCidrs,
+                ProbeHosts = root.Discovery.ProbeHosts
+                    .Where(host => !string.IsNullOrWhiteSpace(host))
+                    .Select(host => host.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                ProbeCidrs = root.Discovery.ProbeCidrs
+                    .Where(cidr => !string.IsNullOrWhiteSpace(cidr))
+                    .Select(cidr => cidr.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                RtspPorts = root.Discovery.RtspPorts
+                    .Where(port => port > 0 && port <= 65535)
+                    .Distinct()
+                    .DefaultIfEmpty(554)
+                    .ToArray(),
+                ProbeTimeoutMs = root.Discovery.ProbeTimeoutMs is < 50 or > 5000
+                    ? 250
+                    : root.Discovery.ProbeTimeoutMs,
+                MaxConcurrentProbes = root.Discovery.MaxConcurrentProbes is < 1 or > 256
+                    ? 32
+                    : root.Discovery.MaxConcurrentProbes,
+            },
             Notifications = new VyzioRuntimeSettings.NotificationsSettings
             {
                 MinimumConfidence = root.Notifications.MinimumConfidence is < 0 or > 1
@@ -71,6 +96,7 @@ public static class VyzioConfigLoader
     {
         public DatabaseConfig Database { get; init; } = new();
         public FrigateConfig Frigate { get; init; } = new();
+        public DiscoveryConfig Discovery { get; init; } = new();
         public NotificationsConfig Notifications { get; init; } = new();
     }
 
@@ -95,6 +121,16 @@ public static class VyzioConfigLoader
         public int Port { get; init; }
         public string Topic { get; init; } = string.Empty;
         public string ClientId { get; init; } = string.Empty;
+    }
+
+    private sealed class DiscoveryConfig
+    {
+        public bool AutoDetectLocalCidrs { get; init; }
+        public List<string> ProbeHosts { get; init; } = [];
+        public List<string> ProbeCidrs { get; init; } = [];
+        public List<int> RtspPorts { get; init; } = [];
+        public int ProbeTimeoutMs { get; init; } = 250;
+        public int MaxConcurrentProbes { get; init; } = 32;
     }
 
     private sealed class NotificationsConfig
