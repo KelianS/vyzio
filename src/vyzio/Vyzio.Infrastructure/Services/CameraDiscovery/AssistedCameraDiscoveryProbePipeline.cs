@@ -693,13 +693,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 return null;
             }
 
-            var normalized = response.ToLowerInvariant();
-            var hasOnvifSignal = normalized.Contains("onvif")
-                || normalized.Contains("soap")
-                || normalized.Contains("www-authenticate:")
-                || response.Contains(" 401 ", StringComparison.OrdinalIgnoreCase);
-
-            if (!hasOnvifSignal)
+            if (!LooksLikeOnvifUnicastResponse(response))
             {
                 return null;
             }
@@ -720,6 +714,28 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         {
             return null;
         }
+    }
+
+    private static bool LooksLikeOnvifUnicastResponse(string response)
+    {
+        var normalized = response.ToLowerInvariant();
+        var hasSoapEnvelope = normalized.Contains("application/soap+xml")
+            || normalized.Contains("<s:envelope")
+            || normalized.Contains("<soap:envelope")
+            || normalized.Contains("<soap-env:envelope");
+
+        var hasOnvifMarker = normalized.Contains("http://www.onvif.org/")
+            || normalized.Contains("www.onvif.org/")
+            || normalized.Contains("/onvif/device_service")
+            || normalized.Contains("getcapabilitiesresponse")
+            || normalized.Contains("getservicesresponse")
+            || normalized.Contains("device_service")
+            || normalized.Contains("trt:")
+            || normalized.Contains("tds:")
+            || normalized.Contains("realm=\"onvif\"")
+            || normalized.Contains("realm='onvif'");
+
+        return hasSoapEnvelope && hasOnvifMarker;
     }
 
     private static async Task<string?> ResolveMacAddressAsync(string host, CancellationToken ct)

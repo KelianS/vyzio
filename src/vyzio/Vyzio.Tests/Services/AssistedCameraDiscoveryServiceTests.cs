@@ -218,7 +218,7 @@ public class AssistedCameraDiscoveryServiceTests
             var buffer = new byte[2048];
             _ = await stream.ReadAsync(buffer);
 
-            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body>onvif</s:Body></s:Envelope>";
+            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">NotAuthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
             var bytes = Encoding.UTF8.GetBytes(payload);
             await stream.WriteAsync(bytes);
             await stream.FlushAsync();
@@ -262,7 +262,7 @@ public class AssistedCameraDiscoveryServiceTests
             var buffer = new byte[2048];
             _ = await stream.ReadAsync(buffer);
 
-            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body>onvif</s:Body></s:Envelope>";
+            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">NotAuthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
             var bytes = Encoding.UTF8.GetBytes(payload);
             await stream.WriteAsync(bytes);
             await stream.FlushAsync();
@@ -290,6 +290,47 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("onvif_unicast", candidate.DiscoverySource);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_does_not_treat_generic_soap_gateway_as_onvif_camera()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var serverTask = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[2048];
+            _ = await stream.ReadAsync(buffer);
+
+            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"BBOX\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">Unauthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await stream.WriteAsync(bytes);
+            await stream.FlushAsync();
+        });
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [],
+                HttpPorts = [],
+                OnvifPorts = [port],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+        await serverTask;
+
+        Assert.Empty(result);
     }
 
     [Fact]

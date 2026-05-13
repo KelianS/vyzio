@@ -9,7 +9,7 @@ internal static class AssistedCameraDiscoveryKnownDevices
         var fingerprint = $"{displayName} {note} {hostName}".ToLowerInvariant();
         var oui = NormalizeOui(macAddress);
 
-        if (fingerprint.Contains("v380 pro") || fingerprint.Contains("v380pro") || fingerprint.Contains("v380"))
+        if (fingerprint.Contains("v380 pro") || fingerprint.Contains("v380pro") || fingerprint.Contains("v380") || hostName?.StartsWith("MV", StringComparison.Ordinal) == true)
         {
             return "v380_pro";
         }
@@ -44,11 +44,6 @@ internal static class AssistedCameraDiscoveryKnownDevices
 
     public static bool LooksLikeCameraHostName(string hostName)
     {
-        if (hostName.StartsWith("MV", StringComparison.Ordinal)) // Common prefix for many V380 camera hostnames (e.g., MV12345678)
-        {
-            return true;
-        }
-
         var normalized = hostName.ToLowerInvariant();
         return normalized.Contains("camera")
             || normalized.Contains("ipcam")
