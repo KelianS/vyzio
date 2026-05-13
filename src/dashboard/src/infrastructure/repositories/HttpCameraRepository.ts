@@ -44,6 +44,7 @@ interface DiscoveredCameraDto {
   streamPath: string | null
   discoverySource: string
   note: string | null
+  macAddress: string | null
 }
 
 interface ApplyCameraDto {
@@ -51,6 +52,12 @@ interface ApplyCameraDto {
   message: string
   configPath: string
   camera: CameraStatusDto
+}
+
+interface DeleteCameraDto {
+  deleted: boolean
+  message: string
+  configPath: string
 }
 
 export class HttpCameraRepository implements CameraRepository {
@@ -89,6 +96,10 @@ export class HttpCameraRepository implements CameraRepository {
       configPath: payload.configPath,
       camera: mapCameraStatus(payload.camera),
     }
+  }
+
+  async delete(cameraId: string): Promise<{ deleted: boolean; message: string; configPath: string }> {
+    return deleteJson<DeleteCameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`)
   }
 }
 
@@ -135,6 +146,7 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     streamPath: camera.streamPath,
     discoverySource: camera.discoverySource,
     note: camera.note,
+    macAddress: camera.macAddress,
   }
 }
 
@@ -146,6 +158,21 @@ async function postJson<T>(url: string, body?: unknown): Promise<T> {
       'Content-Type': 'application/json',
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} on ${url}`)
+  }
+
+  return response.json() as Promise<T>
+}
+
+async function deleteJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+    },
   })
 
   if (!response.ok) {

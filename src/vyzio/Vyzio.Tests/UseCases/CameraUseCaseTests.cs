@@ -93,7 +93,7 @@ public class DiscoverCamerasUseCaseTests
     {
         _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.")
+            new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF")
         ]);
 
         var result = await _sut.ExecuteAsync();
@@ -101,6 +101,7 @@ public class DiscoverCamerasUseCaseTests
         var candidate = Assert.Single(result);
         Assert.Equal("Driveway", candidate.DisplayName);
         Assert.Equal("192.168.1.20", candidate.Host);
+        Assert.Equal("AA:BB:CC:DD:EE:FF", candidate.MacAddress);
     }
 }
 
@@ -213,5 +214,39 @@ public class ApplyCameraUseCaseTests
         Assert.NotNull(result);
         Assert.True(result!.Applied);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated => updated.ValidationState == "validated" && updated.IsEnabled), Arg.Any<CancellationToken>());
+    }
+}
+
+public class DeleteCameraUseCaseTests
+{
+    private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly IFrigateConfigApplier _applier = Substitute.For<IFrigateConfigApplier>();
+    private readonly DeleteCameraUseCase _sut;
+
+    public DeleteCameraUseCaseTests() => _sut = new DeleteCameraUseCase(_repo, _applier);
+
+    [Fact]
+    public async Task Execute_deletes_camera_and_reapplies_when_camera_is_validated()
+    {
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            ValidationState = "validated",
+            IsEnabled = true,
+        };
+
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        _applier.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
+            .Returns(new FrigateConfigApplyResult(true, "Applied.", "config/frigate.generated.yml"));
+
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Deleted);
+        await _repo.Received(1).DeleteAsync(camera, Arg.Any<CancellationToken>());
     }
 }

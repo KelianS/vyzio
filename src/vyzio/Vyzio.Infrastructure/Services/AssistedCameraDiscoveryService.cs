@@ -128,7 +128,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                     "onvif",
                     null,
                     "onvif",
-                    $"ONVIF device announced via {uri.Host}:{uri.Port}.");
+                    $"ONVIF device announced via {uri.Host}:{uri.Port}.",
+                    null);
             }
         }
     }
@@ -155,7 +156,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                     "rtsp_manual",
                     probe.StreamPath,
                     "rtsp_probe",
-                    probe.Note));
+                    probe.Note,
+                    null));
             }
         }
 
@@ -234,7 +236,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 "rtsp_manual",
                 null,
                 "network_scan",
-                $"RTSP port {port} responded during configured LAN scan. Complete the RTSP path before verification.");
+                $"RTSP port {port} responded during configured LAN scan. Complete the RTSP path before verification.",
+                await ResolveMacAddressAsync(host, ct));
         }
         finally
         {
@@ -261,7 +264,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 "web_setup",
                 null,
                 "http_probe",
-                probe.Note);
+                probe.Note,
+                await ResolveMacAddressAsync(host, ct));
         }
         finally
         {
@@ -441,6 +445,66 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         }
     }
 
+    private static async Task<string?> ResolveMacAddressAsync(string host, CancellationToken ct)
+    {
+        try
+        {
+            var addresses = await Dns.GetHostAddressesAsync(host, ct);
+            var address = addresses.FirstOrDefault(candidate => candidate.AddressFamily == AddressFamily.InterNetwork);
+            if (address is null)
+            {
+                return null;
+            }
+
+            return ResolveMacAddress(address);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ResolveMacAddress(IPAddress address)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return null;
+        }
+
+        const string arpTablePath = "/proc/net/arp";
+        if (!File.Exists(arpTablePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var ip = address.ToString();
+            foreach (var line in File.ReadLines(arpTablePath).Skip(1))
+            {
+                var columns = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (columns.Length < 4)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(columns[0], ip, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var mac = columns[3];
+                return IsValidMacAddress(mac) ? mac.ToUpperInvariant() : null;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
     private static HttpProbeResult BuildHttpProbeResult(string host, int port, string response)
     {
         var fingerprint = response.ToLowerInvariant();
@@ -539,6 +603,9 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             (byte)((value >> 16) & 0xFF),
             (byte)((value >> 8) & 0xFF),
             (byte)(value & 0xFF)]);
+
+    private static bool IsValidMacAddress(string mac)
+        => Regex.IsMatch(mac, "^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$");
 
     private sealed record HttpProbeResult(string DisplayName, string Note);
 }

@@ -7,11 +7,11 @@ detectors:
   cpu1:
     type: cpu
 cameras:
-  camera_mock_docker:
-    enabled: true
+  dummy_camera:
+    enabled: false
     ffmpeg:
       inputs:
-      - path: rtsp://mediamtx:8554/test-camera
+      - path: rtsp://replace-me-with-your-stream
         roles:
         - detect
     detect:

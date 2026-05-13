@@ -39,6 +39,12 @@ public static class CamerasEndpoints
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
+        group.MapDelete("/{id}", async (string id, DeleteCameraUseCase useCase, CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(id, ct);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
         return app;
     }
 }

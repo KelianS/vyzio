@@ -6,4 +6,5 @@ export interface DiscoveredCamera {
   streamPath: string | null
   discoverySource: string
   note: string | null
+  macAddress: string | null
 }

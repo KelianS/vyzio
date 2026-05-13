@@ -19,7 +19,8 @@ public sealed record DiscoveredCameraDto(
     string SourceType,
     string? StreamPath,
     string DiscoverySource,
-    string? Note)
+    string? Note,
+    string? MacAddress)
 {
     public static DiscoveredCameraDto From(CameraDiscoveryCandidate candidate) => new(
         candidate.DisplayName,
@@ -28,7 +29,8 @@ public sealed record DiscoveredCameraDto(
         candidate.SourceType,
         candidate.StreamPath,
         candidate.DiscoverySource,
-        candidate.Note);
+        candidate.Note,
+        candidate.MacAddress);
 }
 
 public sealed record ApplyCameraResultDto(
@@ -36,3 +38,8 @@ public sealed record ApplyCameraResultDto(
     string Message,
     string ConfigPath,
     CameraStatusDto Camera);
+
+public sealed record DeleteCameraResultDto(
+    bool Deleted,
+    string Message,
+    string ConfigPath);

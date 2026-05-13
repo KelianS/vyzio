@@ -1,5 +1,6 @@
 import { ApplyCamera } from '../application/use-cases/ApplyCamera'
 import { CreateCamera } from '../application/use-cases/CreateCamera'
+import { DeleteCamera } from '../application/use-cases/DeleteCamera'
 import { DiscoverCameras } from '../application/use-cases/DiscoverCameras'
 import { GetCameraStatus } from '../application/use-cases/GetCameraStatus'
 import { GetCameras } from '../application/use-cases/GetCameras'
@@ -16,6 +17,7 @@ const cameraRepository = new HttpCameraRepository(runtime.apiBaseUrl)
 export const dashboardRuntime = runtime
 export const applyCamera = new ApplyCamera(cameraRepository)
 export const createCamera = new CreateCamera(cameraRepository)
+export const deleteCamera = new DeleteCamera(cameraRepository)
 export const discoverCameras = new DiscoverCameras(cameraRepository)
 export const getCameras = new GetCameras(cameraRepository)
 export const getCameraStatus = new GetCameraStatus(cameraRepository)

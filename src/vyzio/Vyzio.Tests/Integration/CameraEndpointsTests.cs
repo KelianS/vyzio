@@ -111,13 +111,47 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Equal("validated", applied.Camera.ValidationState);
     }
 
+    [Fact]
+    public async Task Delete_camera_removes_it_from_catalog()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.DeleteAsync("/api/cameras/camera-1");
+
+        response.EnsureSuccessStatusCode();
+
+        var catalogResponse = await client.GetAsync("/api/cameras");
+        catalogResponse.EnsureSuccessStatusCode();
+        var payload = await catalogResponse.Content.ReadFromJsonAsync<CameraResponse[]>();
+        Assert.Empty(payload!);
+
+        var restoreResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
+            "Front Door",
+            "192.168.1.10",
+            554,
+            null,
+            null,
+            "/Streaming/Channels/101",
+            "rtsp_manual",
+            "person_default"));
+
+        restoreResponse.EnsureSuccessStatusCode();
+        var restored = await restoreResponse.Content.ReadFromJsonAsync<CameraResponse>();
+        Assert.NotNull(restored);
+
+        var verifyResponse = await client.PostAsync($"/api/cameras/{restored!.Id}/verify", content: null);
+        verifyResponse.EnsureSuccessStatusCode();
+    }
+
     public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, int Port, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, string? FrigateCameraName);
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, string DiscoverySource, string? Note);
+    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, string DiscoverySource, string? Note, string? MacAddress);
 
     public sealed record ApplyCameraResponse(bool Applied, string Message, string ConfigPath, CameraStatusResponse Camera);
+
+    public sealed record DeleteCameraResponse(bool Deleted, string Message, string ConfigPath);
 }
 
 public sealed class CamerasApiFactory : WebApplicationFactory<Program>
@@ -204,7 +238,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
         public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<CameraDiscoveryCandidate>>(
             [
-                new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.")
+                new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF")
             ]);
     }
 

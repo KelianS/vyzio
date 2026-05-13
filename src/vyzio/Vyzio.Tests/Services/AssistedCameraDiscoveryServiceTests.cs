@@ -37,6 +37,7 @@ public class AssistedCameraDiscoveryServiceTests
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("network_scan", candidate.DiscoverySource);
         Assert.Null(candidate.StreamPath);
+        Assert.Null(candidate.MacAddress);
     }
 
     [Fact]
@@ -67,6 +68,7 @@ public class AssistedCameraDiscoveryServiceTests
         using var client = await acceptTask;
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("network_scan", candidate.DiscoverySource);
+        Assert.Null(candidate.MacAddress);
     }
 
     [Fact]
@@ -110,5 +112,6 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("http_probe", candidate.DiscoverySource);
         Assert.Equal("web_setup", candidate.SourceType);
         Assert.Contains("Tapo", candidate.Note);
+        Assert.Null(candidate.MacAddress);
     }
 }

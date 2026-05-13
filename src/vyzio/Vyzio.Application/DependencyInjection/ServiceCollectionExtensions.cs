@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreateCameraUseCase>();
         services.AddScoped<VerifyCameraUseCase>();
         services.AddScoped<ApplyCameraUseCase>();
+        services.AddScoped<DeleteCameraUseCase>();
         services.AddScoped<GetCamerasUseCase>();
         services.AddScoped<GetCameraStatusUseCase>();
         services.AddScoped<GetRecentDetectionEventsUseCase>();

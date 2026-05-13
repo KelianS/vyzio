@@ -13,6 +13,7 @@ describe('DiscoverCameras', () => {
         streamPath: null,
         discoverySource: 'onvif',
         note: 'ONVIF device announced.',
+        macAddress: null,
       },
     ]
 
@@ -23,6 +24,7 @@ describe('DiscoverCameras', () => {
       create: vi.fn(),
       verify: vi.fn(),
       apply: vi.fn(),
+      delete: vi.fn(),
     }
 
     const useCase = new DiscoverCameras(repository)

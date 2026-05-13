@@ -173,3 +173,35 @@ public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfig
             CameraStatusDto.From(camera, "Camera configuration has been applied to Frigate."));
     }
 }
+
+public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
+{
+    public async Task<DeleteCameraResultDto?> ExecuteAsync(string id, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(id, ct);
+        if (camera is null)
+        {
+            return null;
+        }
+
+        var configPath = string.Empty;
+        if (camera.IsEnabled || string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+        {
+            var remaining = (await cameras.GetAllAsync(ct))
+                .Where(existing => existing.Id != camera.Id)
+                .Where(existing => string.Equals(existing.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var applyResult = await frigateConfigApplier.ApplyAsync(remaining, ct);
+            configPath = applyResult.ConfigPath;
+
+            if (!applyResult.Applied)
+            {
+                return new DeleteCameraResultDto(false, applyResult.Message, configPath);
+            }
+        }
+
+        await cameras.DeleteAsync(camera, ct);
+        return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" deleted.", configPath);
+    }
+}

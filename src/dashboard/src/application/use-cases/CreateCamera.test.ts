@@ -28,6 +28,7 @@ describe('CreateCamera', () => {
       create: vi.fn().mockResolvedValue(created),
       verify: vi.fn(),
       apply: vi.fn(),
+      delete: vi.fn(),
     }
 
     const useCase = new CreateCamera(repository)

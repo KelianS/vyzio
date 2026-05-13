@@ -28,4 +28,10 @@ public sealed class CameraRepository(VyzioDbContext db) : ICameraRepository
         db.Cameras.Update(camera);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task DeleteAsync(Camera camera, CancellationToken ct = default)
+    {
+        db.Cameras.Remove(camera);
+        await db.SaveChangesAsync(ct);
+    }
 }

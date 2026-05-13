@@ -9,4 +9,5 @@ public interface ICameraRepository
     Task<Camera?> GetBySlugAsync(string slug, CancellationToken ct = default);
     Task AddAsync(Camera camera, CancellationToken ct = default);
     Task UpdateAsync(Camera camera, CancellationToken ct = default);
+    Task DeleteAsync(Camera camera, CancellationToken ct = default);
 }

@@ -7,4 +7,5 @@ public sealed record CameraDiscoveryCandidate(
     string SourceType,
     string? StreamPath,
     string DiscoverySource,
-    string? Note);
+    string? Note,
+    string? MacAddress);

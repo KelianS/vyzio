@@ -11,4 +11,5 @@ export interface CameraRepository {
   create(input: CameraDraftInput): Promise<Camera>
   verify(cameraId: string): Promise<CameraStatus>
   apply(cameraId: string): Promise<CameraApplyResult>
+  delete(cameraId: string): Promise<{ deleted: boolean; message: string; configPath: string }>
 }

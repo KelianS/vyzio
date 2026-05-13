@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ApplyCamera } from '../../application/use-cases/ApplyCamera'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
+import type { DeleteCamera } from '../../application/use-cases/DeleteCamera'
 import type { DiscoverCameras } from '../../application/use-cases/DiscoverCameras'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
@@ -24,7 +25,24 @@ interface CameraOnboardingViewProps {
   createCamera: CreateCamera
   verifyCamera: VerifyCamera
   applyCamera: ApplyCamera
+  deleteCamera: DeleteCamera
 }
+
+type DiscoveryCandidate = {
+  displayName: string
+  host: string
+  port: number
+  sourceType: string
+  streamPath: string | null
+  discoverySource: string
+  note: string | null
+  macAddress: string | null
+}
+
+type CameraSelection =
+  | { kind: 'manual' }
+  | { kind: 'candidate'; index: number }
+  | { kind: 'camera'; cameraId: string }
 
 const emptyForm: CameraDraftInput = {
   displayName: '',
@@ -39,30 +57,53 @@ const emptyForm: CameraDraftInput = {
 
 export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const camerasState = useCameras(props.getCameras)
-  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
+  const [selection, setSelection] = useState<CameraSelection>({ kind: 'manual' })
+  const selectedCameraId = selection.kind === 'camera' ? selection.cameraId : null
   const cameraStatusState = useCameraStatus(props.getCameraStatus, selectedCameraId)
   const [form, setForm] = useState<CameraDraftInput>(emptyForm)
   const [discoveryLoading, setDiscoveryLoading] = useState(false)
   const [discoveryError, setDiscoveryError] = useState<string | null>(null)
-  const [discoveryResults, setDiscoveryResults] = useState<Array<{ displayName: string; host: string; port: number; sourceType: string; streamPath: string | null; discoverySource: string; note: string | null }>>([])
+  const [discoveryResults, setDiscoveryResults] = useState<DiscoveryCandidate[]>([])
   const [actionLoading, setActionLoading] = useState(false)
-  const [actionMessage, setActionMessage] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
+  const [formMessage, setFormMessage] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [detailMessage, setDetailMessage] = useState<string | null>(null)
+  const [detailError, setDetailError] = useState<string | null>(null)
+
+  const selectedCandidate = selection.kind === 'candidate'
+    ? discoveryResults[selection.index] ?? null
+    : null
+
+  const selectedCamera = selectedCameraId
+    ? camerasState.data.find((camera) => camera.id === selectedCameraId) ?? null
+    : null
 
   useEffect(() => {
-    if (!selectedCameraId && camerasState.data.length > 0) {
-      setSelectedCameraId(camerasState.data[0].id)
+    if (selection.kind === 'camera' && !camerasState.data.some((camera) => camera.id === selection.cameraId)) {
+      setSelection(camerasState.data.length > 0
+        ? { kind: 'camera', cameraId: camerasState.data[0].id }
+        : { kind: 'manual' })
     }
-  }, [camerasState.data, selectedCameraId])
+  }, [camerasState.data, selection])
+
+  useEffect(() => {
+    if (selection.kind === 'candidate' && !discoveryResults[selection.index]) {
+      setSelection({ kind: 'manual' })
+    }
+  }, [discoveryResults, selection])
 
   async function handleDiscovery() {
     setDiscoveryLoading(true)
     setDiscoveryError(null)
+    setFormError(null)
 
     try {
       const candidates = await props.discoverCameras.execute()
       setDiscoveryResults(candidates)
-      setActionMessage(candidates.length > 0 ? `${candidates.length} camera(s) candidate(s) detectee(s).` : 'Aucune camera detectee automatiquement.')
+      if (candidates.length > 0) {
+        selectDiscoveryCandidate(0, candidates)
+      }
+      setFormMessage(candidates.length > 0 ? `${candidates.length} camera(s) candidate(s) detectee(s).` : 'Aucune camera detectee automatiquement.')
     } catch (error: unknown) {
       setDiscoveryError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
@@ -72,16 +113,18 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   async function handleCreate() {
     setActionLoading(true)
-    setActionError(null)
-    setActionMessage(null)
+    setFormError(null)
+    setFormMessage(null)
+    setDetailMessage(null)
 
     try {
       const created = await props.createCamera.execute(form)
       camerasState.reload()
-      setSelectedCameraId(created.id)
-      setActionMessage(`Camera "${created.displayName}" ajoutee au catalogue.`)
+      setSelection({ kind: 'camera', cameraId: created.id })
+      setFormMessage(`Camera "${created.displayName}" ajoutee au catalogue.`)
+      setDetailMessage(`Camera "${created.displayName}" est prete pour verification.`)
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
       setActionLoading(false)
     }
@@ -93,16 +136,16 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
 
     setActionLoading(true)
-    setActionError(null)
-    setActionMessage(null)
+    setDetailError(null)
+    setDetailMessage(null)
 
     try {
       const status = await props.verifyCamera.execute(selectedCameraId)
       camerasState.reload()
       cameraStatusState.reload()
-      setActionMessage(status.guidance ?? 'Verification terminee.')
+      setDetailMessage(status.guidance ?? 'Verification terminee.')
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
       setActionLoading(false)
     }
@@ -114,8 +157,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
 
     setActionLoading(true)
-    setActionError(null)
-    setActionMessage(null)
+    setDetailError(null)
+    setDetailMessage(null)
 
     try {
       const result = await props.applyCamera.execute(selectedCameraId)
@@ -123,13 +166,35 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       cameraStatusState.reload()
 
       if (!result.applied) {
-        setActionError(result.message)
+        setDetailError(result.message)
         return
       }
 
-      setActionMessage(`${result.message} (${result.configPath})`)
+      setDetailMessage(`${result.message} (${result.configPath})`)
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedCameraId) {
+      return
+    }
+
+    setActionLoading(true)
+    setDetailError(null)
+    setDetailMessage(null)
+
+    try {
+      const result = await props.deleteCamera.execute(selectedCameraId)
+      camerasState.reload()
+      cameraStatusState.reload()
+      setSelection({ kind: 'manual' })
+      setFormMessage(result.message)
+    } catch (error: unknown) {
+      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
       setActionLoading(false)
     }
@@ -139,12 +204,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setForm((current) => ({ ...current, ...patch }))
   }
 
-  function applyDiscoveryCandidate(index: number) {
-    const candidate = discoveryResults[index]
+  function selectDiscoveryCandidate(index: number, source = discoveryResults) {
+    const candidate = source[index]
     if (!candidate) {
       return
     }
 
+    setSelection({ kind: 'candidate', index })
     updateForm({
       displayName: candidate.displayName,
       host: candidate.host,
@@ -152,217 +218,305 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       sourceType: candidate.sourceType,
       streamPath: candidate.streamPath,
     })
-    setActionMessage(
+    setFormMessage(
       candidate.streamPath
         ? `Le candidat ${candidate.displayName} a ete recopie dans le formulaire.`
         : `Le candidat ${candidate.displayName} a ete recopie. Completez maintenant le chemin RTSP avant verification.`,
     )
   }
 
+  function selectManualEntry() {
+    setSelection({ kind: 'manual' })
+    setFormMessage('Renseignez les informations minimales de la camera pour l\'ajouter au catalogue.')
+    setDetailError(null)
+  }
+
+  function selectCamera(cameraId: string) {
+    setSelection({ kind: 'camera', cameraId })
+    setDetailError(null)
+  }
+
   return (
     <main className="app-shell app-shell-cameras">
-      <section className="hero-panel cameras-hero">
-        <div className="hero-copy">
+      <section className="panel camera-toolbar">
+        <div className="camera-toolbar-copy">
           <p className="eyebrow">Parcours camera</p>
-          <h1>Ajouter, verifier, appliquer.</h1>
-          <p className="lede">
-            Le hub guide la decouverte reseau, la saisie manuelle et l&apos;application de la configuration Frigate.
+          <h1>Decouverte guidee</h1>
+          <p className="camera-toolbar-lede">
+            Selectionnez un candidat ou une camera existante, puis agissez dans un seul panneau de detail.
           </p>
         </div>
 
-        <div className="hero-status" aria-label="Etat du catalogue camera">
+        <div className="camera-toolbar-status" aria-label="Etat du catalogue camera">
           <div className={`status-pill ${camerasState.error ? 'degraded' : camerasState.loading ? 'loading' : 'online'}`}>
             {camerasState.loading ? 'Chargement' : camerasState.error ? 'Catalogue indisponible' : 'Catalogue pret'}
           </div>
-          <div className="status-summary">
-            <strong>
-              {camerasState.loading
-                ? 'Le hub charge les cameras.'
-                : camerasState.error
-                  ? 'Le hub ne peut pas lire le catalogue camera.'
-                  : 'Le parcours camera est disponible.'}
-            </strong>
-            <p>{camerasState.error ?? `${camerasState.data.length} camera(s) dans le catalogue actuel.`}</p>
-          </div>
+          <p>{camerasState.error ?? `${camerasState.data.length} camera(s) dans le catalogue actuel.`}</p>
           <div className="panel-cta-row">
             <a className="secondary-cta" href="#hub">Retour au hub</a>
             <button className="primary-cta" type="button" onClick={handleDiscovery} disabled={discoveryLoading || actionLoading}>
               {discoveryLoading ? 'Recherche...' : 'Decouverte reseau'}
             </button>
+            <button className="secondary-cta" type="button" onClick={selectManualEntry} disabled={actionLoading}>
+              Saisie manuelle
+            </button>
           </div>
           {discoveryError ? <p className="status-inline error">{discoveryError}</p> : null}
-          {actionMessage ? <p className="status-inline">{actionMessage}</p> : null}
-          {actionError ? <p className="status-inline error">{actionError}</p> : null}
         </div>
       </section>
 
-      <section className="hub-grid cameras-grid cameras-grid-extended">
-        <article className="panel panel-primary cameras-panel-list">
-          <div className="panel-heading">
-            <p className="section-kicker">Catalogue</p>
-            <h2>Cameras connues</h2>
+      <section className="camera-master-detail">
+        <aside className="panel camera-sidebar">
+          <div className="camera-sidebar-group">
+            <div className="camera-sidebar-header">
+              <div>
+                <p className="section-kicker">Detection</p>
+                <h2>Candidats</h2>
+              </div>
+              <span className="camera-sidebar-count">{discoveryResults.length}</span>
+            </div>
+
+            <button
+              type="button"
+              className={`camera-nav-item ${selection.kind === 'manual' ? 'selected' : ''}`}
+              onClick={selectManualEntry}
+            >
+              <div>
+                <strong>Saisie manuelle</strong>
+                <p>Ajouter une camera sans detection automatique.</p>
+              </div>
+            </button>
+
+            {discoveryResults.length > 0 ? (
+              discoveryResults.map((candidate, index) => (
+                <button
+                  key={`${candidate.host}-${candidate.port}-${index}`}
+                  type="button"
+                  className={`camera-nav-item ${selection.kind === 'candidate' && selection.index === index ? 'selected' : ''}`}
+                  onClick={() => selectDiscoveryCandidate(index)}
+                >
+                  <div>
+                    <strong>{candidate.displayName}</strong>
+                    <p>{candidate.host}:{candidate.port}</p>
+                  </div>
+                  <small>{candidate.discoverySource}</small>
+                </button>
+              ))
+            ) : (
+              <div className="camera-nav-empty">
+                <strong>Aucun candidat</strong>
+                <p>Lancez une decouverte reseau pour remplir cette liste.</p>
+              </div>
+            )}
           </div>
 
-          <div className="camera-list">
+          <div className="camera-sidebar-group">
+            <div className="camera-sidebar-header">
+              <div>
+                <p className="section-kicker">Catalogue</p>
+                <h2>Mes cameras</h2>
+              </div>
+              <span className="camera-sidebar-count">{camerasState.data.length}</span>
+            </div>
+
             {camerasState.data.length > 0 ? (
               camerasState.data.map((camera) => (
                 <button
                   key={camera.id}
                   type="button"
-                  className={`camera-card ${formatStatusTone(camera)} ${selectedCameraId === camera.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedCameraId(camera.id)}
+                  className={`camera-nav-item ${formatStatusTone(camera)} ${selection.kind === 'camera' && selection.cameraId === camera.id ? 'selected' : ''}`}
+                  onClick={() => selectCamera(camera.id)}
                 >
                   <div>
-                    <h3>{camera.displayName}</h3>
+                    <strong>{camera.displayName}</strong>
                     <p>{formatCameraAddress(camera)}</p>
                   </div>
-                  <div className="camera-card-meta">
+                  <div className="camera-nav-meta">
                     <span>{formatCameraStatusLabel(camera.status)}</span>
                     <small>{formatValidationStateLabel(camera.validationState)}</small>
                   </div>
                 </button>
               ))
             ) : (
-              <article className="camera-empty-state">
+              <article className="camera-nav-empty">
                 <h3>Aucune camera visible</h3>
                 <p>Commencez par la decouverte reseau ou la saisie manuelle.</p>
               </article>
             )}
           </div>
-        </article>
+        </aside>
 
-        <article className="panel panel-secondary cameras-panel-form">
-          <div className="panel-heading">
-            <p className="section-kicker">Ajout</p>
-            <h2>Decouverte et saisie manuelle</h2>
-          </div>
+        <article className="panel camera-detail-panel">
+          {(selection.kind === 'manual' || selectedCandidate) ? (
+            <>
+              <div className="panel-heading">
+                <p className="section-kicker">Configuration</p>
+                <h2>{selectedCandidate ? selectedCandidate.displayName : 'Nouvelle camera'}</h2>
+              </div>
 
-          <div className="camera-discovery-results">
-            {discoveryResults.length > 0 ? (
-              <>
-                <p className="camera-inline-state">
-                  Cliquez sur un candidat pour pre-remplir le formulaire, puis utilisez <strong>Ajouter au catalogue</strong>.
-                </p>
-                {discoveryResults.map((candidate, index) => (
-                  <button key={`${candidate.host}-${candidate.port}-${index}`} type="button" className="discovery-card" onClick={() => applyDiscoveryCandidate(index)}>
-                    <div>
-                      <h3>{candidate.displayName}</h3>
-                      <p>{candidate.host}:{candidate.port}</p>
-                      <p>{candidate.streamPath ?? 'Chemin RTSP a completer manuellement'}</p>
-                    </div>
-                    <div className="discovery-card-meta">
-                      <small>{candidate.note ?? candidate.discoverySource}</small>
-                      <span>Utiliser ce candidat</span>
-                    </div>
+              {formMessage ? <p className="camera-inline-state success">{formMessage}</p> : null}
+              {formError ? <p className="camera-inline-state error">{formError}</p> : null}
+
+              <div className="camera-detail-sections">
+                <section className="camera-detail-section">
+                  <h3>Resume</h3>
+                  {selectedCandidate ? (
+                    <dl className="camera-summary-list">
+                      <div>
+                        <dt>Adresse</dt>
+                        <dd>{selectedCandidate.host}:{selectedCandidate.port}</dd>
+                      </div>
+                      <div>
+                        <dt>Detection</dt>
+                        <dd>{selectedCandidate.discoverySource}</dd>
+                      </div>
+                      <div>
+                        <dt>Flux suggere</dt>
+                        <dd>{selectedCandidate.streamPath ?? 'A completer manuellement'}</dd>
+                      </div>
+                      <div>
+                        <dt>MAC</dt>
+                        <dd>{selectedCandidate.macAddress ?? 'Indisponible'}</dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="camera-section-copy">Renseignez les informations minimales de la camera. La detection automatique reste optionnelle.</p>
+                  )}
+                </section>
+
+                <section className="camera-detail-section vendor">
+                  <h3>Assistance constructeur</h3>
+                  <p className="camera-section-copy">
+                    {selectedCandidate?.note ?? 'Les notices d activation RTSP ou ONVIF apparaitront ici selon le vendor detecte et le niveau de support officiel.'}
+                  </p>
+                  <p className="camera-section-footnote">
+                    La future suite du parcours affichera ici les actions recommandees pour chaque constructeur reconnu.
+                  </p>
+                </section>
+              </div>
+
+              <div className="camera-form-grid compact">
+                <label>
+                  <span>Nom</span>
+                  <input value={form.displayName} onChange={(event) => updateForm({ displayName: event.target.value })} placeholder="Porte d'entree" />
+                </label>
+                <label>
+                  <span>Host</span>
+                  <input value={form.host} onChange={(event) => updateForm({ host: event.target.value })} placeholder="192.168.1.10" />
+                </label>
+                <label>
+                  <span>Port</span>
+                  <input type="number" value={form.port} onChange={(event) => updateForm({ port: Number(event.target.value) || 554 })} />
+                </label>
+                <label>
+                  <span>Chemin RTSP</span>
+                  <input value={form.streamPath ?? ''} onChange={(event) => updateForm({ streamPath: event.target.value || null })} placeholder="/Streaming/Channels/101" />
+                  <small className="camera-field-hint">
+                    Obligatoire pour verifier le flux. Certaines cameras detectees par ONVIF ne remontent pas ce chemin automatiquement.
+                  </small>
+                </label>
+                <label>
+                  <span>Utilisateur</span>
+                  <input value={form.username ?? ''} onChange={(event) => updateForm({ username: event.target.value || null })} />
+                </label>
+                <label>
+                  <span>Mot de passe</span>
+                  <input type="password" value={form.password ?? ''} onChange={(event) => updateForm({ password: event.target.value || null })} />
+                </label>
+              </div>
+
+              <div className="camera-step-actions compact">
+                <div className="camera-step-summary">
+                  <strong>Etape 1</strong>
+                  <p>Validez les informations utiles avant d'ajouter la camera au catalogue.</p>
+                </div>
+                <div className="panel-cta-row">
+                  <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading}>
+                    {actionLoading ? 'Traitement...' : 'Ajouter au catalogue'}
                   </button>
-                ))}
-              </>
-            ) : (
-              <div className="camera-empty-state compact">
-                <h3>Decouverte assistee</h3>
-                <p>Les candidats reseau apparaitront ici. La saisie manuelle reste disponible en secours.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="camera-form-grid">
-            <label>
-              <span>Nom</span>
-              <input value={form.displayName} onChange={(event) => updateForm({ displayName: event.target.value })} placeholder="Porte d'entree" />
-            </label>
-            <label>
-              <span>Host</span>
-              <input value={form.host} onChange={(event) => updateForm({ host: event.target.value })} placeholder="192.168.1.10" />
-            </label>
-            <label>
-              <span>Port</span>
-              <input type="number" value={form.port} onChange={(event) => updateForm({ port: Number(event.target.value) || 554 })} />
-            </label>
-            <label>
-              <span>Chemin RTSP</span>
-              <input value={form.streamPath ?? ''} onChange={(event) => updateForm({ streamPath: event.target.value || null })} placeholder="/Streaming/Channels/101" />
-              <small className="camera-field-hint">
-                Obligatoire pour verifier le flux. Certaines cameras detectees par ONVIF ne remontent pas ce chemin automatiquement.
-              </small>
-            </label>
-            <label>
-              <span>Utilisateur</span>
-              <input value={form.username ?? ''} onChange={(event) => updateForm({ username: event.target.value || null })} />
-            </label>
-            <label>
-              <span>Mot de passe</span>
-              <input type="password" value={form.password ?? ''} onChange={(event) => updateForm({ password: event.target.value || null })} />
-            </label>
-          </div>
-
-          <div className="panel-cta-row">
-            <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading}>
-              {actionLoading ? 'Traitement...' : 'Ajouter au catalogue'}
-            </button>
-          </div>
-        </article>
-
-        <article className="panel panel-secondary cameras-panel-detail">
-          <div className="panel-heading">
-            <p className="section-kicker">Verification</p>
-            <h2>Etat detaille et application</h2>
-          </div>
-
-          {cameraStatusState.loading ? <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p> : null}
-          {cameraStatusState.error ? <p className="camera-inline-state error">{cameraStatusState.error}</p> : null}
-
-          {cameraStatusState.data ? (
-            <div className="camera-detail-stack">
-              <div className="camera-detail-summary">
-                <div>
-                  <h3>{cameraStatusState.data.displayName}</h3>
-                  <p>{cameraStatusState.data.guidance}</p>
-                </div>
-                <div className={`status-pill ${cameraStatusState.data.connected ? 'online' : 'warning'}`}>
-                  {formatCameraStatusLabel(cameraStatusState.data.status)}
                 </div>
               </div>
-
-              <dl className="camera-facts">
-                <div>
-                  <dt>Validation</dt>
-                  <dd>{formatValidationStateLabel(cameraStatusState.data.validationState)}</dd>
-                </div>
-                <div>
-                  <dt>Flux</dt>
-                  <dd>{cameraStatusState.data.connected ? 'Joignable' : 'A verifier'}</dd>
-                </div>
-                <div>
-                  <dt>Derniere verification</dt>
-                  <dd>{formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}</dd>
-                </div>
-                <div>
-                  <dt>Apercu</dt>
-                  <dd>{formatCameraPreview(cameraStatusState.data)}</dd>
-                </div>
-              </dl>
-
-              <div className="panel-cta-row">
-                <button className="secondary-cta" type="button" onClick={handleVerify} disabled={actionLoading}>
-                  Verifier le flux
-                </button>
-                <button className="primary-cta" type="button" onClick={handleApply} disabled={actionLoading}>
-                  Appliquer a Frigate
-                </button>
-              </div>
-
-              <div className="camera-next-actions">
-                <h3>Application</h3>
-                <p>
-                  La camera est ecrite dans la configuration Frigate geree par Vyzio, puis Frigate est relance pour appliquer le changement.
-                </p>
-              </div>
-            </div>
+            </>
           ) : (
-            <div className="camera-empty-state">
-              <h3>Selectionnez une camera</h3>
-              <p>Le detail, la verification et l&apos;application apparaitront ici.</p>
-            </div>
+            <>
+              <div className="panel-heading">
+                <p className="section-kicker">Camera</p>
+                <h2>{selectedCamera?.displayName ?? 'Camera selectionnee'}</h2>
+              </div>
+
+              {detailMessage ? <p className="camera-inline-state success">{detailMessage}</p> : null}
+              {detailError ? <p className="camera-inline-state error">{detailError}</p> : null}
+              {cameraStatusState.loading ? <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p> : null}
+              {cameraStatusState.error ? <p className="camera-inline-state error">{cameraStatusState.error}</p> : null}
+
+              {cameraStatusState.data ? (
+                <div className="camera-detail-stack">
+                  <div className="camera-detail-summary">
+                    <div>
+                      <h3>{cameraStatusState.data.displayName}</h3>
+                      <p>{cameraStatusState.data.guidance}</p>
+                    </div>
+                    <div className={`status-pill ${cameraStatusState.data.connected ? 'online' : 'warning'}`}>
+                      {formatCameraStatusLabel(cameraStatusState.data.status)}
+                    </div>
+                  </div>
+
+                  <div className="camera-detail-sections">
+                    <section className="camera-detail-section">
+                      <h3>Etat</h3>
+                      <dl className="camera-summary-list">
+                        <div>
+                          <dt>Validation</dt>
+                          <dd>{formatValidationStateLabel(cameraStatusState.data.validationState)}</dd>
+                        </div>
+                        <div>
+                          <dt>Flux</dt>
+                          <dd>{cameraStatusState.data.connected ? 'Joignable' : 'A verifier'}</dd>
+                        </div>
+                        <div>
+                          <dt>Derniere verification</dt>
+                          <dd>{formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}</dd>
+                        </div>
+                        <div>
+                          <dt>Apercu</dt>
+                          <dd>{formatCameraPreview(cameraStatusState.data)}</dd>
+                        </div>
+                      </dl>
+                    </section>
+
+                    <section className="camera-detail-section vendor">
+                      <h3>Suite du parcours</h3>
+                      <p className="camera-section-copy">
+                        Cette zone accueillera ensuite les notices de configuration vendor, les prerequis RTSP ou ONVIF et les statuts de support officiel.
+                      </p>
+                    </section>
+                  </div>
+
+                  <div className="camera-step-actions detail compact">
+                    <div className="camera-step-summary">
+                      <strong>Etape 2</strong>
+                      <p>Verifiez d'abord le flux, puis appliquez ou supprimez la camera selon le resultat.</p>
+                    </div>
+                    <div className="panel-cta-row">
+                      <button className="secondary-cta" type="button" onClick={handleVerify} disabled={actionLoading}>
+                        Verifier le flux
+                      </button>
+                      <button className="primary-cta" type="button" onClick={handleApply} disabled={actionLoading}>
+                        Appliquer a Frigate
+                      </button>
+                      <button className="danger-cta" type="button" onClick={handleDelete} disabled={actionLoading}>
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="camera-empty-state">
+                  <h3>Selectionnez une camera</h3>
+                  <p>Le detail, la verification et l&apos;application apparaitront ici.</p>
+                </div>
+              )}
+            </>
           )}
         </article>
       </section>

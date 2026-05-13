@@ -900,7 +900,7 @@ Le dashboard ne manipule donc jamais directement `frigate.yml`. Il agit sur des 
 La stratégie produit et technique retenue pour l'onboarding caméra suit quatre étages :
 
 1. **Découverte device** : repérer les équipements potentiellement pertinents via ONVIF multicast, probes RTSP ciblés, probes HTTP(S) et futur support de signaux complémentaires si utiles.
-2. **Qualification caméra** : attribuer à chaque candidat un niveau de confiance et une famille probable de constructeur au lieu d'afficher indistinctement tout objet connecté.
+2. **Qualification caméra** : attribuer à chaque candidat un niveau de confiance et une famille probable de constructeur au lieu d'afficher indistinctement tout objet connecté. La récupération best-effort de l'adresse MAC et l'exploitation de l'OUI constructeur sont retenues comme signaux supplémentaires de qualification, sans devenir une source de vérité unique.
 3. **Assistance d'activation** : exposer une notice simple, adaptée au constructeur détecté, pour activer RTSP, ONVIF ou le mode de diffusion attendu sans imposer une recherche externe.
 4. **Binding Frigate** : ne générer la configuration Frigate qu'une fois un flux effectivement exploitable confirmé.
 
@@ -925,6 +925,7 @@ Principes de conception associés :
 - les réponses doivent employer un vocabulaire produit (`connected`, `previewAvailable`, `needsAttention`) plutôt que des codes Frigate bruts ;
 - la saisie manuelle est un chemin nominal de secours, pas une exception cachée ;
 - la découverte doit retourner des candidats qualifiés et des aides d'activation, pas une simple liste brute de ports ouverts ;
+- l'adresse MAC, quand elle peut être récupérée de façon fiable depuis l'hôte ou l'appliance, doit être utilisée comme signal complémentaire de qualification et de rattachement vendor ;
 - une caméra potentielle sans RTSP actif reste un candidat utile si Vyzio sait fournir une guidance d'activation exploitable ;
 - la liste des caméras officiellement supportées doit être maintenue côté Vyzio et exposée au parcours pour rendre le niveau de confiance explicite ;
 - l'écriture de configuration doit rester atomique : génération complète puis application, jamais mutation partielle non traçable ;
