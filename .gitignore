@@ -52,3 +52,4 @@ out/
 coverage/
 *.coverage
 *.coveragexml
+config/frigate.generated.yml
