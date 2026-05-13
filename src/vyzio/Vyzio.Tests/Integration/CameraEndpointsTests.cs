@@ -81,6 +81,24 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task Vendor_assistance_returns_markdown_from_dedicated_route()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/cameras/vendor-assistance", new VendorAssistanceRequestDto(
+            "v380_pro",
+            null,
+            false));
+
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<VendorAssistanceResponse>();
+
+        Assert.NotNull(payload);
+        Assert.Equal("v380_pro", payload!.VendorFamily);
+        Assert.Contains("# V380 PRO", payload.Markdown);
+    }
+
+    [Fact]
     public async Task Create_verify_and_apply_camera_flow_updates_catalog()
     {
         using var client = _factory.CreateClient();
@@ -151,6 +169,8 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, string DiscoverySource, string? Note, string? MacAddress, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons);
 
+    public sealed record VendorAssistanceResponse(string VendorFamily, string Markdown);
+
     public sealed record ApplyCameraResponse(bool Applied, string Message, string ConfigPath, CameraStatusResponse Camera);
 
     public sealed record DeleteCameraResponse(bool Deleted, string Message, string ConfigPath);
@@ -175,6 +195,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<ICameraDiscoveryService>();
             services.RemoveAll<ICameraVerifier>();
             services.RemoveAll<IFrigateConfigApplier>();
+            services.RemoveAll<IVendorAssistanceService>();
 
             services.AddDbContext<VyzioDbContext>(options =>
                 options.UseSqlite(_connection)
@@ -183,6 +204,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<ICameraDiscoveryService>(new StubCameraDiscoveryService());
             services.AddSingleton<ICameraVerifier>(new StubCameraVerifier());
             services.AddSingleton<IFrigateConfigApplier>(new StubFrigateConfigApplier());
+            services.AddSingleton<IVendorAssistanceService>(new StubVendorAssistanceService());
 
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
@@ -260,5 +282,13 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
     {
         public Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
             => Task.FromResult(new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", "config/frigate.generated.yml"));
+    }
+
+    private sealed class StubVendorAssistanceService : IVendorAssistanceService
+    {
+        public Task<VendorDocumentation?> GetAssistanceAsync(string? vendorFamily, string? streamPath, bool connected, CancellationToken ct = default)
+            => Task.FromResult(vendorFamily == "v380_pro" && string.IsNullOrWhiteSpace(streamPath) && !connected
+                ? new VendorDocumentation(vendorFamily, "# V380 PRO\n\nNotice RTSP de test.")
+                : null);
     }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { applyCamera, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, verifyCamera } from './app/dependencies'
+import { applyCamera, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, getVendorAssistance, verifyCamera } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import {
   formatEventDetail,
@@ -97,6 +97,7 @@ function App() {
         getCameras={getCameras}
         getCameraStatus={getCameraStatus}
         discoverCameras={discoverCameras}
+        getVendorAssistance={getVendorAssistance}
         createCamera={createCamera}
         verifyCamera={verifyCamera}
         applyCamera={applyCamera}

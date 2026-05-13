@@ -3,7 +3,12 @@
 # En pratique :
 # - Vyzio pilote Frigate via son API et regenere un fichier de configuration effectif.
 # - La section `discovery` sert a trouver des cameras sur le reseau local.
+# - La section `documentation` contient les notices constructeur editables hors code.
 # - La section `notifications` contient les regles d'envoi d'alertes.
+
+documentation:
+  # Dossier contenant les fiches constructeur au format Markdown.
+  vendor_catalog_path: ./vendors
 
 frigate:
   # URL interne utilisee par Vyzio pour joindre l'API Frigate.

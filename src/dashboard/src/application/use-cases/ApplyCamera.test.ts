@@ -30,6 +30,7 @@ describe('ApplyCamera', () => {
       verify: vi.fn(),
       apply: vi.fn().mockResolvedValue(result),
       delete: vi.fn(),
+      getVendorAssistance: vi.fn(),
     }
 
     const useCase = new ApplyCamera(repository)

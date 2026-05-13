@@ -9,7 +9,7 @@ namespace Vyzio.Infrastructure.Services;
 public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
 {
     private readonly AssistedCameraDiscoveryFormatter _formatter = new();
-    private readonly AssistedCameraDiscoveryIdentifier _identifier = new();
+    private readonly AssistedCameraDiscoveryIdentifier _identifier;
     private readonly ILogger<AssistedCameraDiscoveryService>? _logger;
     private readonly AssistedCameraDiscoveryProbePipeline _probePipeline;
 
@@ -17,6 +17,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
     {
         _logger = logger;
         _probePipeline = new AssistedCameraDiscoveryProbePipeline(settings, logger);
+        _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
 
     public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)

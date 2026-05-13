@@ -5,6 +5,7 @@ public class VyzioRuntimeSettings
     public DatabaseSettings Database { get; init; } = new();
     public FrigateSettings Frigate { get; init; } = new();
     public DiscoverySettings Discovery { get; init; } = new();
+    public DocumentationSettings Documentation { get; init; } = new();
     public NotificationsSettings Notifications { get; init; } = new();
 
     public sealed class DatabaseSettings
@@ -47,6 +48,11 @@ public class VyzioRuntimeSettings
     {
         public float MinimumConfidence { get; init; } = 0.75f;
         public TelegramSettings Telegram { get; init; } = new();
+    }
+
+    public sealed class DocumentationSettings
+    {
+        public string VendorCatalogPath { get; init; } = string.Empty;
     }
 
     public sealed class TelegramSettings

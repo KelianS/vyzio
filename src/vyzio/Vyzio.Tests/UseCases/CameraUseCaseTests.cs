@@ -107,6 +107,27 @@ public class DiscoverCamerasUseCaseTests
     }
 }
 
+public class GetVendorAssistanceUseCaseTests
+{
+    private readonly IVendorAssistanceService _vendorAssistance = Substitute.For<IVendorAssistanceService>();
+    private readonly GetVendorAssistanceUseCase _sut;
+
+    public GetVendorAssistanceUseCaseTests() => _sut = new GetVendorAssistanceUseCase(_vendorAssistance);
+
+    [Fact]
+    public async Task Execute_returns_markdown_when_vendor_requires_rtsp_assistance()
+    {
+        _vendorAssistance.GetAssistanceAsync("v380_pro", null, false, Arg.Any<CancellationToken>())
+            .Returns(new VendorDocumentation("v380_pro", "# V380 PRO\n\nNotice RTSP de test."));
+
+        var result = await _sut.ExecuteAsync(new VendorAssistanceRequestDto("v380_pro", null, false));
+
+        Assert.NotNull(result);
+        Assert.Equal("v380_pro", result!.VendorFamily);
+        Assert.Contains("# V380 PRO", result.Markdown);
+    }
+}
+
 public class CreateCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();

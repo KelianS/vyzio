@@ -367,6 +367,10 @@ public class AssistedCameraDiscoveryServiceTests
     {
         var settings = new VyzioRuntimeSettings
         {
+            Documentation = new VyzioRuntimeSettings.DocumentationSettings
+            {
+                VendorCatalogPath = FindRepoPath("config", "vendors")
+            },
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["v380pro-camera.lan"],
@@ -390,6 +394,18 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("v380_pro", candidate.VendorFamily);
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
         Assert.Contains("vendor_hint_detected", candidate.QualificationReasons);
+        Assert.NotNull(candidate.VendorDocumentation);
+        Assert.Contains("# V380 PRO", candidate.VendorDocumentation!.Markdown, StringComparison.Ordinal);
+        Assert.Contains("https://gist.github.com/SolveSoul/9be5d9599c8b4b59f7cfa4cd0ce79c9c", candidate.VendorDocumentation.Markdown, StringComparison.Ordinal);
+    }
+
+    private static string FindRepoPath(params string[] parts)
+    {
+        var segments = new[] { AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".." }
+            .Concat(parts)
+            .ToArray();
+
+        return Path.GetFullPath(Path.Combine(segments));
     }
 
     [Fact]

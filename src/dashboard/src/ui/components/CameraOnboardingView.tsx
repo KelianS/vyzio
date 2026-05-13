@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import type { ApplyCamera } from '../../application/use-cases/ApplyCamera'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
 import type { DeleteCamera } from '../../application/use-cases/DeleteCamera'
 import type { DiscoverCameras } from '../../application/use-cases/DiscoverCameras'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
+import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
+import { useVendorAssistance } from '../hooks/useVendorAssistance'
 import {
   formatCameraAddress,
   formatCameraCheck,
@@ -22,6 +25,7 @@ interface CameraOnboardingViewProps {
   getCameras: GetCameras
   getCameraStatus: GetCameraStatus
   discoverCameras: DiscoverCameras
+  getVendorAssistance: GetVendorAssistance
   createCamera: CreateCamera
   verifyCamera: VerifyCamera
   applyCamera: ApplyCamera
@@ -41,6 +45,10 @@ type DiscoveryCandidate = {
   supportLevel: string
   vendorFamily: string | null
   qualificationReasons: string[]
+  vendorDocumentation?: {
+    vendorFamily: string
+    markdown: string
+  } | null
 }
 
 type CandidateTone = 'confirmed' | 'likely' | 'unknown'
@@ -83,6 +91,30 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const selectedCamera = selectedCameraId
     ? camerasState.data.find((camera) => camera.id === selectedCameraId) ?? null
     : null
+
+  const matchedDiscoveryCandidate = selectedCamera
+    ? discoveryResults.find((candidate) =>
+        candidate.host === selectedCamera.host
+        && candidate.port === selectedCamera.port)
+      ?? null
+    : null
+
+  const activeVendorFamily = selectedCandidate?.vendorFamily
+    ?? matchedDiscoveryCandidate?.vendorFamily
+    ?? null
+
+  const activeSupportLevel = selectedCandidate?.supportLevel
+    ?? matchedDiscoveryCandidate?.supportLevel
+    ?? 'unknown'
+
+  const activeStreamPath = selectedCandidate?.streamPath ?? null
+
+  const vendorAssistanceState = useVendorAssistance(
+    props.getVendorAssistance,
+    activeVendorFamily,
+    activeStreamPath,
+    cameraStatusState.data?.connected ?? false,
+  )
 
   useEffect(() => {
     if (selection.kind === 'camera' && !camerasState.data.some((camera) => camera.id === selection.cameraId)) {
@@ -550,19 +582,30 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
                 <section className="camera-detail-section vendor">
                   <h3>Assistance constructeur</h3>
-                  <p className="camera-section-copy">
-                    {selectedCandidate?.note ?? 'Les notices d activation RTSP ou ONVIF apparaitront ici selon le vendor detecte et le niveau de support officiel.'}
-                  </p>
-                  {selectedCandidate ? (
+                  {(selectedCandidate || matchedDiscoveryCandidate) ? (
                     <p className="camera-section-copy">
-                      {selectedCandidate.vendorFamily
-                        ? `${formatVendorFamily(selectedCandidate.vendorFamily)} est actuellement classe comme ${formatSupportLabel(selectedCandidate.supportLevel).toLowerCase()}.`
+                      {activeVendorFamily
+                        ? `${formatVendorFamily(activeVendorFamily)} est actuellement classe comme ${formatSupportLabel(activeSupportLevel).toLowerCase()}.`
                         : 'Le constructeur n est pas encore reconnu avec assez de certitude pour fournir une notice plus precise.'}
                     </p>
                   ) : null}
-                  <p className="camera-section-footnote">
-                    La future suite du parcours affichera ici les actions recommandees pour chaque constructeur reconnu.
-                  </p>
+                  {vendorAssistanceState.loading ? (
+                    <p className="camera-section-copy">Chargement de la notice constructeur...</p>
+                  ) : vendorAssistanceState.error ? (
+                    <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
+                  ) : vendorAssistanceState.data?.markdown ? (
+                    <div className="camera-vendor-markdown">
+                      <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
+                    </div>
+                  ) : activeVendorFamily && (activeStreamPath || cameraStatusState.data?.connected) ? (
+                    <p className="camera-section-copy">
+                      La configuration RTSP semble deja renseignee ou fonctionnelle. Aucune notice constructeur supplementaire n'est necessaire.
+                    </p>
+                  ) : activeVendorFamily ? (
+                    <p className="camera-section-copy">
+                      Aucune notice constructeur n'a ete trouvee pour ce vendor dans le catalogue actuel.
+                    </p>
+                  ) : null}
                 </section>
               </div>
 
@@ -656,10 +699,33 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </section>
 
                     <section className="camera-detail-section vendor">
-                      <h3>Suite du parcours</h3>
-                      <p className="camera-section-copy">
-                        Cette zone accueillera ensuite les notices de configuration vendor, les prerequis RTSP ou ONVIF et les statuts de support officiel.
-                      </p>
+                      <h3>Assistance constructeur</h3>
+                      {matchedDiscoveryCandidate?.vendorFamily ? (
+                        <p className="camera-section-copy">
+                          {`${formatVendorFamily(matchedDiscoveryCandidate.vendorFamily)} est actuellement classe comme ${formatSupportLabel(matchedDiscoveryCandidate.supportLevel).toLowerCase()}.`}
+                        </p>
+                      ) : null}
+                      {vendorAssistanceState.loading ? (
+                        <p className="camera-section-copy">Chargement de la notice constructeur...</p>
+                      ) : vendorAssistanceState.error ? (
+                        <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
+                      ) : vendorAssistanceState.data?.markdown ? (
+                        <div className="camera-vendor-markdown">
+                          <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
+                        </div>
+                      ) : matchedDiscoveryCandidate?.vendorFamily && cameraStatusState.data?.connected ? (
+                        <p className="camera-section-copy">
+                          La camera parait deja operationnelle en RTSP. La notice constructeur n'est plus necessaire.
+                        </p>
+                      ) : matchedDiscoveryCandidate?.vendorFamily ? (
+                        <p className="camera-section-copy">
+                          Aucune notice constructeur n'a ete trouvee pour ce vendor dans le catalogue actuel.
+                        </p>
+                      ) : (
+                        <p className="camera-section-copy">
+                          Relancez une decouverte reseau pour identifier le vendor de cette camera avant de demander une assistance constructeur.
+                        </p>
+                      )}
                     </section>
                   </div>
 

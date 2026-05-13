@@ -20,6 +20,12 @@ public static class CamerasEndpoints
             return Results.Ok(result);
         });
 
+        group.MapPost("/vendor-assistance", async (VendorAssistanceRequestDto request, GetVendorAssistanceUseCase useCase, CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(request, ct);
+            return Results.Json(result);
+        });
+
         group.MapGet("/", async (GetCamerasUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(ct)));
 

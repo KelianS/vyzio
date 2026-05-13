@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new HubNotificationSettings(telegramNotificationsEnabled));
         services.AddSingleton<DetectionTelegramMessageFormatter>();
         services.AddScoped<DiscoverCamerasUseCase>();
+        services.AddScoped<GetVendorAssistanceUseCase>();
         services.AddScoped<CreateCameraUseCase>();
         services.AddScoped<VerifyCameraUseCase>();
         services.AddScoped<ApplyCameraUseCase>();

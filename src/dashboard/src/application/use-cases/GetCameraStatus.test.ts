@@ -25,6 +25,7 @@ describe('GetCameraStatus', () => {
       verify: vi.fn(),
       apply: vi.fn(),
       delete: vi.fn(),
+      getVendorAssistance: vi.fn(),
     }
 
     const useCase = new GetCameraStatus(repository)

@@ -94,6 +94,10 @@ public static class VyzioConfigLoader
                     ? 32
                     : root.Discovery.MaxConcurrentProbes,
             },
+            Documentation = new VyzioRuntimeSettings.DocumentationSettings
+            {
+                VendorCatalogPath = ResolvePath(root.Documentation.VendorCatalogPath, configDirectory, Path.Combine("vendors")),
+            },
             Notifications = new VyzioRuntimeSettings.NotificationsSettings
             {
                 MinimumConfidence = root.Notifications.MinimumConfidence is < 0 or > 1
@@ -113,6 +117,7 @@ public static class VyzioConfigLoader
         public DatabaseConfig Database { get; init; } = new();
         public FrigateConfig Frigate { get; init; } = new();
         public DiscoveryConfig Discovery { get; init; } = new();
+        public DocumentationConfig Documentation { get; init; } = new();
         public NotificationsConfig Notifications { get; init; } = new();
     }
 
@@ -156,6 +161,11 @@ public static class VyzioConfigLoader
     {
         public float MinimumConfidence { get; init; } = 0.75f;
         public TelegramConfig Telegram { get; init; } = new();
+    }
+
+    private sealed class DocumentationConfig
+    {
+        public string VendorCatalogPath { get; init; } = string.Empty;
     }
 
     private sealed class TelegramConfig

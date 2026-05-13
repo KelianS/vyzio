@@ -1,3 +1,8 @@
+export interface VendorDocumentation {
+  vendorFamily: string
+  markdown: string
+}
+
 export interface DiscoveredCamera {
   displayName: string
   host: string
@@ -11,4 +16,5 @@ export interface DiscoveredCamera {
   supportLevel: string
   vendorFamily: string | null
   qualificationReasons: string[]
+  vendorDocumentation?: VendorDocumentation | null
 }

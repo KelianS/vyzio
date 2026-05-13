@@ -31,6 +31,7 @@ describe('GetCameras', () => {
       verify: vi.fn(),
       apply: vi.fn(),
       delete: vi.fn(),
+      getVendorAssistance: vi.fn(),
     }
 
     const useCase = new GetCameras(repository)

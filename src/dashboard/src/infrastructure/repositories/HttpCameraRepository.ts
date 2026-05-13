@@ -3,7 +3,9 @@ import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { Camera } from '../../domain/entities/Camera'
 import type { CameraStatus } from '../../domain/entities/CameraStatus'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
+import type { VendorAssistance } from '../../domain/entities/VendorAssistance'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
+import type { VendorAssistanceRequest } from '../../domain/ports/CameraRepository'
 import { fetchJson } from '../http/fetchJson'
 
 interface CameraDto {
@@ -49,6 +51,17 @@ interface DiscoveredCameraDto {
   supportLevel: string
   vendorFamily: string | null
   qualificationReasons: string[]
+  vendorDocumentation?: VendorDocumentationDto | null
+}
+
+interface VendorDocumentationDto {
+  vendorFamily: string
+  markdown: string
+}
+
+interface VendorAssistanceDto {
+  vendorFamily: string
+  markdown: string
 }
 
 interface ApplyCameraDto {
@@ -80,6 +93,10 @@ export class HttpCameraRepository implements CameraRepository {
   async discover(): Promise<DiscoveredCamera[]> {
     const payload = await postJson<DiscoveredCameraDto[]>(`${this.apiBaseUrl}/api/cameras/discovery`)
     return payload.map(mapDiscoveredCamera)
+  }
+
+  async getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null> {
+    return postJson<VendorAssistanceDto | null>(`${this.apiBaseUrl}/api/cameras/vendor-assistance`, input)
   }
 
   async create(input: CameraDraftInput): Promise<Camera> {
@@ -155,6 +172,12 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     supportLevel: camera.supportLevel,
     vendorFamily: camera.vendorFamily,
     qualificationReasons: camera.qualificationReasons,
+    vendorDocumentation: camera.vendorDocumentation
+      ? {
+          vendorFamily: camera.vendorDocumentation.vendorFamily,
+          markdown: camera.vendorDocumentation.markdown,
+        }
+      : null,
   }
 }
 
@@ -172,7 +195,16 @@ async function postJson<T>(url: string, body?: unknown): Promise<T> {
     throw new Error(`HTTP ${response.status} on ${url}`)
   }
 
-  return response.json() as Promise<T>
+  if (response.status === 204) {
+    return null as T
+  }
+
+  const payload = await response.text()
+  if (!payload.trim()) {
+    return null as T
+  }
+
+  return JSON.parse(payload) as T
 }
 
 async function deleteJson<T>(url: string): Promise<T> {

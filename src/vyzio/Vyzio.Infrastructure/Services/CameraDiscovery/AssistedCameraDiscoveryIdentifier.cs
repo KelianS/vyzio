@@ -4,16 +4,24 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
 internal sealed class AssistedCameraDiscoveryIdentifier
 {
+    private readonly AssistedCameraDiscoveryVendorDocumentationCatalog _documentationCatalog;
+
+    public AssistedCameraDiscoveryIdentifier(AssistedCameraDiscoveryVendorDocumentationCatalog documentationCatalog)
+    {
+        _documentationCatalog = documentationCatalog;
+    }
+
     public IReadOnlyList<CameraDiscoveryCandidate> Identify(IReadOnlyList<RawCameraDiscoverySignal> rawSignals)
         => rawSignals.Select(Identify).ToList();
 
-    private static CameraDiscoveryCandidate Identify(RawCameraDiscoverySignal signal)
+    private CameraDiscoveryCandidate Identify(RawCameraDiscoverySignal signal)
     {
         var vendorFamily = AssistedCameraDiscoveryKnownDevices.DetectVendorFamily(
             signal.DisplayName,
             signal.Note,
             signal.ResolvedHostName,
             signal.MacAddress);
+        var vendorDocumentation = _documentationCatalog.GetByVendorFamily(vendorFamily);
 
         var qualificationReasons = BuildQualificationReasons(
             signal.StreamPath,
@@ -33,7 +41,8 @@ internal sealed class AssistedCameraDiscoveryIdentifier
             DetermineQualification(qualificationReasons),
             DetermineSupportLevel(vendorFamily),
             vendorFamily,
-            qualificationReasons);
+                qualificationReasons,
+                vendorDocumentation);
     }
 
     private static IReadOnlyList<string> BuildQualificationReasons(

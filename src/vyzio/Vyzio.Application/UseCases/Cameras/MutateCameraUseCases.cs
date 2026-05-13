@@ -14,6 +14,15 @@ public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryServ
     }
 }
 
+public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAssistanceService)
+{
+    public async Task<VendorAssistanceDto?> ExecuteAsync(VendorAssistanceRequestDto request, CancellationToken ct = default)
+    {
+        var documentation = await vendorAssistanceService.GetAssistanceAsync(request.VendorFamily, request.StreamPath, request.Connected, ct);
+        return VendorAssistanceDto.From(documentation);
+    }
+}
+
 public sealed class CreateCameraUseCase(ICameraRepository cameras)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)

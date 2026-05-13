@@ -24,7 +24,8 @@ public sealed record DiscoveredCameraDto(
     string Qualification,
     string SupportLevel,
     string? VendorFamily,
-    IReadOnlyList<string> QualificationReasons)
+    IReadOnlyList<string> QualificationReasons,
+    VendorDocumentationDto? VendorDocumentation)
 {
     public static DiscoveredCameraDto From(CameraDiscoveryCandidate candidate) => new(
         candidate.DisplayName,
@@ -38,7 +39,33 @@ public sealed record DiscoveredCameraDto(
         candidate.Qualification,
         candidate.SupportLevel,
         candidate.VendorFamily,
-        candidate.QualificationReasons);
+        candidate.QualificationReasons,
+        VendorDocumentationDto.From(candidate.VendorDocumentation));
+}
+
+public sealed record VendorDocumentationDto(
+    string VendorFamily,
+    string Markdown)
+{
+    public static VendorDocumentationDto? From(VendorDocumentation? documentation)
+        => documentation is null
+            ? null
+            : new VendorDocumentationDto(
+                documentation.VendorFamily,
+                documentation.Markdown);
+}
+
+public sealed record VendorAssistanceRequestDto(
+    string? VendorFamily,
+    string? StreamPath,
+    bool Connected);
+
+public sealed record VendorAssistanceDto(
+    string VendorFamily,
+    string Markdown)
+{
+    public static VendorAssistanceDto? From(VendorDocumentation? documentation)
+        => documentation is null ? null : new VendorAssistanceDto(documentation.VendorFamily, documentation.Markdown);
 }
 
 public sealed record ApplyCameraResultDto(

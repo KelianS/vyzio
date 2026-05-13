@@ -12,4 +12,5 @@ public sealed record CameraDiscoveryCandidate(
     string Qualification,
     string SupportLevel,
     string? VendorFamily,
-    IReadOnlyList<string> QualificationReasons);
+    IReadOnlyList<string> QualificationReasons,
+    VendorDocumentation? VendorDocumentation = null);
