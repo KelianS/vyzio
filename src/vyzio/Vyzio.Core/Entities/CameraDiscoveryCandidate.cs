@@ -8,4 +8,8 @@ public sealed record CameraDiscoveryCandidate(
     string? StreamPath,
     string DiscoverySource,
     string? Note,
-    string? MacAddress);
+    string? MacAddress,
+    string Qualification,
+    string SupportLevel,
+    string? VendorFamily,
+    IReadOnlyList<string> QualificationReasons);

@@ -906,6 +906,35 @@ La stratégie produit et technique retenue pour l'onboarding caméra suit quatre
 
 Conséquence importante : l'activation automatique de RTSP n'est pas une hypothèse générale de l'architecture cible. Elle n'est envisageable que pour certains constructeurs disposant d'une API locale documentée et stable. La cible nominale reste une activation assistée, guidée par Vyzio, puis une reprise automatique du parcours dès que le flux devient joignable.
 
+#### Modèle de qualification retenu
+
+Le niveau de confiance affiché à l'utilisateur ne doit pas être un score brut arbitraire. L'architecture retenue sépare :
+
+- **les signaux observés** : ONVIF joignable, réponse RTSP cohérente, interface HTTP caractéristique, informations d'en-tête, OUI constructeur via MAC, chemin RTSP connu, comportement observé lors de la vérification ;
+- **la qualification produit** : `camera_confirmed`, `camera_likely`, `device_unknown` ;
+- **le niveau de support Vyzio** : `supported`, `guided`, `experimental`, `unknown`.
+
+La qualification produit répond à la question : « cet équipement ressemble-t-il réellement à une caméra exploitable ? ».
+
+Le niveau de support répond à une autre question : « dans quelle mesure Vyzio sait-il guider ou automatiser ce constructeur ou ce modèle ? ».
+
+Ces deux axes doivent rester distincts pour éviter deux dérives :
+
+- considérer qu'un équipement est officiellement supporté simplement parce qu'il ressemble à une caméra ;
+- afficher un fort degré de confiance produit alors que la guidance vendor reste pauvre ou absente.
+
+Règles d'interprétation retenues :
+
+- `camera_confirmed` exige plusieurs signaux convergents compatibles avec une vraie caméra IP exploitable ;
+- `camera_likely` couvre un équipement très probablement caméra mais encore incomplet, ambigu ou non vérifié ;
+- `device_unknown` couvre un équipement joignable ou détecté sans preuve suffisante pour le présenter comme caméra ;
+- `supported` implique une compatibilité explicitement qualifiée et documentée par Vyzio ;
+- `guided` implique une assistance constructeur utile mais pas une qualification complète du modèle ;
+- `experimental` implique une compatibilité observée mais encore peu stabilisée ;
+- `unknown` implique l'absence de guidance constructeur exploitable.
+
+Conséquence d'architecture : les contrats de découverte doivent transporter à la fois la qualification produit, les raisons principales qui la motivent et le niveau de support associé. L'UI ne doit pas avoir à recalculer cette logique.
+
 #### Contrats API cibles
 
 Les contrats externes doivent exprimer une intention produit, pas un détail d'infrastructure :

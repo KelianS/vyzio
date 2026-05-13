@@ -36,6 +36,9 @@ public class AssistedCameraDiscoveryServiceTests
         using var client = await acceptTask;
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("network_scan", candidate.DiscoverySource);
+        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Equal("unknown", candidate.SupportLevel);
+        Assert.Contains("rtsp_responding", candidate.QualificationReasons);
         Assert.Null(candidate.StreamPath);
         Assert.Null(candidate.MacAddress);
     }
@@ -68,6 +71,8 @@ public class AssistedCameraDiscoveryServiceTests
         using var client = await acceptTask;
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("network_scan", candidate.DiscoverySource);
+        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Contains("rtsp_responding", candidate.QualificationReasons);
         Assert.Null(candidate.MacAddress);
     }
 
@@ -111,6 +116,10 @@ public class AssistedCameraDiscoveryServiceTests
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("http_probe", candidate.DiscoverySource);
         Assert.Equal("web_setup", candidate.SourceType);
+        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Equal("guided", candidate.SupportLevel);
+        Assert.Equal("tplink_tapo", candidate.VendorFamily);
+        Assert.Contains("http_camera_signature", candidate.QualificationReasons);
         Assert.Contains("Tapo", candidate.Note);
         Assert.Null(candidate.MacAddress);
     }

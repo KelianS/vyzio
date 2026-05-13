@@ -93,7 +93,7 @@ public class DiscoverCamerasUseCaseTests
     {
         _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF")
+            new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
         ]);
 
         var result = await _sut.ExecuteAsync();
@@ -102,6 +102,8 @@ public class DiscoverCamerasUseCaseTests
         Assert.Equal("Driveway", candidate.DisplayName);
         Assert.Equal("192.168.1.20", candidate.Host);
         Assert.Equal("AA:BB:CC:DD:EE:FF", candidate.MacAddress);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        Assert.Contains("onvif_detected", candidate.QualificationReasons);
     }
 }
 

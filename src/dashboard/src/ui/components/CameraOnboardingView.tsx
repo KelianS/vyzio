@@ -37,7 +37,13 @@ type DiscoveryCandidate = {
   discoverySource: string
   note: string | null
   macAddress: string | null
+  qualification: string
+  supportLevel: string
+  vendorFamily: string | null
+  qualificationReasons: string[]
 }
+
+type CandidateTone = 'confirmed' | 'likely' | 'unknown'
 
 type CameraSelection =
   | { kind: 'manual' }
@@ -188,11 +194,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setDetailMessage(null)
 
     try {
+      const deletedCameraId = selectedCameraId
       const result = await props.deleteCamera.execute(selectedCameraId)
+      const remainingCameras = camerasState.data.filter((camera) => camera.id !== deletedCameraId)
+
+      camerasState.removeById(deletedCameraId)
+      cameraStatusState.clear()
+
+      if (remainingCameras.length > 0) {
+        setSelection({ kind: 'camera', cameraId: remainingCameras[0].id })
+        setDetailMessage(result.message)
+        setFormMessage(null)
+      } else {
+        setSelection({ kind: 'manual' })
+        setFormMessage(result.message)
+        setDetailMessage(null)
+      }
+
       camerasState.reload()
-      cameraStatusState.reload()
-      setSelection({ kind: 'manual' })
-      setFormMessage(result.message)
     } catch (error: unknown) {
       setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
@@ -234,6 +253,69 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   function selectCamera(cameraId: string) {
     setSelection({ kind: 'camera', cameraId })
     setDetailError(null)
+  }
+
+  function formatQualificationLabel(qualification: string) {
+    switch (qualification) {
+      case 'camera_confirmed':
+        return 'Camera confirmee'
+      case 'camera_likely':
+        return 'Camera probable'
+      default:
+        return 'Equipement non qualifie'
+    }
+  }
+
+  function formatSupportLabel(supportLevel: string) {
+    switch (supportLevel) {
+      case 'supported':
+        return 'Support officiel'
+      case 'guided':
+        return 'Assistance guidee'
+      case 'experimental':
+        return 'Support experimental'
+      default:
+        return 'Support inconnu'
+    }
+  }
+
+  function formatVendorFamily(vendorFamily: string | null) {
+    switch (vendorFamily) {
+      case 'tplink_tapo':
+        return 'TP-Link Tapo'
+      default:
+        return vendorFamily ?? 'Non identifie'
+    }
+  }
+
+  function formatQualificationReason(reason: string) {
+    switch (reason) {
+      case 'onvif_detected':
+        return 'Annonce ONVIF detectee'
+      case 'rtsp_responding':
+        return 'Port RTSP joignable'
+      case 'http_camera_signature':
+        return 'Interface web camera reconnue'
+      case 'rtsp_path_known':
+        return 'Chemin RTSP deja connu'
+      case 'vendor_hint_detected':
+        return 'Constructeur probable detecte'
+      case 'mac_address_observed':
+        return 'Adresse MAC observee'
+      default:
+        return reason
+    }
+  }
+
+  function qualificationTone(qualification: string): CandidateTone {
+    switch (qualification) {
+      case 'camera_confirmed':
+        return 'confirmed'
+      case 'camera_likely':
+        return 'likely'
+      default:
+        return 'unknown'
+    }
   }
 
   return (
@@ -298,6 +380,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   <div>
                     <strong>{candidate.displayName}</strong>
                     <p>{candidate.host}:{candidate.port}</p>
+                    <div className="camera-badge-row compact">
+                      <span className={`camera-qualification-badge ${qualificationTone(candidate.qualification)}`}>
+                        {formatQualificationLabel(candidate.qualification)}
+                      </span>
+                      <span className="camera-support-badge">
+                        {formatSupportLabel(candidate.supportLevel)}
+                      </span>
+                    </div>
                   </div>
                   <small>{candidate.discoverySource}</small>
                 </button>
@@ -378,17 +468,63 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         <dt>MAC</dt>
                         <dd>{selectedCandidate.macAddress ?? 'Indisponible'}</dd>
                       </div>
+                      <div>
+                        <dt>Confiance</dt>
+                        <dd>
+                          <span className={`camera-qualification-badge ${qualificationTone(selectedCandidate.qualification)}`}>
+                            {formatQualificationLabel(selectedCandidate.qualification)}
+                          </span>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Support</dt>
+                        <dd>
+                          <span className="camera-support-badge">
+                            {formatSupportLabel(selectedCandidate.supportLevel)}
+                          </span>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Constructeur probable</dt>
+                        <dd>{formatVendorFamily(selectedCandidate.vendorFamily)}</dd>
+                      </div>
                     </dl>
                   ) : (
                     <p className="camera-section-copy">Renseignez les informations minimales de la camera. La detection automatique reste optionnelle.</p>
                   )}
                 </section>
 
+                {selectedCandidate ? (
+                  <section className="camera-detail-section confidence">
+                    <h3>Pourquoi ce niveau de confiance ?</h3>
+                    <div className="camera-badge-row">
+                      <span className={`camera-qualification-badge ${qualificationTone(selectedCandidate.qualification)}`}>
+                        {formatQualificationLabel(selectedCandidate.qualification)}
+                      </span>
+                      <span className="camera-support-badge">
+                        {formatSupportLabel(selectedCandidate.supportLevel)}
+                      </span>
+                    </div>
+                    <ul className="camera-reason-list">
+                      {selectedCandidate.qualificationReasons.map((reason) => (
+                        <li key={reason}>{formatQualificationReason(reason)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+
                 <section className="camera-detail-section vendor">
                   <h3>Assistance constructeur</h3>
                   <p className="camera-section-copy">
                     {selectedCandidate?.note ?? 'Les notices d activation RTSP ou ONVIF apparaitront ici selon le vendor detecte et le niveau de support officiel.'}
                   </p>
+                  {selectedCandidate ? (
+                    <p className="camera-section-copy">
+                      {selectedCandidate.vendorFamily
+                        ? `${formatVendorFamily(selectedCandidate.vendorFamily)} est actuellement classe comme ${formatSupportLabel(selectedCandidate.supportLevel).toLowerCase()}.`
+                        : 'Le constructeur n est pas encore reconnu avec assez de certitude pour fournir une notice plus precise.'}
+                    </p>
+                  ) : null}
                   <p className="camera-section-footnote">
                     La future suite du parcours affichera ici les actions recommandees pour chaque constructeur reconnu.
                   </p>

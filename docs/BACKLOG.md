@@ -187,6 +187,81 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 - Une camera sortie de carton peut etre detectee comme candidate exploitable ou candidate a assister, meme si RTSP n'est pas encore active
 - L'utilisateur voit clairement si sa camera est officiellement supportee, probablement compatible ou non encore qualifiee
 
+### Plan d'execution cible — reconnaissance camera et degres de confiance
+
+Ce plan detaille l'ordre d'execution recommande pour la qualification camera sans changer la cible fonctionnelle definie dans les SPECS et le SAD.
+
+#### Etape 1 — Formaliser le contrat de qualification
+
+**Taches :**
+- [ ] Ajouter au contrat de decouverte une qualification produit normalisee (`camera_confirmed`, `camera_likely`, `device_unknown`)
+- [ ] Ajouter un niveau de support distinct (`supported`, `guided`, `experimental`, `unknown`)
+- [ ] Exposer une liste courte de raisons de qualification lisibles par l'UI (`onvif_detected`, `rtsp_responding`, `http_camera_signature`, `vendor_oui_match`, `manual_only`)
+- [ ] Garder les signaux techniques detailles dans un diagnostic separe pour le support
+
+**Criteres d'acceptation :**
+- L'UI peut afficher une qualification camera sans recalcul local
+- Le meme candidat peut etre `camera_likely` mais `unknown` cote support vendor
+
+#### Etape 2 — Introduire un moteur de scoring explicable
+
+**Taches :**
+- [ ] Definir une matrice de signaux positifs, neutres et faibles pour ONVIF, RTSP, HTTP(S), MAC/OUI et verification active
+- [ ] Definir des regles de convergence minimales pour passer en `camera_confirmed`
+- [ ] Definir les cas de doute qui doivent rester en `camera_likely`
+- [ ] Definir les cas de bruit reseau qui doivent rester en `device_unknown`
+- [ ] Ajouter des tests unitaires sur les combinaisons de signaux, pas seulement sur les probes individuels
+
+**Criteres d'acceptation :**
+- Chaque niveau de confiance correspond a des regles testees et explicables
+- Le bruit des objets connectes baisse sans faire disparaitre les cameras plausibles non encore configurees
+
+#### Etape 3 — Construire le premier catalogue vendor
+
+**Taches :**
+- [ ] Introduire un referentiel applicatif des vendors/familles cibles avec aliases, OUI connus, indices HTTP et chemins RTSP frequents
+- [ ] Distinguer les niveaux `supported`, `guided`, `experimental`, `unknown`
+- [ ] Livrer une premiere couverture pour TP-Link Tapo puis une famille generique `OEM / no-name`
+- [ ] Associer a chaque vendor une notice d'activation RTSP/ONVIF et les prerequis connus
+
+**Criteres d'acceptation :**
+- Un candidat Tapo ou OEM reconnu peut afficher une aide immediately exploitable
+- Le niveau de support est derive du catalogue et non hardcode dans l'UI
+
+#### Etape 4 — Exposer un diagnostic support separé
+
+**Taches :**
+- [ ] Retourner les CIDR sondes, probes executes et premiers motifs d'echec dans un endpoint ou bloc de diagnostic dedie
+- [ ] Distinguer les informations produites pour l'utilisateur final de celles utiles au support ou au debug
+- [ ] Journaliser sans noyer l'UI principale sous du detail reseau brut
+
+**Criteres d'acceptation :**
+- Le support peut comprendre pourquoi un candidat reste `device_unknown`
+- L'UI grand public garde un vocabulaire simple
+
+#### Etape 5 — Integrer la qualification dans le parcours UI
+
+**Taches :**
+- [ ] Afficher dans la liste des candidats un badge de qualification et un badge de support vendor distincts
+- [ ] Afficher dans le panneau detail les principales raisons de confiance ou de doute
+- [ ] Afficher la notice constructeur et les prochaines actions recommandees avant verification
+- [ ] Afficher explicitement la difference entre `camera confirmee`, `camera probable` et `equipement non qualifie`
+
+**Criteres d'acceptation :**
+- Un utilisateur non-tech comprend pourquoi un equipement est propose ou non comme camera
+- Le parcours guide naturellement vers l'action suivante au lieu d'afficher un simple score
+
+#### Etape 6 — Verrouiller la boucle de validation
+
+**Taches :**
+- [ ] Ajouter des tests backend d'integration sur les contrats de qualification et support vendor
+- [ ] Ajouter des tests frontend sur l'affichage des badges, raisons et notices
+- [ ] Ajouter une documentation utilisateur de reference sur la signification des niveaux de confiance et de support
+
+**Criteres d'acceptation :**
+- Les niveaux affiches sont coherents entre backend, UI et documentation
+- Le support peut expliquer le comportement sans interpretation implicite du code
+
 ### US-P3.5 — Gestion detections et profils
 
 **Taches :**

@@ -45,5 +45,11 @@ export function useCameras(useCase: GetCameras) {
   return {
     ...state,
     reload: () => setReloadToken((value) => value + 1),
+    removeById: (cameraId: string) => {
+      setState((current) => ({
+        ...current,
+        data: current.data.filter((camera) => camera.id !== cameraId),
+      }))
+    },
   }
 }

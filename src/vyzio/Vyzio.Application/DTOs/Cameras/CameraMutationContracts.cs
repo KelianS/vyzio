@@ -20,7 +20,11 @@ public sealed record DiscoveredCameraDto(
     string? StreamPath,
     string DiscoverySource,
     string? Note,
-    string? MacAddress)
+    string? MacAddress,
+    string Qualification,
+    string SupportLevel,
+    string? VendorFamily,
+    IReadOnlyList<string> QualificationReasons)
 {
     public static DiscoveredCameraDto From(CameraDiscoveryCandidate candidate) => new(
         candidate.DisplayName,
@@ -30,7 +34,11 @@ public sealed record DiscoveredCameraDto(
         candidate.StreamPath,
         candidate.DiscoverySource,
         candidate.Note,
-        candidate.MacAddress);
+        candidate.MacAddress,
+        candidate.Qualification,
+        candidate.SupportLevel,
+        candidate.VendorFamily,
+        candidate.QualificationReasons);
 }
 
 public sealed record ApplyCameraResultDto(

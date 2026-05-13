@@ -143,6 +143,49 @@
   color: var(--ink-soft);
 }
 
+.camera-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.camera-badge-row.compact {
+  margin-top: 10px;
+}
+
+.camera-qualification-badge,
+.camera-support-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.camera-qualification-badge.confirmed {
+  background: rgba(45, 122, 82, 0.14);
+  color: var(--brand-moss);
+}
+
+.camera-qualification-badge.likely {
+  background: rgba(217, 179, 122, 0.2);
+  color: #8a5c09;
+}
+
+.camera-qualification-badge.unknown {
+  background: rgba(198, 92, 61, 0.14);
+  color: #9e4129;
+}
+
+.camera-support-badge {
+  background: rgba(29, 74, 110, 0.12);
+  color: #184d70;
+}
+
 .camera-nav-item.ok {
   background: rgba(45, 122, 82, 0.08);
 }
@@ -206,6 +249,10 @@
   background: linear-gradient(180deg, rgba(255, 249, 239, 0.96), rgba(255, 244, 228, 0.92));
 }
 
+.camera-detail-section.confidence {
+  background: linear-gradient(180deg, rgba(239, 248, 244, 0.96), rgba(234, 245, 239, 0.92));
+}
+
 .camera-detail-section h3 {
   font-size: 1rem;
 }
@@ -243,6 +290,18 @@
 
 .camera-summary-list dd {
   margin: 0;
+}
+
+.camera-summary-list dd .camera-qualification-badge,
+.camera-summary-list dd .camera-support-badge {
+  vertical-align: middle;
+}
+
+.camera-reason-list {
+  display: grid;
+  gap: 8px;
+  padding-left: 18px;
+  color: var(--ink-soft);
 }
 
 .hero-panel {

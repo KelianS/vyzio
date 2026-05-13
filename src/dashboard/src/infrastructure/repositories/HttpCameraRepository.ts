@@ -45,6 +45,10 @@ interface DiscoveredCameraDto {
   discoverySource: string
   note: string | null
   macAddress: string | null
+  qualification: string
+  supportLevel: string
+  vendorFamily: string | null
+  qualificationReasons: string[]
 }
 
 interface ApplyCameraDto {
@@ -147,6 +151,10 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     discoverySource: camera.discoverySource,
     note: camera.note,
     macAddress: camera.macAddress,
+    qualification: camera.qualification,
+    supportLevel: camera.supportLevel,
+    vendorFamily: camera.vendorFamily,
+    qualificationReasons: camera.qualificationReasons,
   }
 }
 

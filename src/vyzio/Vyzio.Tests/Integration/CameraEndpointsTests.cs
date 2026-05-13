@@ -76,6 +76,8 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         var candidate = Assert.Single(payload!);
         Assert.Equal("Driveway", candidate.DisplayName);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        Assert.Contains("onvif_detected", candidate.QualificationReasons);
     }
 
     [Fact]
@@ -147,7 +149,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, string DiscoverySource, string? Note, string? MacAddress);
+    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, string DiscoverySource, string? Note, string? MacAddress, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons);
 
     public sealed record ApplyCameraResponse(bool Applied, string Message, string ConfigPath, CameraStatusResponse Camera);
 
@@ -238,7 +240,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
         public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<CameraDiscoveryCandidate>>(
             [
-                new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF")
+                new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
             ]);
     }
 

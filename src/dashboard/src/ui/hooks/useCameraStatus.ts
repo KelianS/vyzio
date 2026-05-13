@@ -49,5 +49,6 @@ export function useCameraStatus(useCase: GetCameraStatus, cameraId: string | nul
   return {
     ...state,
     reload: () => setReloadToken((value) => value + 1),
+    clear: () => setState({ data: null, loading: false, error: null }),
   }
 }

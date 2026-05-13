@@ -121,7 +121,7 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                     continue;
                 }
 
-                yield return new CameraDiscoveryCandidate(
+                yield return BuildQualifiedCandidate(
                     ToDisplayName(uri.Host),
                     uri.Host,
                     554,
@@ -149,7 +149,7 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         {
             if (await CanConnectAsync(probe.Host, probe.Port, 250, ct))
             {
-                results.Add(new CameraDiscoveryCandidate(
+                results.Add(BuildQualifiedCandidate(
                     probe.DisplayName,
                     probe.Host,
                     probe.Port,
@@ -229,7 +229,9 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 return null;
             }
 
-            return new CameraDiscoveryCandidate(
+            var macAddress = await ResolveMacAddressAsync(host, ct);
+
+            return BuildQualifiedCandidate(
                 ToDisplayName(host),
                 host,
                 port,
@@ -237,7 +239,7 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 null,
                 "network_scan",
                 $"RTSP port {port} responded during configured LAN scan. Complete the RTSP path before verification.",
-                await ResolveMacAddressAsync(host, ct));
+                macAddress);
         }
         finally
         {
@@ -257,7 +259,9 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 return null;
             }
 
-            return new CameraDiscoveryCandidate(
+            var macAddress = await ResolveMacAddressAsync(host, ct);
+
+            return BuildQualifiedCandidate(
                 probe.DisplayName,
                 host,
                 port,
@@ -265,7 +269,7 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 null,
                 "http_probe",
                 probe.Note,
-                await ResolveMacAddressAsync(host, ct));
+                macAddress);
         }
         finally
         {
@@ -606,6 +610,115 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
 
     private static bool IsValidMacAddress(string mac)
         => Regex.IsMatch(mac, "^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$");
+
+    private static CameraDiscoveryCandidate BuildQualifiedCandidate(
+        string displayName,
+        string host,
+        int port,
+        string sourceType,
+        string? streamPath,
+        string discoverySource,
+        string? note,
+        string? macAddress)
+    {
+        var vendorFamily = DetectVendorFamily(displayName, note);
+        var qualificationReasons = BuildQualificationReasons(sourceType, streamPath, discoverySource, vendorFamily, macAddress);
+
+        return new CameraDiscoveryCandidate(
+            displayName,
+            host,
+            port,
+            sourceType,
+            streamPath,
+            discoverySource,
+            note,
+            macAddress,
+            DetermineQualification(qualificationReasons),
+            DetermineSupportLevel(vendorFamily),
+            vendorFamily,
+            qualificationReasons);
+    }
+
+    private static string? DetectVendorFamily(string displayName, string? note)
+    {
+        var fingerprint = $"{displayName} {note}".ToLowerInvariant();
+
+        if (fingerprint.Contains("tapo") || fingerprint.Contains("tp-link") || fingerprint.Contains("tplink"))
+        {
+            return "tplink_tapo";
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> BuildQualificationReasons(
+        string sourceType,
+        string? streamPath,
+        string discoverySource,
+        string? vendorFamily,
+        string? macAddress)
+    {
+        var reasons = new List<string>();
+
+        if (string.Equals(discoverySource, "onvif", StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("onvif_detected");
+        }
+
+        if (string.Equals(discoverySource, "network_scan", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(discoverySource, "rtsp_probe", StringComparison.OrdinalIgnoreCase)
+            || sourceType.Contains("rtsp", StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("rtsp_responding");
+        }
+
+        if (string.Equals(discoverySource, "http_probe", StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("http_camera_signature");
+        }
+
+        if (!string.IsNullOrWhiteSpace(streamPath))
+        {
+            reasons.Add("rtsp_path_known");
+        }
+
+        if (!string.IsNullOrWhiteSpace(vendorFamily))
+        {
+            reasons.Add("vendor_hint_detected");
+        }
+
+        if (!string.IsNullOrWhiteSpace(macAddress))
+        {
+            reasons.Add("mac_address_observed");
+        }
+
+        return reasons;
+    }
+
+    private static string DetermineQualification(IReadOnlyList<string> qualificationReasons)
+    {
+        if (qualificationReasons.Contains("onvif_detected", StringComparer.Ordinal)
+            || (qualificationReasons.Contains("rtsp_responding", StringComparer.Ordinal)
+                && qualificationReasons.Contains("rtsp_path_known", StringComparer.Ordinal)))
+        {
+            return "camera_confirmed";
+        }
+
+        if (qualificationReasons.Contains("rtsp_responding", StringComparer.Ordinal)
+            || qualificationReasons.Contains("http_camera_signature", StringComparer.Ordinal))
+        {
+            return "camera_likely";
+        }
+
+        return "device_unknown";
+    }
+
+    private static string DetermineSupportLevel(string? vendorFamily)
+        => vendorFamily switch
+        {
+            "tplink_tapo" => "guided",
+            _ => "unknown"
+        };
 
     private sealed record HttpProbeResult(string DisplayName, string Note);
 }

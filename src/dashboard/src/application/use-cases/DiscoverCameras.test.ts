@@ -14,6 +14,10 @@ describe('DiscoverCameras', () => {
         discoverySource: 'onvif',
         note: 'ONVIF device announced.',
         macAddress: null,
+        qualification: 'camera_confirmed',
+        supportLevel: 'unknown',
+        vendorFamily: null,
+        qualificationReasons: ['onvif_detected'],
       },
     ]
 

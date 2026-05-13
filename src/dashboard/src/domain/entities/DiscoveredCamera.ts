@@ -7,4 +7,8 @@ export interface DiscoveredCamera {
   discoverySource: string
   note: string | null
   macAddress: string | null
+  qualification: string
+  supportLevel: string
+  vendorFamily: string | null
+  qualificationReasons: string[]
 }

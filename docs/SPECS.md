@@ -63,7 +63,10 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le systeme doit proposer un parcours guide d'ajout de camera ;
 - la detection automatique est souhaitee quand elle est possible, avec une saisie manuelle en secours ;
 - la decouverte reseau doit distinguer au minimum une camera confirmee, une camera probable et un equipement non qualifie ;
+- chaque candidat detecte doit exposer au minimum un libelle de confiance compréhensible, une explication courte des signaux observes et, si possible, un constructeur ou une famille probable ;
+- le niveau de confiance doit rester explicable : Vyzio ne doit pas afficher une precision arbitraire ou un score opaque sans justification lisible ;
 - une camera detectee mais non encore exploitable doit rester visible dans un parcours d'assistance plutot que disparaitre silencieusement ;
+- une camera confirmee doit etre clairement distinguable d'un simple equipement reseau joignable, afin d'eviter les faux positifs dans le parcours d'onboarding ;
 - le produit doit guider l'utilisateur quand RTSP ou ONVIF doivent etre actives, avec une notice adaptee au constructeur detecte quand cette information est disponible ;
 - le produit doit exposer une liste des constructeurs ou modeles officiellement supportes et l'utiliser pour rassurer l'utilisateur pendant l'onboarding ;
 - chaque camera doit avoir un nom, un statut visible et une configuration editable ;
