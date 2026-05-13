@@ -38,33 +38,50 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var configuredHosts = BuildConfiguredHostList();
         _logger?.LogInformation("Built configured discovery host list with {HostCount} host(s).", configuredHosts.Count);
 
+        var onvifTask = DiscoverOnvifSignalsAsync(ct);
+        var knownRtspTask = DiscoverKnownRtspSignalsAsync(ct);
+        var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(configuredHosts, ct);
+        var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(configuredHosts, ct);
+        var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, ct);
+        var hostnameTask = DiscoverHostnameSignalsAsync(configuredHosts, ct);
+        var macTask = DiscoverMacVendorSignalsAsync(configuredHosts, ct);
+
+        await Task.WhenAll(
+            onvifTask,
+            knownRtspTask,
+            configuredRtspTask,
+            configuredOnvifTask,
+            configuredHttpTask,
+            hostnameTask,
+            macTask);
+
         var signals = new List<RawCameraDiscoverySignal>();
 
-        var onvifSignals = await DiscoverOnvifSignalsAsync(ct);
+        var onvifSignals = await onvifTask;
         _logger?.LogInformation("ONVIF multicast discovery returned {CandidateCount} candidate(s).", onvifSignals.Count);
         signals.AddRange(onvifSignals);
 
-        var knownRtspSignals = await DiscoverKnownRtspSignalsAsync(ct);
+        var knownRtspSignals = await knownRtspTask;
         _logger?.LogInformation("Known RTSP probes returned {CandidateCount} candidate(s).", knownRtspSignals.Count);
         signals.AddRange(knownRtspSignals);
 
-        var configuredRtspSignals = await DiscoverConfiguredRtspSignalsAsync(configuredHosts, ct);
+        var configuredRtspSignals = await configuredRtspTask;
         _logger?.LogInformation("Configured RTSP discovery returned {CandidateCount} candidate(s).", configuredRtspSignals.Count);
         signals.AddRange(configuredRtspSignals);
 
-        var configuredOnvifSignals = await DiscoverConfiguredOnvifSignalsAsync(configuredHosts, ct);
+        var configuredOnvifSignals = await configuredOnvifTask;
         _logger?.LogInformation("Configured ONVIF unicast discovery returned {CandidateCount} candidate(s).", configuredOnvifSignals.Count);
         signals.AddRange(configuredOnvifSignals);
 
-        var configuredHttpSignals = await DiscoverConfiguredHttpSignalsAsync(configuredHosts, ct);
+        var configuredHttpSignals = await configuredHttpTask;
         _logger?.LogInformation("Configured HTTP discovery returned {CandidateCount} candidate(s).", configuredHttpSignals.Count);
         signals.AddRange(configuredHttpSignals);
 
-        var hostnameSignals = await DiscoverHostnameSignalsAsync(configuredHosts, ct);
+        var hostnameSignals = await hostnameTask;
         _logger?.LogInformation("Hostname discovery returned {CandidateCount} candidate(s).", hostnameSignals.Count);
         signals.AddRange(hostnameSignals);
 
-        var macSignals = await DiscoverMacVendorSignalsAsync(configuredHosts, ct);
+        var macSignals = await macTask;
         _logger?.LogInformation("MAC/OUI discovery returned {CandidateCount} candidate(s).", macSignals.Count);
         signals.AddRange(macSignals);
 
