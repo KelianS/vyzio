@@ -71,6 +71,11 @@ public static class VyzioConfigLoader
                     .Distinct()
                     .DefaultIfEmpty(554)
                     .ToArray(),
+                HttpPorts = root.Discovery.HttpPorts
+                    .Where(port => port > 0 && port <= 65535)
+                    .Distinct()
+                    .DefaultIfEmpty(80)
+                    .ToArray(),
                 ProbeTimeoutMs = root.Discovery.ProbeTimeoutMs is < 50 or > 5000
                     ? 250
                     : root.Discovery.ProbeTimeoutMs,
@@ -129,6 +134,7 @@ public static class VyzioConfigLoader
         public List<string> ProbeHosts { get; init; } = [];
         public List<string> ProbeCidrs { get; init; } = [];
         public List<int> RtspPorts { get; init; } = [];
+        public List<int> HttpPorts { get; init; } = [];
         public int ProbeTimeoutMs { get; init; } = 250;
         public int MaxConcurrentProbes { get; init; } = 32;
     }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -30,6 +31,11 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         }
 
         foreach (var candidate in await DiscoverConfiguredRtspCandidatesAsync(ct))
+        {
+            candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
+        }
+
+        foreach (var candidate in await DiscoverConfiguredHttpCandidatesAsync(ct))
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
@@ -183,6 +189,33 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         return results;
     }
 
+    private async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverConfiguredHttpCandidatesAsync(CancellationToken ct)
+    {
+        var hosts = BuildConfiguredHostList();
+        if (hosts.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new List<CameraDiscoveryCandidate>();
+        using var gate = new SemaphoreSlim(settings.Discovery.MaxConcurrentProbes);
+
+        var tasks = hosts
+            .SelectMany(host => settings.Discovery.HttpPorts.Select(port => ProbeConfiguredHttpHostAsync(host, port, gate, ct)))
+            .ToArray();
+
+        var probed = await Task.WhenAll(tasks);
+        foreach (var candidate in probed)
+        {
+            if (candidate is not null)
+            {
+                results.Add(candidate);
+            }
+        }
+
+        return results;
+    }
+
     private async Task<CameraDiscoveryCandidate?> ProbeConfiguredHostAsync(string host, int port, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
@@ -202,6 +235,33 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 null,
                 "network_scan",
                 $"RTSP port {port} responded during configured LAN scan. Complete the RTSP path before verification.");
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<CameraDiscoveryCandidate?> ProbeConfiguredHttpHostAsync(string host, int port, SemaphoreSlim gate, CancellationToken ct)
+    {
+        await gate.WaitAsync(ct);
+
+        try
+        {
+            var probe = await ProbeHttpEndpointAsync(host, port, settings.Discovery.ProbeTimeoutMs, ct);
+            if (probe is null)
+            {
+                return null;
+            }
+
+            return new CameraDiscoveryCandidate(
+                probe.DisplayName,
+                host,
+                port,
+                "web_setup",
+                null,
+                "http_probe",
+                probe.Note);
         }
         finally
         {
@@ -343,6 +403,88 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         }
     }
 
+    private static async Task<HttpProbeResult?> ProbeHttpEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            using var stream = client.GetStream();
+            var request = $"GET / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\nUser-Agent: Vyzio\r\n\r\n";
+            var bytes = Encoding.ASCII.GetBytes(request);
+
+            await stream.WriteAsync(bytes, timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var buffer = new byte[4096];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+            if (read <= 0)
+            {
+                return null;
+            }
+
+            var response = Encoding.UTF8.GetString(buffer, 0, read);
+            if (!response.StartsWith("HTTP/", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return BuildHttpProbeResult(host, port, response);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static HttpProbeResult BuildHttpProbeResult(string host, int port, string response)
+    {
+        var fingerprint = response.ToLowerInvariant();
+        var titleMatch = Regex.Match(response, "<title>(.*?)</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        var title = titleMatch.Success ? WebUtility.HtmlDecode(titleMatch.Groups[1].Value.Trim()) : null;
+        var server = response
+            .Split("\r\n", StringSplitOptions.None)
+            .FirstOrDefault(line => line.StartsWith("Server:", StringComparison.OrdinalIgnoreCase))?
+            .Split(':', 2)[1]
+            .Trim();
+
+        if (fingerprint.Contains("tapo") || fingerprint.Contains("tp-link") || fingerprint.Contains("tplink"))
+        {
+            return new HttpProbeResult(
+                "Camera TP-Link Tapo",
+                $"Interface web TP-Link Tapo detectee sur {host}:{port}. RTSP et ONVIF sont souvent desactives d'origine et a activer dans l'application Tapo.");
+        }
+
+        if (fingerprint.Contains("onvif"))
+        {
+            return new HttpProbeResult(
+                title ?? ToDisplayName(host),
+                $"Service web camera detecte sur {host}:{port}. Un endpoint ONVIF semble present; finalisez ensuite l'activation video si necessaire.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            return new HttpProbeResult(
+                title,
+                $"Interface web camera detectee sur {host}:{port}. RTSP peut etre desactive d'origine; completez ensuite l'assistance de configuration.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(server))
+        {
+            return new HttpProbeResult(
+                ToDisplayName(host),
+                $"Service web detecte sur {host}:{port} (serveur: {server}). RTSP peut etre desactive d'origine.");
+        }
+
+        return new HttpProbeResult(
+            ToDisplayName(host),
+            $"Service web detecte sur {host}:{port}. Cette camera peut necessiter une activation initiale via son interface constructeur.");
+    }
+
     private static string BuildProbeEnvelope() =>
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
         "<e:Envelope xmlns:e=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:w=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:d=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\">" +
@@ -397,4 +539,6 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             (byte)((value >> 16) & 0xFF),
             (byte)((value >> 8) & 0xFF),
             (byte)(value & 0xFF)]);
+
+    private sealed record HttpProbeResult(string DisplayName, string Note);
 }

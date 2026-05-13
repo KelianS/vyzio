@@ -172,11 +172,20 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 - [x] Relancer ou recharger Frigate de facon maitrisee apres application de la configuration
 - [x] Proposer une decouverte reseau assistee avec saisie manuelle en secours
 - [x] Rendre visible le statut de chaque camera, la perte de flux et les actions de correction simples
+- [ ] Qualifier les candidats de decouverte (`camera_confirmee`, `camera_probable`, `equipement_non_qualifie`) pour eviter le bruit des objets connectes
+- [ ] Ajouter un diagnostic de decouverte reseau expliquant les CIDR testes, protocoles joignables et raisons d'echec visibles pour le support
+- [ ] Ajouter un probe HTTPS et un probe ONVIF unicast sur les IP candidates pour couvrir les cameras d'origine hors RTSP actif
+- [ ] Introduire un catalogue de vendors avec notices d'activation RTSP/ONVIF et recommandations de configuration par constructeur detecte
+- [ ] Exposer dans l'interface la liste des cameras officiellement supportees et le niveau de support associe
+- [ ] Prioriser une assistance constructeur initiale pour TP-Link Tapo puis pour une famille generique "no-name / OEM"
+- [ ] Reprendre automatiquement le parcours de verification quand une camera precedemment detectee devient exploitable
 
 **Criteres d'acceptation :**
 - Une camera existante peut etre ajoutee sans edition manuelle de fichiers
 - L'utilisateur peut verifier rapidement qu'une camera est joignable, bien nommee et exploitable
 - L'indisponibilite d'une camera est visible sans diagnostic technique avance
+- Une camera sortie de carton peut etre detectee comme candidate exploitable ou candidate a assister, meme si RTSP n'est pas encore active
+- L'utilisateur voit clairement si sa camera est officiellement supportee, probablement compatible ou non encore qualifiee
 
 ### US-P3.5 — Gestion detections et profils
 

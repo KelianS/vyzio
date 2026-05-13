@@ -36,6 +36,7 @@ public class VyzioRuntimeSettings
         public IReadOnlyList<string> ProbeHosts { get; init; } = Array.Empty<string>();
         public IReadOnlyList<string> ProbeCidrs { get; init; } = Array.Empty<string>();
         public IReadOnlyList<int> RtspPorts { get; init; } = [554];
+        public IReadOnlyList<int> HttpPorts { get; init; } = [80, 443, 8080];
         public int ProbeTimeoutMs { get; init; } = 250;
         public int MaxConcurrentProbes { get; init; } = 32;
     }

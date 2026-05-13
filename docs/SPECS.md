@@ -54,10 +54,18 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux verifier rapidement le flux d'une camera depuis l'interface, afin de confirmer que tout fonctionne.
 
+> **En tant qu'utilisateur**, je veux que Vyzio reconnaisse le type probable de ma camera et m'explique quoi activer, afin de finir l'integration sans connaissance technique du constructeur.
+
+> **En tant qu'utilisateur**, je veux savoir si mon modele fait partie des cameras officiellement supportees, afin d'avoir un niveau de confiance clair sur le parcours propose.
+
 ### 2.2 Attendus fonctionnels
 
 - le systeme doit proposer un parcours guide d'ajout de camera ;
 - la detection automatique est souhaitee quand elle est possible, avec une saisie manuelle en secours ;
+- la decouverte reseau doit distinguer au minimum une camera confirmee, une camera probable et un equipement non qualifie ;
+- une camera detectee mais non encore exploitable doit rester visible dans un parcours d'assistance plutot que disparaitre silencieusement ;
+- le produit doit guider l'utilisateur quand RTSP ou ONVIF doivent etre actives, avec une notice adaptee au constructeur detecte quand cette information est disponible ;
+- le produit doit exposer une liste des constructeurs ou modeles officiellement supportes et l'utiliser pour rassurer l'utilisateur pendant l'onboarding ;
 - chaque camera doit avoir un nom, un statut visible et une configuration editable ;
 - l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
 - une perte de flux doit etre detectee et visible sans diagnostic technique avance.

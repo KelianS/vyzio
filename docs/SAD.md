@@ -870,9 +870,10 @@ La gestion des caméras est modélisée comme une orchestration Vyzio en quatre 
 | Brique | Rôle | Source de vérité |
 |---|---|---|
 | **Camera Catalog** | référentiel Vyzio des caméras connues, de leur nom métier, mode de connexion, état de validation et paramètres utiles à la génération de configuration | SQLite Vyzio |
-| **Camera Discovery Adapter** | découverte réseau assistée et normalisation des candidats détectés, avec fallback manuel complet | Frigate/sondage réseau + saisie utilisateur |
+| **Camera Discovery Adapter** | découverte réseau assistée, qualification des candidats détectés et fallback manuel complet | Frigate/sondage réseau + saisie utilisateur |
 | **Camera Config Writer** | génération déterministe de la section `cameras` de la configuration Frigate à partir des caméras actives validées | configuration Frigate générée par Vyzio |
 | **Camera Status Projection** | synthèse d'état exploitable par l'UI (`online`, `offline`, `degraded`, `config_error`) à partir des checks Vyzio et du retour Frigate | projection applicative Vyzio |
+| **Vendor Guidance Catalog** | notices d'activation et niveau de support officiel par constructeur ou famille de caméras | catalogue applicatif Vyzio |
 
 Cette séparation permet d'éviter deux erreurs :
 
@@ -883,14 +884,27 @@ Cette séparation permet d'éviter deux erreurs :
 
 Le flux nominal cible est le suivant :
 
-1. Vyzio découvre ou reçoit les paramètres d'une caméra.
-2. Vyzio vérifie la joignabilité et la cohérence minimale du flux.
-3. Vyzio enregistre la caméra dans son catalogue avec un statut de validation explicite.
-4. Vyzio génère la configuration Frigate complète à partir du catalogue des caméras actives.
-5. Vyzio applique cette configuration par écriture atomique du fichier cible puis déclenche un reload/restart maîtrisé de Frigate.
-6. Vyzio contrôle le retour de Frigate et met à jour un statut produit lisible pour l'utilisateur.
+1. Vyzio découvre des équipements réseau via ONVIF, RTSP, HTTP(S) et sondages ciblés.
+2. Vyzio qualifie chaque candidat avec un niveau de confiance produit (`camera_confirmed`, `camera_likely`, `device_unknown`) et, si possible, une famille constructeur.
+3. Vyzio présente une aide d'activation adaptée quand le flux n'est pas encore exploitable, par exemple pour une caméra sortie de carton avec RTSP ou ONVIF désactivés.
+4. Vyzio vérifie la joignabilité et la cohérence minimale du flux une fois les prérequis d'activation réunis.
+5. Vyzio enregistre la caméra dans son catalogue avec un statut de validation explicite.
+6. Vyzio génère la configuration Frigate complète à partir du catalogue des caméras actives.
+7. Vyzio applique cette configuration par écriture atomique du fichier cible puis déclenche un reload/restart maîtrisé de Frigate.
+8. Vyzio contrôle le retour de Frigate et met à jour un statut produit lisible pour l'utilisateur.
 
 Le dashboard ne manipule donc jamais directement `frigate.yml`. Il agit sur des ressources Vyzio ; Vyzio dérive ensuite la configuration Frigate effective.
+
+#### Stratégie de découverte et d'assistance retenue
+
+La stratégie produit et technique retenue pour l'onboarding caméra suit quatre étages :
+
+1. **Découverte device** : repérer les équipements potentiellement pertinents via ONVIF multicast, probes RTSP ciblés, probes HTTP(S) et futur support de signaux complémentaires si utiles.
+2. **Qualification caméra** : attribuer à chaque candidat un niveau de confiance et une famille probable de constructeur au lieu d'afficher indistinctement tout objet connecté.
+3. **Assistance d'activation** : exposer une notice simple, adaptée au constructeur détecté, pour activer RTSP, ONVIF ou le mode de diffusion attendu sans imposer une recherche externe.
+4. **Binding Frigate** : ne générer la configuration Frigate qu'une fois un flux effectivement exploitable confirmé.
+
+Conséquence importante : l'activation automatique de RTSP n'est pas une hypothèse générale de l'architecture cible. Elle n'est envisageable que pour certains constructeurs disposant d'une API locale documentée et stable. La cible nominale reste une activation assistée, guidée par Vyzio, puis une reprise automatique du parcours dès que le flux devient joignable.
 
 #### Contrats API cibles
 
@@ -910,6 +924,9 @@ Principes de conception associés :
 
 - les réponses doivent employer un vocabulaire produit (`connected`, `previewAvailable`, `needsAttention`) plutôt que des codes Frigate bruts ;
 - la saisie manuelle est un chemin nominal de secours, pas une exception cachée ;
+- la découverte doit retourner des candidats qualifiés et des aides d'activation, pas une simple liste brute de ports ouverts ;
+- une caméra potentielle sans RTSP actif reste un candidat utile si Vyzio sait fournir une guidance d'activation exploitable ;
+- la liste des caméras officiellement supportées doit être maintenue côté Vyzio et exposée au parcours pour rendre le niveau de confiance explicite ;
 - l'écriture de configuration doit rester atomique : génération complète puis application, jamais mutation partielle non traçable ;
 - la base Vyzio n'est pas la configuration finale exécutée par le moteur vidéo ; elle stocke la vérité métier nécessaire pour générer cette configuration ;
 - le hub et la future page caméras consomment le même contrat de statut pour éviter une divergence d'interprétation.
@@ -951,6 +968,8 @@ La configuration finale exécutée par Frigate est générée par Vyzio à parti
 Le parcours reste compatible avec la stratégie "Hub Vyzio simplifié + Frigate avancé" :
 
 - **découverte** : utiliser Frigate ou un adaptateur dédié quand une capacité exploitable existe, sans dépendre d'un écran Frigate ;
+- **qualification** : distinguer les caméras confirmées, les caméras probables et les équipements non qualifiés avant de les proposer au parcours nominal ;
+- **guidance** : exposer une notice par constructeur détecté, avec une liste de modèles officiellement supportés et le niveau d'assistance associé ;
 - **prévisualisation** : passer par un proxy Vyzio pour éviter d'exposer directement Frigate au dashboard ;
 - **application** : Vyzio régénère la configuration caméra Frigate à partir du catalogue, puis déclenche un reload/restart maîtrisé ;
 - **état** : Vyzio recoupe le statut applicatif avec les signaux Frigate pour afficher une information simple au lieu d'un diagnostic brut.

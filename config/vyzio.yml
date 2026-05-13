@@ -39,6 +39,11 @@ discovery:
   rtsp_ports:
     # Ports RTSP testes pendant le scan reseau.
     - 554
+  http_ports:
+    # Ports web testes pour reperer les interfaces constructeur de cameras d'origine.
+    - 80
+    - 443
+    - 8080
   # Timeout de connexion par hote/port pendant la decouverte reseau.
   probe_timeout_ms: 250
   # Nombre maximum de probes reseau lances en parallele.
