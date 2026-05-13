@@ -281,6 +281,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   function formatVendorFamily(vendorFamily: string | null) {
     switch (vendorFamily) {
+      case 'v380_pro':
+        return 'V380 PRO'
       case 'tplink_tapo':
         return 'TP-Link Tapo'
       default:

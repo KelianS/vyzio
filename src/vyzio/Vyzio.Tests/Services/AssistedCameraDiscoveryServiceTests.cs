@@ -322,6 +322,63 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
+    public async Task DiscoverAsync_returns_v380_candidate_from_hostname_hint_when_ports_are_disabled()
+    {
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["v380pro-camera.lan"],
+                RtspPorts = [],
+                RtspPaths = [],
+                HttpPorts = [],
+                OnvifPorts = [],
+                ProbeTimeoutMs = 200,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        var candidate = Assert.Single(result, item => item.Host == "v380pro-camera.lan");
+        Assert.Equal("hostname_probe", candidate.DiscoverySource);
+        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Equal("experimental", candidate.SupportLevel);
+        Assert.Equal("v380_pro", candidate.VendorFamily);
+        Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
+        Assert.Contains("vendor_hint_detected", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_returns_candidate_from_mv_hostname_prefix_when_ports_are_disabled()
+    {
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["MV26970853"],
+                RtspPorts = [],
+                RtspPaths = [],
+                HttpPorts = [],
+                OnvifPorts = [],
+                ProbeTimeoutMs = 200,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        var candidate = Assert.Single(result, item => item.Host == "MV26970853");
+        Assert.Equal("hostname_probe", candidate.DiscoverySource);
+        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
+    }
+
+    [Fact]
     public async Task DiscoverAsync_merges_candidates_for_same_host_and_keeps_best_match()
     {
         using var rtspListener = new TcpListener(IPAddress.Loopback, 0);

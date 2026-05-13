@@ -84,6 +84,7 @@ internal sealed class AssistedCameraDiscoveryIdentifier
 
     private static string DetermineSupportLevel(string? vendorFamily) => vendorFamily switch
     {
+        "v380_pro" => "experimental",
         "tplink_tapo" => "guided",
         _ => "unknown",
     };
