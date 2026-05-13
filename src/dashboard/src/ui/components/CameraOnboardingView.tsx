@@ -292,6 +292,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     switch (reason) {
       case 'onvif_detected':
         return 'Annonce ONVIF detectee'
+      case 'http_service_detected':
+        return 'Service web generique detecte'
       case 'rtsp_responding':
         return 'Port RTSP joignable'
       case 'http_camera_signature':
@@ -304,6 +306,25 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'Adresse MAC observee'
       default:
         return reason
+    }
+  }
+
+  function formatDiscoverySource(discoverySource: string) {
+    switch (discoverySource) {
+      case 'onvif':
+        return 'ONVIF multicast'
+      case 'onvif_unicast':
+        return 'ONVIF unicast'
+      case 'rtsp_probe':
+        return 'RTSP local'
+      case 'network_scan':
+        return 'Scan RTSP'
+      case 'http_probe':
+        return 'HTTP camera'
+      case 'http_service':
+        return 'HTTP generique'
+      default:
+        return discoverySource
     }
   }
 
@@ -389,7 +410,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </span>
                     </div>
                   </div>
-                  <small>{candidate.discoverySource}</small>
+                  <small>{formatDiscoverySource(candidate.discoverySource)}</small>
                 </button>
               ))
             ) : (
@@ -458,7 +479,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </div>
                       <div>
                         <dt>Detection</dt>
-                        <dd>{selectedCandidate.discoverySource}</dd>
+                        <dd>{formatDiscoverySource(selectedCandidate.discoverySource)}</dd>
                       </div>
                       <div>
                         <dt>Flux suggere</dt>

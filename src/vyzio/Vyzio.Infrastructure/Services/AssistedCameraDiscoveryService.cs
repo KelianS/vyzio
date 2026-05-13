@@ -129,7 +129,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                     null,
                     "onvif",
                     $"ONVIF device announced via {uri.Host}:{uri.Port}.",
-                    null);
+                    null,
+                    ["onvif_detected"]);
             }
         }
     }
@@ -157,7 +158,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                     probe.StreamPath,
                     "rtsp_probe",
                     probe.Note,
-                    null));
+                    null,
+                    ["rtsp_responding"]));
             }
         }
 
@@ -239,7 +241,8 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 null,
                 "network_scan",
                 $"RTSP port {port} responded during configured LAN scan. Complete the RTSP path before verification.",
-                macAddress);
+                macAddress,
+                ["rtsp_responding"]);
         }
         finally
         {
@@ -253,7 +256,9 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
 
         try
         {
-            var probe = await ProbeHttpEndpointAsync(host, port, settings.Discovery.ProbeTimeoutMs, ct);
+            var probe = await ProbeOnvifUnicastEndpointAsync(host, port, settings.Discovery.ProbeTimeoutMs, ct)
+                ?? await ProbeHttpEndpointAsync(host, port, settings.Discovery.ProbeTimeoutMs, ct);
+
             if (probe is null)
             {
                 return null;
@@ -265,11 +270,12 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 probe.DisplayName,
                 host,
                 port,
-                "web_setup",
+                probe.SourceType,
                 null,
-                "http_probe",
+                probe.DiscoverySource,
                 probe.Note,
-                macAddress);
+                macAddress,
+                probe.QualificationReasons);
         }
         finally
         {
@@ -449,6 +455,65 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         }
     }
 
+    private static async Task<HttpProbeResult?> ProbeOnvifUnicastEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            using var stream = client.GetStream();
+            var request = $"POST /onvif/device_service HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/soap+xml; charset=utf-8\r\nConnection: close\r\nUser-Agent: Vyzio\r\nContent-Length: {Encoding.UTF8.GetByteCount(BuildOnvifGetCapabilitiesEnvelope())}\r\n\r\n{BuildOnvifGetCapabilitiesEnvelope()}";
+            var bytes = Encoding.UTF8.GetBytes(request);
+
+            await stream.WriteAsync(bytes, timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var buffer = new byte[4096];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+            if (read <= 0)
+            {
+                return null;
+            }
+
+            var response = Encoding.UTF8.GetString(buffer, 0, read);
+            if (!response.StartsWith("HTTP/", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (response.Contains(" 404 ", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var normalized = response.ToLowerInvariant();
+            var hasOnvifSignal = normalized.Contains("onvif")
+                || normalized.Contains("soap")
+                || normalized.Contains("www-authenticate:")
+                || response.Contains(" 401 ", StringComparison.OrdinalIgnoreCase);
+
+            if (!hasOnvifSignal)
+            {
+                return null;
+            }
+
+            return new HttpProbeResult(
+                ToDisplayName(host),
+                $"Endpoint ONVIF unicast detecte sur {host}:{port}. La camera peut etre integree meme sans interface web exploitable.",
+                "onvif",
+                "onvif_unicast",
+                ["onvif_detected"]);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static async Task<string?> ResolveMacAddressAsync(string host, CancellationToken ct)
     {
         try
@@ -524,33 +589,58 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         {
             return new HttpProbeResult(
                 "Camera TP-Link Tapo",
-                $"Interface web TP-Link Tapo detectee sur {host}:{port}. RTSP et ONVIF sont souvent desactives d'origine et a activer dans l'application Tapo.");
+                $"Interface web TP-Link Tapo detectee sur {host}:{port}. RTSP et ONVIF sont souvent desactives d'origine et a activer dans l'application Tapo.",
+                "web_setup",
+                "http_probe",
+                ["http_camera_signature"]);
         }
 
         if (fingerprint.Contains("onvif"))
         {
             return new HttpProbeResult(
                 title ?? ToDisplayName(host),
-                $"Service web camera detecte sur {host}:{port}. Un endpoint ONVIF semble present; finalisez ensuite l'activation video si necessaire.");
+                $"Service web camera detecte sur {host}:{port}. Un endpoint ONVIF semble present; finalisez ensuite l'activation video si necessaire.",
+                "onvif",
+                "http_probe",
+                ["onvif_detected"]);
         }
 
-        if (!string.IsNullOrWhiteSpace(title))
+        if (LooksLikeCameraWebInterface(fingerprint, title, server))
         {
             return new HttpProbeResult(
-                title,
-                $"Interface web camera detectee sur {host}:{port}. RTSP peut etre desactive d'origine; completez ensuite l'assistance de configuration.");
+                title ?? ToDisplayName(host),
+                $"Interface web camera detectee sur {host}:{port}. RTSP peut etre desactive d'origine; completez ensuite l'assistance de configuration.",
+                "web_setup",
+                "http_probe",
+                ["http_camera_signature"]);
         }
 
         if (!string.IsNullOrWhiteSpace(server))
         {
             return new HttpProbeResult(
                 ToDisplayName(host),
-                $"Service web detecte sur {host}:{port} (serveur: {server}). RTSP peut etre desactive d'origine.");
+                $"Service web generique detecte sur {host}:{port} (serveur: {server}). Ce signal seul ne suffit pas a qualifier une camera.",
+                "web_setup",
+                "http_service",
+                ["http_service_detected"]);
+        }
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            return new HttpProbeResult(
+                title,
+                $"Service web generique detecte sur {host}:{port}. Ce signal seul ne suffit pas a qualifier une camera.",
+                "web_setup",
+                "http_service",
+                ["http_service_detected"]);
         }
 
         return new HttpProbeResult(
             ToDisplayName(host),
-            $"Service web detecte sur {host}:{port}. Cette camera peut necessiter une activation initiale via son interface constructeur.");
+            $"Service web generique detecte sur {host}:{port}. Ce signal seul ne suffit pas a qualifier une camera.",
+            "web_setup",
+            "http_service",
+            ["http_service_detected"]);
     }
 
     private static string BuildProbeEnvelope() =>
@@ -563,6 +653,16 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         "</e:Header>" +
         "<e:Body><d:Probe><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></e:Body>" +
         "</e:Envelope>";
+
+    private static string BuildOnvifGetCapabilitiesEnvelope() =>
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+        "<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\">" +
+        "<s:Body>" +
+        "<GetCapabilities xmlns=\"http://www.onvif.org/ver10/device/wsdl\">" +
+        "<Category>All</Category>" +
+        "</GetCapabilities>" +
+        "</s:Body>" +
+        "</s:Envelope>";
 
     private static string ToDisplayName(string host)
         => host.Replace('-', ' ').Replace('_', ' ');
@@ -611,6 +711,29 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
     private static bool IsValidMacAddress(string mac)
         => Regex.IsMatch(mac, "^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$");
 
+    private static bool LooksLikeCameraWebInterface(string fingerprint, string? title, string? server)
+    {
+        var combined = $"{fingerprint} {title} {server}";
+        var markers = new[]
+        {
+            "camera",
+            "ipcam",
+            "network camera",
+            "webcam",
+            "nvr",
+            "dvr",
+            "hikvision",
+            "dahua",
+            "reolink",
+            "amcrest",
+            "foscam",
+            "uniview",
+            "axis"
+        };
+
+        return markers.Any(marker => combined.Contains(marker, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static CameraDiscoveryCandidate BuildQualifiedCandidate(
         string displayName,
         string host,
@@ -619,10 +742,11 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         string? streamPath,
         string discoverySource,
         string? note,
-        string? macAddress)
+        string? macAddress,
+        IReadOnlyList<string>? primaryReasons = null)
     {
         var vendorFamily = DetectVendorFamily(displayName, note);
-        var qualificationReasons = BuildQualificationReasons(sourceType, streamPath, discoverySource, vendorFamily, macAddress);
+        var qualificationReasons = BuildQualificationReasons(streamPath, vendorFamily, macAddress, primaryReasons);
 
         return new CameraDiscoveryCandidate(
             displayName,
@@ -652,44 +776,28 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
     }
 
     private static IReadOnlyList<string> BuildQualificationReasons(
-        string sourceType,
         string? streamPath,
-        string discoverySource,
         string? vendorFamily,
-        string? macAddress)
+        string? macAddress,
+        IReadOnlyList<string>? primaryReasons)
     {
-        var reasons = new List<string>();
-
-        if (string.Equals(discoverySource, "onvif", StringComparison.OrdinalIgnoreCase))
-        {
-            reasons.Add("onvif_detected");
-        }
-
-        if (string.Equals(discoverySource, "network_scan", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(discoverySource, "rtsp_probe", StringComparison.OrdinalIgnoreCase)
-            || sourceType.Contains("rtsp", StringComparison.OrdinalIgnoreCase))
-        {
-            reasons.Add("rtsp_responding");
-        }
-
-        if (string.Equals(discoverySource, "http_probe", StringComparison.OrdinalIgnoreCase))
-        {
-            reasons.Add("http_camera_signature");
-        }
+        var reasons = primaryReasons is null
+            ? []
+            : primaryReasons.Distinct(StringComparer.Ordinal).ToList();
 
         if (!string.IsNullOrWhiteSpace(streamPath))
         {
-            reasons.Add("rtsp_path_known");
+            AddReason(reasons, "rtsp_path_known");
         }
 
         if (!string.IsNullOrWhiteSpace(vendorFamily))
         {
-            reasons.Add("vendor_hint_detected");
+            AddReason(reasons, "vendor_hint_detected");
         }
 
         if (!string.IsNullOrWhiteSpace(macAddress))
         {
-            reasons.Add("mac_address_observed");
+            AddReason(reasons, "mac_address_observed");
         }
 
         return reasons;
@@ -720,5 +828,18 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             _ => "unknown"
         };
 
-    private sealed record HttpProbeResult(string DisplayName, string Note);
+    private static void AddReason(List<string> reasons, string reason)
+    {
+        if (!reasons.Contains(reason, StringComparer.Ordinal))
+        {
+            reasons.Add(reason);
+        }
+    }
+
+    private sealed record HttpProbeResult(
+        string DisplayName,
+        string Note,
+        string SourceType,
+        string DiscoverySource,
+        IReadOnlyList<string> QualificationReasons);
 }
