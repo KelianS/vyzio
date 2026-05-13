@@ -50,6 +50,9 @@ discovery:
     - 80
     - 443
     - 8080
+    - 8800
+    - 10443
+    - 20443
   onvif_ports:
     # Ports testes pour joindre directement un endpoint ONVIF unicast.
     - 80

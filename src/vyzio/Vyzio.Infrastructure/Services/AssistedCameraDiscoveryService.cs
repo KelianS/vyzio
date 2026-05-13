@@ -4,13 +4,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services;
 
-public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings) : ICameraDiscoveryService
+public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings, ILogger<AssistedCameraDiscoveryService>? logger = null) : ICameraDiscoveryService
 {
     private static readonly IPAddress DiscoveryAddress = IPAddress.Parse("239.255.255.250");
     private static readonly IPEndPoint DiscoveryEndpoint = new(DiscoveryAddress, 3702);
@@ -18,41 +19,72 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
 
     public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)
     {
+        logger?.LogInformation(
+            "Starting assisted camera discovery. AutoDetectLocalCidrs={AutoDetectLocalCidrs}, ProbeHosts={ProbeHostsCount}, ProbeCidrs={ProbeCidrsCount}, RtspPorts={RtspPorts}, HttpPorts={HttpPorts}, OnvifPorts={OnvifPorts}",
+            settings.Discovery.AutoDetectLocalCidrs,
+            settings.Discovery.ProbeHosts.Count,
+            settings.Discovery.ProbeCidrs.Count,
+            string.Join(',', settings.Discovery.RtspPorts),
+            string.Join(',', settings.Discovery.HttpPorts),
+            string.Join(',', settings.Discovery.OnvifPorts));
+
         var candidates = new Dictionary<string, CameraDiscoveryCandidate>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var candidate in await DiscoverOnvifCandidatesAsync(ct))
+        var onvifCandidates = await DiscoverOnvifCandidatesAsync(ct);
+        logger?.LogInformation("ONVIF multicast discovery returned {CandidateCount} candidate(s).", onvifCandidates.Count);
+        foreach (var candidate in onvifCandidates)
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
 
-        foreach (var candidate in await DiscoverKnownRtspCandidatesAsync(ct))
+        var knownRtspCandidates = await DiscoverKnownRtspCandidatesAsync(ct);
+        logger?.LogInformation("Known RTSP probes returned {CandidateCount} candidate(s).", knownRtspCandidates.Count);
+        foreach (var candidate in knownRtspCandidates)
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
 
-        foreach (var candidate in await DiscoverConfiguredRtspCandidatesAsync(ct))
+        var configuredRtspCandidates = await DiscoverConfiguredRtspCandidatesAsync(ct);
+        logger?.LogInformation("Configured RTSP discovery returned {CandidateCount} candidate(s).", configuredRtspCandidates.Count);
+        foreach (var candidate in configuredRtspCandidates)
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
 
-        foreach (var candidate in await DiscoverConfiguredOnvifCandidatesAsync(ct))
+        var configuredOnvifCandidates = await DiscoverConfiguredOnvifCandidatesAsync(ct);
+        logger?.LogInformation("Configured ONVIF unicast discovery returned {CandidateCount} candidate(s).", configuredOnvifCandidates.Count);
+        foreach (var candidate in configuredOnvifCandidates)
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
 
-        foreach (var candidate in await DiscoverConfiguredHttpCandidatesAsync(ct))
+        var configuredHttpCandidates = await DiscoverConfiguredHttpCandidatesAsync(ct);
+        logger?.LogInformation("Configured HTTP discovery returned {CandidateCount} candidate(s).", configuredHttpCandidates.Count);
+        foreach (var candidate in configuredHttpCandidates)
         {
             candidates[$"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}"] = candidate;
         }
 
-        foreach (var candidate in await DiscoverConfiguredMacVendorCandidatesAsync(ct))
+        var hostnameCandidates = await DiscoverConfiguredHostnameCandidatesAsync(ct);
+        logger?.LogInformation("Hostname discovery returned {CandidateCount} candidate(s).", hostnameCandidates.Count);
+        foreach (var candidate in hostnameCandidates)
         {
             candidates.TryAdd($"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}", candidate);
         }
 
-        return candidates.Values
+        var macVendorCandidates = await DiscoverConfiguredMacVendorCandidatesAsync(ct);
+        logger?.LogInformation("MAC/OUI discovery returned {CandidateCount} candidate(s).", macVendorCandidates.Count);
+        foreach (var candidate in macVendorCandidates)
+        {
+            candidates.TryAdd($"{candidate.Host}:{candidate.Port}:{candidate.StreamPath}", candidate);
+        }
+
+        var result = candidates.Values
             .OrderBy(candidate => candidate.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        logger?.LogInformation("Assisted camera discovery completed with {CandidateCount} unique candidate(s).", result.Count);
+        return result;
     }
 
     private static async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverOnvifCandidatesAsync(CancellationToken ct)
@@ -288,6 +320,52 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
                 $"Equipement {FormatVendorFamily(vendorFamily)} detecte via l'adresse MAC {macAddress}. Les services video ne repondent pas encore ou sont desactives.",
                 macAddress,
                 ["vendor_oui_match"]));
+
+            logger?.LogDebug("MAC/OUI candidate detected for host {Host} with vendor family {VendorFamily}.", host, vendorFamily);
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverConfiguredHostnameCandidatesAsync(CancellationToken ct)
+    {
+        var hosts = BuildConfiguredHostList();
+        if (hosts.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new List<CameraDiscoveryCandidate>();
+
+        foreach (var host in hosts)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var hostName = await ResolveHostNameAsync(host, ct);
+            if (string.IsNullOrWhiteSpace(hostName))
+            {
+                continue;
+            }
+
+            var vendorFamily = DetectVendorFamily(hostName, null, null);
+            var hostReasons = BuildHostHintReasons(hostName, vendorFamily);
+            if (hostReasons.Count == 0)
+            {
+                continue;
+            }
+
+            results.Add(BuildQualifiedCandidate(
+                ToDisplayName(hostName),
+                host,
+                0,
+                "vendor_probe",
+                null,
+                "hostname_probe",
+                $"Le nom reseau {hostName} ressemble a une camera {FormatVendorFamily(vendorFamily) ?? "probable"}.",
+                null,
+                hostReasons));
+
+            logger?.LogDebug("Hostname candidate detected for host {Host} with hostname {HostName} and vendor family {VendorFamily}.", host, hostName, vendorFamily ?? "unknown");
         }
 
         return results;
@@ -710,6 +788,29 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         }
     }
 
+    private static async Task<string?> ResolveHostNameAsync(string host, CancellationToken ct)
+    {
+        if (!IPAddress.TryParse(host, out _))
+        {
+            return host;
+        }
+
+        try
+        {
+            var entry = await Dns.GetHostEntryAsync(host, ct);
+            if (string.IsNullOrWhiteSpace(entry.HostName))
+            {
+                return null;
+            }
+
+            return entry.HostName.TrimEnd('.');
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static string? ResolveMacAddress(IPAddress address)
     {
         if (!OperatingSystem.IsLinux())
@@ -996,7 +1097,9 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
         }
 
         if (qualificationReasons.Contains("rtsp_responding", StringComparer.Ordinal)
-            || qualificationReasons.Contains("http_camera_signature", StringComparer.Ordinal))
+            || qualificationReasons.Contains("http_camera_signature", StringComparer.Ordinal)
+            || qualificationReasons.Contains("vendor_oui_match", StringComparer.Ordinal)
+            || qualificationReasons.Contains("hostname_camera_hint", StringComparer.Ordinal))
         {
             return "camera_likely";
         }
@@ -1017,6 +1120,28 @@ public sealed class AssistedCameraDiscoveryService(VyzioRuntimeSettings settings
             "tplink_tapo" => "TP-Link Tapo",
             _ => vendorFamily
         };
+
+    private static IReadOnlyList<string> BuildHostHintReasons(string hostName, string? vendorFamily)
+    {
+        var reasons = new List<string>();
+        var normalized = hostName.ToLowerInvariant();
+
+        if (normalized.Contains("camera")
+            || normalized.Contains("ipcam")
+            || normalized.Contains("webcam")
+            || normalized.Contains("tapo")
+            || Regex.IsMatch(normalized, @"\bc\d{2,3}\b"))
+        {
+            reasons.Add("hostname_camera_hint");
+        }
+
+        if (!string.IsNullOrWhiteSpace(vendorFamily))
+        {
+            AddReason(reasons, "vendor_hint_detected");
+        }
+
+        return reasons;
+    }
 
     private static string? NormalizeOui(string? macAddress)
     {

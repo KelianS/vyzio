@@ -291,4 +291,33 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
     }
+
+    [Fact]
+    public async Task DiscoverAsync_returns_candidate_from_hostname_hint_when_ports_are_disabled()
+    {
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["c200-camera-tapo.lan"],
+                RtspPorts = [],
+                RtspPaths = [],
+                HttpPorts = [],
+                OnvifPorts = [],
+                ProbeTimeoutMs = 200,
+                MaxConcurrentProbes = 1,
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        var candidate = Assert.Single(result, item => item.Host == "c200-camera-tapo.lan");
+        Assert.Equal("hostname_probe", candidate.DiscoverySource);
+        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Equal("guided", candidate.SupportLevel);
+        Assert.Equal("tplink_tapo", candidate.VendorFamily);
+        Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
+    }
 }

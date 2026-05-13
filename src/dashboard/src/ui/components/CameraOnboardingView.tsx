@@ -296,6 +296,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'Service web generique detecte'
       case 'vendor_oui_match':
         return 'Constructeur probable via MAC/OUI'
+      case 'hostname_camera_hint':
+        return 'Nom reseau evocateur d une camera'
       case 'rtsp_responding':
         return 'Port RTSP joignable'
       case 'http_camera_signature':
@@ -323,6 +325,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'ONVIF unicast'
       case 'mac_vendor_probe':
         return 'MAC constructeur'
+      case 'hostname_probe':
+        return 'Nom reseau'
       case 'rtsp_probe':
         return 'RTSP local'
       case 'network_scan':
