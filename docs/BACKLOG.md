@@ -120,6 +120,12 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - L'utilisateur peut gerer profils et detections depuis la meme interface
 - Les endpoints conserves sont relies a un parcours utilisateur explicite
 
+### US-P3.7 — UI uniformisee, coherent et guidant
+> But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit ... La vue principale devra aussi être repensé pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live camera, notifications, statuts ...)
+
+**Taches :**
+TODO
+
 ---
 
 ## Definition of done
