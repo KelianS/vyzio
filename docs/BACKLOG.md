@@ -1,7 +1,7 @@
-# Vyzio — Backlog de reprise
-
-> Mai 2026 — plan de remise a plat avant reprise du developpement
+# Vyzio — Backlog
 > References : [SPECS.md](./SPECS.md) · [SAD.md](./SAD.md) · [README.md](../README.md)
+
+Le workflow obligatoire est defini dans les regles du repo, fichier `.instructions.md`.
 
 ---
 
@@ -10,119 +10,6 @@
 Ce backlog ne sert pas a brainstormer la strategie.
 
 Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le SAD. Tant que ces documents ne sont pas alignes, le backlog ne doit pas servir a pousser du code.
-
----
-
-## Workflow obligatoire
-
-Le workflow obligatoire est defini dans les regles du repo, fichier `.instructions.md`.
-
-Ce backlog ne fait qu'appliquer cet ordre; il n'en est pas la source de verite.
-
----
-
-## Principes de reprise
-
-1. **Pas de nouvelle feature tant que la phase P0 n'est pas validee.**
-2. **Frigate reste le moteur central** pour la video, la detection et les enrichissements deja bien couverts.
-3. **Le depot ne contient plus de service Python de reconnaissance faciale** dans le chemin nominal ni comme scaffold vide.
-4. **Le code existant peut etre simplifie ou supprime** s'il ne sert pas clairement la trajectoire retenue.
-5. **Chaque etape doit avoir une validation executable** ou une preuve documentaire explicite.
-
----
-
-## Etat de depart
-
-### Constats
-
-- Le depot a ete demarre trop vite par rapport au cadrage.
-- Une partie du code et des scaffolds a ete creee avant stabilisation du plan.
-- Le runtime par defaut a ete nettoye pour sortir les composants non retenus.
-- Le backlog precedent a ete abandonne car il poussait a implementer avant d'avoir verrouille la reprise.
-
-### Objectif operationnel
-
-Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, verification et revalidation du plan.
-
----
-
-## P1 — Fondations runtime
-
-> But : obtenir une base d'execution minimale, fiable et conforme au positionnement Frigate-first.
-
-### US-P1.1 — Compose minimal et coherent
-
-**Taches :**
-- [x] Stabiliser `docker-compose.yml` autour des seuls services retenus par defaut
-- [x] Clarifier volumes, ports, reseaux et dependances
-- [x] Documenter le boot local de developpement
-
-**Criteres d'acceptation :**
-- `docker compose up` demarre la base retenue sans service parasite
-- Le role de chaque service est comprensible au premier coup d'oeil
-
-### US-P1.2 — Configuration Frigate maitrisee
-
-**Taches :**
-- [x] Valider un `frigate.yml` minimal compatible avec la version cible
-- [x] Documenter ce qui est gere par Vyzio et ce qui reste purement Frigate
-- [x] Verifier l'integration d'un flux de test sans bricolage excessif
-
-**Criteres d'acceptation :**
-- Frigate demarre avec une configuration valide
-- Les hypotheses de configuration sont explicites
-
-### US-P1.3 — Persistance Vyzio minimale
-
-**Taches :**
-- [x] Garder uniquement les entites et tables utiles au MVP reel (profils produit, mapping identites Frigate, evenements, notifications, sessions)
-- [x] Confirmer le provider par defaut et la strategie de migration
-- [x] Verifier que le demarrage API applique les migrations sans logique parasite
-
-**Criteres d'acceptation :**
-- La persistence minimale est testable et comprise
-- Le schema ne simule pas encore des features non construites (notamment un pipeline biometrie propre a Vyzio)
-
----
-
-## P2 — Integration Vyzio vers Frigate
-
-> But : construire la premiere vraie couture produit sans ouvrir trop tot les couches secondaires.
-
-### US-P2.1 — Contrat d'entree Frigate
-
-**Taches :**
-- [x] Definir les evenements Frigate reellement consommes par Vyzio
-- [x] Creer un modele d'entree limite au MVP
-- [x] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
-- [x] Ajouter des tests de deserialisation et d'adaptation
-
-**Criteres d'acceptation :**
-- Le contrat utile est explicite
-- Le code n'est pas couple a des payloads implicites disperses
-
-### US-P2.2 — FrigateAdapter minimal
-
-**Taches :**
-- [x] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
-- [x] Convertir les signaux Frigate en evenements Vyzio comprehensibles
-- [x] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
-- [x] Journaliser proprement les erreurs d'integration
-
-**Criteres d'acceptation :**
-- Une detection Frigate pertinente devient observable cote Vyzio
-- Le couplage a Frigate reste localise
-
-### US-P2.3 — Contrat interne Vyzio
-
-**Taches :**
-- [x] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
-- [x] Eviter de modeliser des canaux non utilises a court terme
-- [x] Documenter le contrat dans un document dedie si necessaire
-
-**Criteres d'acceptation :**
-- Les evenements internes sont limites et stables
-- Le contrat est reutilisable par API, notifications et UI, en partant d'evenements Frigate deja enrichis
 
 ---
 
@@ -172,94 +59,25 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 - [x] Relancer ou recharger Frigate de facon maitrisee apres application de la configuration
 - [x] Proposer une decouverte reseau assistee avec saisie manuelle en secours
 - [x] Rendre visible le statut de chaque camera, la perte de flux et les actions de correction simples
-- [ ] Qualifier les candidats de decouverte (`camera_confirmee`, `camera_probable`, `equipement_non_qualifie`) pour eviter le bruit des objets connectes
-- [ ] Ajouter un diagnostic de decouverte reseau expliquant les CIDR testes, protocoles joignables et raisons d'echec visibles pour le support
-- [ ] Ajouter un probe HTTPS et un probe ONVIF unicast sur les IP candidates pour couvrir les cameras d'origine hors RTSP actif
-- [ ] Introduire un catalogue de vendors avec notices d'activation RTSP/ONVIF et recommandations de configuration par constructeur detecte
-- [ ] Exposer dans l'interface la liste des cameras officiellement supportees et le niveau de support associe
-- [ ] Prioriser une assistance constructeur initiale pour TP-Link Tapo puis pour une famille generique "no-name / OEM"
+- [x] Filtrer les cameras deja configurees hors des candidats de decouverte
+- [x] Qualifier les candidats de base (`camera_confirmee`, `camera_probable`, `equipement_non_qualifie`) et exposer les raisons de qualification a l'UI
+- [x] Introduire une premiere assistance constructeur exploitable pendant l'onboarding
+- [ ] Mettre a jour le cadrage et la documentation si necessaire pour converger vers deux etats lisibles cote produit : camera supportee oui / non, RTSP actif oui / non
+- [ ] 
+oui / non, RTSP actif oui / non
+- [ ] Corriger l'ouverture des liens des notices vendor : les liens externes et les assets locaux doivent s'ouvrir hors de la page Vyzio et declencher un telechargement quand c'est pertinent, sans rediriger l'interface principale
+- [ ] Permettre de relancer les tests / la verification sur une seule camera ou un seul candidat, sans relancer une decouverte complete, afin de rafraichir les informations apres un changement de configuration
 - [ ] Reprendre automatiquement le parcours de verification quand une camera precedemment detectee devient exploitable
+- [ ] Ajouter les tests et la documentation utilisateur qui verrouillent les etats supporte oui / non et RTSP actif oui / non
 
 **Criteres d'acceptation :**
 - Une camera existante peut etre ajoutee sans edition manuelle de fichiers
 - L'utilisateur peut verifier rapidement qu'une camera est joignable, bien nommee et exploitable
 - L'indisponibilite d'une camera est visible sans diagnostic technique avance
 - Une camera sortie de carton peut etre detectee comme candidate exploitable ou candidate a assister, meme si RTSP n'est pas encore active
-- L'utilisateur voit clairement si sa camera est officiellement supportee, probablement compatible ou non encore qualifiee
-
-### Plan d'execution cible — reconnaissance camera et degres de confiance
-
-Ce plan detaille l'ordre d'execution recommande pour la qualification camera sans changer la cible fonctionnelle definie dans les SPECS et le SAD.
-
-#### Etape 1 — Formaliser le contrat de qualification
-
-**Taches :**
-- [ ] Ajouter au contrat de decouverte une qualification produit normalisee (`camera_confirmed`, `camera_likely`, `device_unknown`)
-- [ ] Ajouter un niveau de support distinct (`supported`, `guided`, `experimental`, `unknown`)
-- [ ] Exposer une liste courte de raisons de qualification lisibles par l'UI (`onvif_detected`, `rtsp_responding`, `http_camera_signature`, `vendor_oui_match`, `manual_only`)
-- [ ] Garder les signaux techniques detailles dans un diagnostic separe pour le support
-
-**Criteres d'acceptation :**
-- L'UI peut afficher une qualification camera sans recalcul local
-- Le meme candidat peut etre `camera_likely` mais `unknown` cote support vendor
-
-#### Etape 2 — Introduire un moteur de scoring explicable
-
-**Taches :**
-- [ ] Definir une matrice de signaux positifs, neutres et faibles pour ONVIF, RTSP, HTTP(S), MAC/OUI et verification active
-- [ ] Definir des regles de convergence minimales pour passer en `camera_confirmed`
-- [ ] Definir les cas de doute qui doivent rester en `camera_likely`
-- [ ] Definir les cas de bruit reseau qui doivent rester en `device_unknown`
-- [ ] Ajouter des tests unitaires sur les combinaisons de signaux, pas seulement sur les probes individuels
-
-**Criteres d'acceptation :**
-- Chaque niveau de confiance correspond a des regles testees et explicables
-- Le bruit des objets connectes baisse sans faire disparaitre les cameras plausibles non encore configurees
-
-#### Etape 3 — Construire le premier catalogue vendor
-
-**Taches :**
-- [ ] Introduire un referentiel applicatif des vendors/familles cibles avec aliases, OUI connus, indices HTTP et chemins RTSP frequents
-- [ ] Distinguer les niveaux `supported`, `guided`, `experimental`, `unknown`
-- [ ] Livrer une premiere couverture pour TP-Link Tapo puis une famille generique `OEM / no-name`
-- [ ] Associer a chaque vendor une notice d'activation RTSP/ONVIF et les prerequis connus
-
-**Criteres d'acceptation :**
-- Un candidat Tapo ou OEM reconnu peut afficher une aide immediately exploitable
-- Le niveau de support est derive du catalogue et non hardcode dans l'UI
-
-#### Etape 4 — Exposer un diagnostic support separé
-
-**Taches :**
-- [ ] Retourner les CIDR sondes, probes executes et premiers motifs d'echec dans un endpoint ou bloc de diagnostic dedie
-- [ ] Distinguer les informations produites pour l'utilisateur final de celles utiles au support ou au debug
-- [ ] Journaliser sans noyer l'UI principale sous du detail reseau brut
-
-**Criteres d'acceptation :**
-- Le support peut comprendre pourquoi un candidat reste `device_unknown`
-- L'UI grand public garde un vocabulaire simple
-
-#### Etape 5 — Integrer la qualification dans le parcours UI
-
-**Taches :**
-- [ ] Afficher dans la liste des candidats un badge de qualification et un badge de support vendor distincts
-- [ ] Afficher dans le panneau detail les principales raisons de confiance ou de doute
-- [ ] Afficher la notice constructeur et les prochaines actions recommandees avant verification
-- [ ] Afficher explicitement la difference entre `camera confirmee`, `camera probable` et `equipement non qualifie`
-
-**Criteres d'acceptation :**
-- Un utilisateur non-tech comprend pourquoi un equipement est propose ou non comme camera
-- Le parcours guide naturellement vers l'action suivante au lieu d'afficher un simple score
-
-#### Etape 6 — Verrouiller la boucle de validation
-
-**Taches :**
-- [ ] Ajouter des tests backend d'integration sur les contrats de qualification et support vendor
-- [ ] Ajouter des tests frontend sur l'affichage des badges, raisons et notices
-- [ ] Ajouter une documentation utilisateur de reference sur la signification des niveaux de confiance et de support
-
-**Criteres d'acceptation :**
-- Les niveaux affiches sont coherents entre backend, UI et documentation
+- L'utilisateur voit clairement si sa camera est supportee ou non par Vyzio, et si le RTSP est deja actif ou reste a activer
+- Les notices vendor n'interrompent pas le parcours Vyzio quand l'utilisateur ouvre un lien ou telecharge un asset associe
+- Les etats affiches sont coherents entre backend, UI et documentation
 - Le support peut expliquer le comportement sans interpretation implicite du code
 
 ### US-P3.5 — Gestion detections et profils
