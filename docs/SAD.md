@@ -1324,7 +1324,11 @@ vyzio/
 └── docs/
     ├── SPECS.md
     ├── SAD.md
-    └── BUSINESS_PLAN.md
+    ├── BUSINESS_PLAN.md
+    ├── DESIGN SYSTEM.md
+    ├── user/
+    │   ├── CAMERA_ONBOARDING.md
+    │   └── TELEGRAM_NOTIFICATIONS.md
 ```
 
 ---

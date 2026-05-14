@@ -91,3 +91,6 @@ Vyzio est un projet open source. Les contributions sont bienvenues sur :
 - [Architecture logicielle](docs/SAD.md)
 - [Backlog de reprise](docs/BACKLOG.md)
 - [Business Plan](docs/BUSINESS_PLAN.md)
+- [Documentation utilisateur](docs/user/CAMERA_ONBOARDING.md)
+- [Documentation utilisateur notifications](docs/user/TELEGRAM_NOTIFICATIONS.md)
+- [Design System](docs/DESIGN%20SYSTEM.md)
