@@ -767,6 +767,27 @@ await _http.PostAsync(url, form);
 | **Webhook générique** | Intégrations (Home Assistant, n8n) | ✅ URL signée |
 | **Email** | Fallback | ✅ Image en pièce jointe |
 
+#### Portee technique de la configuration des notifications
+
+La cible technique retenue fait porter a Vyzio la configuration des notifications dans un parcours produit stable, en gardant **Telegram comme premier canal guide** et en preparant les abstractions necessaires pour les canaux complementaires.
+
+Le systeme cible doit introduire les briques suivantes :
+
+- une **configuration de notifications persistante** cote Vyzio, stockee en base, au lieu de dependre uniquement d'options runtime injectees au demarrage ;
+- un **modele de destination** par canal, avec etat configure / non configure, etat active / inactive, metadonnees de verification et capacites affichees a l'UI ;
+- un **modele de regles de diffusion** regroupant au minimum : categories d'evenements notifiees, niveau minimal d'alerte, plages horaires et options de reduction du bruit ;
+- un **modele de format de message** permettant d'activer ou non les principaux champs du message (camera, heure, type, identite, apercu) sans dupliquer les templates par canal ;
+- une **API de lecture / ecriture** dediee a la configuration des notifications ;
+- un **use case de test cible** par destination, decouple du flux de detection normal, afin de verifier la configuration sans attendre un vrai evenement.
+
+Le `NotificationService` ne doit plus dependre d'un unique snapshot `TelegramDetectionNotificationPolicy` fige au demarrage. Il doit resoudre la configuration active depuis un repository ou un provider applicatif, afin de prendre en compte les reglages effectues depuis l'UI.
+
+Les secrets necessaires a un canal tiers (par exemple `bot_token` Telegram) doivent etre traites comme des donnees sensibles dans la couche Infrastructure. Le SAD ne fixe pas ici la technique exacte de protection, mais impose de separer :
+
+- les secrets du canal ;
+- le statut produit expose a l'UI ;
+- l'historique des envois et tests de notification.
+
 **URL signée HMAC** (maintenue pour FCM, webhook et ntfy) :
 
 ```csharp
@@ -789,6 +810,8 @@ public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
 - ✅ FCM + ntfy maintenus pour les utilisateurs préférant les notifications système ou zéro tiers
 - ⚠️ Telegram : la photo transite par leurs serveurs — compromis documenté et opt-in explicite
 - ⚠️ FCM seul : nécessite un tunnel pour voir la photo hors réseau — plus complexe à configurer
+- ✅ P3.5 peut etre livre par increments : configuration UI Telegram d'abord, puis extension aux autres canaux sans reouvrir l'architecture
+- ⚠️ La configuration des notifications devient un vrai sous-domaine produit : repository, API, validation, test d'envoi et projection UI doivent rester coherents
 
 ---
 
@@ -870,9 +893,10 @@ La gestion des caméras est modélisée comme une orchestration Vyzio en quatre 
 | Brique | Rôle | Source de vérité |
 |---|---|---|
 | **Camera Catalog** | référentiel Vyzio des caméras connues, de leur nom métier, mode de connexion, état de validation et paramètres utiles à la génération de configuration | SQLite Vyzio |
-| **Camera Discovery Adapter** | découverte réseau assistée et normalisation des candidats détectés, avec fallback manuel complet | Frigate/sondage réseau + saisie utilisateur |
+| **Camera Discovery Adapter** | découverte réseau assistée, qualification des candidats détectés et fallback manuel complet | Frigate/sondage réseau + saisie utilisateur |
 | **Camera Config Writer** | génération déterministe de la section `cameras` de la configuration Frigate à partir des caméras actives validées | configuration Frigate générée par Vyzio |
 | **Camera Status Projection** | synthèse d'état exploitable par l'UI (`online`, `offline`, `degraded`, `config_error`) à partir des checks Vyzio et du retour Frigate | projection applicative Vyzio |
+| **Vendor Guidance Catalog** | notices d'activation, indicateur `camera supported` et aides de parcours par constructeur ou famille de caméras | catalogue applicatif Vyzio |
 
 Cette séparation permet d'éviter deux erreurs :
 
@@ -883,14 +907,58 @@ Cette séparation permet d'éviter deux erreurs :
 
 Le flux nominal cible est le suivant :
 
-1. Vyzio découvre ou reçoit les paramètres d'une caméra.
-2. Vyzio vérifie la joignabilité et la cohérence minimale du flux.
-3. Vyzio enregistre la caméra dans son catalogue avec un statut de validation explicite.
-4. Vyzio génère la configuration Frigate complète à partir du catalogue des caméras actives.
-5. Vyzio applique cette configuration par écriture atomique du fichier cible puis déclenche un reload/restart maîtrisé de Frigate.
-6. Vyzio contrôle le retour de Frigate et met à jour un statut produit lisible pour l'utilisateur.
+1. Vyzio découvre des équipements réseau via ONVIF, RTSP, HTTP(S) et sondages ciblés.
+2. Vyzio qualifie chaque candidat avec un niveau de confiance produit (`camera_confirmed`, `camera_likely`, `device_unknown`) et, si possible, une famille constructeur.
+3. Vyzio présente une aide d'activation adaptée quand le flux n'est pas encore exploitable, par exemple pour une caméra sortie de carton avec RTSP ou ONVIF désactivés.
+4. Vyzio vérifie la joignabilité et la cohérence minimale du flux une fois les prérequis d'activation réunis.
+5. Vyzio enregistre la caméra dans son catalogue avec un statut de validation explicite.
+6. Vyzio génère la configuration Frigate complète à partir du catalogue des caméras actives.
+7. Vyzio applique cette configuration par écriture atomique du fichier cible puis déclenche un reload/restart maîtrisé de Frigate.
+8. Vyzio contrôle le retour de Frigate et met à jour un statut produit lisible pour l'utilisateur.
 
 Le dashboard ne manipule donc jamais directement `frigate.yml`. Il agit sur des ressources Vyzio ; Vyzio dérive ensuite la configuration Frigate effective.
+
+#### Stratégie de découverte et d'assistance retenue
+
+La stratégie produit et technique retenue pour l'onboarding caméra suit quatre étages :
+
+1. **Découverte device** : repérer les équipements potentiellement pertinents via ONVIF multicast, probes RTSP ciblés, probes HTTP(S) et futur support de signaux complémentaires si utiles.
+2. **Qualification caméra** : attribuer à chaque candidat un niveau de confiance et une famille probable de constructeur au lieu d'afficher indistinctement tout objet connecté. La récupération best-effort de l'adresse MAC et l'exploitation de l'OUI constructeur sont retenues comme signaux supplémentaires de qualification, sans devenir une source de vérité unique.
+3. **Assistance d'activation** : exposer une notice simple, adaptée au constructeur détecté, pour activer RTSP, ONVIF ou le mode de diffusion attendu sans imposer une recherche externe.
+4. **Binding Frigate** : ne générer la configuration Frigate qu'une fois un flux effectivement exploitable confirmé.
+
+Conséquence importante : l'activation automatique de RTSP n'est pas une hypothèse générale de l'architecture cible. Elle n'est envisageable que pour certains constructeurs disposant d'une API locale documentée et stable. La cible nominale reste une activation assistée, guidée par Vyzio, puis une reprise automatique du parcours dès que le flux devient joignable.
+
+#### Modèle de qualification retenu
+
+Le niveau d'information affiché à l'utilisateur ne doit pas être un score brut arbitraire. L'architecture retenue distingue :
+
+- **les signaux observés** : ONVIF joignable, réponse RTSP cohérente, interface HTTP caractéristique, informations d'en-tête, OUI constructeur via MAC, chemin RTSP connu, comportement observé lors de la vérification ;
+- **la qualification technique interne** : `camera_confirmed`, `camera_likely`, `device_unknown`, utile pour la découverte, le support et l'explication du comportement ;
+- **les deux états produit exposés dans le parcours** : `camera supported` oui / non, `RTSP active` oui / non.
+
+La qualification technique interne répond à la question : « cet équipement ressemble-t-il réellement à une caméra exploitable ? ».
+
+L'état `camera supported` répond à la question : « Vyzio sait-il accompagner cette caméra dans le parcours nominal ? ».
+
+L'état `RTSP active` répond à la question : « le flux est-il déjà activable et testable sans étape constructeur supplémentaire ? ».
+
+Les signaux techniques internes et les états produit doivent rester distincts pour éviter deux dérives :
+
+- considérer qu'un équipement est officiellement supporté simplement parce qu'il ressemble à une caméra ;
+- exposer dans l'interface grand public une taxonomie technique plus complexe que nécessaire.
+
+Règles d'interprétation retenues :
+
+- `camera_confirmed` exige plusieurs signaux convergents compatibles avec une vraie caméra IP exploitable ;
+- `camera_likely` couvre un équipement très probablement caméra mais encore incomplet, ambigu ou non vérifié ;
+- `device_unknown` couvre un équipement joignable ou détecté sans preuve suffisante pour le présenter comme caméra ;
+- `camera supported = oui` implique que Vyzio dispose d'un parcours nominal exploitable ou d'une guidance constructeur suffisante pour accompagner l'utilisateur ;
+- `camera supported = non` implique que Vyzio ne sait pas encore accompagner cette caméra de façon suffisamment fiable dans le parcours nominal ;
+- `RTSP active = oui` implique que le flux peut être vérifié immédiatement ;
+- `RTSP active = non` implique qu'une étape d'activation ou de correction reste nécessaire avant vérification.
+
+Conséquence d'architecture : les contrats de découverte peuvent conserver la qualification technique et ses raisons pour le support et le debug, mais le parcours utilisateur ne doit exposer que les états `camera supported` et `RTSP active`. L'UI ne doit pas avoir à recalculer cette logique.
 
 #### Contrats API cibles
 
@@ -910,6 +978,10 @@ Principes de conception associés :
 
 - les réponses doivent employer un vocabulaire produit (`connected`, `previewAvailable`, `needsAttention`) plutôt que des codes Frigate bruts ;
 - la saisie manuelle est un chemin nominal de secours, pas une exception cachée ;
+- la découverte doit retourner des candidats qualifiés et des aides d'activation, pas une simple liste brute de ports ouverts ;
+- l'adresse MAC, quand elle peut être récupérée de façon fiable depuis l'hôte ou l'appliance, doit être utilisée comme signal complémentaire de qualification et de rattachement vendor ;
+- une caméra potentielle sans RTSP actif reste un candidat utile si Vyzio sait fournir une guidance d'activation exploitable ;
+- la liste des caméras officiellement supportées doit être maintenue côté Vyzio et exposée au parcours pour rendre le niveau de confiance explicite ;
 - l'écriture de configuration doit rester atomique : génération complète puis application, jamais mutation partielle non traçable ;
 - la base Vyzio n'est pas la configuration finale exécutée par le moteur vidéo ; elle stocke la vérité métier nécessaire pour générer cette configuration ;
 - le hub et la future page caméras consomment le même contrat de statut pour éviter une divergence d'interprétation.
@@ -951,6 +1023,8 @@ La configuration finale exécutée par Frigate est générée par Vyzio à parti
 Le parcours reste compatible avec la stratégie "Hub Vyzio simplifié + Frigate avancé" :
 
 - **découverte** : utiliser Frigate ou un adaptateur dédié quand une capacité exploitable existe, sans dépendre d'un écran Frigate ;
+- **qualification** : distinguer les caméras confirmées, les caméras probables et les équipements non qualifiés avant de les proposer au parcours nominal ;
+- **guidance** : exposer une notice par constructeur détecté, avec une liste de modèles officiellement supportés et le niveau d'assistance associé ;
 - **prévisualisation** : passer par un proxy Vyzio pour éviter d'exposer directement Frigate au dashboard ;
 - **application** : Vyzio régénère la configuration caméra Frigate à partir du catalogue, puis déclenche un reload/restart maîtrisé ;
 - **état** : Vyzio recoupe le statut applicatif avec les signaux Frigate pour afficher une information simple au lieu d'un diagnostic brut.
@@ -1250,7 +1324,11 @@ vyzio/
 └── docs/
     ├── SPECS.md
     ├── SAD.md
-    └── BUSINESS_PLAN.md
+    ├── BUSINESS_PLAN.md
+    ├── DESIGN SYSTEM.md
+    ├── user/
+    │   ├── CAMERA_ONBOARDING.md
+    │   └── TELEGRAM_NOTIFICATIONS.md
 ```
 
 ---

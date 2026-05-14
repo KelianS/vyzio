@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import './App.css'
-import { dashboardRuntime, getHubOverview } from './app/dependencies'
+import { applyCameraConfiguration, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, getVendorAssistance, updateCamera, verifyCamera, verifyDraftCamera } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import {
   formatEventDetail,
@@ -11,6 +12,9 @@ import {
   formatProfileMeta,
   getEventTone,
 } from './ui/formatters/hub'
+import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
+
+type AppView = 'hub' | 'cameras'
 
 interface SystemStatusViewModel {
   pillTone: 'online' | 'warning' | 'degraded' | 'loading'
@@ -61,6 +65,7 @@ function getSystemStatusViewModel(
 }
 
 function App() {
+  const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash))
   const { data, loading, error } = useHubOverview(getHubOverview)
   const recentEvents = data?.recentEvents ?? []
   const recentProfiles = data?.profiles.slice(0, 3) ?? []
@@ -73,6 +78,35 @@ function App() {
     data?.systemHealthy ?? false,
     warnings,
   )
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setView(getViewFromHash(window.location.hash))
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+    }
+  }, [])
+
+  if (view === 'cameras') {
+    return (
+      <CameraOnboardingView
+        getCameras={getCameras}
+        getCameraStatus={getCameraStatus}
+        discoverCameras={discoverCameras}
+        getVendorAssistance={getVendorAssistance}
+        createCamera={createCamera}
+        updateCamera={updateCamera}
+        verifyDraftCamera={verifyDraftCamera}
+        verifyCamera={verifyCamera}
+        applyCameraConfiguration={applyCameraConfiguration}
+        deleteCamera={deleteCamera}
+      />
+    )
+  }
 
   return (
     <main className="app-shell">
@@ -137,6 +171,7 @@ function App() {
 
           <div className="panel-cta-row">
             <a className="primary-cta" href="#events">Voir les evenements</a>
+            <a className="secondary-cta" href="#cameras">Cameras</a>
             <a className="secondary-cta" href="#profiles">Profils</a>
           </div>
         </article>
@@ -220,6 +255,10 @@ function App() {
       </section>
     </main>
   )
+}
+
+function getViewFromHash(hash: string): AppView {
+  return hash === '#cameras' ? 'cameras' : 'hub'
 }
 
 export default App

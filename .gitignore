@@ -7,6 +7,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+.artifacts/
 
 # Node
 **/node_modules/
@@ -52,3 +53,4 @@ out/
 coverage/
 *.coverage
 *.coveragexml
+config/frigate.generated.yml
