@@ -908,32 +908,34 @@ Conséquence importante : l'activation automatique de RTSP n'est pas une hypoth�
 
 #### Modèle de qualification retenu
 
-Le niveau de confiance affiché à l'utilisateur ne doit pas être un score brut arbitraire. L'architecture retenue sépare :
+Le niveau d'information affiché à l'utilisateur ne doit pas être un score brut arbitraire. L'architecture retenue distingue :
 
 - **les signaux observés** : ONVIF joignable, réponse RTSP cohérente, interface HTTP caractéristique, informations d'en-tête, OUI constructeur via MAC, chemin RTSP connu, comportement observé lors de la vérification ;
-- **la qualification produit** : `camera_confirmed`, `camera_likely`, `device_unknown` ;
-- **le niveau de support Vyzio** : `supported`, `guided`, `experimental`, `unknown`.
+- **la qualification technique interne** : `camera_confirmed`, `camera_likely`, `device_unknown`, utile pour la découverte, le support et l'explication du comportement ;
+- **les deux états produit exposés dans le parcours** : `camera supported` oui / non, `RTSP active` oui / non.
 
-La qualification produit répond à la question : « cet équipement ressemble-t-il réellement à une caméra exploitable ? ».
+La qualification technique interne répond à la question : « cet équipement ressemble-t-il réellement à une caméra exploitable ? ».
 
-Le niveau de support répond à une autre question : « dans quelle mesure Vyzio sait-il guider ou automatiser ce constructeur ou ce modèle ? ».
+L'état `camera supported` répond à la question : « Vyzio sait-il accompagner cette caméra dans le parcours nominal ? ».
 
-Ces deux axes doivent rester distincts pour éviter deux dérives :
+L'état `RTSP active` répond à la question : « le flux est-il déjà activable et testable sans étape constructeur supplémentaire ? ».
+
+Les signaux techniques internes et les états produit doivent rester distincts pour éviter deux dérives :
 
 - considérer qu'un équipement est officiellement supporté simplement parce qu'il ressemble à une caméra ;
-- afficher un fort degré de confiance produit alors que la guidance vendor reste pauvre ou absente.
+- exposer dans l'interface grand public une taxonomie technique plus complexe que nécessaire.
 
 Règles d'interprétation retenues :
 
 - `camera_confirmed` exige plusieurs signaux convergents compatibles avec une vraie caméra IP exploitable ;
 - `camera_likely` couvre un équipement très probablement caméra mais encore incomplet, ambigu ou non vérifié ;
 - `device_unknown` couvre un équipement joignable ou détecté sans preuve suffisante pour le présenter comme caméra ;
-- `supported` implique une compatibilité explicitement qualifiée et documentée par Vyzio ;
-- `guided` implique une assistance constructeur utile mais pas une qualification complète du modèle ;
-- `experimental` implique une compatibilité observée mais encore peu stabilisée ;
-- `unknown` implique l'absence de guidance constructeur exploitable.
+- `camera supported = oui` implique que Vyzio dispose d'un parcours nominal exploitable ou d'une guidance constructeur suffisante pour accompagner l'utilisateur ;
+- `camera supported = non` implique que Vyzio ne sait pas encore accompagner cette caméra de façon suffisamment fiable dans le parcours nominal ;
+- `RTSP active = oui` implique que le flux peut être vérifié immédiatement ;
+- `RTSP active = non` implique qu'une étape d'activation ou de correction reste nécessaire avant vérification.
 
-Conséquence d'architecture : les contrats de découverte doivent transporter à la fois la qualification produit, les raisons principales qui la motivent et le niveau de support associé. L'UI ne doit pas avoir à recalculer cette logique.
+Conséquence d'architecture : les contrats de découverte peuvent conserver la qualification technique et ses raisons pour le support et le debug, mais le parcours utilisateur ne doit exposer que les états `camera supported` et `RTSP active`. L'UI ne doit pas avoir à recalculer cette logique.
 
 #### Contrats API cibles
 

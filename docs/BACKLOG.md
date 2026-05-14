@@ -49,7 +49,7 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 ### US-P3.4 — Parcours camera guide
 
-**Taches :**
+**Taches livrees :**
 - [x] Cadrer l'architecture cible du parcours camera et documenter le SAD
 - [x] Ajouter une page de gestion des cameras depuis le hub
 - [x] Introduire un referentiel camera cote Vyzio pour piloter l'UI et la generation de configuration
@@ -62,12 +62,21 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Filtrer les cameras deja configurees hors des candidats de decouverte
 - [x] Qualifier les candidats de base (`camera_confirmee`, `camera_probable`, `equipement_non_qualifie`) et exposer les raisons de qualification a l'UI
 - [x] Introduire une premiere assistance constructeur exploitable pendant l'onboarding
-- [ ] Mettre a jour le cadrage et la documentation si necessaire pour converger vers deux etats lisibles cote produit : camera supportee oui / non, RTSP actif oui / non
-- [ ] 
-oui / non, RTSP actif oui / non
+
+**Reste a faire :**
+
+_Cadrage et documentation_
+- [x] Mettre a jour le cadrage et la documentation si necessaire pour converger vers deux etats lisibles cote produit : camera supportee oui / non, RTSP actif oui / non
+- [ ] Aligner le contrat backend et les libelles residuels avec cette simplification produit, sans reouvrir un chantier large sur l'interface
+
+_Bugs et robustesse du parcours_
 - [ ] Corriger l'ouverture des liens des notices vendor : les liens externes et les assets locaux doivent s'ouvrir hors de la page Vyzio et declencher un telechargement quand c'est pertinent, sans rediriger l'interface principale
+
+_Evolutions fonctionnelles_
 - [ ] Permettre de relancer les tests / la verification sur une seule camera ou un seul candidat, sans relancer une decouverte complete, afin de rafraichir les informations apres un changement de configuration
 - [ ] Reprendre automatiquement le parcours de verification quand une camera precedemment detectee devient exploitable
+
+_Validation_
 - [ ] Ajouter les tests et la documentation utilisateur qui verrouillent les etats supporte oui / non et RTSP actif oui / non
 
 **Criteres d'acceptation :**
@@ -77,6 +86,7 @@ oui / non, RTSP actif oui / non
 - Une camera sortie de carton peut etre detectee comme candidate exploitable ou candidate a assister, meme si RTSP n'est pas encore active
 - L'utilisateur voit clairement si sa camera est supportee ou non par Vyzio, et si le RTSP est deja actif ou reste a activer
 - Les notices vendor n'interrompent pas le parcours Vyzio quand l'utilisateur ouvre un lien ou telecharge un asset associe
+- L'utilisateur peut relancer une verification ciblee apres modification d'une camera, sans repasser par une decouverte complete
 - Les etats affiches sont coherents entre backend, UI et documentation
 - Le support peut expliquer le comportement sans interpretation implicite du code
 
