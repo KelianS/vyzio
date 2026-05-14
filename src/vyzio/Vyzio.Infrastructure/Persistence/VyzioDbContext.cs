@@ -11,6 +11,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<DetectionEvent> DetectionEvents => Set<DetectionEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<NotificationChannelConfig> NotificationChannelConfigs => Set<NotificationChannelConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

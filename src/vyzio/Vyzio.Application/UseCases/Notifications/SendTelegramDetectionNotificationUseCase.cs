@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -11,28 +12,38 @@ public interface IDetectionNotificationDispatcher
 public sealed class SendTelegramDetectionNotificationUseCase(
     INotificationRepository notifications,
     ITelegramNotificationSender telegramSender,
-    TelegramDetectionNotificationPolicy policy,
+    INotificationChannelConfigRepository channelConfigs,
     DetectionTelegramMessageFormatter formatter) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
+    private static readonly string[] DefaultAllowedLabels = ["person"];
 
     public async Task<bool> ExecuteAsync(DetectionEvent detectionEvent, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(detectionEvent);
 
-        if (!policy.ShouldNotify(detectionEvent))
-        {
+        var config = await channelConfigs.GetByChannelAsync(TelegramChannel, ct);
+        if (config is null || !config.IsEnabled || !config.HasCredentials)
             return false;
-        }
+
+        if (!string.Equals(detectionEvent.Lifecycle, "new", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var minimumConfidence = Math.Clamp(config.MinimumConfidence, 0f, 1f);
+        if (detectionEvent.Confidence.HasValue && detectionEvent.Confidence.Value < minimumConfidence)
+            return false;
+
+        var allowedLabels = ParseAllowedLabels(config.AllowedLabelsJson);
+        if (!allowedLabels.Contains(detectionEvent.Label, StringComparer.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(detectionEvent.Identity))
+            return false;
 
         if (await notifications.HasSentAsync(detectionEvent.Id, TelegramChannel, ct))
-        {
             return false;
-        }
 
         try
         {
-            await telegramSender.SendAsync(formatter.Format(detectionEvent), ct);
+            await telegramSender.SendAsync(formatter.Format(detectionEvent), config.BotToken!, config.ChatId!, ct);
             await notifications.AddAsync(new Notification
             {
                 EventId = detectionEvent.Id,
@@ -53,33 +64,20 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             return false;
         }
     }
-}
 
-public sealed class TelegramDetectionNotificationPolicy(bool telegramEnabled, float minimumConfidence)
-{
-    private readonly float _minimumConfidence = Math.Clamp(minimumConfidence, 0f, 1f);
-
-    public bool ShouldNotify(DetectionEvent detectionEvent)
+    private static string[] ParseAllowedLabels(string? json)
     {
-        ArgumentNullException.ThrowIfNull(detectionEvent);
-
-        if (!telegramEnabled)
+        if (string.IsNullOrWhiteSpace(json)) return DefaultAllowedLabels;
+        try
         {
-            return false;
+            return JsonSerializer.Deserialize<string[]>(json) is { Length: > 0 } labels
+                ? labels
+                : DefaultAllowedLabels;
         }
-
-        if (!string.Equals(detectionEvent.Lifecycle, "new", StringComparison.OrdinalIgnoreCase))
+        catch
         {
-            return false;
+            return DefaultAllowedLabels;
         }
-
-        if (!string.Equals(detectionEvent.Label, "person", StringComparison.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(detectionEvent.Identity))
-        {
-            return false;
-        }
-
-        return !detectionEvent.Confidence.HasValue || detectionEvent.Confidence.Value >= _minimumConfidence;
     }
 }
 

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
+using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
@@ -38,10 +39,20 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         _telegramSender = new RecordingTelegramSender();
         _restClient = new StubFrigateRestClient();
 
+        var channelConfigs = new NotificationChannelConfigRepository(_db);
+        channelConfigs.UpsertAsync(new NotificationChannelConfig
+        {
+            Channel = "telegram",
+            IsEnabled = true,
+            BotToken = "test-bot-token",
+            ChatId = "test-chat-id",
+            MinimumConfidence = 0.75f
+        }).GetAwaiter().GetResult();
+
         var dispatcher = new SendTelegramDetectionNotificationUseCase(
             _notifications,
             _telegramSender,
-            new TelegramDetectionNotificationPolicy(telegramEnabled: true, minimumConfidence: 0.75f),
+            channelConfigs,
             new DetectionTelegramMessageFormatter());
 
         _sut = new FrigateAdapter(
@@ -136,7 +147,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     {
         public List<string> Messages { get; } = [];
 
-        public Task SendAsync(string message, CancellationToken ct = default)
+        public Task SendAsync(string message, string botToken, string chatId, CancellationToken ct = default)
         {
             Messages.Add(message);
             return Task.CompletedTask;

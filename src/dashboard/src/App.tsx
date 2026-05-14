@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { applyCameraConfiguration, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, getVendorAssistance, updateCamera, verifyCamera, verifyDraftCamera } from './app/dependencies'
+import { applyCameraConfiguration, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, getNotificationChannelConfig, getVendorAssistance, saveNotificationChannelConfig, testNotificationChannel, updateCamera, verifyCamera, verifyDraftCamera } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import {
   formatEventDetail,
@@ -13,8 +13,9 @@ import {
   getEventTone,
 } from './ui/formatters/hub'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
+import { NotificationSettingsView } from './ui/components/NotificationSettingsView'
 
-type AppView = 'hub' | 'cameras'
+type AppView = 'hub' | 'cameras' | 'notifications'
 
 interface SystemStatusViewModel {
   pillTone: 'online' | 'warning' | 'degraded' | 'loading'
@@ -108,6 +109,20 @@ function App() {
     )
   }
 
+  if (view === 'notifications') {
+    return (
+      <NotificationSettingsView
+        getNotificationChannelConfig={getNotificationChannelConfig}
+        saveNotificationChannelConfig={saveNotificationChannelConfig}
+        testNotificationChannel={testNotificationChannel}
+        onBack={() => {
+          window.location.hash = ''
+          setView('hub')
+        }}
+      />
+    )
+  }
+
   return (
     <main className="app-shell">
       <section className="hero-panel">
@@ -172,6 +187,7 @@ function App() {
           <div className="panel-cta-row">
             <a className="primary-cta" href="#events">Voir les evenements</a>
             <a className="secondary-cta" href="#cameras">Cameras</a>
+            <a className="secondary-cta" href="#notifications">Notifications</a>
             <a className="secondary-cta" href="#profiles">Profils</a>
           </div>
         </article>
@@ -258,7 +274,9 @@ function App() {
 }
 
 function getViewFromHash(hash: string): AppView {
-  return hash === '#cameras' ? 'cameras' : 'hub'
+  if (hash === '#cameras') return 'cameras'
+  if (hash === '#notifications') return 'notifications'
+  return 'hub'
 }
 
 export default App

@@ -1266,3 +1266,65 @@
   line-height: 1.4;
   color: var(--ink-soft);
 }
+
+/* Notification settings form */
+.camera-form {
+  display: grid;
+  gap: 20px;
+}
+
+.camera-form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.camera-form-field label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.camera-form-field input[type='text'],
+.camera-form-field input[type='password'] {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink-strong);
+}
+
+.camera-form-field input[type='range'] {
+  width: 100%;
+  accent-color: var(--brand-moss);
+}
+
+.camera-form-field-inline {
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.camera-form-field-inline label {
+  font-size: 0.95rem;
+  color: var(--ink-strong);
+  cursor: pointer;
+}
+
+.camera-form-field-inline input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand-moss);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.camera-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}

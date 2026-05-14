@@ -20,7 +20,8 @@ describe('DeleteCamera', () => {
       apply: vi.fn(),
       applyConfiguration: vi.fn(),
       delete: vi.fn().mockResolvedValue(result),
-      getVendorAssistance: vi.fn(),
+update: vi.fn(),
+  getVendorAssistance: vi.fn(),
     }
 
     const useCase = new DeleteCamera(repository)

@@ -9,14 +9,27 @@ public class SendTelegramDetectionNotificationUseCaseTests
 {
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly ITelegramNotificationSender _telegramSender = Substitute.For<ITelegramNotificationSender>();
+    private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
     private readonly SendTelegramDetectionNotificationUseCase _sut;
+
+    private static NotificationChannelConfig ActiveTelegramConfig => new()
+    {
+        Channel = "telegram",
+        IsEnabled = true,
+        BotToken = "bot-token",
+        ChatId = "chat-id",
+        MinimumConfidence = 0.75f
+    };
 
     public SendTelegramDetectionNotificationUseCaseTests()
     {
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
+            .Returns(ActiveTelegramConfig);
+
         _sut = new SendTelegramDetectionNotificationUseCase(
             _notifications,
             _telegramSender,
-            new TelegramDetectionNotificationPolicy(telegramEnabled: true, minimumConfidence: 0.75f),
+            _channelConfigs,
             new DetectionTelegramMessageFormatter());
     }
 
@@ -30,6 +43,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
         Assert.True(sent);
         await _telegramSender.Received(1).SendAsync(
             "Alice detectee - front door - 10:15",
+            "bot-token",
+            "chat-id",
             Arg.Any<CancellationToken>());
         await _notifications.Received(1).AddAsync(
             Arg.Is<Notification>(notification =>
@@ -47,7 +62,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var sent = await _sut.ExecuteAsync(detectionEvent);
 
         Assert.False(sent);
-        await _telegramSender.DidNotReceive().SendAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -59,14 +75,41 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var sent = await _sut.ExecuteAsync(detectionEvent);
 
         Assert.False(sent);
-        await _telegramSender.DidNotReceive().SendAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_skips_when_channel_not_configured()
+    {
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
+            .Returns((NotificationChannelConfig?)null);
+
+        var sent = await _sut.ExecuteAsync(CreateDetectionEvent());
+
+        Assert.False(sent);
+        await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_skips_when_channel_disabled()
+    {
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
+            .Returns(new NotificationChannelConfig { Channel = "telegram", IsEnabled = false, BotToken = "token", ChatId = "chat" });
+
+        var sent = await _sut.ExecuteAsync(CreateDetectionEvent());
+
+        Assert.False(sent);
+        await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Execute_records_failed_notifications_when_telegram_send_fails()
     {
         var detectionEvent = CreateDetectionEvent();
-        _telegramSender.SendAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _telegramSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new HttpRequestException("telegram unavailable")));
 
         var sent = await _sut.ExecuteAsync(detectionEvent);
