@@ -239,11 +239,43 @@ function App() {
             {recentEvents.length > 0 ? (
               recentEvents.map((event) => (
                 <article key={event.eventId} className={`event-card ${getEventTone(event)}`}>
-                  <div>
+                  {event.hasSnapshot && (
+                    <a
+                      className="event-card-thumb"
+                      href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Voir l'apercu"
+                    >
+                      <img
+                        src={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                        alt={formatEventTitle(event)}
+                        loading="lazy"
+                      />
+                    </a>
+                  )}
+                  <div className="event-card-body">
                     <h3>{formatEventTitle(event)}</h3>
                     <p>{formatEventDetail(event)}</p>
+                    <div className="event-card-meta">
+                      {event.confidence !== null && (
+                        <span className="event-card-confidence">
+                          {Math.round(event.confidence * 100)}&nbsp;%
+                        </span>
+                      )}
+                      {event.hasClip && (
+                        <a
+                          className="event-card-clip"
+                          href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/clip.mp4`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          ▶ Clip
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <span>{formatEventTime(event.occurredAt)}</span>
+                  <span className="event-card-time">{formatEventTime(event.occurredAt)}</span>
                 </article>
               ))
             ) : (
