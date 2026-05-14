@@ -5,7 +5,7 @@
 1. Install .NET SDK, Node.js, pnpm, and Docker.
 2. Review `config/vyzio.yml`, `config/frigate.dev.yml`, `config/frigate.mock.yml`, and `config/mosquitto.conf`.
 3. Replace the placeholder RTSP URL in `config/frigate.dev.yml` and enable `test_camera` only when you are ready to validate a real stream.
-4. Start the local runtime with `docker compose up --build`.
+4. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.override.yml up --build`.
 5. Open `http://127.0.0.1:8443/health` for the API and `http://127.0.0.1:5000` for the Frigate UI when the override file is active.
 6. Use `127.0.0.1:1883` only for local MQTT inspection or tooling when the override file is active.
 
@@ -37,18 +37,10 @@
 - src/vyzio: backend (.NET)
 - src/dashboard: frontend (React + TypeScript)
 - config: runtime configuration templates
-
-## Quality gates
-
-- dotnet build src/vyzio/Vyzio.sln
-- pnpm --dir src/dashboard build
+- docs: architectural and strategic documentation
 
 ## Workflow
 
 The mandatory workflow is defined in the repository rules file: `.instructions.md`.
 
 Use this file as the single source of truth for sequencing documentation, implementation, tests, and user-facing docs.
-
-## Current status
-
-The repository is in a reset phase. Before adding new features, align changes with docs/SAD.md and docs/BACKLOG.md.
