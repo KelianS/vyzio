@@ -164,6 +164,8 @@
 
 .camera-badge-row.compact {
   margin-top: 10px;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .camera-qualification-badge,
@@ -231,6 +233,11 @@
   gap: 4px;
   justify-items: end;
   text-align: right;
+  align-self: start;
+}
+
+.camera-nav-meta.compact {
+  min-width: 112px;
 }
 
 .camera-nav-meta span {

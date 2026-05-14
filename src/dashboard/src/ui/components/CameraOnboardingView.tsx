@@ -377,6 +377,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     return candidate.port > 0 ? `${candidate.host}:${candidate.port}` : candidate.host
   }
 
+  function isReadyCandidate(candidate: DiscoveryCandidate) {
+    return Boolean(candidate.streamPath)
+  }
+
   function formatMutedValue(value: string | null | undefined) {
     return value && value.trim() ? value : '—'
   }
@@ -551,61 +555,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
               <div>
-                <p className="section-kicker">Detection</p>
-                <h2>Candidats</h2>
-              </div>
-              <div className="camera-sidebar-actions">
-                <span className="camera-sidebar-count">{discoveryResults.length}</span>
-                <button className="secondary-cta" type="button" onClick={handleDiscovery} disabled={discoveryLoading || actionLoading}>
-                  {discoveryLoading ? 'Recherche...' : 'Scanner'}
-                </button>
-              </div>
-            </div>
-
-            {discoveryError ? <p className="camera-inline-state error">{discoveryError}</p> : null}
-
-            <button
-              type="button"
-              className={`camera-nav-item ${selection.kind === 'manual' ? 'selected' : ''}`}
-              onClick={selectManualEntry}
-            >
-              <div>
-                <strong>Saisie manuelle</strong>
-                <p>Ajouter une camera sans detection automatique.</p>
-              </div>
-            </button>
-
-            {discoveryResults.length > 0 ? (
-              discoveryResults.map((candidate, index) => (
-                <button
-                  key={`${candidate.host}-${candidate.port}-${index}`}
-                  type="button"
-                  className={`camera-nav-item ${selection.kind === 'candidate' && selection.index === index ? 'selected' : ''}`}
-                  onClick={() => selectDiscoveryCandidate(index)}
-                >
-                  <div>
-                    <strong>{candidate.displayName}</strong>
-                    <p>{formatCandidateAddress(candidate)}</p>
-                    <div className="camera-badge-row compact">
-                      <span className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}>
-                        {formatSupportLabel(candidate.vendorFamily, candidate)}
-                      </span>
-                    </div>
-                  </div>
-                  <small>{formatVendorFamily(candidate.vendorFamily)}</small>
-                </button>
-              ))
-            ) : (
-              <div className="camera-nav-empty">
-                <strong>Aucun candidat</strong>
-                <p>Lancez une decouverte reseau pour remplir cette liste.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="camera-sidebar-group">
-            <div className="camera-sidebar-header">
-              <div>
                 <p className="section-kicker">Configuration</p>
                 <h2>Cameras configurees</h2>
               </div>
@@ -645,6 +594,66 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <h3>Aucune camera visible</h3>
                 <p>Commencez par la decouverte reseau ou la saisie manuelle.</p>
               </article>
+            )}
+          </div>
+
+          <div className="camera-sidebar-group">
+            <div className="camera-sidebar-header">
+              <div>
+                <p className="section-kicker">Detection</p>
+                <h2>Candidats</h2>
+              </div>
+              <div className="camera-sidebar-actions">
+                <span className="camera-sidebar-count">{discoveryResults.length}</span>
+                <button className="secondary-cta" type="button" onClick={handleDiscovery} disabled={discoveryLoading || actionLoading}>
+                  {discoveryLoading ? 'Recherche...' : 'Scanner'}
+                </button>
+              </div>
+            </div>
+
+            {discoveryError ? <p className="camera-inline-state error">{discoveryError}</p> : null}
+
+            <button
+              type="button"
+              className={`camera-nav-item ${selection.kind === 'manual' ? 'selected' : ''}`}
+              onClick={selectManualEntry}
+            >
+              <div>
+                <strong>Saisie manuelle</strong>
+                <p>Ajouter une camera sans detection automatique.</p>
+              </div>
+            </button>
+
+            {discoveryResults.length > 0 ? (
+              discoveryResults.map((candidate, index) => (
+                <button
+                  key={`${candidate.host}-${candidate.port}-${index}`}
+                  type="button"
+                  className={`camera-nav-item ${selection.kind === 'candidate' && selection.index === index ? 'selected' : ''}`}
+                  onClick={() => selectDiscoveryCandidate(index)}
+                >
+                  <div>
+                    <strong>{candidate.displayName}</strong>
+                    <p>{formatCandidateAddress(candidate)}</p>
+                    <div className="camera-badge-row compact">
+                      <span className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}>
+                        {formatSupportLabel(candidate.vendorFamily, candidate)}
+                      </span>
+                      {isReadyCandidate(candidate) ? (
+                        <span className="camera-rtsp-badge ready">Prete</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="camera-nav-meta compact">
+                    <small>{formatVendorFamily(candidate.vendorFamily)}</small>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="camera-nav-empty">
+                <strong>Aucun candidat</strong>
+                <p>Lancez une decouverte reseau pour remplir cette liste.</p>
+              </div>
             )}
           </div>
         </aside>
