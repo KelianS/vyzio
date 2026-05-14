@@ -24,6 +24,7 @@ interface CameraDto {
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string | null
+  vendorFamily: string | null
 }
 
 interface CameraStatusDto {
@@ -166,6 +167,7 @@ function mapCamera(camera: CameraDto): Camera {
     lastReachabilityCheckAt: camera.lastReachabilityCheckAt,
     lastSuccessfulFrameAt: camera.lastSuccessfulFrameAt,
     frigateCameraName: camera.frigateCameraName,
+    vendorFamily: camera.vendorFamily,
   }
 }
 

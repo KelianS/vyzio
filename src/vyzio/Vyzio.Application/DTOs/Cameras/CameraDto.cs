@@ -16,7 +16,8 @@ public sealed record CameraDto(
     bool NeedsAttention,
     DateTimeOffset? LastReachabilityCheckAt,
     DateTimeOffset? LastSuccessfulFrameAt,
-    string? FrigateCameraName)
+    string? FrigateCameraName,
+    string? VendorFamily)
 {
     public static CameraDto From(Camera camera) => new(
         camera.Id,
@@ -32,5 +33,6 @@ public sealed record CameraDto(
         !string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase),
         camera.LastReachabilityCheckAt,
         camera.LastSuccessfulFrameAt,
-        camera.FrigateCameraName);
+        camera.FrigateCameraName,
+        camera.VendorFamily);
 }

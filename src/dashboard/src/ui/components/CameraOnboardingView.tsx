@@ -72,6 +72,7 @@ const emptyForm: CameraDraftInput = {
   username: null,
   password: null,
   streamPath: null,
+  vendorFamily: null,
   sourceType: 'rtsp_manual',
   detectionPreset: 'person_default',
 }
@@ -108,6 +109,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     : null
 
   const activeVendorFamily = selectedCandidate?.vendorFamily
+    ?? selectedCamera?.vendorFamily
     ?? matchedDiscoveryCandidate?.vendorFamily
     ?? null
 
@@ -325,6 +327,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       port: candidate.port,
       sourceType: candidate.sourceType,
       streamPath: candidate.streamPath,
+      vendorFamily: candidate.vendorFamily,
     })
     setFormMessage(null)
   }
@@ -332,7 +335,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   function selectManualEntry() {
     setSelection({ kind: 'manual' })
     setDraftVerification(null)
-    setFormMessage('Renseignez les informations minimales de la camera pour l\'ajouter a la configuration.')
+    setForm(emptyForm)
+    setFormMessage(null)
     setDetailError(null)
   }
 
@@ -346,16 +350,16 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     return Boolean(candidate?.vendorDocumentation?.markdown?.trim())
   }
 
-  function isSupportedCandidate(candidate: DiscoveryCandidate | null) {
-    return Boolean(candidate && (candidate.supportLevel !== 'unknown' || hasVendorDocumentation(candidate)))
+  function isSupportedVendor(vendorFamily: string | null, candidate: DiscoveryCandidate | null = null) {
+    return Boolean(vendorFamily || hasVendorDocumentation(candidate))
   }
 
-  function formatSupportLabel(candidate: DiscoveryCandidate | null) {
-    return isSupportedCandidate(candidate) ? 'Supporte' : 'Inconnu'
+  function formatSupportLabel(vendorFamily: string | null, candidate: DiscoveryCandidate | null = null) {
+    return isSupportedVendor(vendorFamily, candidate) ? 'Supporte' : 'Inconnu'
   }
 
-  function supportBadgeTone(candidate: DiscoveryCandidate | null) {
-    return isSupportedCandidate(candidate) ? 'supported' : 'unknown'
+  function supportBadgeTone(vendorFamily: string | null, candidate: DiscoveryCandidate | null = null) {
+    return isSupportedVendor(vendorFamily, candidate) ? 'supported' : 'unknown'
   }
 
   function formatVendorFamily(vendorFamily: string | null) {
@@ -537,9 +541,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <p>{camerasState.error ?? `${camerasState.data.length} camera(s) dans le catalogue actuel.`}</p>
           <div className="panel-cta-row">
             <a className="secondary-cta" href="#hub">Retour au hub</a>
-            <button className="secondary-cta" type="button" onClick={selectManualEntry} disabled={actionLoading}>
-              Saisie manuelle
-            </button>
           </div>
           {discoveryError ? <p className="status-inline error">{discoveryError}</p> : null}
         </div>
@@ -586,8 +587,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <strong>{candidate.displayName}</strong>
                     <p>{formatCandidateAddress(candidate)}</p>
                     <div className="camera-badge-row compact">
-                      <span className={`camera-support-badge ${supportBadgeTone(candidate)}`}>
-                        {formatSupportLabel(candidate)}
+                      <span className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}>
+                        {formatSupportLabel(candidate.vendorFamily, candidate)}
                       </span>
                     </div>
                   </div>
@@ -610,8 +611,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               </div>
               <div className="camera-sidebar-actions">
                 <span className="camera-sidebar-count">{camerasState.data.length}</span>
-                <button className="primary-cta" type="button" onClick={handleApplyConfiguration} disabled={actionLoading || camerasState.data.length === 0}>
-                  Appliquer la configuration
+                <button
+                  className="secondary-cta"
+                  type="button"
+                  onClick={handleApplyConfiguration}
+                  disabled={actionLoading || !camerasState.data.some((camera) => camera.status === 'online' || camera.validationState === 'validated')}
+                >
+                  Appliquer
                 </button>
               </div>
             </div>
@@ -651,9 +657,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <h2>{selectedCandidate ? selectedCandidate.displayName : 'Nouvelle camera'}</h2>
               </div>
 
-              {formMessage ? <p className="camera-inline-state success">{formMessage}</p> : null}
-              {formError ? <p className="camera-inline-state error">{formError}</p> : null}
-
               <div className="camera-detail-sections">
                 <section className="camera-detail-section">
                   <h3>Resume</h3>
@@ -678,8 +681,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       <div>
                         <dt>Support</dt>
                         <dd>
-                          <span className={`camera-support-badge ${supportBadgeTone(selectedCandidate)}`}>
-                            {formatSupportLabel(selectedCandidate)}
+                          <span className={`camera-support-badge ${supportBadgeTone(selectedCandidate.vendorFamily, selectedCandidate)}`}>
+                            {formatSupportLabel(selectedCandidate.vendorFamily, selectedCandidate)}
                           </span>
                         </dd>
                       </div>
@@ -756,9 +759,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       {actionLoading ? 'Traitement...' : 'Verifier le flux'}
                     </button>
                     <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading || !canAddConfiguredCamera}>
-                      {actionLoading ? 'Traitement...' : 'Ajouter aux cameras configurees'}
+                      {actionLoading ? 'Traitement...' : 'Ajouter'}
                     </button>
                   </div>
+
+                  {formMessage ? <p className="camera-inline-state success action-feedback">{formMessage}</p> : null}
+                  {formError ? <p className="camera-inline-state error action-feedback">{formError}</p> : null}
                 </>
               ) : null}
             </>
@@ -769,8 +775,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <h2>{selectedCamera?.displayName ?? 'Camera selectionnee'}</h2>
               </div>
 
-              {detailMessage ? <p className="camera-inline-state success">{detailMessage}</p> : null}
-              {detailError ? <p className="camera-inline-state error">{detailError}</p> : null}
               {cameraStatusState.loading ? <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p> : null}
               {cameraStatusState.error ? <p className="camera-inline-state error">{cameraStatusState.error}</p> : null}
 
@@ -796,7 +800,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         </div>
                         <div>
                           <dt>Constructeur</dt>
-                          <dd>{formatVendorFamily(matchedDiscoveryCandidate?.vendorFamily ?? null)}</dd>
+                          <dd>{formatVendorFamily(selectedCamera?.vendorFamily ?? matchedDiscoveryCandidate?.vendorFamily ?? null)}</dd>
                         </div>
                         <div>
                           <dt>RTSP actif</dt>
@@ -809,8 +813,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         <div>
                           <dt>Support</dt>
                           <dd>
-                            <span className={`camera-support-badge ${supportBadgeTone(matchedDiscoveryCandidate)}`}>
-                              {formatSupportLabel(matchedDiscoveryCandidate)}
+                            <span className={`camera-support-badge ${supportBadgeTone(selectedCamera?.vendorFamily ?? matchedDiscoveryCandidate?.vendorFamily ?? null, matchedDiscoveryCandidate)}`}>
+                              {formatSupportLabel(selectedCamera?.vendorFamily ?? matchedDiscoveryCandidate?.vendorFamily ?? null, matchedDiscoveryCandidate)}
                             </span>
                           </dd>
                         </div>
@@ -865,6 +869,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       Supprimer
                     </button>
                   </div>
+
+                  {detailMessage ? <p className="camera-inline-state success action-feedback">{detailMessage}</p> : null}
+                  {detailError ? <p className="camera-inline-state error action-feedback">{detailError}</p> : null}
                 </div>
               ) : (
                 <div className="camera-empty-state">

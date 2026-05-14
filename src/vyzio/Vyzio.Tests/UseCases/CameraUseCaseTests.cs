@@ -140,12 +140,13 @@ public class CreateCameraUseCaseTests
     {
         _repo.GetBySlugAsync("front-door", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
-        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", 554, null, null, "/rtsp", null, null));
+        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", 554, null, null, "/rtsp", null, null, "tplink_tapo"));
 
         Assert.Equal("front-door", result.Slug);
         Assert.Equal("needs_attention", result.Status);
         await _repo.Received(1).AddAsync(Arg.Is<Camera>(camera =>
             camera.DisplayName == "Front Door"
+            && camera.VendorFamily == "tplink_tapo"
             && camera.ValidationState == "draft"
             && camera.IsEnabled == false), Arg.Any<CancellationToken>());
     }

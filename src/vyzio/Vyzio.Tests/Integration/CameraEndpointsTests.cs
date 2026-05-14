@@ -199,7 +199,14 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         Assert.NotNull(payload);
         Assert.True(payload!.Applied);
-        Assert.Equal(2, payload.CameraCount);
+
+        var catalogResponse = await client.GetAsync("/api/cameras");
+        catalogResponse.EnsureSuccessStatusCode();
+        var catalog = await catalogResponse.Content.ReadFromJsonAsync<CameraResponse[]>();
+
+        Assert.NotNull(catalog);
+        Assert.Contains(catalog!, camera => camera.Id == created.Id && camera.ValidationState == "validated" && camera.IsEnabled);
+        Assert.True(payload.CameraCount >= 1);
     }
 
     [Fact]

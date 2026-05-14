@@ -970,6 +970,10 @@
   color: var(--ink-soft);
 }
 
+.action-feedback {
+  margin-top: 10px;
+}
+
 .camera-inline-state.success {
   color: var(--brand-moss);
 }

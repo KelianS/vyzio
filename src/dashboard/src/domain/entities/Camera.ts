@@ -13,4 +13,5 @@ export interface Camera {
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string | null
+  vendorFamily: string | null
 }

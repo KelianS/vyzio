@@ -18,23 +18,32 @@ public sealed class RtspCameraVerifier : ICameraVerifier
             timeout.CancelAfter(TimeSpan.FromSeconds(3));
 
             await client.ConnectAsync(camera.Host, camera.Port, timeout.Token);
-            var previewAvailable = await ProbeRtspAsync(client, camera, timeout.Token);
+            var probeResult = await ProbeRtspAsync(client, camera, timeout.Token);
 
-            return previewAvailable
-                ? new CameraVerificationResult(
+            return probeResult switch
+            {
+                RtspProbeResult.Success => new CameraVerificationResult(
                     true,
                     true,
                     "online",
                     "Camera responded to the stream verification.",
                     checkedAt,
-                    checkedAt)
-                : new CameraVerificationResult(
+                    checkedAt),
+                RtspProbeResult.AuthenticationRequired => new CameraVerificationResult(
+                    true,
+                    false,
+                    "needs_attention",
+                    "Le flux RTSP repond, mais la camera demande une authentification. Renseignez l'utilisateur et le mot de passe puis relancez la verification.",
+                    checkedAt,
+                    null),
+                _ => new CameraVerificationResult(
                     true,
                     false,
                     "degraded",
                     "Camera network endpoint is reachable, but the stream response could not be confirmed.",
                     checkedAt,
-                    null);
+                    null)
+            };
         }
         catch
         {
@@ -48,7 +57,7 @@ public sealed class RtspCameraVerifier : ICameraVerifier
         }
     }
 
-    private static async Task<bool> ProbeRtspAsync(TcpClient client, Camera camera, CancellationToken ct)
+    private static async Task<RtspProbeResult> ProbeRtspAsync(TcpClient client, Camera camera, CancellationToken ct)
     {
         var stream = client.GetStream();
         var requestUri = BuildRtspUri(camera);
@@ -62,12 +71,21 @@ public sealed class RtspCameraVerifier : ICameraVerifier
         var read = await stream.ReadAsync(buffer, ct);
         if (read <= 0)
         {
-            return false;
+            return RtspProbeResult.Unknown;
         }
 
         var response = Encoding.ASCII.GetString(buffer, 0, read);
-        return response.Contains("RTSP/1.0 200", StringComparison.OrdinalIgnoreCase)
-            || response.Contains("RTSP/1.0 401", StringComparison.OrdinalIgnoreCase);
+        if (response.Contains("RTSP/1.0 200", StringComparison.OrdinalIgnoreCase))
+        {
+            return RtspProbeResult.Success;
+        }
+
+        if (response.Contains("RTSP/1.0 401", StringComparison.OrdinalIgnoreCase))
+        {
+            return RtspProbeResult.AuthenticationRequired;
+        }
+
+        return RtspProbeResult.Unknown;
     }
 
     private static string BuildRtspUri(Camera camera)
@@ -86,5 +104,12 @@ public sealed class RtspCameraVerifier : ICameraVerifier
         }
 
         return builder.Uri.ToString();
+    }
+
+    private enum RtspProbeResult
+    {
+        Unknown,
+        Success,
+        AuthenticationRequired,
     }
 }

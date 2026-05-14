@@ -98,6 +98,11 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("VendorFamily")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vendor_family");
+
                     b.Property<string>("Username")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")

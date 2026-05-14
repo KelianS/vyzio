@@ -32,6 +32,9 @@ public class Camera
     [MaxLength(500)]
     public string? StreamPath { get; set; }
 
+    [MaxLength(100)]
+    public string? VendorFamily { get; set; }
+
     [Required, MaxLength(50)]
     public string DetectionPreset { get; set; } = "person_default";
 

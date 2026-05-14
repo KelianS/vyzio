@@ -280,6 +280,7 @@ internal static class CameraDraftFactory
             Username = NormalizeOptional(request.Username),
             Password = NormalizeOptional(request.Password),
             StreamPath = NormalizeStreamPath(request.StreamPath),
+            VendorFamily = NormalizeOptional(request.VendorFamily),
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
             DetectionPreset = string.IsNullOrWhiteSpace(request.DetectionPreset) ? "person_default" : request.DetectionPreset.Trim(),
             Status = "needs_attention",

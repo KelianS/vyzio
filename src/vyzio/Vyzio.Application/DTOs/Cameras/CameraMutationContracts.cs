@@ -10,7 +10,8 @@ public sealed record CreateCameraRequest(
     string? Password,
     string? StreamPath,
     string? SourceType,
-    string? DetectionPreset);
+    string? DetectionPreset,
+    string? VendorFamily = null);
 
 public sealed record DiscoveredCameraDto(
     string DisplayName,
