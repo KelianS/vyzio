@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
@@ -14,6 +14,7 @@ import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
 import { useVendorAssistance } from '../hooks/useVendorAssistance'
+import { resolveVendorLinkTarget } from '../vendorLinks'
 import {
   formatCameraAddress,
   formatCameraCheck,
@@ -42,9 +43,11 @@ type DiscoveryCandidate = {
   port: number
   sourceType: string
   streamPath: string | null
+  rtspActive: boolean
   discoverySource: string
   note: string | null
   macAddress: string | null
+  isSupported: boolean
   qualification: string
   supportLevel: string
   vendorFamily: string | null
@@ -261,6 +264,46 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setDetailMessage(status.guidance ?? 'Verification terminee.')
     } catch (error: unknown) {
       setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function handleRefreshCandidate() {
+    if (!selectedCandidate || selection.kind !== 'candidate') {
+      return
+    }
+
+    setActionLoading(true)
+    setFormError(null)
+    setFormMessage(null)
+
+    try {
+      const candidates = await props.discoverCameras.execute({
+        host: selectedCandidate.host,
+        port: selectedCandidate.port,
+      })
+
+      const refreshedCandidate = candidates.find((candidate) =>
+        candidate.host === selectedCandidate.host
+        && candidate.port === selectedCandidate.port)
+
+      if (!refreshedCandidate) {
+        setFormMessage('Aucune nouvelle information detectee pour ce candidat.')
+        return
+      }
+
+      const nextResults = [...discoveryResults]
+      nextResults[selection.index] = refreshedCandidate
+      setDiscoveryResults(nextResults)
+      selectDiscoveryCandidate(selection.index, nextResults)
+      setFormMessage(
+        refreshedCandidate.streamPath
+          ? 'Candidat rafraichi. Le flux RTSP semble maintenant exploitable.'
+          : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.'
+      )
+    } catch (error: unknown) {
+      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
       setActionLoading(false)
     }
@@ -564,7 +607,27 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
         ) : vendorAssistanceState.data?.markdown ? (
           <div className="camera-vendor-markdown">
-            <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                a({ href, children, ...props }: ComponentPropsWithoutRef<'a'>) {
+                  const linkTarget = resolveVendorLinkTarget(href)
+
+                  return (
+                    <a
+                      {...props}
+                      href={linkTarget?.href ?? href}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      download={linkTarget?.download || undefined}
+                    >
+                      {children}
+                    </a>
+                  )
+                },
+              }}
+            >
+              {vendorAssistanceState.data.markdown}
+            </ReactMarkdown>
           </div>
         ) : null}
       </section>
@@ -663,7 +726,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             Selectionnez un candidat ou une camera existante, puis agissez dans un seul panneau de detail.
           </p>
         </div>
-
         <div className="camera-toolbar-status" aria-label="Etat du catalogue camera">
           <div className={`status-pill ${camerasState.error ? 'degraded' : camerasState.loading ? 'loading' : 'online'}`}>
             {camerasState.loading ? 'Chargement' : camerasState.error ? 'Catalogue indisponible' : 'Catalogue pret'}
@@ -831,6 +893,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 {selectedCandidate ? renderConfidenceDetails(selectedCandidate) : null}
                 {selectedCandidate ? renderTechnicalDetails(selectedCandidate) : null}
               </div>
+
+              {selectedCandidate ? (
+                <div className="panel-cta-row">
+                  <button className="secondary-cta" type="button" onClick={handleRefreshCandidate} disabled={actionLoading}>
+                    {actionLoading ? 'Traitement...' : 'Rafraichir ce candidat'}
+                  </button>
+                </div>
+              ) : null}
 
               {canShowCandidateForm ? (
                 <>

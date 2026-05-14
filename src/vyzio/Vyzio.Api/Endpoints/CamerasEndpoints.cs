@@ -13,12 +13,12 @@ public static class CamerasEndpoints
     {
         var group = app.MapGroup("/api/cameras");
 
-        group.MapPost("/discovery", async (DiscoverCamerasUseCase useCase, ILoggerFactory loggerFactory, CancellationToken ct) =>
+        group.MapPost("/discovery", async (DiscoverCamerasRequest? request, DiscoverCamerasUseCase useCase, ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
             var logger = loggerFactory.CreateLogger("CamerasDiscovery");
             logger.LogInformation("HTTP camera discovery request received.");
 
-            var result = await useCase.ExecuteAsync(ct);
+            var result = await useCase.ExecuteAsync(request, ct);
 
             logger.LogInformation("HTTP camera discovery request completed with {CandidateCount} candidate(s).", result.Count);
             return Results.Ok(result);

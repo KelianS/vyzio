@@ -24,15 +24,27 @@ public sealed record UpdateCameraRequest(
     string? DetectionPreset,
     string? VendorFamily = null);
 
+public sealed record DiscoverCamerasRequest(
+    string? Host,
+    int? Port)
+{
+    public CameraDiscoveryTarget? ToTarget()
+        => string.IsNullOrWhiteSpace(Host)
+            ? null
+            : new CameraDiscoveryTarget(Host.Trim(), Port is > 0 ? Port : null);
+}
+
 public sealed record DiscoveredCameraDto(
     string DisplayName,
     string Host,
     int Port,
     string SourceType,
     string? StreamPath,
+    bool RtspActive,
     string DiscoverySource,
     string? Note,
     string? MacAddress,
+    bool IsSupported,
     string Qualification,
     string SupportLevel,
     string? VendorFamily,
@@ -46,9 +58,11 @@ public sealed record DiscoveredCameraDto(
         candidate.Port,
         candidate.SourceType,
         candidate.StreamPath,
+        !string.IsNullOrWhiteSpace(candidate.StreamPath),
         candidate.DiscoverySource,
         candidate.Note,
         candidate.MacAddress,
+        !string.IsNullOrWhiteSpace(candidate.VendorFamily) || candidate.VendorDocumentation is not null,
         candidate.Qualification,
         candidate.SupportLevel,
         candidate.VendorFamily,

@@ -24,9 +24,9 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
 
-    public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, CancellationToken ct = default)
     {
-        var rawSignals = await _probePipeline.DiscoverAsync(ct);
+        var rawSignals = await _probePipeline.DiscoverAsync(target, ct);
         var identifiedCandidates = _identifier.Identify(rawSignals);
         var result = await EnrichTechnicalDetailsAsync(_formatter.Format(identifiedCandidates), rawSignals, ct);
 

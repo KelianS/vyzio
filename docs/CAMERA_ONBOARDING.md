@@ -48,13 +48,21 @@ Configuration actuelle :
 
 1. Ouvrir le hub Vyzio.
 2. Cliquer sur **Cameras**.
-3. Cliquer sur **Decouverte reseau**.
+3. Cliquer sur **Scanner** ou choisir **Saisie manuelle**.
 4. Si un candidat apparait, cliquer dessus pour pre-remplir le formulaire.
-5. Completer ou corriger le nom, l'hote, le port et le chemin RTSP.
-6. Cliquer sur **Ajouter au catalogue**.
-7. Selectionner la camera creee dans le catalogue.
-8. Cliquer sur **Verifier le flux**.
-9. Une fois le statut confirme, cliquer sur **Appliquer a Frigate**.
+5. Si la camera vient d'etre reconfiguree, cliquer sur **Rafraichir ce candidat** pour remettre a jour uniquement ce candidat sans relancer un scan complet.
+6. Completer ou corriger le nom, l'hote, le port et le chemin RTSP.
+7. Cliquer sur **Verifier le flux**, puis sur **Ajouter** quand le flux est confirme.
+8. Selectionner ensuite la camera dans le catalogue.
+9. Recliquer sur **Verifier le flux** apres une modification si necessaire.
+10. Une fois le statut confirme, cliquer sur **Appliquer**.
+
+### Indicateurs affiches
+
+- **Camera supportee** : indique si Vyzio sait accompagner ce constructeur ou ce parcours dans l'etat actuel du produit.
+- **RTSP actif** : indique si le flux peut etre teste tout de suite ou s'il reste une activation a faire sur la camera.
+
+Dans l'assistance constructeur, les liens externes s'ouvrent hors de la page Vyzio. Les assets locaux proposes par une notice se telechargent sans interrompre le parcours principal.
 
 ---
 

@@ -873,7 +873,7 @@ La gestion des caméras est modélisée comme une orchestration Vyzio en quatre 
 | **Camera Discovery Adapter** | découverte réseau assistée, qualification des candidats détectés et fallback manuel complet | Frigate/sondage réseau + saisie utilisateur |
 | **Camera Config Writer** | génération déterministe de la section `cameras` de la configuration Frigate à partir des caméras actives validées | configuration Frigate générée par Vyzio |
 | **Camera Status Projection** | synthèse d'état exploitable par l'UI (`online`, `offline`, `degraded`, `config_error`) à partir des checks Vyzio et du retour Frigate | projection applicative Vyzio |
-| **Vendor Guidance Catalog** | notices d'activation et niveau de support officiel par constructeur ou famille de caméras | catalogue applicatif Vyzio |
+| **Vendor Guidance Catalog** | notices d'activation, indicateur `camera supported` et aides de parcours par constructeur ou famille de caméras | catalogue applicatif Vyzio |
 
 Cette séparation permet d'éviter deux erreurs :
 

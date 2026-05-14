@@ -7,15 +7,16 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryService, ICameraRepository cameras)
 {
-    public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(DiscoverCamerasRequest? request = null, CancellationToken ct = default)
     {
-        var candidates = await discoveryService.DiscoverAsync(ct);
+        var target = request?.ToTarget();
+        var candidates = await discoveryService.DiscoverAsync(target, ct);
         var configuredEndpoints = (await cameras.GetAllAsync(ct))
             .Select(camera => BuildEndpointKey(camera.Host, camera.Port))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return candidates
-            .Where(candidate => !configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)))
+            .Where(candidate => target is not null || !configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)))
             .Select(DiscoveredCameraDto.From)
             .ToList();
     }

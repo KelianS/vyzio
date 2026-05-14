@@ -93,7 +93,7 @@ public class DiscoverCamerasUseCaseTests
     public async Task Execute_returns_discovered_candidates()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(
+        _discovery.DiscoverAsync(null, Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
         ]);
@@ -123,7 +123,7 @@ public class DiscoverCamerasUseCaseTests
             }
         ]);
 
-        _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(
+        _discovery.DiscoverAsync(null, Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", null, null, "camera_confirmed", "unknown", null, []),
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", null, null, "camera_confirmed", "unknown", null, [])
@@ -133,6 +133,36 @@ public class DiscoverCamerasUseCaseTests
 
         var candidate = Assert.Single(result);
         Assert.Equal("Driveway", candidate.DisplayName);
+    }
+
+    [Fact]
+    public async Task Execute_refreshes_targeted_candidate_without_filtering_configured_endpoint()
+    {
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new Camera
+            {
+                Id = "camera-1",
+                Slug = "front-door",
+                DisplayName = "Front Door",
+                Host = "192.168.1.10",
+                Port = 554,
+            }
+        ]);
+
+        _discovery.DiscoverAsync(Arg.Any<CameraDiscoveryTarget>(), Arg.Any<CancellationToken>()).Returns(
+        [
+            new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", "/Streaming/Channels/101", "rtsp_describe", null, null, "camera_confirmed", "unknown", null, ["rtsp_responding"])
+        ]);
+
+        var result = await _sut.ExecuteAsync(new DiscoverCamerasRequest("192.168.1.10", 554));
+
+        var candidate = Assert.Single(result);
+        Assert.Equal("Front Door", candidate.DisplayName);
+        Assert.True(candidate.RtspActive);
+        await _discovery.Received(1).DiscoverAsync(
+            Arg.Is<CameraDiscoveryTarget>(target => target.Host == "192.168.1.10" && target.Port == 554),
+            Arg.Any<CancellationToken>());
     }
 }
 

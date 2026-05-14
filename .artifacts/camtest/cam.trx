@@ -1,0 +1,572 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="50d32bd5-a1f6-4d34-a0c4-8f59bc9b7b56" name="kelian@NZXT_KELIAN 2026-05-14 15:06:02" runUser="NZXT_KELIAN\kelian" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-05-14T15:06:02.4908539+02:00" queuing="2026-05-14T15:06:02.4908542+02:00" start="2026-05-14T15:06:00.6925950+02:00" finish="2026-05-14T15:06:02.5400451+02:00" />
+  <TestSettings name="default" id="6872a769-32d1-4ac7-9a48-ea4a9a500742">
+    <Deployment runDeploymentRoot="kelian_NZXT_KELIAN_2026-05-14_15_06_02" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="0d8c4c23-971d-47b7-836c-c3bf97c28ae0" testId="0a45acb5-51d7-55a1-b869-9e62602021d4" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Update_camera_persists_changes_without_forcing_delete_and_recreate" computerName="NZXT_KELIAN" duration="00:00:00.0193298" startTime="2026-05-14T15:06:02.3916552+02:00" endTime="2026-05-14T15:06:02.3916561+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0d8c4c23-971d-47b7-836c-c3bf97c28ae0" />
+    <UnitTestResult executionId="75f54639-f7e3-49d2-b60c-6444d56212f7" testId="35ae4272-3f37-9258-0b26-3a6cc5908164" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Apply_configuration_enables_all_eligible_cameras" computerName="NZXT_KELIAN" duration="00:00:00.0167065" startTime="2026-05-14T15:06:02.4703396+02:00" endTime="2026-05-14T15:06:02.4703397+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="75f54639-f7e3-49d2-b60c-6444d56212f7" />
+    <UnitTestResult executionId="50e18d2b-33ad-4d13-896c-28589eaeee82" testId="a3b90b57-b617-baa7-99e4-738d82368614" testName="Vyzio.Tests.Integration.CameraEndpointsTests.GetCameras_returns_catalog_with_status_projection" computerName="NZXT_KELIAN" duration="00:00:00.0032372" startTime="2026-05-14T15:06:02.4245738+02:00" endTime="2026-05-14T15:06:02.4245739+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="50e18d2b-33ad-4d13-896c-28589eaeee82" />
+    <UnitTestResult executionId="20bc2925-dd45-44fd-a657-8d3d6a5fbf51" testId="a21662cc-61a6-805c-a46c-8add9104f730" testName="Vyzio.Tests.Integration.CameraEndpointsTests.GetCameraStatus_returns_not_found_for_unknown_camera" computerName="NZXT_KELIAN" duration="00:00:00.0054392" startTime="2026-05-14T15:06:02.4303216+02:00" endTime="2026-05-14T15:06:02.4303220+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="20bc2925-dd45-44fd-a657-8d3d6a5fbf51" />
+    <UnitTestResult executionId="0c0b4078-c36b-46a0-91c6-d8b11d0702ae" testId="80f71c9d-d035-ebfb-26eb-68d5b3bd9f6f" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Vendor_assistance_returns_markdown_from_dedicated_route" computerName="NZXT_KELIAN" duration="00:00:00.0221260" startTime="2026-05-14T15:06:02.3460218+02:00" endTime="2026-05-14T15:06:02.3460223+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0c0b4078-c36b-46a0-91c6-d8b11d0702ae" />
+    <UnitTestResult executionId="4d09d6e9-2c73-4dd5-8f7d-53483aeaa54b" testId="6eb5a413-54e1-5547-802f-8a7adb0e391e" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Discover_returns_candidates_from_discovery_service" computerName="NZXT_KELIAN" duration="00:00:00.0147828" startTime="2026-05-14T15:06:02.4814058+02:00" endTime="2026-05-14T15:06:02.4814060+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4d09d6e9-2c73-4dd5-8f7d-53483aeaa54b" />
+    <UnitTestResult executionId="cf0712ff-5464-4141-a044-9c3fd164740c" testId="78c8842f-30e2-1aa2-7377-11ecdd48d306" testName="Vyzio.Tests.Integration.CameraEndpointsTests.GetCameraStatus_returns_guidance_for_known_camera" computerName="NZXT_KELIAN" duration="00:00:01.1345436" startTime="2026-05-14T15:06:02.3227580+02:00" endTime="2026-05-14T15:06:02.3228089+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cf0712ff-5464-4141-a044-9c3fd164740c" />
+    <UnitTestResult executionId="4b924349-6c73-44b1-a2c0-ea5c6e8fea7e" testId="3dbfbb27-a072-9b8a-2d01-402723aa0948" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Vendor_asset_route_serves_local_vendor_file" computerName="NZXT_KELIAN" duration="00:00:00.0108865" startTime="2026-05-14T15:06:02.4028380+02:00" endTime="2026-05-14T15:06:02.4028381+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4b924349-6c73-44b1-a2c0-ea5c6e8fea7e" />
+    <UnitTestResult executionId="21e682c4-cd3b-4a0a-80ad-040dc9eff47c" testId="1ea58a9a-19b6-9190-3be8-89cae65d4226" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Delete_camera_removes_it_from_catalog" computerName="NZXT_KELIAN" duration="00:00:00.0179102" startTime="2026-05-14T15:06:02.4210948+02:00" endTime="2026-05-14T15:06:02.4210951+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="21e682c4-cd3b-4a0a-80ad-040dc9eff47c" />
+    <UnitTestResult executionId="09d7f2a6-3494-4015-b706-d0ce0cdf9c24" testId="f4795f33-f2de-a27c-cd4a-f7b19002293b" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Create_verify_and_apply_camera_flow_updates_catalog" computerName="NZXT_KELIAN" duration="00:00:00.0186147" startTime="2026-05-14T15:06:02.4493347+02:00" endTime="2026-05-14T15:06:02.4493353+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="09d7f2a6-3494-4015-b706-d0ce0cdf9c24" />
+    <UnitTestResult executionId="4bbe3975-115b-455a-85dd-c617adbc3af5" testId="e873a390-fe15-7dac-f12c-8bfc3cac256b" testName="Vyzio.Tests.Integration.CameraEndpointsTests.Verify_draft_returns_status_without_persisting_camera" computerName="NZXT_KELIAN" duration="00:00:00.0256417" startTime="2026-05-14T15:06:02.3719729+02:00" endTime="2026-05-14T15:06:02.3719731+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4bbe3975-115b-455a-85dd-c617adbc3af5" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.GetCameraStatus_returns_guidance_for_known_camera" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="78c8842f-30e2-1aa2-7377-11ecdd48d306">
+      <Execution id="cf0712ff-5464-4141-a044-9c3fd164740c" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="GetCameraStatus_returns_guidance_for_known_camera" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Verify_draft_returns_status_without_persisting_camera" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="e873a390-fe15-7dac-f12c-8bfc3cac256b">
+      <Execution id="4bbe3975-115b-455a-85dd-c617adbc3af5" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Verify_draft_returns_status_without_persisting_camera" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Discover_returns_candidates_from_discovery_service" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="6eb5a413-54e1-5547-802f-8a7adb0e391e">
+      <Execution id="4d09d6e9-2c73-4dd5-8f7d-53483aeaa54b" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Discover_returns_candidates_from_discovery_service" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.GetCameraStatus_returns_not_found_for_unknown_camera" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="a21662cc-61a6-805c-a46c-8add9104f730">
+      <Execution id="20bc2925-dd45-44fd-a657-8d3d6a5fbf51" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="GetCameraStatus_returns_not_found_for_unknown_camera" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.GetCameras_returns_catalog_with_status_projection" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="a3b90b57-b617-baa7-99e4-738d82368614">
+      <Execution id="50e18d2b-33ad-4d13-896c-28589eaeee82" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="GetCameras_returns_catalog_with_status_projection" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Apply_configuration_enables_all_eligible_cameras" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="35ae4272-3f37-9258-0b26-3a6cc5908164">
+      <Execution id="75f54639-f7e3-49d2-b60c-6444d56212f7" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Apply_configuration_enables_all_eligible_cameras" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Update_camera_persists_changes_without_forcing_delete_and_recreate" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="0a45acb5-51d7-55a1-b869-9e62602021d4">
+      <Execution id="0d8c4c23-971d-47b7-836c-c3bf97c28ae0" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Update_camera_persists_changes_without_forcing_delete_and_recreate" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Vendor_asset_route_serves_local_vendor_file" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="3dbfbb27-a072-9b8a-2d01-402723aa0948">
+      <Execution id="4b924349-6c73-44b1-a2c0-ea5c6e8fea7e" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Vendor_asset_route_serves_local_vendor_file" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Vendor_assistance_returns_markdown_from_dedicated_route" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="80f71c9d-d035-ebfb-26eb-68d5b3bd9f6f">
+      <Execution id="0c0b4078-c36b-46a0-91c6-d8b11d0702ae" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Vendor_assistance_returns_markdown_from_dedicated_route" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Create_verify_and_apply_camera_flow_updates_catalog" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="f4795f33-f2de-a27c-cd4a-f7b19002293b">
+      <Execution id="09d7f2a6-3494-4015-b706-d0ce0cdf9c24" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Create_verify_and_apply_camera_flow_updates_catalog" />
+    </UnitTest>
+    <UnitTest name="Vyzio.Tests.Integration.CameraEndpointsTests.Delete_camera_removes_it_from_catalog" storage="c:\local_dev\vyzio\src\vyzio\vyzio.tests\bin\debug\net10.0\vyzio.tests.dll" id="1ea58a9a-19b6-9190-3be8-89cae65d4226">
+      <Execution id="21e682c4-cd3b-4a0a-80ad-040dc9eff47c" />
+      <TestMethod codeBase="C:\LOCAL_DEV\vyzio\src\vyzio\Vyzio.Tests\bin\Debug\net10.0\Vyzio.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Vyzio.Tests.Integration.CameraEndpointsTests" name="Delete_camera_removes_it_from_catalog" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="0a45acb5-51d7-55a1-b869-9e62602021d4" executionId="0d8c4c23-971d-47b7-836c-c3bf97c28ae0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="35ae4272-3f37-9258-0b26-3a6cc5908164" executionId="75f54639-f7e3-49d2-b60c-6444d56212f7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a3b90b57-b617-baa7-99e4-738d82368614" executionId="50e18d2b-33ad-4d13-896c-28589eaeee82" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a21662cc-61a6-805c-a46c-8add9104f730" executionId="20bc2925-dd45-44fd-a657-8d3d6a5fbf51" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="80f71c9d-d035-ebfb-26eb-68d5b3bd9f6f" executionId="0c0b4078-c36b-46a0-91c6-d8b11d0702ae" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6eb5a413-54e1-5547-802f-8a7adb0e391e" executionId="4d09d6e9-2c73-4dd5-8f7d-53483aeaa54b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="78c8842f-30e2-1aa2-7377-11ecdd48d306" executionId="cf0712ff-5464-4141-a044-9c3fd164740c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3dbfbb27-a072-9b8a-2d01-402723aa0948" executionId="4b924349-6c73-44b1-a2c0-ea5c6e8fea7e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1ea58a9a-19b6-9190-3be8-89cae65d4226" executionId="21e682c4-cd3b-4a0a-80ad-040dc9eff47c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f4795f33-f2de-a27c-cd4a-f7b19002293b" executionId="09d7f2a6-3494-4015-b706-d0ce0cdf9c24" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e873a390-fe15-7dac-f12c-8bfc3cac256b" executionId="4bbe3975-115b-455a-85dd-c617adbc3af5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="11" executed="11" passed="11" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.8)&#xD;
+[xUnit.net 00:00:00.06]   Discovering: Vyzio.Tests&#xD;
+[xUnit.net 00:00:00.11]   Discovered:  Vyzio.Tests&#xD;
+[xUnit.net 00:00:00.12]   Starting:    Vyzio.Tests&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20411]&#xD;
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (7ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT COUNT(*) FROM "sqlite_master" WHERE "name" = '__EFMigrationsLock' AND "type" = 'table';&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE IF NOT EXISTS "__EFMigrationsLock" (&#xD;
+          "Id" INTEGER NOT NULL CONSTRAINT "PK___EFMigrationsLock" PRIMARY KEY,&#xD;
+          "Timestamp" TEXT NOT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT OR IGNORE INTO "__EFMigrationsLock"("Id", "Timestamp") VALUES(1, '2026-05-14 13:06:01.7779317+00:00');&#xD;
+      SELECT changes();&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (&#xD;
+          "migration_id" TEXT NOT NULL CONSTRAINT "pk___ef_migrations_history" PRIMARY KEY,&#xD;
+          "product_version" TEXT NOT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT COUNT(*) FROM "sqlite_master" WHERE "name" = '__EFMigrationsHistory' AND "type" = 'table';&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "migration_id", "product_version"&#xD;
+      FROM "__EFMigrationsHistory"&#xD;
+      ORDER BY "migration_id";&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260512174835_InitialSchema'.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE "notifications" (&#xD;
+          "id" TEXT NOT NULL CONSTRAINT "pk_notifications" PRIMARY KEY,&#xD;
+          "event_id" TEXT NOT NULL,&#xD;
+          "channel" TEXT NOT NULL,&#xD;
+          "status" TEXT NOT NULL,&#xD;
+          "sent_at" TEXT NOT NULL,&#xD;
+          "error_message" TEXT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE "profiles" (&#xD;
+          "id" TEXT NOT NULL CONSTRAINT "pk_profiles" PRIMARY KEY,&#xD;
+          "name" TEXT NOT NULL,&#xD;
+          "category" TEXT NOT NULL,&#xD;
+          "alert_mode" TEXT NOT NULL,&#xD;
+          "last_seen_at" TEXT NULL,&#xD;
+          "created_at" TEXT NOT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE "sessions" (&#xD;
+          "id" TEXT NOT NULL CONSTRAINT "pk_sessions" PRIMARY KEY,&#xD;
+          "user_id" TEXT NOT NULL,&#xD;
+          "created_at" TEXT NOT NULL,&#xD;
+          "expires_at" TEXT NOT NULL,&#xD;
+          "revoked" INTEGER NOT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE "observed_events" (&#xD;
+          "id" TEXT NOT NULL CONSTRAINT "pk_observed_events" PRIMARY KEY,&#xD;
+          "frigate_event_id" TEXT NOT NULL,&#xD;
+          "lifecycle" TEXT NOT NULL,&#xD;
+          "camera" TEXT NOT NULL,&#xD;
+          "label" TEXT NOT NULL,&#xD;
+          "identity" TEXT NULL,&#xD;
+          "profile_id" TEXT NULL,&#xD;
+          "confidence" REAL NULL,&#xD;
+          "occurred_at" TEXT NOT NULL,&#xD;
+          "has_clip" INTEGER NOT NULL,&#xD;
+          "has_snapshot" INTEGER NOT NULL,&#xD;
+          CONSTRAINT "fk_observed_events_profiles_profile_id" FOREIGN KEY ("profile_id") REFERENCES "profiles" ("id") ON DELETE CASCADE&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE INDEX "idx_events_occurred" ON "observed_events" ("occurred_at");&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE INDEX "idx_events_profile" ON "observed_events" ("profile_id", "occurred_at");&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE UNIQUE INDEX "ux_events_frigate_event_id" ON "observed_events" ("frigate_event_id");&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "__EFMigrationsHistory" ("migration_id", "product_version")&#xD;
+      VALUES ('20260512174835_InitialSchema', '9.0.5');&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260512183438_AddCameraCatalog'.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE "cameras" (&#xD;
+          "id" TEXT NOT NULL CONSTRAINT "pk_cameras" PRIMARY KEY,&#xD;
+          "slug" TEXT NOT NULL,&#xD;
+          "display_name" TEXT NOT NULL,&#xD;
+          "source_type" TEXT NOT NULL,&#xD;
+          "host" TEXT NOT NULL,&#xD;
+          "port" INTEGER NOT NULL,&#xD;
+          "username" TEXT NULL,&#xD;
+          "password" TEXT NULL,&#xD;
+          "stream_path" TEXT NULL,&#xD;
+          "detection_preset" TEXT NOT NULL,&#xD;
+          "status" TEXT NOT NULL,&#xD;
+          "last_reachability_check_at" TEXT NULL,&#xD;
+          "last_successful_frame_at" TEXT NULL,&#xD;
+          "frigate_camera_name" TEXT NULL,&#xD;
+          "validation_state" TEXT NOT NULL,&#xD;
+          "is_enabled" INTEGER NOT NULL,&#xD;
+          "created_at" TEXT NOT NULL,&#xD;
+          "updated_at" TEXT NOT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE INDEX "idx_cameras_display_name" ON "cameras" ("display_name");&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE INDEX "idx_cameras_status" ON "cameras" ("status");&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE UNIQUE INDEX "ux_cameras_slug" ON "cameras" ("slug");&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "__EFMigrationsHistory" ("migration_id", "product_version")&#xD;
+      VALUES ('20260512183438_AddCameraCatalog', '9.0.5');&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260514140000_AddCameraVendorFamily'.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      ALTER TABLE "cameras" ADD "vendor_family" TEXT NULL;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "__EFMigrationsHistory" ("migration_id", "product_version")&#xD;
+      VALUES ('20260514140000_AddCameraVendorFamily', '9.0.5');&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "__EFMigrationsLock";&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (2ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20411]&#xD;
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT COUNT(*) FROM "sqlite_master" WHERE "name" = '__EFMigrationsLock' AND "type" = 'table';&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT OR IGNORE INTO "__EFMigrationsLock"("Id", "Timestamp") VALUES(1, '2026-05-14 13:06:02.0925578+00:00');&#xD;
+      SELECT changes();&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (&#xD;
+          "migration_id" TEXT NOT NULL CONSTRAINT "pk___ef_migrations_history" PRIMARY KEY,&#xD;
+          "product_version" TEXT NOT NULL&#xD;
+      );&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT COUNT(*) FROM "sqlite_master" WHERE "name" = '__EFMigrationsHistory' AND "type" = 'table';&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "migration_id", "product_version"&#xD;
+      FROM "__EFMigrationsHistory"&#xD;
+      ORDER BY "migration_id";&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20405]&#xD;
+      No migrations were applied. The database is already up to date.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "__EFMigrationsLock";&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (1ms) [Parameters=[@__id_0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 8), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 5), @p3='?' (Size = 10), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 10), @p11='?' (Size = 11), @p12='?' (Size = 15), @p13='?' (Size = 23), @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 5), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 8), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 10), @p3='?' (Size = 10), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 10), @p11='?' (Size = 11), @p12='?' (Size = 6), @p13='?', @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 15), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (Size = 7)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__slug_0='?' (Size = 6)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."slug" = @__slug_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 32), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 6), @p4='?' (Size = 6), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 6), @p12='?' (Size = 11), @p13='?' (Size = 15), @p14='?' (Size = 23), @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 5), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (Size = 32)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 32), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 6), @p3='?' (Size = 6), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 6), @p11='?' (Size = 11), @p12='?' (Size = 6), @p13='?' (Size = 23), @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 5), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (Size = 32)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 32), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 6), @p3='?' (Size = 6), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 6), @p11='?' (Size = 11), @p12='?' (Size = 6), @p13='?' (Size = 23), @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 9), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 32)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__slug_0='?' (Size = 6)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."slug" = @__slug_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 32), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 6), @p4='?' (Size = 6), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 6), @p12='?' (Size = 11), @p13='?' (Size = 15), @p14='?' (Size = 23), @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 5), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (Size = 32)], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      WHERE "c"."id" = @__id_0&#xD;
+      LIMIT 1&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 32), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 6), @p3='?' (Size = 6), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 6), @p11='?' (Size = 11), @p12='?' (Size = 6), @p13='?' (Size = 23), @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 5), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (Size = 32), @p0='?' (DbType = Boolean), @p1='?' (DbType = DateTime), @p2='?' (Size = 9)], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "is_enabled" = @p0, "updated_at" = @p1, "validation_state" = @p2&#xD;
+      WHERE "id" = @p3&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 8), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 10), @p3='?' (Size = 10), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 10), @p11='?' (Size = 11), @p12='?' (Size = 6), @p13='?', @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 9), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p18='?' (Size = 32), @p0='?' (DbType = DateTime), @p1='?' (Size = 14), @p2='?' (Size = 6), @p3='?' (Size = 6), @p4='?' (Size = 12), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (DbType = Int32), @p10='?' (Size = 6), @p11='?' (Size = 11), @p12='?' (Size = 6), @p13='?' (Size = 23), @p14='?' (DbType = DateTime), @p15='?', @p16='?' (Size = 9), @p17='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      UPDATE "cameras" SET "created_at" = @p0, "detection_preset" = @p1, "display_name" = @p2, "frigate_camera_name" = @p3, "host" = @p4, "is_enabled" = @p5, "last_reachability_check_at" = @p6, "last_successful_frame_at" = @p7, "password" = @p8, "port" = @p9, "slug" = @p10, "source_type" = @p11, "status" = @p12, "stream_path" = @p13, "updated_at" = @p14, "username" = @p15, "validation_state" = @p16, "vendor_family" = @p17&#xD;
+      WHERE "id" = @p18&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 32)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8)], CommandType='Text', CommandTimeout='30']&#xD;
+      DELETE FROM "cameras"&#xD;
+      WHERE "id" = @p0&#xD;
+      RETURNING 1;&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (DbType = DateTime), @p2='?' (Size = 14), @p3='?' (Size = 10), @p4='?' (Size = 10), @p5='?' (Size = 12), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Int32), @p11='?' (Size = 10), @p12='?' (Size = 11), @p13='?' (Size = 6), @p14='?', @p15='?' (DbType = DateTime), @p16='?', @p17='?' (Size = 9), @p18='?'], CommandType='Text', CommandTimeout='30']&#xD;
+      INSERT INTO "cameras" ("id", "created_at", "detection_preset", "display_name", "frigate_camera_name", "host", "is_enabled", "last_reachability_check_at", "last_successful_frame_at", "password", "port", "slug", "source_type", "status", "stream_path", "updated_at", "username", "validation_state", "vendor_family")&#xD;
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);&#xD;
+info: CamerasDiscovery[0]&#xD;
+      HTTP camera discovery request received.&#xD;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]&#xD;
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']&#xD;
+      SELECT "c"."id", "c"."created_at", "c"."detection_preset", "c"."display_name", "c"."frigate_camera_name", "c"."host", "c"."is_enabled", "c"."last_reachability_check_at", "c"."last_successful_frame_at", "c"."password", "c"."port", "c"."slug", "c"."source_type", "c"."status", "c"."stream_path", "c"."updated_at", "c"."username", "c"."validation_state", "c"."vendor_family"&#xD;
+      FROM "cameras" AS "c"&#xD;
+      ORDER BY "c"."display_name"&#xD;
+info: CamerasDiscovery[0]&#xD;
+      HTTP camera discovery request completed with 1 candidate(s).&#xD;
+[xUnit.net 00:00:01.46]   Finished:    Vyzio.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

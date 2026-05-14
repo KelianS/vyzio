@@ -65,19 +65,20 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 **Reste a faire :**
 
+Ordre de stabilisation retenu pour finir proprement ce lot : cadrage/doc, puis bugs, puis validation, puis evolutions fonctionnelles.
+
 _Cadrage et documentation_
 - [x] Mettre a jour le cadrage et la documentation si necessaire pour converger vers deux etats lisibles cote produit : camera supportee oui / non, RTSP actif oui / non
-- [ ] Aligner le contrat backend et les libelles residuels avec cette simplification produit, sans reouvrir un chantier large sur l'interface
+- [x] Aligner le contrat backend et les libelles residuels avec cette simplification produit, sans reouvrir un chantier large sur l'interface
 
 _Bugs et robustesse du parcours_
-- [ ] Corriger l'ouverture des liens des notices vendor : les liens externes et les assets locaux doivent s'ouvrir hors de la page Vyzio et declencher un telechargement quand c'est pertinent, sans rediriger l'interface principale
-
-_Evolutions fonctionnelles_
-- [ ] Permettre de relancer les tests / la verification sur une seule camera ou un seul candidat, sans relancer une decouverte complete, afin de rafraichir les informations apres un changement de configuration
-- [ ] Reprendre automatiquement le parcours de verification quand une camera precedemment detectee devient exploitable
+- [x] Corriger l'ouverture des liens des notices vendor : les liens externes et les assets locaux doivent s'ouvrir hors de la page Vyzio et declencher un telechargement quand c'est pertinent, sans rediriger l'interface principale
 
 _Validation_
-- [ ] Ajouter les tests et la documentation utilisateur qui verrouillent les etats supporte oui / non et RTSP actif oui / non
+- [x] Ajouter les tests et la documentation utilisateur qui verrouillent les etats supporte oui / non et RTSP actif oui / non
+
+_Evolutions fonctionnelles_
+- [x] Permettre de relancer les tests / la verification sur une seule camera ou un seul candidat, sans relancer une decouverte complete, afin de rafraichir les informations apres un changement de configuration
 
 **Criteres d'acceptation :**
 - Une camera existante peut etre ajoutee sans edition manuelle de fichiers

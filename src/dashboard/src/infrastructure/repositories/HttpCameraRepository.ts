@@ -6,6 +6,7 @@ import type { CameraStatus } from '../../domain/entities/CameraStatus'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import type { VendorAssistance } from '../../domain/entities/VendorAssistance'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
+import type { DiscoveryRequest } from '../../domain/ports/CameraRepository'
 import type { VendorAssistanceRequest } from '../../domain/ports/CameraRepository'
 import { fetchJson } from '../http/fetchJson'
 
@@ -48,9 +49,11 @@ interface DiscoveredCameraDto {
   port: number
   sourceType: string
   streamPath: string | null
+  rtspActive: boolean
   discoverySource: string
   note: string | null
   macAddress: string | null
+  isSupported: boolean
   qualification: string
   supportLevel: string
   vendorFamily: string | null
@@ -110,8 +113,8 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCameraStatus(payload)
   }
 
-  async discover(): Promise<DiscoveredCamera[]> {
-    const payload = await postJson<DiscoveredCameraDto[]>(`${this.apiBaseUrl}/api/cameras/discovery`)
+  async discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]> {
+    const payload = await postJson<DiscoveredCameraDto[]>(`${this.apiBaseUrl}/api/cameras/discovery`, input)
     return payload.map(mapDiscoveredCamera)
   }
 
@@ -202,9 +205,11 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     port: camera.port,
     sourceType: camera.sourceType,
     streamPath: camera.streamPath,
+    rtspActive: camera.rtspActive,
     discoverySource: camera.discoverySource,
     note: camera.note,
     macAddress: camera.macAddress,
+    isSupported: camera.isSupported,
     qualification: camera.qualification,
     supportLevel: camera.supportLevel,
     vendorFamily: camera.vendorFamily,

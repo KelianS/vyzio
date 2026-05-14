@@ -12,10 +12,15 @@ export interface VendorAssistanceRequest {
   connected: boolean
 }
 
+export interface DiscoveryRequest {
+  host: string
+  port?: number
+}
+
 export interface CameraRepository {
   getAll(): Promise<Camera[]>
   getStatus(cameraId: string): Promise<CameraStatus>
-  discover(): Promise<DiscoveredCamera[]>
+  discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: CameraDraftInput): Promise<Camera>
   update(cameraId: string, input: CameraDraftInput): Promise<Camera>

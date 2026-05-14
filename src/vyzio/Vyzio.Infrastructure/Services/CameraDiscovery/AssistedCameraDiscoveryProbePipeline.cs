@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
+using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
@@ -24,8 +25,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverAsync(CameraDiscoveryTarget? target, CancellationToken ct)
     {
+        if (target is not null)
+        {
+            return await DiscoverTargetAsync(target, ct);
+        }
+
         _logger?.LogInformation(
             "Starting assisted camera discovery. AutoDetectLocalCidrs={AutoDetectLocalCidrs}, ProbeHosts={ProbeHostsCount}, ProbeCidrs={ProbeCidrsCount}, RtspPorts={RtspPorts}, HttpPorts={HttpPorts}, OnvifPorts={OnvifPorts}",
             _settings.Discovery.AutoDetectLocalCidrs,
@@ -39,9 +45,9 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         _logger?.LogInformation("Built configured discovery host list with {HostCount} host(s).", configuredHosts.Count);
 
         var onvifTask = DiscoverOnvifSignalsAsync(ct);
-        var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(configuredHosts, ct);
-        var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(configuredHosts, ct);
-        var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, ct);
+        var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(configuredHosts, _settings.Discovery.RtspPorts, ct);
+        var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(configuredHosts, _settings.Discovery.OnvifPorts, ct);
+        var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, _settings.Discovery.HttpPorts, ct);
         var hostnameTask = DiscoverHostnameSignalsAsync(configuredHosts, ct);
         var macTask = DiscoverMacVendorSignalsAsync(configuredHosts, ct);
 
@@ -80,6 +86,35 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         signals.AddRange(macSignals);
 
         return signals;
+    }
+
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverTargetAsync(CameraDiscoveryTarget target, CancellationToken ct)
+    {
+        var hosts = new[] { target.Host.Trim() };
+        var rtspPorts = target.Port is > 0
+            ? _settings.Discovery.RtspPorts.Append(target.Port.Value).Distinct().Order().ToArray()
+            : _settings.Discovery.RtspPorts;
+        var httpPorts = target.Port is > 0
+            ? _settings.Discovery.HttpPorts.Append(target.Port.Value).Distinct().Order().ToArray()
+            : _settings.Discovery.HttpPorts;
+        var onvifPorts = target.Port is > 0
+            ? _settings.Discovery.OnvifPorts.Append(target.Port.Value).Distinct().Order().ToArray()
+            : _settings.Discovery.OnvifPorts;
+
+        var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(hosts, rtspPorts, ct);
+        var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(hosts, onvifPorts, ct);
+        var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(hosts, httpPorts, ct);
+        var hostnameTask = DiscoverHostnameSignalsAsync(hosts, ct);
+        var macTask = DiscoverMacVendorSignalsAsync(hosts, ct);
+
+        await Task.WhenAll(configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask);
+
+        return (await configuredRtspTask)
+            .Concat(await configuredOnvifTask)
+            .Concat(await configuredHttpTask)
+            .Concat(await hostnameTask)
+            .Concat(await macTask)
+            .ToList();
     }
 
     private static async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverOnvifSignalsAsync(CancellationToken ct)
@@ -170,7 +205,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredRtspSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredRtspSignalsAsync(IReadOnlyList<string> hosts, IReadOnlyList<int> ports, CancellationToken ct)
     {
         if (hosts.Count == 0)
         {
@@ -182,7 +217,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
 
         var tasks = hosts
-            .SelectMany(host => _settings.Discovery.RtspPorts.Select(port => ProbeConfiguredRtspHostAsync(host, port, gate, ct)))
+            .SelectMany(host => ports.Select(port => ProbeConfiguredRtspHostAsync(host, port, gate, ct)))
             .ToArray();
 
         var probed = await Task.WhenAll(tasks);
@@ -197,7 +232,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return results;
     }
 
-    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredHttpSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredHttpSignalsAsync(IReadOnlyList<string> hosts, IReadOnlyList<int> ports, CancellationToken ct)
     {
         if (hosts.Count == 0)
         {
@@ -208,7 +243,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
 
         var tasks = hosts
-            .SelectMany(host => _settings.Discovery.HttpPorts.Select(port => ProbeConfiguredHttpHostAsync(host, port, gate, ct)))
+            .SelectMany(host => ports.Select(port => ProbeConfiguredHttpHostAsync(host, port, gate, ct)))
             .ToArray();
 
         var probed = await Task.WhenAll(tasks);
@@ -223,7 +258,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return results;
     }
 
-    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredOnvifSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredOnvifSignalsAsync(IReadOnlyList<string> hosts, IReadOnlyList<int> ports, CancellationToken ct)
     {
         if (hosts.Count == 0)
         {
@@ -234,7 +269,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
 
         var tasks = hosts
-            .SelectMany(host => _settings.Discovery.OnvifPorts.Select(port => ProbeConfiguredOnvifHostAsync(host, port, gate, ct)))
+            .SelectMany(host => ports.Select(port => ProbeConfiguredOnvifHostAsync(host, port, gate, ct)))
             .ToArray();
 
         var probed = await Task.WhenAll(tasks);

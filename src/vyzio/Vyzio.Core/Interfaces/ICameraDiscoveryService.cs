@@ -4,5 +4,5 @@ namespace Vyzio.Core.Interfaces;
 
 public interface ICameraDiscoveryService
 {
-    Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, CancellationToken ct = default);
 }

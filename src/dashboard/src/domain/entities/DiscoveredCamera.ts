@@ -17,9 +17,11 @@ export interface DiscoveredCamera {
   port: number
   sourceType: string
   streamPath: string | null
+  rtspActive: boolean
   discoverySource: string
   note: string | null
   macAddress: string | null
+  isSupported: boolean
   qualification: string
   supportLevel: string
   vendorFamily: string | null

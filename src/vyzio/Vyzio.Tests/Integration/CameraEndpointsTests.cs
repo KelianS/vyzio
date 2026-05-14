@@ -21,6 +21,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     public CameraEndpointsTests(CamerasApiFactory factory)
     {
         _factory = factory;
+        _factory.ResetState();
     }
 
     [Fact]
@@ -76,8 +77,28 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         var candidate = Assert.Single(payload!);
         Assert.Equal("Driveway", candidate.DisplayName);
+        Assert.False(candidate.RtspActive);
+        Assert.False(candidate.IsSupported);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task Discover_can_refresh_a_single_target_without_full_scan()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/cameras/discovery", new DiscoverCamerasRequest(
+            "192.168.1.10",
+            554));
+
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveredCameraResponse[]>();
+
+        var candidate = Assert.Single(payload!);
+        Assert.Equal("Front Door", candidate.DisplayName);
+        Assert.True(candidate.RtspActive);
+        Assert.Contains("rtsp_responding", candidate.QualificationReasons);
     }
 
     [Fact]
@@ -100,7 +121,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         Assert.NotNull(payload);
         Assert.Equal("Entry", payload!.DisplayName);
-        Assert.Equal("validated", payload.ValidationState);
+        Assert.Equal("draft", payload.ValidationState);
     }
 
     [Fact]
@@ -261,7 +282,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, string DiscoverySource, string? Note, string? MacAddress, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons);
+    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string? MacAddress, bool IsSupported, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons);
 
     public sealed record VendorAssistanceResponse(string VendorFamily, string Markdown);
 
@@ -275,6 +296,38 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
+
+    public void ResetState()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
+
+        SeedDatabase(db);
+    }
+
+    private static void SeedDatabase(VyzioDbContext db)
+    {
+        db.Cameras.RemoveRange(db.Cameras);
+        db.SaveChanges();
+
+        db.Cameras.Add(new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            DisplayName = "Front Door",
+            SourceType = "rtsp_manual",
+            Host = "192.168.1.10",
+            Port = 554,
+            Status = "online",
+            ValidationState = "validated",
+            IsEnabled = true,
+            LastReachabilityCheckAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00"),
+            LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:01:00+00:00"),
+            FrigateCameraName = "front_door"
+        });
+
+        db.SaveChanges();
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -305,24 +358,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
             db.Database.Migrate();
-
-            db.Cameras.Add(new Camera
-            {
-                Id = "camera-1",
-                Slug = "front-door",
-                DisplayName = "Front Door",
-                SourceType = "rtsp_manual",
-                Host = "192.168.1.10",
-                Port = 554,
-                Status = "online",
-                ValidationState = "validated",
-                IsEnabled = true,
-                LastReachabilityCheckAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00"),
-                LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:01:00+00:00"),
-                FrigateCameraName = "front_door"
-            });
-
-            db.SaveChanges();
+            SeedDatabase(db);
         });
     }
 
@@ -355,12 +391,18 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraDiscoveryService : ICameraDiscoveryService
     {
-        public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)
+        public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<CameraDiscoveryCandidate>>(
-            [
-                new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"]),
-                new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
-            ]);
+                target is not null && string.Equals(target.Host, "192.168.1.10", StringComparison.OrdinalIgnoreCase)
+                    ?
+                    [
+                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["rtsp_responding", "mac_address_observed"])
+                    ]
+                    :
+                    [
+                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"]),
+                        new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
+                    ]);
     }
 
     private sealed class StubCameraVerifier : ICameraVerifier
