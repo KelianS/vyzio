@@ -4,6 +4,7 @@ import type {
   SaveNotificationChannelConfigRequest,
   TestNotificationChannelResult,
 } from '../../domain/entities/NotificationChannelConfig'
+import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
@@ -13,9 +14,11 @@ interface UseNotificationSettingsResult {
   loading: boolean
   saving: boolean
   testing: boolean
+  removing: boolean
   testResult: TestNotificationChannelResult | null
   save: (request: SaveNotificationChannelConfigRequest) => Promise<void>
   test: () => Promise<void>
+  remove: () => Promise<void>
 }
 
 export function useNotificationSettings(
@@ -23,11 +26,13 @@ export function useNotificationSettings(
   getConfig: GetNotificationChannelConfig,
   saveConfig: SaveNotificationChannelConfig,
   testChannel: TestNotificationChannel,
+  deleteChannel: DeleteNotificationChannel,
 ): UseNotificationSettingsResult {
   const [config, setConfig] = useState<NotificationChannelConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [removing, setRemoving] = useState(false)
   const [testResult, setTestResult] = useState<TestNotificationChannelResult | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -70,5 +75,16 @@ export function useNotificationSettings(
     }
   }, [channel, testChannel])
 
-  return { config, loading, saving, testing, testResult, save, test }
+  const remove = useCallback(async () => {
+    setRemoving(true)
+    setTestResult(null)
+    try {
+      await deleteChannel.execute(channel)
+      setConfig(null)
+    } finally {
+      setRemoving(false)
+    }
+  }, [channel, deleteChannel])
+
+  return { config, loading, saving, testing, removing, testResult, save, test, remove }
 }

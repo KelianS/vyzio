@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
@@ -13,6 +14,7 @@ interface NotificationSettingsViewProps {
   getNotificationChannelConfig: GetNotificationChannelConfig
   saveNotificationChannelConfig: SaveNotificationChannelConfig
   testNotificationChannel: TestNotificationChannel
+  deleteNotificationChannel: DeleteNotificationChannel
   onBack: () => void
 }
 
@@ -36,16 +38,19 @@ export function NotificationSettingsView({
   getNotificationChannelConfig,
   saveNotificationChannelConfig,
   testNotificationChannel,
+  deleteNotificationChannel,
   onBack,
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
 
-  const { config, loading, saving, testing, testResult, save, test } = useNotificationSettings(
-    selectedChannel,
-    getNotificationChannelConfig,
-    saveNotificationChannelConfig,
-    testNotificationChannel,
-  )
+  const { config, loading, saving, testing, removing, testResult, save, test, remove } =
+    useNotificationSettings(
+      selectedChannel,
+      getNotificationChannelConfig,
+      saveNotificationChannelConfig,
+      testNotificationChannel,
+      deleteNotificationChannel,
+    )
 
   return (
     <div className="app-shell app-shell-cameras">
@@ -105,9 +110,11 @@ export function NotificationSettingsView({
               loading={loading}
               saving={saving}
               testing={testing}
+              removing={removing}
               testResult={testResult}
               onSave={save}
               onTest={test}
+              onRemove={remove}
             />
           )}
         </div>
@@ -184,17 +191,21 @@ function TelegramConfigPanel({
   loading,
   saving,
   testing,
+  removing,
   testResult,
   onSave,
   onTest,
+  onRemove,
 }: {
   config: NotificationChannelConfig | null
   loading: boolean
   saving: boolean
   testing: boolean
+  removing: boolean
   testResult: TestNotificationChannelResult | null
   onSave: (req: SaveNotificationChannelConfigRequest) => Promise<void>
   onTest: () => Promise<void>
+  onRemove: () => Promise<void>
 }) {
   const [botToken, setBotToken] = useState('')
   const [chatId, setChatId] = useState('')
@@ -338,6 +349,17 @@ function TelegramConfigPanel({
             >
               {testing ? 'Test en cours…' : 'Tester le canal'}
             </button>
+            {config?.hasToken && (
+              <button
+                type="button"
+                className="secondary-cta"
+                onClick={onRemove}
+                disabled={removing}
+                style={{ color: 'var(--status-degraded, #e05252)', marginLeft: 'auto' }}
+              >
+                {removing ? 'Suppression…' : 'Supprimer le canal'}
+              </button>
+            )}
           </div>
 
           {testResult && (

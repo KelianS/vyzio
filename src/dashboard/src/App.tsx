@@ -5,6 +5,7 @@ import {
   createCamera,
   dashboardRuntime,
   deleteCamera,
+  deleteNotificationChannel,
   discoverCameras,
   getCameraStatus,
   getCameras,
@@ -131,6 +132,7 @@ function App() {
         getNotificationChannelConfig={getNotificationChannelConfig}
         saveNotificationChannelConfig={saveNotificationChannelConfig}
         testNotificationChannel={testNotificationChannel}
+        deleteNotificationChannel={deleteNotificationChannel}
         onBack={() => {
           window.location.hash = ''
           setView('hub')

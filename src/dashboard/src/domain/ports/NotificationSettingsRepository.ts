@@ -11,4 +11,5 @@ export interface NotificationSettingsRepository {
     request: SaveNotificationChannelConfigRequest,
   ): Promise<NotificationChannelConfig>
   testChannel(channel: string): Promise<TestNotificationChannelResult>
+  deleteChannel(channel: string): Promise<boolean>
 }

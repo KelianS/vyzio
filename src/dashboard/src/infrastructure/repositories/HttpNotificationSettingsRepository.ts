@@ -34,6 +34,16 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
       `${this.apiBaseUrl}/api/notifications/settings/${channel}/test`,
     )
   }
+
+  async deleteChannel(channel: string): Promise<boolean> {
+    const response = await fetch(`${this.apiBaseUrl}/api/notifications/settings/${channel}`, {
+      method: 'DELETE',
+      headers: { Accept: 'application/json' },
+    })
+    if (response.status === 404) return false
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    return true
+  }
 }
 
 async function postJson<T>(url: string, body?: unknown): Promise<T> {

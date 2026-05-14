@@ -48,6 +48,12 @@ public sealed class SaveNotificationChannelConfigUseCase(INotificationChannelCon
     }
 }
 
+public sealed class DeleteNotificationChannelConfigUseCase(INotificationChannelConfigRepository repository)
+{
+    public async Task<bool> ExecuteAsync(string channel, CancellationToken ct = default)
+        => await repository.DeleteByChannelAsync(channel, ct);
+}
+
 public sealed class TestNotificationChannelUseCase(
     INotificationChannelConfigRepository repository,
     ITelegramNotificationSender telegramSender)

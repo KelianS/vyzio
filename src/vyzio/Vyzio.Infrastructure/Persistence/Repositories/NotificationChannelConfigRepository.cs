@@ -35,4 +35,17 @@ public sealed class NotificationChannelConfigRepository(VyzioDbContext db) : INo
 
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<bool> DeleteByChannelAsync(string channel, CancellationToken ct = default)
+    {
+        var existing = await db.NotificationChannelConfigs
+            .FirstOrDefaultAsync(c => c.Channel == channel, ct);
+
+        if (existing is null)
+            return false;
+
+        db.NotificationChannelConfigs.Remove(existing);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 }
