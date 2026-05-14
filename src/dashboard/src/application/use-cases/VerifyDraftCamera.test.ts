@@ -1,32 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CreateCamera } from './CreateCamera'
+import { VerifyDraftCamera } from './VerifyDraftCamera'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
 
-describe('CreateCamera', () => {
-  it('delegates creation to the camera repository', async () => {
-    const created = {
-      id: 'camera-1',
-      slug: 'front-door',
+describe('VerifyDraftCamera', () => {
+  it('delegates draft verification to the camera repository', async () => {
+    const status = {
+      cameraId: 'draft-camera',
       displayName: 'Front Door',
-      sourceType: 'rtsp_manual',
-      host: '192.168.1.10',
-      port: 554,
-      status: 'needs_attention',
+      status: 'online',
       validationState: 'draft',
-      isEnabled: false,
-      previewAvailable: false,
-      needsAttention: true,
+      connected: true,
+      previewAvailable: true,
+      needsAttention: false,
+      guidance: 'Le flux RTSP repond correctement.',
       lastReachabilityCheckAt: null,
       lastSuccessfulFrameAt: null,
-      frigateCameraName: 'front_door',
     }
 
     const repository: CameraRepository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
-      create: vi.fn().mockResolvedValue(created),
-      verifyDraft: vi.fn(),
+      create: vi.fn(),
+      verifyDraft: vi.fn().mockResolvedValue(status),
       verify: vi.fn(),
       apply: vi.fn(),
       applyConfiguration: vi.fn(),
@@ -34,19 +30,19 @@ describe('CreateCamera', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new CreateCamera(repository)
+    const useCase = new VerifyDraftCamera(repository)
     const input = {
       displayName: 'Front Door',
       host: '192.168.1.10',
       port: 554,
-      username: null,
-      password: null,
+      username: 'admin',
+      password: 'secret',
       streamPath: '/Streaming/Channels/101',
       sourceType: 'rtsp_manual',
       detectionPreset: 'person_default',
     }
 
-    await expect(useCase.execute(input)).resolves.toEqual(created)
-    expect(repository.create).toHaveBeenCalledWith(input)
+    await expect(useCase.execute(input)).resolves.toEqual(status)
+    expect(repository.verifyDraft).toHaveBeenCalledWith(input)
   })
 })

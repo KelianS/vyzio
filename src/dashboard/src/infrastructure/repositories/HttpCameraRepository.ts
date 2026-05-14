@@ -1,6 +1,7 @@
 import type { CameraApplyResult } from '../../domain/entities/CameraApplyResult'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { Camera } from '../../domain/entities/Camera'
+import type { CameraConfigurationApplyResult } from '../../domain/entities/CameraConfigurationApplyResult'
 import type { CameraStatus } from '../../domain/entities/CameraStatus'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import type { VendorAssistance } from '../../domain/entities/VendorAssistance'
@@ -86,6 +87,13 @@ interface DeleteCameraDto {
   configPath: string
 }
 
+interface ApplyCameraConfigurationDto {
+  applied: boolean
+  message: string
+  configPath: string
+  cameraCount: number
+}
+
 export class HttpCameraRepository implements CameraRepository {
   constructor(private readonly apiBaseUrl: string) {}
 
@@ -113,6 +121,11 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCamera(payload)
   }
 
+  async verifyDraft(input: CameraDraftInput): Promise<CameraStatus> {
+    const payload = await postJson<CameraStatusDto>(`${this.apiBaseUrl}/api/cameras/verify-draft`, input)
+    return mapCameraStatus(payload)
+  }
+
   async verify(cameraId: string): Promise<CameraStatus> {
     const payload = await postJson<CameraStatusDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}/verify`)
     return mapCameraStatus(payload)
@@ -126,6 +139,10 @@ export class HttpCameraRepository implements CameraRepository {
       configPath: payload.configPath,
       camera: mapCameraStatus(payload.camera),
     }
+  }
+
+  async applyConfiguration(): Promise<CameraConfigurationApplyResult> {
+    return postJson<ApplyCameraConfigurationDto>(`${this.apiBaseUrl}/api/cameras/apply-configuration`)
   }
 
   async delete(cameraId: string): Promise<{ deleted: boolean; message: string; configPath: string }> {

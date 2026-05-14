@@ -146,6 +146,63 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task Verify_draft_returns_status_without_persisting_camera()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/cameras/verify-draft", new CreateCameraRequest(
+            "Porch",
+            "192.168.1.40",
+            554,
+            "admin",
+            "secret",
+            "/Streaming/Channels/101",
+            "rtsp_manual",
+            "person_default"));
+
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<CameraStatusResponse>();
+
+        Assert.NotNull(payload);
+        Assert.Equal("online", payload!.Status);
+
+        var catalogResponse = await client.GetAsync("/api/cameras");
+        var catalog = await catalogResponse.Content.ReadFromJsonAsync<CameraResponse[]>();
+        Assert.Single(catalog!);
+    }
+
+    [Fact]
+    public async Task Apply_configuration_enables_all_eligible_cameras()
+    {
+        using var client = _factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
+            "Garage",
+            "192.168.1.30",
+            554,
+            null,
+            null,
+            "/Streaming/Channels/101",
+            "rtsp_manual",
+            "person_default"));
+
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<CameraResponse>();
+        Assert.NotNull(created);
+
+        var verifyResponse = await client.PostAsync($"/api/cameras/{created!.Id}/verify", content: null);
+        verifyResponse.EnsureSuccessStatusCode();
+
+        var applyResponse = await client.PostAsync("/api/cameras/apply-configuration", content: null);
+        applyResponse.EnsureSuccessStatusCode();
+        var payload = await applyResponse.Content.ReadFromJsonAsync<ApplyCameraConfigurationResponse>();
+
+        Assert.NotNull(payload);
+        Assert.True(payload!.Applied);
+        Assert.Equal(2, payload.CameraCount);
+    }
+
+    [Fact]
     public async Task Delete_camera_removes_it_from_catalog()
     {
         using var client = _factory.CreateClient();
@@ -186,6 +243,8 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     public sealed record VendorAssistanceResponse(string VendorFamily, string Markdown);
 
     public sealed record ApplyCameraResponse(bool Applied, string Message, string ConfigPath, CameraStatusResponse Camera);
+
+    public sealed record ApplyCameraConfigurationResponse(bool Applied, string Message, string ConfigPath, int CameraCount);
 
     public sealed record DeleteCameraResponse(bool Deleted, string Message, string ConfigPath);
 }

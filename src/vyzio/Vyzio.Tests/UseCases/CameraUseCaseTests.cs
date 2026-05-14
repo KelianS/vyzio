@@ -183,6 +183,39 @@ public class VerifyCameraUseCaseTests
     }
 }
 
+public class VerifyDraftCameraUseCaseTests
+{
+    private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
+    private readonly VerifyDraftCameraUseCase _sut;
+
+    public VerifyDraftCameraUseCaseTests() => _sut = new VerifyDraftCameraUseCase(_verifier);
+
+    [Fact]
+    public async Task Execute_returns_status_projection_from_transient_camera_verification()
+    {
+        _verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00"), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00")));
+
+        var result = await _sut.ExecuteAsync(new CreateCameraRequest(
+            "Front Door",
+            "192.168.1.10",
+            554,
+            "admin",
+            "secret",
+            "Streaming/Channels/101",
+            "rtsp_manual",
+            "person_default"));
+
+        Assert.Equal("online", result.Status);
+        Assert.True(result.Connected);
+        await _verifier.Received(1).VerifyAsync(Arg.Is<Camera>(camera =>
+            camera.DisplayName == "Front Door"
+            && camera.Host == "192.168.1.10"
+            && camera.StreamPath == "/Streaming/Channels/101"
+            && camera.ValidationState == "draft"), Arg.Any<CancellationToken>());
+    }
+}
+
 public class ApplyCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
@@ -271,5 +304,51 @@ public class DeleteCameraUseCaseTests
         Assert.NotNull(result);
         Assert.True(result!.Deleted);
         await _repo.Received(1).DeleteAsync(camera, Arg.Any<CancellationToken>());
+    }
+}
+
+public class ApplyCameraConfigurationUseCaseTests
+{
+    private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly IFrigateConfigApplier _applier = Substitute.For<IFrigateConfigApplier>();
+    private readonly ApplyCameraConfigurationUseCase _sut;
+
+    public ApplyCameraConfigurationUseCaseTests() => _sut = new ApplyCameraConfigurationUseCase(_repo, _applier);
+
+    [Fact]
+    public async Task Execute_applies_all_online_or_validated_cameras()
+    {
+        var onlineDraft = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            Port = 554,
+            Status = "online",
+            ValidationState = "draft",
+        };
+
+        var validated = new Camera
+        {
+            Id = "camera-2",
+            Slug = "garage",
+            DisplayName = "Garage",
+            Host = "192.168.1.11",
+            Port = 554,
+            Status = "offline",
+            ValidationState = "validated",
+            IsEnabled = true,
+        };
+
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([onlineDraft, validated]);
+        _applier.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
+            .Returns(new FrigateConfigApplyResult(true, "Applied.", "config/frigate.generated.yml"));
+
+        var result = await _sut.ExecuteAsync();
+
+        Assert.True(result.Applied);
+        Assert.Equal(2, result.CameraCount);
+        await _repo.Received(2).UpdateAsync(Arg.Is<Camera>(camera => camera.ValidationState == "validated" && camera.IsEnabled), Arg.Any<CancellationToken>());
     }
 }

@@ -1,4 +1,5 @@
 import { ApplyCamera } from '../application/use-cases/ApplyCamera'
+import { ApplyCameraConfiguration } from '../application/use-cases/ApplyCameraConfiguration'
 import { CreateCamera } from '../application/use-cases/CreateCamera'
 import { DeleteCamera } from '../application/use-cases/DeleteCamera'
 import { DiscoverCameras } from '../application/use-cases/DiscoverCameras'
@@ -6,6 +7,7 @@ import { GetCameraStatus } from '../application/use-cases/GetCameraStatus'
 import { GetCameras } from '../application/use-cases/GetCameras'
 import { GetHubOverview } from '../application/use-cases/GetHubOverview'
 import { GetVendorAssistance } from '../application/use-cases/GetVendorAssistance'
+import { VerifyDraftCamera } from '../application/use-cases/VerifyDraftCamera'
 import { VerifyCamera } from '../application/use-cases/VerifyCamera'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
@@ -17,6 +19,7 @@ const cameraRepository = new HttpCameraRepository(runtime.apiBaseUrl)
 
 export const dashboardRuntime = runtime
 export const applyCamera = new ApplyCamera(cameraRepository)
+export const applyCameraConfiguration = new ApplyCameraConfiguration(cameraRepository)
 export const createCamera = new CreateCamera(cameraRepository)
 export const deleteCamera = new DeleteCamera(cameraRepository)
 export const discoverCameras = new DiscoverCameras(cameraRepository)
@@ -24,4 +27,5 @@ export const getCameras = new GetCameras(cameraRepository)
 export const getCameraStatus = new GetCameraStatus(cameraRepository)
 export const getHubOverview = new GetHubOverview(hubRepository)
 export const getVendorAssistance = new GetVendorAssistance(cameraRepository)
+export const verifyDraftCamera = new VerifyDraftCamera(cameraRepository)
 export const verifyCamera = new VerifyCamera(cameraRepository)

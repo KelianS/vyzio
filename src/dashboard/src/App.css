@@ -94,6 +94,18 @@
   gap: 12px;
 }
 
+.camera-sidebar-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.camera-sidebar-actions .primary-cta,
+.camera-sidebar-actions .secondary-cta {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
 .camera-sidebar-header h2 {
   font-size: 1.25rem;
 }

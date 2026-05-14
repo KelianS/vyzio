@@ -26,8 +26,10 @@ describe('DiscoverCameras', () => {
       getStatus: vi.fn(),
       discover: vi.fn().mockResolvedValue(candidates),
       create: vi.fn(),
+      verifyDraft: vi.fn(),
       verify: vi.fn(),
       apply: vi.fn(),
+      applyConfiguration: vi.fn(),
       delete: vi.fn(),
       getVendorAssistance: vi.fn(),
     }

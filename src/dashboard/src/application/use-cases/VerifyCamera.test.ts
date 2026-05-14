@@ -22,8 +22,10 @@ describe('VerifyCamera', () => {
       getStatus: vi.fn(),
       discover: vi.fn(),
       create: vi.fn(),
+      verifyDraft: vi.fn(),
       verify: vi.fn().mockResolvedValue(status),
       apply: vi.fn(),
+      applyConfiguration: vi.fn(),
       delete: vi.fn(),
       getVendorAssistance: vi.fn(),
     }

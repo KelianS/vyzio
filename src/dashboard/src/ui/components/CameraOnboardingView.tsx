@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import type { ApplyCamera } from '../../application/use-cases/ApplyCamera'
+import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
 import type { DeleteCamera } from '../../application/use-cases/DeleteCamera'
 import type { DiscoverCameras } from '../../application/use-cases/DiscoverCameras'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
+import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftCamera'
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import { useCameraStatus } from '../hooks/useCameraStatus'
@@ -27,8 +28,9 @@ interface CameraOnboardingViewProps {
   discoverCameras: DiscoverCameras
   getVendorAssistance: GetVendorAssistance
   createCamera: CreateCamera
+  verifyDraftCamera: VerifyDraftCamera
   verifyCamera: VerifyCamera
-  applyCamera: ApplyCamera
+  applyCameraConfiguration: ApplyCameraConfiguration
   deleteCamera: DeleteCamera
 }
 
@@ -88,6 +90,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [detailMessage, setDetailMessage] = useState<string | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const [draftVerification, setDraftVerification] = useState<{ connected: boolean; guidance: string | null } | null>(null)
 
   const selectedCandidate = selection.kind === 'candidate'
     ? discoveryResults[selection.index] ?? null
@@ -121,6 +124,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   const selectedCandidateNeedsRtspActivation = Boolean(selectedCandidate && !selectedCandidate.streamPath)
   const canShowCandidateForm = selection.kind === 'manual' || Boolean(selectedCandidate && selectedCandidate.streamPath)
+  const canVerifyDraft = canShowCandidateForm
+    && !selectedCandidateNeedsRtspActivation
+    && Boolean(form.displayName.trim() && form.host.trim() && form.streamPath?.trim())
+  const canAddConfiguredCamera = Boolean(draftVerification?.connected)
 
   useEffect(() => {
     if (selection.kind === 'camera' && !camerasState.data.some((camera) => camera.id === selection.cameraId)) {
@@ -156,6 +163,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   }
 
   async function handleCreate() {
+    if (!draftVerification?.connected) {
+      setFormError('Verifiez d abord le flux avant d ajouter la camera.')
+      return
+    }
+
     setActionLoading(true)
     setFormError(null)
     setFormMessage(null)
@@ -163,11 +175,35 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
     try {
       const created = await props.createCamera.execute(form)
+      const verified = await props.verifyCamera.execute(created.id)
       camerasState.reload()
       setSelection({ kind: 'camera', cameraId: created.id })
-      setFormMessage(`Camera "${created.displayName}" ajoutee au catalogue.`)
-      setDetailMessage(`Camera "${created.displayName}" est prete pour verification.`)
+      setDraftVerification(null)
+      setDetailMessage(verified.guidance ?? `Camera "${created.displayName}" ajoutee a la configuration.`)
     } catch (error: unknown) {
+      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function handleVerifyDraft() {
+    setActionLoading(true)
+    setFormError(null)
+    setFormMessage(null)
+
+    try {
+      const status = await props.verifyDraftCamera.execute(form)
+      if (!status.connected) {
+        setDraftVerification(null)
+        setFormError(status.guidance ?? 'Le flux n a pas pu etre valide.')
+        return
+      }
+
+      setDraftVerification({ connected: status.connected, guidance: status.guidance })
+      setFormMessage(status.guidance ?? 'Flux valide. Vous pouvez maintenant ajouter cette camera.')
+    } catch (error: unknown) {
+      setDraftVerification(null)
       setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
       setActionLoading(false)
@@ -195,28 +231,39 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
   }
 
-  async function handleApply() {
-    if (!selectedCameraId) {
-      return
-    }
-
+  async function handleApplyConfiguration() {
     setActionLoading(true)
+    setFormError(null)
     setDetailError(null)
-    setDetailMessage(null)
 
     try {
-      const result = await props.applyCamera.execute(selectedCameraId)
+      const result = await props.applyCameraConfiguration.execute()
       camerasState.reload()
-      cameraStatusState.reload()
+      if (selectedCameraId) {
+        cameraStatusState.reload()
+      }
 
       if (!result.applied) {
-        setDetailError(result.message)
+        if (selection.kind === 'camera') {
+          setDetailError(result.message)
+        } else {
+          setFormError(result.message)
+        }
         return
       }
 
-      setDetailMessage(`${result.message} (${result.configPath})`)
+      if (selection.kind === 'camera') {
+        setDetailMessage(`${result.message} (${result.configPath})`)
+      } else {
+        setFormMessage(`${result.message} (${result.configPath})`)
+      }
     } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      if (selection.kind === 'camera') {
+        setDetailError(message)
+      } else {
+        setFormError(message)
+      }
     } finally {
       setActionLoading(false)
     }
@@ -258,6 +305,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   }
 
   function updateForm(patch: Partial<CameraDraftInput>) {
+    setDraftVerification(null)
+    setFormMessage(null)
+    setFormError(null)
     setForm((current) => ({ ...current, ...patch }))
   }
 
@@ -268,6 +318,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
 
     setSelection({ kind: 'candidate', index })
+    setDraftVerification(null)
     updateForm({
       displayName: candidate.displayName,
       host: candidate.host,
@@ -280,12 +331,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   function selectManualEntry() {
     setSelection({ kind: 'manual' })
-    setFormMessage('Renseignez les informations minimales de la camera pour l\'ajouter au catalogue.')
+    setDraftVerification(null)
+    setFormMessage('Renseignez les informations minimales de la camera pour l\'ajouter a la configuration.')
     setDetailError(null)
   }
 
   function selectCamera(cameraId: string) {
     setSelection({ kind: 'camera', cameraId })
+    setDraftVerification(null)
     setDetailError(null)
   }
 
@@ -484,9 +537,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <p>{camerasState.error ?? `${camerasState.data.length} camera(s) dans le catalogue actuel.`}</p>
           <div className="panel-cta-row">
             <a className="secondary-cta" href="#hub">Retour au hub</a>
-            <button className="primary-cta" type="button" onClick={handleDiscovery} disabled={discoveryLoading || actionLoading}>
-              {discoveryLoading ? 'Recherche...' : 'Decouverte reseau'}
-            </button>
             <button className="secondary-cta" type="button" onClick={selectManualEntry} disabled={actionLoading}>
               Saisie manuelle
             </button>
@@ -503,8 +553,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <p className="section-kicker">Detection</p>
                 <h2>Candidats</h2>
               </div>
-              <span className="camera-sidebar-count">{discoveryResults.length}</span>
+              <div className="camera-sidebar-actions">
+                <span className="camera-sidebar-count">{discoveryResults.length}</span>
+                <button className="secondary-cta" type="button" onClick={handleDiscovery} disabled={discoveryLoading || actionLoading}>
+                  {discoveryLoading ? 'Recherche...' : 'Scanner'}
+                </button>
+              </div>
             </div>
+
+            {discoveryError ? <p className="camera-inline-state error">{discoveryError}</p> : null}
 
             <button
               type="button"
@@ -548,10 +605,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
               <div>
-                <p className="section-kicker">Catalogue</p>
-                <h2>Mes cameras</h2>
+                <p className="section-kicker">Configuration</p>
+                <h2>Cameras configurees</h2>
               </div>
-              <span className="camera-sidebar-count">{camerasState.data.length}</span>
+              <div className="camera-sidebar-actions">
+                <span className="camera-sidebar-count">{camerasState.data.length}</span>
+                <button className="primary-cta" type="button" onClick={handleApplyConfiguration} disabled={actionLoading || camerasState.data.length === 0}>
+                  Appliquer la configuration
+                </button>
+              </div>
             </div>
 
             {camerasState.data.length > 0 ? (
@@ -690,8 +752,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading}>
-                      {actionLoading ? 'Traitement...' : 'Ajouter au catalogue'}
+                    <button className="secondary-cta" type="button" onClick={handleVerifyDraft} disabled={actionLoading || !canVerifyDraft}>
+                      {actionLoading ? 'Traitement...' : 'Verifier le flux'}
+                    </button>
+                    <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading || !canAddConfiguredCamera}>
+                      {actionLoading ? 'Traitement...' : 'Ajouter aux cameras configurees'}
                     </button>
                   </div>
                 </>
@@ -792,22 +857,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </div>
                   </div>
 
-                  <div className="camera-step-actions detail compact">
-                    <div className="camera-step-summary">
-                      <strong>Etape 2</strong>
-                      <p>Verifiez d'abord le flux, puis appliquez ou supprimez la camera selon le resultat.</p>
-                    </div>
-                    <div className="panel-cta-row">
-                      <button className="secondary-cta" type="button" onClick={handleVerify} disabled={actionLoading}>
-                        Verifier le flux
-                      </button>
-                      <button className="primary-cta" type="button" onClick={handleApply} disabled={actionLoading}>
-                        Appliquer a Frigate
-                      </button>
-                      <button className="danger-cta" type="button" onClick={handleDelete} disabled={actionLoading}>
-                        Supprimer
-                      </button>
-                    </div>
+                  <div className="panel-cta-row">
+                    <button className="secondary-cta" type="button" onClick={handleVerify} disabled={actionLoading}>
+                      Verifier le flux
+                    </button>
+                    <button className="danger-cta" type="button" onClick={handleDelete} disabled={actionLoading}>
+                      Supprimer
+                    </button>
                   </div>
                 </div>
               ) : (

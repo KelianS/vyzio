@@ -94,6 +94,12 @@ public sealed record ApplyCameraResultDto(
     string ConfigPath,
     CameraStatusDto Camera);
 
+public sealed record ApplyCameraConfigurationResultDto(
+    bool Applied,
+    string Message,
+    string ConfigPath,
+    int CameraCount);
+
 public sealed record DeleteCameraResultDto(
     bool Deleted,
     string Message,
