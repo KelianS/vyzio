@@ -79,7 +79,35 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - Les etats affiches sont coherents entre backend, UI et documentation
 - Le support peut expliquer le comportement sans interpretation implicite du code
 
-### US-P3.5 — Gestion detections et profils
+### US-P3.5 — Gestion configuration des notification via UI
+
+> But : permettre a l'utilisateur de configurer les canaux de notification via l'interface, l'aider a configurer Telegram et les autres canaux. Permettre de choisir les categories de detection a notifier et les politiques d'alerte associees. Permettre de choisir le format des messages et les informations a inclure.
+
+**Taches :**
+- [x] Completer le cadrage SPECS/SAD pour expliciter le parcours UI de configuration des notifications, le modele de destinations et les regles produit a exposer
+- [ ] Definir le modele metier de configuration des notifications cote Vyzio : destinations, statuts de configuration, regles de diffusion, format de message, resultat des tests d'envoi
+- [ ] Introduire une persistence dediee a cette configuration dans Vyzio, sans dependre uniquement des options runtime injectees au demarrage
+- [ ] Definir la strategie de stockage des secrets canal (ex. token Telegram) et la separation entre donnees sensibles, statut produit et historique d'envoi
+- [ ] Exposer une API de lecture/ecriture pour la configuration des notifications, avec contrats stables pour l'UI
+- [ ] Exposer une action de test ciblee par destination pour verifier un canal configure sans attendre une vraie detection
+- [ ] Construire le premier parcours UI guide pour Telegram : etat configure / non configure, saisie assistee, aide de configuration, test d'envoi, retour d'erreur comprehensible
+- [ ] Etendre le pipeline de notification pour resoudre les destinations actives et les regles applicables depuis la configuration persistante, et non depuis un seul switch Telegram statique
+- [ ] Introduire un modele de capacites par canal pour afficher clairement ce que chaque destination supporte (image, dependance tierce, prerequis reseau, confidentialite)
+- [ ] Permettre de configurer au minimum les categories / types d'evenements notifies, le niveau minimal d'alerte et les plages horaires associees
+- [ ] Permettre de configurer le format du message envoye, avec activation minimale des champs camera, heure, type d'evenement, identite et apercu
+- [ ] Ajouter les validations backend/frontend, tests unitaires/integration et documentation utilisateur necessaires pour verrouiller le parcours de configuration et le test d'envoi
+
+**Criteres d'acceptation :**
+- L'utilisateur peut configurer Telegram depuis l'interface sans modifier de fichier ni redemarrer manuellement le produit
+- L'utilisateur voit clairement si une destination est configuree, testee avec succes, en erreur ou inactive
+- Une notification de test peut etre envoyee a la demande pour valider la configuration d'un canal
+- L'utilisateur peut regler depuis l'interface les destinations actives, les categories d'evenements, le niveau minimal d'alerte et les plages horaires minimales retenues
+- Le format du message reste comprehensible, configurable dans les limites du MVP et coherent entre backend, UI et documentation
+- Les compromis d'un canal tiers comme Telegram sont affiches explicitement avant activation
+- Le pipeline d'envoi applique la configuration persistante courante sans exiger une edition manuelle du runtime
+
+
+### US-P3.6 — Gestion detections et profils
 
 **Taches :**
 - [ ] Relier le CTA du hub a une page dediee couvrant detections et profils

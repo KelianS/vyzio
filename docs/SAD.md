@@ -767,6 +767,27 @@ await _http.PostAsync(url, form);
 | **Webhook générique** | Intégrations (Home Assistant, n8n) | ✅ URL signée |
 | **Email** | Fallback | ✅ Image en pièce jointe |
 
+#### Portee technique de la configuration des notifications
+
+La cible technique retenue fait porter a Vyzio la configuration des notifications dans un parcours produit stable, en gardant **Telegram comme premier canal guide** et en preparant les abstractions necessaires pour les canaux complementaires.
+
+Le systeme cible doit introduire les briques suivantes :
+
+- une **configuration de notifications persistante** cote Vyzio, stockee en base, au lieu de dependre uniquement d'options runtime injectees au demarrage ;
+- un **modele de destination** par canal, avec etat configure / non configure, etat active / inactive, metadonnees de verification et capacites affichees a l'UI ;
+- un **modele de regles de diffusion** regroupant au minimum : categories d'evenements notifiees, niveau minimal d'alerte, plages horaires et options de reduction du bruit ;
+- un **modele de format de message** permettant d'activer ou non les principaux champs du message (camera, heure, type, identite, apercu) sans dupliquer les templates par canal ;
+- une **API de lecture / ecriture** dediee a la configuration des notifications ;
+- un **use case de test cible** par destination, decouple du flux de detection normal, afin de verifier la configuration sans attendre un vrai evenement.
+
+Le `NotificationService` ne doit plus dependre d'un unique snapshot `TelegramDetectionNotificationPolicy` fige au demarrage. Il doit resoudre la configuration active depuis un repository ou un provider applicatif, afin de prendre en compte les reglages effectues depuis l'UI.
+
+Les secrets necessaires a un canal tiers (par exemple `bot_token` Telegram) doivent etre traites comme des donnees sensibles dans la couche Infrastructure. Le SAD ne fixe pas ici la technique exacte de protection, mais impose de separer :
+
+- les secrets du canal ;
+- le statut produit expose a l'UI ;
+- l'historique des envois et tests de notification.
+
 **URL signée HMAC** (maintenue pour FCM, webhook et ntfy) :
 
 ```csharp
@@ -789,6 +810,8 @@ public string GenerateSignedThumbnailUrl(string eventId, string baseUrl)
 - ✅ FCM + ntfy maintenus pour les utilisateurs préférant les notifications système ou zéro tiers
 - ⚠️ Telegram : la photo transite par leurs serveurs — compromis documenté et opt-in explicite
 - ⚠️ FCM seul : nécessite un tunnel pour voir la photo hors réseau — plus complexe à configurer
+- ✅ P3.5 peut etre livre par increments : configuration UI Telegram d'abord, puis extension aux autres canaux sans reouvrir l'architecture
+- ⚠️ La configuration des notifications devient un vrai sous-domaine produit : repository, API, validation, test d'envoi et projection UI doivent rester coherents
 
 ---
 
