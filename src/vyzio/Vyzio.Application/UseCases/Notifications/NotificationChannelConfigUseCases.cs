@@ -38,6 +38,11 @@ public sealed class SaveNotificationChannelConfigUseCase(INotificationChannelCon
         config.ActiveFromHour = request.ActiveFromHour is >= 0 and <= 23 ? request.ActiveFromHour : null;
         config.ActiveToHour = request.ActiveToHour is >= 0 and <= 23 ? request.ActiveToHour : null;
 
+        if (request.MessageFields is { Length: > 0 })
+            config.MessageFieldsJson = JsonSerializer.Serialize(request.MessageFields);
+        else if (request.MessageFields is { Length: 0 })
+            config.MessageFieldsJson = null; // empty array → reset to all fields
+
         // Only update token when a non-empty value is explicitly provided
         if (!string.IsNullOrWhiteSpace(request.BotToken))
         {

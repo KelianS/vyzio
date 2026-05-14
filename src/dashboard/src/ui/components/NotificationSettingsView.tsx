@@ -187,6 +187,52 @@ function LabelCheckboxes({
   )
 }
 
+const MESSAGE_FIELD_OPTIONS: { value: string; label: string }[] = [
+  { value: 'camera', label: 'Caméra' },
+  { value: 'time', label: 'Heure' },
+  { value: 'label', label: "Type d'événement" },
+  { value: 'confidence', label: 'Confiance' },
+  { value: 'snapshot', label: 'Aperçu (photo)' },
+]
+
+function MessageFieldsSelector({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (fields: string[]) => void
+}) {
+  function toggle(field: string) {
+    if (selected.includes(field)) {
+      const next = selected.filter((f) => f !== field)
+      onChange(next.length > 0 ? next : [field]) // keep at least one
+    } else {
+      onChange([...selected, field])
+    }
+  }
+
+  return (
+    <div className="camera-form-field">
+      <label>Champs inclus dans le message</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 6 }}>
+        {MESSAGE_FIELD_OPTIONS.map(({ value, label }) => (
+          <label
+            key={value}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+          >
+            <input
+              type="checkbox"
+              checked={selected.includes(value)}
+              onChange={() => toggle(value)}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
   value: h,
   label: `${String(h).padStart(2, '0')}:00`,
@@ -432,6 +478,7 @@ function TelegramConfigPanel({
   const [allowedLabels, setAllowedLabels] = useState<string[]>(['person'])
   const [activeFromHour, setActiveFromHour] = useState<number | null>(null)
   const [activeToHour, setActiveToHour] = useState<number | null>(null)
+  const [messageFields, setMessageFields] = useState<string[]>(['camera', 'time', 'label', 'confidence', 'snapshot'])
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
 
   useEffect(() => {
@@ -442,6 +489,7 @@ function TelegramConfigPanel({
       setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person'])
       setActiveFromHour(config.activeFromHour ?? null)
       setActiveToHour(config.activeToHour ?? null)
+      setMessageFields(config.messageFields?.length > 0 ? config.messageFields : ['camera', 'time', 'label', 'confidence', 'snapshot'])
       setSyncedConfig(config)
     }
   }, [config, syncedConfig])
@@ -458,6 +506,7 @@ function TelegramConfigPanel({
       allowedLabels,
       activeFromHour,
       activeToHour,
+      messageFields,
     })
     setBotToken('')
   }
@@ -554,6 +603,8 @@ function TelegramConfigPanel({
           </div>
 
           <LabelCheckboxes selected={allowedLabels} onChange={setAllowedLabels} />
+
+          <MessageFieldsSelector selected={messageFields} onChange={setMessageFields} />
 
           <SchedulePicker
             fromHour={activeFromHour}

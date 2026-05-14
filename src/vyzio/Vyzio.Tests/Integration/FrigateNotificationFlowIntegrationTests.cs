@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -55,7 +55,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _telegramSender,
             channelConfigs,
             Substitute.For<IFrigateSnapshotProvider>(),
-            new DetectionTelegramMessageFormatter());
+            new DetectionTelegramMessageFormatter(),
+            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance);
 
         _sut = new FrigateAdapter(
             new FrigateEventContractAdapter(new FrigateLabelFilter(["person"])),
@@ -90,7 +91,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         Assert.Equal("telegram", notification.Channel);
         Assert.Equal("sent", notification.Status);
 
-        Assert.Equal(["Alice detectee - front door - 10:20"], _telegramSender.Messages);
+        var expectedTime = DateTimeOffset.FromUnixTimeSeconds(1778408400).ToLocalTime().ToString("HH:mm");
+        Assert.Equal([$"Alice detectee — front door — {expectedTime} — 97 %"], _telegramSender.Messages);
     }
 
     [Fact]

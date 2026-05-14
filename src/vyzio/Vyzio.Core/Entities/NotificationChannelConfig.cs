@@ -32,6 +32,10 @@ public class NotificationChannelConfig
     /// <summary>Local hour (0-23, exclusive) until which notifications are active. Null means no restriction.</summary>
     public int? ActiveToHour { get; set; }
 
+    /// <summary>JSON array of enabled message fields. Null means all fields enabled.</summary>
+    [MaxLength(200)]
+    public string? MessageFieldsJson { get; set; }
+
     public DateTimeOffset? ConfiguredAt { get; set; }
 
     public DateTimeOffset? LastTestedAt { get; set; }

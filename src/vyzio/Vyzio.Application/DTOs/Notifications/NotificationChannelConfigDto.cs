@@ -12,12 +12,14 @@ public sealed record NotificationChannelConfigDto(
     string[] AllowedLabels,
     int? ActiveFromHour,
     int? ActiveToHour,
+    string[] MessageFields,
     DateTimeOffset? ConfiguredAt,
     DateTimeOffset? LastTestedAt,
     string? LastTestStatus,
     string? LastTestError)
 {
     private static readonly string[] DefaultLabels = ["person"];
+    private static readonly string[] DefaultFields = ["camera", "time", "label", "confidence", "snapshot"];
 
     public static NotificationChannelConfigDto From(NotificationChannelConfig config)
     {
@@ -33,6 +35,18 @@ public sealed record NotificationChannelConfigDto(
             labels = DefaultLabels;
         }
 
+        string[] fields;
+        try
+        {
+            fields = !string.IsNullOrWhiteSpace(config.MessageFieldsJson)
+                ? JsonSerializer.Deserialize<string[]>(config.MessageFieldsJson) ?? DefaultFields
+                : DefaultFields;
+        }
+        catch
+        {
+            fields = DefaultFields;
+        }
+
         return new NotificationChannelConfigDto(
             Channel: config.Channel,
             IsEnabled: config.IsEnabled,
@@ -42,6 +56,7 @@ public sealed record NotificationChannelConfigDto(
             AllowedLabels: labels,
             ActiveFromHour: config.ActiveFromHour,
             ActiveToHour: config.ActiveToHour,
+            MessageFields: fields,
             ConfiguredAt: config.ConfiguredAt,
             LastTestedAt: config.LastTestedAt,
             LastTestStatus: config.LastTestStatus,
@@ -56,7 +71,8 @@ public sealed record SaveNotificationChannelConfigRequest(
     float? MinimumConfidence,
     string[]? AllowedLabels,
     int? ActiveFromHour,
-    int? ActiveToHour);
+    int? ActiveToHour,
+    string[]? MessageFields = null);
 
 public sealed record NotificationLogEntryDto(
     string Status,

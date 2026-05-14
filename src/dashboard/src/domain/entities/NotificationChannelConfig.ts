@@ -7,6 +7,7 @@ export interface NotificationChannelConfig {
   allowedLabels: string[]
   activeFromHour: number | null
   activeToHour: number | null
+  messageFields: string[]
   configuredAt: string | null
   lastTestedAt: string | null
   lastTestStatus: 'success' | 'failure' | null
@@ -21,6 +22,7 @@ export interface SaveNotificationChannelConfigRequest {
   allowedLabels?: string[]
   activeFromHour?: number | null
   activeToHour?: number | null
+  messageFields?: string[]
 }
 
 export interface TestNotificationChannelResult {

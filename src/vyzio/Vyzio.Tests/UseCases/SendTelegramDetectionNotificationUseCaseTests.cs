@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -32,7 +33,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _telegramSender,
             _channelConfigs,
             _snapshotProvider,
-            new DetectionTelegramMessageFormatter());
+            new DetectionTelegramMessageFormatter(),
+            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance);
     }
 
     [Fact]
@@ -44,7 +46,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendAsync(
-            "Alice detectee - front door - 10:15",
+            "Alice detectee — front door — 10:15 — 91 %",
             "bot-token",
             "chat-id",
             Arg.Any<CancellationToken>());
@@ -57,14 +59,91 @@ public class SendTelegramDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_non_new_events()
+    public async Task Execute_skips_end_lifecycle_events()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "update");
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end");
 
         var sent = await _sut.ExecuteAsync(detectionEvent);
 
         Assert.False(sent);
         await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_sends_update_event_when_not_already_notified()
+    {
+        // update lifecycle is accepted so notifications aren't missed when the
+        // "new" frame arrives before the Telegram config is saved
+        var detectionEvent = CreateDetectionEvent(lifecycle: "update");
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.True(sent);
+    }
+
+    [Fact]
+    public async Task Execute_defers_new_event_when_snapshot_not_yet_ready()
+    {
+        // On lifecycle=new, if the snapshot field is enabled but has_snapshot=false,
+        // we wait for an "update" frame so the notification carries a photo.
+        var detectionEvent = new DetectionEvent
+        {
+            Id = "evt-900",
+            FrigateEventId = "frigate-evt-900",
+            Lifecycle = "new",
+            Camera = "front_door",
+            Label = "person",
+            Identity = "Alice",
+            Confidence = 0.91f,
+            OccurredAt = LocalTime(2026, 5, 10, 10, 15),
+            HasSnapshot = false,
+            HasClip = true
+        };
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.False(sent);
+        await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _telegramSender.DidNotReceive().SendPhotoAsync(
+            Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_sends_new_event_immediately_when_snapshot_field_disabled()
+    {
+        // If the user disabled the snapshot field, send text immediately on "new"
+        // without waiting for has_snapshot=true.
+        var configNoSnapshot = new NotificationChannelConfig
+        {
+            Channel = "telegram",
+            IsEnabled = true,
+            BotToken = "bot-token",
+            ChatId = "chat-id",
+            MinimumConfidence = 0.75f,
+            MessageFieldsJson = """["camera","time","label","confidence"]"""
+        };
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>()).Returns(configNoSnapshot);
+
+        var detectionEvent = new DetectionEvent
+        {
+            Id = "evt-900",
+            FrigateEventId = "frigate-evt-900",
+            Lifecycle = "new",
+            Camera = "front_door",
+            Label = "person",
+            Identity = "Alice",
+            Confidence = 0.91f,
+            OccurredAt = LocalTime(2026, 5, 10, 10, 15),
+            HasSnapshot = false,
+            HasClip = true
+        };
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.True(sent);
+        await _telegramSender.Received(1).SendAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
@@ -157,6 +236,9 @@ public class SendTelegramDetectionNotificationUseCaseTests
         Assert.Equal(expected, result);
     }
 
+    private static DateTimeOffset LocalTime(int year, int month, int day, int hour, int minute) =>
+        new(year, month, day, hour, minute, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(year, month, day, hour, minute, 0)));
+
     private static DetectionEvent CreateDetectionEvent(
         string lifecycle = "new",
         float confidence = 0.91f,
@@ -170,8 +252,86 @@ public class SendTelegramDetectionNotificationUseCaseTests
             Label = label,
             Identity = "Alice",
             Confidence = confidence,
-            OccurredAt = DateTimeOffset.Parse("2026-05-10T10:15:00+00:00"),
+            OccurredAt = LocalTime(2026, 5, 10, 10, 15),
             HasSnapshot = true,
             HasClip = true
         };
+}
+
+public class DetectionTelegramMessageFormatterTests
+{
+    private readonly DetectionTelegramMessageFormatter _sut = new();
+
+    private static DetectionEvent EventWith(
+        string camera = "front_door",
+        string label = "person",
+        string? identity = null,
+        float confidence = 0.82f) => new()
+    {
+        Id = "e1",
+        FrigateEventId = "f1",
+        Lifecycle = "new",
+        Camera = camera,
+        Label = label,
+        Identity = identity,
+        Confidence = confidence,
+        OccurredAt = new DateTimeOffset(2026, 5, 10, 8, 30, 0,
+            TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 5, 10, 8, 30, 0))),
+        HasSnapshot = true
+    };
+
+    [Fact]
+    public void Format_all_fields_enabled_returns_all_parts()
+    {
+        var result = _sut.Format(EventWith(identity: "Alice"), MessageField.All);
+        Assert.Contains("Alice detectee", result);
+        Assert.Contains("front door", result);
+        Assert.Contains("08:30", result);
+        Assert.Contains("82 %", result);
+    }
+
+    [Fact]
+    public void Format_without_camera_omits_camera_name()
+    {
+        var fields = new HashSet<string>(MessageField.All) { };
+        fields.Remove(MessageField.Camera);
+        var result = _sut.Format(EventWith(), fields);
+        Assert.DoesNotContain("front door", result);
+    }
+
+    [Fact]
+    public void Format_without_time_omits_time()
+    {
+        var fields = new HashSet<string>(MessageField.All);
+        fields.Remove(MessageField.Time);
+        var result = _sut.Format(EventWith(), fields);
+        Assert.DoesNotContain("08:30", result);
+    }
+
+    [Fact]
+    public void Format_without_confidence_omits_percentage()
+    {
+        var fields = new HashSet<string>(MessageField.All);
+        fields.Remove(MessageField.Confidence);
+        var result = _sut.Format(EventWith(), fields);
+        Assert.DoesNotContain("%", result);
+    }
+
+    [Fact]
+    public void Format_without_label_uses_generic_subject()
+    {
+        var fields = new HashSet<string> { MessageField.Camera };
+        var result = _sut.Format(EventWith(), fields);
+        Assert.StartsWith("Detection", result);
+        Assert.DoesNotContain("person", result);
+    }
+
+    [Fact]
+    public void Format_null_fields_defaults_to_all()
+    {
+        var result = _sut.Format(EventWith(identity: "Bob"));
+        Assert.Contains("Bob detectee", result);
+        Assert.Contains("front door", result);
+        Assert.Contains("08:30", result);
+    }
 }

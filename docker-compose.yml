@@ -14,6 +14,7 @@ services:
       - ./config:/app/config
       - vyzio-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - vyzio-net
     ports:
