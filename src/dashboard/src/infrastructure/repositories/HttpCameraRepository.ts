@@ -52,6 +52,15 @@ interface DiscoveredCameraDto {
   vendorFamily: string | null
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentationDto | null
+  technicalDetails?: DiscoveryTechnicalDetailsDto | null
+}
+
+interface DiscoveryTechnicalDetailsDto {
+  resolvedHostName: string | null
+  httpPortsDetected: number[]
+  rtspPortsDetected: number[]
+  onvifPortsDetected: number[]
+  rtspPathsDetected: string[]
 }
 
 interface VendorDocumentationDto {
@@ -176,6 +185,15 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
       ? {
           vendorFamily: camera.vendorDocumentation.vendorFamily,
           markdown: camera.vendorDocumentation.markdown,
+        }
+      : null,
+    technicalDetails: camera.technicalDetails
+      ? {
+          resolvedHostName: camera.technicalDetails.resolvedHostName,
+          httpPortsDetected: camera.technicalDetails.httpPortsDetected,
+          rtspPortsDetected: camera.technicalDetails.rtspPortsDetected,
+          onvifPortsDetected: camera.technicalDetails.onvifPortsDetected,
+          rtspPathsDetected: camera.technicalDetails.rtspPathsDetected,
         }
       : null,
   }

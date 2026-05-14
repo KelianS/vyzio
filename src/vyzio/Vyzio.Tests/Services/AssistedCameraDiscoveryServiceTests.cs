@@ -52,6 +52,9 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
         Assert.Equal("/stream1", candidate.StreamPath);
         Assert.Null(candidate.MacAddress);
+        Assert.NotNull(candidate.TechnicalDetails);
+        Assert.Equal([port], candidate.TechnicalDetails!.RtspPortsDetected);
+        Assert.Equal(["/stream1"], candidate.TechnicalDetails.RtspPathsDetected);
     }
 
     [Fact]

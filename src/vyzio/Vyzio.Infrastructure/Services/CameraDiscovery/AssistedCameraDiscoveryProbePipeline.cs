@@ -39,7 +39,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         _logger?.LogInformation("Built configured discovery host list with {HostCount} host(s).", configuredHosts.Count);
 
         var onvifTask = DiscoverOnvifSignalsAsync(ct);
-        var knownRtspTask = DiscoverKnownRtspSignalsAsync(ct);
         var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(configuredHosts, ct);
         var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(configuredHosts, ct);
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, ct);
@@ -48,7 +47,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
         await Task.WhenAll(
             onvifTask,
-            knownRtspTask,
             configuredRtspTask,
             configuredOnvifTask,
             configuredHttpTask,
@@ -60,10 +58,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var onvifSignals = await onvifTask;
         _logger?.LogInformation("ONVIF multicast discovery returned {CandidateCount} candidate(s).", onvifSignals.Count);
         signals.AddRange(onvifSignals);
-
-        var knownRtspSignals = await knownRtspTask;
-        _logger?.LogInformation("Known RTSP probes returned {CandidateCount} candidate(s).", knownRtspSignals.Count);
-        signals.AddRange(knownRtspSignals);
 
         var configuredRtspSignals = await configuredRtspTask;
         _logger?.LogInformation("Configured RTSP discovery returned {CandidateCount} candidate(s).", configuredRtspSignals.Count);
@@ -176,44 +170,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverKnownRtspSignalsAsync(CancellationToken ct)
-    {
-        var probes = new (string Host, int Port, string StreamPath, string DisplayName, string Note)[]
-        {
-            ("127.0.0.1", 8554, "/test-camera", "Camera locale mock", "RTSP relay detected on the local mock stream."),
-            ("localhost", 8554, "/test-camera", "Camera locale mock", "RTSP relay detected on the local mock stream."),
-            ("mediamtx", 8554, "/test-camera", "Camera mock Docker", "RTSP relay detected on the Docker mock stream."),
-        };
-
-        var results = new List<RawCameraDiscoverySignal>();
-
-        foreach (var probe in probes)
-        {
-            if (await CanConnectAsync(probe.Host, probe.Port, 250, ct))
-            {
-                results.Add(BuildRawSignal(
-                    probe.DisplayName,
-                    probe.Host,
-                    probe.Port,
-                    "rtsp_manual",
-                    probe.StreamPath,
-                    "rtsp_probe",
-                    probe.Note,
-                    null,
-                    null,
-                    ["rtsp_responding"]));
-            }
-        }
-
-        return results;
-    }
-
     private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverConfiguredRtspSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
     {
         if (hosts.Count == 0)
         {
             return [];
         }
+        //return [];
 
         var results = new List<RawCameraDiscoverySignal>();
         using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);

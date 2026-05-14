@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Endpoints;
 
 public static class CamerasEndpoints
 {
+    private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
+
     public static IEndpointRouteBuilder MapCameras(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/cameras");
@@ -25,6 +29,8 @@ public static class CamerasEndpoints
             var result = await useCase.ExecuteAsync(request, ct);
             return Results.Json(result);
         });
+
+        group.MapGet("/vendor-assets/{**assetPath}", GetVendorAsset);
 
         group.MapGet("/", async (GetCamerasUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(ct)));
@@ -60,5 +66,30 @@ public static class CamerasEndpoints
         });
 
         return app;
+    }
+
+    private static IResult GetVendorAsset(string assetPath, VyzioRuntimeSettings settings)
+    {
+        var catalogPath = settings.Documentation.VendorCatalogPath;
+        if (string.IsNullOrWhiteSpace(catalogPath) || string.IsNullOrWhiteSpace(assetPath))
+        {
+            return Results.NotFound();
+        }
+
+        var assetRoot = Path.GetFullPath(Path.Combine(catalogPath, "assets"));
+        var requestedPath = Path.GetFullPath(Path.Combine(assetRoot, assetPath));
+
+        if (!requestedPath.StartsWith(assetRoot, StringComparison.OrdinalIgnoreCase) || !File.Exists(requestedPath))
+        {
+            return Results.NotFound();
+        }
+
+        var contentType = ContentTypeProvider.TryGetContentType(requestedPath, out var resolvedContentType)
+            ? resolvedContentType
+            : string.Equals(Path.GetExtension(requestedPath), ".ini", StringComparison.OrdinalIgnoreCase)
+                ? "text/plain"
+                : "application/octet-stream";
+
+        return Results.File(File.OpenRead(requestedPath), contentType, enableRangeProcessing: true);
     }
 }

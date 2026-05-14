@@ -3,6 +3,14 @@ export interface VendorDocumentation {
   markdown: string
 }
 
+export interface DiscoveryTechnicalDetails {
+  resolvedHostName: string | null
+  httpPortsDetected: number[]
+  rtspPortsDetected: number[]
+  onvifPortsDetected: number[]
+  rtspPathsDetected: string[]
+}
+
 export interface DiscoveredCamera {
   displayName: string
   host: string
@@ -17,4 +25,5 @@ export interface DiscoveredCamera {
   vendorFamily: string | null
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentation | null
+  technicalDetails?: DiscoveryTechnicalDetails | null
 }

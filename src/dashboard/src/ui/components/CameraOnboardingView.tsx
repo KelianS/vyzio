@@ -49,9 +49,14 @@ type DiscoveryCandidate = {
     vendorFamily: string
     markdown: string
   } | null
+  technicalDetails?: {
+    resolvedHostName: string | null
+    httpPortsDetected: number[]
+    rtspPortsDetected: number[]
+    onvifPortsDetected: number[]
+    rtspPathsDetected: string[]
+  } | null
 }
-
-type CandidateTone = 'confirmed' | 'likely' | 'unknown'
 
 type CameraSelection =
   | { kind: 'manual' }
@@ -103,11 +108,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     ?? matchedDiscoveryCandidate?.vendorFamily
     ?? null
 
-  const activeSupportLevel = selectedCandidate?.supportLevel
-    ?? matchedDiscoveryCandidate?.supportLevel
-    ?? 'unknown'
-
-  const activeStreamPath = selectedCandidate?.streamPath ?? null
+  const activeStreamPath = selectedCandidate?.streamPath
+    ?? matchedDiscoveryCandidate?.streamPath
+    ?? null
 
   const vendorAssistanceState = useVendorAssistance(
     props.getVendorAssistance,
@@ -115,6 +118,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     activeStreamPath,
     cameraStatusState.data?.connected ?? false,
   )
+
+  const selectedCandidateNeedsRtspActivation = Boolean(selectedCandidate && !selectedCandidate.streamPath)
+  const canShowCandidateForm = selection.kind === 'manual' || Boolean(selectedCandidate && selectedCandidate.streamPath)
 
   useEffect(() => {
     if (selection.kind === 'camera' && !camerasState.data.some((camera) => camera.id === selection.cameraId)) {
@@ -269,11 +275,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       sourceType: candidate.sourceType,
       streamPath: candidate.streamPath,
     })
-    setFormMessage(
-      candidate.streamPath
-        ? `Le candidat ${candidate.displayName} a ete recopie dans le formulaire.`
-        : `Le candidat ${candidate.displayName} a ete recopie. Completez maintenant le chemin RTSP avant verification.`,
-    )
+    setFormMessage(null)
   }
 
   function selectManualEntry() {
@@ -287,28 +289,20 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setDetailError(null)
   }
 
-  function formatQualificationLabel(qualification: string) {
-    switch (qualification) {
-      case 'camera_confirmed':
-        return 'Camera confirmee'
-      case 'camera_likely':
-        return 'Camera probable'
-      default:
-        return 'Equipement non qualifie'
-    }
+  function hasVendorDocumentation(candidate: DiscoveryCandidate | null) {
+    return Boolean(candidate?.vendorDocumentation?.markdown?.trim())
   }
 
-  function formatSupportLabel(supportLevel: string) {
-    switch (supportLevel) {
-      case 'supported':
-        return 'Support officiel'
-      case 'guided':
-        return 'Assistance guidee'
-      case 'experimental':
-        return 'Support experimental'
-      default:
-        return 'Support inconnu'
-    }
+  function isSupportedCandidate(candidate: DiscoveryCandidate | null) {
+    return Boolean(candidate && (candidate.supportLevel !== 'unknown' || hasVendorDocumentation(candidate)))
+  }
+
+  function formatSupportLabel(candidate: DiscoveryCandidate | null) {
+    return isSupportedCandidate(candidate) ? 'Supporte' : 'Inconnu'
+  }
+
+  function supportBadgeTone(candidate: DiscoveryCandidate | null) {
+    return isSupportedCandidate(candidate) ? 'supported' : 'unknown'
   }
 
   function formatVendorFamily(vendorFamily: string | null) {
@@ -318,7 +312,46 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       case 'tplink_tapo':
         return 'TP-Link Tapo'
       default:
-        return vendorFamily ?? 'Non identifie'
+        return vendorFamily ?? 'Constructeur inconnu'
+    }
+  }
+
+  function formatCandidateAddress(candidate: DiscoveryCandidate) {
+    return candidate.port > 0 ? `${candidate.host}:${candidate.port}` : candidate.host
+  }
+
+  function formatMutedValue(value: string | null | undefined) {
+    return value && value.trim() ? value : '—'
+  }
+
+  function formatMutedList(values: Array<string | number> | null | undefined) {
+    return values && values.length > 0 ? values.join(', ') : '—'
+  }
+
+  function formatOptionalVendor(vendorFamily: string | null) {
+    return vendorFamily ? formatVendorFamily(vendorFamily) : '—'
+  }
+
+  function formatDiscoverySource(discoverySource: string) {
+    switch (discoverySource) {
+      case 'onvif':
+        return 'ONVIF multicast'
+      case 'onvif_unicast':
+        return 'ONVIF unicast'
+      case 'mac_vendor_probe':
+        return 'MAC constructeur'
+      case 'hostname_probe':
+        return 'Nom reseau'
+      case 'rtsp_probe':
+        return 'RTSP local'
+      case 'network_scan':
+        return 'Scan RTSP'
+      case 'http_probe':
+        return 'HTTP camera'
+      case 'http_service':
+        return 'HTTP generique'
+      default:
+        return discoverySource
     }
   }
 
@@ -347,42 +380,90 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
   }
 
-  function formatCandidateAddress(candidate: DiscoveryCandidate) {
-    return candidate.port > 0 ? `${candidate.host}:${candidate.port}` : candidate.host
+  const shouldShowVendorAssistance = vendorAssistanceState.loading
+    || Boolean(vendorAssistanceState.error)
+    || Boolean(vendorAssistanceState.data?.markdown)
+
+  function renderTechnicalDetails(candidate: DiscoveryCandidate | null, fallbackHost: string | null = null) {
+    const technicalDetails = candidate?.technicalDetails
+    const host = candidate?.host ?? fallbackHost
+
+    return (
+      <details className="camera-debug-details">
+        <summary>Details techniques</summary>
+        <div className="camera-debug-content">
+          <dl className="camera-summary-list debug">
+            <div>
+              <dt>IP</dt>
+              <dd>{formatMutedValue(host)}</dd>
+            </div>
+            <div>
+              <dt>Hostname</dt>
+              <dd>{formatMutedValue(technicalDetails?.resolvedHostName)}</dd>
+            </div>
+            <div>
+              <dt>MAC</dt>
+              <dd>{formatMutedValue(candidate?.macAddress)}</dd>
+            </div>
+            <div>
+              <dt>Constructeur</dt>
+              <dd>{formatOptionalVendor(candidate?.vendorFamily ?? null)}</dd>
+            </div>
+            <div>
+              <dt>Ports HTTP detectes</dt>
+              <dd>{formatMutedList(technicalDetails?.httpPortsDetected)}</dd>
+            </div>
+            <div>
+              <dt>Ports ONVIF detectes</dt>
+              <dd>{formatMutedList(technicalDetails?.onvifPortsDetected)}</dd>
+            </div>
+            <div>
+              <dt>Ports RTSP detectes</dt>
+              <dd>{formatMutedList(technicalDetails?.rtspPortsDetected)}</dd>
+            </div>
+            <div>
+              <dt>Flux RTSP detectes</dt>
+              <dd>{formatMutedList(technicalDetails?.rtspPathsDetected)}</dd>
+            </div>
+          </dl>
+        </div>
+      </details>
+    )
   }
 
-  function formatDiscoverySource(discoverySource: string) {
-    switch (discoverySource) {
-      case 'onvif':
-        return 'ONVIF multicast'
-      case 'onvif_unicast':
-        return 'ONVIF unicast'
-      case 'mac_vendor_probe':
-        return 'MAC constructeur'
-      case 'hostname_probe':
-        return 'Nom reseau'
-      case 'rtsp_probe':
-        return 'RTSP local'
-      case 'network_scan':
-        return 'Scan RTSP'
-      case 'http_probe':
-        return 'HTTP camera'
-      case 'http_service':
-        return 'HTTP generique'
-      default:
-        return discoverySource
+  function renderConfidenceDetails(candidate: DiscoveryCandidate | null) {
+    if (!candidate) {
+      return null
     }
-  }
 
-  function qualificationTone(qualification: string): CandidateTone {
-    switch (qualification) {
-      case 'camera_confirmed':
-        return 'confirmed'
-      case 'camera_likely':
-        return 'likely'
-      default:
-        return 'unknown'
-    }
+    return (
+      <details className="camera-debug-details camera-confidence-details">
+        <summary>Pourquoi cette camera est proposee</summary>
+        <div className="camera-debug-content">
+          <dl className="camera-summary-list debug">
+            <div>
+              <dt>Detection retenue</dt>
+              <dd>{formatMutedValue(formatDiscoverySource(candidate.discoverySource))}</dd>
+            </div>
+            <div>
+              <dt>Niveau de confiance</dt>
+              <dd>{formatMutedValue(candidate.qualification)}</dd>
+            </div>
+          </dl>
+          <div className="camera-confidence-signals">
+            {candidate.qualificationReasons.length > 0 ? (
+              candidate.qualificationReasons.map((reason) => (
+                <span key={reason} className="camera-confidence-chip">
+                  {formatQualificationReason(reason)}
+                </span>
+              ))
+            ) : (
+              <span className="camera-confidence-empty">Aucun indice detaille</span>
+            )}
+          </div>
+        </div>
+      </details>
+    )
   }
 
   return (
@@ -448,15 +529,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <strong>{candidate.displayName}</strong>
                     <p>{formatCandidateAddress(candidate)}</p>
                     <div className="camera-badge-row compact">
-                      <span className={`camera-qualification-badge ${qualificationTone(candidate.qualification)}`}>
-                        {formatQualificationLabel(candidate.qualification)}
-                      </span>
-                      <span className="camera-support-badge">
-                        {formatSupportLabel(candidate.supportLevel)}
+                      <span className={`camera-support-badge ${supportBadgeTone(candidate)}`}>
+                        {formatSupportLabel(candidate)}
                       </span>
                     </div>
                   </div>
-                  <small>{formatDiscoverySource(candidate.discoverySource)}</small>
+                  <small>{formatVendorFamily(candidate.vendorFamily)}</small>
                 </button>
               ))
             ) : (
@@ -524,36 +602,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         <dd>{formatCandidateAddress(selectedCandidate)}</dd>
                       </div>
                       <div>
-                        <dt>Detection</dt>
-                        <dd>{formatDiscoverySource(selectedCandidate.discoverySource)}</dd>
+                        <dt>Constructeur</dt>
+                        <dd>{formatVendorFamily(selectedCandidate.vendorFamily)}</dd>
                       </div>
                       <div>
-                        <dt>Flux suggere</dt>
-                        <dd>{selectedCandidate.streamPath ?? 'A completer manuellement'}</dd>
-                      </div>
-                      <div>
-                        <dt>MAC</dt>
-                        <dd>{selectedCandidate.macAddress ?? 'Indisponible'}</dd>
-                      </div>
-                      <div>
-                        <dt>Confiance</dt>
+                        <dt>RTSP actif</dt>
                         <dd>
-                          <span className={`camera-qualification-badge ${qualificationTone(selectedCandidate.qualification)}`}>
-                            {formatQualificationLabel(selectedCandidate.qualification)}
+                          <span className={`camera-rtsp-badge ${selectedCandidate.streamPath ? 'ready' : 'missing'}`}>
+                            {selectedCandidate.streamPath ? 'Oui' : 'Non'}
                           </span>
                         </dd>
                       </div>
                       <div>
                         <dt>Support</dt>
                         <dd>
-                          <span className="camera-support-badge">
-                            {formatSupportLabel(selectedCandidate.supportLevel)}
+                          <span className={`camera-support-badge ${supportBadgeTone(selectedCandidate)}`}>
+                            {formatSupportLabel(selectedCandidate)}
                           </span>
                         </dd>
-                      </div>
-                      <div>
-                        <dt>Constructeur probable</dt>
-                        <dd>{formatVendorFamily(selectedCandidate.vendorFamily)}</dd>
                       </div>
                     </dl>
                   ) : (
@@ -561,95 +627,75 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   )}
                 </section>
 
-                {selectedCandidate ? (
-                  <section className="camera-detail-section confidence">
-                    <h3>Pourquoi ce niveau de confiance ?</h3>
-                    <div className="camera-badge-row">
-                      <span className={`camera-qualification-badge ${qualificationTone(selectedCandidate.qualification)}`}>
-                        {formatQualificationLabel(selectedCandidate.qualification)}
-                      </span>
-                      <span className="camera-support-badge">
-                        {formatSupportLabel(selectedCandidate.supportLevel)}
-                      </span>
-                    </div>
-                    <ul className="camera-reason-list">
-                      {selectedCandidate.qualificationReasons.map((reason) => (
-                        <li key={reason}>{formatQualificationReason(reason)}</li>
-                      ))}
-                    </ul>
+                {selectedCandidateNeedsRtspActivation ? (
+                  <section className="camera-readiness-callout" aria-live="polite">
+                    <strong>Camera non prete pour l'ajout</strong>
+                    <p>
+                      Le flux RTSP n'est pas encore actif. Activez-le d'abord sur la camera, puis revenez ici pour l'ajouter au catalogue.
+                    </p>
+                    {vendorAssistanceState.data?.markdown ? (
+                      <p>Suivez la notice constructeur ci-dessous pour l'activer pas a pas.</p>
+                    ) : (
+                      <p>Quand le RTSP sera disponible, le formulaire d'ajout reapparaitra automatiquement.</p>
+                    )}
                   </section>
                 ) : null}
 
-                <section className="camera-detail-section vendor">
-                  <h3>Assistance constructeur</h3>
-                  {(selectedCandidate || matchedDiscoveryCandidate) ? (
-                    <p className="camera-section-copy">
-                      {activeVendorFamily
-                        ? `${formatVendorFamily(activeVendorFamily)} est actuellement classe comme ${formatSupportLabel(activeSupportLevel).toLowerCase()}.`
-                        : 'Le constructeur n est pas encore reconnu avec assez de certitude pour fournir une notice plus precise.'}
-                    </p>
-                  ) : null}
-                  {vendorAssistanceState.loading ? (
-                    <p className="camera-section-copy">Chargement de la notice constructeur...</p>
-                  ) : vendorAssistanceState.error ? (
-                    <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
-                  ) : vendorAssistanceState.data?.markdown ? (
-                    <div className="camera-vendor-markdown">
-                      <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
-                    </div>
-                  ) : activeVendorFamily && (activeStreamPath || cameraStatusState.data?.connected) ? (
-                    <p className="camera-section-copy">
-                      La configuration RTSP semble deja renseignee ou fonctionnelle. Aucune notice constructeur supplementaire n'est necessaire.
-                    </p>
-                  ) : activeVendorFamily ? (
-                    <p className="camera-section-copy">
-                      Aucune notice constructeur n'a ete trouvee pour ce vendor dans le catalogue actuel.
-                    </p>
-                  ) : null}
-                </section>
+                {shouldShowVendorAssistance ? (
+                  <section className="camera-detail-section vendor">
+                    <h3>Assistance constructeur</h3>
+                    {vendorAssistanceState.loading ? (
+                      <p className="camera-section-copy">Chargement de la notice constructeur...</p>
+                    ) : vendorAssistanceState.error ? (
+                      <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
+                    ) : vendorAssistanceState.data?.markdown ? (
+                      <div className="camera-vendor-markdown">
+                        <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
+                      </div>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                {selectedCandidate ? renderConfidenceDetails(selectedCandidate) : null}
+                {selectedCandidate ? renderTechnicalDetails(selectedCandidate) : null}
               </div>
 
-              <div className="camera-form-grid compact">
-                <label>
-                  <span>Nom</span>
-                  <input value={form.displayName} onChange={(event) => updateForm({ displayName: event.target.value })} placeholder="Porte d'entree" />
-                </label>
-                <label>
-                  <span>Host</span>
-                  <input value={form.host} onChange={(event) => updateForm({ host: event.target.value })} placeholder="192.168.1.10" />
-                </label>
-                <label>
-                  <span>Port</span>
-                  <input type="number" value={form.port} onChange={(event) => updateForm({ port: Number(event.target.value) || 554 })} />
-                </label>
-                <label>
-                  <span>Chemin RTSP</span>
-                  <input value={form.streamPath ?? ''} onChange={(event) => updateForm({ streamPath: event.target.value || null })} placeholder="/Streaming/Channels/101" />
-                  <small className="camera-field-hint">
-                    Obligatoire pour verifier le flux. Certaines cameras detectees par ONVIF ne remontent pas ce chemin automatiquement.
-                  </small>
-                </label>
-                <label>
-                  <span>Utilisateur</span>
-                  <input value={form.username ?? ''} onChange={(event) => updateForm({ username: event.target.value || null })} />
-                </label>
-                <label>
-                  <span>Mot de passe</span>
-                  <input type="password" value={form.password ?? ''} onChange={(event) => updateForm({ password: event.target.value || null })} />
-                </label>
-              </div>
+              {canShowCandidateForm ? (
+                <>
+                  <div className="camera-form-grid compact">
+                    <label>
+                      <span>Nom</span>
+                      <input value={form.displayName} onChange={(event) => updateForm({ displayName: event.target.value })} placeholder="Porte d'entree" />
+                    </label>
+                    <label>
+                      <span>Host</span>
+                      <input value={form.host} onChange={(event) => updateForm({ host: event.target.value })} placeholder="192.168.1.10" />
+                    </label>
+                    <label>
+                      <span>Port</span>
+                      <input type="number" value={form.port} onChange={(event) => updateForm({ port: Number(event.target.value) || 554 })} />
+                    </label>
+                    <label>
+                      <span>Chemin RTSP</span>
+                      <input value={form.streamPath ?? ''} onChange={(event) => updateForm({ streamPath: event.target.value || null })} placeholder="/Streaming/Channels/101" />
+                    </label>
+                    <label>
+                      <span>Utilisateur</span>
+                      <input value={form.username ?? ''} onChange={(event) => updateForm({ username: event.target.value || null })} />
+                    </label>
+                    <label>
+                      <span>Mot de passe</span>
+                      <input type="password" value={form.password ?? ''} onChange={(event) => updateForm({ password: event.target.value || null })} />
+                    </label>
+                  </div>
 
-              <div className="camera-step-actions compact">
-                <div className="camera-step-summary">
-                  <strong>Etape 1</strong>
-                  <p>Validez les informations utiles avant d'ajouter la camera au catalogue.</p>
-                </div>
-                <div className="panel-cta-row">
-                  <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading}>
-                    {actionLoading ? 'Traitement...' : 'Ajouter au catalogue'}
-                  </button>
-                </div>
-              </div>
+                  <div className="panel-cta-row">
+                    <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading}>
+                      {actionLoading ? 'Traitement...' : 'Ajouter au catalogue'}
+                    </button>
+                  </div>
+                </>
+              ) : null}
             </>
           ) : (
             <>
@@ -677,56 +723,73 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
                   <div className="camera-detail-sections">
                     <section className="camera-detail-section">
-                      <h3>Etat</h3>
+                      <h3>Resume</h3>
                       <dl className="camera-summary-list">
                         <div>
-                          <dt>Validation</dt>
-                          <dd>{formatValidationStateLabel(cameraStatusState.data.validationState)}</dd>
+                          <dt>Adresse</dt>
+                          <dd>{selectedCamera ? formatCameraAddress(selectedCamera) : '—'}</dd>
                         </div>
                         <div>
-                          <dt>Flux</dt>
-                          <dd>{cameraStatusState.data.connected ? 'Joignable' : 'A verifier'}</dd>
+                          <dt>Constructeur</dt>
+                          <dd>{formatVendorFamily(matchedDiscoveryCandidate?.vendorFamily ?? null)}</dd>
                         </div>
                         <div>
-                          <dt>Derniere verification</dt>
-                          <dd>{formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}</dd>
+                          <dt>RTSP actif</dt>
+                          <dd>
+                            <span className={`camera-rtsp-badge ${cameraStatusState.data.connected ? 'ready' : 'missing'}`}>
+                              {cameraStatusState.data.connected ? 'Oui' : 'Non'}
+                            </span>
+                          </dd>
                         </div>
                         <div>
-                          <dt>Apercu</dt>
-                          <dd>{formatCameraPreview(cameraStatusState.data)}</dd>
+                          <dt>Support</dt>
+                          <dd>
+                            <span className={`camera-support-badge ${supportBadgeTone(matchedDiscoveryCandidate)}`}>
+                              {formatSupportLabel(matchedDiscoveryCandidate)}
+                            </span>
+                          </dd>
                         </div>
                       </dl>
                     </section>
 
-                    <section className="camera-detail-section vendor">
-                      <h3>Assistance constructeur</h3>
-                      {matchedDiscoveryCandidate?.vendorFamily ? (
-                        <p className="camera-section-copy">
-                          {`${formatVendorFamily(matchedDiscoveryCandidate.vendorFamily)} est actuellement classe comme ${formatSupportLabel(matchedDiscoveryCandidate.supportLevel).toLowerCase()}.`}
-                        </p>
-                      ) : null}
-                      {vendorAssistanceState.loading ? (
-                        <p className="camera-section-copy">Chargement de la notice constructeur...</p>
-                      ) : vendorAssistanceState.error ? (
-                        <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
-                      ) : vendorAssistanceState.data?.markdown ? (
-                        <div className="camera-vendor-markdown">
-                          <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
+                    {shouldShowVendorAssistance ? (
+                      <section className="camera-detail-section vendor">
+                        <h3>Assistance constructeur</h3>
+                        {vendorAssistanceState.loading ? (
+                          <p className="camera-section-copy">Chargement de la notice constructeur...</p>
+                        ) : vendorAssistanceState.error ? (
+                          <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
+                        ) : vendorAssistanceState.data?.markdown ? (
+                          <div className="camera-vendor-markdown">
+                            <ReactMarkdown>{vendorAssistanceState.data.markdown}</ReactMarkdown>
+                          </div>
+                        ) : null}
+                      </section>
+                    ) : null}
+
+                    <div className="camera-debug-stack">
+                      {renderConfidenceDetails(matchedDiscoveryCandidate)}
+                      {renderTechnicalDetails(matchedDiscoveryCandidate, selectedCamera?.host ?? null)}
+                      <details className="camera-debug-details">
+                        <summary>Etat technique</summary>
+                        <div className="camera-debug-content">
+                          <dl className="camera-summary-list debug">
+                            <div>
+                              <dt>Validation</dt>
+                              <dd>{formatValidationStateLabel(cameraStatusState.data.validationState)}</dd>
+                            </div>
+                            <div>
+                              <dt>Derniere verification</dt>
+                              <dd>{formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}</dd>
+                            </div>
+                            <div>
+                              <dt>Apercu</dt>
+                              <dd>{formatCameraPreview(cameraStatusState.data)}</dd>
+                            </div>
+                          </dl>
                         </div>
-                      ) : matchedDiscoveryCandidate?.vendorFamily && cameraStatusState.data?.connected ? (
-                        <p className="camera-section-copy">
-                          La camera parait deja operationnelle en RTSP. La notice constructeur n'est plus necessaire.
-                        </p>
-                      ) : matchedDiscoveryCandidate?.vendorFamily ? (
-                        <p className="camera-section-copy">
-                          Aucune notice constructeur n'a ete trouvee pour ce vendor dans le catalogue actuel.
-                        </p>
-                      ) : (
-                        <p className="camera-section-copy">
-                          Relancez une decouverte reseau pour identifier le vendor de cette camera avant de demander une assistance constructeur.
-                        </p>
-                      )}
-                    </section>
+                      </details>
+                    </div>
                   </div>
 
                   <div className="camera-step-actions detail compact">

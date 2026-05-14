@@ -25,7 +25,8 @@ public sealed record DiscoveredCameraDto(
     string SupportLevel,
     string? VendorFamily,
     IReadOnlyList<string> QualificationReasons,
-    VendorDocumentationDto? VendorDocumentation)
+    VendorDocumentationDto? VendorDocumentation,
+    DiscoveryTechnicalDetailsDto? TechnicalDetails)
 {
     public static DiscoveredCameraDto From(CameraDiscoveryCandidate candidate) => new(
         candidate.DisplayName,
@@ -40,7 +41,26 @@ public sealed record DiscoveredCameraDto(
         candidate.SupportLevel,
         candidate.VendorFamily,
         candidate.QualificationReasons,
-        VendorDocumentationDto.From(candidate.VendorDocumentation));
+        VendorDocumentationDto.From(candidate.VendorDocumentation),
+        DiscoveryTechnicalDetailsDto.From(candidate.TechnicalDetails));
+}
+
+public sealed record DiscoveryTechnicalDetailsDto(
+    string? ResolvedHostName,
+    IReadOnlyList<int> HttpPortsDetected,
+    IReadOnlyList<int> RtspPortsDetected,
+    IReadOnlyList<int> OnvifPortsDetected,
+    IReadOnlyList<string> RtspPathsDetected)
+{
+    public static DiscoveryTechnicalDetailsDto? From(DiscoveryTechnicalDetails? details)
+        => details is null
+            ? null
+            : new DiscoveryTechnicalDetailsDto(
+                details.ResolvedHostName,
+                details.HttpPortsDetected,
+                details.RtspPortsDetected,
+                details.OnvifPortsDetected,
+                details.RtspPathsDetected);
 }
 
 public sealed record VendorDocumentationDto(

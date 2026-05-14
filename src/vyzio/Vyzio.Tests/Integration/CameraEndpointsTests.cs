@@ -99,6 +99,20 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task Vendor_asset_route_serves_local_vendor_file()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/cameras/vendor-assets/ceshi.ini");
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+
+        var payload = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(payload));
+    }
+
+    [Fact]
     public async Task Create_verify_and_apply_camera_flow_updates_catalog()
     {
         using var client = _factory.CreateClient();

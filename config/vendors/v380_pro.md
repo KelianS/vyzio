@@ -15,7 +15,7 @@ Le principe est simple : on place un fichier d'activation sur la carte, on demar
 
 1. Ouvrez l'application **V380 Pro** et terminez la configuration normale de la camera.
 2. Verifiez que la camera a bien un identifiant et un mot de passe.
-3. Recuperez le fichier `ceshi.ini` depuis le guide communautaire ci-dessous.
+3. Telechargez le fichier [ceshi.ini](/api/cameras/vendor-assets/ceshi.ini).
 4. Copiez ce fichier a la **racine** de la carte micro SD.
 5. Eteignez la camera.
 6. Inserez la carte micro SD dans la camera.
@@ -53,4 +53,5 @@ Remplacez :
 
 ## Liens utiles
 
+- [Telecharger le fichier ceshi.ini](/api/cameras/vendor-assets/ceshi.ini)
 - [Guide communautaire V380 PRO](https://gist.github.com/SolveSoul/9be5d9599c8b4b59f7cfa4cd0ce79c9c)
