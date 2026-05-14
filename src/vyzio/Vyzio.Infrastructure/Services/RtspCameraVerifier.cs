@@ -26,7 +26,7 @@ public sealed class RtspCameraVerifier : ICameraVerifier
                     true,
                     true,
                     "online",
-                    "Camera responded to the stream verification.",
+                    "Le flux RTSP repond correctement.",
                     checkedAt,
                     checkedAt),
                 RtspProbeResult.AuthenticationRequired => new CameraVerificationResult(
@@ -40,7 +40,7 @@ public sealed class RtspCameraVerifier : ICameraVerifier
                     true,
                     false,
                     "degraded",
-                    "Camera network endpoint is reachable, but the stream response could not be confirmed.",
+                    "La camera repond sur le reseau, mais le flux RTSP n'a pas pu etre confirme.",
                     checkedAt,
                     null)
             };
@@ -51,7 +51,7 @@ public sealed class RtspCameraVerifier : ICameraVerifier
                 false,
                 false,
                 "offline",
-                "Camera is unreachable. Check host, port, and stream path.",
+                "Camera injoignable. Verifiez l'hote, le port et le chemin RTSP.",
                 checkedAt,
                 null);
         }

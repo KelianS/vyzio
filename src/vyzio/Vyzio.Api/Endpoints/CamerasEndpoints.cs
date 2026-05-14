@@ -41,6 +41,12 @@ public static class CamerasEndpoints
             return Results.Created($"/api/cameras/{dto.Id}", dto);
         });
 
+        group.MapPut("/{id}", async (string id, UpdateCameraRequest request, UpdateCameraUseCase useCase, CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(id, request, ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
         group.MapPost("/verify-draft", async (CreateCameraRequest request, VerifyDraftCameraUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(request, ct)));
 

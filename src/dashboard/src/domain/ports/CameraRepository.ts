@@ -18,6 +18,7 @@ export interface CameraRepository {
   discover(): Promise<DiscoveredCamera[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: CameraDraftInput): Promise<Camera>
+  update(cameraId: string, input: CameraDraftInput): Promise<Camera>
   verifyDraft(input: CameraDraftInput): Promise<CameraStatus>
   verify(cameraId: string): Promise<CameraStatus>
   apply(cameraId: string): Promise<CameraApplyResult>

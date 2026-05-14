@@ -35,36 +35,41 @@ public sealed record CameraStatusDto(
 
     private static string? BuildGuidance(Camera camera, bool connected, bool previewAvailable)
     {
+        if (string.Equals(camera.ValidationState, "pending_removal", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Suppression en attente. Appliquez la configuration pour finaliser le retrait dans Frigate.";
+        }
+
         if (string.Equals(camera.ValidationState, "draft", StringComparison.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(camera.StreamPath))
             {
-                return "Camera setup is incomplete. Add the RTSP path, then run verification.";
+                return "Configuration incomplete. Ajoutez le chemin RTSP, puis lancez la verification.";
             }
 
-            return "Camera setup is incomplete. Run verification to confirm the stream before apply.";
+            return "Configuration incomplete. Verifiez le flux avant d'appliquer la configuration.";
         }
 
         if (string.Equals(camera.Status, "config_error", StringComparison.OrdinalIgnoreCase))
         {
-            return "Frigate could not apply the generated camera configuration.";
+            return "Frigate n'a pas pu appliquer la configuration generee pour cette camera.";
         }
 
         if (string.Equals(camera.Status, "degraded", StringComparison.OrdinalIgnoreCase))
         {
-            return "Camera network endpoint is reachable, but the stream preview could not be confirmed.";
+            return "La camera repond sur le reseau, mais le flux n'a pas pu etre confirme.";
         }
 
         if (!connected)
         {
-            return "Camera is unreachable. Check network access and stream settings.";
+            return "Camera injoignable. Verifiez l'acces reseau et les parametres du flux.";
         }
 
         if (!previewAvailable)
         {
-            return "Camera is connected but no recent preview is available yet.";
+            return "Camera connectee, mais aucun apercu recent n'est encore disponible.";
         }
 
-        return "Camera is connected and ready.";
+        return "Camera connectee et prete.";
     }
 }

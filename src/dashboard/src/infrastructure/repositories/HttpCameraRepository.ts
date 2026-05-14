@@ -16,6 +16,8 @@ interface CameraDto {
   sourceType: string
   host: string
   port: number
+  username: string | null
+  streamPath: string | null
   status: string
   validationState: string
   isEnabled: boolean
@@ -122,6 +124,11 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCamera(payload)
   }
 
+  async update(cameraId: string, input: CameraDraftInput): Promise<Camera> {
+    const payload = await putJson<CameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`, input)
+    return mapCamera(payload)
+  }
+
   async verifyDraft(input: CameraDraftInput): Promise<CameraStatus> {
     const payload = await postJson<CameraStatusDto>(`${this.apiBaseUrl}/api/cameras/verify-draft`, input)
     return mapCameraStatus(payload)
@@ -159,6 +166,8 @@ function mapCamera(camera: CameraDto): Camera {
     sourceType: camera.sourceType,
     host: camera.host,
     port: camera.port,
+    username: camera.username,
+    streamPath: camera.streamPath,
     status: camera.status,
     validationState: camera.validationState,
     isEnabled: camera.isEnabled,
@@ -250,6 +259,23 @@ async function deleteJson<T>(url: string): Promise<T> {
     headers: {
       Accept: 'application/json',
     },
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} on ${url}`)
+  }
+
+  return response.json() as Promise<T>
+}
+
+async function putJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {

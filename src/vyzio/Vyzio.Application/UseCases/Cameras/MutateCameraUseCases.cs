@@ -5,13 +5,23 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryService)
+public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryService, ICameraRepository cameras)
 {
     public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(CancellationToken ct = default)
     {
         var candidates = await discoveryService.DiscoverAsync(ct);
-        return candidates.Select(DiscoveredCameraDto.From).ToList();
+        var configuredEndpoints = (await cameras.GetAllAsync(ct))
+            .Select(camera => BuildEndpointKey(camera.Host, camera.Port))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return candidates
+            .Where(candidate => !configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)))
+            .Select(DiscoveredCameraDto.From)
+            .ToList();
     }
+
+    private static string BuildEndpointKey(string host, int port)
+        => $"{host.Trim().ToLowerInvariant()}:{port}";
 }
 
 public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAssistanceService)
@@ -129,6 +139,67 @@ public sealed class VerifyCameraUseCase(ICameraRepository cameras, ICameraVerifi
     }
 }
 
+public sealed class UpdateCameraUseCase(ICameraRepository cameras)
+{
+    public async Task<CameraDto?> ExecuteAsync(string id, UpdateCameraRequest request, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.DisplayName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Host);
+
+        var camera = await cameras.GetByIdAsync(id, ct);
+        if (camera is null)
+        {
+            return null;
+        }
+
+        var normalizedHost = request.Host.Trim();
+        var normalizedPort = request.Port > 0 ? request.Port : 554;
+        var normalizedUsername = CameraDraftFactory.NormalizeOptional(request.Username);
+        var normalizedStreamPath = CameraDraftFactory.NormalizeStreamPath(request.StreamPath);
+        var normalizedVendorFamily = CameraDraftFactory.NormalizeOptional(request.VendorFamily);
+        var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
+        var normalizedDetectionPreset = string.IsNullOrWhiteSpace(request.DetectionPreset) ? camera.DetectionPreset : request.DetectionPreset.Trim();
+        var normalizedPassword = request.Password is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
+
+        var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
+            || camera.Port != normalizedPort
+            || !string.Equals(camera.Username, normalizedUsername, StringComparison.Ordinal)
+            || !string.Equals(camera.StreamPath, normalizedStreamPath, StringComparison.Ordinal)
+            || !string.Equals(camera.SourceType, normalizedSourceType, StringComparison.Ordinal)
+            || !string.Equals(camera.DetectionPreset, normalizedDetectionPreset, StringComparison.Ordinal)
+            || !string.Equals(camera.VendorFamily, normalizedVendorFamily, StringComparison.Ordinal)
+            || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
+
+        camera.DisplayName = request.DisplayName.Trim();
+        camera.Host = normalizedHost;
+        camera.Port = normalizedPort;
+        camera.Username = normalizedUsername;
+        camera.StreamPath = normalizedStreamPath;
+        camera.SourceType = normalizedSourceType;
+        camera.DetectionPreset = normalizedDetectionPreset;
+        camera.VendorFamily = normalizedVendorFamily;
+
+        if (normalizedPassword is not null)
+        {
+            camera.Password = normalizedPassword;
+        }
+
+        if (connectivityChanged)
+        {
+            camera.Status = "needs_attention";
+            camera.ValidationState = "draft";
+            camera.IsEnabled = false;
+            camera.LastReachabilityCheckAt = null;
+            camera.LastSuccessfulFrameAt = null;
+        }
+
+        camera.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await cameras.UpdateAsync(camera, ct);
+        return CameraDto.From(camera);
+    }
+}
+
 public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
 {
     public async Task<ApplyCameraResultDto?> ExecuteAsync(string id, CancellationToken ct = default)
@@ -182,7 +253,7 @@ public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfig
     }
 }
 
-public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
+public sealed class DeleteCameraUseCase(ICameraRepository cameras)
 {
     public async Task<DeleteCameraResultDto?> ExecuteAsync(string id, CancellationToken ct = default)
     {
@@ -192,25 +263,12 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfi
             return null;
         }
 
-        var configPath = string.Empty;
-        if (camera.IsEnabled || string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
-        {
-            var remaining = (await cameras.GetAllAsync(ct))
-                .Where(existing => existing.Id != camera.Id)
-                .Where(existing => string.Equals(existing.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+        camera.IsEnabled = false;
+        camera.ValidationState = "pending_removal";
+        camera.UpdatedAt = DateTimeOffset.UtcNow;
 
-            var applyResult = await frigateConfigApplier.ApplyAsync(remaining, ct);
-            configPath = applyResult.ConfigPath;
-
-            if (!applyResult.Applied)
-            {
-                return new DeleteCameraResultDto(false, applyResult.Message, configPath);
-            }
-        }
-
-        await cameras.DeleteAsync(camera, ct);
-        return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" deleted.", configPath);
+        await cameras.UpdateAsync(camera, ct);
+        return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" queued for removal. Apply the configuration to update Frigate.", string.Empty);
     }
 }
 
@@ -219,13 +277,18 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
     public async Task<ApplyCameraConfigurationResultDto> ExecuteAsync(CancellationToken ct = default)
     {
         var catalog = await cameras.GetAllAsync(ct);
+        var pendingRemovals = catalog
+            .Where(camera => string.Equals(camera.ValidationState, "pending_removal", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
         var applicable = catalog
+            .Where(camera => !string.Equals(camera.ValidationState, "pending_removal", StringComparison.OrdinalIgnoreCase))
             .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase))
             .DistinctBy(camera => camera.Id)
             .ToList();
 
-        if (applicable.Count == 0)
+        if (applicable.Count == 0 && pendingRemovals.Count == 0)
         {
             return new ApplyCameraConfigurationResultDto(false, "Aucune camera verifiee a appliquer pour le moment.", string.Empty, 0);
         }
@@ -260,9 +323,18 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
             await cameras.UpdateAsync(camera, ct);
         }
 
+        foreach (var removedCamera in pendingRemovals)
+        {
+            await cameras.DeleteAsync(removedCamera, ct);
+        }
+
         return new ApplyCameraConfigurationResultDto(
             true,
-            applicable.Count == 1 ? "Configuration appliquee pour 1 camera." : $"Configuration appliquee pour {applicable.Count} cameras.",
+            applicable.Count == 0
+                ? "Configuration appliquee. Les suppressions en attente ont ete synchronisees."
+                : applicable.Count == 1
+                    ? "Configuration appliquee pour 1 camera."
+                    : $"Configuration appliquee pour {applicable.Count} cameras.",
             applyResult.ConfigPath,
             applicable.Count);
     }

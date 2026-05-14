@@ -67,7 +67,7 @@ public class GetCameraStatusUseCaseTests
 
         Assert.NotNull(result);
         Assert.True(result!.NeedsAttention);
-        Assert.Equal("Camera setup is incomplete. Add the RTSP path, then run verification.", result.Guidance);
+        Assert.Equal("Configuration incomplete. Ajoutez le chemin RTSP, puis lancez la verification.", result.Guidance);
     }
 
     [Fact]
@@ -84,13 +84,15 @@ public class GetCameraStatusUseCaseTests
 public class DiscoverCamerasUseCaseTests
 {
     private readonly ICameraDiscoveryService _discovery = Substitute.For<ICameraDiscoveryService>();
+    private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly DiscoverCamerasUseCase _sut;
 
-    public DiscoverCamerasUseCaseTests() => _sut = new DiscoverCamerasUseCase(_discovery);
+    public DiscoverCamerasUseCaseTests() => _sut = new DiscoverCamerasUseCase(_discovery, _repo);
 
     [Fact]
     public async Task Execute_returns_discovered_candidates()
     {
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
@@ -104,6 +106,33 @@ public class DiscoverCamerasUseCaseTests
         Assert.Equal("AA:BB:CC:DD:EE:FF", candidate.MacAddress);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task Execute_filters_out_already_configured_candidates()
+    {
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new Camera
+            {
+                Id = "camera-1",
+                Slug = "front-door",
+                DisplayName = "Front Door",
+                Host = "192.168.1.10",
+                Port = 554,
+            }
+        ]);
+
+        _discovery.DiscoverAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", null, null, "camera_confirmed", "unknown", null, []),
+            new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", null, null, "camera_confirmed", "unknown", null, [])
+        ]);
+
+        var result = await _sut.ExecuteAsync();
+
+        var candidate = Assert.Single(result);
+        Assert.Equal("Driveway", candidate.DisplayName);
     }
 }
 
@@ -277,13 +306,12 @@ public class ApplyCameraUseCaseTests
 public class DeleteCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
-    private readonly IFrigateConfigApplier _applier = Substitute.For<IFrigateConfigApplier>();
     private readonly DeleteCameraUseCase _sut;
 
-    public DeleteCameraUseCaseTests() => _sut = new DeleteCameraUseCase(_repo, _applier);
+    public DeleteCameraUseCaseTests() => _sut = new DeleteCameraUseCase(_repo);
 
     [Fact]
-    public async Task Execute_deletes_camera_and_reapplies_when_camera_is_validated()
+    public async Task Execute_marks_camera_pending_removal_without_reapplying()
     {
         var camera = new Camera
         {
@@ -296,15 +324,98 @@ public class DeleteCameraUseCaseTests
         };
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
-        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
-        _applier.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
-            .Returns(new FrigateConfigApplyResult(true, "Applied.", "config/frigate.generated.yml"));
 
         var result = await _sut.ExecuteAsync(camera.Id);
 
         Assert.NotNull(result);
         Assert.True(result!.Deleted);
-        await _repo.Received(1).DeleteAsync(camera, Arg.Any<CancellationToken>());
+        await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
+            updated.ValidationState == "pending_removal"
+            && updated.IsEnabled == false), Arg.Any<CancellationToken>());
+    }
+}
+
+public class UpdateCameraUseCaseTests
+{
+    private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly UpdateCameraUseCase _sut;
+
+    public UpdateCameraUseCaseTests() => _sut = new UpdateCameraUseCase(_repo);
+
+    [Fact]
+    public async Task Execute_updates_display_name_without_resetting_verified_state()
+    {
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            Port = 554,
+            StreamPath = "/Streaming/Channels/101",
+            Status = "online",
+            ValidationState = "validated",
+            IsEnabled = true,
+            DetectionPreset = "person_default",
+            SourceType = "rtsp_manual",
+        };
+
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        var result = await _sut.ExecuteAsync(camera.Id, new UpdateCameraRequest(
+            "Entry",
+            "192.168.1.10",
+            554,
+            null,
+            null,
+            "/Streaming/Channels/101",
+            "rtsp_manual",
+            "person_default"));
+
+        Assert.NotNull(result);
+        Assert.Equal("Entry", result!.DisplayName);
+        await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
+            updated.DisplayName == "Entry"
+            && updated.ValidationState == "validated"
+            && updated.IsEnabled), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_resets_camera_to_draft_when_stream_settings_change()
+    {
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            Port = 554,
+            StreamPath = "/Streaming/Channels/101",
+            Status = "online",
+            ValidationState = "validated",
+            IsEnabled = true,
+            DetectionPreset = "person_default",
+            SourceType = "rtsp_manual",
+        };
+
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        var result = await _sut.ExecuteAsync(camera.Id, new UpdateCameraRequest(
+            "Front Door",
+            "192.168.1.10",
+            554,
+            null,
+            null,
+            "/Streaming/Channels/102",
+            "rtsp_manual",
+            "person_default"));
+
+        Assert.NotNull(result);
+        await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
+            updated.StreamPath == "/Streaming/Channels/102"
+            && updated.ValidationState == "draft"
+            && updated.IsEnabled == false
+            && updated.Status == "needs_attention"), Arg.Any<CancellationToken>());
     }
 }
 

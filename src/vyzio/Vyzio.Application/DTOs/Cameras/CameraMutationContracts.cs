@@ -13,6 +13,17 @@ public sealed record CreateCameraRequest(
     string? DetectionPreset,
     string? VendorFamily = null);
 
+public sealed record UpdateCameraRequest(
+    string DisplayName,
+    string Host,
+    int Port,
+    string? Username,
+    string? Password,
+    string? StreamPath,
+    string? SourceType,
+    string? DetectionPreset,
+    string? VendorFamily = null);
+
 public sealed record DiscoveredCameraDto(
     string DisplayName,
     string Host,

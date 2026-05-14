@@ -25,6 +25,8 @@ export function formatValidationStateLabel(state: string): string {
   switch (state) {
     case 'validated':
       return 'Validee'
+    case 'pending_removal':
+      return 'Suppression en attente'
     case 'draft':
       return 'Configuration inachevee'
     default:

@@ -81,6 +81,29 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task Update_camera_persists_changes_without_forcing_delete_and_recreate()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PutAsJsonAsync("/api/cameras/camera-1", new UpdateCameraRequest(
+            "Entry",
+            "192.168.1.10",
+            554,
+            null,
+            null,
+            "/Streaming/Channels/101",
+            "rtsp_manual",
+            "person_default"));
+
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<CameraResponse>();
+
+        Assert.NotNull(payload);
+        Assert.Equal("Entry", payload!.DisplayName);
+        Assert.Equal("validated", payload.ValidationState);
+    }
+
+    [Fact]
     public async Task Vendor_assistance_returns_markdown_from_dedicated_route()
     {
         using var client = _factory.CreateClient();
@@ -217,31 +240,24 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var response = await client.DeleteAsync("/api/cameras/camera-1");
 
         response.EnsureSuccessStatusCode();
+        var deleted = await response.Content.ReadFromJsonAsync<DeleteCameraResponse>();
+        Assert.NotNull(deleted);
+        Assert.True(deleted!.Deleted);
 
         var catalogResponse = await client.GetAsync("/api/cameras");
         catalogResponse.EnsureSuccessStatusCode();
         var payload = await catalogResponse.Content.ReadFromJsonAsync<CameraResponse[]>();
-        Assert.Empty(payload!);
+        var camera = Assert.Single(payload!);
+        Assert.Equal("pending_removal", camera.ValidationState);
 
-        var restoreResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
-            "Front Door",
-            "192.168.1.10",
-            554,
-            null,
-            null,
-            "/Streaming/Channels/101",
-            "rtsp_manual",
-            "person_default"));
+        var applyResponse = await client.PostAsync("/api/cameras/apply-configuration", content: null);
+        applyResponse.EnsureSuccessStatusCode();
 
-        restoreResponse.EnsureSuccessStatusCode();
-        var restored = await restoreResponse.Content.ReadFromJsonAsync<CameraResponse>();
-        Assert.NotNull(restored);
-
-        var verifyResponse = await client.PostAsync($"/api/cameras/{restored!.Id}/verify", content: null);
-        verifyResponse.EnsureSuccessStatusCode();
+        var refreshedCatalog = await client.GetFromJsonAsync<CameraResponse[]>("/api/cameras");
+        Assert.Empty(refreshedCatalog!);
     }
 
-    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, int Port, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, string? FrigateCameraName);
+    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, int Port, string? Username, string? StreamPath, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, string? FrigateCameraName, string? VendorFamily);
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
@@ -342,6 +358,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
         public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<CameraDiscoveryCandidate>>(
             [
+                new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"]),
                 new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
             ]);
     }
