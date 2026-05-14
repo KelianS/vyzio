@@ -62,22 +62,10 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Filtrer les cameras deja configurees hors des candidats de decouverte
 - [x] Qualifier les candidats de base (`camera_confirmee`, `camera_probable`, `equipement_non_qualifie`) et exposer les raisons de qualification a l'UI
 - [x] Introduire une premiere assistance constructeur exploitable pendant l'onboarding
-
-**Reste a faire :**
-
-Ordre de stabilisation retenu pour finir proprement ce lot : cadrage/doc, puis bugs, puis validation, puis evolutions fonctionnelles.
-
-_Cadrage et documentation_
 - [x] Mettre a jour le cadrage et la documentation si necessaire pour converger vers deux etats lisibles cote produit : camera supportee oui / non, RTSP actif oui / non
 - [x] Aligner le contrat backend et les libelles residuels avec cette simplification produit, sans reouvrir un chantier large sur l'interface
-
-_Bugs et robustesse du parcours_
 - [x] Corriger l'ouverture des liens des notices vendor : les liens externes et les assets locaux doivent s'ouvrir hors de la page Vyzio et declencher un telechargement quand c'est pertinent, sans rediriger l'interface principale
-
-_Validation_
 - [x] Ajouter les tests et la documentation utilisateur qui verrouillent les etats supporte oui / non et RTSP actif oui / non
-
-_Evolutions fonctionnelles_
 - [x] Permettre de relancer les tests / la verification sur une seule camera ou un seul candidat, sans relancer une decouverte complete, afin de rafraichir les informations apres un changement de configuration
 
 **Criteres d'acceptation :**
