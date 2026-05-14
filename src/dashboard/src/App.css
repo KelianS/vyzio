@@ -150,6 +150,32 @@
   font-size: 0.98rem;
 }
 
+.candidate-preview-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  align-items: stretch;
+}
+
+.candidate-preview-main {
+  min-width: 0;
+  width: 100%;
+}
+
+.candidate-preview-main strong {
+  margin-bottom: 6px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.candidate-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .camera-nav-item p,
 .camera-nav-item small {
   color: var(--ink-soft);
@@ -163,7 +189,7 @@
 }
 
 .camera-badge-row.compact {
-  margin-top: 10px;
+  margin-top: 0;
   flex-wrap: nowrap;
   align-items: center;
 }
@@ -238,6 +264,18 @@
 
 .camera-nav-meta.compact {
   min-width: 112px;
+}
+
+.candidate-preview-meta {
+  min-width: auto;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.candidate-preview-meta small {
+  display: block;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .camera-nav-meta span {

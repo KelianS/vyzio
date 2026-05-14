@@ -373,8 +373,16 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
   }
 
+  function formatKnownVendorFamily(vendorFamily: string | null) {
+    return vendorFamily ? formatVendorFamily(vendorFamily) : null
+  }
+
+  function formatCandidatePreviewTitle(candidate: DiscoveryCandidate) {
+    return candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
+  }
+
   function formatCandidateAddress(candidate: DiscoveryCandidate) {
-    return candidate.port > 0 ? `${candidate.host}:${candidate.port}` : candidate.host
+    return candidate.host
   }
 
   function isReadyCandidate(candidate: DiscoveryCandidate) {
@@ -629,23 +637,28 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <button
                   key={`${candidate.host}-${candidate.port}-${index}`}
                   type="button"
-                  className={`camera-nav-item ${selection.kind === 'candidate' && selection.index === index ? 'selected' : ''}`}
+                  className={`camera-nav-item candidate-preview-card ${selection.kind === 'candidate' && selection.index === index ? 'selected' : ''}`}
                   onClick={() => selectDiscoveryCandidate(index)}
                 >
-                  <div>
-                    <strong>{candidate.displayName}</strong>
+                  <div className="candidate-preview-main">
+                    <strong>{formatCandidatePreviewTitle(candidate)}</strong>
                     <p>{formatCandidateAddress(candidate)}</p>
-                    <div className="camera-badge-row compact">
-                      <span className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}>
-                        {formatSupportLabel(candidate.vendorFamily, candidate)}
-                      </span>
-                      {isReadyCandidate(candidate) ? (
-                        <span className="camera-rtsp-badge ready">Prete</span>
+                    <div className="candidate-preview-footer">
+                      <div className="camera-badge-row compact">
+                        <span className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}>
+                          {formatSupportLabel(candidate.vendorFamily, candidate)}
+                        </span>
+                        {isReadyCandidate(candidate) ? (
+                          <span className="camera-rtsp-badge ready">Prete</span>
+                        ) : null}
+                      </div>
+
+                      {formatKnownVendorFamily(candidate.vendorFamily) ? (
+                        <div className="camera-nav-meta compact candidate-preview-meta">
+                          <small>{formatKnownVendorFamily(candidate.vendorFamily)}</small>
+                        </div>
                       ) : null}
                     </div>
-                  </div>
-                  <div className="camera-nav-meta compact">
-                    <small>{formatVendorFamily(candidate.vendorFamily)}</small>
                   </div>
                 </button>
               ))

@@ -514,6 +514,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("tplink_tapo", candidate.VendorFamily);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
         Assert.Contains("http_camera_signature", candidate.QualificationReasons);
+        Assert.False(string.IsNullOrWhiteSpace(candidate.TechnicalDetails?.ResolvedHostName));
     }
 
     [Fact]

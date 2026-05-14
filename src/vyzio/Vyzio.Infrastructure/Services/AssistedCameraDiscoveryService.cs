@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Text.RegularExpressions;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -27,15 +28,16 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
     {
         var rawSignals = await _probePipeline.DiscoverAsync(ct);
         var identifiedCandidates = _identifier.Identify(rawSignals);
-        var result = EnrichTechnicalDetails(_formatter.Format(identifiedCandidates), rawSignals);
+        var result = await EnrichTechnicalDetailsAsync(_formatter.Format(identifiedCandidates), rawSignals, ct);
 
         _logger?.LogInformation("Assisted camera discovery completed with {CandidateCount} unique candidate(s).", result.Count);
         return result;
     }
 
-    private IReadOnlyList<CameraDiscoveryCandidate> EnrichTechnicalDetails(
+    private async Task<IReadOnlyList<CameraDiscoveryCandidate>> EnrichTechnicalDetailsAsync(
         IReadOnlyList<CameraDiscoveryCandidate> candidates,
-        IReadOnlyList<RawCameraDiscoverySignal> rawSignals)
+        IReadOnlyList<RawCameraDiscoverySignal> rawSignals,
+        CancellationToken ct)
     {
         var signalsByHost = rawSignals
             .GroupBy(signal => signal.Host, StringComparer.OrdinalIgnoreCase)
@@ -44,17 +46,41 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
                 group => group.ToList(),
                 StringComparer.OrdinalIgnoreCase);
 
+        var resolvedHostNames = await ResolveDisplayedHostNamesAsync(candidates, signalsByHost, ct);
+
         return candidates
             .Select(candidate => candidate with
             {
                 TechnicalDetails = new DiscoveryTechnicalDetails(
-                    GetResolvedHostName(signalsByHost, candidate.Host),
+                    resolvedHostNames.GetValueOrDefault(candidate.Host),
                     GetDetectedPorts(signalsByHost, candidate.Host, IsHttpSignal),
                     GetDetectedPorts(signalsByHost, candidate.Host, IsRtspSignal),
                     GetDetectedOnvifPorts(signalsByHost, candidate.Host),
                     GetDetectedRtspPaths(signalsByHost, candidate.Host))
             })
             .ToList();
+    }
+
+    private static async Task<Dictionary<string, string?>> ResolveDisplayedHostNamesAsync(
+        IReadOnlyList<CameraDiscoveryCandidate> candidates,
+        IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
+        CancellationToken ct)
+    {
+        var results = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var candidate in candidates)
+        {
+            var resolvedFromSignals = GetResolvedHostName(signalsByHost, candidate.Host);
+            if (!string.IsNullOrWhiteSpace(resolvedFromSignals))
+            {
+                results[candidate.Host] = resolvedFromSignals;
+                continue;
+            }
+
+            results[candidate.Host] = await ResolveHostNameForDisplayAsync(candidate.Host, ct);
+        }
+
+        return results;
     }
 
     private static string? GetResolvedHostName(
@@ -64,6 +90,26 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
             ? signals.Select(signal => signal.ResolvedHostName)
                 .FirstOrDefault(hostName => !string.IsNullOrWhiteSpace(hostName))
             : null;
+
+    private static async Task<string?> ResolveHostNameForDisplayAsync(string host, CancellationToken ct)
+    {
+        if (!IPAddress.TryParse(host, out _))
+        {
+            return null;
+        }
+
+        try
+        {
+            var entry = await Dns.GetHostEntryAsync(host, ct);
+            return string.IsNullOrWhiteSpace(entry.HostName)
+                ? null
+                : entry.HostName.TrimEnd('.');
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private static IReadOnlyList<int> GetDetectedPorts(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
