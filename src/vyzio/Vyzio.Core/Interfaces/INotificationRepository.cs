@@ -8,4 +8,6 @@ public interface INotificationRepository
     Task<int> CountSentAsync(string channel, CancellationToken ct = default);
     Task<DateTimeOffset?> GetLastSentAtAsync(string channel, CancellationToken ct = default);
     Task AddAsync(Notification notification, CancellationToken ct = default);
+    Task<IReadOnlyList<Notification>> GetRecentAsync(string channel, int limit, CancellationToken ct = default);
+}
 }

@@ -10,6 +10,8 @@ public sealed record NotificationChannelConfigDto(
     string? ChatId,
     float MinimumConfidence,
     string[] AllowedLabels,
+    int? ActiveFromHour,
+    int? ActiveToHour,
     DateTimeOffset? ConfiguredAt,
     DateTimeOffset? LastTestedAt,
     string? LastTestStatus,
@@ -38,6 +40,8 @@ public sealed record NotificationChannelConfigDto(
             ChatId: config.ChatId,
             MinimumConfidence: config.MinimumConfidence,
             AllowedLabels: labels,
+            ActiveFromHour: config.ActiveFromHour,
+            ActiveToHour: config.ActiveToHour,
             ConfiguredAt: config.ConfiguredAt,
             LastTestedAt: config.LastTestedAt,
             LastTestStatus: config.LastTestStatus,
@@ -50,7 +54,18 @@ public sealed record SaveNotificationChannelConfigRequest(
     string? BotToken,
     string? ChatId,
     float? MinimumConfidence,
-    string[]? AllowedLabels);
+    string[]? AllowedLabels,
+    int? ActiveFromHour,
+    int? ActiveToHour);
+
+public sealed record NotificationLogEntryDto(
+    string Status,
+    DateTimeOffset SentAt,
+    string? ErrorMessage)
+{
+    public static NotificationLogEntryDto From(Notification n)
+        => new(n.Status, n.SentAt, n.ErrorMessage);
+}
 
 public sealed record TestNotificationChannelResult(
     bool Success,

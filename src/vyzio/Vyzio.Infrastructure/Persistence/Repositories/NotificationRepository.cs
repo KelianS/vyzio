@@ -30,4 +30,11 @@ public sealed class NotificationRepository(VyzioDbContext db) : INotificationRep
         db.Notifications.Add(notification);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<Notification>> GetRecentAsync(string channel, int limit, CancellationToken ct = default)
+        => await db.Notifications
+            .Where(n => n.Channel == channel)
+            .OrderByDescending(n => n.SentAt)
+            .Take(limit)
+            .ToListAsync(ct);
 }

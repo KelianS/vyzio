@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
+import type { GetNotificationLog } from '../../application/use-cases/GetNotificationLog'
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
 import type {
   NotificationChannelConfig,
+  NotificationLogEntry,
   SaveNotificationChannelConfigRequest,
   TestNotificationChannelResult,
 } from '../../domain/entities/NotificationChannelConfig'
@@ -15,6 +17,7 @@ interface NotificationSettingsViewProps {
   saveNotificationChannelConfig: SaveNotificationChannelConfig
   testNotificationChannel: TestNotificationChannel
   deleteNotificationChannel: DeleteNotificationChannel
+  getNotificationLog: GetNotificationLog
   onBack: () => void
 }
 
@@ -39,9 +42,15 @@ export function NotificationSettingsView({
   saveNotificationChannelConfig,
   testNotificationChannel,
   deleteNotificationChannel,
+  getNotificationLog,
   onBack,
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
+  const [notifLog, setNotifLog] = useState<NotificationLogEntry[]>([])
+
+  useEffect(() => {
+    getNotificationLog.execute(selectedChannel).then(setNotifLog).catch(() => setNotifLog([]))
+  }, [selectedChannel, getNotificationLog])
 
   const { config, loading, saving, testing, removing, testResult, save, test, remove } =
     useNotificationSettings(
@@ -112,6 +121,7 @@ export function NotificationSettingsView({
               testing={testing}
               removing={removing}
               testResult={testResult}
+              notifLog={notifLog}
               onSave={save}
               onTest={test}
               onRemove={remove}
@@ -120,6 +130,185 @@ export function NotificationSettingsView({
         </div>
       </div>
     </div>
+  )
+}
+
+const KNOWN_LABELS = ['person', 'car', 'dog', 'cat', 'bicycle', 'motorcycle', 'truck']
+
+function LabelCheckboxes({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (labels: string[]) => void
+}) {
+  function toggle(label: string) {
+    if (selected.includes(label)) {
+      const next = selected.filter((l) => l !== label)
+      onChange(next.length > 0 ? next : [label]) // keep at least one
+    } else {
+      onChange([...selected, label])
+    }
+  }
+
+  return (
+    <div className="camera-form-field">
+      <label>Categories de detection notifiees</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 6 }}>
+        {KNOWN_LABELS.map((label) => (
+          <label
+            key={label}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+          >
+            <input
+              type="checkbox"
+              checked={selected.includes(label)}
+              onChange={() => toggle(label)}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
+  value: h,
+  label: `${String(h).padStart(2, '0')}:00`,
+}))
+
+function SchedulePicker({
+  fromHour,
+  toHour,
+  onFromChange,
+  onToChange,
+}: {
+  fromHour: number | null
+  toHour: number | null
+  onFromChange: (h: number | null) => void
+  onToChange: (h: number | null) => void
+}) {
+  const scheduleEnabled = fromHour !== null && toHour !== null
+
+  function handleToggle(enabled: boolean) {
+    if (enabled) {
+      onFromChange(8)
+      onToChange(22)
+    } else {
+      onFromChange(null)
+      onToChange(null)
+    }
+  }
+
+  return (
+    <div className="camera-form-field">
+      <label>Plage horaire active</label>
+      <div className="camera-form-field-inline" style={{ marginTop: 6 }}>
+        <input
+          id="schedule-enabled"
+          type="checkbox"
+          checked={scheduleEnabled}
+          onChange={(e) => handleToggle(e.target.checked)}
+        />
+        <label htmlFor="schedule-enabled" style={{ marginLeft: 4 }}>
+          Restreindre aux heures suivantes
+        </label>
+      </div>
+      {scheduleEnabled && (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
+          <div>
+            <label htmlFor="from-hour" style={{ fontSize: '0.88rem', display: 'block' }}>
+              De
+            </label>
+            <select
+              id="from-hour"
+              value={fromHour ?? 8}
+              onChange={(e) => onFromChange(Number(e.target.value))}
+            >
+              {HOUR_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="to-hour" style={{ fontSize: '0.88rem', display: 'block' }}>
+              A
+            </label>
+            <select
+              id="to-hour"
+              value={toHour ?? 22}
+              onChange={(e) => onToChange(Number(e.target.value))}
+            >
+              {HOUR_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {fromHour !== null && toHour !== null && fromHour > toHour && (
+            <p style={{ fontSize: '0.84rem', color: 'var(--ink-soft)', marginTop: 4 }}>
+              Plage de nuit : actif de {String(fromHour).padStart(2, '0')}:00 a{' '}
+              {String(toHour).padStart(2, '0')}:00 le lendemain.
+            </p>
+          )}
+        </div>
+      )}
+      {!scheduleEnabled && (
+        <p style={{ fontSize: '0.84rem', color: 'var(--ink-soft)', marginTop: 4 }}>
+          Notifications actives 24h/24.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function NotificationLogSection({ entries }: { entries: NotificationLogEntry[] }) {
+  return (
+    <section className="camera-detail-section">
+      <h3>Historique des envois</h3>
+      {entries.length === 0 ? (
+        <p className="camera-toolbar-lede" style={{ fontSize: '0.9rem' }}>
+          Aucun envoi enregistre. Les notifications sont traitees en temps reel — les evenements
+          deja visibles sur le hub ont ete detectes avant la configuration du canal.
+        </p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(247,244,237,0.15)' }}>
+              <th style={{ padding: '4px 8px' }}>Date</th>
+              <th style={{ padding: '4px 8px' }}>Statut</th>
+              <th style={{ padding: '4px 8px' }}>Erreur</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e, i) => (
+              <tr
+                key={i}
+                style={{ borderBottom: '1px solid rgba(247,244,237,0.07)', opacity: 0.9 }}
+              >
+                <td style={{ padding: '4px 8px' }}>
+                  {new Date(e.sentAt).toLocaleString('fr-FR')}
+                </td>
+                <td style={{ padding: '4px 8px' }}>
+                  <span
+                    className={`camera-support-badge ${e.status === 'sent' ? 'supported' : 'unsupported'}`}
+                  >
+                    {e.status === 'sent' ? 'Envoyé' : 'Echec'}
+                  </span>
+                </td>
+                <td style={{ padding: '4px 8px', color: 'var(--status-degraded, #e05252)' }}>
+                  {e.errorMessage ?? '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   )
 }
 
@@ -193,6 +382,7 @@ function TelegramConfigPanel({
   testing,
   removing,
   testResult,
+  notifLog,
   onSave,
   onTest,
   onRemove,
@@ -203,6 +393,7 @@ function TelegramConfigPanel({
   testing: boolean
   removing: boolean
   testResult: TestNotificationChannelResult | null
+  notifLog: NotificationLogEntry[]
   onSave: (req: SaveNotificationChannelConfigRequest) => Promise<void>
   onTest: () => Promise<void>
   onRemove: () => Promise<void>
@@ -211,6 +402,9 @@ function TelegramConfigPanel({
   const [chatId, setChatId] = useState('')
   const [isEnabled, setIsEnabled] = useState(false)
   const [minimumConfidence, setMinimumConfidence] = useState(75)
+  const [allowedLabels, setAllowedLabels] = useState<string[]>(['person'])
+  const [activeFromHour, setActiveFromHour] = useState<number | null>(null)
+  const [activeToHour, setActiveToHour] = useState<number | null>(null)
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
 
   useEffect(() => {
@@ -218,6 +412,9 @@ function TelegramConfigPanel({
       setChatId(config.chatId ?? '')
       setIsEnabled(config.isEnabled)
       setMinimumConfidence(Math.round(config.minimumConfidence * 100))
+      setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person'])
+      setActiveFromHour(config.activeFromHour ?? null)
+      setActiveToHour(config.activeToHour ?? null)
       setSyncedConfig(config)
     }
   }, [config, syncedConfig])
@@ -231,6 +428,9 @@ function TelegramConfigPanel({
       botToken: botToken.trim() || undefined,
       chatId: chatId.trim() || undefined,
       minimumConfidence: minimumConfidence / 100,
+      allowedLabels,
+      activeFromHour,
+      activeToHour,
     })
     setBotToken('')
   }
@@ -326,6 +526,15 @@ function TelegramConfigPanel({
             />
           </div>
 
+          <LabelCheckboxes selected={allowedLabels} onChange={setAllowedLabels} />
+
+          <SchedulePicker
+            fromHour={activeFromHour}
+            toHour={activeToHour}
+            onFromChange={setActiveFromHour}
+            onToChange={setActiveToHour}
+          />
+
           <div className="camera-form-field camera-form-field-inline">
             <input
               id="is-enabled"
@@ -371,6 +580,8 @@ function TelegramConfigPanel({
           )}
         </form>
       </section>
+
+      <NotificationLogSection entries={notifLog} />
 
       <section className="camera-detail-section">
         <h3>Comment obtenir le token et le Chat ID</h3>

@@ -7,6 +7,7 @@ import { DiscoverCameras } from '../application/use-cases/DiscoverCameras'
 import { GetCameraStatus } from '../application/use-cases/GetCameraStatus'
 import { GetCameras } from '../application/use-cases/GetCameras'
 import { GetHubOverview } from '../application/use-cases/GetHubOverview'
+import { GetNotificationLog } from '../application/use-cases/GetNotificationLog'
 import { GetNotificationChannelConfig } from '../application/use-cases/GetNotificationChannelConfig'
 import { GetVendorAssistance } from '../application/use-cases/GetVendorAssistance'
 import { SaveNotificationChannelConfig } from '../application/use-cases/SaveNotificationChannelConfig'
@@ -47,3 +48,4 @@ export const testNotificationChannel = new TestNotificationChannel(notificationS
 export const deleteNotificationChannel = new DeleteNotificationChannel(
   notificationSettingsRepository,
 )
+export const getNotificationLog = new GetNotificationLog(notificationSettingsRepository)

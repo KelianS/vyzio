@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SaveNotificationChannelConfigUseCase>();
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
         services.AddScoped<TestNotificationChannelUseCase>();
+        services.AddScoped<GetNotificationLogUseCase>();
 
         // Profile use cases
         services.AddScoped<CreateProfileUseCase>();

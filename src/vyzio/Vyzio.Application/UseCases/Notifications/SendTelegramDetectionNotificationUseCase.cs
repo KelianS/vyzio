@@ -33,6 +33,9 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         if (detectionEvent.Confidence.HasValue && detectionEvent.Confidence.Value < minimumConfidence)
             return false;
 
+        if (!IsWithinActiveHours(detectionEvent.OccurredAt.ToLocalTime().Hour, config.ActiveFromHour, config.ActiveToHour))
+            return false;
+
         var allowedLabels = ParseAllowedLabels(config.AllowedLabelsJson);
         if (!allowedLabels.Contains(detectionEvent.Label, StringComparer.OrdinalIgnoreCase)
             && string.IsNullOrWhiteSpace(detectionEvent.Identity))
@@ -78,6 +81,22 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         {
             return DefaultAllowedLabels;
         }
+    }
+
+    /// <summary>
+    /// Returns false only when both bounds are defined and <paramref name="localHour"/> falls outside them.
+    /// Handles overnight ranges (e.g. from=22, to=6).
+    /// </summary>
+    internal static bool IsWithinActiveHours(int localHour, int? fromHour, int? toHour)
+    {
+        if (fromHour is null || toHour is null) return true;
+
+        // Same-day range: 08:00 → 22:00
+        if (fromHour <= toHour)
+            return localHour >= fromHour && localHour < toHour;
+
+        // Overnight range: 22:00 → 06:00
+        return localHour >= fromHour || localHour < toHour;
     }
 }
 

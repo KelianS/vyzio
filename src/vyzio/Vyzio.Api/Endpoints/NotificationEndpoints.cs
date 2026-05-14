@@ -19,6 +19,9 @@ public static class NotificationEndpoints
         app.MapDelete("/api/notifications/settings/{channel}", DeleteChannelConfig)
             .WithName("DeleteNotificationChannelConfig");
 
+        app.MapGet("/api/notifications/log/{channel}", GetNotificationLog)
+            .WithName("GetNotificationLog");
+
         return app;
     }
 
@@ -57,5 +60,14 @@ public static class NotificationEndpoints
     {
         var deleted = await useCase.ExecuteAsync(channel, ct);
         return deleted ? Results.NoContent() : Results.NotFound();
+    }
+
+    private static async Task<IResult> GetNotificationLog(
+        string channel,
+        GetNotificationLogUseCase useCase,
+        CancellationToken ct)
+    {
+        var entries = await useCase.ExecuteAsync(channel, ct: ct);
+        return Results.Ok(entries);
     }
 }

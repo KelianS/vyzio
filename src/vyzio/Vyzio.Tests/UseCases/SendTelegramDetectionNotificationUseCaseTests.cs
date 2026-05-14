@@ -123,6 +123,38 @@ public class SendTelegramDetectionNotificationUseCaseTests
             Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task Execute_sends_when_event_is_within_active_hours()
+    {
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
+            .Returns(new NotificationChannelConfig
+            {
+                Channel = "telegram", IsEnabled = true, BotToken = "token", ChatId = "chat",
+                ActiveFromHour = 8, ActiveToHour = 22
+            });
+
+        // 10h is within [8, 22) regardless of timezone
+        var inRange = SendTelegramDetectionNotificationUseCase.IsWithinActiveHours(10, 8, 22);
+
+        Assert.True(inRange);
+    }
+
+    [Theory]
+    [InlineData(8, 22, 10, true)]   // 10h inside [8,22)
+    [InlineData(8, 22, 7,  false)]  // 7h before range
+    [InlineData(8, 22, 22, false)]  // 22h is exclusive upper bound
+    [InlineData(22, 6,  23, true)]  // overnight: 23h inside [22,24)
+    [InlineData(22, 6,  3,  true)]  // overnight: 3h inside [0,6)
+    [InlineData(22, 6,  10, false)] // overnight: 10h outside both bands
+    [InlineData(null, 22, 10, true)]// no lower bound → always active
+    [InlineData(8, null, 10, true)] // no upper bound → always active
+    public void IsWithinActiveHours_applies_schedule_correctly(int? from, int? to, int hour, bool expected)
+    {
+        var result = SendTelegramDetectionNotificationUseCase.IsWithinActiveHours(hour, from, to);
+
+        Assert.Equal(expected, result);
+    }
+
     private static DetectionEvent CreateDetectionEvent(
         string lifecycle = "new",
         float confidence = 0.91f,

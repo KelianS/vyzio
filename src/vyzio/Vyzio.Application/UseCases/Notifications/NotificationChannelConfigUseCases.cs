@@ -31,10 +31,12 @@ public sealed class SaveNotificationChannelConfigUseCase(INotificationChannelCon
             ? request.MinimumConfidence.Value
             : config.MinimumConfidence;
 
-        if (!string.IsNullOrWhiteSpace(request.AllowedLabels is { Length: > 0 } ? "x" : null))
+        if (request.AllowedLabels is { Length: > 0 })
             config.AllowedLabelsJson = JsonSerializer.Serialize(request.AllowedLabels);
-        else if (request.AllowedLabels is { Length: > 0 })
-            config.AllowedLabelsJson = JsonSerializer.Serialize(request.AllowedLabels);
+
+        // null clears the restriction; a value in 0-23 sets it
+        config.ActiveFromHour = request.ActiveFromHour is >= 0 and <= 23 ? request.ActiveFromHour : null;
+        config.ActiveToHour = request.ActiveToHour is >= 0 and <= 23 ? request.ActiveToHour : null;
 
         // Only update token when a non-empty value is explicitly provided
         if (!string.IsNullOrWhiteSpace(request.BotToken))
@@ -52,6 +54,18 @@ public sealed class DeleteNotificationChannelConfigUseCase(INotificationChannelC
 {
     public async Task<bool> ExecuteAsync(string channel, CancellationToken ct = default)
         => await repository.DeleteByChannelAsync(channel, ct);
+}
+
+public sealed class GetNotificationLogUseCase(INotificationRepository notifications)
+{
+    public async Task<IReadOnlyList<NotificationLogEntryDto>> ExecuteAsync(
+        string channel,
+        int limit = 20,
+        CancellationToken ct = default)
+    {
+        var entries = await notifications.GetRecentAsync(channel, limit, ct);
+        return entries.Select(NotificationLogEntryDto.From).ToList();
+    }
 }
 
 public sealed class TestNotificationChannelUseCase(

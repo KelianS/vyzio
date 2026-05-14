@@ -1,5 +1,6 @@
 import type {
   NotificationChannelConfig,
+  NotificationLogEntry,
   SaveNotificationChannelConfigRequest,
   TestNotificationChannelResult,
 } from '../../domain/entities/NotificationChannelConfig'
@@ -43,6 +44,16 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
     if (response.status === 404) return false
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     return true
+  }
+
+  async getNotificationLog(channel: string): Promise<NotificationLogEntry[]> {
+    try {
+      return await fetchJson<NotificationLogEntry[]>(
+        `${this.apiBaseUrl}/api/notifications/log/${channel}`,
+      )
+    } catch {
+      return []
+    }
   }
 }
 

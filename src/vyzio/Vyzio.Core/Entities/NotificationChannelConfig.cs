@@ -26,6 +26,12 @@ public class NotificationChannelConfig
     [MaxLength(500)]
     public string? AllowedLabelsJson { get; set; }
 
+    /// <summary>Local hour (0-23) from which notifications are active. Null means no restriction.</summary>
+    public int? ActiveFromHour { get; set; }
+
+    /// <summary>Local hour (0-23, exclusive) until which notifications are active. Null means no restriction.</summary>
+    public int? ActiveToHour { get; set; }
+
     public DateTimeOffset? ConfiguredAt { get; set; }
 
     public DateTimeOffset? LastTestedAt { get; set; }

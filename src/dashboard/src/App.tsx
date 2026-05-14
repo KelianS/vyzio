@@ -11,6 +11,7 @@ import {
   getCameras,
   getHubOverview,
   getNotificationChannelConfig,
+  getNotificationLog,
   getVendorAssistance,
   saveNotificationChannelConfig,
   testNotificationChannel,
@@ -133,6 +134,7 @@ function App() {
         saveNotificationChannelConfig={saveNotificationChannelConfig}
         testNotificationChannel={testNotificationChannel}
         deleteNotificationChannel={deleteNotificationChannel}
+        getNotificationLog={getNotificationLog}
         onBack={() => {
           window.location.hash = ''
           setView('hub')

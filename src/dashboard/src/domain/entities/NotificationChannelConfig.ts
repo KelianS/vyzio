@@ -5,6 +5,8 @@ export interface NotificationChannelConfig {
   chatId: string | null
   minimumConfidence: number
   allowedLabels: string[]
+  activeFromHour: number | null
+  activeToHour: number | null
   configuredAt: string | null
   lastTestedAt: string | null
   lastTestStatus: 'success' | 'failure' | null
@@ -17,9 +19,17 @@ export interface SaveNotificationChannelConfigRequest {
   chatId?: string
   minimumConfidence?: number
   allowedLabels?: string[]
+  activeFromHour?: number | null
+  activeToHour?: number | null
 }
 
 export interface TestNotificationChannelResult {
   success: boolean
+  errorMessage: string | null
+}
+
+export interface NotificationLogEntry {
+  status: 'sent' | 'failed'
+  sentAt: string
   errorMessage: string | null
 }
