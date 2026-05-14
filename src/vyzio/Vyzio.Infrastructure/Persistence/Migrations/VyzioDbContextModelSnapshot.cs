@@ -17,6 +17,119 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.5");
 
+            modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DetectionPreset")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("detection_preset");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("FrigateCameraName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("frigate_camera_name");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("host");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<DateTime?>("LastReachabilityCheckAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_reachability_check_at");
+
+                    b.Property<DateTime?>("LastSuccessfulFrameAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_successful_frame_at");
+
+                    b.Property<string>("Password")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("port");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_type");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StreamPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("stream_path");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("VendorFamily")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vendor_family");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("username");
+
+                    b.Property<string>("ValidationState")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("validation_state");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cameras");
+
+                    b.HasIndex("DisplayName")
+                        .HasDatabaseName("idx_cameras_display_name");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cameras_slug");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("idx_cameras_status");
+
+                    b.ToTable("cameras", (string)null);
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>
                 {
                     b.Property<string>("Id")

@@ -1,7 +1,7 @@
-# Vyzio — Backlog de reprise
-
-> Mai 2026 — plan de remise a plat avant reprise du developpement
+# Vyzio — Backlog
 > References : [SPECS.md](./SPECS.md) · [SAD.md](./SAD.md) · [README.md](../README.md)
+
+Le workflow obligatoire est defini dans les regles du repo, fichier `.instructions.md`.
 
 ---
 
@@ -10,119 +10,6 @@
 Ce backlog ne sert pas a brainstormer la strategie.
 
 Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le SAD. Tant que ces documents ne sont pas alignes, le backlog ne doit pas servir a pousser du code.
-
----
-
-## Workflow obligatoire
-
-Le workflow obligatoire est defini dans les regles du repo, fichier `.instructions.md`.
-
-Ce backlog ne fait qu'appliquer cet ordre; il n'en est pas la source de verite.
-
----
-
-## Principes de reprise
-
-1. **Pas de nouvelle feature tant que la phase P0 n'est pas validee.**
-2. **Frigate reste le moteur central** pour la video, la detection et les enrichissements deja bien couverts.
-3. **Le depot ne contient plus de service Python de reconnaissance faciale** dans le chemin nominal ni comme scaffold vide.
-4. **Le code existant peut etre simplifie ou supprime** s'il ne sert pas clairement la trajectoire retenue.
-5. **Chaque etape doit avoir une validation executable** ou une preuve documentaire explicite.
-
----
-
-## Etat de depart
-
-### Constats
-
-- Le depot a ete demarre trop vite par rapport au cadrage.
-- Une partie du code et des scaffolds a ete creee avant stabilisation du plan.
-- Le runtime par defaut a ete nettoye pour sortir les composants non retenus.
-- Le backlog precedent a ete abandonne car il poussait a implementer avant d'avoir verrouille la reprise.
-
-### Objectif operationnel
-
-Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, verification et revalidation du plan.
-
----
-
-## P1 — Fondations runtime
-
-> But : obtenir une base d'execution minimale, fiable et conforme au positionnement Frigate-first.
-
-### US-P1.1 — Compose minimal et coherent
-
-**Taches :**
-- [x] Stabiliser `docker-compose.yml` autour des seuls services retenus par defaut
-- [x] Clarifier volumes, ports, reseaux et dependances
-- [x] Documenter le boot local de developpement
-
-**Criteres d'acceptation :**
-- `docker compose up` demarre la base retenue sans service parasite
-- Le role de chaque service est comprensible au premier coup d'oeil
-
-### US-P1.2 — Configuration Frigate maitrisee
-
-**Taches :**
-- [x] Valider un `frigate.yml` minimal compatible avec la version cible
-- [x] Documenter ce qui est gere par Vyzio et ce qui reste purement Frigate
-- [x] Verifier l'integration d'un flux de test sans bricolage excessif
-
-**Criteres d'acceptation :**
-- Frigate demarre avec une configuration valide
-- Les hypotheses de configuration sont explicites
-
-### US-P1.3 — Persistance Vyzio minimale
-
-**Taches :**
-- [x] Garder uniquement les entites et tables utiles au MVP reel (profils produit, mapping identites Frigate, evenements, notifications, sessions)
-- [x] Confirmer le provider par defaut et la strategie de migration
-- [x] Verifier que le demarrage API applique les migrations sans logique parasite
-
-**Criteres d'acceptation :**
-- La persistence minimale est testable et comprise
-- Le schema ne simule pas encore des features non construites (notamment un pipeline biometrie propre a Vyzio)
-
----
-
-## P2 — Integration Vyzio vers Frigate
-
-> But : construire la premiere vraie couture produit sans ouvrir trop tot les couches secondaires.
-
-### US-P2.1 — Contrat d'entree Frigate
-
-**Taches :**
-- [x] Definir les evenements Frigate reellement consommes par Vyzio
-- [x] Creer un modele d'entree limite au MVP
-- [x] Integrer un filtrage configurable des labels Frigate retenus par l'utilisateur
-- [x] Ajouter des tests de deserialisation et d'adaptation
-
-**Criteres d'acceptation :**
-- Le contrat utile est explicite
-- Le code n'est pas couple a des payloads implicites disperses
-
-### US-P2.2 — FrigateAdapter minimal
-
-**Taches :**
-- [x] Consommer les evenements Frigate via une seule couche d'adaptation, avec MQTT pour le temps reel et REST uniquement pour les ressources complementaires necessaires
-- [x] Convertir les signaux Frigate en evenements Vyzio comprehensibles
-- [x] Appliquer le filtre de labels configure sans hardcoder `person` comme seule categorie utile
-- [x] Journaliser proprement les erreurs d'integration
-
-**Criteres d'acceptation :**
-- Une detection Frigate pertinente devient observable cote Vyzio
-- Le couplage a Frigate reste localise
-
-### US-P2.3 — Contrat interne Vyzio
-
-**Taches :**
-- [x] Definir les evenements internes necessaires au MVP sans repliquer le pipeline IA de Frigate
-- [x] Eviter de modeliser des canaux non utilises a court terme
-- [x] Documenter le contrat dans un document dedie si necessaire
-
-**Criteres d'acceptation :**
-- Les evenements internes sont limites et stables
-- Le contrat est reutilisable par API, notifications et UI, en partant d'evenements Frigate deja enrichis
 
 ---
 
@@ -162,23 +49,65 @@ Reprendre le projet en 4 phases, avec une **phase P0 bloquante** de nettoyage, v
 
 ### US-P3.4 — Parcours camera guide
 
-**Taches :**
+**Taches livrees :**
 - [x] Cadrer l'architecture cible du parcours camera et documenter le SAD
-- [ ] Ajouter une page de gestion des cameras depuis le hub
-- [ ] Introduire un referentiel camera cote Vyzio pour piloter l'UI et la generation de configuration
-- [ ] Exposer une lecture du statut camera independante des evenements de detection
-- [ ] Construire le parcours manuel complet: saisie, verification du flux, nommage, edition minimale
-- [ ] Generer la section cameras de la configuration Frigate depuis les cameras valides
-- [ ] Relancer ou recharger Frigate de facon maitrisee apres application de la configuration
-- [ ] Proposer une decouverte reseau assistee avec saisie manuelle en secours
-- [ ] Rendre visible le statut de chaque camera, la perte de flux et les actions de correction simples
+- [x] Ajouter une page de gestion des cameras depuis le hub
+- [x] Introduire un referentiel camera cote Vyzio pour piloter l'UI et la generation de configuration
+- [x] Exposer une lecture du statut camera independante des evenements de detection
+- [x] Construire le parcours manuel complet: saisie, verification du flux, nommage, edition minimale
+- [x] Generer la section cameras de la configuration Frigate depuis les cameras valides
+- [x] Relancer ou recharger Frigate de facon maitrisee apres application de la configuration
+- [x] Proposer une decouverte reseau assistee avec saisie manuelle en secours
+- [x] Rendre visible le statut de chaque camera, la perte de flux et les actions de correction simples
+- [x] Filtrer les cameras deja configurees hors des candidats de decouverte
+- [x] Qualifier les candidats de base (`camera_confirmee`, `camera_probable`, `equipement_non_qualifie`) et exposer les raisons de qualification a l'UI
+- [x] Introduire une premiere assistance constructeur exploitable pendant l'onboarding
+- [x] Mettre a jour le cadrage et la documentation si necessaire pour converger vers deux etats lisibles cote produit : camera supportee oui / non, RTSP actif oui / non
+- [x] Aligner le contrat backend et les libelles residuels avec cette simplification produit, sans reouvrir un chantier large sur l'interface
+- [x] Corriger l'ouverture des liens des notices vendor : les liens externes et les assets locaux doivent s'ouvrir hors de la page Vyzio et declencher un telechargement quand c'est pertinent, sans rediriger l'interface principale
+- [x] Ajouter les tests et la documentation utilisateur qui verrouillent les etats supporte oui / non et RTSP actif oui / non
+- [x] Permettre de relancer les tests / la verification sur une seule camera ou un seul candidat, sans relancer une decouverte complete, afin de rafraichir les informations apres un changement de configuration
 
 **Criteres d'acceptation :**
 - Une camera existante peut etre ajoutee sans edition manuelle de fichiers
 - L'utilisateur peut verifier rapidement qu'une camera est joignable, bien nommee et exploitable
 - L'indisponibilite d'une camera est visible sans diagnostic technique avance
+- Une camera sortie de carton peut etre detectee comme candidate exploitable ou candidate a assister, meme si RTSP n'est pas encore active
+- L'utilisateur voit clairement si sa camera est supportee ou non par Vyzio, et si le RTSP est deja actif ou reste a activer
+- Les notices vendor n'interrompent pas le parcours Vyzio quand l'utilisateur ouvre un lien ou telecharge un asset associe
+- L'utilisateur peut relancer une verification ciblee apres modification d'une camera, sans repasser par une decouverte complete
+- Les etats affiches sont coherents entre backend, UI et documentation
+- Le support peut expliquer le comportement sans interpretation implicite du code
 
-### US-P3.5 — Gestion detections et profils
+### US-P3.5 — Gestion configuration des notification via UI
+
+> But : permettre a l'utilisateur de configurer les canaux de notification via l'interface, l'aider a configurer Telegram et les autres canaux. Permettre de choisir les categories de detection a notifier et les politiques d'alerte associees. Permettre de choisir le format des messages et les informations a inclure.
+
+**Taches :**
+- [x] Completer le cadrage SPECS/SAD pour expliciter le parcours UI de configuration des notifications, le modele de destinations et les regles produit a exposer
+- [ ] Definir le modele metier de configuration des notifications cote Vyzio : destinations, statuts de configuration, regles de diffusion, format de message, resultat des tests d'envoi
+- [ ] Introduire une persistence dediee a cette configuration dans Vyzio, sans dependre uniquement des options runtime injectees au demarrage
+- [ ] Definir la strategie de stockage des secrets canal (ex. token Telegram) et la separation entre donnees sensibles, statut produit et historique d'envoi
+- [ ] Exposer une API de lecture/ecriture pour la configuration des notifications, avec contrats stables pour l'UI
+- [ ] Exposer une action de test ciblee par destination pour verifier un canal configure sans attendre une vraie detection
+- [ ] Construire le premier parcours UI guide pour Telegram : etat configure / non configure, saisie assistee, aide de configuration, test d'envoi, retour d'erreur comprehensible
+- [ ] Etendre le pipeline de notification pour resoudre les destinations actives et les regles applicables depuis la configuration persistante, et non depuis un seul switch Telegram statique
+- [ ] Introduire un modele de capacites par canal pour afficher clairement ce que chaque destination supporte (image, dependance tierce, prerequis reseau, confidentialite)
+- [ ] Permettre de configurer au minimum les categories / types d'evenements notifies, le niveau minimal d'alerte et les plages horaires associees
+- [ ] Permettre de configurer le format du message envoye, avec activation minimale des champs camera, heure, type d'evenement, identite et apercu
+- [ ] Ajouter les validations backend/frontend, tests unitaires/integration et documentation utilisateur necessaires pour verrouiller le parcours de configuration et le test d'envoi
+
+**Criteres d'acceptation :**
+- L'utilisateur peut configurer Telegram depuis l'interface sans modifier de fichier ni redemarrer manuellement le produit
+- L'utilisateur voit clairement si une destination est configuree, testee avec succes, en erreur ou inactive
+- Une notification de test peut etre envoyee a la demande pour valider la configuration d'un canal
+- L'utilisateur peut regler depuis l'interface les destinations actives, les categories d'evenements, le niveau minimal d'alerte et les plages horaires minimales retenues
+- Le format du message reste comprehensible, configurable dans les limites du MVP et coherent entre backend, UI et documentation
+- Les compromis d'un canal tiers comme Telegram sont affiches explicitement avant activation
+- Le pipeline d'envoi applique la configuration persistante courante sans exiger une edition manuelle du runtime
+
+
+### US-P3.6 — Gestion detections et profils
 
 **Taches :**
 - [ ] Relier le CTA du hub a une page dediee couvrant detections et profils

@@ -14,6 +14,9 @@ RUN dotnet publish ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj -c Release -o /app/pub
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends docker.io \
+	&& rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
 EXPOSE 8443
 ENTRYPOINT ["dotnet", "Vyzio.Api.dll"]

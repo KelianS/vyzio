@@ -54,10 +54,21 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux verifier rapidement le flux d'une camera depuis l'interface, afin de confirmer que tout fonctionne.
 
+> **En tant qu'utilisateur**, je veux que Vyzio reconnaisse le type probable de ma camera et m'explique quoi activer, afin de finir l'integration sans connaissance technique du constructeur.
+
+> **En tant qu'utilisateur**, je veux savoir si mon modele fait partie des cameras officiellement supportees, afin d'avoir un niveau de confiance clair sur le parcours propose.
+
 ### 2.2 Attendus fonctionnels
 
 - le systeme doit proposer un parcours guide d'ajout de camera ;
 - la detection automatique est souhaitee quand elle est possible, avec une saisie manuelle en secours ;
+- la decouverte reseau doit distinguer au minimum une camera confirmee, une camera probable et un equipement non qualifie ;
+- chaque candidat detecte doit exposer au minimum un libelle de confiance compréhensible, une explication courte des signaux observes et, si possible, un constructeur ou une famille probable ;
+- le niveau de confiance doit rester explicable : Vyzio ne doit pas afficher une precision arbitraire ou un score opaque sans justification lisible ;
+- une camera detectee mais non encore exploitable doit rester visible dans un parcours d'assistance plutot que disparaitre silencieusement ;
+- une camera confirmee doit etre clairement distinguable d'un simple equipement reseau joignable, afin d'eviter les faux positifs dans le parcours d'onboarding ;
+- le produit doit guider l'utilisateur quand RTSP ou ONVIF doivent etre actives, avec une notice adaptee au constructeur detecte quand cette information est disponible ;
+- le produit doit exposer une liste des constructeurs ou modeles officiellement supportes et l'utiliser pour rassurer l'utilisateur pendant l'onboarding ;
 - chaque camera doit avoir un nom, un statut visible et une configuration editable ;
 - l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
 - une perte de flux doit etre detectee et visible sans diagnostic technique avance.
@@ -123,13 +134,27 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux continuer a etre informe meme si je n'ai pas l'interface ouverte.
 
+> **En tant qu'utilisateur**, je veux configurer mes destinations de notification depuis l'interface, afin de ne jamais modifier un fichier a la main.
+
+> **En tant qu'utilisateur**, je veux etre guide pour configurer Telegram, tester l'envoi et comprendre les compromis du canal choisi.
+
+> **En tant qu'utilisateur**, je veux choisir quelles categories d'evenements meritent une alerte et quel niveau de bruit appliquer selon le contexte.
+
+> **En tant qu'utilisateur**, je veux choisir les informations affichees dans le message, afin de recevoir un contenu utile sans surcharge.
+
 ### 5.2 Attendus fonctionnels
 
 - le produit doit supporter au moins un canal de notification utilisable par un public non-tech ;
 - plusieurs canaux pourront coexister selon les besoins utilisateur ;
 - chaque notification importante doit contenir un contexte minimum : type d'evenement, camera, heure, apercu si autorise ;
 - l'utilisateur doit pouvoir regler des plages horaires et un niveau minimal d'alerte ;
-- si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in.
+- si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
+- la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;
+- le premier parcours guide doit couvrir Telegram de bout en bout : saisie des identifiants, verification, etat configure / non configure, test d'envoi ;
+- le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, le niveau minimal d'alerte et les plages horaires associees ;
+- le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise ;
+- les reglages doivent etre persistants cote Vyzio et ne pas dependre d'une edition manuelle du runtime ;
+- les capacites et limites d'un canal doivent etre explicites dans l'interface avant activation.
 
 ### 5.3 Regles hors ligne
 

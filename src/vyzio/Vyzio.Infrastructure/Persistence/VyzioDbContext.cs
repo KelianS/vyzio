@@ -6,6 +6,7 @@ namespace Vyzio.Infrastructure.Persistence;
 
 public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContext(options)
 {
+    public DbSet<Camera> Cameras => Set<Camera>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<DetectionEvent> DetectionEvents => Set<DetectionEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -14,6 +15,19 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ConfigureSqliteDateTimeOffsets(modelBuilder);
+
+        modelBuilder.Entity<Camera>(camera =>
+        {
+            camera.HasIndex(c => c.Slug)
+                .IsUnique()
+                .HasDatabaseName("ux_cameras_slug");
+
+            camera.HasIndex(c => c.DisplayName)
+                .HasDatabaseName("idx_cameras_display_name");
+
+            camera.HasIndex(c => c.Status)
+                .HasDatabaseName("idx_cameras_status");
+        });
 
         modelBuilder.Entity<DetectionEvent>(e =>
         {
