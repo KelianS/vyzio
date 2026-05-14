@@ -4,6 +4,7 @@ using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.Services;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.DependencyInjection;
 using Vyzio.Infrastructure.Notifications;
@@ -18,6 +19,10 @@ var runtimeSettings = VyzioConfigLoader.Load(configPath);
 builder.Services.AddVyzioInfrastructure(runtimeSettings);
 builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels);
 builder.Services.AddHttpClient<IFrigateRestClient, FrigateRestClient>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
+builder.Services.AddHttpClient<IFrigateSnapshotProvider, FrigateSnapshotProvider>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });

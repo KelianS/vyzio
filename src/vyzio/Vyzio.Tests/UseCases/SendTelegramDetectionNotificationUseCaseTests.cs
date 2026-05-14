@@ -10,6 +10,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly ITelegramNotificationSender _telegramSender = Substitute.For<ITelegramNotificationSender>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
+    private readonly IFrigateSnapshotProvider _snapshotProvider = Substitute.For<IFrigateSnapshotProvider>();
     private readonly SendTelegramDetectionNotificationUseCase _sut;
 
     private static NotificationChannelConfig ActiveTelegramConfig => new()
@@ -30,6 +31,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _notifications,
             _telegramSender,
             _channelConfigs,
+            _snapshotProvider,
             new DetectionTelegramMessageFormatter());
     }
 

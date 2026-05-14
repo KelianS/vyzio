@@ -13,6 +13,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     INotificationRepository notifications,
     ITelegramNotificationSender telegramSender,
     INotificationChannelConfigRepository channelConfigs,
+    IFrigateSnapshotProvider snapshotProvider,
     DetectionTelegramMessageFormatter formatter) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
@@ -46,7 +47,26 @@ public sealed class SendTelegramDetectionNotificationUseCase(
 
         try
         {
-            await telegramSender.SendAsync(formatter.Format(detectionEvent), config.BotToken!, config.ChatId!, ct);
+            var caption = formatter.Format(detectionEvent);
+
+            if (detectionEvent.HasSnapshot)
+            {
+                var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
+                if (snapshot is not null)
+                {
+                    await using (snapshot)
+                        await telegramSender.SendPhotoAsync(snapshot, caption, config.BotToken!, config.ChatId!, ct);
+                    await notifications.AddAsync(new Notification
+                    {
+                        EventId = detectionEvent.Id,
+                        Channel = TelegramChannel,
+                        Status = "sent"
+                    }, ct);
+                    return true;
+                }
+            }
+
+            await telegramSender.SendAsync(caption, config.BotToken!, config.ChatId!, ct);
             await notifications.AddAsync(new Notification
             {
                 EventId = detectionEvent.Id,

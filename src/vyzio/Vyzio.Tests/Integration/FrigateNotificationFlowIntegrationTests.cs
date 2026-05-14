@@ -1,3 +1,4 @@
+using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -53,6 +54,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _notifications,
             _telegramSender,
             channelConfigs,
+            Substitute.For<IFrigateSnapshotProvider>(),
             new DetectionTelegramMessageFormatter());
 
         _sut = new FrigateAdapter(
@@ -150,6 +152,12 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         public Task SendAsync(string message, string botToken, string chatId, CancellationToken ct = default)
         {
             Messages.Add(message);
+            return Task.CompletedTask;
+        }
+
+        public Task SendPhotoAsync(Stream photo, string caption, string botToken, string chatId, CancellationToken ct = default)
+        {
+            Messages.Add(caption);
             return Task.CompletedTask;
         }
     }

@@ -10,4 +10,3 @@ public interface INotificationRepository
     Task AddAsync(Notification notification, CancellationToken ct = default);
     Task<IReadOnlyList<Notification>> GetRecentAsync(string channel, int limit, CancellationToken ct = default);
 }
-}

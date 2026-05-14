@@ -47,10 +47,13 @@ export function NotificationSettingsView({
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
   const [notifLog, setNotifLog] = useState<NotificationLogEntry[]>([])
+  const [logRefreshKey, setLogRefreshKey] = useState(0)
 
   useEffect(() => {
     getNotificationLog.execute(selectedChannel).then(setNotifLog).catch(() => setNotifLog([]))
-  }, [selectedChannel, getNotificationLog])
+  }, [selectedChannel, getNotificationLog, logRefreshKey])
+
+  const refreshLog = () => setLogRefreshKey((k) => k + 1)
 
   const { config, loading, saving, testing, removing, testResult, save, test, remove } =
     useNotificationSettings(
@@ -60,6 +63,16 @@ export function NotificationSettingsView({
       testNotificationChannel,
       deleteNotificationChannel,
     )
+
+  async function handleSaveWithRefresh(req: Parameters<typeof save>[0]) {
+    await save(req)
+    refreshLog()
+  }
+
+  async function handleTestWithRefresh() {
+    await test()
+    refreshLog()
+  }
 
   return (
     <div className="app-shell app-shell-cameras">
@@ -122,9 +135,10 @@ export function NotificationSettingsView({
               removing={removing}
               testResult={testResult}
               notifLog={notifLog}
-              onSave={save}
-              onTest={test}
+              onSave={handleSaveWithRefresh}
+              onTest={handleTestWithRefresh}
               onRemove={remove}
+              onRefreshLog={refreshLog}
             />
           )}
         </div>
@@ -266,10 +280,21 @@ function SchedulePicker({
   )
 }
 
-function NotificationLogSection({ entries }: { entries: NotificationLogEntry[] }) {
+function NotificationLogSection({
+  entries,
+  onRefresh,
+}: {
+  entries: NotificationLogEntry[]
+  onRefresh: () => void
+}) {
   return (
     <section className="camera-detail-section">
-      <h3>Historique des envois</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <h3 style={{ margin: 0 }}>Historique des envois</h3>
+        <button type="button" className="secondary-cta" style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }} onClick={onRefresh}>
+          Rafraichir
+        </button>
+      </div>
       {entries.length === 0 ? (
         <p className="camera-toolbar-lede" style={{ fontSize: '0.9rem' }}>
           Aucun envoi enregistre. Les notifications sont traitees en temps reel — les evenements
@@ -386,6 +411,7 @@ function TelegramConfigPanel({
   onSave,
   onTest,
   onRemove,
+  onRefreshLog,
 }: {
   config: NotificationChannelConfig | null
   loading: boolean
@@ -397,6 +423,7 @@ function TelegramConfigPanel({
   onSave: (req: SaveNotificationChannelConfigRequest) => Promise<void>
   onTest: () => Promise<void>
   onRemove: () => Promise<void>
+  onRefreshLog: () => void
 }) {
   const [botToken, setBotToken] = useState('')
   const [chatId, setChatId] = useState('')
@@ -581,7 +608,7 @@ function TelegramConfigPanel({
         </form>
       </section>
 
-      <NotificationLogSection entries={notifLog} />
+      <NotificationLogSection entries={notifLog} onRefresh={onRefreshLog} />
 
       <section className="camera-detail-section">
         <h3>Comment obtenir le token et le Chat ID</h3>
