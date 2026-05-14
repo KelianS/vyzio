@@ -390,7 +390,7 @@ public class AssistedCameraDiscoveryServiceTests
         var candidate = Assert.Single(result, item => item.Host == "v380pro-camera.lan");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
         Assert.Equal("camera_likely", candidate.Qualification);
-        Assert.Equal("experimental", candidate.SupportLevel);
+        Assert.Equal("guided", candidate.SupportLevel);
         Assert.Equal("v380_pro", candidate.VendorFamily);
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
         Assert.Contains("vendor_hint_detected", candidate.QualificationReasons);

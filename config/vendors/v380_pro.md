@@ -1,39 +1,56 @@
 # V380 PRO
 
-## Summary
-Les cameras V380 PRO ont RTSP et ONVIF desactives par defaut. L'activation passe par un fichier `ceshi.ini` place a la racine d'une carte micro SD.
+Sur beaucoup de cameras V380 PRO, l'acces video local n'est pas actif par defaut. Pour que Vyzio puisse recuperer le flux, il faut souvent faire une petite manipulation avec une carte micro SD.
 
-## Prerequisites
-- Avoir une carte micro SD accessible pour y copier un fichier a la racine.
-- Associer d'abord la camera a l'application V380 Pro.
-- Definir un identifiant et un mot de passe personnalises sur la camera avant d'activer RTSP.
+Le principe est simple : on place un fichier d'activation sur la carte, on demarre la camera quelques minutes, puis on retire ce fichier.
 
-## Steps
-### action: Installer l'application
-Telechargez l'application V380 Pro depuis l'App Store ou Google Play, puis ouvrez-la.
+## Ce qu'il faut avant de commencer
 
-### action: Associer la camera
-Demarrez la camera, associez-la a l'application et finalisez la configuration initiale.
+- Avoir l'application **V380 Pro** sur le telephone
+- Avoir deja ajoute la camera dans l'application
+- Avoir une **carte micro SD**
+- Avoir defini un identifiant et un mot de passe pour la camera
 
-### action: Definir les identifiants
-Configurez un nom d'utilisateur et un mot de passe personnalises pour la camera.
+## Etapes
 
-### action: Telecharger le fichier d'activation
-Recuperez le fichier `ceshi.ini` puis copiez-le a la racine de la carte micro SD, sans le placer dans un sous-dossier.
+1. Ouvrez l'application **V380 Pro** et terminez la configuration normale de la camera.
+2. Verifiez que la camera a bien un identifiant et un mot de passe.
+3. Recuperez le fichier `ceshi.ini` depuis le guide communautaire ci-dessous.
+4. Copiez ce fichier a la **racine** de la carte micro SD.
+5. Eteignez la camera.
+6. Inserez la carte micro SD dans la camera.
+7. Rallumez la camera et laissez-la demarrer pendant environ **5 minutes**.
+8. Eteignez a nouveau la camera.
+9. Retirez la carte micro SD.
+10. Supprimez le fichier `ceshi.ini` de la carte.
+11. Rallumez la camera.
 
-### warning: Inserer la carte puis redemarrer
-Eteignez la camera, inserez la carte micro SD, rallumez-la puis attendez environ 5 minutes. La camera annonce vocalement l'operation en chinois.
+Apres cela, le flux RTSP est souvent disponible pour Vyzio.
 
-### action: Retirer la carte et nettoyer le fichier
-Eteignez a nouveau la camera, retirez la carte micro SD, supprimez `ceshi.ini` de la carte, puis rallumez la camera.
+## Si Vyzio demande une adresse de flux
 
-### check: Tester le flux RTSP
-Utilisez ensuite le flux `rtsp://username:password@ipaddress:554/live/ch00_0` avec les identifiants definis plus tot.
+Le format le plus courant est :
 
-## Caveats
-- Le fichier `ceshi.ini` ne doit rester sur la carte que pour l'activation initiale.
-- Certaines variantes V380 peuvent demander un delai un peu plus court, mais 5 minutes est la marge la plus sure.
-- Cette procedure repose sur une methode communautaire, donc elle reste classee en support experimental.
+- `rtsp://username:password@ipaddress:554/stream1`
 
-## Links
+Remplacez :
+
+- `username` par l'identifiant de la camera
+- `password` par le mot de passe de la camera
+- `ipaddress` par l'adresse locale de la camera
+
+## Si cela ne fonctionne pas
+
+- Verifiez que le fichier `ceshi.ini` etait bien a la racine de la carte.
+- Laissez la camera allumee environ **5 minutes** avant de retirer la carte.
+- Pensez a **supprimer le fichier** de la carte apres l'activation.
+- Verifiez que vous utilisez bien les identifiants definis dans la camera.
+
+## A savoir
+
+- Cette methode vient d'une procedure communautaire, pas d'un guide officiel du fabricant.
+- Certaines variantes V380 peuvent reagir un peu differemment, mais cette methode fonctionne souvent.
+
+## Liens utiles
+
 - [Guide communautaire V380 PRO](https://gist.github.com/SolveSoul/9be5d9599c8b4b59f7cfa4cd0ce79c9c)
