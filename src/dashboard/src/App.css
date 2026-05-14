@@ -134,7 +134,10 @@
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.72);
   text-align: left;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .camera-nav-item:hover,
@@ -981,7 +984,10 @@
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.68);
   text-align: left;
-  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .camera-card:hover,

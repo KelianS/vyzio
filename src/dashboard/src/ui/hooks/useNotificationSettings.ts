@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { NotificationChannelConfig, SaveNotificationChannelConfigRequest, TestNotificationChannelResult } from '../../domain/entities/NotificationChannelConfig'
+import type {
+  NotificationChannelConfig,
+  SaveNotificationChannelConfigRequest,
+  TestNotificationChannelResult,
+} from '../../domain/entities/NotificationChannelConfig'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
@@ -32,7 +36,8 @@ export function useNotificationSettings(
     abortRef.current = new AbortController()
     setLoading(true)
 
-    getConfig.execute(channel)
+    getConfig
+      .execute(channel)
       .then(setConfig)
       .catch(() => setConfig(null))
       .finally(() => setLoading(false))
@@ -40,16 +45,19 @@ export function useNotificationSettings(
     return () => abortRef.current?.abort()
   }, [channel, getConfig])
 
-  const save = useCallback(async (request: SaveNotificationChannelConfigRequest) => {
-    setSaving(true)
-    setTestResult(null)
-    try {
-      const updated = await saveConfig.execute(channel, request)
-      setConfig(updated)
-    } finally {
-      setSaving(false)
-    }
-  }, [channel, saveConfig])
+  const save = useCallback(
+    async (request: SaveNotificationChannelConfigRequest) => {
+      setSaving(true)
+      setTestResult(null)
+      try {
+        const updated = await saveConfig.execute(channel, request)
+        setConfig(updated)
+      } finally {
+        setSaving(false)
+      }
+    },
+    [channel, saveConfig],
+  )
 
   const test = useCallback(async () => {
     setTesting(true)

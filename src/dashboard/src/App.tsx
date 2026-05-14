@@ -1,6 +1,22 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { applyCameraConfiguration, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, getNotificationChannelConfig, getVendorAssistance, saveNotificationChannelConfig, testNotificationChannel, updateCamera, verifyCamera, verifyDraftCamera } from './app/dependencies'
+import {
+  applyCameraConfiguration,
+  createCamera,
+  dashboardRuntime,
+  deleteCamera,
+  discoverCameras,
+  getCameraStatus,
+  getCameras,
+  getHubOverview,
+  getNotificationChannelConfig,
+  getVendorAssistance,
+  saveNotificationChannelConfig,
+  testNotificationChannel,
+  updateCamera,
+  verifyCamera,
+  verifyDraftCamera,
+} from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import {
   formatEventDetail,
@@ -133,9 +149,7 @@ function App() {
         </div>
 
         <div className="hero-status" aria-label="Etat general du systeme">
-          <div className={`status-pill ${systemStatus.pillTone}`}>
-            {systemStatus.pillLabel}
-          </div>
+          <div className={`status-pill ${systemStatus.pillTone}`}>{systemStatus.pillLabel}</div>
           <div className="status-summary">
             <strong>{systemStatus.headline}</strong>
             <p>{systemStatus.detail}</p>
@@ -155,10 +169,17 @@ function App() {
             </div>
           </dl>
 
-          {error ? <p className="status-inline error">Le hub ne peut pas joindre le backend pour le moment.</p> : null}
-          {!error && warnings.slice(1).map((warning) => (
-            <p key={warning} className="status-inline warning">{warning}</p>
-          ))}
+          {error ? (
+            <p className="status-inline error">
+              Le hub ne peut pas joindre le backend pour le moment.
+            </p>
+          ) : null}
+          {!error &&
+            warnings.slice(1).map((warning) => (
+              <p key={warning} className="status-inline warning">
+                {warning}
+              </p>
+            ))}
         </div>
       </section>
 
@@ -185,18 +206,26 @@ function App() {
           </div>
 
           <div className="panel-cta-row">
-            <a className="primary-cta" href="#events">Voir les evenements</a>
-            <a className="secondary-cta" href="#cameras">Cameras</a>
-            <a className="secondary-cta" href="#notifications">Notifications</a>
-            <a className="secondary-cta" href="#profiles">Profils</a>
+            <a className="primary-cta" href="#events">
+              Voir les evenements
+            </a>
+            <a className="secondary-cta" href="#cameras">
+              Cameras
+            </a>
+            <a className="secondary-cta" href="#notifications">
+              Notifications
+            </a>
+            <a className="secondary-cta" href="#profiles">
+              Profils
+            </a>
           </div>
         </article>
 
         <article className="panel panel-secondary" id="events">
-            <div>
-              <dt>Notifications</dt>
-              <dd>{notifications ? formatNotificationStatus(notifications) : 'En attente'}</dd>
-            </div>
+          <div>
+            <dt>Notifications</dt>
+            <dd>{notifications ? formatNotificationStatus(notifications) : 'En attente'}</dd>
+          </div>
           <div className="panel-heading">
             <p className="section-kicker">Evenements</p>
             <h2>Recents et intelligibles</h2>
@@ -260,12 +289,19 @@ function App() {
 
           <p className="expert-copy">Acces reserve aux reglages experts et au support.</p>
 
-          <a className="expert-link" href={dashboardRuntime.frigateBaseUrl} target="_blank" rel="noreferrer">
+          <a
+            className="expert-link"
+            href={dashboardRuntime.frigateBaseUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             Ouvrir Frigate en mode avance
           </a>
 
           <p className="expert-footnote">
-            {notifications ? formatLastNotification(notifications.lastSentAt) : 'Aucune information disponible'}
+            {notifications
+              ? formatLastNotification(notifications.lastSentAt)
+              : 'Aucune information disponible'}
           </p>
         </article>
       </section>

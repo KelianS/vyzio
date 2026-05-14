@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
-import type { NotificationChannelConfig, SaveNotificationChannelConfigRequest, TestNotificationChannelResult } from '../../domain/entities/NotificationChannelConfig'
+import type {
+  NotificationChannelConfig,
+  SaveNotificationChannelConfigRequest,
+  TestNotificationChannelResult,
+} from '../../domain/entities/NotificationChannelConfig'
 import { useNotificationSettings } from '../hooks/useNotificationSettings'
 
 interface NotificationSettingsViewProps {
@@ -36,13 +40,12 @@ export function NotificationSettingsView({
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
 
-  const { config, loading, saving, testing, testResult, save, test } =
-    useNotificationSettings(
-      selectedChannel,
-      getNotificationChannelConfig,
-      saveNotificationChannelConfig,
-      testNotificationChannel,
-    )
+  const { config, loading, saving, testing, testResult, save, test } = useNotificationSettings(
+    selectedChannel,
+    getNotificationChannelConfig,
+    saveNotificationChannelConfig,
+    testNotificationChannel,
+  )
 
   return (
     <div className="app-shell app-shell-cameras">
@@ -77,7 +80,12 @@ export function NotificationSettingsView({
                   <p>{channel.description}</p>
                 </div>
                 <div className="camera-nav-meta">
-                  <ChannelStatusBadge config={config} loading={loading} channel={channel.id} selectedChannel={selectedChannel} />
+                  <ChannelStatusBadge
+                    config={config}
+                    loading={loading}
+                    channel={channel.id}
+                    selectedChannel={selectedChannel}
+                  />
                 </div>
               </button>
             ))}
@@ -108,13 +116,23 @@ export function NotificationSettingsView({
   )
 }
 
-function ChannelStatusSummary({ config, loading }: { config: NotificationChannelConfig | null; loading: boolean }) {
+function ChannelStatusSummary({
+  config,
+  loading,
+}: {
+  config: NotificationChannelConfig | null
+  loading: boolean
+}) {
   if (loading) {
     return <p style={{ color: 'rgba(247,244,237,0.74)' }}>Chargement…</p>
   }
   const active = config?.isEnabled && config?.hasToken && config?.chatId
   const configured = config?.hasToken && config?.chatId
-  const label = active ? 'Telegram actif' : configured ? 'Configure — inactif' : 'Aucun canal configure'
+  const label = active
+    ? 'Telegram actif'
+    : configured
+      ? 'Configure — inactif'
+      : 'Aucun canal configure'
   const detail = active
     ? 'Les alertes Telegram sont operationnelles.'
     : configured
@@ -137,7 +155,12 @@ function ChannelStatusSummary({ config, loading }: { config: NotificationChannel
   )
 }
 
-function ChannelStatusBadge({ config, loading, channel, selectedChannel }: {
+function ChannelStatusBadge({
+  config,
+  loading,
+  channel,
+  selectedChannel,
+}: {
   config: NotificationChannelConfig | null
   loading: boolean
   channel: ChannelId
@@ -148,7 +171,9 @@ function ChannelStatusBadge({ config, loading, channel, selectedChannel }: {
   const active = config?.isEnabled && config?.hasToken && config?.chatId
   const configured = config?.hasToken && config?.chatId
   return (
-    <span className={`camera-support-badge ${active ? 'supported' : configured ? 'unknown' : 'unknown'}`}>
+    <span
+      className={`camera-support-badge ${active ? 'supported' : configured ? 'unknown' : 'unknown'}`}
+    >
       {active ? 'Actif' : configured ? 'Inactif' : 'Non configure'}
     </span>
   )
@@ -219,7 +244,9 @@ function TelegramConfigPanel({
           <div>
             <dt>Token configure</dt>
             <dd>
-              <span className={`camera-support-badge ${config?.hasToken ? 'supported' : 'unknown'}`}>
+              <span
+                className={`camera-support-badge ${config?.hasToken ? 'supported' : 'unknown'}`}
+              >
                 {config?.hasToken ? 'Oui' : 'Non'}
               </span>
             </dd>
@@ -235,7 +262,9 @@ function TelegramConfigPanel({
           <div>
             <dt>Statut</dt>
             <dd>
-              <span className={`camera-support-badge ${config?.isEnabled ? 'supported' : 'unknown'}`}>
+              <span
+                className={`camera-support-badge ${config?.isEnabled ? 'supported' : 'unknown'}`}
+              >
                 {config?.isEnabled ? 'Actif' : 'Inactif'}
               </span>
             </dd>
@@ -251,7 +280,11 @@ function TelegramConfigPanel({
             <input
               id="bot-token"
               type="password"
-              placeholder={config?.hasToken ? '••••••• (token deja enregistre — laisser vide pour conserver)' : 'Entrez le token fourni par @BotFather'}
+              placeholder={
+                config?.hasToken
+                  ? '••••••• (token deja enregistre — laisser vide pour conserver)'
+                  : 'Entrez le token fourni par @BotFather'
+              }
               value={botToken}
               onChange={(e) => setBotToken(e.target.value)}
               autoComplete="new-password"
@@ -322,22 +355,35 @@ function TelegramConfigPanel({
         <div className="camera-confidence-details camera-debug-details">
           <ol className="camera-reason-list" style={{ paddingLeft: 20 }}>
             <li>
-              <strong>Creez un bot via @BotFather</strong><br />
-              Sur Telegram, ecrivez a <a href="https://t.me/BotFather" target="_blank" rel="noreferrer">@BotFather</a>.
-              Tapez <code>/newbot</code>, choisissez un nom. Copiez le token affiche (format <code>123456:ABC...</code>) et collez-le dans le champ Token ci-dessus.
+              <strong>Creez un bot via @BotFather</strong>
+              <br />
+              Sur Telegram, ecrivez a{' '}
+              <a href="https://t.me/BotFather" target="_blank" rel="noreferrer">
+                @BotFather
+              </a>
+              . Tapez <code>/newbot</code>, choisissez un nom. Copiez le token affiche (format{' '}
+              <code>123456:ABC...</code>) et collez-le dans le champ Token ci-dessus.
             </li>
             <li>
-              <strong>Demarrez votre bot</strong><br />
+              <strong>Demarrez votre bot</strong>
+              <br />
               Cherchez votre bot dans Telegram et envoyez-lui <code>/start</code> pour l'activer.
             </li>
             <li>
-              <strong>Obtenez votre Chat ID</strong><br />
-              Ecrivez a <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer">@userinfobot</a> sur Telegram.
-              Il repond immediatement avec votre identifiant numerique (ex : <code>123456789</code>). Copiez-le dans le champ Chat ID ci-dessus.
+              <strong>Obtenez votre Chat ID</strong>
+              <br />
+              Ecrivez a{' '}
+              <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer">
+                @userinfobot
+              </a>{' '}
+              sur Telegram. Il repond immediatement avec votre identifiant numerique (ex :{' '}
+              <code>123456789</code>). Copiez-le dans le champ Chat ID ci-dessus.
             </li>
             <li>
-              <strong>Testez la connexion</strong><br />
-              Cliquez sur <em>Tester le canal</em> pour verifier que Vyzio peut envoyer un message a votre bot.
+              <strong>Testez la connexion</strong>
+              <br />
+              Cliquez sur <em>Tester le canal</em> pour verifier que Vyzio peut envoyer un message a
+              votre bot.
             </li>
           </ol>
         </div>

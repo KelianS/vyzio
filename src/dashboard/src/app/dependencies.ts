@@ -36,6 +36,10 @@ export const getVendorAssistance = new GetVendorAssistance(cameraRepository)
 export const updateCamera = new UpdateCamera(cameraRepository)
 export const verifyDraftCamera = new VerifyDraftCamera(cameraRepository)
 export const verifyCamera = new VerifyCamera(cameraRepository)
-export const getNotificationChannelConfig = new GetNotificationChannelConfig(notificationSettingsRepository)
-export const saveNotificationChannelConfig = new SaveNotificationChannelConfig(notificationSettingsRepository)
+export const getNotificationChannelConfig = new GetNotificationChannelConfig(
+  notificationSettingsRepository,
+)
+export const saveNotificationChannelConfig = new SaveNotificationChannelConfig(
+  notificationSettingsRepository,
+)
 export const testNotificationChannel = new TestNotificationChannel(notificationSettingsRepository)

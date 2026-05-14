@@ -1,4 +1,8 @@
-import type { NotificationChannelConfig, SaveNotificationChannelConfigRequest, TestNotificationChannelResult } from '../../domain/entities/NotificationChannelConfig'
+import type {
+  NotificationChannelConfig,
+  SaveNotificationChannelConfigRequest,
+  TestNotificationChannelResult,
+} from '../../domain/entities/NotificationChannelConfig'
 import type { NotificationSettingsRepository } from '../../domain/ports/NotificationSettingsRepository'
 import { fetchJson } from '../http/fetchJson'
 
@@ -8,7 +12,7 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
   async getChannelConfig(channel: string): Promise<NotificationChannelConfig | null> {
     try {
       return await fetchJson<NotificationChannelConfig>(
-        `${this.apiBaseUrl}/api/notifications/settings/${channel}`
+        `${this.apiBaseUrl}/api/notifications/settings/${channel}`,
       )
     } catch {
       return null
@@ -17,17 +21,17 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
 
   async saveChannelConfig(
     channel: string,
-    request: SaveNotificationChannelConfigRequest
+    request: SaveNotificationChannelConfigRequest,
   ): Promise<NotificationChannelConfig> {
     return putJson<NotificationChannelConfig>(
       `${this.apiBaseUrl}/api/notifications/settings/${channel}`,
-      request
+      request,
     )
   }
 
   async testChannel(channel: string): Promise<TestNotificationChannelResult> {
     return postJson<TestNotificationChannelResult>(
-      `${this.apiBaseUrl}/api/notifications/settings/${channel}/test`
+      `${this.apiBaseUrl}/api/notifications/settings/${channel}/test`,
     )
   }
 }
