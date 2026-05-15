@@ -10,7 +10,6 @@ public sealed record CreateCameraRequest(
     string? Password,
     string? StreamPath,
     string? SourceType,
-    string? DetectionPreset,
     string? VendorFamily = null);
 
 public sealed record UpdateCameraRequest(
@@ -21,7 +20,6 @@ public sealed record UpdateCameraRequest(
     string? Password,
     string? StreamPath,
     string? SourceType,
-    string? DetectionPreset,
     string? VendorFamily = null);
 
 public sealed record DiscoverCamerasRequest(

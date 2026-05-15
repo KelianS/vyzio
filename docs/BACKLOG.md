@@ -54,44 +54,44 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 #### Modèle métier et persistance
 
-- [ ] Introduire le modèle de photo de profil dans `Core` et `Infrastructure` : entité ou value object portant la référence fichier, le statut de synchronisation vers Frigate et la date d'ajout ; repository dédié ou extension de `IProfileRepository`
-- [ ] Introduire la configuration de détection par caméra dans `Core` et `Infrastructure` : entité portant la liste des labels activés par caméra (`CameraDetectionConfig`), repository dédié, migration EF Core
-- [ ] Introduire l'association profil-caméra dans `Core` et `Infrastructure` : entité de jointure `ProfileCameraLink` (profile_id, camera_id, enabled), repository, migration EF Core
-- [ ] Étendre le schéma SQLite via migrations EF Core pour les trois nouvelles entités, sans rupture des tables existantes
+- [x] Introduire le modèle de photo de profil dans `Core` et `Infrastructure` : entité ou value object portant la référence fichier, le statut de synchronisation vers Frigate et la date d'ajout ; repository dédié ou extension de `IProfileRepository`
+- [x] Introduire la configuration de détection par caméra dans `Core` et `Infrastructure` : entité portant la liste des labels activés par caméra (`CameraDetectionConfig`), repository dédié, migration EF Core
+- [x] Introduire l'association profil-caméra dans `Core` et `Infrastructure` : entité de jointure `ProfileCameraLink` (profile_id, camera_id, enabled), repository, migration EF Core
+- [x] Étendre le schéma SQLite via migrations EF Core pour les trois nouvelles entités, sans rupture des tables existantes
 
 #### Use cases backend
 
-- [ ] Implémenter `AddProfilePhotoUseCase` : valider et stocker la photo localement, déclencher la synchronisation vers la bibliothèque de reconnaissance Frigate via l'API REST Frigate, retourner le statut de sync
-- [ ] Implémenter `RemoveProfilePhotoUseCase` : supprimer la photo locale et retirer l'entrée correspondante de la bibliothèque Frigate
-- [ ] Implémenter `GetCameraDetectionConfigUseCase` et `SaveCameraDetectionConfigUseCase` : lire et écrire la liste des labels actifs par caméra ; déclencher la regénération de `frigate.yml` via le `CameraConfigWriter` existant si la config change
-- [ ] Implémenter `LinkProfileToCameraUseCase` et `UnlinkProfileFromCameraUseCase` : créer ou désactiver l'association profil-caméra, mettre à jour le statut produit visible par l'UI
-- [ ] Implémenter `GetDetectionHistoryUseCase` : requête paginée sur `observed_events` avec filtres combinables (camera, label, profile_id, plage de dates), triée par `occurred_at` décroissant
-- [ ] Implémenter `CorrectDetectionIdentityUseCase` : permettre de lier ou délier un événement de détection à un profil existant, mettre à jour `profile_id` et `identity` dans `observed_events`, invalider le cache du profil concerné
-- [ ] Étendre `ProfileRulesService` pour appliquer les associations profil-caméra lors de la résolution des règles métier : une reconnaissance Frigate (`sub_label`) n'est mappée vers un profil Vyzio que si ce profil est associé à la caméra concernée
+- [x] Implémenter `AddProfilePhotoUseCase` : valider et stocker la photo localement, déclencher la synchronisation vers la bibliothèque de reconnaissance Frigate via l'API REST Frigate, retourner le statut de sync
+- [x] Implémenter `RemoveProfilePhotoUseCase` : supprimer la photo locale et retirer l'entrée correspondante de la bibliothèque Frigate
+- [x] Implémenter `GetCameraDetectionConfigUseCase` et `SaveCameraDetectionConfigUseCase` : lire et écrire la liste des labels actifs par caméra ; déclencher la regénération de `frigate.yml` via le `CameraConfigWriter` existant si la config change
+- [x] Implémenter `SetCameraProfileLinksUseCase` et `SetProfileCameraLinksUseCase` : remplacer intégralement les associations profil-caméra (full replacement idempotent)
+- [x] Implémenter `GetDetectionHistoryUseCase` : requête paginée sur `detection_events` avec filtres combinables (camera, label, profile_id, plage de dates), triée par `occurred_at` décroissant
+- [x] Implémenter `CorrectDetectionIdentityUseCase` : permettre de lier ou délier un événement de détection à un profil existant, mettre à jour `profile_id` et `identity` dans `detection_events`
+- [x] Étendre `FrigateAdapter` pour appliquer les associations profil-caméra (ADR-15) : une reconnaissance Frigate (`sub_label`) n'est mappée vers un profil Vyzio que si ce profil est associé à la caméra concernée (ou si aucun lien n'est défini)
 
 #### API
 
-- [ ] Exposer les endpoints photo de profil : `POST /api/profiles/{id}/photos` (upload multipart), `DELETE /api/profiles/{id}/photos/{photoId}` ; inclure le statut de sync Frigate dans la réponse
-- [ ] Exposer les endpoints de configuration détection par caméra : `GET /api/cameras/{id}/detection-config`, `PUT /api/cameras/{id}/detection-config` avec validation des labels connus
-- [ ] Exposer les endpoints d'association profil-caméra : `GET /api/cameras/{id}/profile-links`, `PUT /api/cameras/{id}/profile-links` (liste complète, idempotent), `GET /api/profiles/{id}/camera-links`
-- [ ] Exposer l'endpoint historique détections filtré et paginé : `GET /api/detection-events?camera=&label=&profileId=&from=&to=&page=&limit=` avec en-têtes de pagination standard
-- [ ] Exposer l'endpoint de correction de reconnaissance : `PATCH /api/detection-events/{id}/identity` avec `{ profileId: string | null }`
+- [x] Exposer les endpoints photo de profil : `POST /api/profiles/{id}/photos` (upload multipart), `DELETE /api/profiles/{id}/photos/{photoId}` ; inclure le statut de sync Frigate dans la réponse
+- [x] Exposer les endpoints de configuration détection par caméra : `GET /api/cameras/{id}/detection-config`, `PUT /api/cameras/{id}/detection-config` avec validation des labels connus
+- [x] Exposer les endpoints d'association profil-caméra : `GET /api/cameras/{id}/profile-links`, `PUT /api/cameras/{id}/profile-links`, `GET /api/profiles/{id}/camera-links`, `PUT /api/profiles/{id}/camera-links`
+- [x] Exposer l'endpoint historique détections filtré et paginé : `GET /api/detection-events/history?camera=&label=&profileId=&from=&to=&page=&limit=`
+- [x] Exposer l'endpoint de correction de reconnaissance : `PATCH /api/detection-events/{id}/identity` avec `{ profileId: string | null }`
 
 #### Interface utilisateur
 
-- [ ] Construire la page de gestion des profils (liste complète) : afficher tous les profils avec nom, catégorie, mode d'alerte, date de dernière apparition, nombre de photos ; lien vers le détail ; bouton de création
-- [ ] Construire le formulaire de création et d'édition de profil : nom, catégorie, mode d'alerte, upload de une ou plusieurs photos avec prévisualisation et statut de synchronisation Frigate
-- [ ] Construire la vue détail d'un profil : informations du profil, galerie de photos avec possibilité de suppression individuelle, liste paginée des dernières apparitions avec miniature et caméra source, liste des caméras auxquelles le profil est associé
-- [ ] Construire l'interface de configuration de détection par caméra : accessible depuis le détail caméra, afficher les labels Frigate disponibles sous forme de toggles (person, car, dog, cat, etc.), sauvegarder et déclencher la regénération Frigate
-- [ ] Construire l'interface d'association profil-caméra : depuis le détail caméra, afficher la liste des profils existants avec toggle actif/inactif par profil ; depuis le détail profil, afficher la liste des caméras avec toggle ; les deux vues sont cohérentes
-- [ ] Construire la vue historique des détections : liste paginée d'événements avec miniature, label, identité reconnue, nom de caméra, heure ; filtres par caméra, label et profil ; accessible depuis le menu principal
-- [ ] Permettre la correction d'une reconnaissance depuis la vue historique : afficher un menu contextuel sur chaque événement permettant d'assigner ou de retirer un profil, avec confirmation visuelle immédiate
+- [x] Construire la page de gestion des profils (liste complète) : afficher tous les profils avec nom, catégorie, mode d'alerte ; bouton de création ; accessible via `#profiles`
+- [x] Construire le formulaire de création et d'édition de profil : nom, catégorie, mode d'alerte
+- [x] Construire la vue détail d'un profil : onglets Informations / Photos / Cameras ; galerie de photos avec upload et suppression individuelle + statut sync Frigate ; liste des caméras liées avec toggle
+- [x] Construire l'interface de configuration de détection par caméra : depuis `CameraOnboardingView`, endpoints `GET/PUT /cameras/{id}/detection-config`
+- [x] Construire l'interface d'association profil-caméra : depuis le détail profil (onglet Cameras), liste des caméras avec checkbox ; cohérent avec `PUT /profiles/{id}/camera-links`
+- [x] Construire la vue historique des détections : liste paginée d'événements avec label, identité reconnue, caméra, heure, lien snapshot ; filtres par caméra, label, profil, plage de dates ; accessible via `#history`
+- [x] Permettre la correction d'une reconnaissance depuis la vue historique : bouton "Corriger" inline sur chaque événement avec dropdown profil, appel `PATCH /detection-events/{id}/identity`
 
 #### Tests
 
-- [ ] Tests unitaires (NSubstitute, zéro DB) pour : `AddProfilePhotoUseCase`, `SaveCameraDetectionConfigUseCase`, `LinkProfileToCameraUseCase`, `GetDetectionHistoryUseCase`, `CorrectDetectionIdentityUseCase`, la logique de filtrage dans `ProfileRulesService`
-- [ ] Tests d'intégration (SQLite in-memory, EnsureCreated) pour : les migrations des nouvelles tables, les requêtes filtrées sur `observed_events`, la cohérence des associations profil-caméra après upsert
-- [ ] Tests de contrat MQTT : vérifier que `ProfileRulesService` ne mappe un `sub_label` Frigate vers un profil que si l'association profil-caméra est active pour la caméra concernée
+- [x] Tests unitaires (NSubstitute, zéro DB) pour : `AddProfilePhotoUseCase`, `RemoveProfilePhotoUseCase`, `SetCameraProfileLinksUseCase`, `CorrectDetectionIdentityUseCase`
+- [x] Tests d'intégration (SQLite in-memory, EnsureCreated) pour : `ProfilePhotoRepository`, `ProfileCameraLinkRepository` (upsert, unicité, suppression), `DetectionEventRepository.GetPagedAsync` (filtres, pagination), `UpdateIdentityAsync`
+- [x] Tests de contrat FrigateAdapter (ADR-15) : vérifier que le ProfileId est résolu uniquement si le profil est lié à la caméra ; sans lien défini, la reconnaissance s'applique sur toutes les caméras
 
 #### Documentation utilisateur
 

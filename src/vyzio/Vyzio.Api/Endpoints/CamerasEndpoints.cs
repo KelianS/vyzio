@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Application.DTOs.Profiles;
 using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.Profiles;
 using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Endpoints;
@@ -75,6 +77,37 @@ public static class CamerasEndpoints
         {
             var result = await useCase.ExecuteAsync(id, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
+        // Detection config
+        group.MapGet("/{id}/detection-config", async (string id, GetCameraDetectionConfigUseCase useCase, CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(id, ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        group.MapPut("/{id}/detection-config", async (
+            string id,
+            SaveCameraDetectionConfigRequest request,
+            SaveCameraDetectionConfigUseCase useCase,
+            CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(id, request, ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        // Profile links
+        group.MapGet("/{id}/profile-links", async (string id, GetCameraProfileLinksUseCase useCase, CancellationToken ct) =>
+            Results.Ok(await useCase.ExecuteAsync(id, ct)));
+
+        group.MapPut("/{id}/profile-links", async (
+            string id,
+            SetCameraProfileLinksRequest request,
+            SetCameraProfileLinksUseCase useCase,
+            CancellationToken ct) =>
+        {
+            var links = await useCase.ExecuteAsync(id, request, ct);
+            return Results.Ok(links);
         });
 
         return app;

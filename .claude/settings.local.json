@@ -6,7 +6,9 @@
       "Bash(Format-Table)",
       "Bash(Get-ChildItem -Path \"C:\\\\LOCAL_DEV\\\\vyzio\" -Directory)",
       "Bash(Select-Object Name)",
-      "Bash(xargs grep -l \"frigate.yml\\\\|cameras.*section\")"
+      "Bash(xargs grep -l \"frigate.yml\\\\|cameras.*section\")",
+      "Bash(dotnet ef *)",
+      "Bash(dotnet build *)"
     ]
   }
 }

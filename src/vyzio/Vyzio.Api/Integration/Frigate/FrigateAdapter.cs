@@ -12,6 +12,8 @@ public sealed class FrigateAdapter(
     IDetectionEventRepository detectionEvents,
     IDetectionNotificationDispatcher detectionNotifications,
     IFrigateRestClient restClient,
+    IProfileRepository profileRepository,
+    IProfileCameraLinkRepository profileCameraLinks,
     ILogger<FrigateAdapter> logger)
 {
     public async Task<bool> ProcessMessageAsync(string topic, string payload, CancellationToken ct = default)
@@ -25,16 +27,17 @@ public sealed class FrigateAdapter(
         {
             var existing = await detectionEvents.GetByFrigateEventIdAsync(consumedEvent.FrigateEventId, ct);
             var identity = await TryResolveIdentityAsync(consumedEvent, existing?.Identity, ct);
+            var profileId = await ResolveProfileIdAsync(identity, consumedEvent.Camera, ct);
 
             if (existing is null)
             {
-                var detectionEvent = ToDetectionEvent(consumedEvent, identity);
+                var detectionEvent = ToDetectionEvent(consumedEvent, identity, profileId);
                 await detectionEvents.AddAsync(detectionEvent, ct);
                 await detectionNotifications.ExecuteAsync(detectionEvent, ct);
                 return true;
             }
 
-            ApplyUpdate(existing, consumedEvent, identity);
+            ApplyUpdate(existing, consumedEvent, identity, profileId);
             await detectionEvents.UpdateAsync(existing, ct);
             await detectionNotifications.ExecuteAsync(existing, ct);
             return true;
@@ -71,7 +74,34 @@ public sealed class FrigateAdapter(
         }
     }
 
-    private static DetectionEvent ToDetectionEvent(FrigateConsumedEvent consumedEvent, string? identity)
+    // Resolves a Frigate sub_label to a Vyzio profile, respecting profile-camera link restrictions (ADR-15).
+    // Returns null if no matching profile exists or if the profile is not linked to this camera.
+    private async Task<string?> ResolveProfileIdAsync(string? identity, string camera, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(identity))
+            return null;
+
+        var allProfiles = await profileRepository.GetAllAsync(ct);
+        var profile = allProfiles.FirstOrDefault(p =>
+            string.Equals(p.Name, identity, StringComparison.OrdinalIgnoreCase));
+
+        if (profile is null)
+            return null;
+
+        // If the profile has camera links defined, only recognize on linked cameras.
+        var links = await profileCameraLinks.GetByProfileIdAsync(profile.Id, ct);
+        var activeLinks = links.Where(l => l.Enabled).ToList();
+
+        if (activeLinks.Count > 0 && !activeLinks.Any(l => string.Equals(l.CameraId, camera, StringComparison.Ordinal)))
+        {
+            // Profile exists but not linked to this camera
+            return null;
+        }
+
+        return profile.Id;
+    }
+
+    private static DetectionEvent ToDetectionEvent(FrigateConsumedEvent consumedEvent, string? identity, string? profileId)
         => new()
         {
             FrigateEventId = consumedEvent.FrigateEventId,
@@ -79,13 +109,14 @@ public sealed class FrigateAdapter(
             Camera = consumedEvent.Camera,
             Label = consumedEvent.Label,
             Identity = identity,
+            ProfileId = profileId,
             Confidence = consumedEvent.Confidence,
             OccurredAt = consumedEvent.OccurredAt,
             HasClip = consumedEvent.HasClip,
             HasSnapshot = consumedEvent.HasSnapshot
         };
 
-    private static void ApplyUpdate(DetectionEvent existing, FrigateConsumedEvent consumedEvent, string? identity)
+    private static void ApplyUpdate(DetectionEvent existing, FrigateConsumedEvent consumedEvent, string? identity, string? profileId)
     {
         existing.Lifecycle = consumedEvent.Lifecycle;
         existing.Camera = consumedEvent.Camera;
@@ -98,6 +129,7 @@ public sealed class FrigateAdapter(
         if (!string.IsNullOrWhiteSpace(identity))
         {
             existing.Identity = identity;
+            existing.ProfileId = profileId;
         }
     }
 }

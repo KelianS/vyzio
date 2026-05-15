@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DetectionEventContractProjector>();
         services.AddSingleton<DetectionTelegramMessageFormatter>();
 
+        // Camera use cases
         services.AddScoped<DiscoverCamerasUseCase>();
         services.AddScoped<GetVendorAssistanceUseCase>();
         services.AddScoped<CreateCameraUseCase>();
@@ -30,11 +31,20 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteCameraUseCase>();
         services.AddScoped<GetCamerasUseCase>();
         services.AddScoped<GetCameraStatusUseCase>();
+        services.AddScoped<GetCameraDetectionConfigUseCase>();
+        services.AddScoped<SaveCameraDetectionConfigUseCase>();
+
+        // Detection event use cases
         services.AddScoped<GetRecentDetectionEventsUseCase>();
         services.AddScoped<GetProfileDetectionEventsUseCase>();
+        services.AddScoped<GetDetectionHistoryUseCase>();
+        services.AddScoped<CorrectDetectionIdentityUseCase>();
+
+        // Hub
         services.AddScoped<GetHubOverviewUseCase>();
         services.AddScoped<IDetectionNotificationDispatcher, SendTelegramDetectionNotificationUseCase>();
 
+        // Notification use cases
         services.AddScoped<GetNotificationChannelConfigUseCase>();
         services.AddScoped<SaveNotificationChannelConfigUseCase>();
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
@@ -47,6 +57,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetProfileByIdUseCase>();
         services.AddScoped<UpdateProfileUseCase>();
         services.AddScoped<DeleteProfileUseCase>();
+        services.AddScoped<GetProfilePhotosUseCase>();
+        services.AddScoped<AddProfilePhotoUseCase>();
+        services.AddScoped<RemoveProfilePhotoUseCase>();
+        services.AddScoped<ResyncFaceLibraryUseCase>();
+        services.AddScoped<GetCameraProfileLinksUseCase>();
+        services.AddScoped<GetProfileCameraLinksUseCase>();
+        services.AddScoped<SetCameraProfileLinksUseCase>();
+        services.AddScoped<SetProfileCameraLinksUseCase>();
 
         return services;
     }
