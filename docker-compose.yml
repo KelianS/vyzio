@@ -14,6 +14,7 @@ services:
       - ./config:/app/config
       - vyzio-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - vyzio-net
     ports:
@@ -37,6 +38,9 @@ services:
       - mqtt
     privileged: true
     shm_size: "512mb"
+    # Expose frigate for advanced mode.
+    ports:
+      - "127.0.0.1:5000:5000"
     volumes:
       # Vyzio owns the effective Frigate config for the nominal product flow.
       - ./config/frigate.generated.yml:/config/config.yml:ro

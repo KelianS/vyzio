@@ -34,9 +34,7 @@ export function resolveVendorLinkTarget(href: string | null | undefined): Vendor
     }
   }
 
-  const normalizedAssetPath = normalizedHref
-    .replace(/^\.\//, '')
-    .replace(/^\//, '')
+  const normalizedAssetPath = normalizedHref.replace(/^\.\//, '').replace(/^\//, '')
 
   return {
     href: `${vendorAssetPrefix}${normalizedAssetPath}`,

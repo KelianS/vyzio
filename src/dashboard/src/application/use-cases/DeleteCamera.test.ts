@@ -20,6 +20,7 @@ describe('DeleteCamera', () => {
       apply: vi.fn(),
       applyConfiguration: vi.fn(),
       delete: vi.fn().mockResolvedValue(result),
+      update: vi.fn(),
       getVendorAssistance: vi.fn(),
     }
 

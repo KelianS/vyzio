@@ -98,11 +98,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("VendorFamily")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("vendor_family");
-
                     b.Property<string>("Username")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")
@@ -113,6 +108,11 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("validation_state");
+
+                    b.Property<string>("VendorFamily")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vendor_family");
 
                     b.HasKey("Id")
                         .HasName("pk_cameras");
@@ -238,6 +238,77 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasName("pk_notifications");
 
                     b.ToTable("notifications", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.NotificationChannelConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("ActiveFromHour")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("active_from_hour");
+
+                    b.Property<int?>("ActiveToHour")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("active_to_hour");
+
+                    b.Property<string>("AllowedLabelsJson")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("allowed_labels_json");
+
+                    b.Property<string>("BotToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("bot_token");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("channel");
+
+                    b.Property<string>("ChatId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("chat_id");
+
+                    b.Property<DateTime?>("ConfiguredAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("configured_at");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("LastTestError")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_test_error");
+
+                    b.Property<string>("LastTestStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_test_status");
+
+                    b.Property<DateTime?>("LastTestedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_tested_at");
+
+                    b.Property<string>("MessageFieldsJson")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("message_fields_json");
+
+                    b.Property<float>("MinimumConfidence")
+                        .HasColumnType("REAL")
+                        .HasColumnName("minimum_confidence");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_channel_configs");
+
+                    b.ToTable("notification_channel_configs", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.Profile", b =>

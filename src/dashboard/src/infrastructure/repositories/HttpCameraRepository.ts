@@ -109,17 +109,25 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async getStatus(cameraId: string): Promise<CameraStatus> {
-    const payload = await fetchJson<CameraStatusDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}/status`)
+    const payload = await fetchJson<CameraStatusDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/status`,
+    )
     return mapCameraStatus(payload)
   }
 
   async discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]> {
-    const payload = await postJson<DiscoveredCameraDto[]>(`${this.apiBaseUrl}/api/cameras/discovery`, input)
+    const payload = await postJson<DiscoveredCameraDto[]>(
+      `${this.apiBaseUrl}/api/cameras/discovery`,
+      input,
+    )
     return payload.map(mapDiscoveredCamera)
   }
 
   async getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null> {
-    return postJson<VendorAssistanceDto | null>(`${this.apiBaseUrl}/api/cameras/vendor-assistance`, input)
+    return postJson<VendorAssistanceDto | null>(
+      `${this.apiBaseUrl}/api/cameras/vendor-assistance`,
+      input,
+    )
   }
 
   async create(input: CameraDraftInput): Promise<Camera> {
@@ -133,17 +141,24 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async verifyDraft(input: CameraDraftInput): Promise<CameraStatus> {
-    const payload = await postJson<CameraStatusDto>(`${this.apiBaseUrl}/api/cameras/verify-draft`, input)
+    const payload = await postJson<CameraStatusDto>(
+      `${this.apiBaseUrl}/api/cameras/verify-draft`,
+      input,
+    )
     return mapCameraStatus(payload)
   }
 
   async verify(cameraId: string): Promise<CameraStatus> {
-    const payload = await postJson<CameraStatusDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}/verify`)
+    const payload = await postJson<CameraStatusDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/verify`,
+    )
     return mapCameraStatus(payload)
   }
 
   async apply(cameraId: string): Promise<CameraApplyResult> {
-    const payload = await postJson<ApplyCameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}/apply`)
+    const payload = await postJson<ApplyCameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/apply`,
+    )
     return {
       applied: payload.applied,
       message: payload.message,
@@ -153,10 +168,14 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async applyConfiguration(): Promise<CameraConfigurationApplyResult> {
-    return postJson<ApplyCameraConfigurationDto>(`${this.apiBaseUrl}/api/cameras/apply-configuration`)
+    return postJson<ApplyCameraConfigurationDto>(
+      `${this.apiBaseUrl}/api/cameras/apply-configuration`,
+    )
   }
 
-  async delete(cameraId: string): Promise<{ deleted: boolean; message: string; configPath: string }> {
+  async delete(
+    cameraId: string,
+  ): Promise<{ deleted: boolean; message: string; configPath: string }> {
     return deleteJson<DeleteCameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`)
   }
 }

@@ -10,21 +10,15 @@ namespace Vyzio.Application.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    /// <summary>Registers all application use cases.</summary>
     public static IServiceCollection AddVyzioApplication(
         this IServiceCollection services,
-        IEnumerable<string>? retainedFrigateLabels = null,
-        bool telegramNotificationsEnabled = false,
-        float minimumNotificationConfidence = 0.75f)
+        IEnumerable<string>? retainedFrigateLabels = null)
     {
         services.AddSingleton(new FrigateLabelFilter(retainedFrigateLabels));
         services.AddSingleton<FrigateEventContractAdapter>();
         services.AddSingleton<DetectionEventContractProjector>();
-        services.AddSingleton(new TelegramDetectionNotificationPolicy(
-            telegramNotificationsEnabled,
-            minimumNotificationConfidence));
-        services.AddSingleton(new HubNotificationSettings(telegramNotificationsEnabled));
         services.AddSingleton<DetectionTelegramMessageFormatter>();
+
         services.AddScoped<DiscoverCamerasUseCase>();
         services.AddScoped<GetVendorAssistanceUseCase>();
         services.AddScoped<CreateCameraUseCase>();
@@ -40,6 +34,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetProfileDetectionEventsUseCase>();
         services.AddScoped<GetHubOverviewUseCase>();
         services.AddScoped<IDetectionNotificationDispatcher, SendTelegramDetectionNotificationUseCase>();
+
+        services.AddScoped<GetNotificationChannelConfigUseCase>();
+        services.AddScoped<SaveNotificationChannelConfigUseCase>();
+        services.AddScoped<DeleteNotificationChannelConfigUseCase>();
+        services.AddScoped<TestNotificationChannelUseCase>();
+        services.AddScoped<GetNotificationLogUseCase>();
 
         // Profile use cases
         services.AddScoped<CreateProfileUseCase>();

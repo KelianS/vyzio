@@ -25,7 +25,8 @@ export function useCameraStatus(useCase: GetCameraStatus, cameraId: string | nul
     let cancelled = false
     setState({ data: null, loading: true, error: null })
 
-    useCase.execute(cameraId)
+    useCase
+      .execute(cameraId)
       .then((data) => {
         if (!cancelled) {
           setState({ data, loading: false, error: null })

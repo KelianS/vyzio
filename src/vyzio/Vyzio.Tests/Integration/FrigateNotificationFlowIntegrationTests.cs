@@ -1,9 +1,11 @@
+﻿using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
+using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
@@ -38,11 +40,23 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         _telegramSender = new RecordingTelegramSender();
         _restClient = new StubFrigateRestClient();
 
+        var channelConfigs = new NotificationChannelConfigRepository(_db);
+        channelConfigs.UpsertAsync(new NotificationChannelConfig
+        {
+            Channel = "telegram",
+            IsEnabled = true,
+            BotToken = "test-bot-token",
+            ChatId = "test-chat-id",
+            MinimumConfidence = 0.75f
+        }).GetAwaiter().GetResult();
+
         var dispatcher = new SendTelegramDetectionNotificationUseCase(
             _notifications,
             _telegramSender,
-            new TelegramDetectionNotificationPolicy(telegramEnabled: true, minimumConfidence: 0.75f),
-            new DetectionTelegramMessageFormatter());
+            channelConfigs,
+            Substitute.For<IFrigateSnapshotProvider>(),
+            new DetectionTelegramMessageFormatter(),
+            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance);
 
         _sut = new FrigateAdapter(
             new FrigateEventContractAdapter(new FrigateLabelFilter(["person"])),
@@ -77,7 +91,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         Assert.Equal("telegram", notification.Channel);
         Assert.Equal("sent", notification.Status);
 
-        Assert.Equal(["Alice detectee - front door - 10:20"], _telegramSender.Messages);
+        var expectedTime = DateTimeOffset.FromUnixTimeSeconds(1778408400).ToLocalTime().ToString("HH:mm");
+        Assert.Equal([$"Alice detectee — front door — {expectedTime} — 97 %"], _telegramSender.Messages);
     }
 
     [Fact]
@@ -136,9 +151,15 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     {
         public List<string> Messages { get; } = [];
 
-        public Task SendAsync(string message, CancellationToken ct = default)
+        public Task SendAsync(string message, string botToken, string chatId, CancellationToken ct = default)
         {
             Messages.Add(message);
+            return Task.CompletedTask;
+        }
+
+        public Task SendPhotoAsync(Stream photo, string caption, string botToken, string chatId, CancellationToken ct = default)
+        {
+            Messages.Add(caption);
             return Task.CompletedTask;
         }
     }

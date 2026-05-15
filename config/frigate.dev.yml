@@ -26,3 +26,8 @@ cameras:
     detect:
       enabled: true
       fps: 5
+    snapshots:
+      enabled: true
+      bounding_box: true
+      retain:
+        default: 30

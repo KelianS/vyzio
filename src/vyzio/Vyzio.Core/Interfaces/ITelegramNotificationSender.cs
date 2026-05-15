@@ -2,5 +2,6 @@ namespace Vyzio.Core.Interfaces;
 
 public interface ITelegramNotificationSender
 {
-    Task SendAsync(string message, CancellationToken ct = default);
+    Task SendAsync(string message, string botToken, string chatId, CancellationToken ct = default);
+    Task SendPhotoAsync(Stream photo, string caption, string botToken, string chatId, CancellationToken ct = default);
 }

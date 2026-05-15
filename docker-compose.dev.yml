@@ -1,0 +1,8 @@
+services:
+  mqtt:
+    ports:
+      - "127.0.0.1:1883:1883"
+
+  vyzio-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development

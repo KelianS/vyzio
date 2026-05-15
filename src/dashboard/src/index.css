@@ -16,9 +16,9 @@
   --radius-xl: 28px;
   --radius-lg: 24px;
   --radius-md: 18px;
-  --sans: "Aptos", "Segoe UI Variable Text", "Trebuchet MS", sans-serif;
-  --heading: "Iowan Old Style", "Palatino Linotype", serif;
-  --mono: "Cascadia Code", "Consolas", monospace;
+  --sans: 'Aptos', 'Segoe UI Variable Text', 'Trebuchet MS', sans-serif;
+  --heading: 'Iowan Old Style', 'Palatino Linotype', serif;
+  --mono: 'Cascadia Code', 'Consolas', monospace;
 
   font: 18px/1.5 var(--sans);
   letter-spacing: 0.01em;
@@ -52,7 +52,7 @@ body {
 }
 
 body::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   background-image:
