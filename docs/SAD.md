@@ -1,6 +1,6 @@
 # Vyzio — Software Architecture Document (SAD)
 
-> Mai 2026 — v2.1 — Document vivant
+> Mai 2026 — v2.2 — Document vivant
 
 ---
 
@@ -23,6 +23,9 @@
    - [ADR-10 — Authentification : JWT + bcrypt](#adr-10--authentification--jwt--bcrypt)
   - [ADR-11 — Stratégie UX non-tech : Hub Vyzio simplifié + Frigate avancé](#adr-11--stratégie-ux-non-tech--hub-vyzio-simplifié--frigate-avancé)
   - [ADR-12 — Gestion des caméras pilotée par Vyzio, appliquée à Frigate](#adr-12--gestion-des-caméras-pilotée-par-vyzio-appliquée-à-frigate)
+  - [ADR-13 — Photos de profil : stockage Vyzio + synchronisation via API REST Frigate](#adr-13--photos-de-profil--stockage-vyzio--synchronisation-via-api-rest-frigate)
+  - [ADR-14 — Labels de détection par caméra : colonne JSON sur Camera](#adr-14--labels-de-détection-par-caméra--colonne-json-sur-camera)
+  - [ADR-15 — Association profil-caméra : table de jointure + filtrage dans ProfileRulesService](#adr-15--association-profil-caméra--table-de-jointure--filtrage-dans-profilerulesservice)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -1041,17 +1044,259 @@ Le point important de conception est de ne pas faire dépendre tout le parcours 
 
 ---
 
+### ADR-13 — Photos de profil : stockage Vyzio + synchronisation via API REST Frigate
+
+#### Contexte
+
+La reconnaissance faciale de Frigate (v0.16+) repose sur une bibliothèque de photos de référence organisée par nom de personne. Pour qu'un profil Vyzio génère une reconnaissance, ses photos de référence doivent être présentes dans cette bibliothèque. Trois stratégies d'alimentation ont été évaluées.
+
+#### API REST Frigate pour la gestion des faces (v0.16+)
+
+Frigate expose les endpoints suivants pour gérer la bibliothèque de reconnaissance :
+
+```
+POST   /api/faces/{name}              → upload d'une photo de référence (multipart/form-data, champ "file")
+DELETE /api/faces/{name}/{filename}   → suppression d'une photo de référence spécifique
+GET    /api/faces                     → liste toutes les personnes et leurs photos dans la bibliothèque
+```
+
+La bibliothèque est physiquement stockée dans le volume Frigate sous `/media/frigate/clips/faces/{name}/`. L'activation de la reconnaissance faciale requiert dans `frigate.yml` :
+
+```yaml
+face_recognition:
+  enabled: true
+  threshold: 0.9    # score minimal pour valider une reconnaissance (0.0–1.0)
+  min_area: 10000   # surface minimale du visage détecté en pixels²
+```
+
+Lors d'une détection avec reconnaissance réussie, Frigate publie sur MQTT le champ `sub_label` avec le nom de la personne reconnue — déjà consommé par le `FrigateAdapter` Vyzio existant.
+
+#### Options comparées
+
+| Option | Description | Avantages | Inconvénients |
+|---|---|---|---|
+| **A — Écriture directe dans le volume Frigate** | Vyzio écrit les fichiers photos dans `/media/frigate/clips/faces/{name}/` via un volume Docker partagé | Zéro API, minimal | Couplage fort à la structure interne Frigate ; casse si Frigate change son layout ; photos sous contrôle de Frigate, pas de Vyzio |
+| **B — API REST Frigate uniquement** | Vyzio transmet la photo à Frigate via `POST /api/faces/{name}` sans en garder de copie | Simple, découplé | Si Frigate est réinitialisé ou recréé, les photos sont perdues ; pas de source de vérité côté Vyzio |
+| **C — Stockage canonique Vyzio + sync via API REST** | Vyzio conserve une copie canonique dans `/data/vyzio/faces/{profile_id}/` et synchronise vers Frigate via `POST /api/faces/{name}` à chaque ajout, retrait ou renommage | Vyzio est source de vérité ; re-sync possible après reset Frigate ; photos sont données utilisateur sous contrôle Vyzio | Deux copies stockées (volume Vyzio + volume Frigate) |
+
+#### Décision
+
+**Option C retenue : stockage canonique Vyzio + synchronisation via API REST Frigate.**
+
+Les photos sont des données utilisateur sensibles. Elles doivent rester sous le contrôle de Vyzio, pas dépendre de la stabilité du volume Frigate. Le `FrigateRestClient` existant est étendu avec les opérations de gestion de bibliothèque. Un use case de re-synchronisation (`ResyncFaceLibraryUseCase`) peut reconstruire l'état Frigate complet depuis les photos Vyzio à tout moment.
+
+**Modèle de stockage local Vyzio :**
+
+```
+/data/vyzio/
+  faces/
+    {profile_id}/
+      {photo_id}.jpg     ← copie canonique Vyzio
+```
+
+**Contrat `IFrigateRestClient` étendu :**
+
+```csharp
+// Ajouts à l'interface existante
+Task UploadFacePhotoAsync(string personName, string filename, byte[] imageJpeg, CancellationToken ct = default);
+Task DeleteFacePhotoAsync(string personName, string filename, CancellationToken ct = default);
+Task<IReadOnlyList<FrigateFaceLibraryEntry>> GetFaceLibraryAsync(CancellationToken ct = default);
+```
+
+**Modèle de données côté Vyzio :**
+
+```sql
+CREATE TABLE profile_photos (
+    id              TEXT PRIMARY KEY,
+    profile_id      TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    filename        TEXT NOT NULL,                  -- nom canonique dans /data/vyzio/faces/{profile_id}/
+    frigate_synced  INTEGER NOT NULL DEFAULT 0,     -- 1 si la photo est présente dans la bibliothèque Frigate
+    synced_at       TEXT,
+    created_at      TEXT NOT NULL
+);
+```
+
+**Règle de nommage dans Frigate :** le `personName` transmis à Frigate est le `Profile.Name` (nom affiché). En cas de renommage de profil, une re-sync supprime les photos de l'ancien nom et les réenvoie sous le nouveau nom.
+
+**Activation de la reconnaissance dans `frigate.yml` :** la section `face_recognition` est ajoutée par le `CameraConfigWriter` dès qu'au moins un profil dispose de photos synchronisées.
+
+#### Conséquences
+
+- ✅ Les photos restent sous contrôle de Vyzio — données utilisateur, supprimables intégralement depuis Vyzio
+- ✅ Re-synchronisation possible après reset ou recréation du conteneur Frigate
+- ✅ Couplage limité à l'API REST Frigate, pas à sa structure de fichiers interne
+- ✅ Le statut `frigate_synced` permet d'afficher dans l'UI si une photo est effective dans la reconnaissance
+- ⚠️ Deux copies des photos stockées — volume Vyzio + volume Frigate ; acceptable au vu du volume de données (photos de profil, pas de clips vidéo)
+- ⚠️ Le renommage d'un profil déclenche une re-sync complète côté Frigate — à traiter dans `UpdateProfileUseCase`
+
+---
+
+### ADR-14 — Labels de détection par caméra : colonne JSON sur Camera
+
+#### Contexte
+
+Chaque caméra doit pouvoir détecter un sous-ensemble des labels Frigate (`person`, `car`, `dog`, `cat`, etc.). Cette configuration est projetée dans la section `objects.track` de chaque caméra dans `frigate.yml`. L'entité `Camera` possède déjà un champ `DetectionPreset` (valeur `"person_default"`) qui n'est pas encore utilisé dans la génération de config.
+
+#### Frigate : structure de configuration des objets détectés
+
+```yaml
+cameras:
+  front_door:
+    objects:
+      track:
+        - person
+        - dog
+```
+
+Sans cette section, Frigate utilise les objets définis au niveau global (par défaut `person` uniquement). La liste des labels disponibles dépend du modèle IA configuré dans Frigate — les labels courants sont : `person`, `car`, `motorcycle`, `bicycle`, `dog`, `cat`, `bird`, `deer`, `face`.
+
+#### Options comparées
+
+| Option | Description | Avantages | Inconvénients |
+|---|---|---|---|
+| **A — Valeurs de preset** | Étendre `DetectionPreset` avec des chaînes prédéfinies (`person_only`, `all_animals`, `full`) | Zéro migration, simple | Rigide ; combinaisons impossibles ; mapping preset → labels doit vivre quelque part |
+| **B — Table `CameraDetectionConfig`** | Entité dédiée avec une ligne par label activé par caméra | Requêtes propres, extensible | Join supplémentaire pour la génération de config ; surcoût pour un besoin simple |
+| **C — Colonne JSON `detection_labels_json` sur Camera** | Stocker la liste des labels actifs comme JSON sur la table `cameras` | Simple, flexible, pas de join pour la génération | JSON en base moins requêtable — acceptable car aucune query ne filtre sur les labels individuels |
+
+#### Décision
+
+**Option C retenue : colonne JSON `detection_labels_json` sur l'entité `Camera`.**
+
+Le besoin est simple : stocker et lire une liste de chaînes par caméra. Aucune query ne filtre sur un label individuel — la liste est lue en bloc pour la génération de `frigate.yml`. Une table dédiée ajouterait de la complexité sans bénéfice ici. Le champ `DetectionPreset` existant est **remplacé** par `DetectionLabelsJson`.
+
+**Modification de l'entité `Camera` :**
+
+```csharp
+// Remplace DetectionPreset
+/// <summary>JSON array of active detection labels. Null defaults to ["person"].</summary>
+[MaxLength(500)]
+public string? DetectionLabelsJson { get; set; }
+
+// Helper (non mappé EF)
+public IReadOnlyList<string> GetDetectionLabels() =>
+    DetectionLabelsJson is not null
+        ? JsonSerializer.Deserialize<List<string>>(DetectionLabelsJson) ?? _defaultLabels
+        : _defaultLabels;
+
+private static readonly IReadOnlyList<string> _defaultLabels = ["person"];
+```
+
+**Projection dans `FrigateConfigApplier` :**
+
+```csharp
+Objects = new FrigateObjectsConfig
+{
+    Track = camera.GetDetectionLabels().ToList()
+},
+```
+
+**Labels valides reconnus par Vyzio (liste ouverte, extensible) :**
+
+| Label Frigate | Libellé UI |
+|---|---|
+| `person` | Personne |
+| `face` | Visage |
+| `car` | Voiture |
+| `motorcycle` | Moto |
+| `bicycle` | Vélo |
+| `dog` | Chien |
+| `cat` | Chat |
+| `bird` | Oiseau |
+| `deer` | Cerf |
+
+La validation des labels fournis par l'UI se fait dans le use case (`SaveCameraDetectionConfigUseCase`) en comparant à une liste de référence maintenue dans `Core`. Les labels inconnus sont rejetés avec un message explicite.
+
+#### Conséquences
+
+- ✅ Migration minimale — une colonne ajoutée sur la table `cameras` existante
+- ✅ Génération de config Frigate directe — pas de join, lecture en bloc
+- ✅ La valeur `null` correspond au comportement par défaut (`["person"]`) — compatibilité avec les caméras existantes sans migration de données
+- ⚠️ `DetectionPreset` est retiré — les caméras existantes ayant `person_default` seront migrées vers `detection_labels_json = null` (comportement équivalent)
+- ⚠️ Un reload Frigate est déclenché dès qu'un label change — à traiter dans `SaveCameraDetectionConfigUseCase` via le `CameraConfigWriter` + `ApplyCommand` existants
+
+---
+
+### ADR-15 — Association profil-caméra : table de jointure + filtrage dans ProfileRulesService
+
+#### Contexte
+
+L'utilisateur veut pouvoir restreindre la reconnaissance à des profils spécifiques par caméra : "reconnaître Alice et Bob uniquement sur la caméra de la porte d'entrée, pas sur la caméra du jardin". Cela implique de modéliser une association N×M entre profils et caméras, et de décider où et comment ce filtre s'applique dans l'architecture.
+
+#### Point clé : la reconnaissance Frigate est globale
+
+La bibliothèque de reconnaissance faciale de Frigate est **globale** — elle ne supporte pas de restriction par caméra. Si Alice est dans la bibliothèque, Frigate peut la reconnaître sur n'importe quelle caméra. La restriction par caméra est donc nécessairement une **règle métier Vyzio**, appliquée après réception de l'événement enrichi, pas dans la configuration Frigate.
+
+#### Options comparées
+
+| Option | Description | Avantages | Inconvénients |
+|---|---|---|---|
+| **A — Table de jointure `profile_camera_links`** | Table many-to-many explicite avec `profile_id`, `camera_id`, `enabled` | Requêtable, extensible (futurs attributs par lien), source de vérité claire | Migration + entité supplémentaire |
+| **B — JSON sur Camera** | Colonne `recognized_profile_ids_json` sur `cameras` | Un seul endroit à lire pour construire la config | Difficile de requêter "sur quelles caméras est Alice ?", JSON en base côté caméra |
+| **C — JSON sur Profile** | Colonne `linked_camera_ids_json` sur `profiles` | Symétrique à l'option B | Même limitation que B, sens inversé |
+| **D — Aucune association Vyzio — toujours reconnaître sur toutes les caméras** | La bibliothèque Frigate contient tous les profils, pas de filtre Vyzio | Zéro complexité | Ne répond pas au besoin produit ; risque de faux positifs sur des caméras non pertinentes |
+
+#### Décision
+
+**Option A retenue : table de jointure `profile_camera_links` + filtrage dans `ProfileRulesService`.**
+
+La table de jointure est la représentation naturelle d'une relation many-to-many avec état (`enabled`). Elle permet de répondre proprement aux deux sens de la requête ("quels profils sur cette caméra ?" et "sur quelles caméras ce profil ?"). Le filtrage est appliqué dans `ProfileRulesService` lors de la résolution des règles : un événement enrichi avec un `sub_label` Frigate n'est mappé vers un profil Vyzio que si le lien profil-caméra correspondant est actif.
+
+**Modèle de données :**
+
+```sql
+CREATE TABLE profile_camera_links (
+    id          TEXT PRIMARY KEY,
+    profile_id  TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    camera_id   TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
+    enabled     INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT NOT NULL,
+    UNIQUE (profile_id, camera_id)
+);
+CREATE INDEX idx_pcl_camera ON profile_camera_links(camera_id, enabled);
+CREATE INDEX idx_pcl_profile ON profile_camera_links(profile_id, enabled);
+```
+
+**Comportement par défaut :** un profil sans aucun lien défini est reconnaissable sur **toutes** les caméras (`null` associations = pas de restriction). Ce comportement est intentionnel pour minimiser la friction lors de la création d'un premier profil. L'utilisateur peut affiner en ajoutant des liens explicites.
+
+**Règle de résolution dans `ProfileRulesService` :**
+
+```
+sub_label Frigate reçu sur caméra X
+  → chercher un profil Vyzio dont le Name correspond au sub_label
+  → vérifier si ce profil a des liens actifs définis
+    → s'il n'en a pas : reconnaissance valide sur toutes les caméras
+    → s'il en a : reconnaissance valide seulement si un lien actif existe pour la caméra X
+  → si valide : mapper l'événement vers le profil, appliquer les règles d'alerte
+  → si invalide : conserver l'identité Frigate brute sans mapper vers un profil Vyzio
+```
+
+**Impact sur la bibliothèque Frigate :** aucun. La bibliothèque Frigate contient toujours les photos de tous les profils. Le filtrage est exclusivement applicatif côté Vyzio.
+
+#### Conséquences
+
+- ✅ Requêtes propres dans les deux sens (par profil, par caméra)
+- ✅ `enabled` permet de désactiver temporairement un lien sans supprimer l'association
+- ✅ Compatible avec le comportement par défaut "reconnaître partout" — pas de friction à la création
+- ✅ Extensible : on peut ajouter un `alert_override` par lien sans changer la structure globale
+- ⚠️ Le `ProfileRulesService` doit charger les liens actifs par caméra lors de chaque évaluation — à mettre en cache court (TTL ~30s) pour éviter une requête SQLite par événement
+- ⚠️ La suppression d'une caméra ou d'un profil doit supprimer les liens en cascade (`ON DELETE CASCADE` dans le schéma)
+
+---
+
 ## 6. Architecture des services
 
 ### 6.1 Responsabilités
 
 ```
-Frigate                           → Vidéo brut, détection, clips
+Frigate                           → Vidéo brut, détection, clips, bibliothèque de reconnaissance faciale
 Mosquitto Broker                  → Bus MQTT partagé entre Frigate et Vyzio
-FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer)
-Profile & Rules Service (.NET)    → Profils produit, mapping identités Frigate, règles d'alertes
+FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer + REST client)
+FrigateRestClient (.NET)          → Appels REST Frigate : sub_label, upload photos faces, bibliothèque
+Profile & Rules Service (.NET)    → Profils produit, mapping sub_label → profil, filtre profil-caméra, règles d'alertes
 Notification Service (.NET)       → Règles + envoi FCM/webhook/email
 Storage Service (.NET)            → Persistance événements enrichis (EF Core)
+FaceLibrarySyncService (.NET)     → Synchronisation des photos de profil Vyzio vers la bibliothèque Frigate
+CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, labels détection, face_recognition
 API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
 Dashboard / Hub (React + TS)      → UI grand public guidée
 ```
@@ -1059,32 +1304,39 @@ Dashboard / Hub (React + TS)      → UI grand public guidée
 ### 6.2 Flux complet : détection → notification
 
 ```
-1. Frigate détecte une personne
-   └─► Publish MQTT sur le broker: frigate/events { label: "person", thumbnail: "...", camera: "front_door" }
+1. Frigate détecte une personne (bibliothèque faces déjà synchronisée par FaceLibrarySyncService)
+   └─► Reconnaissance faciale Frigate : compare avec bibliothèque → sub_label = "Alice" si match
+   └─► Publish MQTT: frigate/events { label: "person", sub_label: "Alice", camera: "front_door" }
 
 2. Broker Mosquitto dédié
-   └─► Transporte `frigate/events` vers les consommateurs Vyzio
+   └─► Transporte frigate/events vers les consommateurs Vyzio
 
 3. FrigateAdapter (.NET) — souscrit frigate/events
-  └─► Normalise l'événement Frigate (label, sub_label, score, thumbnail)
-  └─► Publie MQTT sur le broker: vyzio/events/detection_enriched { frigate_event_id, camera, label, sub_label, confidence }
+   └─► Normalise l'événement : label, sub_label (via REST si absent du MQTT), score, liens clips/snapshot
+   └─► Publie MQTT: vyzio/events/detection_enriched { frigate_event_id, camera, label, identity: "Alice", confidence }
 
 4. Services Vyzio (souscripteurs MQTT indépendants, en parallèle) :
 
-  Mode par défaut (Frigate natif) :
-  └─► Frigate publie des objets enrichis (sub_label, face/LPR) sur le broker MQTT
-  └─► Vyzio mappe l'identité Frigate vers ses profils produit puis applique ses règles métier
-
    StorageService — souscrit vyzio/events/detection_enriched
-   └─► EF Core INSERT recognition_events
+   └─► EF Core INSERT observed_events (identity = "Alice", profile_id = résolu si lien actif)
 
-  ProfileRulesService — souscrit vyzio/events/detection_enriched
-  └─► RuleEngine : Alice → notify, heure active, pas de rate-limit
-  └─► Publie vyzio/events/notification_ready
+   ProfileRulesService — souscrit vyzio/events/detection_enriched
+   └─► Résolution profil : identity "Alice" → chercher profil Vyzio par name
+   └─► Vérification lien profil-caméra : Alice associée à "front_door" ? (ADR-15)
+       → si oui ou aucun lien défini : mapper → profil Alice, appliquer alert_mode
+       → si non : événement sans profil mappé, pas de notification profil
+   └─► Publie vyzio/events/notification_ready { profile_id, priority, channels }
 
-  NotificationService — souscrit vyzio/events/notification_ready
+   NotificationService — souscrit vyzio/events/notification_ready
    └─► Telegram sendPhoto : "Alice est arrivée • Porte d'entrée • 09:32" + photo
    └─► SignalR : push vers dashboard ouvert
+
+5. Flux de synchronisation bibliothèque (indépendant du flux de détection) :
+   FaceLibrarySyncService
+   └─► Déclenché par : ajout/suppression de photo profil, renommage profil
+   └─► POST /api/faces/{name} → upload photo vers Frigate
+   └─► Mise à jour profile_photos.frigate_synced = 1
+   └─► Si activation face_recognition : régénère frigate.yml via CameraConfigWriter
 ```
 
 ---
@@ -1107,33 +1359,81 @@ CREATE TABLE profiles (
     created_at      TEXT NOT NULL
 );
 
+-- Photos de référence pour la reconnaissance Frigate (ADR-13)
+CREATE TABLE profile_photos (
+    id              TEXT PRIMARY KEY,
+    profile_id      TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    filename        TEXT NOT NULL,          -- nom du fichier dans /data/vyzio/faces/{profile_id}/
+    frigate_synced  INTEGER NOT NULL DEFAULT 0,  -- 1 si présente dans la bibliothèque Frigate
+    synced_at       TEXT,
+    created_at      TEXT NOT NULL
+);
+CREATE INDEX idx_photos_profile ON profile_photos(profile_id);
+
+-- Associations profil-caméra pour filtrage de reconnaissance (ADR-15)
+CREATE TABLE profile_camera_links (
+    id          TEXT PRIMARY KEY,
+    profile_id  TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    camera_id   TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
+    enabled     INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT NOT NULL,
+    UNIQUE (profile_id, camera_id)
+);
+CREATE INDEX idx_pcl_camera  ON profile_camera_links(camera_id, enabled);
+CREATE INDEX idx_pcl_profile ON profile_camera_links(profile_id, enabled);
+
+CREATE TABLE cameras (
+    id                        TEXT PRIMARY KEY,
+    slug                      TEXT NOT NULL UNIQUE,
+    display_name              TEXT NOT NULL,
+    source_type               TEXT NOT NULL DEFAULT 'rtsp_manual',
+    host                      TEXT NOT NULL,
+    port                      INTEGER NOT NULL DEFAULT 554,
+    username                  TEXT,
+    password                  TEXT,
+    stream_path               TEXT,
+    vendor_family             TEXT,
+    detection_labels_json     TEXT,   -- JSON array ex: ["person","dog"] ; null = ["person"] (ADR-14)
+    status                    TEXT NOT NULL DEFAULT 'needs_attention',
+    validation_state          TEXT NOT NULL DEFAULT 'draft',
+    is_enabled                INTEGER NOT NULL DEFAULT 0,
+    last_reachability_check_at TEXT,
+    last_successful_frame_at  TEXT,
+    frigate_camera_name       TEXT,
+    created_at                TEXT NOT NULL,
+    updated_at                TEXT NOT NULL
+    -- Note: remplace detection_preset (retiré, ADR-14)
+);
+
 CREATE TABLE observed_events (
     id                TEXT PRIMARY KEY,
-    frigate_event_id  TEXT NOT NULL,     -- référence Frigate (pour proxy clips/thumbnails)
-  lifecycle         TEXT NOT NULL,     -- new|update|end
-  camera            TEXT NOT NULL,
-  label             TEXT NOT NULL,     -- person|dog|car|...
-  identity          TEXT,              -- sub_label Frigate si disponible
+    frigate_event_id  TEXT NOT NULL UNIQUE,  -- référence Frigate (pour proxy clips/thumbnails)
+    lifecycle         TEXT NOT NULL,         -- new|update|end
+    camera            TEXT NOT NULL,
+    label             TEXT NOT NULL,         -- person|dog|car|...
+    identity          TEXT,                  -- sub_label Frigate si disponible
     profile_id        TEXT REFERENCES profiles(id),
     confidence        REAL,
     occurred_at       TEXT NOT NULL,
-  has_clip          INTEGER NOT NULL DEFAULT 0,
-  has_snapshot      INTEGER NOT NULL DEFAULT 0
+    has_clip          INTEGER NOT NULL DEFAULT 0,
+    has_snapshot      INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_events_occurred ON observed_events(occurred_at DESC);
 CREATE INDEX idx_events_profile  ON observed_events(profile_id, occurred_at DESC);
+CREATE INDEX idx_events_camera   ON observed_events(camera, occurred_at DESC);
+CREATE INDEX idx_events_label    ON observed_events(label, occurred_at DESC);
 
 CREATE TABLE notifications (
     id            TEXT PRIMARY KEY,
-  event_id      TEXT NOT NULL REFERENCES observed_events(id),
-  channel       TEXT NOT NULL,         -- telegram|discord|fcm|webhook|email|ntfy
+    event_id      TEXT NOT NULL REFERENCES observed_events(id),
+    channel       TEXT NOT NULL,   -- telegram|discord|fcm|webhook|email|ntfy
     status        TEXT NOT NULL DEFAULT 'pending',
     sent_at       TEXT,
     error_message TEXT
 );
 
 CREATE TABLE sessions (
-    id         TEXT PRIMARY KEY,         -- refresh token
+    id         TEXT PRIMARY KEY,   -- refresh token
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     revoked    INTEGER NOT NULL DEFAULT 0
@@ -1141,9 +1441,11 @@ CREATE TABLE sessions (
 
 CREATE TABLE settings (
     key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL                  -- JSON
+    value TEXT NOT NULL            -- JSON
 );
 ```
+
+**Index ajoutés dans cette version :** `idx_events_camera` et `idx_events_label` pour supporter les requêtes filtrées de la vue historique détections (US-P3.6).
 
 ---
 
