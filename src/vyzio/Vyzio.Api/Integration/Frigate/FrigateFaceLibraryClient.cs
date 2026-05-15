@@ -8,22 +8,33 @@ public sealed class FrigateFaceLibraryClient(HttpClient httpClient) : IFrigateFa
 {
     public async Task UploadFacePhotoAsync(string personName, string filename, byte[] imageJpeg, CancellationToken ct = default)
     {
+        var escapedName = Uri.EscapeDataString(personName);
+
+        // Create the person entry if it doesn't already exist
+        var createResponse = await httpClient.PostAsync($"api/faces/{escapedName}/create", null, ct);
+        if (!createResponse.IsSuccessStatusCode && createResponse.StatusCode != System.Net.HttpStatusCode.Conflict)
+            createResponse.EnsureSuccessStatusCode();
+
+        // Upload the face photo
         using var content = new MultipartFormDataContent();
-        content.Add(new ByteArrayContent(imageJpeg), "file", filename);
-        var response = await httpClient.PostAsync($"api/faces/{Uri.EscapeDataString(personName)}", content, ct);
+        var imageContent = new ByteArrayContent(imageJpeg);
+        imageContent.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("image/jpeg");
+        content.Add(imageContent, "file", filename);
+        var response = await httpClient.PostAsync($"api/faces/{escapedName}/register", content, ct);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task DeleteFacePhotoAsync(string personName, string filename, CancellationToken ct = default)
     {
-        var response = await httpClient.DeleteAsync(
-            $"api/faces/{Uri.EscapeDataString(personName)}/{Uri.EscapeDataString(filename)}", ct);
+        var escapedName = Uri.EscapeDataString(personName);
+        var response = await httpClient.PostAsJsonAsync(
+            $"api/faces/{escapedName}/delete",
+            new { fileName = filename },
+            ct);
 
         // 404 is acceptable — photo may have already been removed from Frigate
         if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NotFound)
-        {
             response.EnsureSuccessStatusCode();
-        }
     }
 
     public async Task<IReadOnlyList<FrigateFaceLibraryEntry>> GetLibraryAsync(CancellationToken ct = default)
