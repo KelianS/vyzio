@@ -93,6 +93,11 @@ export class HttpProfileRepository implements ProfileRepository {
     return fetchJson<DetectionHistoryPage>(`${this.apiBaseUrl}/api/detection-events/history?${params}`)
   }
 
+  async resyncFaceLibrary(): Promise<number> {
+    const result = await postJson<{ synced: number }>(`${this.apiBaseUrl}/api/profiles/resync-face-library`, {})
+    return result.synced
+  }
+
   async correctDetectionIdentity(eventId: string, profileId: string | null): Promise<void> {
     const response = await fetch(`${this.apiBaseUrl}/api/detection-events/${eventId}/identity`, {
       method: 'PATCH',

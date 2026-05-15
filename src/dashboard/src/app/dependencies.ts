@@ -20,6 +20,7 @@ import { GetProfilePhotos } from '../application/use-cases/GetProfilePhotos'
 import { GetProfiles } from '../application/use-cases/GetProfiles'
 import { GetVendorAssistance } from '../application/use-cases/GetVendorAssistance'
 import { RemoveProfilePhoto } from '../application/use-cases/RemoveProfilePhoto'
+import { ResyncFaceLibrary } from '../application/use-cases/ResyncFaceLibrary'
 import { SaveCameraDetectionConfig } from '../application/use-cases/SaveCameraDetectionConfig'
 import { SaveNotificationChannelConfig } from '../application/use-cases/SaveNotificationChannelConfig'
 import { SetProfileCameraLinks } from '../application/use-cases/SetProfileCameraLinks'
@@ -73,6 +74,7 @@ export const deleteProfile = new DeleteProfile(profileRepository)
 export const getProfilePhotos = new GetProfilePhotos(profileRepository)
 export const addProfilePhoto = new AddProfilePhoto(profileRepository)
 export const removeProfilePhoto = new RemoveProfilePhoto(profileRepository)
+export const resyncFaceLibrary = new ResyncFaceLibrary(profileRepository)
 export const getProfileCameraLinks = new GetProfileCameraLinks(profileRepository)
 export const setProfileCameraLinks = new SetProfileCameraLinks(profileRepository)
 export const getCameraDetectionConfig = new GetCameraDetectionConfig(profileRepository)

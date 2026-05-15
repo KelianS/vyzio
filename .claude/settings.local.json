@@ -10,7 +10,8 @@
       "Bash(dotnet ef *)",
       "Bash(dotnet build *)",
       "PowerShell(dotnet build *)",
-      "PowerShell(pnpm *)"
+      "PowerShell(pnpm *)",
+      "Bash(pnpm build *)"
     ]
   }
 }

@@ -6,6 +6,7 @@ import type { GetProfileCameraLinks } from '../../application/use-cases/GetProfi
 import type { GetProfilePhotos } from '../../application/use-cases/GetProfilePhotos'
 import type { GetProfiles } from '../../application/use-cases/GetProfiles'
 import type { RemoveProfilePhoto } from '../../application/use-cases/RemoveProfilePhoto'
+import type { ResyncFaceLibrary } from '../../application/use-cases/ResyncFaceLibrary'
 import type { SetProfileCameraLinks } from '../../application/use-cases/SetProfileCameraLinks'
 import type { UpdateProfile } from '../../application/use-cases/UpdateProfile'
 import type { Profile } from '../../domain/entities/Profile'
@@ -22,6 +23,7 @@ interface ProfilesViewProps {
   removeProfilePhoto: RemoveProfilePhoto
   getProfileCameraLinks: GetProfileCameraLinks
   setProfileCameraLinks: SetProfileCameraLinks
+  resyncFaceLibrary: ResyncFaceLibrary
   apiBaseUrl: string
   onBack: () => void
 }
@@ -50,6 +52,7 @@ export function ProfilesView({
   removeProfilePhoto,
   getProfileCameraLinks,
   setProfileCameraLinks,
+  resyncFaceLibrary,
   apiBaseUrl,
   onBack,
 }: ProfilesViewProps) {
@@ -59,6 +62,8 @@ export function ProfilesView({
   const [tab, setTab] = useState<DetailTab>('info')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resyncing, setResyncing] = useState(false)
+  const [resyncMessage, setResyncMessage] = useState<string | null>(null)
 
   const selectedProfile = profiles.find((p) => p.id === selectedId) ?? null
 
@@ -111,6 +116,19 @@ export function ProfilesView({
     setProfiles((prev) => prev.filter((p) => p.id !== id))
     setSelectedId(null)
     setCreating(false)
+  }
+
+  async function handleResync() {
+    setResyncing(true)
+    setResyncMessage(null)
+    try {
+      const count = await resyncFaceLibrary.execute()
+      setResyncMessage(`${count} photo${count !== 1 ? 's' : ''} synchronisee${count !== 1 ? 's' : ''}.`)
+    } catch {
+      setResyncMessage('Erreur lors de la synchronisation.')
+    } finally {
+      setResyncing(false)
+    }
   }
 
   return (
@@ -224,6 +242,9 @@ export function ProfilesView({
                   addProfilePhoto={addProfilePhoto}
                   removeProfilePhoto={removeProfilePhoto}
                   apiBaseUrl={apiBaseUrl}
+                  onResync={handleResync}
+                  resyncing={resyncing}
+                  resyncMessage={resyncMessage}
                 />
               )}
               {tab === 'cameras' && (
@@ -399,12 +420,18 @@ function ProfilePhotosTab({
   addProfilePhoto,
   removeProfilePhoto,
   apiBaseUrl,
+  onResync,
+  resyncing,
+  resyncMessage,
 }: {
   profileId: string
   getProfilePhotos: GetProfilePhotos
   addProfilePhoto: AddProfilePhoto
   removeProfilePhoto: RemoveProfilePhoto
   apiBaseUrl: string
+  onResync: () => void
+  resyncing: boolean
+  resyncMessage: string | null
 }) {
   const [photos, setPhotos] = useState<ProfilePhoto[]>([])
   const [loading, setLoading] = useState(true)
@@ -450,8 +477,17 @@ function ProfilePhotosTab({
 
   return (
     <section className="camera-detail-section">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>Photos de reconnaissance</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <h3 style={{ margin: 0, flex: 1 }}>Photos de reconnaissance</h3>
+        <button
+          type="button"
+          className="secondary-cta"
+          style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
+          onClick={onResync}
+          disabled={resyncing}
+        >
+          {resyncing ? 'Synchronisation…' : 'Forcer une synchronisation'}
+        </button>
         <button
           type="button"
           className="primary-cta"
@@ -463,6 +499,9 @@ function ProfilePhotosTab({
         </button>
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleUpload} />
       </div>
+      {resyncMessage && (
+        <p style={{ fontSize: '0.82rem', marginBottom: 8, opacity: 0.8 }}>{resyncMessage}</p>
+      )}
 
       {error && <p style={{ color: 'var(--status-degraded, #e05252)', fontSize: '0.88rem', marginBottom: 8 }}>{error}</p>}
 
@@ -470,7 +509,7 @@ function ProfilePhotosTab({
 
       {!loading && photos.length === 0 && (
         <p className="camera-toolbar-lede" style={{ fontSize: '0.9rem' }}>
-          Aucune photo. Ajoutez une photo pour activer la reconnaissance faciale par Frigate.
+          Aucune photo. Ajoutez une photo pour activer la reconnaissance faciale.
         </p>
       )}
 
@@ -485,7 +524,7 @@ function ProfilePhotosTab({
               />
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 6px', background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center' }}>
                 <span className={`camera-support-badge ${photo.frigateSynced ? 'supported' : 'unknown'}`} style={{ fontSize: '0.68rem' }}>
-                  {photo.frigateSynced ? 'Synchro Frigate' : 'En attente Frigate'}
+                  {photo.frigateSynced ? 'Synchronisee' : 'En attente de synchronisation'}
                 </span>
               </div>
               <button

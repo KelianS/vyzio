@@ -202,7 +202,6 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
     private sealed class FrigateFaceRecognitionConfig
     {
         public required bool Enabled { get; init; }
-        public float Threshold { get; init; } = 0.9f;
     }
 
     private sealed class FrigateCameraConfig

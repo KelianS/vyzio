@@ -13,6 +13,7 @@ import {
   discoverCameras,
   getCameraStatus,
   getCameras,
+  getCameraDetectionConfig,
   getDetectionHistory,
   getHubOverview,
   getNotificationChannelConfig,
@@ -22,7 +23,9 @@ import {
   getProfiles,
   getVendorAssistance,
   removeProfilePhoto,
+  resyncFaceLibrary,
   saveNotificationChannelConfig,
+  saveCameraDetectionConfig,
   setProfileCameraLinks,
   testNotificationChannel,
   updateCamera,
@@ -136,6 +139,8 @@ function App() {
         verifyCamera={verifyCamera}
         applyCameraConfiguration={applyCameraConfiguration}
         deleteCamera={deleteCamera}
+        getCameraDetectionConfig={getCameraDetectionConfig}
+        saveCameraDetectionConfig={saveCameraDetectionConfig}
       />
     )
   }
@@ -168,6 +173,7 @@ function App() {
         removeProfilePhoto={removeProfilePhoto}
         getProfileCameraLinks={getProfileCameraLinks}
         setProfileCameraLinks={setProfileCameraLinks}
+        resyncFaceLibrary={resyncFaceLibrary}
         apiBaseUrl={dashboardRuntime.apiBaseUrl}
         onBack={() => {
           window.location.hash = ''
@@ -369,7 +375,7 @@ function App() {
         <article className="panel panel-expert" id="expert">
           <div className="panel-heading">
             <p className="section-kicker">Mode avance</p>
-            <h2>Frigate</h2>
+            <h2>Interface avancee</h2>
           </div>
 
           <p className="expert-copy">Acces reserve aux reglages experts et au support.</p>
@@ -380,7 +386,7 @@ function App() {
             target="_blank"
             rel="noreferrer"
           >
-            Ouvrir Frigate en mode avance
+            Acceder a l&apos;interface experte
           </a>
 
           <p className="expert-footnote">

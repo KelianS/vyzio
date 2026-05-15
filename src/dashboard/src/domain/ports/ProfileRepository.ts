@@ -36,6 +36,8 @@ export interface ProfileRepository {
   getCameraDetectionConfig(cameraId: string): Promise<DetectionConfig | null>
   saveCameraDetectionConfig(cameraId: string, labels: string[]): Promise<DetectionConfig>
 
+  resyncFaceLibrary(): Promise<number>
+
   getDetectionHistory(query: DetectionHistoryQuery): Promise<DetectionHistoryPage>
   correctDetectionIdentity(eventId: string, profileId: string | null): Promise<void>
 }
