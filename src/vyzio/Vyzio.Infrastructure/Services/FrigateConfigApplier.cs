@@ -90,6 +90,12 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
                     {
                         Enabled = true,
                         Fps = 5,
+                    },
+                    Snapshots = new FrigateSnapshotsConfig
+                    {
+                        Enabled = true,
+                        BoundingBox = true,
+                        Retain = new FrigateRetainConfig { Default = 30 },
                     }
                 },
                 StringComparer.OrdinalIgnoreCase);
@@ -182,6 +188,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
         public required bool Enabled { get; init; }
         public required FrigateFfmpegConfig Ffmpeg { get; init; }
         public required FrigateDetectConfig Detect { get; init; }
+        public FrigateSnapshotsConfig? Snapshots { get; init; }
     }
 
     private sealed class FrigateFfmpegConfig
@@ -199,5 +206,17 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
     {
         public required bool Enabled { get; init; }
         public required int Fps { get; init; }
+    }
+
+    private sealed class FrigateSnapshotsConfig
+    {
+        public required bool Enabled { get; init; }
+        public bool BoundingBox { get; init; }
+        public FrigateRetainConfig? Retain { get; init; }
+    }
+
+    private sealed class FrigateRetainConfig
+    {
+        public required int Default { get; init; }
     }
 }

@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { applyCameraConfiguration, createCamera, dashboardRuntime, deleteCamera, discoverCameras, getCameraStatus, getCameras, getHubOverview, getVendorAssistance, updateCamera, verifyCamera, verifyDraftCamera } from './app/dependencies'
+import {
+  applyCameraConfiguration,
+  createCamera,
+  dashboardRuntime,
+  deleteCamera,
+  deleteNotificationChannel,
+  discoverCameras,
+  getCameraStatus,
+  getCameras,
+  getHubOverview,
+  getNotificationChannelConfig,
+  getNotificationLog,
+  getVendorAssistance,
+  saveNotificationChannelConfig,
+  testNotificationChannel,
+  updateCamera,
+  verifyCamera,
+  verifyDraftCamera,
+} from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import {
   formatEventDetail,
@@ -13,8 +31,9 @@ import {
   getEventTone,
 } from './ui/formatters/hub'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
+import { NotificationSettingsView } from './ui/components/NotificationSettingsView'
 
-type AppView = 'hub' | 'cameras'
+type AppView = 'hub' | 'cameras' | 'notifications'
 
 interface SystemStatusViewModel {
   pillTone: 'online' | 'warning' | 'degraded' | 'loading'
@@ -108,6 +127,22 @@ function App() {
     )
   }
 
+  if (view === 'notifications') {
+    return (
+      <NotificationSettingsView
+        getNotificationChannelConfig={getNotificationChannelConfig}
+        saveNotificationChannelConfig={saveNotificationChannelConfig}
+        testNotificationChannel={testNotificationChannel}
+        deleteNotificationChannel={deleteNotificationChannel}
+        getNotificationLog={getNotificationLog}
+        onBack={() => {
+          window.location.hash = ''
+          setView('hub')
+        }}
+      />
+    )
+  }
+
   return (
     <main className="app-shell">
       <section className="hero-panel">
@@ -118,9 +153,7 @@ function App() {
         </div>
 
         <div className="hero-status" aria-label="Etat general du systeme">
-          <div className={`status-pill ${systemStatus.pillTone}`}>
-            {systemStatus.pillLabel}
-          </div>
+          <div className={`status-pill ${systemStatus.pillTone}`}>{systemStatus.pillLabel}</div>
           <div className="status-summary">
             <strong>{systemStatus.headline}</strong>
             <p>{systemStatus.detail}</p>
@@ -140,10 +173,17 @@ function App() {
             </div>
           </dl>
 
-          {error ? <p className="status-inline error">Le hub ne peut pas joindre le backend pour le moment.</p> : null}
-          {!error && warnings.slice(1).map((warning) => (
-            <p key={warning} className="status-inline warning">{warning}</p>
-          ))}
+          {error ? (
+            <p className="status-inline error">
+              Le hub ne peut pas joindre le backend pour le moment.
+            </p>
+          ) : null}
+          {!error &&
+            warnings.slice(1).map((warning) => (
+              <p key={warning} className="status-inline warning">
+                {warning}
+              </p>
+            ))}
         </div>
       </section>
 
@@ -170,17 +210,26 @@ function App() {
           </div>
 
           <div className="panel-cta-row">
-            <a className="primary-cta" href="#events">Voir les evenements</a>
-            <a className="secondary-cta" href="#cameras">Cameras</a>
-            <a className="secondary-cta" href="#profiles">Profils</a>
+            <a className="primary-cta" href="#events">
+              Voir les evenements
+            </a>
+            <a className="secondary-cta" href="#cameras">
+              Cameras
+            </a>
+            <a className="secondary-cta" href="#notifications">
+              Notifications
+            </a>
+            <a className="secondary-cta" href="#profiles">
+              Profils
+            </a>
           </div>
         </article>
 
         <article className="panel panel-secondary" id="events">
-            <div>
-              <dt>Notifications</dt>
-              <dd>{notifications ? formatNotificationStatus(notifications) : 'En attente'}</dd>
-            </div>
+          <div>
+            <dt>Notifications</dt>
+            <dd>{notifications ? formatNotificationStatus(notifications) : 'En attente'}</dd>
+          </div>
           <div className="panel-heading">
             <p className="section-kicker">Evenements</p>
             <h2>Recents et intelligibles</h2>
@@ -190,11 +239,43 @@ function App() {
             {recentEvents.length > 0 ? (
               recentEvents.map((event) => (
                 <article key={event.eventId} className={`event-card ${getEventTone(event)}`}>
-                  <div>
+                  {event.hasSnapshot && (
+                    <a
+                      className="event-card-thumb"
+                      href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Voir l'apercu"
+                    >
+                      <img
+                        src={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                        alt={formatEventTitle(event)}
+                        loading="lazy"
+                      />
+                    </a>
+                  )}
+                  <div className="event-card-body">
                     <h3>{formatEventTitle(event)}</h3>
                     <p>{formatEventDetail(event)}</p>
+                    <div className="event-card-meta">
+                      {event.confidence !== null && (
+                        <span className="event-card-confidence">
+                          {Math.round(event.confidence * 100)}&nbsp;%
+                        </span>
+                      )}
+                      {event.hasClip && (
+                        <a
+                          className="event-card-clip"
+                          href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/clip.mp4`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          ▶ Clip
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <span>{formatEventTime(event.occurredAt)}</span>
+                  <span className="event-card-time">{formatEventTime(event.occurredAt)}</span>
                 </article>
               ))
             ) : (
@@ -244,12 +325,19 @@ function App() {
 
           <p className="expert-copy">Acces reserve aux reglages experts et au support.</p>
 
-          <a className="expert-link" href={dashboardRuntime.frigateBaseUrl} target="_blank" rel="noreferrer">
+          <a
+            className="expert-link"
+            href={dashboardRuntime.frigateBaseUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             Ouvrir Frigate en mode avance
           </a>
 
           <p className="expert-footnote">
-            {notifications ? formatLastNotification(notifications.lastSentAt) : 'Aucune information disponible'}
+            {notifications
+              ? formatLastNotification(notifications.lastSentAt)
+              : 'Aucune information disponible'}
           </p>
         </article>
       </section>
@@ -258,7 +346,9 @@ function App() {
 }
 
 function getViewFromHash(hash: string): AppView {
-  return hash === '#cameras' ? 'cameras' : 'hub'
+  if (hash === '#cameras') return 'cameras'
+  if (hash === '#notifications') return 'notifications'
+  return 'hub'
 }
 
 export default App

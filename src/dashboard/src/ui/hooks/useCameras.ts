@@ -21,7 +21,8 @@ export function useCameras(useCase: GetCameras) {
 
     setState((current) => ({ ...current, loading: true, error: null }))
 
-    useCase.execute()
+    useCase
+      .execute()
       .then((data) => {
         if (!cancelled) {
           setState({ data, loading: false, error: null })

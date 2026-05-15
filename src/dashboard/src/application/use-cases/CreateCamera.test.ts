@@ -32,6 +32,7 @@ describe('CreateCamera', () => {
       apply: vi.fn(),
       applyConfiguration: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
       getVendorAssistance: vi.fn(),
     }
 

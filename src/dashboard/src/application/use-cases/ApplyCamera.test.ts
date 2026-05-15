@@ -32,6 +32,7 @@ describe('ApplyCamera', () => {
       apply: vi.fn().mockResolvedValue(result),
       applyConfiguration: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
       getVendorAssistance: vi.fn(),
     }
 

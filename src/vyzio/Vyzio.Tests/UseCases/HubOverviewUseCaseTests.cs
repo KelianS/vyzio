@@ -11,6 +11,7 @@ public class GetHubOverviewUseCaseTests
     private readonly IDetectionEventRepository _events = Substitute.For<IDetectionEventRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
+    private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
 
     [Fact]
     public async Task Execute_returns_hub_overview_with_recent_events_profiles_and_notification_summary()
@@ -35,13 +36,21 @@ public class GetHubOverviewUseCaseTests
         _notifications.CountSentAsync("telegram", Arg.Any<CancellationToken>()).Returns(3);
         _notifications.GetLastSentAtAsync("telegram", Arg.Any<CancellationToken>())
             .Returns(DateTimeOffset.Parse("2026-05-12T10:30:00+00:00"));
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
+            .Returns(new NotificationChannelConfig
+            {
+                Channel = "telegram",
+                IsEnabled = true,
+                BotToken = "token",
+                ChatId = "chat"
+            });
 
         var sut = new GetHubOverviewUseCase(
             _events,
             _profiles,
             _notifications,
-            new DetectionEventContractProjector(),
-            new HubNotificationSettings(telegramConfigured: true));
+            _channelConfigs,
+            new DetectionEventContractProjector());
 
         var overview = await sut.ExecuteAsync();
 
@@ -60,13 +69,15 @@ public class GetHubOverviewUseCaseTests
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _notifications.CountSentAsync("telegram", Arg.Any<CancellationToken>()).Returns(0);
         _notifications.GetLastSentAtAsync("telegram", Arg.Any<CancellationToken>()).Returns((DateTimeOffset?)null);
+        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
+            .Returns((NotificationChannelConfig?)null);
 
         var sut = new GetHubOverviewUseCase(
             _events,
             _profiles,
             _notifications,
-            new DetectionEventContractProjector(),
-            new HubNotificationSettings(telegramConfigured: false));
+            _channelConfigs,
+            new DetectionEventContractProjector());
 
         var overview = await sut.ExecuteAsync();
 

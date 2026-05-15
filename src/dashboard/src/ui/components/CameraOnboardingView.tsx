@@ -96,33 +96,35 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [detailMessage, setDetailMessage] = useState<string | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
-  const [draftVerification, setDraftVerification] = useState<{ connected: boolean; guidance: string | null } | null>(null)
+  const [draftVerification, setDraftVerification] = useState<{
+    connected: boolean
+    guidance: string | null
+  } | null>(null)
   const [editForm, setEditForm] = useState<CameraDraftInput>(emptyForm)
   const [editPassword, setEditPassword] = useState('')
 
-  const selectedCandidate = selection.kind === 'candidate'
-    ? discoveryResults[selection.index] ?? null
-    : null
+  const selectedCandidate =
+    selection.kind === 'candidate' ? (discoveryResults[selection.index] ?? null) : null
 
   const selectedCamera = selectedCameraId
-    ? camerasState.data.find((camera) => camera.id === selectedCameraId) ?? null
+    ? (camerasState.data.find((camera) => camera.id === selectedCameraId) ?? null)
     : null
 
   const matchedDiscoveryCandidate = selectedCamera
-    ? discoveryResults.find((candidate) =>
-        candidate.host === selectedCamera.host
-        && candidate.port === selectedCamera.port)
-      ?? null
+    ? (discoveryResults.find(
+        (candidate) =>
+          candidate.host === selectedCamera.host && candidate.port === selectedCamera.port,
+      ) ?? null)
     : null
 
-  const activeVendorFamily = selectedCandidate?.vendorFamily
-    ?? selectedCamera?.vendorFamily
-    ?? matchedDiscoveryCandidate?.vendorFamily
-    ?? null
+  const activeVendorFamily =
+    selectedCandidate?.vendorFamily ??
+    selectedCamera?.vendorFamily ??
+    matchedDiscoveryCandidate?.vendorFamily ??
+    null
 
-  const activeStreamPath = selectedCandidate?.streamPath
-    ?? matchedDiscoveryCandidate?.streamPath
-    ?? null
+  const activeStreamPath =
+    selectedCandidate?.streamPath ?? matchedDiscoveryCandidate?.streamPath ?? null
 
   const vendorAssistanceState = useVendorAssistance(
     props.getVendorAssistance,
@@ -131,28 +133,40 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     cameraStatusState.data?.connected ?? false,
   )
 
-  const selectedCandidateNeedsRtspActivation = Boolean(selectedCandidate && !selectedCandidate.streamPath)
-  const canShowCandidateForm = selection.kind === 'manual' || Boolean(selectedCandidate && selectedCandidate.streamPath)
-  const canVerifyDraft = canShowCandidateForm
-    && !selectedCandidateNeedsRtspActivation
-    && Boolean(form.displayName.trim() && form.host.trim() && form.streamPath?.trim())
+  const selectedCandidateNeedsRtspActivation = Boolean(
+    selectedCandidate && !selectedCandidate.streamPath,
+  )
+  const canShowCandidateForm =
+    selection.kind === 'manual' || Boolean(selectedCandidate && selectedCandidate.streamPath)
+  const canVerifyDraft =
+    canShowCandidateForm &&
+    !selectedCandidateNeedsRtspActivation &&
+    Boolean(form.displayName.trim() && form.host.trim() && form.streamPath?.trim())
   const canAddConfiguredCamera = Boolean(draftVerification?.connected)
-  const canApplyConfiguration = camerasState.data.some((camera) =>
-    camera.status === 'online'
-    || camera.validationState === 'validated'
-    || camera.validationState === 'pending_removal')
+  const canApplyConfiguration = camerasState.data.some(
+    (camera) =>
+      camera.status === 'online' ||
+      camera.validationState === 'validated' ||
+      camera.validationState === 'pending_removal',
+  )
   const canUpdateConfiguredCamera = Boolean(
-    selectedCamera
-    && editForm.displayName.trim()
-    && editForm.host.trim()
-    && editForm.streamPath?.trim()
-    && selectedCamera.validationState !== 'pending_removal')
+    selectedCamera &&
+    editForm.displayName.trim() &&
+    editForm.host.trim() &&
+    editForm.streamPath?.trim() &&
+    selectedCamera.validationState !== 'pending_removal',
+  )
 
   useEffect(() => {
-    if (selection.kind === 'camera' && !camerasState.data.some((camera) => camera.id === selection.cameraId)) {
-      setSelection(camerasState.data.length > 0
-        ? { kind: 'camera', cameraId: camerasState.data[0].id }
-        : { kind: 'manual' })
+    if (
+      selection.kind === 'camera' &&
+      !camerasState.data.some((camera) => camera.id === selection.cameraId)
+    ) {
+      setSelection(
+        camerasState.data.length > 0
+          ? { kind: 'camera', cameraId: camerasState.data[0].id }
+          : { kind: 'manual' },
+      )
     }
   }, [camerasState.data, selection])
 
@@ -192,7 +206,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       if (candidates.length > 0) {
         selectDiscoveryCandidate(0, candidates)
       }
-      setFormMessage(candidates.length > 0 ? `${candidates.length} camera(s) candidate(s) detectee(s).` : 'Aucune camera detectee automatiquement.')
+      setFormMessage(
+        candidates.length > 0
+          ? `${candidates.length} camera(s) candidate(s) detectee(s).`
+          : 'Aucune camera detectee automatiquement.',
+      )
     } catch (error: unknown) {
       setDiscoveryError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
@@ -217,7 +235,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       camerasState.reload()
       setSelection({ kind: 'camera', cameraId: created.id })
       setDraftVerification(null)
-      setDetailMessage(verified.guidance ?? `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour la synchroniser avec Frigate.`)
+      setDetailMessage(
+        verified.guidance ??
+          `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour la synchroniser avec Frigate.`,
+      )
     } catch (error: unknown) {
       setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
@@ -284,9 +305,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         port: selectedCandidate.port,
       })
 
-      const refreshedCandidate = candidates.find((candidate) =>
-        candidate.host === selectedCandidate.host
-        && candidate.port === selectedCandidate.port)
+      const refreshedCandidate = candidates.find(
+        (candidate) =>
+          candidate.host === selectedCandidate.host && candidate.port === selectedCandidate.port,
+      )
 
       if (!refreshedCandidate) {
         setFormMessage('Aucune nouvelle information detectee pour ce candidat.')
@@ -300,7 +322,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setFormMessage(
         refreshedCandidate.streamPath
           ? 'Candidat rafraichi. Le flux RTSP semble maintenant exploitable.'
-          : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.'
+          : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.',
       )
     } catch (error: unknown) {
       setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
@@ -389,7 +411,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setDetailMessage(
         updated.validationState === 'draft'
           ? 'Camera mise a jour. Reverifiez le flux avant d appliquer la configuration.'
-          : 'Camera mise a jour. Appliquez la configuration pour synchroniser Frigate.'
+          : 'Camera mise a jour. Appliquez la configuration pour synchroniser Frigate.',
       )
     } catch (error: unknown) {
       setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
@@ -449,15 +471,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     return Boolean(candidate?.vendorDocumentation?.markdown?.trim())
   }
 
-  function isSupportedVendor(vendorFamily: string | null, candidate: DiscoveryCandidate | null = null) {
+  function isSupportedVendor(
+    vendorFamily: string | null,
+    candidate: DiscoveryCandidate | null = null,
+  ) {
     return Boolean(vendorFamily || hasVendorDocumentation(candidate))
   }
 
-  function formatSupportLabel(vendorFamily: string | null, candidate: DiscoveryCandidate | null = null) {
+  function formatSupportLabel(
+    vendorFamily: string | null,
+    candidate: DiscoveryCandidate | null = null,
+  ) {
     return isSupportedVendor(vendorFamily, candidate) ? 'Supporte' : 'Inconnu'
   }
 
-  function supportBadgeTone(vendorFamily: string | null, candidate: DiscoveryCandidate | null = null) {
+  function supportBadgeTone(
+    vendorFamily: string | null,
+    candidate: DiscoveryCandidate | null = null,
+  ) {
     return isSupportedVendor(vendorFamily, candidate) ? 'supported' : 'unknown'
   }
 
@@ -548,9 +579,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     }
   }
 
-  const shouldShowVendorAssistance = vendorAssistanceState.loading
-    || Boolean(vendorAssistanceState.error)
-    || Boolean(vendorAssistanceState.data?.markdown)
+  const shouldShowVendorAssistance =
+    vendorAssistanceState.loading ||
+    Boolean(vendorAssistanceState.error) ||
+    Boolean(vendorAssistanceState.data?.markdown)
 
   function renderSummarySection(options: {
     address: string
@@ -583,7 +615,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <div>
             <dt>Support</dt>
             <dd>
-              <span className={`camera-support-badge ${supportBadgeTone(vendorFamily, supportedCandidate)}`}>
+              <span
+                className={`camera-support-badge ${supportBadgeTone(vendorFamily, supportedCandidate)}`}
+              >
                 {formatSupportLabel(vendorFamily, supportedCandidate)}
               </span>
             </dd>
@@ -634,7 +668,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     )
   }
 
-  function renderTechnicalDetails(candidate: DiscoveryCandidate | null, fallbackHost: string | null = null) {
+  function renderTechnicalDetails(
+    candidate: DiscoveryCandidate | null,
+    fallbackHost: string | null = null,
+  ) {
     const technicalDetails = candidate?.technicalDetails
     const host = candidate?.host ?? fallbackHost
 
@@ -723,16 +760,28 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <p className="eyebrow">Parcours camera</p>
           <h1>Decouverte guidee</h1>
           <p className="camera-toolbar-lede">
-            Selectionnez un candidat ou une camera existante, puis agissez dans un seul panneau de detail.
+            Selectionnez un candidat ou une camera existante, puis agissez dans un seul panneau de
+            detail.
           </p>
         </div>
         <div className="camera-toolbar-status" aria-label="Etat du catalogue camera">
-          <div className={`status-pill ${camerasState.error ? 'degraded' : camerasState.loading ? 'loading' : 'online'}`}>
-            {camerasState.loading ? 'Chargement' : camerasState.error ? 'Catalogue indisponible' : 'Catalogue pret'}
+          <div
+            className={`status-pill ${camerasState.error ? 'degraded' : camerasState.loading ? 'loading' : 'online'}`}
+          >
+            {camerasState.loading
+              ? 'Chargement'
+              : camerasState.error
+                ? 'Catalogue indisponible'
+                : 'Catalogue pret'}
           </div>
-          <p>{camerasState.error ?? `${camerasState.data.length} camera(s) dans le catalogue actuel.`}</p>
+          <p>
+            {camerasState.error ??
+              `${camerasState.data.length} camera(s) dans le catalogue actuel.`}
+          </p>
           <div className="panel-cta-row">
-            <a className="secondary-cta" href="#hub">Retour au hub</a>
+            <a className="secondary-cta" href="#hub">
+              Retour au hub
+            </a>
           </div>
           {discoveryError ? <p className="status-inline error">{discoveryError}</p> : null}
         </div>
@@ -793,7 +842,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               </div>
               <div className="camera-sidebar-actions">
                 <span className="camera-sidebar-count">{discoveryResults.length}</span>
-                <button className="secondary-cta" type="button" onClick={handleDiscovery} disabled={discoveryLoading || actionLoading}>
+                <button
+                  className="secondary-cta"
+                  type="button"
+                  onClick={handleDiscovery}
+                  disabled={discoveryLoading || actionLoading}
+                >
                   {discoveryLoading ? 'Recherche...' : 'Scanner'}
                 </button>
               </div>
@@ -825,7 +879,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <p>{formatCandidateAddress(candidate)}</p>
                     <div className="candidate-preview-footer">
                       <div className="camera-badge-row compact">
-                        <span className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}>
+                        <span
+                          className={`camera-support-badge ${supportBadgeTone(candidate.vendorFamily, candidate)}`}
+                        >
                           {formatSupportLabel(candidate.vendorFamily, candidate)}
                         </span>
                         {isReadyCandidate(candidate) ? (
@@ -852,7 +908,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         </aside>
 
         <article className="panel camera-detail-panel">
-          {(selection.kind === 'manual' || selectedCandidate) ? (
+          {selection.kind === 'manual' || selectedCandidate ? (
             <>
               <div className="panel-heading">
                 <p className="section-kicker">Configuration</p>
@@ -860,30 +916,37 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               </div>
 
               <div className="camera-detail-sections">
-                {selectedCandidate
-                  ? renderSummarySection({
-                      address: formatCandidateAddress(selectedCandidate),
-                      vendorFamily: selectedCandidate.vendorFamily,
-                      supportedCandidate: selectedCandidate,
-                      rtspActive: Boolean(selectedCandidate.streamPath),
-                    })
-                  : (
-                    <section className="camera-detail-section">
-                      <h3>Resume</h3>
-                      <p className="camera-section-copy">Renseignez les informations minimales de la camera. La detection automatique reste optionnelle.</p>
-                    </section>
-                    )}
+                {selectedCandidate ? (
+                  renderSummarySection({
+                    address: formatCandidateAddress(selectedCandidate),
+                    vendorFamily: selectedCandidate.vendorFamily,
+                    supportedCandidate: selectedCandidate,
+                    rtspActive: Boolean(selectedCandidate.streamPath),
+                  })
+                ) : (
+                  <section className="camera-detail-section">
+                    <h3>Resume</h3>
+                    <p className="camera-section-copy">
+                      Renseignez les informations minimales de la camera. La detection automatique
+                      reste optionnelle.
+                    </p>
+                  </section>
+                )}
 
                 {selectedCandidateNeedsRtspActivation ? (
                   <section className="camera-readiness-callout" aria-live="polite">
                     <strong>Camera non prete pour l'ajout</strong>
                     <p>
-                      Le flux RTSP n'est pas encore actif. Activez-le d'abord sur la camera, puis revenez ici pour l'ajouter au catalogue.
+                      Le flux RTSP n'est pas encore actif. Activez-le d'abord sur la camera, puis
+                      revenez ici pour l'ajouter au catalogue.
                     </p>
                     {vendorAssistanceState.data?.markdown ? (
                       <p>Suivez la notice constructeur ci-dessous pour l'activer pas a pas.</p>
                     ) : (
-                      <p>Quand le RTSP sera disponible, le formulaire d'ajout reapparaitra automatiquement.</p>
+                      <p>
+                        Quand le RTSP sera disponible, le formulaire d'ajout reapparaitra
+                        automatiquement.
+                      </p>
                     )}
                   </section>
                 ) : null}
@@ -896,7 +959,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
               {selectedCandidate ? (
                 <div className="panel-cta-row">
-                  <button className="secondary-cta" type="button" onClick={handleRefreshCandidate} disabled={actionLoading}>
+                  <button
+                    className="secondary-cta"
+                    type="button"
+                    onClick={handleRefreshCandidate}
+                    disabled={actionLoading}
+                  >
                     {actionLoading ? 'Traitement...' : 'Rafraichir ce candidat'}
                   </button>
                 </div>
@@ -907,41 +975,80 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   <div className="camera-form-grid compact">
                     <label>
                       <span>Nom</span>
-                      <input value={form.displayName} onChange={(event) => updateForm({ displayName: event.target.value })} placeholder="Porte d'entree" />
+                      <input
+                        value={form.displayName}
+                        onChange={(event) => updateForm({ displayName: event.target.value })}
+                        placeholder="Porte d'entree"
+                      />
                     </label>
                     <label>
                       <span>Host</span>
-                      <input value={form.host} onChange={(event) => updateForm({ host: event.target.value })} placeholder="192.168.1.10" />
+                      <input
+                        value={form.host}
+                        onChange={(event) => updateForm({ host: event.target.value })}
+                        placeholder="192.168.1.10"
+                      />
                     </label>
                     <label>
                       <span>Port</span>
-                      <input type="number" value={form.port} onChange={(event) => updateForm({ port: Number(event.target.value) || 554 })} />
+                      <input
+                        type="number"
+                        value={form.port}
+                        onChange={(event) =>
+                          updateForm({ port: Number(event.target.value) || 554 })
+                        }
+                      />
                     </label>
                     <label>
                       <span>Chemin RTSP</span>
-                      <input value={form.streamPath ?? ''} onChange={(event) => updateForm({ streamPath: event.target.value || null })} placeholder="/Streaming/Channels/101" />
+                      <input
+                        value={form.streamPath ?? ''}
+                        onChange={(event) => updateForm({ streamPath: event.target.value || null })}
+                        placeholder="/Streaming/Channels/101"
+                      />
                     </label>
                     <label>
                       <span>Utilisateur</span>
-                      <input value={form.username ?? ''} onChange={(event) => updateForm({ username: event.target.value || null })} />
+                      <input
+                        value={form.username ?? ''}
+                        onChange={(event) => updateForm({ username: event.target.value || null })}
+                      />
                     </label>
                     <label>
                       <span>Mot de passe</span>
-                      <input type="password" value={form.password ?? ''} onChange={(event) => updateForm({ password: event.target.value || null })} />
+                      <input
+                        type="password"
+                        value={form.password ?? ''}
+                        onChange={(event) => updateForm({ password: event.target.value || null })}
+                      />
                     </label>
                   </div>
 
                   <div className="panel-cta-row">
-                    <button className="secondary-cta" type="button" onClick={handleVerifyDraft} disabled={actionLoading || !canVerifyDraft}>
+                    <button
+                      className="secondary-cta"
+                      type="button"
+                      onClick={handleVerifyDraft}
+                      disabled={actionLoading || !canVerifyDraft}
+                    >
                       {actionLoading ? 'Traitement...' : 'Verifier le flux'}
                     </button>
-                    <button className="primary-cta" type="button" onClick={handleCreate} disabled={actionLoading || !canAddConfiguredCamera}>
+                    <button
+                      className="primary-cta"
+                      type="button"
+                      onClick={handleCreate}
+                      disabled={actionLoading || !canAddConfiguredCamera}
+                    >
                       {actionLoading ? 'Traitement...' : 'Ajouter'}
                     </button>
                   </div>
 
-                  {formMessage ? <p className="camera-inline-state success action-feedback">{formMessage}</p> : null}
-                  {formError ? <p className="camera-inline-state error action-feedback">{formError}</p> : null}
+                  {formMessage ? (
+                    <p className="camera-inline-state success action-feedback">{formMessage}</p>
+                  ) : null}
+                  {formError ? (
+                    <p className="camera-inline-state error action-feedback">{formError}</p>
+                  ) : null}
                 </>
               ) : null}
             </>
@@ -953,14 +1060,20 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   <h2>{selectedCamera?.displayName ?? 'Camera selectionnee'}</h2>
                 </div>
                 {cameraStatusState.data ? (
-                  <div className={`status-pill camera-detail-status ${cameraStatusState.data.connected ? 'online' : 'warning'}`}>
+                  <div
+                    className={`status-pill camera-detail-status ${cameraStatusState.data.connected ? 'online' : 'warning'}`}
+                  >
                     {formatCameraStatusLabel(cameraStatusState.data.status)}
                   </div>
                 ) : null}
               </div>
 
-              {cameraStatusState.loading ? <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p> : null}
-              {cameraStatusState.error ? <p className="camera-inline-state error">{cameraStatusState.error}</p> : null}
+              {cameraStatusState.loading ? (
+                <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p>
+              ) : null}
+              {cameraStatusState.error ? (
+                <p className="camera-inline-state error">{cameraStatusState.error}</p>
+              ) : null}
 
               {cameraStatusState.data ? (
                 <div className="camera-detail-stack">
@@ -971,7 +1084,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   <div className="camera-detail-sections">
                     {renderSummarySection({
                       address: selectedCamera ? formatCameraAddress(selectedCamera) : '—',
-                      vendorFamily: selectedCamera?.vendorFamily ?? matchedDiscoveryCandidate?.vendorFamily ?? null,
+                      vendorFamily:
+                        selectedCamera?.vendorFamily ??
+                        matchedDiscoveryCandidate?.vendorFamily ??
+                        null,
                       supportedCandidate: matchedDiscoveryCandidate,
                       rtspActive: cameraStatusState.data.connected,
                     })}
@@ -981,27 +1097,56 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       <div className="camera-form-grid compact">
                         <label>
                           <span>Nom</span>
-                          <input value={editForm.displayName} onChange={(event) => updateEditForm({ displayName: event.target.value })} />
+                          <input
+                            value={editForm.displayName}
+                            onChange={(event) =>
+                              updateEditForm({ displayName: event.target.value })
+                            }
+                          />
                         </label>
                         <label>
                           <span>Host</span>
-                          <input value={editForm.host} onChange={(event) => updateEditForm({ host: event.target.value })} />
+                          <input
+                            value={editForm.host}
+                            onChange={(event) => updateEditForm({ host: event.target.value })}
+                          />
                         </label>
                         <label>
                           <span>Port</span>
-                          <input type="number" value={editForm.port} onChange={(event) => updateEditForm({ port: Number(event.target.value) || 554 })} />
+                          <input
+                            type="number"
+                            value={editForm.port}
+                            onChange={(event) =>
+                              updateEditForm({ port: Number(event.target.value) || 554 })
+                            }
+                          />
                         </label>
                         <label>
                           <span>Chemin RTSP</span>
-                          <input value={editForm.streamPath ?? ''} onChange={(event) => updateEditForm({ streamPath: event.target.value || null })} />
+                          <input
+                            value={editForm.streamPath ?? ''}
+                            onChange={(event) =>
+                              updateEditForm({ streamPath: event.target.value || null })
+                            }
+                          />
                         </label>
                         <label>
                           <span>Utilisateur</span>
-                          <input value={editForm.username ?? ''} onChange={(event) => updateEditForm({ username: event.target.value || null })} />
+                          <input
+                            value={editForm.username ?? ''}
+                            onChange={(event) =>
+                              updateEditForm({ username: event.target.value || null })
+                            }
+                          />
                         </label>
                         <label>
                           <span>Nouveau mot de passe</span>
-                          <input type="password" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} placeholder="Laisser vide pour conserver" />
+                          <input
+                            type="password"
+                            value={editPassword}
+                            onChange={(event) => setEditPassword(event.target.value)}
+                            placeholder="Laisser vide pour conserver"
+                          />
                         </label>
                       </div>
                     </section>
@@ -1010,18 +1155,25 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
                     <div className="camera-debug-stack">
                       {renderConfidenceDetails(matchedDiscoveryCandidate)}
-                      {renderTechnicalDetails(matchedDiscoveryCandidate, selectedCamera?.host ?? null)}
+                      {renderTechnicalDetails(
+                        matchedDiscoveryCandidate,
+                        selectedCamera?.host ?? null,
+                      )}
                       <details className="camera-debug-details">
                         <summary>Etat technique</summary>
                         <div className="camera-debug-content">
                           <dl className="camera-summary-list debug">
                             <div>
                               <dt>Validation</dt>
-                              <dd>{formatValidationStateLabel(cameraStatusState.data.validationState)}</dd>
+                              <dd>
+                                {formatValidationStateLabel(cameraStatusState.data.validationState)}
+                              </dd>
                             </div>
                             <div>
                               <dt>Derniere verification</dt>
-                              <dd>{formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}</dd>
+                              <dd>
+                                {formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}
+                              </dd>
                             </div>
                             <div>
                               <dt>Apercu</dt>
@@ -1034,19 +1186,44 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    <button className="primary-cta" type="button" onClick={handleUpdate} disabled={actionLoading || !canUpdateConfiguredCamera}>
+                    <button
+                      className="primary-cta"
+                      type="button"
+                      onClick={handleUpdate}
+                      disabled={actionLoading || !canUpdateConfiguredCamera}
+                    >
                       Enregistrer
                     </button>
-                    <button className="secondary-cta" type="button" onClick={handleVerify} disabled={actionLoading || selectedCamera?.validationState === 'pending_removal'}>
+                    <button
+                      className="secondary-cta"
+                      type="button"
+                      onClick={handleVerify}
+                      disabled={
+                        actionLoading || selectedCamera?.validationState === 'pending_removal'
+                      }
+                    >
                       Verifier le flux
                     </button>
-                    <button className="danger-cta" type="button" onClick={handleDelete} disabled={actionLoading || selectedCamera?.validationState === 'pending_removal'}>
-                      {selectedCamera?.validationState === 'pending_removal' ? 'Suppression en attente' : 'Supprimer'}
+                    <button
+                      className="danger-cta"
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={
+                        actionLoading || selectedCamera?.validationState === 'pending_removal'
+                      }
+                    >
+                      {selectedCamera?.validationState === 'pending_removal'
+                        ? 'Suppression en attente'
+                        : 'Supprimer'}
                     </button>
                   </div>
 
-                  {detailMessage ? <p className="camera-inline-state success action-feedback">{detailMessage}</p> : null}
-                  {detailError ? <p className="camera-inline-state error action-feedback">{detailError}</p> : null}
+                  {detailMessage ? (
+                    <p className="camera-inline-state success action-feedback">{detailMessage}</p>
+                  ) : null}
+                  {detailError ? (
+                    <p className="camera-inline-state error action-feedback">{detailError}</p>
+                  ) : null}
                 </div>
               ) : (
                 <div className="camera-empty-state">

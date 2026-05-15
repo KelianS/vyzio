@@ -29,7 +29,8 @@ export function useVendorAssistance(
     let cancelled = false
     setState({ data: null, loading: true, error: null })
 
-    useCase.execute({ vendorFamily, streamPath, connected })
+    useCase
+      .execute({ vendorFamily, streamPath, connected })
       .then((data) => {
         if (!cancelled) {
           setState({ data, loading: false, error: null })

@@ -48,6 +48,9 @@ describe('UpdateCamera', () => {
     })
 
     expect(result.displayName).toBe('Entry')
-    expect(repository.update).toHaveBeenCalledWith('camera-1', expect.objectContaining({ displayName: 'Entry' }))
+    expect(repository.update).toHaveBeenCalledWith(
+      'camera-1',
+      expect.objectContaining({ displayName: 'Entry' }),
+    )
   })
 })
