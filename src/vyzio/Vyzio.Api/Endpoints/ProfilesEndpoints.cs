@@ -1,4 +1,5 @@
 using Vyzio.Application.DTOs.Profiles;
+using Vyzio.Application.Options;
 using Vyzio.Application.UseCases.Profiles;
 
 namespace Vyzio.Api.Endpoints;
@@ -39,6 +40,19 @@ public static class ProfilesEndpoints
         // Photos
         group.MapGet("/{id}/photos", async (string id, GetProfilePhotosUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(id, ct)));
+
+        group.MapGet("/{id}/photos/{filename}", (string id, string filename, FaceStorageOptions storage) =>
+        {
+            var safeName = Path.GetFileName(filename);
+            if (string.IsNullOrWhiteSpace(safeName))
+                return Results.BadRequest();
+
+            var filePath = Path.Combine(storage.DataDirectory, "faces", id, safeName);
+            if (!File.Exists(filePath))
+                return Results.NotFound();
+
+            return Results.File(File.OpenRead(filePath), "image/jpeg", enableRangeProcessing: false);
+        });
 
         group.MapPost("/{id}/photos", async (
             string id,

@@ -8,7 +8,9 @@
       "Bash(Select-Object Name)",
       "Bash(xargs grep -l \"frigate.yml\\\\|cameras.*section\")",
       "Bash(dotnet ef *)",
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(pnpm *)"
     ]
   }
 }

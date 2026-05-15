@@ -22,6 +22,7 @@ interface ProfilesViewProps {
   removeProfilePhoto: RemoveProfilePhoto
   getProfileCameraLinks: GetProfileCameraLinks
   setProfileCameraLinks: SetProfileCameraLinks
+  apiBaseUrl: string
   onBack: () => void
 }
 
@@ -29,7 +30,6 @@ type DetailTab = 'info' | 'photos' | 'cameras'
 
 const ALERT_MODE_OPTIONS = [
   { value: 'always', label: 'Toujours alerter' },
-  { value: 'strangers_only', label: 'Inconnus seulement' },
   { value: 'never', label: 'Ne jamais alerter' },
 ]
 
@@ -50,6 +50,7 @@ export function ProfilesView({
   removeProfilePhoto,
   getProfileCameraLinks,
   setProfileCameraLinks,
+  apiBaseUrl,
   onBack,
 }: ProfilesViewProps) {
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -222,6 +223,7 @@ export function ProfilesView({
                   getProfilePhotos={getProfilePhotos}
                   addProfilePhoto={addProfilePhoto}
                   removeProfilePhoto={removeProfilePhoto}
+                  apiBaseUrl={apiBaseUrl}
                 />
               )}
               {tab === 'cameras' && (
@@ -396,11 +398,13 @@ function ProfilePhotosTab({
   getProfilePhotos,
   addProfilePhoto,
   removeProfilePhoto,
+  apiBaseUrl,
 }: {
   profileId: string
   getProfilePhotos: GetProfilePhotos
   addProfilePhoto: AddProfilePhoto
   removeProfilePhoto: RemoveProfilePhoto
+  apiBaseUrl: string
 }) {
   const [photos, setPhotos] = useState<ProfilePhoto[]>([])
   const [loading, setLoading] = useState(true)
@@ -474,11 +478,14 @@ function ProfilePhotosTab({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12, marginTop: 8 }}>
           {photos.map((photo) => (
             <div key={photo.id} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', background: 'rgba(247,244,237,0.07)', aspectRatio: '1' }}>
-              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 8, gap: 4 }}>
-                <span style={{ fontSize: '2rem' }}>🖼</span>
-                <span style={{ fontSize: '0.7rem', opacity: 0.6, textAlign: 'center', wordBreak: 'break-all' }}>{photo.filename}</span>
+              <img
+                src={`${apiBaseUrl}/api/profiles/${profileId}/photos/${photo.filename}`}
+                alt={photo.filename}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 6px', background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center' }}>
                 <span className={`camera-support-badge ${photo.frigateSynced ? 'supported' : 'unknown'}`} style={{ fontSize: '0.68rem' }}>
-                  {photo.frigateSynced ? 'Synchro' : 'En attente'}
+                  {photo.frigateSynced ? 'Synchro Frigate' : 'En attente Frigate'}
                 </span>
               </div>
               <button

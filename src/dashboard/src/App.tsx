@@ -168,6 +168,7 @@ function App() {
         removeProfilePhoto={removeProfilePhoto}
         getProfileCameraLinks={getProfileCameraLinks}
         setProfileCameraLinks={setProfileCameraLinks}
+        apiBaseUrl={dashboardRuntime.apiBaseUrl}
         onBack={() => {
           window.location.hash = ''
           setView('hub')
