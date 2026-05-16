@@ -54,7 +54,6 @@ export function ProfilesView({
   setProfileCameraLinks,
   resyncFaceLibrary,
   apiBaseUrl,
-  onBack,
 }: ProfilesViewProps) {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
@@ -187,11 +186,6 @@ export function ProfilesView({
             ))}
           </div>
 
-          <div className="camera-sidebar-actions">
-            <button type="button" className="secondary-cta" onClick={onBack}>
-              ← Retour au hub
-            </button>
-          </div>
         </aside>
 
         <div className="camera-detail-panel panel">

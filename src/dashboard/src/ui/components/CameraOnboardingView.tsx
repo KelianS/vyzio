@@ -814,11 +814,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             {camerasState.error ??
               `${camerasState.data.length} camera(s) dans le catalogue actuel.`}
           </p>
-          <div className="panel-cta-row">
-            <a className="secondary-cta" href="#hub">
-              Retour au hub
-            </a>
-          </div>
           {discoveryError ? <p className="status-inline error">{discoveryError}</p> : null}
         </div>
       </section>

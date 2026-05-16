@@ -25,7 +25,6 @@ export function DetectionHistoryView({
   getProfiles,
   frigateBaseUrl,
   apiBaseUrl,
-  onBack,
 }: DetectionHistoryViewProps) {
   const [page, setPage] = useState<DetectionHistoryPage | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -168,9 +167,6 @@ export function DetectionHistoryView({
 
           <button type="button" className="secondary-cta" onClick={resetFilters} style={{ marginTop: 4 }}>
             Reinitialiser
-          </button>
-          <button type="button" className="secondary-cta" onClick={onBack} style={{ marginTop: 4 }}>
-            ← Retour au hub
           </button>
         </aside>
 
