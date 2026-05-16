@@ -63,6 +63,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _detectionEvents,
             dispatcher,
             _restClient,
+            Substitute.For<IProfileRepository>(),
+            Substitute.For<IProfileCameraLinkRepository>(),
             NullLogger<FrigateAdapter>.Instance);
     }
 

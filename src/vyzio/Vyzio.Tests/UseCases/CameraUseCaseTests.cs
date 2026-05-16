@@ -199,7 +199,7 @@ public class CreateCameraUseCaseTests
     {
         _repo.GetBySlugAsync("front-door", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
-        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", 554, null, null, "/rtsp", null, null, "tplink_tapo"));
+        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", 554, null, null, "/rtsp", null, "tplink_tapo"));
 
         Assert.Equal("front-door", result.Slug);
         Assert.Equal("needs_attention", result.Status);
@@ -386,7 +386,6 @@ public class UpdateCameraUseCaseTests
             Status = "online",
             ValidationState = "validated",
             IsEnabled = true,
-            DetectionPreset = "person_default",
             SourceType = "rtsp_manual",
         };
 
@@ -399,8 +398,7 @@ public class UpdateCameraUseCaseTests
             null,
             null,
             "/Streaming/Channels/101",
-            "rtsp_manual",
-            "person_default"));
+            "rtsp_manual"));
 
         Assert.NotNull(result);
         Assert.Equal("Entry", result!.DisplayName);
@@ -424,7 +422,6 @@ public class UpdateCameraUseCaseTests
             Status = "online",
             ValidationState = "validated",
             IsEnabled = true,
-            DetectionPreset = "person_default",
             SourceType = "rtsp_manual",
         };
 
@@ -437,8 +434,7 @@ public class UpdateCameraUseCaseTests
             null,
             null,
             "/Streaming/Channels/102",
-            "rtsp_manual",
-            "person_default"));
+            "rtsp_manual"));
 
         Assert.NotNull(result);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>

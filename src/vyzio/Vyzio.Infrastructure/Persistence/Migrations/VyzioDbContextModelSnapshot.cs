@@ -27,11 +27,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("DetectionPreset")
-                        .IsRequired()
-                        .HasMaxLength(50)
+                    b.Property<string>("DetectionLabelsJson")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT")
-                        .HasColumnName("detection_preset");
+                        .HasColumnName("detection_labels_json");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -196,6 +195,12 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.HasIndex("OccurredAt")
                         .HasDatabaseName("idx_events_occurred");
 
+                    b.HasIndex("Camera", "OccurredAt")
+                        .HasDatabaseName("idx_events_camera");
+
+                    b.HasIndex("Label", "OccurredAt")
+                        .HasDatabaseName("idx_events_label");
+
                     b.HasIndex("ProfileId", "OccurredAt")
                         .HasDatabaseName("idx_events_profile");
 
@@ -349,6 +354,87 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("profiles", (string)null);
                 });
 
+            modelBuilder.Entity("Vyzio.Core.Entities.ProfileCameraLink", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CameraId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("camera_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("profile_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_profile_camera_links");
+
+                    b.HasIndex("CameraId", "Enabled")
+                        .HasDatabaseName("idx_pcl_camera");
+
+                    b.HasIndex("ProfileId", "CameraId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pcl_profile_camera");
+
+                    b.HasIndex("ProfileId", "Enabled")
+                        .HasDatabaseName("idx_pcl_profile");
+
+                    b.ToTable("profile_camera_links", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.ProfilePhoto", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Filename")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("filename");
+
+                    b.Property<bool>("FrigateSynced")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("frigate_synced");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("profile_id");
+
+                    b.Property<DateTime?>("SyncedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("synced_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_profile_photos");
+
+                    b.HasIndex("ProfileId")
+                        .HasDatabaseName("idx_photos_profile");
+
+                    b.ToTable("profile_photos", (string)null);
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
                 {
                     b.Property<string>("Id")
@@ -390,9 +476,46 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Navigation("Profile");
                 });
 
+            modelBuilder.Entity("Vyzio.Core.Entities.ProfileCameraLink", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_profile_camera_links_cameras_camera_id");
+
+                    b.HasOne("Vyzio.Core.Entities.Profile", "Profile")
+                        .WithMany("CameraLinks")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_profile_camera_links_profiles_profile_id");
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.ProfilePhoto", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Profile", "Profile")
+                        .WithMany("Photos")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_profile_photos_profiles_profile_id");
+
+                    b.Navigation("Profile");
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Profile", b =>
                 {
+                    b.Navigation("CameraLinks");
+
                     b.Navigation("DetectionEvents");
+
+                    b.Navigation("Photos");
                 });
 #pragma warning restore 612, 618
         }

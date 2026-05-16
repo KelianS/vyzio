@@ -43,7 +43,6 @@ describe('UpdateCamera', () => {
       password: null,
       streamPath: '/Streaming/Channels/101',
       sourceType: 'rtsp_manual',
-      detectionPreset: 'person_default',
       vendorFamily: null,
     })
 

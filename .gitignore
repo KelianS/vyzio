@@ -33,6 +33,7 @@ obj/
 *.suo
 *.rsuser
 TestResults/
+*.lscache
 
 # EF Core local DB artifacts
 *.db
