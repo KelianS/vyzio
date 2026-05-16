@@ -77,8 +77,8 @@ export class HttpProfileRepository implements ProfileRepository {
     return response.json() as Promise<DetectionConfig>
   }
 
-  async saveCameraDetectionConfig(cameraId: string, labels: string[]): Promise<DetectionConfig> {
-    return putJson<DetectionConfig>(`${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`, { labels })
+  async saveCameraDetectionConfig(cameraId: string, labels: string[], continuousRecordingEnabled: boolean): Promise<DetectionConfig> {
+    return putJson<DetectionConfig>(`${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`, { labels, continuousRecordingEnabled })
   }
 
   async getDetectionHistory(query: DetectionHistoryQuery): Promise<DetectionHistoryPage> {
