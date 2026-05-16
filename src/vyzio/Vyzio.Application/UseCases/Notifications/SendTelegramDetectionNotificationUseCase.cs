@@ -17,6 +17,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     IFrigateSnapshotProvider snapshotProvider,
     IFrigateClipProvider clipProvider,
     DetectionTelegramMessageFormatter formatter,
+    TimeZoneInfo timeZone,
     ILogger<SendTelegramDetectionNotificationUseCase> logger,
     int clipFetchDelaySeconds = 10) : IDetectionNotificationDispatcher
 {
@@ -50,10 +51,11 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             return false;
         }
 
-        if (!IsWithinActiveHours(detectionEvent.OccurredAt.ToLocalTime().Hour, config.ActiveFromHour, config.ActiveToHour))
+        var localHour = TimeZoneInfo.ConvertTime(detectionEvent.OccurredAt, timeZone).Hour;
+        if (!IsWithinActiveHours(localHour, config.ActiveFromHour, config.ActiveToHour))
         {
             logger.LogDebug("Telegram skipped for event {EventId}: hour={Hour} outside [{From}-{To}]",
-                detectionEvent.Id, detectionEvent.OccurredAt.ToLocalTime().Hour, config.ActiveFromHour, config.ActiveToHour);
+                detectionEvent.Id, localHour, config.ActiveFromHour, config.ActiveToHour);
             return false;
         }
 
@@ -255,6 +257,15 @@ public static class MessageField
 
 public sealed class DetectionTelegramMessageFormatter
 {
+    private readonly TimeZoneInfo _timeZone;
+
+    public DetectionTelegramMessageFormatter() : this(TimeZoneInfo.Local) { }
+
+    public DetectionTelegramMessageFormatter(TimeZoneInfo timeZone)
+    {
+        _timeZone = timeZone;
+    }
+
     public string Format(DetectionEvent detectionEvent, IReadOnlySet<string>? enabledFields = null)
     {
         ArgumentNullException.ThrowIfNull(detectionEvent);
@@ -271,7 +282,7 @@ public sealed class DetectionTelegramMessageFormatter
             parts.Add(detectionEvent.Camera.Replace('_', ' '));
 
         if (enabledFields.Contains(MessageField.Time))
-            parts.Add(detectionEvent.OccurredAt.ToLocalTime().ToString("HH:mm"));
+            parts.Add(TimeZoneInfo.ConvertTime(detectionEvent.OccurredAt, _timeZone).ToString("HH:mm"));
 
         if (enabledFields.Contains(MessageField.Confidence) && detectionEvent.Confidence.HasValue)
             parts.Add($"{(int)Math.Round(detectionEvent.Confidence.Value * 100)} %");

@@ -6,6 +6,11 @@
 # - La section `documentation` contient les notices constructeur editables hors code.
 # - La section `notifications` contient les regles d'envoi d'alertes.
 
+# Fuseau horaire utilise pour les horodatages dans les notifications Telegram et les plages horaires actives.
+# Utiliser un identifiant IANA (ex : "Europe/Paris", "America/New_York").
+# Si absent, le fuseau du systeme est utilise (souvent UTC dans Docker).
+time_zone: "Europe/Paris"
+
 documentation:
   # Dossier contenant les fiches constructeur au format Markdown.
   vendor_catalog_path: ./vendors

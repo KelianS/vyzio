@@ -36,6 +36,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _snapshotProvider,
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
+            TimeZoneInfo.Local,
             NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
             clipFetchDelaySeconds: 0);
     }

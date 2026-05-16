@@ -59,6 +59,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             Substitute.For<IFrigateSnapshotProvider>(),
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
+            TimeZoneInfo.Local,
             NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
             clipFetchDelaySeconds: 0);
 

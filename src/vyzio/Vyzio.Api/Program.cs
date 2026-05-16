@@ -28,7 +28,10 @@ var dataDirectory = Path.GetDirectoryName(Path.GetFullPath(dbFilePath)) ?? Path.
 
 builder.Services.AddSingleton(new FaceStorageOptions(dataDirectory));
 builder.Services.AddVyzioInfrastructure(runtimeSettings);
-builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels);
+var appTimeZone = string.IsNullOrWhiteSpace(runtimeSettings.TimeZone)
+    ? TimeZoneInfo.Local
+    : TimeZoneInfo.FindSystemTimeZoneById(runtimeSettings.TimeZone);
+builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels, appTimeZone);
 builder.Services.AddHttpClient<IFrigateRestClient, FrigateRestClient>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
