@@ -22,7 +22,8 @@
       "PowerShell(head *)",
       "Bash(npm run *)",
       "Bash(npx tsc *)",
-      "WebFetch(domain:core.telegram.org)"
+      "WebFetch(domain:core.telegram.org)",
+      "PowerShell(dotnet test C:\\\\LOCAL_DEV\\\\vyzio\\\\src\\\\vyzio -nologo 2>&1 | Select-Object -Last 20)"
     ]
   }
 }

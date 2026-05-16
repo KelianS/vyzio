@@ -269,6 +269,46 @@ public class SendTelegramDetectionNotificationUseCaseTests
         };
 }
 
+public class LabelRoutingTests
+{
+    [Theory]
+    [InlineData("person", null,    "person_unknown")]
+    [InlineData("person", "",      "person_unknown")]
+    [InlineData("person", "Alice", "person_known")]
+    [InlineData("face",   null,    "person_unknown")]
+    [InlineData("face",   "Alice", "person_known")]
+    [InlineData("FACE",   "Alice", "person_known")]
+    [InlineData("car",    null,    "car")]
+    [InlineData("car",    "Alice", "car")]
+    [InlineData("dog",    null,    "dog")]
+    public void ResolveNotificationLabel_maps_correctly(string label, string? identity, string expected)
+    {
+        var result = SendTelegramDetectionNotificationUseCase.ResolveNotificationLabel(label, identity);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    // person events
+    [InlineData("person", null,    new[] { "person_unknown", "person_known" }, true)]
+    [InlineData("person", "Alice", new[] { "person_unknown", "person_known" }, true)]
+    [InlineData("person", null,    new[] { "person_known" },                  false)]
+    [InlineData("person", "Alice", new[] { "person_unknown" },                false)]
+    // face events — same resolution as person
+    [InlineData("face",   null,    new[] { "person_unknown" },                true)]
+    [InlineData("face",   "Alice", new[] { "person_known" },                  true)]
+    [InlineData("face",   null,    new[] { "person_known" },                  false)]
+    [InlineData("face",   "Alice", new[] { "person_unknown" },                false)]
+    // other labels
+    [InlineData("car",    null,    new[] { "car" },                           true)]
+    [InlineData("car",    null,    new[] { "person_unknown", "person_known" },false)]
+    public void IsLabelAllowed_routes_correctly(string label, string? identity, string[] allowed, bool expected)
+    {
+        var allowedSet = new HashSet<string>(allowed, StringComparer.OrdinalIgnoreCase);
+        var result = SendTelegramDetectionNotificationUseCase.IsLabelAllowed(label, identity, allowedSet);
+        Assert.Equal(expected, result);
+    }
+}
+
 public class DetectionTelegramMessageFormatterTests
 {
     private readonly DetectionTelegramMessageFormatter _sut = new();

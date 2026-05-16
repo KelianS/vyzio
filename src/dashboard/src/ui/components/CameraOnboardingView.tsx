@@ -7,7 +7,7 @@ import type { DiscoverCameras } from '../../application/use-cases/DiscoverCamera
 import type { GetCameraDetectionConfig } from '../../application/use-cases/GetCameraDetectionConfig'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
-import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
+import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import type { SaveCameraDetectionConfig } from '../../application/use-cases/SaveCameraDetectionConfig'
 import type { UpdateCamera } from '../../application/use-cases/UpdateCamera'
@@ -41,7 +41,7 @@ interface CameraOnboardingViewProps {
   deleteCamera: DeleteCamera
   getCameraDetectionConfig: GetCameraDetectionConfig
   saveCameraDetectionConfig: SaveCameraDetectionConfig
-  getDetectionLabels: GetDetectionLabels
+  getCameraLabels: GetCameraLabels
   apiBaseUrl: string
 }
 
@@ -115,10 +115,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [detectionContinuousRecording, setDetectionContinuousRecording] = useState(false)
 
   useEffect(() => {
-    props.getDetectionLabels.execute()
-      .then((labels) => setAllDetectionLabels(labels.filter((l) => !l.notificationOnly)))
+    props.getCameraLabels.execute()
+      .then(setAllDetectionLabels)
       .catch(() => {})
-  }, [props.getDetectionLabels])
+  }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
 

@@ -22,7 +22,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     int clipFetchDelaySeconds = 10) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
-    private static readonly string[] DefaultAllowedLabels = ["person", "person_known"];
+    private static readonly string[] DefaultAllowedLabels = ["person_unknown", "person_known"];
 
     public async Task<bool> ExecuteAsync(DetectionEvent detectionEvent, CancellationToken ct = default)
     {
@@ -227,27 +227,19 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         }
     }
 
-    // "person" = unknown person, "person_known" = recognized profile (virtual label).
-    // If only "person" is configured (no "person_known"), apply old behavior: all person events pass.
-    // If "person_known" appears in the list, apply strict split.
+    // Maps a Frigate detection label + identity to its notification-semantic label.
+    // "person" and "face" both resolve to person_unknown/person_known depending on identity.
+    internal static string ResolveNotificationLabel(string label, string? identity) =>
+        label.ToLowerInvariant() switch
+        {
+            "person" or "face" => string.IsNullOrWhiteSpace(identity) ? "person_unknown" : "person_known",
+            var other          => other
+        };
+
     internal static bool IsLabelAllowed(string label, string? identity, IReadOnlySet<string> allowedLabels)
     {
-        var hasIdentity = !string.IsNullOrWhiteSpace(identity);
-
-        if (!label.Equals("person", StringComparison.OrdinalIgnoreCase))
-            return allowedLabels.Contains(label, StringComparer.OrdinalIgnoreCase);
-
-        var wantsPerson = allowedLabels.Contains("person", StringComparer.OrdinalIgnoreCase);
-        var wantsKnown  = allowedLabels.Contains("person_known", StringComparer.OrdinalIgnoreCase);
-
-        if (!wantsPerson && !wantsKnown) return false;
-
-        // Strict split only when "person_known" is explicitly listed.
-        if (wantsKnown)
-            return hasIdentity ? wantsKnown : wantsPerson;
-
-        // Only "person" listed — backward-compat: all person events pass.
-        return true;
+        var notificationLabel = ResolveNotificationLabel(label, identity);
+        return allowedLabels.Contains(notificationLabel, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

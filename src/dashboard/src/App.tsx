@@ -15,7 +15,8 @@ import {
   getCameras,
   getCameraDetectionConfig,
   getDetectionHistory,
-  getDetectionLabels,
+  getCameraLabels,
+  getNotificationLabels,
   getHubOverview,
   getNotificationChannelConfig,
   getNotificationLog,
@@ -142,7 +143,7 @@ function App() {
         deleteCamera={deleteCamera}
         getCameraDetectionConfig={getCameraDetectionConfig}
         saveCameraDetectionConfig={saveCameraDetectionConfig}
-        getDetectionLabels={getDetectionLabels}
+        getCameraLabels={getCameraLabels}
         apiBaseUrl={dashboardRuntime.apiBaseUrl}
       />
     )
@@ -156,7 +157,7 @@ function App() {
         testNotificationChannel={testNotificationChannel}
         deleteNotificationChannel={deleteNotificationChannel}
         getNotificationLog={getNotificationLog}
-        getDetectionLabels={getDetectionLabels}
+        getNotificationLabels={getNotificationLabels}
         onBack={() => {
           window.location.hash = ''
           setView('hub')
@@ -191,7 +192,7 @@ function App() {
     return (
       <DetectionHistoryView
         getDetectionHistory={getDetectionHistory}
-        getDetectionLabels={getDetectionLabels}
+        getCameraLabels={getCameraLabels}
         correctDetectionIdentity={correctDetectionIdentity}
         getProfiles={getProfiles}
         frigateBaseUrl={dashboardRuntime.frigateBaseUrl}

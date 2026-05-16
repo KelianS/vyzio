@@ -21,7 +21,7 @@ interface NotificationSettingsViewProps {
   testNotificationChannel: TestNotificationChannel
   deleteNotificationChannel: DeleteNotificationChannel
   getNotificationLog: GetNotificationLog
-  getDetectionLabels: GetDetectionLabels
+  getNotificationLabels: GetDetectionLabels
   onBack: () => void
 }
 
@@ -47,7 +47,7 @@ export function NotificationSettingsView({
   testNotificationChannel,
   deleteNotificationChannel,
   getNotificationLog,
-  getDetectionLabels,
+  getNotificationLabels,
   onBack,
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
@@ -56,7 +56,7 @@ export function NotificationSettingsView({
   const [detectionLabels, setDetectionLabels] = useState<DetectionLabel[]>([])
 
   useEffect(() => {
-    getDetectionLabels.execute().then(setDetectionLabels).catch(() => setDetectionLabels([]))
+    getNotificationLabels.execute().then(setDetectionLabels).catch(() => setDetectionLabels([]))
   }, [getDetectionLabels])
 
   useEffect(() => {
@@ -178,8 +178,8 @@ function LabelCheckboxes({
 
   if (labels.length === 0) return null
 
-  const personGroup = labels.filter((l) => l.value === 'person' || l.value === 'person_known')
-  const otherLabels = labels.filter((l) => l.value !== 'person' && l.value !== 'person_known')
+  const personGroup = labels.filter((l) => l.value === 'person_unknown' || l.value === 'person_known')
+  const otherLabels = labels.filter((l) => l.value !== 'person_unknown' && l.value !== 'person_known')
 
   return (
     <div className="camera-form-field">
@@ -606,7 +606,7 @@ function TelegramConfigPanel({
   const [chatId, setChatId] = useState('')
   const [isEnabled, setIsEnabled] = useState(false)
   const [minimumConfidence, setMinimumConfidence] = useState(75)
-  const [allowedLabels, setAllowedLabels] = useState<string[]>(['person', 'person_known'])
+  const [allowedLabels, setAllowedLabels] = useState<string[]>(['person_unknown', 'person_known'])
   const [activeFromHour, setActiveFromHour] = useState<number | null>(null)
   const [activeToHour, setActiveToHour] = useState<number | null>(null)
   const [messageFields, setMessageFields] = useState<string[]>(['camera', 'time', 'label', 'confidence', 'snapshot'])
@@ -619,7 +619,7 @@ function TelegramConfigPanel({
       setChatId(config.chatId ?? '')
       setIsEnabled(config.isEnabled)
       setMinimumConfidence(Math.round(config.minimumConfidence * 100))
-      setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person', 'person_known'])
+      setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person_unknown', 'person_known'])
       setActiveFromHour(config.activeFromHour ?? null)
       setActiveToHour(config.activeToHour ?? null)
       setMessageFields(config.messageFields?.length > 0 ? config.messageFields : ['camera', 'time', 'label', 'confidence', 'snapshot'])

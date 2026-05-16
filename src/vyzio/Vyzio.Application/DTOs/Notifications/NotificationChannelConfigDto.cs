@@ -20,7 +20,7 @@ public sealed record NotificationChannelConfigDto(
     string? LastTestStatus,
     string? LastTestError)
 {
-    private static readonly string[] DefaultLabels = ["person", "person_known"];
+    private static readonly string[] DefaultLabels = ["person_unknown", "person_known"];
     private static readonly string[] DefaultFields = ["camera", "time", "label", "confidence", "snapshot"];
 
     public static NotificationChannelConfigDto From(NotificationChannelConfig config)

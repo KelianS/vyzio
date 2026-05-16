@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
 import type { GetDetectionHistory } from '../../application/use-cases/GetDetectionHistory'
-import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
+import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetProfiles } from '../../application/use-cases/GetProfiles'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
 import type { DetectionHistoryPage } from '../../domain/entities/DetectionHistory'
@@ -10,7 +10,7 @@ import type { Profile } from '../../domain/entities/Profile'
 
 interface DetectionHistoryViewProps {
   getDetectionHistory: GetDetectionHistory
-  getDetectionLabels: GetDetectionLabels
+  getCameraLabels: GetCameraLabels
   correctDetectionIdentity: CorrectDetectionIdentity
   getProfiles: GetProfiles
   frigateBaseUrl: string
@@ -20,7 +20,7 @@ interface DetectionHistoryViewProps {
 
 export function DetectionHistoryView({
   getDetectionHistory,
-  getDetectionLabels,
+  getCameraLabels,
   correctDetectionIdentity,
   getProfiles,
   frigateBaseUrl,
@@ -48,10 +48,10 @@ export function DetectionHistoryView({
   }, [getProfiles])
 
   useEffect(() => {
-    getDetectionLabels.execute()
-      .then((labels) => setDetectionLabels(labels.filter((l) => !l.notificationOnly)))
+    getCameraLabels.execute()
+      .then(setDetectionLabels)
       .catch(() => {})
-  }, [getDetectionLabels])
+  }, [getCameraLabels])
 
   useEffect(() => {
     setLoading(true)
