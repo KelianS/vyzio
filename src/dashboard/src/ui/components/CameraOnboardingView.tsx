@@ -1,4 +1,5 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from 'react'
+import { useToast } from './Toast'
 import ReactMarkdown from 'react-markdown'
 import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
@@ -121,6 +122,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
+
+  const { toast } = useToast()
 
   const selectedCandidate =
     selection.kind === 'candidate' ? (discoveryResults[selection.index] ?? null) : null
@@ -268,9 +271,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       camerasState.reload()
       setSelection({ kind: 'camera', cameraId: created.id })
       setDraftVerification(null)
-      setDetailMessage(
+      toast(
         verified.guidance ??
           `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour activer la surveillance.`,
+        'success',
       )
     } catch (error: unknown) {
       setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
@@ -385,11 +389,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return
       }
 
-      if (selection.kind === 'camera') {
-        setDetailMessage(`${result.message} (${result.configPath})`)
-      } else {
-        setFormMessage(`${result.message} (${result.configPath})`)
-      }
+      toast(`${result.message} (${result.configPath})`, 'success')
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       if (selection.kind === 'camera') {
@@ -415,7 +415,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       const result = await props.deleteCamera.execute(selectedCameraId)
       camerasState.reload()
       cameraStatusState.reload()
-      setDetailMessage(result.message)
+      toast(result.message, 'info')
     } catch (error: unknown) {
       setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
     } finally {
@@ -444,10 +444,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       camerasState.reload()
       cameraStatusState.reload()
       setEditPassword('')
-      setDetailMessage(
+      toast(
         updated.validationState === 'draft'
           ? 'Camera mise a jour. Reverifiez le flux avant d appliquer la configuration.'
           : 'Camera mise a jour. Appliquez la configuration pour prendre en compte les modifications.',
+        'success',
       )
     } catch (error: unknown) {
       setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
@@ -1382,6 +1383,12 @@ function DetectionConfigSection({
               </label>
             ))}
           </div>
+          {!labels.includes('person') && (
+            <p className="detection-person-warning">
+              Sans "Personne", la reconnaissance faciale ne fonctionnera pas sur cette caméra.
+            </p>
+          )}
+
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(247,244,237,0.1)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem' }}>
               <input

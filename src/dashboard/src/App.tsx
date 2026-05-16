@@ -40,7 +40,6 @@ import { useCameras } from './ui/hooks/useCameras'
 import {
   formatEventDetail,
   formatEventTime,
-  formatLastNotification,
   formatEventTitle,
   formatLastSeen,
   formatNotificationStatus,
@@ -52,10 +51,11 @@ import { CameraLiveThumbnail } from './ui/components/CameraLiveThumbnail'
 import { ToastProvider } from './ui/components/Toast'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
 import { DetectionHistoryView } from './ui/components/DetectionHistoryView'
+import { ExpertView } from './ui/components/ExpertView'
 import { NotificationSettingsView } from './ui/components/NotificationSettingsView'
 import { ProfilesView } from './ui/components/ProfilesView'
 
-type AppView = 'hub' | 'cameras' | 'notifications' | 'profiles' | 'history'
+type AppView = 'hub' | 'cameras' | 'notifications' | 'profiles' | 'history' | 'expert'
 
 function App() {
   const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash))
@@ -138,6 +138,10 @@ function App() {
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
             onBack={navigateBack}
           />
+        )}
+
+        {view === 'expert' && (
+          <ExpertView frigateBaseUrl={dashboardRuntime.frigateBaseUrl} />
         )}
 
         {view === 'hub' && (
@@ -353,8 +357,8 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
         )}
       </section>
 
-      <section className="hub-grid">
-        <article className="panel panel-secondary" id="events">
+      <section className="hub-bottom">
+        <article className="panel hub-events" id="events">
           <div className="panel-heading">
             <p className="section-kicker">Événements</p>
             <h2>Détections récentes</h2>
@@ -421,60 +425,40 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
           </div>
         </article>
 
-        <article className="panel panel-dark" id="profiles">
-          <div className="panel-heading">
-            <p className="section-kicker">Profils</p>
-            <h2>Personnes reconnues</h2>
-          </div>
-          <div className="profile-list">
-            {recentProfiles.length > 0 ? (
-              recentProfiles.map((profile) => (
-                <article key={profile.id} className="profile-card">
+        <aside className="hub-sidebar">
+          <article className="panel panel-dark" id="profiles">
+            <div className="panel-heading">
+              <p className="section-kicker">Profils</p>
+              <h2>Personnes reconnues</h2>
+            </div>
+            <div className="profile-list">
+              {recentProfiles.length > 0 ? (
+                recentProfiles.map((profile) => (
+                  <article key={profile.id} className="profile-card">
+                    <div>
+                      <h3>{profile.name}</h3>
+                      <p>{formatProfileMeta(profile)}</p>
+                    </div>
+                    <span>{formatLastSeen(profile.lastSeenAt)}</span>
+                  </article>
+                ))
+              ) : (
+                <article className="profile-card empty">
                   <div>
-                    <h3>{profile.name}</h3>
-                    <p>{formatProfileMeta(profile)}</p>
+                    <h3>Aucun profil configuré</h3>
+                    <p>Ajoutez des profils pour reconnaître les personnes dans vos flux.</p>
                   </div>
-                  <span>{formatLastSeen(profile.lastSeenAt)}</span>
                 </article>
-              ))
-            ) : (
-              <article className="profile-card empty">
-                <div>
-                  <h3>Aucun profil configuré</h3>
-                  <p>Ajoutez des profils pour reconnaître les personnes dans vos flux.</p>
-                </div>
-              </article>
-            )}
-          </div>
-          <div className="panel-cta-row">
-            <a className="primary-cta hub-cta-inverse" href="#profiles">
-              Gérer les profils
-            </a>
-          </div>
-        </article>
+              )}
+            </div>
+            <div className="panel-cta-row">
+              <a className="primary-cta hub-cta-inverse" href="#profiles">
+                Gérer les profils
+              </a>
+            </div>
+          </article>
 
-        <article className="panel panel-expert" id="expert">
-          <div className="panel-heading">
-            <p className="section-kicker">Mode avancé</p>
-            <h2>Interface experte</h2>
-          </div>
-          <p className="expert-copy">
-            Accès aux réglages fins de Frigate pour les utilisateurs techniques.
-          </p>
-          <a
-            className="expert-link"
-            href={dashboardRuntime.frigateBaseUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Ouvrir Frigate
-          </a>
-          <p className="expert-footnote">
-            {notifications
-              ? formatLastNotification(notifications.lastSentAt)
-              : 'Aucune information disponible'}
-          </p>
-        </article>
+        </aside>
       </section>
     </main>
   )
@@ -485,6 +469,7 @@ function getViewFromHash(hash: string): AppView {
   if (hash === '#notifications') return 'notifications'
   if (hash === '#profiles') return 'profiles'
   if (hash === '#history') return 'history'
+  if (hash === '#expert') return 'expert'
   return 'hub'
 }
 

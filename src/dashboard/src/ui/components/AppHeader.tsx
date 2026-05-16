@@ -1,6 +1,6 @@
 import './AppHeader.css'
 
-type AppView = 'hub' | 'cameras' | 'notifications' | 'profiles' | 'history'
+type AppView = 'hub' | 'cameras' | 'notifications' | 'profiles' | 'history' | 'expert'
 
 const NAV_ITEMS: { view: AppView; label: string; hash: string }[] = [
   { view: 'hub', label: 'Accueil', hash: '#' },
@@ -8,6 +8,7 @@ const NAV_ITEMS: { view: AppView; label: string; hash: string }[] = [
   { view: 'profiles', label: 'Profils', hash: '#profiles' },
   { view: 'notifications', label: 'Alertes', hash: '#notifications' },
   { view: 'history', label: 'Historique', hash: '#history' },
+  { view: 'expert', label: 'Expert', hash: '#expert' },
 ]
 
 interface AppHeaderProps {
