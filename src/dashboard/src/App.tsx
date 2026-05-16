@@ -378,7 +378,6 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
                   )}
                   <div className="event-card-body">
                     <h3>{formatEventTitle(event)}</h3>
-                    <p>{formatEventDetail(event)}</p>
                     <div className="event-card-meta">
                       {event.confidence !== null && (
                         <span className="event-card-confidence">
@@ -397,7 +396,10 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
                       )}
                     </div>
                   </div>
-                  <span className="event-card-time">{formatEventTime(event.occurredAt)}</span>
+                  <div className="event-card-aside">
+                    <span className="event-card-time">{formatEventTime(event.occurredAt)}</span>
+                    <span className="event-card-camera">{formatEventDetail(event)}</span>
+                  </div>
                 </article>
               ))
             ) : (
