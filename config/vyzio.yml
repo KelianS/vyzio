@@ -71,11 +71,3 @@ discovery:
   probe_timeout_ms: 250
   # Nombre maximum de probes reseau lances en parallele.
   max_concurrent_probes: 32
-
-notifications:
-  # Seuil minimal de confiance pour declencher une notification.
-  minimum_confidence: 0.75
-  telegram:
-    # Laisser vide pour desactiver Telegram.
-    bot_token: ""
-    chat_id: ""
