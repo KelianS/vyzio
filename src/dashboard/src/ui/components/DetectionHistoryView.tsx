@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
 import type { GetDetectionHistory } from '../../application/use-cases/GetDetectionHistory'
+import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetProfiles } from '../../application/use-cases/GetProfiles'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
 import type { DetectionHistoryPage } from '../../domain/entities/DetectionHistory'
+import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { Profile } from '../../domain/entities/Profile'
 
 interface DetectionHistoryViewProps {
   getDetectionHistory: GetDetectionHistory
+  getDetectionLabels: GetDetectionLabels
   correctDetectionIdentity: CorrectDetectionIdentity
   getProfiles: GetProfiles
   frigateBaseUrl: string
@@ -15,10 +18,9 @@ interface DetectionHistoryViewProps {
   onBack: () => void
 }
 
-const KNOWN_LABELS = ['person', 'face', 'car', 'motorcycle', 'bicycle', 'dog', 'cat', 'bird', 'deer']
-
 export function DetectionHistoryView({
   getDetectionHistory,
+  getDetectionLabels,
   correctDetectionIdentity,
   getProfiles,
   frigateBaseUrl,
@@ -27,6 +29,7 @@ export function DetectionHistoryView({
 }: DetectionHistoryViewProps) {
   const [page, setPage] = useState<DetectionHistoryPage | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [detectionLabels, setDetectionLabels] = useState<DetectionLabel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,6 +46,12 @@ export function DetectionHistoryView({
   useEffect(() => {
     getProfiles.execute().then(setProfiles).catch(() => {})
   }, [getProfiles])
+
+  useEffect(() => {
+    getDetectionLabels.execute()
+      .then((labels) => setDetectionLabels(labels.filter((l) => !l.notificationOnly)))
+      .catch(() => {})
+  }, [getDetectionLabels])
 
   useEffect(() => {
     setLoading(true)
@@ -131,8 +140,8 @@ export function DetectionHistoryView({
             <label>Type</label>
             <select value={filterLabel} onChange={(e) => { setFilterLabel(e.target.value); setCurrentPage(1) }}>
               <option value="">Tous</option>
-              {KNOWN_LABELS.map((l) => (
-                <option key={l} value={l}>{l}</option>
+              {detectionLabels.map(({ value, displayName, emoji }) => (
+                <option key={value} value={value}>{emoji} {displayName}</option>
               ))}
             </select>
           </div>

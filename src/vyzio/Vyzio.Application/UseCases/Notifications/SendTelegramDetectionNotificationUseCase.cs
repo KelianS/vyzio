@@ -22,7 +22,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     int clipFetchDelaySeconds = 10) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
-    private static readonly string[] DefaultAllowedLabels = ["person"];
+    private static readonly string[] DefaultAllowedLabels = ["person", "person_known"];
 
     public async Task<bool> ExecuteAsync(DetectionEvent detectionEvent, CancellationToken ct = default)
     {
@@ -60,11 +60,10 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         }
 
         var allowedLabels = ParseAllowedLabels(config.AllowedLabelsJson);
-        if (!allowedLabels.Contains(detectionEvent.Label, StringComparer.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(detectionEvent.Identity))
+        if (!IsLabelAllowed(detectionEvent.Label, detectionEvent.Identity, allowedLabels))
         {
-            logger.LogDebug("Telegram skipped for event {EventId}: label={Label} not in [{AllowedLabels}] and no identity",
-                detectionEvent.Id, detectionEvent.Label, string.Join(",", allowedLabels));
+            logger.LogDebug("Telegram skipped for event {EventId}: label={Label} identity={Identity} not matched by [{AllowedLabels}]",
+                detectionEvent.Id, detectionEvent.Label, detectionEvent.Identity, string.Join(",", allowedLabels));
             return false;
         }
 
@@ -211,19 +210,44 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         }
     }
 
-    private static string[] ParseAllowedLabels(string? json)
+    private static HashSet<string> ParseAllowedLabels(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return DefaultAllowedLabels;
+        if (string.IsNullOrWhiteSpace(json))
+            return new HashSet<string>(DefaultAllowedLabels, StringComparer.OrdinalIgnoreCase);
         try
         {
-            return JsonSerializer.Deserialize<string[]>(json) is { Length: > 0 } labels
-                ? labels
-                : DefaultAllowedLabels;
+            var labels = JsonSerializer.Deserialize<string[]>(json);
+            return labels is { Length: > 0 }
+                ? new HashSet<string>(labels, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(DefaultAllowedLabels, StringComparer.OrdinalIgnoreCase);
         }
         catch
         {
-            return DefaultAllowedLabels;
+            return new HashSet<string>(DefaultAllowedLabels, StringComparer.OrdinalIgnoreCase);
         }
+    }
+
+    // "person" = unknown person, "person_known" = recognized profile (virtual label).
+    // If only "person" is configured (no "person_known"), apply old behavior: all person events pass.
+    // If "person_known" appears in the list, apply strict split.
+    internal static bool IsLabelAllowed(string label, string? identity, IReadOnlySet<string> allowedLabels)
+    {
+        var hasIdentity = !string.IsNullOrWhiteSpace(identity);
+
+        if (!label.Equals("person", StringComparison.OrdinalIgnoreCase))
+            return allowedLabels.Contains(label, StringComparer.OrdinalIgnoreCase);
+
+        var wantsPerson = allowedLabels.Contains("person", StringComparer.OrdinalIgnoreCase);
+        var wantsKnown  = allowedLabels.Contains("person_known", StringComparer.OrdinalIgnoreCase);
+
+        if (!wantsPerson && !wantsKnown) return false;
+
+        // Strict split only when "person_known" is explicitly listed.
+        if (wantsKnown)
+            return hasIdentity ? wantsKnown : wantsPerson;
+
+        // Only "person" listed — backward-compat: all person events pass.
+        return true;
     }
 
     /// <summary>
@@ -301,14 +325,17 @@ public sealed class DetectionTelegramMessageFormatter
 
     private static string GetLabelEmoji(string label) => label.ToLowerInvariant() switch
     {
-        "person"     => "🚶",
-        "cat"        => "🐱",
-        "dog"        => "🐕",
-        "car"        => "🚗",
-        "bicycle"    => "🚲",
-        "motorcycle" => "🏍",
-        "truck"      => "🚛",
-        "bird"       => "🐦",
-        _            => "📡"
+        "person"       => "🚶",
+        "person_known" => "🧑",
+        "face"         => "👤",
+        "cat"          => "🐱",
+        "dog"          => "🐕",
+        "car"          => "🚗",
+        "bicycle"      => "🚲",
+        "motorcycle"   => "🏍",
+        "truck"        => "🚛",
+        "bird"         => "🐦",
+        "deer"         => "🦌",
+        _              => "📡"
     };
 }

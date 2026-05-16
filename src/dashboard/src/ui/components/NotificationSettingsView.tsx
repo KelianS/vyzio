@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
+import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
 import type { GetNotificationLog } from '../../application/use-cases/GetNotificationLog'
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
+import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type {
   MediaMode,
   NotificationChannelConfig,
@@ -19,6 +21,7 @@ interface NotificationSettingsViewProps {
   testNotificationChannel: TestNotificationChannel
   deleteNotificationChannel: DeleteNotificationChannel
   getNotificationLog: GetNotificationLog
+  getDetectionLabels: GetDetectionLabels
   onBack: () => void
 }
 
@@ -44,11 +47,17 @@ export function NotificationSettingsView({
   testNotificationChannel,
   deleteNotificationChannel,
   getNotificationLog,
+  getDetectionLabels,
   onBack,
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
   const [notifLog, setNotifLog] = useState<NotificationLogEntry[]>([])
   const [logRefreshKey, setLogRefreshKey] = useState(0)
+  const [detectionLabels, setDetectionLabels] = useState<DetectionLabel[]>([])
+
+  useEffect(() => {
+    getDetectionLabels.execute().then(setDetectionLabels).catch(() => setDetectionLabels([]))
+  }, [getDetectionLabels])
 
   useEffect(() => {
     getNotificationLog.execute(selectedChannel).then(setNotifLog).catch(() => setNotifLog([]))
@@ -136,6 +145,7 @@ export function NotificationSettingsView({
               removing={removing}
               testResult={testResult}
               notifLog={notifLog}
+              detectionLabels={detectionLabels}
               onSave={handleSaveWithRefresh}
               onTest={handleTestWithRefresh}
               onRemove={remove}
@@ -148,41 +158,65 @@ export function NotificationSettingsView({
   )
 }
 
-const KNOWN_LABELS = ['person', 'car', 'dog', 'cat', 'bicycle', 'motorcycle', 'truck']
-
 function LabelCheckboxes({
+  labels,
   selected,
   onChange,
 }: {
+  labels: DetectionLabel[]
   selected: string[]
   onChange: (labels: string[]) => void
 }) {
-  function toggle(label: string) {
-    if (selected.includes(label)) {
-      const next = selected.filter((l) => l !== label)
-      onChange(next.length > 0 ? next : [label]) // keep at least one
+  function toggle(value: string) {
+    if (selected.includes(value)) {
+      const next = selected.filter((l) => l !== value)
+      onChange(next.length > 0 ? next : [value])
     } else {
-      onChange([...selected, label])
+      onChange([...selected, value])
     }
   }
+
+  if (labels.length === 0) return null
+
+  const personGroup = labels.filter((l) => l.value === 'person' || l.value === 'person_known')
+  const otherLabels = labels.filter((l) => l.value !== 'person' && l.value !== 'person_known')
 
   return (
     <div className="camera-form-field">
       <label>Categories de detection notifiees</label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 6 }}>
-        {KNOWN_LABELS.map((label) => (
-          <label
-            key={label}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
-          >
-            <input
-              type="checkbox"
-              checked={selected.includes(label)}
-              onChange={() => toggle(label)}
-            />
-            {label}
-          </label>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+        {personGroup.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {personGroup.map(({ value, displayName, emoji }) => (
+              <label
+                key={value}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.includes(value)}
+                  onChange={() => toggle(value)}
+                />
+                {emoji} {displayName}
+              </label>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {otherLabels.map(({ value, displayName, emoji }) => (
+            <label
+              key={value}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(value)}
+                onChange={() => toggle(value)}
+              />
+              {emoji} {displayName}
+            </label>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -549,6 +583,7 @@ function TelegramConfigPanel({
   removing,
   testResult,
   notifLog,
+  detectionLabels,
   onSave,
   onTest,
   onRemove,
@@ -561,6 +596,7 @@ function TelegramConfigPanel({
   removing: boolean
   testResult: TestNotificationChannelResult | null
   notifLog: NotificationLogEntry[]
+  detectionLabels: DetectionLabel[]
   onSave: (req: SaveNotificationChannelConfigRequest) => Promise<void>
   onTest: () => Promise<void>
   onRemove: () => Promise<void>
@@ -570,7 +606,7 @@ function TelegramConfigPanel({
   const [chatId, setChatId] = useState('')
   const [isEnabled, setIsEnabled] = useState(false)
   const [minimumConfidence, setMinimumConfidence] = useState(75)
-  const [allowedLabels, setAllowedLabels] = useState<string[]>(['person'])
+  const [allowedLabels, setAllowedLabels] = useState<string[]>(['person', 'person_known'])
   const [activeFromHour, setActiveFromHour] = useState<number | null>(null)
   const [activeToHour, setActiveToHour] = useState<number | null>(null)
   const [messageFields, setMessageFields] = useState<string[]>(['camera', 'time', 'label', 'confidence', 'snapshot'])
@@ -583,7 +619,7 @@ function TelegramConfigPanel({
       setChatId(config.chatId ?? '')
       setIsEnabled(config.isEnabled)
       setMinimumConfidence(Math.round(config.minimumConfidence * 100))
-      setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person'])
+      setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person', 'person_known'])
       setActiveFromHour(config.activeFromHour ?? null)
       setActiveToHour(config.activeToHour ?? null)
       setMessageFields(config.messageFields?.length > 0 ? config.messageFields : ['camera', 'time', 'label', 'confidence', 'snapshot'])
@@ -704,7 +740,7 @@ function TelegramConfigPanel({
             />
           </div>
 
-          <LabelCheckboxes selected={allowedLabels} onChange={setAllowedLabels} />
+          <LabelCheckboxes labels={detectionLabels} selected={allowedLabels} onChange={setAllowedLabels} />
 
           <MessageFieldsSelector selected={messageFields} onChange={setMessageFields} />
 

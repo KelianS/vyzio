@@ -81,6 +81,7 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/", () => Results.Ok(new { service = "vyzio-api", config = configPath }));
 app.MapHub();
+app.MapDetectionLabels();
 app.MapCameras();
 app.MapDetectionEvents();
 app.MapProfiles();

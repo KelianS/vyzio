@@ -7,12 +7,14 @@ import type { DiscoverCameras } from '../../application/use-cases/DiscoverCamera
 import type { GetCameraDetectionConfig } from '../../application/use-cases/GetCameraDetectionConfig'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
+import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import type { SaveCameraDetectionConfig } from '../../application/use-cases/SaveCameraDetectionConfig'
 import type { UpdateCamera } from '../../application/use-cases/UpdateCamera'
 import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftCamera'
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
+import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
 import { useVendorAssistance } from '../hooks/useVendorAssistance'
@@ -39,6 +41,7 @@ interface CameraOnboardingViewProps {
   deleteCamera: DeleteCamera
   getCameraDetectionConfig: GetCameraDetectionConfig
   saveCameraDetectionConfig: SaveCameraDetectionConfig
+  getDetectionLabels: GetDetectionLabels
   apiBaseUrl: string
 }
 
@@ -108,7 +111,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [editPassword, setEditPassword] = useState('')
   const [detectionLabels, setDetectionLabels] = useState<string[]>(['person'])
   const [detectionAvailableLabels, setDetectionAvailableLabels] = useState<string[]>([])
+  const [allDetectionLabels, setAllDetectionLabels] = useState<DetectionLabel[]>([])
   const [detectionContinuousRecording, setDetectionContinuousRecording] = useState(false)
+
+  useEffect(() => {
+    props.getDetectionLabels.execute()
+      .then((labels) => setAllDetectionLabels(labels.filter((l) => !l.notificationOnly)))
+      .catch(() => {})
+  }, [props.getDetectionLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
 
@@ -1202,6 +1212,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <DetectionConfigSection
                       labels={detectionLabels}
                       availableLabels={detectionAvailableLabels}
+                      allLabels={allDetectionLabels}
                       loading={detectionConfigLoading}
                       continuousRecordingEnabled={detectionContinuousRecording}
                       onToggle={(value) =>
@@ -1298,19 +1309,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   )
 }
 
-const ALL_DETECTION_LABELS = [
-  { value: 'person', label: 'Personne' },
-  { value: 'car', label: 'Voiture' },
-  { value: 'dog', label: 'Chien' },
-  { value: 'cat', label: 'Chat' },
-  { value: 'bird', label: 'Oiseau' },
-  { value: 'deer', label: 'Cerf' },
-  { value: 'horse', label: 'Cheval' },
-  { value: 'motorcycle', label: 'Moto' },
-  { value: 'bicycle', label: 'Velo' },
-  { value: 'truck', label: 'Camion' },
-]
-
 function CameraLiveView({ cameraId, apiBaseUrl }: { cameraId: string; apiBaseUrl: string }) {
   const [src, setSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
@@ -1335,6 +1333,7 @@ function CameraLiveView({ cameraId, apiBaseUrl }: { cameraId: string; apiBaseUrl
 function DetectionConfigSection({
   labels,
   availableLabels,
+  allLabels,
   loading,
   continuousRecordingEnabled,
   onToggle,
@@ -1342,6 +1341,7 @@ function DetectionConfigSection({
 }: {
   labels: string[]
   availableLabels: string[]
+  allLabels: DetectionLabel[]
   loading: boolean
   continuousRecordingEnabled: boolean
   onToggle: (value: string) => void
@@ -1349,8 +1349,8 @@ function DetectionConfigSection({
 }) {
   const displayLabels =
     availableLabels.length > 0
-      ? ALL_DETECTION_LABELS.filter((l) => availableLabels.includes(l.value))
-      : ALL_DETECTION_LABELS
+      ? allLabels.filter((l) => availableLabels.includes(l.value))
+      : allLabels
 
   return (
     <section className="camera-form-section" style={{ marginTop: 24 }}>
@@ -1362,7 +1362,7 @@ function DetectionConfigSection({
       ) : (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            {displayLabels.map(({ value, label }) => (
+            {displayLabels.map(({ value, displayName, emoji }) => (
               <label
                 key={value}
                 style={{
@@ -1383,7 +1383,7 @@ function DetectionConfigSection({
                   onChange={() => onToggle(value)}
                   style={{ accentColor: 'currentColor' }}
                 />
-                {label}
+                {emoji} {displayName}
               </label>
             ))}
           </div>
