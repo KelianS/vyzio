@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.StaticFiles;
+using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
 using Vyzio.Application.UseCases.Cameras;
@@ -94,6 +95,18 @@ public static class CamerasEndpoints
         {
             var dto = await useCase.ExecuteAsync(id, request, ct);
             return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        // Live feed — MJPEG proxy (ADR-16)
+        group.MapGet("/{id}/live/mjpeg", async (string id, GetCamerasUseCase getCameras, IFrigateRestClient frigateClient, CancellationToken ct) =>
+        {
+            var cameras = await getCameras.ExecuteAsync(ct);
+            var camera = cameras.FirstOrDefault(c => c.Id == id);
+            if (camera is null) return Results.NotFound();
+
+            var slug = camera.Slug.Replace('-', '_');
+            var stream = await frigateClient.OpenMjpegStreamAsync(slug, ct);
+            return Results.Stream(stream, "multipart/x-mixed-replace; boundary=frame");
         });
 
         // Profile links

@@ -12,6 +12,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
     private readonly ITelegramNotificationSender _telegramSender = Substitute.For<ITelegramNotificationSender>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
     private readonly IFrigateSnapshotProvider _snapshotProvider = Substitute.For<IFrigateSnapshotProvider>();
+    private readonly IFrigateClipProvider _clipProvider = Substitute.For<IFrigateClipProvider>();
     private readonly SendTelegramDetectionNotificationUseCase _sut;
 
     private static NotificationChannelConfig ActiveTelegramConfig => new()
@@ -33,124 +34,109 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _telegramSender,
             _channelConfigs,
             _snapshotProvider,
+            _clipProvider,
             new DetectionTelegramMessageFormatter(),
             NullLogger<SendTelegramDetectionNotificationUseCase>.Instance);
     }
 
     [Fact]
-    public async Task Execute_sends_and_records_a_sent_notification_for_high_value_new_detections()
+    public async Task Execute_sends_video_on_end_when_has_clip_true()
     {
-        var detectionEvent = CreateDetectionEvent();
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true);
+        var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
 
         var sent = await _sut.ExecuteAsync(detectionEvent);
 
         Assert.True(sent);
-        await _telegramSender.Received(1).SendAsync(
-            "Alice detectee — front door — 10:15 — 91 %",
+        await _telegramSender.Received(1).SendVideoAsync(
+            clipStream,
+            Arg.Any<string>(),
             "bot-token",
             "chat-id",
             Arg.Any<CancellationToken>());
-        await _notifications.Received(1).AddAsync(
-            Arg.Is<Notification>(notification =>
-                notification.EventId == detectionEvent.Id
-                && notification.Channel == "telegram"
-                && notification.Status == "sent"),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Execute_skips_end_lifecycle_events()
-    {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end");
-
-        var sent = await _sut.ExecuteAsync(detectionEvent);
-
-        Assert.False(sent);
-        await _telegramSender.DidNotReceive().SendAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Execute_sends_update_event_when_not_already_notified()
-    {
-        // update lifecycle is accepted so notifications aren't missed when the
-        // "new" frame arrives before the Telegram config is saved
-        var detectionEvent = CreateDetectionEvent(lifecycle: "update");
-
-        var sent = await _sut.ExecuteAsync(detectionEvent);
-
-        Assert.True(sent);
-    }
-
-    [Fact]
-    public async Task Execute_defers_new_event_when_snapshot_not_yet_ready()
-    {
-        // On lifecycle=new, if the snapshot field is enabled but has_snapshot=false,
-        // we wait for an "update" frame so the notification carries a photo.
-        var detectionEvent = new DetectionEvent
-        {
-            Id = "evt-900",
-            FrigateEventId = "frigate-evt-900",
-            Lifecycle = "new",
-            Camera = "front_door",
-            Label = "person",
-            Identity = "Alice",
-            Confidence = 0.91f,
-            OccurredAt = LocalTime(2026, 5, 10, 10, 15),
-            HasSnapshot = false,
-            HasClip = true
-        };
-
-        var sent = await _sut.ExecuteAsync(detectionEvent);
-
-        Assert.False(sent);
-        await _telegramSender.DidNotReceive().SendAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _telegramSender.DidNotReceive().SendPhotoAsync(
             Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Execute_sends_new_event_immediately_when_snapshot_field_disabled()
+    public async Task Execute_falls_back_to_snapshot_on_end_when_clip_unavailable()
     {
-        // If the user disabled the snapshot field, send text immediately on "new"
-        // without waiting for has_snapshot=true.
-        var configNoSnapshot = new NotificationChannelConfig
-        {
-            Channel = "telegram",
-            IsEnabled = true,
-            BotToken = "bot-token",
-            ChatId = "chat-id",
-            MinimumConfidence = 0.75f,
-            MessageFieldsJson = """["camera","time","label","confidence"]"""
-        };
-        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>()).Returns(configNoSnapshot);
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true, hasSnapshot: true);
+        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
+        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
-        var detectionEvent = new DetectionEvent
-        {
-            Id = "evt-900",
-            FrigateEventId = "frigate-evt-900",
-            Lifecycle = "new",
-            Camera = "front_door",
-            Label = "person",
-            Identity = "Alice",
-            Confidence = 0.91f,
-            OccurredAt = LocalTime(2026, 5, 10, 10, 15),
-            HasSnapshot = false,
-            HasClip = true
-        };
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.True(sent);
+        await _telegramSender.Received(1).SendPhotoAsync(
+            snapshotStream,
+            Arg.Any<string>(),
+            "bot-token",
+            "chat-id",
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_sends_photo_on_end_when_has_clip_false_but_has_snapshot_true()
+    {
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: true);
+        var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
+        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.True(sent);
+        await _telegramSender.Received(1).SendPhotoAsync(
+            snapshotStream,
+            Arg.Any<string>(),
+            "bot-token",
+            "chat-id",
+            Arg.Any<CancellationToken>());
+        await _clipProvider.DidNotReceive().TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_sends_text_on_end_when_neither_clip_nor_snapshot()
+    {
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: false);
 
         var sent = await _sut.ExecuteAsync(detectionEvent);
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendAsync(
+            Arg.Any<string>(), "bot-token", "chat-id", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_skips_new_lifecycle()
+    {
+        var detectionEvent = CreateDetectionEvent(lifecycle: "new");
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.False(sent);
+        await _telegramSender.DidNotReceive().SendAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_skips_update_lifecycle()
+    {
+        var detectionEvent = CreateDetectionEvent(lifecycle: "update");
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.False(sent);
+        await _telegramSender.DidNotReceive().SendAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Execute_skips_duplicate_notifications_for_the_same_event()
     {
-        var detectionEvent = CreateDetectionEvent();
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end");
         _notifications.HasSentAsync(detectionEvent.Id, "telegram", Arg.Any<CancellationToken>()).Returns(true);
 
         var sent = await _sut.ExecuteAsync(detectionEvent);
@@ -166,7 +152,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
             .Returns((NotificationChannelConfig?)null);
 
-        var sent = await _sut.ExecuteAsync(CreateDetectionEvent());
+        var sent = await _sut.ExecuteAsync(CreateDetectionEvent(lifecycle: "end"));
 
         Assert.False(sent);
         await _telegramSender.DidNotReceive().SendAsync(
@@ -179,7 +165,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
             .Returns(new NotificationChannelConfig { Channel = "telegram", IsEnabled = false, BotToken = "token", ChatId = "chat" });
 
-        var sent = await _sut.ExecuteAsync(CreateDetectionEvent());
+        var sent = await _sut.ExecuteAsync(CreateDetectionEvent(lifecycle: "end"));
 
         Assert.False(sent);
         await _telegramSender.DidNotReceive().SendAsync(
@@ -189,7 +175,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
     [Fact]
     public async Task Execute_records_failed_notifications_when_telegram_send_fails()
     {
-        var detectionEvent = CreateDetectionEvent();
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: false);
         _telegramSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new HttpRequestException("telegram unavailable")));
 
@@ -197,42 +183,35 @@ public class SendTelegramDetectionNotificationUseCaseTests
 
         Assert.False(sent);
         await _notifications.Received(1).AddAsync(
-            Arg.Is<Notification>(notification =>
-                notification.EventId == detectionEvent.Id
-                && notification.Status == "failed"
-                && notification.ErrorMessage == "telegram unavailable"),
+            Arg.Is<Notification>(n =>
+                n.EventId == detectionEvent.Id
+                && n.Status == "failed"
+                && n.ErrorMessage == "telegram unavailable"),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Execute_sends_when_event_is_within_active_hours()
+    public async Task Execute_skips_below_minimum_confidence()
     {
-        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
-            .Returns(new NotificationChannelConfig
-            {
-                Channel = "telegram", IsEnabled = true, BotToken = "token", ChatId = "chat",
-                ActiveFromHour = 8, ActiveToHour = 22
-            });
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", confidence: 0.5f);
 
-        // 10h is within [8, 22) regardless of timezone
-        var inRange = SendTelegramDetectionNotificationUseCase.IsWithinActiveHours(10, 8, 22);
+        var sent = await _sut.ExecuteAsync(detectionEvent);
 
-        Assert.True(inRange);
+        Assert.False(sent);
     }
 
     [Theory]
-    [InlineData(8, 22, 10, true)]   // 10h inside [8,22)
-    [InlineData(8, 22, 7,  false)]  // 7h before range
-    [InlineData(8, 22, 22, false)]  // 22h is exclusive upper bound
-    [InlineData(22, 6,  23, true)]  // overnight: 23h inside [22,24)
-    [InlineData(22, 6,  3,  true)]  // overnight: 3h inside [0,6)
-    [InlineData(22, 6,  10, false)] // overnight: 10h outside both bands
-    [InlineData(null, 22, 10, true)]// no lower bound → always active
-    [InlineData(8, null, 10, true)] // no upper bound → always active
+    [InlineData(8, 22, 10, true)]
+    [InlineData(8, 22, 7,  false)]
+    [InlineData(8, 22, 22, false)]
+    [InlineData(22, 6,  23, true)]
+    [InlineData(22, 6,  3,  true)]
+    [InlineData(22, 6,  10, false)]
+    [InlineData(null, 22, 10, true)]
+    [InlineData(8, null, 10, true)]
     public void IsWithinActiveHours_applies_schedule_correctly(int? from, int? to, int hour, bool expected)
     {
         var result = SendTelegramDetectionNotificationUseCase.IsWithinActiveHours(hour, from, to);
-
         Assert.Equal(expected, result);
     }
 
@@ -240,9 +219,11 @@ public class SendTelegramDetectionNotificationUseCaseTests
         new(year, month, day, hour, minute, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(year, month, day, hour, minute, 0)));
 
     private static DetectionEvent CreateDetectionEvent(
-        string lifecycle = "new",
+        string lifecycle = "end",
         float confidence = 0.91f,
-        string label = "person")
+        string label = "person",
+        bool hasClip = true,
+        bool hasSnapshot = true)
         => new()
         {
             Id = "evt-900",
@@ -253,8 +234,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
             Identity = "Alice",
             Confidence = confidence,
             OccurredAt = LocalTime(2026, 5, 10, 10, 15),
-            HasSnapshot = true,
-            HasClip = true
+            HasSnapshot = hasSnapshot,
+            HasClip = hasClip
         };
 }
 
@@ -270,7 +251,7 @@ public class DetectionTelegramMessageFormatterTests
     {
         Id = "e1",
         FrigateEventId = "f1",
-        Lifecycle = "new",
+        Lifecycle = "end",
         Camera = camera,
         Label = label,
         Identity = identity,

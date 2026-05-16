@@ -15,6 +15,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     ITelegramNotificationSender telegramSender,
     INotificationChannelConfigRepository channelConfigs,
     IFrigateSnapshotProvider snapshotProvider,
+    IFrigateClipProvider clipProvider,
     DetectionTelegramMessageFormatter formatter,
     ILogger<SendTelegramDetectionNotificationUseCase> logger) : IDetectionNotificationDispatcher
 {
@@ -25,18 +26,18 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     {
         ArgumentNullException.ThrowIfNull(detectionEvent);
 
+        // Only notify on lifecycle=end so the clip is available when has_clip=true (option B).
+        if (!string.Equals(detectionEvent.Lifecycle, "end", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogDebug("Telegram skipped for event {EventId}: lifecycle={Lifecycle} (waiting for end)", detectionEvent.Id, detectionEvent.Lifecycle);
+            return false;
+        }
+
         var config = await channelConfigs.GetByChannelAsync(TelegramChannel, ct);
         if (config is null || !config.IsEnabled || !config.HasCredentials)
         {
             logger.LogDebug("Telegram skipped for event {EventId}: channel not configured (isNull={IsNull} isEnabled={IsEnabled} hasCreds={HasCreds})",
                 detectionEvent.Id, config is null, config?.IsEnabled, config?.HasCredentials);
-            return false;
-        }
-
-        if (!string.Equals(detectionEvent.Lifecycle, "new", StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(detectionEvent.Lifecycle, "update", StringComparison.OrdinalIgnoreCase))
-        {
-            logger.LogDebug("Telegram skipped for event {EventId}: lifecycle={Lifecycle}", detectionEvent.Id, detectionEvent.Lifecycle);
             return false;
         }
 
@@ -64,34 +65,42 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             return false;
         }
 
-        // Parse fields early so we can check the snapshot preference before committing to send.
-        var enabledFields = ParseMessageFields(config.MessageFieldsJson);
-
-        // On the very first frame ("new"), the snapshot is often not yet written by Frigate.
-        // If the snapshot field is enabled and the snapshot is not ready, defer until an
-        // "update" frame arrives with has_snapshot=true. This ensures the notification
-        // always carries a photo when available.
-        if (string.Equals(detectionEvent.Lifecycle, "new", StringComparison.OrdinalIgnoreCase)
-            && enabledFields.Contains(MessageField.Snapshot)
-            && !detectionEvent.HasSnapshot)
-        {
-            logger.LogDebug("Telegram deferred for event {EventId}: lifecycle=new, snapshot not ready yet", detectionEvent.Id);
-            return false;
-        }
-
         if (await notifications.HasSentAsync(detectionEvent.Id, TelegramChannel, ct))
         {
             logger.LogDebug("Telegram skipped for event {EventId}: already sent", detectionEvent.Id);
             return false;
         }
 
-        logger.LogInformation("Sending Telegram notification for event {EventId} label={Label} lifecycle={Lifecycle} hasSnapshot={HasSnapshot}",
-            detectionEvent.Id, detectionEvent.Label, detectionEvent.Lifecycle, detectionEvent.HasSnapshot);
+        var enabledFields = ParseMessageFields(config.MessageFieldsJson);
+
+        logger.LogInformation("Sending Telegram notification for event {EventId} label={Label} hasClip={HasClip} hasSnapshot={HasSnapshot}",
+            detectionEvent.Id, detectionEvent.Label, detectionEvent.HasClip, detectionEvent.HasSnapshot);
 
         try
         {
             var caption = formatter.Format(detectionEvent, enabledFields);
 
+            // Priority 1: send clip as video when available.
+            if (detectionEvent.HasClip && enabledFields.Contains(MessageField.Snapshot))
+            {
+                var clip = await clipProvider.TryGetClipAsync(detectionEvent.FrigateEventId, ct);
+                if (clip is not null)
+                {
+                    logger.LogInformation("Sending Telegram video for event {EventId}", detectionEvent.Id);
+                    await using (clip)
+                        await telegramSender.SendVideoAsync(clip, caption, config.BotToken!, config.ChatId!, ct);
+                    await notifications.AddAsync(new Notification
+                    {
+                        EventId = detectionEvent.Id,
+                        Channel = TelegramChannel,
+                        Status = "sent"
+                    }, ct);
+                    return true;
+                }
+                logger.LogWarning("Clip unavailable for event {EventId} — falling back to snapshot", detectionEvent.Id);
+            }
+
+            // Fallback: send snapshot photo.
             if (detectionEvent.HasSnapshot && enabledFields.Contains(MessageField.Snapshot))
             {
                 var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
@@ -110,12 +119,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 }
                 logger.LogWarning("Snapshot unavailable for event {EventId} — falling back to text message", detectionEvent.Id);
             }
-            else
-            {
-                logger.LogDebug("Skipping snapshot for event {EventId}: hasSnapshot={HasSnapshot} snapshotField={SnapshotEnabled}",
-                    detectionEvent.Id, detectionEvent.HasSnapshot, enabledFields.Contains(MessageField.Snapshot));
-            }
 
+            // Final fallback: text only.
             await telegramSender.SendAsync(caption, config.BotToken!, config.ChatId!, ct);
             await notifications.AddAsync(new Notification
             {

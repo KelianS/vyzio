@@ -37,6 +37,10 @@ builder.Services.AddHttpClient<IFrigateSnapshotProvider, FrigateSnapshotProvider
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
+builder.Services.AddHttpClient<IFrigateClipProvider, FrigateClipProvider>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
 builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");

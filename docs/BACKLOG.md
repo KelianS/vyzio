@@ -115,13 +115,13 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 #### Configuration Frigate
 
-- [ ] Activer l'enregistrement des clips dans la config Frigate générée (`record.enabled: true` global + `events.retain.default: 14j`) — condition préalable à `has_clip: true` sur les événements
-- [ ] Ajouter `ContinuousRecordingEnabled` dans `CameraDetectionConfig` et le projeter dans la section `record.enabled` par caméra dans `frigate.generated.yml` (ADR-18)
+- [x] Activer l'enregistrement des clips dans la config Frigate générée (`record.enabled: true` global + `events.retain.default: 14j`) — condition préalable à `has_clip: true` sur les événements
+- [x] Ajouter `ContinuousRecordingEnabled` dans `CameraDetectionConfig` et le projeter dans la section `record.enabled` par caméra dans `frigate.generated.yml` (ADR-18)
 
 #### API
 
-- [ ] Implémenter `GET /api/cameras/{id}/live/mjpeg` : proxy MJPEG Frigate en streaming chunked, auth Vyzio (ADR-16) — Frigate retiré des ports exposés en production
-- [ ] Implémenter `GET /api/detection-events/{id}/clip` : proxy MP4 Frigate authentifié en streaming chunked avec support Range (ADR-17)
+- [x] Implémenter `GET /api/cameras/{id}/live/mjpeg` : proxy MJPEG Frigate en streaming chunked, auth Vyzio (ADR-16) — Frigate retiré des ports exposés en production
+- [x] Implémenter `GET /api/detection-events/{id}/clip` : proxy MP4 Frigate authentifié en streaming chunked avec support Range (ADR-17)
 
 #### Interface utilisateur
 
@@ -131,13 +131,13 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 #### Notifications enrichies — clip en pièce jointe
 
-- [ ] Différer l'envoi de la notification Telegram au lifecycle `end` de l'événement Frigate (plutôt que `new`) afin d'inclure le clip MP4 quand `has_clip: true`
-- [ ] Télécharger le clip depuis Frigate via le proxy `GET /api/detection-events/{id}/clip` et l'envoyer via `sendVideo` Telegram en pièce jointe de la notification (snapshot en aperçu, clip en vidéo)
-- [ ] Gérer le cas `has_clip: false` à la fin de l'événement : envoyer la notification avec snapshot uniquement, sans attendre indéfiniment
+- [x] Différer l'envoi de la notification Telegram au lifecycle `end` de l'événement Frigate (plutôt que `new`) afin d'inclure le clip MP4 quand `has_clip: true`
+- [x] Télécharger le clip depuis Frigate via le proxy `GET /api/detection-events/{id}/clip` et l'envoyer via `sendVideo` Telegram en pièce jointe de la notification (snapshot en aperçu, clip en vidéo)
+- [x] Gérer le cas `has_clip: false` à la fin de l'événement : envoyer la notification avec snapshot uniquement, sans attendre indéfiniment
 
 #### Tests
 
-- [ ] Vérifier que la config Frigate générée inclut bien `record` et `clips` quand activés, sans régression sur les caméras non concernées
+- [x] Vérifier que la config Frigate générée inclut bien `record` et `clips` quand activés, sans régression sur les caméras non concernées
 
 ### US-P3.8 — UI uniformisee, coherente et guidante
 > But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit. La vue principale devra aussi être repensée pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live caméra, notifications, statuts).

@@ -13,7 +13,10 @@
       "PowerShell(pnpm *)",
       "Bash(pnpm build *)",
       "WebSearch",
-      "WebFetch(domain:docs.frigate.video)"
+      "WebFetch(domain:docs.frigate.video)",
+      "Bash(Remove-Item *)",
+      "Bash(dotnet test *)",
+      "Bash(git stash *)"
     ]
   }
 }

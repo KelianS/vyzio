@@ -104,7 +104,10 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                             Enabled = true,
                             BoundingBox = true,
                             Retain = new FrigateRetainConfig { Default = 30 },
-                        }
+                        },
+                        Record = camera.ContinuousRecordingEnabled
+                            ? new FrigateCameraRecordConfig { Enabled = true }
+                            : null,
                     };
                 },
                 StringComparer.OrdinalIgnoreCase);
@@ -154,6 +157,15 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                 ["cpu1"] = new() { Type = "cpu" }
             },
             FaceRecognition = faceRecognition,
+            Record = new FrigateRecordConfig
+            {
+                Enabled = true,
+                Retain = new FrigateRecordRetainConfig { Days = 7, Mode = "motion" },
+                Events = new FrigateRecordEventsConfig
+                {
+                    Retain = new FrigateRetainConfig { Default = 14 },
+                },
+            },
             Cameras = activeCameras,
         };
     }
@@ -180,6 +192,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
         public required FrigateDatabaseConfig Database { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
         public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
+        public FrigateRecordConfig? Record { get; init; }
         public required Dictionary<string, FrigateCameraConfig> Cameras { get; init; }
     }
 
@@ -211,6 +224,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
         public required FrigateDetectConfig Detect { get; init; }
         public FrigateObjectsConfig? Objects { get; init; }
         public FrigateSnapshotsConfig? Snapshots { get; init; }
+        public FrigateCameraRecordConfig? Record { get; init; }
     }
 
     private sealed class FrigateObjectsConfig
@@ -245,5 +259,29 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
     private sealed class FrigateRetainConfig
     {
         public required int Default { get; init; }
+    }
+
+    private sealed class FrigateRecordConfig
+    {
+        public required bool Enabled { get; init; }
+        public FrigateRecordRetainConfig? Retain { get; init; }
+        public FrigateRecordEventsConfig? Events { get; init; }
+    }
+
+    private sealed class FrigateRecordRetainConfig
+    {
+        public required int Days { get; init; }
+        public string Mode { get; init; } = "motion";
+    }
+
+    private sealed class FrigateRecordEventsConfig
+    {
+        public FrigateRetainConfig? Retain { get; init; }
+    }
+
+    // Per-camera record override: only sets enabled; global retain/events apply otherwise.
+    private sealed class FrigateCameraRecordConfig
+    {
+        public required bool Enabled { get; init; }
     }
 }
