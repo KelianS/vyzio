@@ -20,7 +20,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\LOCAL_DEV\\\\vyzio\\\\src\\\\vyzio-ui\" -Recurse -Directory)",
       "Bash(Select-Object -ExpandProperty FullName)",
       "PowerShell(head *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

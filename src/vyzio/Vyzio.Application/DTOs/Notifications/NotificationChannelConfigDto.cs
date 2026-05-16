@@ -13,6 +13,7 @@ public sealed record NotificationChannelConfigDto(
     int? ActiveFromHour,
     int? ActiveToHour,
     string[] MessageFields,
+    string MediaMode,
     DateTimeOffset? ConfiguredAt,
     DateTimeOffset? LastTestedAt,
     string? LastTestStatus,
@@ -57,6 +58,7 @@ public sealed record NotificationChannelConfigDto(
             ActiveFromHour: config.ActiveFromHour,
             ActiveToHour: config.ActiveToHour,
             MessageFields: fields,
+            MediaMode: config.MediaMode ?? "clip_or_photo",
             ConfiguredAt: config.ConfiguredAt,
             LastTestedAt: config.LastTestedAt,
             LastTestStatus: config.LastTestStatus,
@@ -72,7 +74,8 @@ public sealed record SaveNotificationChannelConfigRequest(
     string[]? AllowedLabels,
     int? ActiveFromHour,
     int? ActiveToHour,
-    string[]? MessageFields = null);
+    string[]? MessageFields = null,
+    string? MediaMode = null);
 
 public sealed record NotificationLogEntryDto(
     string Status,

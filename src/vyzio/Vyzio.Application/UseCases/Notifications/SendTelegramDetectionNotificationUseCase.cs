@@ -72,16 +72,17 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         }
 
         var enabledFields = ParseMessageFields(config.MessageFieldsJson);
+        var mediaMode = config.MediaMode ?? "clip_or_photo";
 
-        logger.LogInformation("Sending Telegram notification for event {EventId} label={Label} hasClip={HasClip} hasSnapshot={HasSnapshot}",
-            detectionEvent.Id, detectionEvent.Label, detectionEvent.HasClip, detectionEvent.HasSnapshot);
+        logger.LogInformation("Sending Telegram notification for event {EventId} label={Label} hasClip={HasClip} hasSnapshot={HasSnapshot} mediaMode={MediaMode}",
+            detectionEvent.Id, detectionEvent.Label, detectionEvent.HasClip, detectionEvent.HasSnapshot, mediaMode);
 
         try
         {
             var caption = formatter.Format(detectionEvent, enabledFields);
 
-            // Priority 1: send clip as video when available.
-            if (detectionEvent.HasClip && enabledFields.Contains(MessageField.Snapshot))
+            // Priority 1: send clip as video when mode allows it and clip is available.
+            if (mediaMode == "clip_or_photo" && detectionEvent.HasClip && enabledFields.Contains(MessageField.Snapshot))
             {
                 var clip = await clipProvider.TryGetClipAsync(detectionEvent.FrigateEventId, ct);
                 if (clip is not null)
@@ -100,8 +101,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 logger.LogWarning("Clip unavailable for event {EventId} — falling back to snapshot", detectionEvent.Id);
             }
 
-            // Fallback: send snapshot photo.
-            if (detectionEvent.HasSnapshot && enabledFields.Contains(MessageField.Snapshot))
+            // Photo: send snapshot when mode allows it and snapshot is available.
+            if (mediaMode is "clip_or_photo" or "photo" && detectionEvent.HasSnapshot && enabledFields.Contains(MessageField.Snapshot))
             {
                 var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
                 if (snapshot is not null)
@@ -120,7 +121,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 logger.LogWarning("Snapshot unavailable for event {EventId} — falling back to text message", detectionEvent.Id);
             }
 
-            // Final fallback: text only.
+            // Final fallback (or mediaMode="text"): text only.
             await telegramSender.SendAsync(caption, config.BotToken!, config.ChatId!, ct);
             await notifications.AddAsync(new Notification
             {

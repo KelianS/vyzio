@@ -1,3 +1,5 @@
+export type MediaMode = 'clip_or_photo' | 'photo' | 'text'
+
 export interface NotificationChannelConfig {
   channel: string
   isEnabled: boolean
@@ -8,6 +10,7 @@ export interface NotificationChannelConfig {
   activeFromHour: number | null
   activeToHour: number | null
   messageFields: string[]
+  mediaMode: MediaMode
   configuredAt: string | null
   lastTestedAt: string | null
   lastTestStatus: 'success' | 'failure' | null
@@ -23,6 +26,7 @@ export interface SaveNotificationChannelConfigRequest {
   activeFromHour?: number | null
   activeToHour?: number | null
   messageFields?: string[]
+  mediaMode?: MediaMode
 }
 
 export interface TestNotificationChannelResult {

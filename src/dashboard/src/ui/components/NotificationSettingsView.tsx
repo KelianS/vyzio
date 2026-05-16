@@ -5,6 +5,7 @@ import type { GetNotificationLog } from '../../application/use-cases/GetNotifica
 import type { SaveNotificationChannelConfig } from '../../application/use-cases/SaveNotificationChannelConfig'
 import type { TestNotificationChannel } from '../../application/use-cases/TestNotificationChannel'
 import type {
+  MediaMode,
   NotificationChannelConfig,
   NotificationLogEntry,
   SaveNotificationChannelConfigRequest,
@@ -226,6 +227,46 @@ function MessageFieldsSelector({
               onChange={() => toggle(value)}
             />
             {label}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const MEDIA_MODE_OPTIONS: { value: MediaMode; label: string; description: string }[] = [
+  { value: 'clip_or_photo', label: 'Clip ou photo', description: 'Envoie le clip si disponible, sinon la photo.' },
+  { value: 'photo', label: 'Photo uniquement', description: 'Envoie toujours une photo, jamais de clip.' },
+  { value: 'text', label: 'Texte uniquement', description: 'Aucun media, juste le message texte.' },
+]
+
+function MediaModeSelector({
+  value,
+  onChange,
+}: {
+  value: MediaMode
+  onChange: (mode: MediaMode) => void
+}) {
+  return (
+    <div className="camera-form-field">
+      <label>Format des notifications</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+        {MEDIA_MODE_OPTIONS.map((opt) => (
+          <label
+            key={opt.value}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            <input
+              type="radio"
+              name="media-mode"
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+            />
+            <span>
+              <strong>{opt.label}</strong>
+              <span style={{ marginLeft: 6, fontSize: '0.85rem', opacity: 0.7 }}>{opt.description}</span>
+            </span>
           </label>
         ))}
       </div>
@@ -479,6 +520,7 @@ function TelegramConfigPanel({
   const [activeFromHour, setActiveFromHour] = useState<number | null>(null)
   const [activeToHour, setActiveToHour] = useState<number | null>(null)
   const [messageFields, setMessageFields] = useState<string[]>(['camera', 'time', 'label', 'confidence', 'snapshot'])
+  const [mediaMode, setMediaMode] = useState<MediaMode>('clip_or_photo')
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
 
   useEffect(() => {
@@ -490,6 +532,7 @@ function TelegramConfigPanel({
       setActiveFromHour(config.activeFromHour ?? null)
       setActiveToHour(config.activeToHour ?? null)
       setMessageFields(config.messageFields?.length > 0 ? config.messageFields : ['camera', 'time', 'label', 'confidence', 'snapshot'])
+      setMediaMode(config.mediaMode ?? 'clip_or_photo')
       setSyncedConfig(config)
     }
   }, [config, syncedConfig])
@@ -507,6 +550,7 @@ function TelegramConfigPanel({
       activeFromHour,
       activeToHour,
       messageFields,
+      mediaMode,
     })
     setBotToken('')
   }
@@ -605,6 +649,8 @@ function TelegramConfigPanel({
           <LabelCheckboxes selected={allowedLabels} onChange={setAllowedLabels} />
 
           <MessageFieldsSelector selected={messageFields} onChange={setMessageFields} />
+
+          <MediaModeSelector value={mediaMode} onChange={setMediaMode} />
 
           <SchedulePicker
             fromHour={activeFromHour}
