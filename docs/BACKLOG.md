@@ -109,25 +109,31 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 #### Cadrage préalable — aligner SAD avant implémentation
 
-- [ ] Documenter dans le SAD la stratégie d'accès au live feed : URL HLS directe vers Frigate ou proxy Vyzio, implications réseau et authentification
-- [ ] Documenter dans le SAD la stratégie d'accès aux clips : URL directe Frigate ou endpoint Vyzio, cycle de rétention, taille estimée par caméra
-- [ ] Documenter dans le SAD la stratégie d'enregistrement continu : activation par caméra dans la config Frigate générée, impact sur le stockage, politique de rétention configurable
+- [x] Documenter dans le SAD la stratégie d'accès au live feed : URL HLS directe vers Frigate ou proxy Vyzio, implications réseau et authentification (ADR-16)
+- [x] Documenter dans le SAD la stratégie d'accès aux clips : URL directe Frigate ou endpoint Vyzio, cycle de rétention, taille estimée par caméra (ADR-17)
+- [x] Documenter dans le SAD la stratégie d'enregistrement continu : activation par caméra dans la config Frigate générée, impact sur le stockage, politique de rétention configurable (ADR-18)
 
 #### Configuration Frigate
 
-- [ ] Activer l'enregistrement des clips dans la config Frigate générée par défaut (tous les événements ont actuellement `has_clip: false`)
-- [ ] Exposer l'activation de l'enregistrement continu par caméra dans `CameraDetectionConfig` et le projeter dans la config Frigate générée
+- [ ] Activer l'enregistrement des clips dans la config Frigate générée (`record.enabled: true` global + `events.retain.default: 14j`) — condition préalable à `has_clip: true` sur les événements
+- [ ] Ajouter `ContinuousRecordingEnabled` dans `CameraDetectionConfig` et le projeter dans la section `record.enabled` par caméra dans `frigate.generated.yml` (ADR-18)
 
 #### API
 
-- [ ] Exposer par caméra l'URL du flux live (HLS ou WebRTC) : `GET /api/cameras/{id}/stream-url`
-- [ ] Vérifier que les clips Frigate sont accessibles depuis le navigateur (CORS, auth) et documenter l'URL de référence
+- [ ] Implémenter `GET /api/cameras/{id}/live/mjpeg` : proxy MJPEG Frigate en streaming chunked, auth Vyzio (ADR-16) — Frigate retiré des ports exposés en production
+- [ ] Implémenter `GET /api/detection-events/{id}/clip` : proxy MP4 Frigate authentifié en streaming chunked avec support Range (ADR-17)
 
 #### Interface utilisateur
 
 - [ ] Construire la vue live feed : player embarqué (HLS.js ou video natif) par caméra, accessible depuis la liste des caméras ou la vue principale
 - [ ] Construire le replay des détections : depuis l'historique, afficher le clip de l'événement dans un player inline ou une modale si `has_clip: true`
 - [ ] Permettre d'activer ou désactiver l'enregistrement continu par caméra depuis l'interface de configuration, avec indication de l'impact stockage
+
+#### Notifications enrichies — clip en pièce jointe
+
+- [ ] Différer l'envoi de la notification Telegram au lifecycle `end` de l'événement Frigate (plutôt que `new`) afin d'inclure le clip MP4 quand `has_clip: true`
+- [ ] Télécharger le clip depuis Frigate via le proxy `GET /api/detection-events/{id}/clip` et l'envoyer via `sendVideo` Telegram en pièce jointe de la notification (snapshot en aperçu, clip en vidéo)
+- [ ] Gérer le cas `has_clip: false` à la fin de l'événement : envoyer la notification avec snapshot uniquement, sans attendre indéfiniment
 
 #### Tests
 

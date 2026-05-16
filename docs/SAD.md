@@ -26,6 +26,9 @@
   - [ADR-13 — Photos de profil : stockage Vyzio + synchronisation via API REST Frigate](#adr-13--photos-de-profil--stockage-vyzio--synchronisation-via-api-rest-frigate)
   - [ADR-14 — Labels de détection par caméra : colonne JSON sur Camera](#adr-14--labels-de-détection-par-caméra--colonne-json-sur-camera)
   - [ADR-15 — Association profil-caméra : table de jointure + filtrage dans ProfileRulesService](#adr-15--association-profil-caméra--table-de-jointure--filtrage-dans-profilerulesservice)
+  - [ADR-16 — Accès au flux live : URL Frigate retournée par Vyzio, sans proxy streaming](#adr-16--accès-au-flux-live--url-frigate-retournée-par-vyzio-sans-proxy-streaming)
+  - [ADR-17 — Accès aux clips événementiels : proxy Vyzio authentifié en streaming](#adr-17--accès-aux-clips-événementiels--proxy-vyzio-authentifié-en-streaming)
+  - [ADR-18 — Enregistrement continu : activation par caméra dans la config Frigate générée](#adr-18--enregistrement-continu--activation-par-caméra-dans-la-config-frigate-générée)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -1280,6 +1283,195 @@ sub_label Frigate reçu sur caméra X
 - ✅ Extensible : on peut ajouter un `alert_override` par lien sans changer la structure globale
 - ⚠️ Le `ProfileRulesService` doit charger les liens actifs par caméra lors de chaque évaluation — à mettre en cache court (TTL ~30s) pour éviter une requête SQLite par événement
 - ⚠️ La suppression d'une caméra ou d'un profil doit supprimer les liens en cascade (`ON DELETE CASCADE` dans le schéma)
+
+---
+
+### ADR-16 — Accès au flux live : proxy MJPEG via Vyzio, Frigate non exposé
+
+#### Contexte
+
+L'interface Vyzio doit permettre de visualiser le flux en direct de chaque caméra. L'objectif est de minimiser le couplage réseau direct vers Frigate : le navigateur ne doit jamais connaître l'existence de Frigate ni s'y connecter directement. Vyzio est le seul point d'entrée réseau.
+
+#### Endpoints live Frigate disponibles
+
+```
+GET  /api/cameras/{name}/latest.jpg          → dernière frame JPEG
+GET  /api/cameras/{name}/mjpeg               → flux MJPEG (HTTP multipart/x-mixed-replace)
+GET  /live/hls/{name}/index.m3u8             → HLS via go2rtc
+GET  /live/webrtc/api/ws?src={name}          → WebRTC via go2rtc (peer-to-peer — non proxifiable)
+```
+
+WebRTC (go2rtc) n'est pas proxifiable par nature : c'est un protocole pair-à-pair qui nécessite que le navigateur se connecte directement à la source. Tout proxy WebRTC deviendrait un media relay (TURN), une infrastructure hors périmètre.
+
+#### Options comparées
+
+| Option | Description | Avantages | Inconvénients |
+|---|---|---|---|
+| **A — Proxy MJPEG Vyzio** | `GET /api/cameras/{id}/live/mjpeg` → stream Frigate `/api/cameras/{slug}/mjpeg` | Frigate jamais exposé ; auth Vyzio ; simple à implémenter | Bande passante LAN ~300KB/s par caméra en 720p ; pas d'accélération codec |
+| **B — Proxy HLS Vyzio** | Proxy m3u8 + segments .ts, réécriture URLs | Meilleure compression, qualité supérieure | Implémentation plus complexe (URL rewriting) ; latence ~3-5s |
+| **C — URL directe Frigate (retournée par API)** | Vyzio retourne l'URL Frigate, le navigateur se connecte directement | Zéro overhead serveur | Frigate exposé sur le réseau — **non acceptable** : contredit la promesse réseau simple |
+
+#### Décision
+
+**Option A retenue : proxy MJPEG via `GET /api/cameras/{id}/live/mjpeg`.**
+
+Vyzio proxifie le flux MJPEG de Frigate en streaming HTTP chunked. Le navigateur reçoit un flux `multipart/x-mixed-replace` et l'affiche via une balise `<img>` standard — aucune bibliothèque vidéo requise côté UI.
+
+Frigate est **uniquement accessible sur le réseau Docker interne** (`vyzio-net`). Le port 5000 n'est pas publié sur l'interface hôte en production. En développement, l'exposition sur `127.0.0.1:5000` reste possible pour l'accès à l'UI Frigate en mode expert, mais le flux live passe toujours par Vyzio.
+
+```csharp
+// Principe d'implémentation
+app.MapGet("/api/cameras/{id}/live/mjpeg", async (string id, IFrigateRestClient frigate, CancellationToken ct) =>
+{
+    var slug = await ResolveCameraSlugAsync(id);
+    var frigateStream = await frigate.OpenMjpegStreamAsync(slug, ct);
+    return Results.Stream(frigateStream, "multipart/x-mixed-replace; boundary=frame");
+});
+```
+
+```html
+<!-- UI -->
+<img src="/api/cameras/{id}/live/mjpeg" />
+```
+
+**Bande passante estimée :** 720p, 5fps (fps de détection Frigate) ≈ 100–300 KB/s par caméra sur le LAN — acceptable dans ce contexte domestique.
+
+#### Conséquences
+
+- ✅ Frigate jamais exposé au navigateur — réseau simple, un seul point d'entrée (Vyzio)
+- ✅ Auth Vyzio obligatoire avant tout accès au flux
+- ✅ Implémentation minimale côté serveur (stream HTTP forwarding) et côté UI (`<img>`)
+- ✅ Compatible accès distant sans revision : le tunnel (Tailscale, reverse proxy) couvre uniquement Vyzio
+- ⚠️ Bande passante plus élevée que HLS/WebRTC — acceptable sur LAN domestique, à réévaluer si >4 caméras simultanées
+- ⚠️ Pas de seeking ou d'adaptation qualité — intentionnel pour ce cas d'usage live simple
+
+---
+
+### ADR-17 — Accès aux clips événementiels : proxy Vyzio authentifié en streaming
+
+#### Contexte
+
+Chaque événement de détection peut produire un clip MP4 dans Frigate (si l'enregistrement de clips est activé). Le champ `has_clip` dans `observed_events` indique si un clip est disponible. L'UI doit permettre de lire ce clip depuis l'historique. À la différence du flux live (continu, haute bande passante), les clips sont des fichiers courts (<60s en général) : le proxy est acceptable.
+
+#### Endpoints clips Frigate disponibles
+
+```
+GET /api/events/{event_id}/clip.mp4       → clip événementiel MP4
+GET /api/events/{event_id}/thumbnail.jpg  → miniature de l'événement
+GET /api/events/{event_id}/snapshot.jpg   → snapshot haute résolution
+```
+
+Frigate stocke les clips sous `/media/frigate/clips/` dans son volume. La rétention est contrôlée par la section `record.retain` de la config Frigate générée.
+
+#### Options comparées
+
+| Option | Description | Avantages | Inconvénients |
+|---|---|---|---|
+| **A — URL directe Frigate** | Vyzio retourne l'URL Frigate, le navigateur accède directement | Zéro overhead serveur | Frigate exposé sans auth ; problème CORS selon navigateur |
+| **B — Proxy Vyzio authentifié** | `GET /api/detection-events/{id}/clip` → Vyzio proxifie le MP4 depuis Frigate en streaming | Auth Vyzio obligatoire ; Frigate jamais exposé pour les clips ; pas de CORS | Overhead serveur modéré — acceptable (fichiers courts, pas de flux continu) |
+| **C — Volume partagé + serve statique** | Vyzio monte le volume clips Frigate et les sert directement | Performance maximale | Couplage fort au layout interne Frigate ; déconseillé |
+
+#### Décision
+
+**Option B retenue : proxy Vyzio authentifié en streaming pour les clips et thumbnails.**
+
+La route `GET /api/detection-events/{id}/clip` valide le JWT Vyzio, résout le `frigate_event_id` dans `observed_events`, puis proxifie le MP4 depuis `http://frigate:5000/api/events/{frigate_event_id}/clip.mp4` en **streaming chunked** pour éviter le buffering mémoire complet.
+
+```csharp
+// Principe de l'implémentation (pas de buffering complet)
+var frigateStream = await httpClient.GetStreamAsync(frigateClipUrl, ct);
+return Results.Stream(frigateStream, "video/mp4", enableRangeProcessing: true);
+```
+
+Le support des **Range headers** (HTTP 206) est activé pour permettre la navigation dans le clip depuis le player navigateur sans retélécharger le fichier entier.
+
+**Routes exposées :**
+
+```
+GET /api/detection-events/{id}/clip        → proxy clip MP4 (streaming, Range support)
+GET /api/detection-events/{id}/thumbnail   → proxy thumbnail JPEG (déjà existant via FrigateSnapshotProvider)
+```
+
+**Rétention clips Frigate :** contrôlée par la section `record` de `frigate.generated.yml`. Vyzio projette la rétention configurée par l'utilisateur (en jours) dans ce fichier. Quand Frigate supprime un clip arrivé à terme, `has_clip` dans `observed_events` n'est pas mis à jour automatiquement — l'UI doit gérer gracieusement un 404 sur la route clip.
+
+#### Conséquences
+
+- ✅ Auth Vyzio validée avant tout accès aux clips — Frigate jamais exposé pour les médias
+- ✅ Support Range HTTP → navigation dans le clip sans re-download complet
+- ✅ Pas de couplage au layout interne Frigate (volume)
+- ⚠️ Overhead proxy modéré — acceptable pour des clips <60s ; à monitorer si clips longs (enregistrement continu)
+- ⚠️ `has_clip: true` peut devenir obsolète si Frigate a supprimé le clip par rétention — l'UI affiche un état "clip expiré" si 404 reçu
+
+---
+
+### ADR-18 — Enregistrement continu : activation par caméra dans la config Frigate générée
+
+#### Contexte
+
+En plus des clips événementiels (court extrait autour d'une détection), Frigate supporte un mode d'enregistrement continu par caméra. Ce mode permet de conserver une vidéo complète sur une durée configurable, utile pour retrouver un événement qui n'a pas déclenché de détection. Ce mode a un impact significatif sur le stockage et doit être opt-in par caméra.
+
+#### Configuration Frigate pour les clips événementiels et l'enregistrement continu
+
+```yaml
+# Clips événementiels (autour de chaque détection)
+record:
+  enabled: true
+  retain:
+    days: 7          # durée de rétention des segments sans événement
+    mode: motion     # motion | continuous | active_objects
+  events:
+    retain:
+      default: 14    # durée de rétention des clips liés à un événement
+
+# Par caméra (surcharge la config globale)
+cameras:
+  front_door:
+    record:
+      enabled: true   # active l'enregistrement pour cette caméra
+```
+
+#### Décision
+
+**L'enregistrement continu est activé par caméra via un champ booléen `ContinuousRecordingEnabled` dans `CameraDetectionConfig`, projeté dans la section `record` de `frigate.generated.yml` par le `CameraConfigWriter`.**
+
+La rétention globale des clips est configurée au niveau du fichier Frigate généré via une section `record` globale. L'activation par caméra surcharge cette section.
+
+**Extension du modèle `CameraDetectionConfig` :**
+
+```csharp
+public sealed class CameraDetectionConfig
+{
+    public string CameraId { get; init; } = "";
+    public IReadOnlyList<string> ActiveLabels { get; init; } = [];
+    public bool ContinuousRecordingEnabled { get; init; } = false;  // nouveau champ
+}
+```
+
+**Projection dans `CameraConfigWriter` :**
+
+```yaml
+cameras:
+  {slug}:
+    record:
+      enabled: {continuousRecordingEnabled}
+    objects:
+      track:
+        - {label}
+```
+
+La section `record` globale (rétention) reste gérée par une config par défaut dans `CameraConfigWriter` et sera exposée dans l'UI en US-P3.7 ou une future story.
+
+**Impact stockage estimé :**
+- 1 caméra 1080p, H.264, 15fps ≈ 1–3 GB/jour selon la complexité de la scène
+- L'UI doit afficher cet ordre de grandeur avant activation pour informer l'utilisateur
+
+#### Conséquences
+
+- ✅ Activation par caméra — zéro impact sur les caméras non concernées
+- ✅ Projeté via le `CameraConfigWriter` existant — pas de nouveau pipeline
+- ✅ Aucune migration EF Core nécessaire si `ContinuousRecordingEnabled` est ajouté à la colonne JSON existante `detection_labels_json` (ou dans une colonne dédiée)
+- ⚠️ Activation massive → saturation disque rapide — l'UI doit avertir explicitement avant activation
+- ⚠️ La rétention est contrôlée par Frigate, pas par Vyzio directement — la valeur configurée dans `frigate.yml` est la source de vérité
 
 ---
 
