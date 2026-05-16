@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useToast } from './Toast'
 import type { AddProfilePhoto } from '../../application/use-cases/AddProfilePhoto'
 import type { CreateProfile } from '../../application/use-cases/CreateProfile'
 import type { DeleteProfile } from '../../application/use-cases/DeleteProfile'
@@ -54,7 +55,6 @@ export function ProfilesView({
   setProfileCameraLinks,
   resyncFaceLibrary,
   apiBaseUrl,
-  onBack,
 }: ProfilesViewProps) {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,6 +66,8 @@ export function ProfilesView({
   const [resyncMessage, setResyncMessage] = useState<string | null>(null)
 
   const selectedProfile = profiles.find((p) => p.id === selectedId) ?? null
+
+  const { toast } = useToast()
 
   const loadProfiles = useCallback(() => {
     setLoading(true)
@@ -103,11 +105,13 @@ export function ProfilesView({
     setProfiles((prev) => [...prev, profile])
     setSelectedId(profile.id)
     setCreating(false)
+    toast('Profil créé', 'success')
   }
 
   async function handleUpdate(id: string, name: string, category: string, alertMode: string) {
     const updated = await updateProfile.execute(id, { name, category, alertMode })
     setProfiles((prev) => prev.map((p) => (p.id === id ? updated : p)))
+    toast('Profil enregistré', 'success')
   }
 
   async function handleDelete(id: string) {
@@ -116,6 +120,7 @@ export function ProfilesView({
     setProfiles((prev) => prev.filter((p) => p.id !== id))
     setSelectedId(null)
     setCreating(false)
+    toast('Profil supprimé', 'info')
   }
 
   async function handleResync() {
@@ -154,18 +159,13 @@ export function ProfilesView({
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
               <h2>Profils</h2>
-              <button type="button" className="primary-cta" style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }} onClick={handleNew}>
-                + Nouveau
-              </button>
+              <span className="camera-sidebar-count">{profiles.length}</span>
             </div>
+            <button type="button" className="primary-cta camera-sidebar-btn" onClick={handleNew}>
+              + Nouveau profil
+            </button>
 
             {loading && <p style={{ padding: '12px 16px', opacity: 0.6 }}>Chargement…</p>}
-
-            {!loading && profiles.length === 0 && (
-              <p style={{ padding: '12px 16px', opacity: 0.6, fontSize: '0.88rem' }}>
-                Aucun profil. Cliquez sur + Nouveau.
-              </p>
-            )}
 
             {profiles.map((profile) => (
               <button
@@ -187,11 +187,6 @@ export function ProfilesView({
             ))}
           </div>
 
-          <div className="camera-sidebar-actions">
-            <button type="button" className="secondary-cta" onClick={onBack}>
-              ← Retour au hub
-            </button>
-          </div>
         </aside>
 
         <div className="camera-detail-panel panel">
@@ -205,25 +200,15 @@ export function ProfilesView({
 
           {!creating && selectedProfile && (
             <>
-              <div className="camera-detail-tabs" style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid rgba(247,244,237,0.12)', paddingBottom: 12 }}>
+              <div className="profile-tabs">
                 {(['info', 'photos', 'cameras'] as DetailTab[]).map((t) => (
                   <button
                     key={t}
                     type="button"
+                    className={`profile-tab-btn${tab === t ? ' active' : ''}`}
                     onClick={() => setTab(t)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '6px 14px',
-                      borderRadius: 6,
-                      fontWeight: tab === t ? 700 : 400,
-                      color: tab === t ? 'var(--ink)' : 'var(--ink-soft)',
-                      backgroundColor: tab === t ? 'rgba(247,244,237,0.12)' : 'transparent',
-                      fontSize: '0.92rem',
-                    }}
                   >
-                    {t === 'info' ? 'Informations' : t === 'photos' ? 'Photos' : 'Cameras'}
+                    {t === 'info' ? 'Informations' : t === 'photos' ? 'Photos' : 'Caméras'}
                   </button>
                 ))}
               </div>
@@ -433,19 +418,21 @@ function ProfilePhotosTab({
   resyncing: boolean
   resyncMessage: string | null
 }) {
+  const { toast } = useToast()
   const [photos, setPhotos] = useState<ProfilePhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const MIN_PHOTOS = 3
 
   const load = useCallback(() => {
     setLoading(true)
     getProfilePhotos
       .execute(profileId)
       .then((list) => { setPhotos(list); setLoading(false) })
-      .catch(() => { setError('Impossible de charger les photos.'); setLoading(false) })
-  }, [profileId, getProfilePhotos])
+      .catch(() => { toast('Impossible de charger les photos.', 'error'); setLoading(false) })
+  }, [profileId, getProfilePhotos, toast])
 
   useEffect(() => { load() }, [load])
 
@@ -453,12 +440,12 @@ function ProfilePhotosTab({
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    setError(null)
     try {
       const photo = await addProfilePhoto.execute(profileId, file)
       setPhotos((prev) => [...prev, photo])
+      toast('Photo ajoutée', 'success')
     } catch {
-      setError("Erreur lors de l'envoi de la photo.")
+      toast("Erreur lors de l'envoi de la photo.", 'error')
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -470,72 +457,86 @@ function ProfilePhotosTab({
     try {
       await removeProfilePhoto.execute(profileId, photoId)
       setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+      toast('Photo supprimée', 'info')
     } catch {
-      setError('Impossible de supprimer la photo.')
+      toast('Impossible de supprimer la photo.', 'error')
     }
   }
 
+  const photoTone =
+    photos.length === 0 ? 'none' : photos.length < MIN_PHOTOS ? 'warn' : 'ok'
+
   return (
     <section className="camera-detail-section">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <h3 style={{ margin: 0, flex: 1 }}>Photos de reconnaissance</h3>
-        <button
-          type="button"
-          className="secondary-cta"
-          style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
-          onClick={onResync}
-          disabled={resyncing}
-        >
-          {resyncing ? 'Synchronisation…' : 'Forcer une synchronisation'}
-        </button>
-        <button
-          type="button"
-          className="primary-cta"
-          style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? 'Envoi…' : '+ Ajouter une photo'}
-        </button>
-        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleUpload} />
+      <div className="profile-photos-header">
+        <h3>Photos de reconnaissance</h3>
+        <div className="profile-photos-actions">
+          <button
+            type="button"
+            className="secondary-cta profile-action-btn"
+            onClick={onResync}
+            disabled={resyncing}
+          >
+            {resyncing ? 'Synchronisation…' : 'Resynchroniser'}
+          </button>
+          <button
+            type="button"
+            className="primary-cta profile-action-btn"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? 'Envoi…' : '+ Photo'}
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={handleUpload}
+          />
+        </div>
       </div>
-      {resyncMessage && (
-        <p style={{ fontSize: '0.82rem', marginBottom: 8, opacity: 0.8 }}>{resyncMessage}</p>
+
+      {resyncMessage && <p className="profile-resync-msg">{resyncMessage}</p>}
+
+      {loading && <p className="profile-loading">Chargement…</p>}
+
+      {!loading && (
+        <div className={`photo-count-bar photo-count-bar--${photoTone}`}>
+          <span className="photo-count-number">{photos.length}</span>
+          <span className="photo-count-label">
+            {photos.length < MIN_PHOTOS
+              ? `photo${photos.length !== 1 ? 's' : ''} — minimum ${MIN_PHOTOS} recommandées pour une reconnaissance fiable`
+              : `photo${photos.length !== 1 ? 's' : ''} — seuil minimum atteint`}
+          </span>
+        </div>
       )}
 
-      {error && <p style={{ color: 'var(--status-degraded, #e05252)', fontSize: '0.88rem', marginBottom: 8 }}>{error}</p>}
-
-      {loading && <p style={{ opacity: 0.6 }}>Chargement…</p>}
-
       {!loading && photos.length === 0 && (
-        <p className="camera-toolbar-lede" style={{ fontSize: '0.9rem' }}>
-          Aucune photo. Ajoutez une photo pour activer la reconnaissance faciale.
+        <p className="profile-empty-hint">
+          Ajoutez des photos nettes de face pour activer la reconnaissance.
+          Privilégiez des angles variés.
         </p>
       )}
 
       {photos.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12, marginTop: 8 }}>
+        <div className="profile-photo-grid">
           {photos.map((photo) => (
-            <div key={photo.id} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', background: 'rgba(247,244,237,0.07)', aspectRatio: '1' }}>
+            <div key={photo.id} className="profile-photo-item">
               <img
                 src={`${apiBaseUrl}/api/profiles/${profileId}/photos/${photo.filename}`}
                 alt={photo.filename}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                className="profile-photo-img"
               />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 6px', background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center' }}>
-                <span className={`camera-support-badge ${photo.frigateSynced ? 'supported' : 'unknown'}`} style={{ fontSize: '0.68rem' }}>
-                  {photo.frigateSynced ? 'Synchronisee' : 'En attente de synchronisation'}
+              <div className="profile-photo-sync">
+                <span className={`camera-support-badge ${photo.frigateSynced ? 'supported' : 'unknown'}`}>
+                  {photo.frigateSynced ? 'Sync' : 'En attente'}
                 </span>
               </div>
               <button
                 type="button"
+                className="profile-photo-delete"
                 onClick={() => handleDelete(photo.id)}
-                style={{
-                  position: 'absolute', top: 4, right: 4,
-                  background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%',
-                  width: 22, height: 22, cursor: 'pointer', color: '#fff', fontSize: '0.75rem',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
                 title="Supprimer"
               >
                 ×
@@ -557,10 +558,10 @@ function ProfileCamerasTab({
   getProfileCameraLinks: GetProfileCameraLinks
   setProfileCameraLinks: SetProfileCameraLinks
 }) {
+  const { toast } = useToast()
   const [links, setLinks] = useState<ProfileCameraLink[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const load = useCallback(() => {
@@ -572,8 +573,8 @@ function ProfileCamerasTab({
         setSelected(new Set(list.filter((l) => l.enabled).map((l) => l.cameraId)))
         setLoading(false)
       })
-      .catch(() => { setError('Impossible de charger les cameras liees.'); setLoading(false) })
-  }, [profileId, getProfileCameraLinks])
+      .catch(() => { toast('Impossible de charger les caméras liées.', 'error'); setLoading(false) })
+  }, [profileId, getProfileCameraLinks, toast])
 
   useEffect(() => { load() }, [load])
 
@@ -588,13 +589,13 @@ function ProfileCamerasTab({
 
   async function handleSave() {
     setSaving(true)
-    setError(null)
     try {
       const updated = await setProfileCameraLinks.execute(profileId, [...selected])
       setLinks(updated)
       setSelected(new Set(updated.filter((l) => l.enabled).map((l) => l.cameraId)))
+      toast('Associations enregistrées', 'success')
     } catch {
-      setError("Erreur lors de l'enregistrement des liens.")
+      toast("Erreur lors de l'enregistrement des associations.", 'error')
     } finally {
       setSaving(false)
     }
@@ -602,33 +603,34 @@ function ProfileCamerasTab({
 
   return (
     <section className="camera-detail-section">
-      <h3>Cameras associees</h3>
-      <p className="camera-toolbar-lede" style={{ fontSize: '0.88rem', marginBottom: 12 }}>
-        Limitez la reconnaissance de ce profil aux cameras selectionnees. Sans selection, le profil est reconnu sur toutes les cameras.
+      <h3>Caméras associées</h3>
+      <p className="camera-section-copy">
+        Limitez la reconnaissance de ce profil aux caméras sélectionnées. Sans sélection, le profil est reconnu sur toutes les caméras.
       </p>
 
-      {error && <p style={{ color: 'var(--status-degraded, #e05252)', fontSize: '0.88rem' }}>{error}</p>}
-      {loading && <p style={{ opacity: 0.6 }}>Chargement…</p>}
+      {loading && <p className="profile-loading">Chargement…</p>}
 
       {!loading && links.length === 0 && (
-        <p style={{ opacity: 0.6, fontSize: '0.88rem' }}>Aucune camera configuree dans Vyzio.</p>
+        <p className="camera-section-footnote">Aucune caméra configurée dans Vyzio.</p>
       )}
 
-      {links.map((link) => (
-        <label key={link.cameraId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(247,244,237,0.07)', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={selected.has(link.cameraId)}
-            onChange={() => toggle(link.cameraId)}
-          />
-          <span style={{ fontWeight: 500 }}>{link.cameraDisplayName ?? link.cameraId}</span>
-        </label>
-      ))}
+      <div className="profile-camera-list">
+        {links.map((link) => (
+          <label key={link.cameraId} className="profile-camera-item">
+            <input
+              type="checkbox"
+              checked={selected.has(link.cameraId)}
+              onChange={() => toggle(link.cameraId)}
+            />
+            <span>{link.cameraDisplayName ?? link.cameraId}</span>
+          </label>
+        ))}
+      </div>
 
       {!loading && (
-        <div className="camera-form-actions" style={{ marginTop: 16 }}>
+        <div className="camera-form-actions">
           <button type="button" className="primary-cta" onClick={handleSave} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer les liens'}
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
       )}

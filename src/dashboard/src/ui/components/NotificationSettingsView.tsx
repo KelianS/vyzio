@@ -48,7 +48,6 @@ export function NotificationSettingsView({
   deleteNotificationChannel,
   getNotificationLog,
   getNotificationLabels,
-  onBack,
 }: NotificationSettingsViewProps) {
   const [selectedChannel, setSelectedChannel] = useState<ChannelId>('telegram')
   const [notifLog, setNotifLog] = useState<NotificationLogEntry[]>([])
@@ -128,11 +127,6 @@ export function NotificationSettingsView({
             ))}
           </div>
 
-          <div className="camera-sidebar-actions">
-            <button type="button" className="secondary-cta" onClick={onBack}>
-              ← Retour au hub
-            </button>
-          </div>
         </aside>
 
         <div className="camera-detail-panel panel">

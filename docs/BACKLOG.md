@@ -166,31 +166,47 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 #### Audit et cadrage
 
-- [ ] Auditer la cohérence cross-pages : terminologie (noms des actions, labels, statuts), patterns de navigation (boutons retour, accès aux sections), comportements des formulaires
-- [ ] Identifier les composants UI dupliqués entre pages et définir les abstractions communes à extraire
+- [x] Auditer la cohérence cross-pages : terminologie (noms des actions, labels, statuts), patterns de navigation (boutons retour, accès aux sections), comportements des formulaires
+- [x] Identifier les composants UI dupliqués entre pages et définir les abstractions communes à extraire
 
 #### Vue principale (hub)
 
-- [ ] Repenser la vue principale pour orienter clairement l'utilisateur selon son état : première configuration (aucune caméra), système opérationnel (lien vers live feed), système dégradé (guidage vers la correction)
-- [ ] Intégrer un accès rapide au live feed sur la vue principale une fois P3.7 livré
-- [ ] Afficher sur la vue principale un résumé actionnable des statuts : caméras actives, profils synchronisés, dernière notification, alertes en attente
+- [x] Repenser la vue principale pour orienter clairement l'utilisateur selon son état : première configuration (aucune caméra), système opérationnel (lien vers live feed), système dégradé (guidage vers la correction)
+- [x] Intégrer un accès rapide au live feed sur la vue principale une fois P3.7 livré
+- [x] Afficher sur la vue principale un résumé actionnable des statuts : caméras actives, profils synchronisés, dernière notification, alertes en attente
 
 #### Guidage utilisateur — reconnaissance
 
-- [ ] Avertir l'utilisateur si une caméra n'a plus `person` dans ses labels de détection alors qu'elle a des profils associés — la reconnaissance ne pourra pas s'exécuter sans ce label
-- [ ] Donner un retour lors de l'upload d'une photo de profil si aucun visage n'est détectable dans l'image (photo de dos, qualité insuffisante, etc.)
-- [ ] Afficher le nombre de photos par profil et une indication sur le minimum recommandé pour une reconnaissance fiable (3 à 5 photos, angles variés)
-- [ ] Valider le flow end-to-end `sub_label` → profil : vérifier que lorsque Frigate pose un `sub_label` reconnu, l'événement remonte dans l'historique avec le nom du profil (non encore confirmé en conditions réelles)
+- [x] Avertir l'utilisateur si une caméra n'a plus `person` dans ses labels de détection alors qu'elle a des profils associés — la reconnaissance ne pourra pas s'exécuter sans ce label
+- [x] Afficher le nombre de photos par profil et une indication sur le minimum recommandé pour une reconnaissance fiable (3 à 5 photos, angles variés)
+- [x] Valider le flow end-to-end `sub_label` → profil : vérifier que lorsque Frigate pose un `sub_label` reconnu, l'événement remonte dans l'historique avec le nom du profil (non encore confirmé en conditions réelles)
 
 #### Cohérence composants et navigation
 
-- [ ] Uniformiser les patterns de navigation entre toutes les vues (position et libellé du bouton retour, fil d'Ariane, transitions)
-- [ ] Harmoniser les composants de feedback (messages d'erreur, états de chargement, confirmations) pour qu'ils aient le même rendu et le même comportement quelle que soit la page
-- [ ] Avoir des loaders et information utilisateurs lors des chargements longs, application de config etc...
-- [ ] Avoir une cohérence entre les actions et les messages de retour (un appui bouton sur un panel ne devrait pas avoir un message d'erreur dans un autre panel, etc...)
+- [x] Uniformiser les patterns de navigation entre toutes les vues (position et libellé du bouton retour, fil d'Ariane, transitions)
+- [x] Harmoniser les composants de feedback (messages d'erreur, états de chargement, confirmations) pour qu'ils aient le même rendu et le même comportement quelle que soit la page
+- [x] Avoir des loaders et information utilisateurs lors des chargements longs, application de config etc...
+- [x] Avoir une cohérence entre les actions et les messages de retour (un appui bouton sur un panel ne devrait pas avoir un message d'erreur dans un autre panel, etc...)
 
 
-### US-P3.9 - Privacy mode
+### US-P3.9 — Vue experte intégrée (Frigate en iframe)
+> But : donner accès à l'interface Frigate directement dans Vyzio, sans ouvrir un onglet externe. L'utilisateur accède aux réglages avancés dans le même contexte que le reste du produit, avec le header Vyzio visible au-dessus. La route `#expert` est ajoutée à la navigation principale.
+
+**Tâches :**
+- [x] Ajouter la route `#expert` dans le router hash de l'application et l'entrée correspondante dans `AppHeader`
+- [x] Construire la vue `ExpertView` : iframe pointant vers `frigateBaseUrl`, pleine hauteur disponible sous le header
+- [x] Gérer les cas d'indisponibilité Frigate : message d'erreur clair si l'iframe ne charge pas (timeout 10s)
+- [x] Vérifier que l'iframe ne pose pas de problème CORS ou X-Frame-Options selon la configuration Frigate locale (Frigate ne pose pas de X-Frame-Options par défaut ; si bloqué, un lien "Ouvrir dans un onglet" est proposé)
+
+**Critères d'acceptation :**
+- L'utilisateur peut accéder à Frigate depuis `#expert` sans quitter Vyzio
+- Le header Vyzio reste visible et fonctionnel pendant la navigation dans l'iframe
+- Un message clair s'affiche si Frigate n'est pas joignable
+- La route `#expert` apparaît dans la navigation principale
+
+---
+
+### US-P3.10 — Privacy mode
 > But : permettre à l'utilisateur de couper une caméra temporairement ou de manière récurrente (ex. tous les soirs de 22h à 6h) pour préserver la vie privée, avec un impact minimal sur les autres fonctionnalités (notifications, reconnaissance, etc.) et une indication claire du statut de confidentialité de chaque caméra. La caméra doit réellement être coupé et le flux RTSP ne doit être visible de personne sur le réseau, y compris de Frigate.
 
 **Taches :**

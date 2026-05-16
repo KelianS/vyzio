@@ -23,7 +23,10 @@
       "Bash(npm run *)",
       "Bash(npx tsc *)",
       "WebFetch(domain:core.telegram.org)",
-      "PowerShell(dotnet test C:\\\\LOCAL_DEV\\\\vyzio\\\\src\\\\vyzio -nologo 2>&1 | Select-Object -Last 20)"
+      "PowerShell(dotnet test C:\\\\LOCAL_DEV\\\\vyzio\\\\src\\\\vyzio -nologo 2>&1 | Select-Object -Last 20)",
+      "Bash(Get-ChildItem -Path \"C:\\\\LOCAL_DEV\\\\vyzio\" -Recurse -Depth 2)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(pnpm tsc *)"
     ]
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useToast } from './Toast'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
 import type { GetDetectionHistory } from '../../application/use-cases/GetDetectionHistory'
 import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
@@ -25,7 +26,6 @@ export function DetectionHistoryView({
   getProfiles,
   frigateBaseUrl,
   apiBaseUrl,
-  onBack,
 }: DetectionHistoryViewProps) {
   const [page, setPage] = useState<DetectionHistoryPage | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -40,8 +40,8 @@ export function DetectionHistoryView({
   const [filterTo, setFilterTo] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
+  const { toast } = useToast()
   const [correcting, setCorrecting] = useState<string | null>(null)
-  const [correctError, setCorrectError] = useState<string | null>(null)
 
   useEffect(() => {
     getProfiles.execute().then(setProfiles).catch(() => {})
@@ -72,10 +72,8 @@ export function DetectionHistoryView({
 
   async function handleCorrect(eventId: string, profileId: string | null) {
     setCorrecting(eventId)
-    setCorrectError(null)
     try {
       await correctDetectionIdentity.execute(eventId, profileId)
-      // Refresh current page
       const result = await getDetectionHistory.execute({
         camera: filterCamera || undefined,
         label: filterLabel || undefined,
@@ -86,8 +84,9 @@ export function DetectionHistoryView({
         limit: 20,
       })
       setPage(result)
+      toast(profileId ? 'Reconnaissance corrigée' : 'Identité retirée', 'success')
     } catch {
-      setCorrectError("Erreur lors de la correction de l'identite.")
+      toast("Erreur lors de la correction de l'identité.", 'error')
     } finally {
       setCorrecting(null)
     }
@@ -121,16 +120,15 @@ export function DetectionHistoryView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, padding: 16 }}>
-        {/* Filters sidebar */}
-        <aside className="panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, alignSelf: 'start' }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: '1rem' }}>Filtres</h2>
+      <div className="history-layout">
+        <aside className="panel history-filters">
+          <h2>Filtres</h2>
 
           <div className="camera-form-field">
-            <label>Camera</label>
+            <label>Caméra</label>
             <input
               type="text"
-              placeholder="Nom de la camera"
+              placeholder="Nom de la caméra"
               value={filterCamera}
               onChange={(e) => { setFilterCamera(e.target.value); setCurrentPage(1) }}
             />
@@ -162,27 +160,19 @@ export function DetectionHistoryView({
           </div>
 
           <div className="camera-form-field">
-            <label>Jusqu'a</label>
+            <label>Jusqu'à</label>
             <input type="datetime-local" value={filterTo} onChange={(e) => { setFilterTo(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
           </div>
 
-          <button type="button" className="secondary-cta" onClick={resetFilters} style={{ marginTop: 4 }}>
-            Reinitialiser
-          </button>
-          <button type="button" className="secondary-cta" onClick={onBack} style={{ marginTop: 4 }}>
-            ← Retour au hub
+          <button type="button" className="secondary-cta" onClick={resetFilters}>
+            Réinitialiser
           </button>
         </aside>
 
-        {/* Events table */}
-        <div>
-          {correctError && (
-            <p style={{ color: 'var(--status-degraded, #e05252)', marginBottom: 8, fontSize: '0.88rem' }}>{correctError}</p>
-          )}
+        <div className="history-events">
+          {error && <p className="history-load-error">{error}</p>}
 
-          {error && <p style={{ color: 'var(--status-degraded, #e05252)' }}>{error}</p>}
-
-          {loading && <p style={{ opacity: 0.6, padding: 16 }}>Chargement…</p>}
+          {loading && <p className="history-loading">Chargement…</p>}
 
           {!loading && page && (
             <>
@@ -191,8 +181,9 @@ export function DetectionHistoryView({
                   Aucune detection pour ces filtres.
                 </div>
               ) : (
-                <div className="panel" style={{ overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                <div className="panel">
+                  <div style={{ overflowX: 'auto', minWidth: 0 }}>
+                  <table style={{ width: '100%', minWidth: 540, borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                     <thead>
                       <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(247,244,237,0.15)' }}>
                         {['Date', 'Camera', 'Type', 'Confiance', 'Identite', 'Action'].map((h) => (
@@ -214,6 +205,7 @@ export function DetectionHistoryView({
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 

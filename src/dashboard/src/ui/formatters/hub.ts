@@ -16,7 +16,7 @@ export function formatEventTitle(event: DetectionEvent): string {
     return `${event.identity} detectee`
   }
 
-  return `Detection ${event.label}`
+  return `Detection '${event.label}'`
 }
 
 export function formatEventDetail(event: DetectionEvent): string {
