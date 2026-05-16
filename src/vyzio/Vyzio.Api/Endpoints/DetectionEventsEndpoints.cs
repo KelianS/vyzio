@@ -1,6 +1,8 @@
+using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.DTOs.DetectionEvents;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Api.Endpoints;
 
@@ -36,6 +38,17 @@ public static class DetectionEventsEndpoints
                 Page: page ?? 1,
                 Limit: limit ?? 20);
             return Results.Ok(await useCase.ExecuteAsync(query, ct));
+        });
+
+        // Clip proxy — streams MP4 from Frigate with Range support (ADR-17)
+        group.MapGet("/{id}/clip", async (string id, IDetectionEventRepository detectionEvents, IFrigateRestClient frigateClient, CancellationToken ct) =>
+        {
+            var evt = await detectionEvents.GetByIdAsync(id, ct);
+            if (evt is null) return Results.NotFound();
+            if (!evt.HasClip) return Results.NotFound();
+
+            var stream = await frigateClient.GetClipStreamAsync(evt.FrigateEventId, ct);
+            return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });
 
         group.MapPatch("/{id}/identity", async (

@@ -43,6 +43,16 @@ public sealed class SaveNotificationChannelConfigUseCase(INotificationChannelCon
         else if (request.MessageFields is { Length: 0 })
             config.MessageFieldsJson = null; // empty array → reset to all fields
 
+        if (request.MediaMode is "clip_or_photo" or "photo" or "text")
+            config.MediaMode = request.MediaMode;
+        else if (request.MediaMode is not null)
+            config.MediaMode = null; // unknown value → reset to default
+
+        if (request.ClearCooldown)
+            config.CooldownMinutes = null;
+        else if (request.CooldownMinutes is > 0)
+            config.CooldownMinutes = request.CooldownMinutes;
+
         // Only update token when a non-empty value is explicitly provided
         if (!string.IsNullOrWhiteSpace(request.BotToken))
         {

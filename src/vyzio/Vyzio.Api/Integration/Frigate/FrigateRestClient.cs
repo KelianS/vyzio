@@ -7,6 +7,8 @@ namespace Vyzio.Api.Integration.Frigate;
 public interface IFrigateRestClient
 {
     Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default);
+    Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default);
+    Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default);
 }
 
 public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClient
@@ -16,6 +18,12 @@ public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClien
         var details = await httpClient.GetFromJsonAsync<FrigateEventDetailsDto>($"api/events/{frigateEventId}", ct);
         return ResolveSubLabel(details?.SubLabel);
     }
+
+    public Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default)
+        => httpClient.GetAsync($"api/{cameraSlug}/latest.jpg", HttpCompletionOption.ResponseHeadersRead, ct);
+
+    public Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
+        => httpClient.GetStreamAsync($"api/events/{frigateEventId}/clip.mp4", ct);
 
     private static string? ResolveSubLabel(JsonElement? subLabel)
     {

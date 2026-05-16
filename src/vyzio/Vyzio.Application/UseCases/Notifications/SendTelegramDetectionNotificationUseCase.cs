@@ -15,28 +15,31 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     ITelegramNotificationSender telegramSender,
     INotificationChannelConfigRepository channelConfigs,
     IFrigateSnapshotProvider snapshotProvider,
+    IFrigateClipProvider clipProvider,
     DetectionTelegramMessageFormatter formatter,
-    ILogger<SendTelegramDetectionNotificationUseCase> logger) : IDetectionNotificationDispatcher
+    TimeZoneInfo timeZone,
+    ILogger<SendTelegramDetectionNotificationUseCase> logger,
+    int clipFetchDelaySeconds = 10) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
-    private static readonly string[] DefaultAllowedLabels = ["person"];
+    private static readonly string[] DefaultAllowedLabels = ["person_unknown", "person_known"];
 
     public async Task<bool> ExecuteAsync(DetectionEvent detectionEvent, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(detectionEvent);
+
+        // Only notify on lifecycle=end so the clip is available when has_clip=true (option B).
+        if (!string.Equals(detectionEvent.Lifecycle, "end", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogDebug("Telegram skipped for event {EventId}: lifecycle={Lifecycle} (waiting for end)", detectionEvent.Id, detectionEvent.Lifecycle);
+            return false;
+        }
 
         var config = await channelConfigs.GetByChannelAsync(TelegramChannel, ct);
         if (config is null || !config.IsEnabled || !config.HasCredentials)
         {
             logger.LogDebug("Telegram skipped for event {EventId}: channel not configured (isNull={IsNull} isEnabled={IsEnabled} hasCreds={HasCreds})",
                 detectionEvent.Id, config is null, config?.IsEnabled, config?.HasCredentials);
-            return false;
-        }
-
-        if (!string.Equals(detectionEvent.Lifecycle, "new", StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(detectionEvent.Lifecycle, "update", StringComparison.OrdinalIgnoreCase))
-        {
-            logger.LogDebug("Telegram skipped for event {EventId}: lifecycle={Lifecycle}", detectionEvent.Id, detectionEvent.Lifecycle);
             return false;
         }
 
@@ -48,34 +51,19 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             return false;
         }
 
-        if (!IsWithinActiveHours(detectionEvent.OccurredAt.ToLocalTime().Hour, config.ActiveFromHour, config.ActiveToHour))
+        var localHour = TimeZoneInfo.ConvertTime(detectionEvent.OccurredAt, timeZone).Hour;
+        if (!IsWithinActiveHours(localHour, config.ActiveFromHour, config.ActiveToHour))
         {
             logger.LogDebug("Telegram skipped for event {EventId}: hour={Hour} outside [{From}-{To}]",
-                detectionEvent.Id, detectionEvent.OccurredAt.ToLocalTime().Hour, config.ActiveFromHour, config.ActiveToHour);
+                detectionEvent.Id, localHour, config.ActiveFromHour, config.ActiveToHour);
             return false;
         }
 
         var allowedLabels = ParseAllowedLabels(config.AllowedLabelsJson);
-        if (!allowedLabels.Contains(detectionEvent.Label, StringComparer.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(detectionEvent.Identity))
+        if (!IsLabelAllowed(detectionEvent.Label, detectionEvent.Identity, allowedLabels))
         {
-            logger.LogDebug("Telegram skipped for event {EventId}: label={Label} not in [{AllowedLabels}] and no identity",
-                detectionEvent.Id, detectionEvent.Label, string.Join(",", allowedLabels));
-            return false;
-        }
-
-        // Parse fields early so we can check the snapshot preference before committing to send.
-        var enabledFields = ParseMessageFields(config.MessageFieldsJson);
-
-        // On the very first frame ("new"), the snapshot is often not yet written by Frigate.
-        // If the snapshot field is enabled and the snapshot is not ready, defer until an
-        // "update" frame arrives with has_snapshot=true. This ensures the notification
-        // always carries a photo when available.
-        if (string.Equals(detectionEvent.Lifecycle, "new", StringComparison.OrdinalIgnoreCase)
-            && enabledFields.Contains(MessageField.Snapshot)
-            && !detectionEvent.HasSnapshot)
-        {
-            logger.LogDebug("Telegram deferred for event {EventId}: lifecycle=new, snapshot not ready yet", detectionEvent.Id);
+            logger.LogDebug("Telegram skipped for event {EventId}: label={Label} identity={Identity} not matched by [{AllowedLabels}]",
+                detectionEvent.Id, detectionEvent.Label, detectionEvent.Identity, string.Join(",", allowedLabels));
             return false;
         }
 
@@ -85,14 +73,87 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             return false;
         }
 
-        logger.LogInformation("Sending Telegram notification for event {EventId} label={Label} lifecycle={Lifecycle} hasSnapshot={HasSnapshot}",
-            detectionEvent.Id, detectionEvent.Label, detectionEvent.Lifecycle, detectionEvent.HasSnapshot);
+        if (config.CooldownMinutes is > 0)
+        {
+            var lastSent = await notifications.GetLastSentAtForAsync(
+                TelegramChannel, detectionEvent.Camera, detectionEvent.Label, ct);
+            if (lastSent.HasValue
+                && (DateTimeOffset.UtcNow - lastSent.Value).TotalMinutes < config.CooldownMinutes.Value)
+            {
+                logger.LogDebug(
+                    "Telegram skipped for event {EventId}: cooldown {Minutes}min (last sent {LastSent})",
+                    detectionEvent.Id, config.CooldownMinutes.Value, lastSent.Value);
+                return false;
+            }
+        }
+
+        var enabledFields = ParseMessageFields(config.MessageFieldsJson);
+        var mediaMode = config.MediaMode ?? "clip_or_photo";
+
+        logger.LogInformation("Sending Telegram notification for event {EventId} label={Label} hasClip={HasClip} hasSnapshot={HasSnapshot} mediaMode={MediaMode}",
+            detectionEvent.Id, detectionEvent.Label, detectionEvent.HasClip, detectionEvent.HasSnapshot, mediaMode);
 
         try
         {
             var caption = formatter.Format(detectionEvent, enabledFields);
 
-            if (detectionEvent.HasSnapshot && enabledFields.Contains(MessageField.Snapshot))
+            // has_clip/has_snapshot in the MQTT end payload are unreliable: Frigate may report false
+            // and finalize the file a few seconds later. We always attempt the fetch after the delay,
+            // regardless of the flags, and fall through on 404.
+            var wantMedia = mediaMode != "text" && enabledFields.Contains(MessageField.Snapshot);
+
+            if (wantMedia && clipFetchDelaySeconds > 0)
+            {
+                logger.LogDebug("Waiting {Seconds}s for Frigate to finalize media for event {EventId}",
+                    clipFetchDelaySeconds, detectionEvent.Id);
+                await Task.Delay(TimeSpan.FromSeconds(clipFetchDelaySeconds), ct);
+            }
+
+            // Priority 1: send clip + snapshot as media group (album) when mode allows it.
+            if (mediaMode == "clip_or_photo" && enabledFields.Contains(MessageField.Snapshot))
+            {
+                var clip = await clipProvider.TryGetClipAsync(detectionEvent.FrigateEventId, ct);
+                if (clip is not null)
+                {
+                    var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
+                    if (snapshot is not null)
+                    {
+                        logger.LogInformation("Sending Telegram media group for event {EventId}", detectionEvent.Id);
+                        try
+                        {
+                            await telegramSender.SendMediaGroupAsync(snapshot, clip, caption, config.BotToken!, config.ChatId!, ct);
+                        }
+                        finally
+                        {
+                            await snapshot.DisposeAsync();
+                            await clip.DisposeAsync();
+                        }
+                    }
+                    else
+                    {
+                        logger.LogInformation("Sending Telegram video (no snapshot) for event {EventId}", detectionEvent.Id);
+                        try
+                        {
+                            await telegramSender.SendVideoAsync(clip, null, caption, config.BotToken!, config.ChatId!, ct);
+                        }
+                        finally
+                        {
+                            await clip.DisposeAsync();
+                        }
+                    }
+                    await notifications.AddAsync(new Notification
+                    {
+                        EventId = detectionEvent.Id,
+                        Channel = TelegramChannel,
+                        Status = "sent"
+                    }, ct);
+                    return true;
+                }
+                logger.LogWarning("Clip unavailable for event {EventId} — falling back to snapshot", detectionEvent.Id);
+            }
+
+            // Photo: send snapshot when mode allows it.
+            if (mediaMode is "clip_or_photo" or "photo" && enabledFields.Contains(MessageField.Snapshot))
             {
                 var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
                 if (snapshot is not null)
@@ -110,12 +171,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 }
                 logger.LogWarning("Snapshot unavailable for event {EventId} — falling back to text message", detectionEvent.Id);
             }
-            else
-            {
-                logger.LogDebug("Skipping snapshot for event {EventId}: hasSnapshot={HasSnapshot} snapshotField={SnapshotEnabled}",
-                    detectionEvent.Id, detectionEvent.HasSnapshot, enabledFields.Contains(MessageField.Snapshot));
-            }
 
+            // Final fallback (or mediaMode="text"): text only.
             await telegramSender.SendAsync(caption, config.BotToken!, config.ChatId!, ct);
             await notifications.AddAsync(new Notification
             {
@@ -153,19 +210,36 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         }
     }
 
-    private static string[] ParseAllowedLabels(string? json)
+    private static HashSet<string> ParseAllowedLabels(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return DefaultAllowedLabels;
+        if (string.IsNullOrWhiteSpace(json))
+            return new HashSet<string>(DefaultAllowedLabels, StringComparer.OrdinalIgnoreCase);
         try
         {
-            return JsonSerializer.Deserialize<string[]>(json) is { Length: > 0 } labels
-                ? labels
-                : DefaultAllowedLabels;
+            var labels = JsonSerializer.Deserialize<string[]>(json);
+            return labels is { Length: > 0 }
+                ? new HashSet<string>(labels, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(DefaultAllowedLabels, StringComparer.OrdinalIgnoreCase);
         }
         catch
         {
-            return DefaultAllowedLabels;
+            return new HashSet<string>(DefaultAllowedLabels, StringComparer.OrdinalIgnoreCase);
         }
+    }
+
+    // Maps a Frigate detection label + identity to its notification-semantic label.
+    // "person" and "face" both resolve to person_unknown/person_known depending on identity.
+    internal static string ResolveNotificationLabel(string label, string? identity) =>
+        label.ToLowerInvariant() switch
+        {
+            "person" or "face" => string.IsNullOrWhiteSpace(identity) ? "person_unknown" : "person_known",
+            var other          => other
+        };
+
+    internal static bool IsLabelAllowed(string label, string? identity, IReadOnlySet<string> allowedLabels)
+    {
+        var notificationLabel = ResolveNotificationLabel(label, identity);
+        return allowedLabels.Contains(notificationLabel, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -199,27 +273,61 @@ public static class MessageField
 
 public sealed class DetectionTelegramMessageFormatter
 {
+    private readonly TimeZoneInfo _timeZone;
+
+    public DetectionTelegramMessageFormatter() : this(TimeZoneInfo.Local) { }
+
+    public DetectionTelegramMessageFormatter(TimeZoneInfo timeZone)
+    {
+        _timeZone = timeZone;
+    }
+
     public string Format(DetectionEvent detectionEvent, IReadOnlySet<string>? enabledFields = null)
     {
         ArgumentNullException.ThrowIfNull(detectionEvent);
         enabledFields ??= MessageField.All;
 
+        var hasIdentity = !string.IsNullOrWhiteSpace(detectionEvent.Identity);
         var hasLabel = enabledFields.Contains(MessageField.Label);
-        var subject = string.IsNullOrWhiteSpace(detectionEvent.Identity)
-            ? (hasLabel ? $"Detection {detectionEvent.Label}" : "Detection")
-            : $"{detectionEvent.Identity} detectee";
 
-        var parts = new List<string> { subject };
+        var emoji = hasIdentity ? "🧑" : GetLabelEmoji(detectionEvent.Label);
+        var subject = hasIdentity
+            ? $"{Encode(detectionEvent.Identity!)} detectee"
+            : (hasLabel ? $"Detection {Encode(detectionEvent.Label)}" : "Detection");
+
+        var meta = new List<string>();
 
         if (enabledFields.Contains(MessageField.Camera))
-            parts.Add(detectionEvent.Camera.Replace('_', ' '));
+            meta.Add($"📷 {Encode(detectionEvent.Camera.Replace('_', ' '))}");
 
         if (enabledFields.Contains(MessageField.Time))
-            parts.Add(detectionEvent.OccurredAt.ToLocalTime().ToString("HH:mm"));
+            meta.Add($"🕐 {TimeZoneInfo.ConvertTime(detectionEvent.OccurredAt, _timeZone):HH:mm}");
 
         if (enabledFields.Contains(MessageField.Confidence) && detectionEvent.Confidence.HasValue)
-            parts.Add($"{(int)Math.Round(detectionEvent.Confidence.Value * 100)} %");
+            meta.Add($"{(int)Math.Round(detectionEvent.Confidence.Value * 100)} %");
 
-        return string.Join(" — ", parts);
+        var text = $"{emoji} <b>{subject}</b>";
+        if (meta.Count > 0)
+            text += $"\n{string.Join("  ·  ", meta)}";
+
+        return text;
     }
+
+    private static string Encode(string value) => System.Net.WebUtility.HtmlEncode(value);
+
+    private static string GetLabelEmoji(string label) => label.ToLowerInvariant() switch
+    {
+        "person"       => "🚶",
+        "person_known" => "🧑",
+        "face"         => "👤",
+        "cat"          => "🐱",
+        "dog"          => "🐕",
+        "car"          => "🚗",
+        "bicycle"      => "🚲",
+        "motorcycle"   => "🏍",
+        "truck"        => "🚛",
+        "bird"         => "🐦",
+        "deer"         => "🦌",
+        _              => "📡"
+    };
 }

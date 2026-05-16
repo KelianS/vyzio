@@ -24,6 +24,7 @@ public static class VyzioConfigLoader
 
         return new VyzioRuntimeSettings
         {
+            TimeZone = root.TimeZone?.Trim(),
             Database = new VyzioRuntimeSettings.DatabaseSettings
             {
                 ConnectionString = string.IsNullOrWhiteSpace(root.Database.ConnectionString)
@@ -114,6 +115,7 @@ public static class VyzioConfigLoader
 
     private sealed class RootConfig
     {
+        public string? TimeZone { get; init; }
         public DatabaseConfig Database { get; init; } = new();
         public FrigateConfig Frigate { get; init; } = new();
         public DiscoveryConfig Discovery { get; init; } = new();

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vyzio.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    partial class VyzioDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516094809_AddContinuousRecording")]
+    partial class AddContinuousRecording
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.5");
@@ -304,15 +307,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("LastTestedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_tested_at");
-
-                    b.Property<string>("MediaMode")
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("media_mode");
-
-                    b.Property<int?>("CooldownMinutes")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("cooldown_minutes");
 
                     b.Property<string>("MessageFieldsJson")
                         .HasMaxLength(200)

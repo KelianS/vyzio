@@ -12,6 +12,7 @@ import { GetCameraDetectionConfig } from '../application/use-cases/GetCameraDete
 import { GetCameraStatus } from '../application/use-cases/GetCameraStatus'
 import { GetCameras } from '../application/use-cases/GetCameras'
 import { GetDetectionHistory } from '../application/use-cases/GetDetectionHistory'
+import { GetDetectionLabels } from '../application/use-cases/GetDetectionLabels'
 import { GetHubOverview } from '../application/use-cases/GetHubOverview'
 import { GetNotificationLog } from '../application/use-cases/GetNotificationLog'
 import { GetNotificationChannelConfig } from '../application/use-cases/GetNotificationChannelConfig'
@@ -31,6 +32,7 @@ import { VerifyDraftCamera } from '../application/use-cases/VerifyDraftCamera'
 import { VerifyCamera } from '../application/use-cases/VerifyCamera'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
+import { HttpCameraLabelsRepository, HttpNotificationLabelsRepository } from '../infrastructure/repositories/HttpDetectionLabelsRepository'
 import { HttpHubRepository } from '../infrastructure/repositories/HttpHubRepository'
 import { HttpNotificationSettingsRepository } from '../infrastructure/repositories/HttpNotificationSettingsRepository'
 import { HttpProfileRepository } from '../infrastructure/repositories/HttpProfileRepository'
@@ -40,6 +42,8 @@ const hubRepository = new HttpHubRepository(runtime.apiBaseUrl)
 const cameraRepository = new HttpCameraRepository(runtime.apiBaseUrl)
 const notificationSettingsRepository = new HttpNotificationSettingsRepository(runtime.apiBaseUrl)
 const profileRepository = new HttpProfileRepository(runtime.apiBaseUrl)
+const cameraLabelsRepository = new HttpCameraLabelsRepository(runtime.apiBaseUrl)
+const notificationLabelsRepository = new HttpNotificationLabelsRepository(runtime.apiBaseUrl)
 
 export const dashboardRuntime = runtime
 export const applyCamera = new ApplyCamera(cameraRepository)
@@ -81,3 +85,5 @@ export const getCameraDetectionConfig = new GetCameraDetectionConfig(profileRepo
 export const saveCameraDetectionConfig = new SaveCameraDetectionConfig(profileRepository)
 export const getDetectionHistory = new GetDetectionHistory(profileRepository)
 export const correctDetectionIdentity = new CorrectDetectionIdentity(profileRepository)
+export const getCameraLabels = new GetDetectionLabels(cameraLabelsRepository)
+export const getNotificationLabels = new GetDetectionLabels(notificationLabelsRepository)

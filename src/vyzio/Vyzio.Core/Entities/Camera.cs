@@ -40,6 +40,8 @@ public class Camera
     [MaxLength(500)]
     public string? DetectionLabelsJson { get; set; }
 
+    public bool ContinuousRecordingEnabled { get; set; }
+
     [Required, MaxLength(50)]
     public string Status { get; set; } = "needs_attention";
 

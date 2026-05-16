@@ -28,12 +28,19 @@ var dataDirectory = Path.GetDirectoryName(Path.GetFullPath(dbFilePath)) ?? Path.
 
 builder.Services.AddSingleton(new FaceStorageOptions(dataDirectory));
 builder.Services.AddVyzioInfrastructure(runtimeSettings);
-builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels);
+var appTimeZone = string.IsNullOrWhiteSpace(runtimeSettings.TimeZone)
+    ? TimeZoneInfo.Local
+    : TimeZoneInfo.FindSystemTimeZoneById(runtimeSettings.TimeZone);
+builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels, appTimeZone);
 builder.Services.AddHttpClient<IFrigateRestClient, FrigateRestClient>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
 builder.Services.AddHttpClient<IFrigateSnapshotProvider, FrigateSnapshotProvider>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
+builder.Services.AddHttpClient<IFrigateClipProvider, FrigateClipProvider>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
@@ -74,6 +81,7 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/", () => Results.Ok(new { service = "vyzio-api", config = configPath }));
 app.MapHub();
+app.MapDetectionLabels();
 app.MapCameras();
 app.MapDetectionEvents();
 app.MapProfiles();
