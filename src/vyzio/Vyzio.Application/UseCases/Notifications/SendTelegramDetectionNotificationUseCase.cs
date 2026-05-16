@@ -271,22 +271,44 @@ public sealed class DetectionTelegramMessageFormatter
         ArgumentNullException.ThrowIfNull(detectionEvent);
         enabledFields ??= MessageField.All;
 
+        var hasIdentity = !string.IsNullOrWhiteSpace(detectionEvent.Identity);
         var hasLabel = enabledFields.Contains(MessageField.Label);
-        var subject = string.IsNullOrWhiteSpace(detectionEvent.Identity)
-            ? (hasLabel ? $"Detection {detectionEvent.Label}" : "Detection")
-            : $"{detectionEvent.Identity} detectee";
 
-        var parts = new List<string> { subject };
+        var emoji = hasIdentity ? "🧑" : GetLabelEmoji(detectionEvent.Label);
+        var subject = hasIdentity
+            ? $"{Encode(detectionEvent.Identity!)} detectee"
+            : (hasLabel ? $"Detection {Encode(detectionEvent.Label)}" : "Detection");
+
+        var meta = new List<string>();
 
         if (enabledFields.Contains(MessageField.Camera))
-            parts.Add(detectionEvent.Camera.Replace('_', ' '));
+            meta.Add($"📷 {Encode(detectionEvent.Camera.Replace('_', ' '))}");
 
         if (enabledFields.Contains(MessageField.Time))
-            parts.Add(TimeZoneInfo.ConvertTime(detectionEvent.OccurredAt, _timeZone).ToString("HH:mm"));
+            meta.Add($"🕐 {TimeZoneInfo.ConvertTime(detectionEvent.OccurredAt, _timeZone):HH:mm}");
 
         if (enabledFields.Contains(MessageField.Confidence) && detectionEvent.Confidence.HasValue)
-            parts.Add($"{(int)Math.Round(detectionEvent.Confidence.Value * 100)} %");
+            meta.Add($"{(int)Math.Round(detectionEvent.Confidence.Value * 100)} %");
 
-        return string.Join(" — ", parts);
+        var text = $"{emoji} <b>{subject}</b>";
+        if (meta.Count > 0)
+            text += $"\n{string.Join("  ·  ", meta)}";
+
+        return text;
     }
+
+    private static string Encode(string value) => System.Net.WebUtility.HtmlEncode(value);
+
+    private static string GetLabelEmoji(string label) => label.ToLowerInvariant() switch
+    {
+        "person"     => "🚶",
+        "cat"        => "🐱",
+        "dog"        => "🐕",
+        "car"        => "🚗",
+        "bicycle"    => "🚲",
+        "motorcycle" => "🏍",
+        "truck"      => "🚛",
+        "bird"       => "🐦",
+        _            => "📡"
+    };
 }

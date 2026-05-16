@@ -135,6 +135,17 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Télécharger le clip depuis Frigate via le proxy `GET /api/detection-events/{id}/clip` et l'envoyer via `sendVideo` Telegram en pièce jointe de la notification (snapshot en aperçu, clip en vidéo)
 - [x] Gérer le cas `has_clip: false` à la fin de l'événement : envoyer la notification avec snapshot uniquement, sans attendre indéfiniment
 
+#### Fixes et améliorations notifications (post-P3.7)
+
+- [x] **Détection animaux** : corriger le filtre `retained_labels: [person]` dans `vyzio.yml` qui bloquait cat/dog/bird/etc. au niveau de l'intake MQTT — passer à `[]` pour tout accepter, le filtrage par catégorie restant configurable par canal
+- [x] **Anti-spam cooldown** : ajouter un cooldown configurable par canal (minutes, par caméra × label) pour éviter le spam lors d'une détection continue ; configurable depuis l'interface Telegram
+- [x] **Mode média configurable** : exposer un choix de format par canal (`clip_or_photo`, `photo`, `text`) configurable depuis l'UI ; l'option `clip_or_photo` envoie un album Telegram (`sendMediaGroup`) avec la photo bbox + le clip ensemble
+- [x] **Album Telegram (sendMediaGroup)** : remplacer `sendVideo` seul par un album photo+clip quand les deux sont disponibles, permettant d'afficher le snapshot avec bounding box à côté du clip
+- [x] **Délai de finalisation clip** : attendre 10 s (configurable, 0 en tests) avant de tenter le fetch clip/snapshot, Frigate finalisant les fichiers après avoir publié le payload MQTT `end`
+- [x] **Suppression des gardes `has_clip`/`has_snapshot`** : ne plus bloquer le fetch sur les flags MQTT non fiables ; toujours tenter après le délai et tomber en fallback sur 404
+- [x] **Fuseau horaire** : corriger les horodatages Telegram (heure locale) et les plages horaires actives en remplaçant `ToLocalTime()` (fuseau système souvent UTC en Docker) par `TimeZoneInfo.ConvertTime()` avec un `time_zone` configurable dans `vyzio.yml`
+- [x] **Format de notification amélioré** : emoji par catégorie (🚶🐱🐕🚗…), titre en gras HTML, métadonnées sur une seconde ligne (📷 caméra · 🕐 heure · confiance), `parse_mode=HTML` sur tous les appels Telegram
+
 #### Tests
 
 - [x] Vérifier que la config Frigate générée inclut bien `record` et `clips` quand activés, sans régression sur les caméras non concernées

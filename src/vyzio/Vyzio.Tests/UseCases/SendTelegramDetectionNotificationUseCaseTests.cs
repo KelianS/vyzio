@@ -333,7 +333,7 @@ public class DetectionTelegramMessageFormatterTests
     {
         var fields = new HashSet<string> { MessageField.Camera };
         var result = _sut.Format(EventWith(), fields);
-        Assert.StartsWith("Detection", result);
+        Assert.Contains("Detection", result);
         Assert.DoesNotContain("person", result);
     }
 
