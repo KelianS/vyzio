@@ -186,6 +186,8 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 - [ ] Uniformiser les patterns de navigation entre toutes les vues (position et libellé du bouton retour, fil d'Ariane, transitions)
 - [ ] Harmoniser les composants de feedback (messages d'erreur, états de chargement, confirmations) pour qu'ils aient le même rendu et le même comportement quelle que soit la page
+- [ ] Avoir des loaders et information utilisateurs lors des chargements longs, application de config etc...
+- [ ] Avoir une cohérence entre les actions et les messages de retour (un appui bouton sur un panel ne devrait pas avoir un message d'erreur dans un autre panel, etc...)
 
 
 ### US-P3.9 - Privacy mode
