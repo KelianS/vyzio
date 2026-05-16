@@ -38,6 +38,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
             validatedLabels = ["person"];
 
         camera.DetectionLabelsJson = JsonSerializer.Serialize(validatedLabels);
+        camera.ContinuousRecordingEnabled = request.ContinuousRecordingEnabled;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
 

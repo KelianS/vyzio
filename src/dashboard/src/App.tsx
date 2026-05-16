@@ -15,6 +15,8 @@ import {
   getCameras,
   getCameraDetectionConfig,
   getDetectionHistory,
+  getCameraLabels,
+  getNotificationLabels,
   getHubOverview,
   getNotificationChannelConfig,
   getNotificationLog,
@@ -141,6 +143,8 @@ function App() {
         deleteCamera={deleteCamera}
         getCameraDetectionConfig={getCameraDetectionConfig}
         saveCameraDetectionConfig={saveCameraDetectionConfig}
+        getCameraLabels={getCameraLabels}
+        apiBaseUrl={dashboardRuntime.apiBaseUrl}
       />
     )
   }
@@ -153,6 +157,7 @@ function App() {
         testNotificationChannel={testNotificationChannel}
         deleteNotificationChannel={deleteNotificationChannel}
         getNotificationLog={getNotificationLog}
+        getNotificationLabels={getNotificationLabels}
         onBack={() => {
           window.location.hash = ''
           setView('hub')
@@ -187,9 +192,11 @@ function App() {
     return (
       <DetectionHistoryView
         getDetectionHistory={getDetectionHistory}
+        getCameraLabels={getCameraLabels}
         correctDetectionIdentity={correctDetectionIdentity}
         getProfiles={getProfiles}
         frigateBaseUrl={dashboardRuntime.frigateBaseUrl}
+        apiBaseUrl={dashboardRuntime.apiBaseUrl}
         onBack={() => {
           window.location.hash = ''
           setView('hub')
@@ -321,7 +328,7 @@ function App() {
                       {event.hasClip && (
                         <a
                           className="event-card-clip"
-                          href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/clip.mp4`}
+                          href={`${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/clip`}
                           target="_blank"
                           rel="noreferrer"
                         >

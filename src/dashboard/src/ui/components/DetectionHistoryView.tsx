@@ -1,30 +1,35 @@
 import { useEffect, useState } from 'react'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
 import type { GetDetectionHistory } from '../../application/use-cases/GetDetectionHistory'
+import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetProfiles } from '../../application/use-cases/GetProfiles'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
 import type { DetectionHistoryPage } from '../../domain/entities/DetectionHistory'
+import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { Profile } from '../../domain/entities/Profile'
 
 interface DetectionHistoryViewProps {
   getDetectionHistory: GetDetectionHistory
+  getCameraLabels: GetCameraLabels
   correctDetectionIdentity: CorrectDetectionIdentity
   getProfiles: GetProfiles
   frigateBaseUrl: string
+  apiBaseUrl: string
   onBack: () => void
 }
 
-const KNOWN_LABELS = ['person', 'face', 'car', 'motorcycle', 'bicycle', 'dog', 'cat', 'bird', 'deer']
-
 export function DetectionHistoryView({
   getDetectionHistory,
+  getCameraLabels,
   correctDetectionIdentity,
   getProfiles,
   frigateBaseUrl,
+  apiBaseUrl,
   onBack,
 }: DetectionHistoryViewProps) {
   const [page, setPage] = useState<DetectionHistoryPage | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [detectionLabels, setDetectionLabels] = useState<DetectionLabel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,6 +46,12 @@ export function DetectionHistoryView({
   useEffect(() => {
     getProfiles.execute().then(setProfiles).catch(() => {})
   }, [getProfiles])
+
+  useEffect(() => {
+    getCameraLabels.execute()
+      .then(setDetectionLabels)
+      .catch(() => {})
+  }, [getCameraLabels])
 
   useEffect(() => {
     setLoading(true)
@@ -129,8 +140,8 @@ export function DetectionHistoryView({
             <label>Type</label>
             <select value={filterLabel} onChange={(e) => { setFilterLabel(e.target.value); setCurrentPage(1) }}>
               <option value="">Tous</option>
-              {KNOWN_LABELS.map((l) => (
-                <option key={l} value={l}>{l}</option>
+              {detectionLabels.map(({ value, displayName, emoji }) => (
+                <option key={value} value={value}>{emoji} {displayName}</option>
               ))}
             </select>
           </div>
@@ -196,6 +207,7 @@ export function DetectionHistoryView({
                           event={event}
                           profiles={profiles}
                           frigateBaseUrl={frigateBaseUrl}
+                          apiBaseUrl={apiBaseUrl}
                           correcting={correcting === event.eventId}
                           onCorrect={(profileId) => handleCorrect(event.eventId, profileId)}
                         />
@@ -242,16 +254,19 @@ function EventRow({
   event,
   profiles,
   frigateBaseUrl,
+  apiBaseUrl,
   correcting,
   onCorrect,
 }: {
   event: DetectionEvent
   profiles: Profile[]
   frigateBaseUrl: string
+  apiBaseUrl: string
   correcting: boolean
   onCorrect: (profileId: string | null) => Promise<void>
 }) {
   const [showCorrect, setShowCorrect] = useState(false)
+  const [showClip, setShowClip] = useState(false)
   const [selectedProfileId, setSelectedProfileId] = useState(event.profileId ?? '')
 
   async function handleApply() {
@@ -263,70 +278,98 @@ function EventRow({
   const identity = event.identity ?? '—'
 
   return (
-    <tr style={{ borderBottom: '1px solid rgba(247,244,237,0.07)' }}>
-      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
-        {new Date(event.occurredAt).toLocaleString('fr-FR')}
-      </td>
-      <td style={{ padding: '8px 12px' }}>{event.camera}</td>
-      <td style={{ padding: '8px 12px' }}>
-        <span className="camera-support-badge unknown">{event.label}</span>
-      </td>
-      <td style={{ padding: '8px 12px' }}>{confidence}</td>
-      <td style={{ padding: '8px 12px' }}>
-        {event.hasSnapshot && (
-          <a
-            href={`${frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ marginRight: 6, opacity: 0.7, fontSize: '0.8rem' }}
-          >
-            🖼
-          </a>
-        )}
-        {identity}
-      </td>
-      <td style={{ padding: '8px 12px' }}>
-        {!showCorrect ? (
-          <button
-            type="button"
-            className="secondary-cta"
-            style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-            onClick={() => setShowCorrect(true)}
-          >
-            Corriger
-          </button>
-        ) : (
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <select
-              value={selectedProfileId}
-              onChange={(e) => setSelectedProfileId(e.target.value)}
-              style={{ fontSize: '0.82rem', padding: '2px 4px' }}
+    <>
+      <tr style={{ borderBottom: showClip ? 'none' : '1px solid rgba(247,244,237,0.07)' }}>
+        <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+          {new Date(event.occurredAt).toLocaleString('fr-FR')}
+        </td>
+        <td style={{ padding: '8px 12px' }}>{event.camera}</td>
+        <td style={{ padding: '8px 12px' }}>
+          <span className="camera-support-badge unknown">{event.label}</span>
+        </td>
+        <td style={{ padding: '8px 12px' }}>{confidence}</td>
+        <td style={{ padding: '8px 12px' }}>
+          {event.hasSnapshot && (
+            <a
+              href={`${frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ marginRight: 6, opacity: 0.7, fontSize: '0.8rem' }}
             >
-              <option value="">Inconnu</option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="primary-cta"
-              style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-              onClick={handleApply}
-              disabled={correcting}
-            >
-              {correcting ? '…' : 'OK'}
-            </button>
-            <button
-              type="button"
-              className="secondary-cta"
-              style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-              onClick={() => setShowCorrect(false)}
-            >
-              ×
-            </button>
+              🖼
+            </a>
+          )}
+          {identity}
+        </td>
+        <td style={{ padding: '8px 12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {!showCorrect ? (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  className="secondary-cta"
+                  style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
+                  onClick={() => setShowCorrect(true)}
+                >
+                  Corriger
+                </button>
+                {event.hasClip && (
+                  <button
+                    type="button"
+                    className="secondary-cta"
+                    style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
+                    onClick={() => setShowClip((v) => !v)}
+                  >
+                    {showClip ? '✕ Clip' : '▶ Clip'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <select
+                  value={selectedProfileId}
+                  onChange={(e) => setSelectedProfileId(e.target.value)}
+                  style={{ fontSize: '0.82rem', padding: '2px 4px' }}
+                >
+                  <option value="">Inconnu</option>
+                  {profiles.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="primary-cta"
+                  style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
+                  onClick={handleApply}
+                  disabled={correcting}
+                >
+                  {correcting ? '…' : 'OK'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-cta"
+                  style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
+                  onClick={() => setShowCorrect(false)}
+                >
+                  ×
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </td>
-    </tr>
+        </td>
+      </tr>
+      {showClip && (
+        <tr style={{ borderBottom: '1px solid rgba(247,244,237,0.07)' }}>
+          <td colSpan={6} style={{ padding: '0 12px 12px' }}>
+            <video
+              src={`${apiBaseUrl}/api/detection-events/${event.eventId}/clip`}
+              controls
+              preload="metadata"
+              style={{ width: '100%', maxHeight: 320, borderRadius: 4, background: '#000' }}
+            />
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

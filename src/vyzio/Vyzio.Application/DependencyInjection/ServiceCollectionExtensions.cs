@@ -12,12 +12,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddVyzioApplication(
         this IServiceCollection services,
-        IEnumerable<string>? retainedFrigateLabels = null)
+        IEnumerable<string>? retainedFrigateLabels = null,
+        TimeZoneInfo? timeZone = null)
     {
+        var tz = timeZone ?? TimeZoneInfo.Local;
+        services.AddSingleton(tz);
         services.AddSingleton(new FrigateLabelFilter(retainedFrigateLabels));
         services.AddSingleton<FrigateEventContractAdapter>();
         services.AddSingleton<DetectionEventContractProjector>();
-        services.AddSingleton<DetectionTelegramMessageFormatter>();
+        services.AddSingleton(new DetectionTelegramMessageFormatter(tz));
 
         // Camera use cases
         services.AddScoped<DiscoverCamerasUseCase>();

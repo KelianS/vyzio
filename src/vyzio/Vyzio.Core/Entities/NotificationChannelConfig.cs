@@ -36,6 +36,13 @@ public class NotificationChannelConfig
     [MaxLength(200)]
     public string? MessageFieldsJson { get; set; }
 
+    /// <summary>Media format for Telegram notifications: "clip_or_photo" (default), "photo", or "text".</summary>
+    [MaxLength(20)]
+    public string? MediaMode { get; set; }
+
+    /// <summary>Minimum minutes between two notifications for the same (camera, label). Null = no cooldown.</summary>
+    public int? CooldownMinutes { get; set; }
+
     public DateTimeOffset? ConfiguredAt { get; set; }
 
     public DateTimeOffset? LastTestedAt { get; set; }

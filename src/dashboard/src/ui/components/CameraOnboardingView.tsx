@@ -7,12 +7,14 @@ import type { DiscoverCameras } from '../../application/use-cases/DiscoverCamera
 import type { GetCameraDetectionConfig } from '../../application/use-cases/GetCameraDetectionConfig'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
+import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import type { SaveCameraDetectionConfig } from '../../application/use-cases/SaveCameraDetectionConfig'
 import type { UpdateCamera } from '../../application/use-cases/UpdateCamera'
 import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftCamera'
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
+import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
 import { useVendorAssistance } from '../hooks/useVendorAssistance'
@@ -39,6 +41,8 @@ interface CameraOnboardingViewProps {
   deleteCamera: DeleteCamera
   getCameraDetectionConfig: GetCameraDetectionConfig
   saveCameraDetectionConfig: SaveCameraDetectionConfig
+  getCameraLabels: GetCameraLabels
+  apiBaseUrl: string
 }
 
 type DiscoveryCandidate = {
@@ -107,7 +111,16 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [editPassword, setEditPassword] = useState('')
   const [detectionLabels, setDetectionLabels] = useState<string[]>(['person'])
   const [detectionAvailableLabels, setDetectionAvailableLabels] = useState<string[]>([])
+  const [allDetectionLabels, setAllDetectionLabels] = useState<DetectionLabel[]>([])
+  const [detectionContinuousRecording, setDetectionContinuousRecording] = useState(false)
+
+  useEffect(() => {
+    props.getCameraLabels.execute()
+      .then(setAllDetectionLabels)
+      .catch(() => {})
+  }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
+  const [showLive, setShowLive] = useState(false)
 
   const selectedCandidate =
     selection.kind === 'candidate' ? (discoveryResults[selection.index] ?? null) : null
@@ -200,12 +213,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setEditPassword('')
     setDetectionLabels(['person'])
     setDetectionAvailableLabels([])
+    setDetectionContinuousRecording(false)
+    setShowLive(false)
     setDetectionConfigLoading(true)
     props.getCameraDetectionConfig.execute(selectedCamera.id)
       .then((config) => {
         if (config) {
           setDetectionLabels(config.labels)
           setDetectionAvailableLabels(config.availableLabels)
+          setDetectionContinuousRecording(config.continuousRecordingEnabled)
         }
       })
       .catch(() => {})
@@ -422,7 +438,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           ...editForm,
           password: editPassword.trim() ? editPassword : null,
         }),
-        props.saveCameraDetectionConfig.execute(selectedCameraId, detectionLabels),
+        props.saveCameraDetectionConfig.execute(selectedCameraId, detectionLabels, detectionContinuousRecording),
       ])
 
       camerasState.reload()
@@ -1113,6 +1129,26 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     })}
 
                     <section className="camera-detail-section">
+                      <h3>Live</h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <button
+                          type="button"
+                          className="secondary-cta"
+                          style={{ alignSelf: 'flex-start', minHeight: 28, padding: '0 10px', fontSize: '0.82rem' }}
+                          onClick={() => setShowLive((v) => !v)}
+                        >
+                          {showLive ? 'Arreter le live' : 'Voir le live'}
+                        </button>
+                        {showLive && selectedCameraId && (
+                          <CameraLiveView
+                            cameraId={selectedCameraId}
+                            apiBaseUrl={props.apiBaseUrl}
+                          />
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="camera-detail-section">
                       <h3>Modifier</h3>
                       <div className="camera-form-grid compact">
                         <label>
@@ -1176,12 +1212,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <DetectionConfigSection
                       labels={detectionLabels}
                       availableLabels={detectionAvailableLabels}
+                      allLabels={allDetectionLabels}
                       loading={detectionConfigLoading}
+                      continuousRecordingEnabled={detectionContinuousRecording}
                       onToggle={(value) =>
                         setDetectionLabels((prev) =>
                           prev.includes(value) ? prev.filter((l) => l !== value) : [...prev, value],
                         )
                       }
+                      onToggleContinuousRecording={() => setDetectionContinuousRecording((v) => !v)}
                     />
 
                     <div className="camera-debug-stack">
@@ -1270,34 +1309,48 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   )
 }
 
-const ALL_DETECTION_LABELS = [
-  { value: 'person', label: 'Personne' },
-  { value: 'car', label: 'Voiture' },
-  { value: 'dog', label: 'Chien' },
-  { value: 'cat', label: 'Chat' },
-  { value: 'bird', label: 'Oiseau' },
-  { value: 'deer', label: 'Cerf' },
-  { value: 'horse', label: 'Cheval' },
-  { value: 'motorcycle', label: 'Moto' },
-  { value: 'bicycle', label: 'Velo' },
-  { value: 'truck', label: 'Camion' },
-]
+function CameraLiveView({ cameraId, apiBaseUrl }: { cameraId: string; apiBaseUrl: string }) {
+  const [src, setSrc] = useState(
+    () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
+  )
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSrc(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [cameraId, apiBaseUrl])
+
+  return (
+    <img
+      src={src}
+      alt="Flux live"
+      style={{ width: '100%', borderRadius: 4, background: '#000' }}
+    />
+  )
+}
 
 function DetectionConfigSection({
   labels,
   availableLabels,
+  allLabels,
   loading,
+  continuousRecordingEnabled,
   onToggle,
+  onToggleContinuousRecording,
 }: {
   labels: string[]
   availableLabels: string[]
+  allLabels: DetectionLabel[]
   loading: boolean
+  continuousRecordingEnabled: boolean
   onToggle: (value: string) => void
+  onToggleContinuousRecording: () => void
 }) {
   const displayLabels =
     availableLabels.length > 0
-      ? ALL_DETECTION_LABELS.filter((l) => availableLabels.includes(l.value))
-      : ALL_DETECTION_LABELS
+      ? allLabels.filter((l) => availableLabels.includes(l.value))
+      : allLabels
 
   return (
     <section className="camera-form-section" style={{ marginTop: 24 }}>
@@ -1309,7 +1362,7 @@ function DetectionConfigSection({
       ) : (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            {displayLabels.map(({ value, label }) => (
+            {displayLabels.map(({ value, displayName, emoji }) => (
               <label
                 key={value}
                 style={{
@@ -1330,9 +1383,25 @@ function DetectionConfigSection({
                   onChange={() => onToggle(value)}
                   style={{ accentColor: 'currentColor' }}
                 />
-                {label}
+                {emoji} {displayName}
               </label>
             ))}
+          </div>
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(247,244,237,0.1)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={continuousRecordingEnabled}
+                onChange={onToggleContinuousRecording}
+                style={{ accentColor: 'currentColor' }}
+              />
+              Enregistrement continu
+            </label>
+            {continuousRecordingEnabled && (
+              <p style={{ marginTop: 6, fontSize: '0.82rem', opacity: 0.65, paddingLeft: 22 }}>
+                Attention : l'enregistrement continu consomme environ 1 a 3 Go par jour par camera.
+              </p>
+            )}
           </div>
         </>
       )}

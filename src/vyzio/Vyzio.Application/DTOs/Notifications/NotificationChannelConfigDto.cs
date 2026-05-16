@@ -13,12 +13,14 @@ public sealed record NotificationChannelConfigDto(
     int? ActiveFromHour,
     int? ActiveToHour,
     string[] MessageFields,
+    string MediaMode,
+    int? CooldownMinutes,
     DateTimeOffset? ConfiguredAt,
     DateTimeOffset? LastTestedAt,
     string? LastTestStatus,
     string? LastTestError)
 {
-    private static readonly string[] DefaultLabels = ["person"];
+    private static readonly string[] DefaultLabels = ["person_unknown", "person_known"];
     private static readonly string[] DefaultFields = ["camera", "time", "label", "confidence", "snapshot"];
 
     public static NotificationChannelConfigDto From(NotificationChannelConfig config)
@@ -57,6 +59,8 @@ public sealed record NotificationChannelConfigDto(
             ActiveFromHour: config.ActiveFromHour,
             ActiveToHour: config.ActiveToHour,
             MessageFields: fields,
+            MediaMode: config.MediaMode ?? "clip_or_photo",
+            CooldownMinutes: config.CooldownMinutes,
             ConfiguredAt: config.ConfiguredAt,
             LastTestedAt: config.LastTestedAt,
             LastTestStatus: config.LastTestStatus,
@@ -72,7 +76,10 @@ public sealed record SaveNotificationChannelConfigRequest(
     string[]? AllowedLabels,
     int? ActiveFromHour,
     int? ActiveToHour,
-    string[]? MessageFields = null);
+    string[]? MessageFields = null,
+    string? MediaMode = null,
+    int? CooldownMinutes = null,
+    bool ClearCooldown = false);
 
 public sealed record NotificationLogEntryDto(
     string Status,

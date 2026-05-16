@@ -50,7 +50,8 @@ internal static class AssistedCameraDiscoveryKnownDevices
             || normalized.Contains("webcam")
             || normalized.Contains("v380")
             || normalized.Contains("tapo")
-            || Regex.IsMatch(normalized, @"\bc\d{2,3}\b");
+            || Regex.IsMatch(normalized, @"\bc\d{2,3}\b")
+            || Regex.IsMatch(normalized, @"^mv\d");
     }
 
     private static string? NormalizeOui(string? macAddress)

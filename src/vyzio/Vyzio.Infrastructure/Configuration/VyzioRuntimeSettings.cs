@@ -2,6 +2,7 @@ namespace Vyzio.Infrastructure.Configuration;
 
 public class VyzioRuntimeSettings
 {
+    public string? TimeZone { get; init; }
     public DatabaseSettings Database { get; init; } = new();
     public FrigateSettings Frigate { get; init; } = new();
     public DiscoverySettings Discovery { get; init; } = new();
