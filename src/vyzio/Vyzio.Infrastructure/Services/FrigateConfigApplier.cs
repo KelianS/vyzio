@@ -157,15 +157,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                 ["cpu1"] = new() { Type = "cpu" }
             },
             FaceRecognition = faceRecognition,
-            Record = new FrigateRecordConfig
-            {
-                Enabled = true,
-                Retain = new FrigateRecordRetainConfig { Days = 7, Mode = "motion" },
-                Events = new FrigateRecordEventsConfig
-                {
-                    Retain = new FrigateRetainConfig { Default = 14 },
-                },
-            },
+            Record = new FrigateRecordConfig { Enabled = true },
             Cameras = activeCameras,
         };
     }
@@ -264,19 +256,6 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
     private sealed class FrigateRecordConfig
     {
         public required bool Enabled { get; init; }
-        public FrigateRecordRetainConfig? Retain { get; init; }
-        public FrigateRecordEventsConfig? Events { get; init; }
-    }
-
-    private sealed class FrigateRecordRetainConfig
-    {
-        public required int Days { get; init; }
-        public string Mode { get; init; } = "motion";
-    }
-
-    private sealed class FrigateRecordEventsConfig
-    {
-        public FrigateRetainConfig? Retain { get; init; }
     }
 
     // Per-camera record override: only sets enabled; global retain/events apply otherwise.
