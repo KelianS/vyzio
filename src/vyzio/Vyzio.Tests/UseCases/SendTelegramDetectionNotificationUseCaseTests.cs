@@ -41,11 +41,37 @@ public class SendTelegramDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_sends_video_on_end_when_has_clip_true()
+    public async Task Execute_sends_media_group_on_end_when_clip_and_snapshot_available()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true);
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true, hasSnapshot: true);
+        var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
+        var snapshotStream = new MemoryStream(new byte[] { 4, 5, 6 });
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
+        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+
+        var sent = await _sut.ExecuteAsync(detectionEvent);
+
+        Assert.True(sent);
+        await _telegramSender.Received(1).SendMediaGroupAsync(
+            snapshotStream,
+            clipStream,
+            Arg.Any<string>(),
+            "bot-token",
+            "chat-id",
+            Arg.Any<CancellationToken>());
+        await _telegramSender.DidNotReceive().SendVideoAsync(
+            Arg.Any<Stream>(), Arg.Any<Stream?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _telegramSender.DidNotReceive().SendPhotoAsync(
+            Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_sends_video_on_end_when_clip_available_but_no_snapshot()
+    {
+        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true, hasSnapshot: false);
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
         _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
+        _snapshotProvider.TryGetSnapshotAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
 
         var sent = await _sut.ExecuteAsync(detectionEvent);
 
@@ -57,8 +83,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
             "bot-token",
             "chat-id",
             Arg.Any<CancellationToken>());
-        await _telegramSender.DidNotReceive().SendPhotoAsync(
-            Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _telegramSender.DidNotReceive().SendMediaGroupAsync(
+            Arg.Any<Stream>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -108,7 +108,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         Assert.Equal(1, await _db.DetectionEvents.CountAsync());
         Assert.Equal(1, await _db.Notifications.CountAsync());
+        // Snapshot provider returns null → media group not possible → video-only fallback
         Assert.Single(_telegramSender.Videos);
+        Assert.Empty(_telegramSender.MediaGroups);
         Assert.Empty(_telegramSender.Messages);
 
         var notification = await _db.Notifications.SingleAsync();
@@ -165,6 +167,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     {
         public List<string> Messages { get; } = [];
         public List<string> Videos { get; } = [];
+        public List<string> MediaGroups { get; } = [];
 
         public Task SendAsync(string message, string botToken, string chatId, CancellationToken ct = default)
         {
@@ -181,6 +184,12 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         public Task SendVideoAsync(Stream video, Stream? thumbnail, string caption, string botToken, string chatId, CancellationToken ct = default)
         {
             Videos.Add(caption);
+            return Task.CompletedTask;
+        }
+
+        public Task SendMediaGroupAsync(Stream photo, Stream video, string caption, string botToken, string chatId, CancellationToken ct = default)
+        {
+            MediaGroups.Add(caption);
             return Task.CompletedTask;
         }
     }

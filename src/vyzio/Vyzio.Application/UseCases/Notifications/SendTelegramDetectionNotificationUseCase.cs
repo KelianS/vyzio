@@ -108,22 +108,37 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 await Task.Delay(TimeSpan.FromSeconds(clipFetchDelaySeconds), ct);
             }
 
-            // Priority 1: send clip as video when mode allows it.
+            // Priority 1: send clip + snapshot as media group (album) when mode allows it.
             if (mediaMode == "clip_or_photo" && enabledFields.Contains(MessageField.Snapshot))
             {
                 var clip = await clipProvider.TryGetClipAsync(detectionEvent.FrigateEventId, ct);
                 if (clip is not null)
                 {
-                    logger.LogInformation("Sending Telegram video for event {EventId}", detectionEvent.Id);
-                    var thumbnail = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
-                    try
+                    var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
+                    if (snapshot is not null)
                     {
-                        await telegramSender.SendVideoAsync(clip, thumbnail, caption, config.BotToken!, config.ChatId!, ct);
+                        logger.LogInformation("Sending Telegram media group for event {EventId}", detectionEvent.Id);
+                        try
+                        {
+                            await telegramSender.SendMediaGroupAsync(snapshot, clip, caption, config.BotToken!, config.ChatId!, ct);
+                        }
+                        finally
+                        {
+                            await snapshot.DisposeAsync();
+                            await clip.DisposeAsync();
+                        }
                     }
-                    finally
+                    else
                     {
-                        await clip.DisposeAsync();
-                        if (thumbnail is not null) await thumbnail.DisposeAsync();
+                        logger.LogInformation("Sending Telegram video (no snapshot) for event {EventId}", detectionEvent.Id);
+                        try
+                        {
+                            await telegramSender.SendVideoAsync(clip, null, caption, config.BotToken!, config.ChatId!, ct);
+                        }
+                        finally
+                        {
+                            await clip.DisposeAsync();
+                        }
                     }
                     await notifications.AddAsync(new Notification
                     {

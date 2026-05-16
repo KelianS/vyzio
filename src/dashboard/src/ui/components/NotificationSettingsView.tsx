@@ -235,7 +235,7 @@ function MessageFieldsSelector({
 }
 
 const MEDIA_MODE_OPTIONS: { value: MediaMode; label: string; description: string }[] = [
-  { value: 'clip_or_photo', label: 'Clip ou photo', description: 'Envoie le clip si disponible, sinon la photo.' },
+  { value: 'clip_or_photo', label: 'Album (photo + clip)', description: 'Envoie la photo avec zone de detection et le clip ensemble dans un album.' },
   { value: 'photo', label: 'Photo uniquement', description: 'Envoie toujours une photo, jamais de clip.' },
   { value: 'text', label: 'Texte uniquement', description: 'Aucun media, juste le message texte.' },
 ]
