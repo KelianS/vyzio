@@ -13,6 +13,8 @@ public class FrigateAdapterTests
     private readonly IDetectionEventRepository _detectionEvents = Substitute.For<IDetectionEventRepository>();
     private readonly IDetectionNotificationDispatcher _notifications = Substitute.For<IDetectionNotificationDispatcher>();
     private readonly IFrigateRestClient _restClient = Substitute.For<IFrigateRestClient>();
+    private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
+    private readonly IProfileCameraLinkRepository _profileCameraLinks = Substitute.For<IProfileCameraLinkRepository>();
     private readonly ILogger<FrigateAdapter> _logger = Substitute.For<ILogger<FrigateAdapter>>();
 
     [Fact]
@@ -111,6 +113,8 @@ public class FrigateAdapterTests
             _detectionEvents,
             _notifications,
             _restClient,
+            _profiles,
+            _profileCameraLinks,
             _logger);
 
     private static string RelevantPayload(

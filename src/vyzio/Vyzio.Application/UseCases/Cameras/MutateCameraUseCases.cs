@@ -159,7 +159,6 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
         var normalizedStreamPath = CameraDraftFactory.NormalizeStreamPath(request.StreamPath);
         var normalizedVendorFamily = CameraDraftFactory.NormalizeOptional(request.VendorFamily);
         var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
-        var normalizedDetectionPreset = string.IsNullOrWhiteSpace(request.DetectionPreset) ? camera.DetectionPreset : request.DetectionPreset.Trim();
         var normalizedPassword = request.Password is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
 
         var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
@@ -167,7 +166,6 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
             || !string.Equals(camera.Username, normalizedUsername, StringComparison.Ordinal)
             || !string.Equals(camera.StreamPath, normalizedStreamPath, StringComparison.Ordinal)
             || !string.Equals(camera.SourceType, normalizedSourceType, StringComparison.Ordinal)
-            || !string.Equals(camera.DetectionPreset, normalizedDetectionPreset, StringComparison.Ordinal)
             || !string.Equals(camera.VendorFamily, normalizedVendorFamily, StringComparison.Ordinal)
             || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
 
@@ -177,7 +175,6 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
         camera.Username = normalizedUsername;
         camera.StreamPath = normalizedStreamPath;
         camera.SourceType = normalizedSourceType;
-        camera.DetectionPreset = normalizedDetectionPreset;
         camera.VendorFamily = normalizedVendorFamily;
 
         if (normalizedPassword is not null)
@@ -355,7 +352,6 @@ internal static class CameraDraftFactory
             StreamPath = NormalizeStreamPath(request.StreamPath),
             VendorFamily = NormalizeOptional(request.VendorFamily),
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
-            DetectionPreset = string.IsNullOrWhiteSpace(request.DetectionPreset) ? "person_default" : request.DetectionPreset.Trim(),
             Status = "needs_attention",
             ValidationState = "draft",
             IsEnabled = false,

@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: src/vyzio/Vyzio.Api/Dockerfile
     container_name: vyzio-api
+    restart: unless-stopped
     depends_on:
       - frigate
     environment:
@@ -14,7 +15,7 @@ services:
       - ./config:/app/config
       - vyzio-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - vyzio-net
     ports:
@@ -24,6 +25,7 @@ services:
     # Dedicated MQTT broker used by Frigate and later by Vyzio integration.
     image: eclipse-mosquitto:2
     container_name: vyzio-mqtt
+    restart: unless-stopped
     volumes:
       - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     networks:
@@ -34,6 +36,7 @@ services:
     # development-only fallback file until Vyzio manages the effective config.
     image: ghcr.io/blakeblackshear/frigate:stable
     container_name: vyzio-frigate
+    restart: unless-stopped
     depends_on:
       - mqtt
     privileged: true

@@ -45,16 +45,125 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 > But : Pouvoir configurer ce qui va être détecté, des personnes, animaux, véhicules, etc. Pouvoir reconnaitre une personne en particulier, pas uniquement "person", mais "Alice", "Bob, etc. Pouvoir associer des profils à des caméras, par exemple "Caméra de la porte d'entrée : détecter les personnes, reconnaître Alice et Bob, mais pas les véhicules". Pouvoir avoir une vue claire de ce qui est détecté sur chaque caméra et un historique des détections avec les métadonnées associées (catégorie, identité reconnue, caméra, heure).
 
 **Taches :**
-TODO
+
+#### Cadrage préalable — aligner SAD avant implémentation
+
+- [x] Compléter le SAD pour documenter le modèle de stockage des photos de profil : comment Vyzio transmet les photos vers la bibliothèque de reconnaissance Frigate (API REST Frigate ou écriture directe dans le volume), quel identifiant Vyzio utilise pour le rattachement (nom profil ou slug), et ce que Vyzio conserve localement (référence de chemin ou métadonnées uniquement)
+- [x] Compléter le SAD pour documenter la configuration de détection par caméra : comment Vyzio persiste les labels actifs par caméra (`person`, `car`, `dog`, etc.) et comment cette configuration est projetée dans la section `cameras` de `frigate.yml` via le `CameraConfigWriter` existant
+- [x] Compléter le SAD pour documenter l'association profil-caméra comme agrégat métier Vyzio : structure de données, cardinalité (N profils × M caméras), et quand cette association influence le comportement de reconnaissance (filtrage dans `ProfileRulesService` ou configuration Frigate)
+
+#### Modèle métier et persistance
+
+- [x] Introduire le modèle de photo de profil dans `Core` et `Infrastructure` : entité ou value object portant la référence fichier, le statut de synchronisation vers Frigate et la date d'ajout ; repository dédié ou extension de `IProfileRepository`
+- [x] Introduire la configuration de détection par caméra dans `Core` et `Infrastructure` : entité portant la liste des labels activés par caméra (`CameraDetectionConfig`), repository dédié, migration EF Core
+- [x] Introduire l'association profil-caméra dans `Core` et `Infrastructure` : entité de jointure `ProfileCameraLink` (profile_id, camera_id, enabled), repository, migration EF Core
+- [x] Étendre le schéma SQLite via migrations EF Core pour les trois nouvelles entités, sans rupture des tables existantes
+
+#### Use cases backend
+
+- [x] Implémenter `AddProfilePhotoUseCase` : valider et stocker la photo localement, déclencher la synchronisation vers la bibliothèque de reconnaissance Frigate via l'API REST Frigate, retourner le statut de sync
+- [x] Implémenter `RemoveProfilePhotoUseCase` : supprimer la photo locale et retirer l'entrée correspondante de la bibliothèque Frigate
+- [x] Implémenter `GetCameraDetectionConfigUseCase` et `SaveCameraDetectionConfigUseCase` : lire et écrire la liste des labels actifs par caméra ; déclencher la regénération de `frigate.yml` via le `CameraConfigWriter` existant si la config change
+- [x] Implémenter `SetCameraProfileLinksUseCase` et `SetProfileCameraLinksUseCase` : remplacer intégralement les associations profil-caméra (full replacement idempotent)
+- [x] Implémenter `GetDetectionHistoryUseCase` : requête paginée sur `detection_events` avec filtres combinables (camera, label, profile_id, plage de dates), triée par `occurred_at` décroissant
+- [x] Implémenter `CorrectDetectionIdentityUseCase` : permettre de lier ou délier un événement de détection à un profil existant, mettre à jour `profile_id` et `identity` dans `detection_events`
+- [x] Étendre `FrigateAdapter` pour appliquer les associations profil-caméra (ADR-15) : une reconnaissance Frigate (`sub_label`) n'est mappée vers un profil Vyzio que si ce profil est associé à la caméra concernée (ou si aucun lien n'est défini)
+
+#### API
+
+- [x] Exposer les endpoints photo de profil : `POST /api/profiles/{id}/photos` (upload multipart), `DELETE /api/profiles/{id}/photos/{photoId}` ; inclure le statut de sync Frigate dans la réponse
+- [x] Exposer les endpoints de configuration détection par caméra : `GET /api/cameras/{id}/detection-config`, `PUT /api/cameras/{id}/detection-config` avec validation des labels connus
+- [x] Exposer les endpoints d'association profil-caméra : `GET /api/cameras/{id}/profile-links`, `PUT /api/cameras/{id}/profile-links`, `GET /api/profiles/{id}/camera-links`, `PUT /api/profiles/{id}/camera-links`
+- [x] Exposer l'endpoint historique détections filtré et paginé : `GET /api/detection-events/history?camera=&label=&profileId=&from=&to=&page=&limit=`
+- [x] Exposer l'endpoint de correction de reconnaissance : `PATCH /api/detection-events/{id}/identity` avec `{ profileId: string | null }`
+
+#### Interface utilisateur
+
+- [x] Construire la page de gestion des profils (liste complète) : afficher tous les profils avec nom, catégorie, mode d'alerte ; bouton de création ; accessible via `#profiles`
+- [x] Construire le formulaire de création et d'édition de profil : nom, catégorie, mode d'alerte
+- [x] Construire la vue détail d'un profil : onglets Informations / Photos / Cameras ; galerie de photos avec upload et suppression individuelle + statut sync Frigate ; liste des caméras liées avec toggle
+- [x] Construire l'interface de configuration de détection par caméra : depuis `CameraOnboardingView`, endpoints `GET/PUT /cameras/{id}/detection-config`
+- [x] Construire l'interface d'association profil-caméra : depuis le détail profil (onglet Cameras), liste des caméras avec checkbox ; cohérent avec `PUT /profiles/{id}/camera-links`
+- [x] Construire la vue historique des détections : liste paginée d'événements avec label, identité reconnue, caméra, heure, lien snapshot ; filtres par caméra, label, profil, plage de dates ; accessible via `#history`
+- [x] Permettre la correction d'une reconnaissance depuis la vue historique : bouton "Corriger" inline sur chaque événement avec dropdown profil, appel `PATCH /detection-events/{id}/identity`
+
+#### Tests
+
+- [x] Tests unitaires (NSubstitute, zéro DB) pour : `AddProfilePhotoUseCase`, `RemoveProfilePhotoUseCase`, `SetCameraProfileLinksUseCase`, `CorrectDetectionIdentityUseCase`
+- [x] Tests d'intégration (SQLite in-memory, EnsureCreated) pour : `ProfilePhotoRepository`, `ProfileCameraLinkRepository` (upsert, unicité, suppression), `DetectionEventRepository.GetPagedAsync` (filtres, pagination), `UpdateIdentityAsync`
+- [x] Tests de contrat FrigateAdapter (ADR-15) : vérifier que le ProfileId est résolu uniquement si le profil est lié à la caméra ; sans lien défini, la reconnaissance s'applique sur toutes les caméras
+
+**Critères d'acceptation :**
+- L'utilisateur peut créer un profil, y ajouter une ou plusieurs photos et voir la synchronisation confirmée vers Frigate depuis l'interface, sans ouvrir un terminal ni modifier un fichier
+- L'utilisateur peut configurer, par caméra, les catégories de détection actives (personnes, animaux, véhicules, etc.) depuis l'interface ; la configuration est appliquée à Frigate sans intervention manuelle
+- L'utilisateur peut associer des profils à des caméras spécifiques ; seuls les profils associés à une caméra sont candidats à la reconnaissance sur cette caméra
+- Lorsque Frigate retourne un `sub_label` correspondant à un profil Vyzio associé à la caméra, l'événement apparaît avec le nom de la personne dans l'historique et dans les notifications
+- L'utilisateur dispose d'une vue historique filtrée et paginée des détections, avec miniature, identité reconnue, caméra et heure, accessible sans passer par Frigate
+- L'utilisateur peut corriger une reconnaissance erronée depuis l'historique en assignant ou retirant un profil d'un événement
+- La suppression d'un profil supprime ses photos, retire ses associations caméra et préserve les événements historiques avec une référence neutre
 
 ### US-P3.7 — Live feed, replay détections et enregistrements continus
 > But : Avoir depuis l'interface une vue en direct du flux de chaque caméra. Avoir une courte vidéo en replay des dernières secondes avant et après une détection, pour pouvoir vérifier rapidement ce qui s'est passé sans devoir aller chercher les fichiers d'enregistrement. Avoir la possibilité d'activer un enregistrement continu sur certaines caméras, pour pouvoir faire du time-lapse ou de la recherche d'événements sur une période donnée.
 
 **Taches :**
-TODO
 
-### US-P3.8 — UI uniformisee, coherent et guidant
-> But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit ... La vue principale devra aussi être repensé pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live camera, notifications, statuts ...)
+#### Cadrage préalable — aligner SAD avant implémentation
+
+- [ ] Documenter dans le SAD la stratégie d'accès au live feed : URL HLS directe vers Frigate ou proxy Vyzio, implications réseau et authentification
+- [ ] Documenter dans le SAD la stratégie d'accès aux clips : URL directe Frigate ou endpoint Vyzio, cycle de rétention, taille estimée par caméra
+- [ ] Documenter dans le SAD la stratégie d'enregistrement continu : activation par caméra dans la config Frigate générée, impact sur le stockage, politique de rétention configurable
+
+#### Configuration Frigate
+
+- [ ] Activer l'enregistrement des clips dans la config Frigate générée par défaut (tous les événements ont actuellement `has_clip: false`)
+- [ ] Exposer l'activation de l'enregistrement continu par caméra dans `CameraDetectionConfig` et le projeter dans la config Frigate générée
+
+#### API
+
+- [ ] Exposer par caméra l'URL du flux live (HLS ou WebRTC) : `GET /api/cameras/{id}/stream-url`
+- [ ] Vérifier que les clips Frigate sont accessibles depuis le navigateur (CORS, auth) et documenter l'URL de référence
+
+#### Interface utilisateur
+
+- [ ] Construire la vue live feed : player embarqué (HLS.js ou video natif) par caméra, accessible depuis la liste des caméras ou la vue principale
+- [ ] Construire le replay des détections : depuis l'historique, afficher le clip de l'événement dans un player inline ou une modale si `has_clip: true`
+- [ ] Permettre d'activer ou désactiver l'enregistrement continu par caméra depuis l'interface de configuration, avec indication de l'impact stockage
+
+#### Tests
+
+- [ ] Vérifier que la config Frigate générée inclut bien `record` et `clips` quand activés, sans régression sur les caméras non concernées
+
+### US-P3.8 — UI uniformisee, coherente et guidante
+> But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit. La vue principale devra aussi être repensée pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live caméra, notifications, statuts).
+
+**Taches :**
+
+#### Audit et cadrage
+
+- [ ] Auditer la cohérence cross-pages : terminologie (noms des actions, labels, statuts), patterns de navigation (boutons retour, accès aux sections), comportements des formulaires
+- [ ] Identifier les composants UI dupliqués entre pages et définir les abstractions communes à extraire
+
+#### Vue principale (hub)
+
+- [ ] Repenser la vue principale pour orienter clairement l'utilisateur selon son état : première configuration (aucune caméra), système opérationnel (lien vers live feed), système dégradé (guidage vers la correction)
+- [ ] Intégrer un accès rapide au live feed sur la vue principale une fois P3.7 livré
+- [ ] Afficher sur la vue principale un résumé actionnable des statuts : caméras actives, profils synchronisés, dernière notification, alertes en attente
+
+#### Guidage utilisateur — reconnaissance
+
+- [ ] Avertir l'utilisateur si une caméra n'a plus `person` dans ses labels de détection alors qu'elle a des profils associés — la reconnaissance ne pourra pas s'exécuter sans ce label
+- [ ] Donner un retour lors de l'upload d'une photo de profil si aucun visage n'est détectable dans l'image (photo de dos, qualité insuffisante, etc.)
+- [ ] Afficher le nombre de photos par profil et une indication sur le minimum recommandé pour une reconnaissance fiable (3 à 5 photos, angles variés)
+- [ ] Valider le flow end-to-end `sub_label` → profil : vérifier que lorsque Frigate pose un `sub_label` reconnu, l'événement remonte dans l'historique avec le nom du profil (non encore confirmé en conditions réelles)
+
+#### Cohérence composants et navigation
+
+- [ ] Uniformiser les patterns de navigation entre toutes les vues (position et libellé du bouton retour, fil d'Ariane, transitions)
+- [ ] Harmoniser les composants de feedback (messages d'erreur, états de chargement, confirmations) pour qu'ils aient le même rendu et le même comportement quelle que soit la page
+
+
+### US-P3.9 - Privacy mode
+> But : permettre à l'utilisateur de couper une caméra temporairement ou de manière récurrente (ex. tous les soirs de 22h à 6h) pour préserver la vie privée, avec un impact minimal sur les autres fonctionnalités (notifications, reconnaissance, etc.) et une indication claire du statut de confidentialité de chaque caméra. La caméra doit réellement être coupé et le flux RTSP ne doit être visible de personne sur le réseau, y compris de Frigate.
 
 **Taches :**
 TODO

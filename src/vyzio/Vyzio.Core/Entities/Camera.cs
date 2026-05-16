@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace Vyzio.Core.Entities;
 
@@ -35,8 +36,9 @@ public class Camera
     [MaxLength(100)]
     public string? VendorFamily { get; set; }
 
-    [Required, MaxLength(50)]
-    public string DetectionPreset { get; set; } = "person_default";
+    // JSON array of active detection labels e.g. ["person","dog"]. Null defaults to ["person"].
+    [MaxLength(500)]
+    public string? DetectionLabelsJson { get; set; }
 
     [Required, MaxLength(50)]
     public string Status { get; set; } = "needs_attention";
@@ -56,4 +58,21 @@ public class Camera
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    public IReadOnlyList<string> GetDetectionLabels()
+    {
+        if (DetectionLabelsJson is null)
+            return DefaultLabels;
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(DetectionLabelsJson) ?? [.. DefaultLabels];
+        }
+        catch (JsonException)
+        {
+            return DefaultLabels;
+        }
+    }
+
+    private static readonly IReadOnlyList<string> DefaultLabels = ["person"];
 }

@@ -1,21 +1,35 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import {
+  addProfilePhoto,
   applyCameraConfiguration,
+  correctDetectionIdentity,
   createCamera,
+  createProfile,
   dashboardRuntime,
   deleteCamera,
   deleteNotificationChannel,
+  deleteProfile,
   discoverCameras,
   getCameraStatus,
   getCameras,
+  getCameraDetectionConfig,
+  getDetectionHistory,
   getHubOverview,
   getNotificationChannelConfig,
   getNotificationLog,
+  getProfileCameraLinks,
+  getProfilePhotos,
+  getProfiles,
   getVendorAssistance,
+  removeProfilePhoto,
+  resyncFaceLibrary,
   saveNotificationChannelConfig,
+  saveCameraDetectionConfig,
+  setProfileCameraLinks,
   testNotificationChannel,
   updateCamera,
+  updateProfile,
   verifyCamera,
   verifyDraftCamera,
 } from './app/dependencies'
@@ -31,9 +45,11 @@ import {
   getEventTone,
 } from './ui/formatters/hub'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
+import { DetectionHistoryView } from './ui/components/DetectionHistoryView'
 import { NotificationSettingsView } from './ui/components/NotificationSettingsView'
+import { ProfilesView } from './ui/components/ProfilesView'
 
-type AppView = 'hub' | 'cameras' | 'notifications'
+type AppView = 'hub' | 'cameras' | 'notifications' | 'profiles' | 'history'
 
 interface SystemStatusViewModel {
   pillTone: 'online' | 'warning' | 'degraded' | 'loading'
@@ -123,6 +139,8 @@ function App() {
         verifyCamera={verifyCamera}
         applyCameraConfiguration={applyCameraConfiguration}
         deleteCamera={deleteCamera}
+        getCameraDetectionConfig={getCameraDetectionConfig}
+        saveCameraDetectionConfig={saveCameraDetectionConfig}
       />
     )
   }
@@ -135,6 +153,43 @@ function App() {
         testNotificationChannel={testNotificationChannel}
         deleteNotificationChannel={deleteNotificationChannel}
         getNotificationLog={getNotificationLog}
+        onBack={() => {
+          window.location.hash = ''
+          setView('hub')
+        }}
+      />
+    )
+  }
+
+  if (view === 'profiles') {
+    return (
+      <ProfilesView
+        getProfiles={getProfiles}
+        createProfile={createProfile}
+        updateProfile={updateProfile}
+        deleteProfile={deleteProfile}
+        getProfilePhotos={getProfilePhotos}
+        addProfilePhoto={addProfilePhoto}
+        removeProfilePhoto={removeProfilePhoto}
+        getProfileCameraLinks={getProfileCameraLinks}
+        setProfileCameraLinks={setProfileCameraLinks}
+        resyncFaceLibrary={resyncFaceLibrary}
+        apiBaseUrl={dashboardRuntime.apiBaseUrl}
+        onBack={() => {
+          window.location.hash = ''
+          setView('hub')
+        }}
+      />
+    )
+  }
+
+  if (view === 'history') {
+    return (
+      <DetectionHistoryView
+        getDetectionHistory={getDetectionHistory}
+        correctDetectionIdentity={correctDetectionIdentity}
+        getProfiles={getProfiles}
+        frigateBaseUrl={dashboardRuntime.frigateBaseUrl}
         onBack={() => {
           window.location.hash = ''
           setView('hub')
@@ -210,8 +265,8 @@ function App() {
           </div>
 
           <div className="panel-cta-row">
-            <a className="primary-cta" href="#events">
-              Voir les evenements
+            <a className="primary-cta" href="#history">
+              Historique
             </a>
             <a className="secondary-cta" href="#cameras">
               Cameras
@@ -320,7 +375,7 @@ function App() {
         <article className="panel panel-expert" id="expert">
           <div className="panel-heading">
             <p className="section-kicker">Mode avance</p>
-            <h2>Frigate</h2>
+            <h2>Interface avancee</h2>
           </div>
 
           <p className="expert-copy">Acces reserve aux reglages experts et au support.</p>
@@ -331,7 +386,7 @@ function App() {
             target="_blank"
             rel="noreferrer"
           >
-            Ouvrir Frigate en mode avance
+            Acceder a l&apos;interface experte
           </a>
 
           <p className="expert-footnote">
@@ -348,6 +403,8 @@ function App() {
 function getViewFromHash(hash: string): AppView {
   if (hash === '#cameras') return 'cameras'
   if (hash === '#notifications') return 'notifications'
+  if (hash === '#profiles') return 'profiles'
+  if (hash === '#history') return 'history'
   return 'hub'
 }
 

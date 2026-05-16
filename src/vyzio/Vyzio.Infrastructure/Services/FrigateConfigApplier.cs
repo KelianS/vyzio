@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Vyzio.Core.Entities;
@@ -8,7 +9,7 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services;
 
-public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFrigateConfigApplier
+public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<FrigateConfigApplier> logger) : IFrigateConfigApplier
 {
     public async Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
@@ -72,31 +73,39 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
             .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
             .ToDictionary(
                 camera => camera.FrigateCameraName ?? camera.Slug.Replace('-', '_'),
-                camera => new FrigateCameraConfig
+                camera =>
                 {
-                    Enabled = true,
-                    Ffmpeg = new FrigateFfmpegConfig
-                    {
-                        Inputs =
-                        [
-                            new FrigateInputConfig
-                            {
-                                Path = BuildRtspPath(camera),
-                                Roles = ["detect"],
-                            }
-                        ]
-                    },
-                    Detect = new FrigateDetectConfig
+                    var labels = camera.GetDetectionLabels();
+                    return new FrigateCameraConfig
                     {
                         Enabled = true,
-                        Fps = 5,
-                    },
-                    Snapshots = new FrigateSnapshotsConfig
-                    {
-                        Enabled = true,
-                        BoundingBox = true,
-                        Retain = new FrigateRetainConfig { Default = 30 },
-                    }
+                        Ffmpeg = new FrigateFfmpegConfig
+                        {
+                            Inputs =
+                            [
+                                new FrigateInputConfig
+                                {
+                                    Path = BuildRtspPath(camera),
+                                    Roles = ["detect"],
+                                }
+                            ]
+                        },
+                        Detect = new FrigateDetectConfig
+                        {
+                            Enabled = true,
+                            Fps = 5,
+                        },
+                        Objects = new FrigateObjectsConfig
+                        {
+                            Track = [.. labels],
+                        },
+                        Snapshots = new FrigateSnapshotsConfig
+                        {
+                            Enabled = true,
+                            BoundingBox = true,
+                            Retain = new FrigateRetainConfig { Default = 30 },
+                        }
+                    };
                 },
                 StringComparer.OrdinalIgnoreCase);
 
@@ -124,6 +133,11 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
             };
         }
 
+        // Enable face_recognition globally when at least one active camera is configured
+        FrigateFaceRecognitionConfig? faceRecognition = activeCameras.Any(c => c.Value.Enabled)
+            ? new FrigateFaceRecognitionConfig { Enabled = true }
+            : null;
+
         return new FrigateDocument
         {
             Mqtt = new FrigateMqttConfig
@@ -139,6 +153,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
             {
                 ["cpu1"] = new() { Type = "cpu" }
             },
+            FaceRecognition = faceRecognition,
             Cameras = activeCameras,
         };
     }
@@ -164,6 +179,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
         public required FrigateMqttConfig Mqtt { get; init; }
         public required FrigateDatabaseConfig Database { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
+        public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
         public required Dictionary<string, FrigateCameraConfig> Cameras { get; init; }
     }
 
@@ -183,12 +199,23 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings) : IFriga
         public required string Type { get; init; }
     }
 
+    private sealed class FrigateFaceRecognitionConfig
+    {
+        public required bool Enabled { get; init; }
+    }
+
     private sealed class FrigateCameraConfig
     {
         public required bool Enabled { get; init; }
         public required FrigateFfmpegConfig Ffmpeg { get; init; }
         public required FrigateDetectConfig Detect { get; init; }
+        public FrigateObjectsConfig? Objects { get; init; }
         public FrigateSnapshotsConfig? Snapshots { get; init; }
+    }
+
+    private sealed class FrigateObjectsConfig
+    {
+        public required List<string> Track { get; init; }
     }
 
     private sealed class FrigateFfmpegConfig

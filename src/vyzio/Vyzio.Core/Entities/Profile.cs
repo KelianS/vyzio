@@ -23,4 +23,6 @@ public class Profile
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public ICollection<DetectionEvent> DetectionEvents { get; set; } = [];
+    public ICollection<ProfilePhoto> Photos { get; set; } = [];
+    public ICollection<ProfileCameraLink> CameraLinks { get; set; } = [];
 }

@@ -4,9 +4,11 @@ import type { ApplyCameraConfiguration } from '../../application/use-cases/Apply
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
 import type { DeleteCamera } from '../../application/use-cases/DeleteCamera'
 import type { DiscoverCameras } from '../../application/use-cases/DiscoverCameras'
+import type { GetCameraDetectionConfig } from '../../application/use-cases/GetCameraDetectionConfig'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
+import type { SaveCameraDetectionConfig } from '../../application/use-cases/SaveCameraDetectionConfig'
 import type { UpdateCamera } from '../../application/use-cases/UpdateCamera'
 import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftCamera'
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
@@ -35,6 +37,8 @@ interface CameraOnboardingViewProps {
   verifyCamera: VerifyCamera
   applyCameraConfiguration: ApplyCameraConfiguration
   deleteCamera: DeleteCamera
+  getCameraDetectionConfig: GetCameraDetectionConfig
+  saveCameraDetectionConfig: SaveCameraDetectionConfig
 }
 
 type DiscoveryCandidate = {
@@ -79,7 +83,6 @@ const emptyForm: CameraDraftInput = {
   streamPath: null,
   vendorFamily: null,
   sourceType: 'rtsp_manual',
-  detectionPreset: 'person_default',
 }
 
 export function CameraOnboardingView(props: CameraOnboardingViewProps) {
@@ -102,6 +105,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   } | null>(null)
   const [editForm, setEditForm] = useState<CameraDraftInput>(emptyForm)
   const [editPassword, setEditPassword] = useState('')
+  const [detectionLabels, setDetectionLabels] = useState<string[]>(['person'])
+  const [detectionAvailableLabels, setDetectionAvailableLabels] = useState<string[]>([])
+  const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
 
   const selectedCandidate =
     selection.kind === 'candidate' ? (discoveryResults[selection.index] ?? null) : null
@@ -190,9 +196,20 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       streamPath: selectedCamera.streamPath ?? null,
       vendorFamily: selectedCamera.vendorFamily ?? null,
       sourceType: selectedCamera.sourceType,
-      detectionPreset: 'person_default',
     })
     setEditPassword('')
+    setDetectionLabels(['person'])
+    setDetectionAvailableLabels([])
+    setDetectionConfigLoading(true)
+    props.getCameraDetectionConfig.execute(selectedCamera.id)
+      .then((config) => {
+        if (config) {
+          setDetectionLabels(config.labels)
+          setDetectionAvailableLabels(config.availableLabels)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setDetectionConfigLoading(false))
   }, [selectedCamera])
 
   async function handleDiscovery() {
@@ -237,7 +254,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setDraftVerification(null)
       setDetailMessage(
         verified.guidance ??
-          `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour la synchroniser avec Frigate.`,
+          `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour activer la surveillance.`,
       )
     } catch (error: unknown) {
       setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
@@ -400,10 +417,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setDetailMessage(null)
 
     try {
-      const updated = await props.updateCamera.execute(selectedCameraId, {
-        ...editForm,
-        password: editPassword.trim() ? editPassword : null,
-      })
+      const [updated] = await Promise.all([
+        props.updateCamera.execute(selectedCameraId, {
+          ...editForm,
+          password: editPassword.trim() ? editPassword : null,
+        }),
+        props.saveCameraDetectionConfig.execute(selectedCameraId, detectionLabels),
+      ])
 
       camerasState.reload()
       cameraStatusState.reload()
@@ -411,7 +431,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setDetailMessage(
         updated.validationState === 'draft'
           ? 'Camera mise a jour. Reverifiez le flux avant d appliquer la configuration.'
-          : 'Camera mise a jour. Appliquez la configuration pour synchroniser Frigate.',
+          : 'Camera mise a jour. Appliquez la configuration pour prendre en compte les modifications.',
       )
     } catch (error: unknown) {
       setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
@@ -1153,6 +1173,17 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
                     {renderVendorAssistanceSection()}
 
+                    <DetectionConfigSection
+                      labels={detectionLabels}
+                      availableLabels={detectionAvailableLabels}
+                      loading={detectionConfigLoading}
+                      onToggle={(value) =>
+                        setDetectionLabels((prev) =>
+                          prev.includes(value) ? prev.filter((l) => l !== value) : [...prev, value],
+                        )
+                      }
+                    />
+
                     <div className="camera-debug-stack">
                       {renderConfidenceDetails(matchedDiscoveryCandidate)}
                       {renderTechnicalDetails(
@@ -1236,5 +1267,75 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         </article>
       </section>
     </main>
+  )
+}
+
+const ALL_DETECTION_LABELS = [
+  { value: 'person', label: 'Personne' },
+  { value: 'car', label: 'Voiture' },
+  { value: 'dog', label: 'Chien' },
+  { value: 'cat', label: 'Chat' },
+  { value: 'bird', label: 'Oiseau' },
+  { value: 'deer', label: 'Cerf' },
+  { value: 'horse', label: 'Cheval' },
+  { value: 'motorcycle', label: 'Moto' },
+  { value: 'bicycle', label: 'Velo' },
+  { value: 'truck', label: 'Camion' },
+]
+
+function DetectionConfigSection({
+  labels,
+  availableLabels,
+  loading,
+  onToggle,
+}: {
+  labels: string[]
+  availableLabels: string[]
+  loading: boolean
+  onToggle: (value: string) => void
+}) {
+  const displayLabels =
+    availableLabels.length > 0
+      ? ALL_DETECTION_LABELS.filter((l) => availableLabels.includes(l.value))
+      : ALL_DETECTION_LABELS
+
+  return (
+    <section className="camera-form-section" style={{ marginTop: 24 }}>
+      <h3 style={{ fontSize: '0.92rem', marginBottom: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Detection — etiquettes actives
+      </h3>
+      {loading ? (
+        <p style={{ opacity: 0.6, fontSize: '0.88rem' }}>Chargement…</p>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {displayLabels.map(({ value, label }) => (
+              <label
+                key={value}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  padding: '4px 10px',
+                  borderRadius: 4,
+                  background: labels.includes(value) ? 'rgba(247,244,237,0.15)' : 'rgba(247,244,237,0.05)',
+                  border: `1px solid ${labels.includes(value) ? 'rgba(247,244,237,0.4)' : 'rgba(247,244,237,0.12)'}`,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={labels.includes(value)}
+                  onChange={() => onToggle(value)}
+                  style={{ accentColor: 'currentColor' }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   )
 }
