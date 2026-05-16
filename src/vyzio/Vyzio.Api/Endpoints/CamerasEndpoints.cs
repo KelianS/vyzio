@@ -97,16 +97,20 @@ public static class CamerasEndpoints
             return dto is null ? Results.NotFound() : Results.Ok(dto);
         });
 
-        // Live feed — MJPEG proxy (ADR-16)
-        group.MapGet("/{id}/live/mjpeg", async (string id, GetCamerasUseCase getCameras, IFrigateRestClient frigateClient, CancellationToken ct) =>
+        // Live feed — latest frame proxy (ADR-16)
+        group.MapGet("/{id}/live/latest.jpg", async (string id, GetCamerasUseCase getCameras, IFrigateRestClient frigateClient, CancellationToken ct) =>
         {
             var cameras = await getCameras.ExecuteAsync(ct);
             var camera = cameras.FirstOrDefault(c => c.Id == id);
             if (camera is null) return Results.NotFound();
 
-            var slug = camera.Slug.Replace('-', '_');
-            var stream = await frigateClient.OpenMjpegStreamAsync(slug, ct);
-            return Results.Stream(stream, "multipart/x-mixed-replace; boundary=frame");
+            var frigateCamera = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var response = await frigateClient.GetLatestFrameAsync(frigateCamera, ct);
+            if (!response.IsSuccessStatusCode)
+                return Results.StatusCode((int)response.StatusCode);
+
+            var stream = await response.Content.ReadAsStreamAsync(ct);
+            return Results.Stream(stream, "image/jpeg");
         });
 
         // Profile links

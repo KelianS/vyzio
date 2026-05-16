@@ -120,14 +120,14 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 #### API
 
-- [x] Implémenter `GET /api/cameras/{id}/live/mjpeg` : proxy MJPEG Frigate en streaming chunked, auth Vyzio (ADR-16) — Frigate retiré des ports exposés en production
+- [x] Implémenter `GET /api/cameras/{id}/live/latest.jpg` : proxy de la dernière frame Frigate (`/api/{slug}/latest.jpg`), rafraîchi en polling 1fps côté UI (ADR-16) — Frigate non exposé au navigateur
 - [x] Implémenter `GET /api/detection-events/{id}/clip` : proxy MP4 Frigate authentifié en streaming chunked avec support Range (ADR-17)
 
 #### Interface utilisateur
 
-- [ ] Construire la vue live feed : player embarqué (HLS.js ou video natif) par caméra, accessible depuis la liste des caméras ou la vue principale
-- [ ] Construire le replay des détections : depuis l'historique, afficher le clip de l'événement dans un player inline ou une modale si `has_clip: true`
-- [ ] Permettre d'activer ou désactiver l'enregistrement continu par caméra depuis l'interface de configuration, avec indication de l'impact stockage
+- [x] Construire la vue live feed : polling `latest.jpg` à 1fps par caméra, toggle Voir/Arrêter dans le panneau détail caméra (ADR-16)
+- [x] Construire le replay des détections : depuis l'historique, afficher le clip de l'événement dans un `<video>` inline expandable si `has_clip: true` (ADR-17)
+- [x] Permettre d'activer ou désactiver l'enregistrement continu par caméra depuis l'interface de configuration, avec indication de l'impact stockage (~1-3 Go/jour)
 
 #### Notifications enrichies — clip en pièce jointe
 

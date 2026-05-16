@@ -191,8 +191,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         public Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default)
             => Task.FromResult(Identity);
 
-        public Task<Stream> OpenMjpegStreamAsync(string cameraSlug, CancellationToken ct = default)
-            => Task.FromResult<Stream>(Stream.Null);
+        public Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default)
+            => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StreamContent(Stream.Null) });
 
         public Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
             => Task.FromResult<Stream>(Stream.Null);

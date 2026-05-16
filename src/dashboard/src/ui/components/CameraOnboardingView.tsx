@@ -1129,11 +1129,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         >
                           {showLive ? 'Arreter le live' : 'Voir le live'}
                         </button>
-                        {showLive && (
-                          <img
-                            src={`${props.apiBaseUrl}/api/cameras/${selectedCameraId}/live/mjpeg`}
-                            alt="Flux live"
-                            style={{ width: '100%', borderRadius: 4, background: '#000' }}
+                        {showLive && selectedCameraId && (
+                          <CameraLiveView
+                            cameraId={selectedCameraId}
+                            apiBaseUrl={props.apiBaseUrl}
                           />
                         )}
                       </div>
@@ -1311,6 +1310,27 @@ const ALL_DETECTION_LABELS = [
   { value: 'bicycle', label: 'Velo' },
   { value: 'truck', label: 'Camion' },
 ]
+
+function CameraLiveView({ cameraId, apiBaseUrl }: { cameraId: string; apiBaseUrl: string }) {
+  const [src, setSrc] = useState(
+    () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
+  )
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSrc(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [cameraId, apiBaseUrl])
+
+  return (
+    <img
+      src={src}
+      alt="Flux live"
+      style={{ width: '100%', borderRadius: 4, background: '#000' }}
+    />
+  )
+}
 
 function DetectionConfigSection({
   labels,

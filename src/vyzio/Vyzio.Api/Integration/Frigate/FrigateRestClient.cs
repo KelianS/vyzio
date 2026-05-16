@@ -7,7 +7,7 @@ namespace Vyzio.Api.Integration.Frigate;
 public interface IFrigateRestClient
 {
     Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default);
-    Task<Stream> OpenMjpegStreamAsync(string cameraSlug, CancellationToken ct = default);
+    Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default);
     Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default);
 }
 
@@ -19,8 +19,8 @@ public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClien
         return ResolveSubLabel(details?.SubLabel);
     }
 
-    public Task<Stream> OpenMjpegStreamAsync(string cameraSlug, CancellationToken ct = default)
-        => httpClient.GetStreamAsync($"api/cameras/{cameraSlug}/mjpeg", ct);
+    public Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default)
+        => httpClient.GetAsync($"api/{cameraSlug}/latest.jpg", HttpCompletionOption.ResponseHeadersRead, ct);
 
     public Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
         => httpClient.GetStreamAsync($"api/events/{frigateEventId}/clip.mp4", ct);

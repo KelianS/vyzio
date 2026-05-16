@@ -26,7 +26,7 @@
   - [ADR-13 — Photos de profil : stockage Vyzio + synchronisation via API REST Frigate](#adr-13--photos-de-profil--stockage-vyzio--synchronisation-via-api-rest-frigate)
   - [ADR-14 — Labels de détection par caméra : colonne JSON sur Camera](#adr-14--labels-de-détection-par-caméra--colonne-json-sur-camera)
   - [ADR-15 — Association profil-caméra : table de jointure + filtrage dans ProfileRulesService](#adr-15--association-profil-caméra--table-de-jointure--filtrage-dans-profilerulesservice)
-  - [ADR-16 — Accès au flux live : URL Frigate retournée par Vyzio, sans proxy streaming](#adr-16--accès-au-flux-live--url-frigate-retournée-par-vyzio-sans-proxy-streaming)
+  - [ADR-16 — Accès au flux live : polling latest.jpg via Vyzio, Frigate non exposé](#adr-16--accès-au-flux-live--polling-latestjpg-via-vyzio-frigate-non-exposé)
   - [ADR-17 — Accès aux clips événementiels : proxy Vyzio authentifié en streaming](#adr-17--accès-aux-clips-événementiels--proxy-vyzio-authentifié-en-streaming)
   - [ADR-18 — Enregistrement continu : activation par caméra dans la config Frigate générée](#adr-18--enregistrement-continu--activation-par-caméra-dans-la-config-frigate-générée)
 6. [Architecture des services](#6-architecture-des-services)
@@ -1286,7 +1286,7 @@ sub_label Frigate reçu sur caméra X
 
 ---
 
-### ADR-16 — Accès au flux live : proxy MJPEG via Vyzio, Frigate non exposé
+### ADR-16 — Accès au flux live : polling latest.jpg via Vyzio, Frigate non exposé
 
 #### Contexte
 
@@ -1295,55 +1295,64 @@ L'interface Vyzio doit permettre de visualiser le flux en direct de chaque camé
 #### Endpoints live Frigate disponibles
 
 ```
-GET  /api/cameras/{name}/latest.jpg          → dernière frame JPEG
-GET  /api/cameras/{name}/mjpeg               → flux MJPEG (HTTP multipart/x-mixed-replace)
+GET  /api/{name}/latest.jpg                  → dernière frame JPEG (polling)
+WS   /live/jsmpeg/{name}                     → flux MPEG1 via WebSocket (jsmpeg)
 GET  /live/hls/{name}/index.m3u8             → HLS via go2rtc
 GET  /live/webrtc/api/ws?src={name}          → WebRTC via go2rtc (peer-to-peer — non proxifiable)
 ```
 
-WebRTC (go2rtc) n'est pas proxifiable par nature : c'est un protocole pair-à-pair qui nécessite que le navigateur se connecte directement à la source. Tout proxy WebRTC deviendrait un media relay (TURN), une infrastructure hors périmètre.
+**Constat terrain :** Frigate utilise WebSocket + jsmpeg pour son propre live feed — pas de flux MJPEG HTTP natif. WebRTC et jsmpeg sont non proxifiables sans infrastructure dédiée (TURN server, media relay).
 
 #### Options comparées
 
 | Option | Description | Avantages | Inconvénients |
 |---|---|---|---|
-| **A — Proxy MJPEG Vyzio** | `GET /api/cameras/{id}/live/mjpeg` → stream Frigate `/api/cameras/{slug}/mjpeg` | Frigate jamais exposé ; auth Vyzio ; simple à implémenter | Bande passante LAN ~300KB/s par caméra en 720p ; pas d'accélération codec |
-| **B — Proxy HLS Vyzio** | Proxy m3u8 + segments .ts, réécriture URLs | Meilleure compression, qualité supérieure | Implémentation plus complexe (URL rewriting) ; latence ~3-5s |
-| **C — URL directe Frigate (retournée par API)** | Vyzio retourne l'URL Frigate, le navigateur se connecte directement | Zéro overhead serveur | Frigate exposé sur le réseau — **non acceptable** : contredit la promesse réseau simple |
+| **A — Polling latest.jpg via Vyzio** | `GET /api/cameras/{id}/live/latest.jpg` → proxy Frigate `/api/{slug}/latest.jpg`, rafraîchi à 1fps | Frigate jamais exposé ; 0 dépendance ; fiable sur tout réseau | ~1fps max ; qualité snapshot (pas de streaming fluide) |
+| **B — Proxy WebSocket jsmpeg** | Vyzio bridgerait le WebSocket Frigate → navigateur | Fluide (~15fps) | Implémentation complexe (WS bridge ASP.NET Core) ; dépendance jsmpeg.js côté UI |
+| **C — Proxy HLS Vyzio** | Proxy m3u8 + segments .ts, réécriture URLs | Bonne qualité, seeking possible | Complexe (URL rewriting) ; latence ~3-5s |
+| **D — URL directe Frigate** | Vyzio retourne l'URL Frigate, navigateur se connecte directement | Zéro overhead | Frigate exposé — **non acceptable** |
 
 #### Décision
 
-**Option A retenue : proxy MJPEG via `GET /api/cameras/{id}/live/mjpeg`.**
+**Option A retenue : proxy polling `latest.jpg` via `GET /api/cameras/{id}/live/latest.jpg`.**
 
-Vyzio proxifie le flux MJPEG de Frigate en streaming HTTP chunked. Le navigateur reçoit un flux `multipart/x-mixed-replace` et l'affiche via une balise `<img>` standard — aucune bibliothèque vidéo requise côté UI.
+Vyzio proxifie la dernière frame JPEG de Frigate. Le frontend rafraîchit l'URL toutes les secondes avec un paramètre de cache-busting (`?t=timestamp`) — aucune bibliothèque vidéo requise, aucune connexion WebSocket, implémentation minimale.
 
-Frigate est **uniquement accessible sur le réseau Docker interne** (`vyzio-net`). Le port 5000 n'est pas publié sur l'interface hôte en production. En développement, l'exposition sur `127.0.0.1:5000` reste possible pour l'accès à l'UI Frigate en mode expert, mais le flux live passe toujours par Vyzio.
+Frigate est **uniquement accessible sur le réseau Docker interne** (`vyzio-net`). Le port 5000 n'est pas publié sur l'interface hôte en production.
 
 ```csharp
-// Principe d'implémentation
-app.MapGet("/api/cameras/{id}/live/mjpeg", async (string id, IFrigateRestClient frigate, CancellationToken ct) =>
+// Implémentation backend
+app.MapGet("/api/cameras/{id}/live/latest.jpg", async (string id, IFrigateRestClient frigate, CancellationToken ct) =>
 {
-    var slug = await ResolveCameraSlugAsync(id);
-    var frigateStream = await frigate.OpenMjpegStreamAsync(slug, ct);
-    return Results.Stream(frigateStream, "multipart/x-mixed-replace; boundary=frame");
+    var frigateCamera = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+    var response = await frigate.GetLatestFrameAsync(frigateCamera, ct);
+    if (!response.IsSuccessStatusCode) return Results.StatusCode((int)response.StatusCode);
+    return Results.Stream(await response.Content.ReadAsStreamAsync(ct), "image/jpeg");
 });
 ```
 
-```html
-<!-- UI -->
-<img src="/api/cameras/{id}/live/mjpeg" />
+```tsx
+// Implémentation frontend — polling avec cache-busting
+function CameraLiveView({ cameraId, apiBaseUrl }) {
+  const [src, setSrc] = useState(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+  useEffect(() => {
+    const id = setInterval(() => setSrc(`...?t=${Date.now()}`), 1000)
+    return () => clearInterval(id)
+  }, [cameraId])
+  return <img src={src} />
+}
 ```
 
-**Bande passante estimée :** 720p, 5fps (fps de détection Frigate) ≈ 100–300 KB/s par caméra sur le LAN — acceptable dans ce contexte domestique.
+**Bande passante estimée :** 1 requête/s, ~20–80 KB par frame JPEG 720p ≈ 20–80 KB/s par caméra — très acceptable sur LAN domestique.
 
 #### Conséquences
 
 - ✅ Frigate jamais exposé au navigateur — réseau simple, un seul point d'entrée (Vyzio)
-- ✅ Auth Vyzio obligatoire avant tout accès au flux
-- ✅ Implémentation minimale côté serveur (stream HTTP forwarding) et côté UI (`<img>`)
-- ✅ Compatible accès distant sans revision : le tunnel (Tailscale, reverse proxy) couvre uniquement Vyzio
-- ⚠️ Bande passante plus élevée que HLS/WebRTC — acceptable sur LAN domestique, à réévaluer si >4 caméras simultanées
-- ⚠️ Pas de seeking ou d'adaptation qualité — intentionnel pour ce cas d'usage live simple
+- ✅ 0 dépendance côté UI (pas de jsmpeg.js, pas de HLS.js)
+- ✅ Implémentation minimale et fiable — un simple GET proxifié
+- ✅ Compatible accès distant sans révision réseau
+- ⚠️ ~1fps — suffisant pour un aperçu de surveillance, pas pour un monitoring temps réel
+- ⚠️ Si un live fluide devient nécessaire, l'option B (WebSocket jsmpeg proxy) est le chemin naturel
 
 ---
 
