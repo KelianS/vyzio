@@ -93,11 +93,6 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Tests d'intégration (SQLite in-memory, EnsureCreated) pour : `ProfilePhotoRepository`, `ProfileCameraLinkRepository` (upsert, unicité, suppression), `DetectionEventRepository.GetPagedAsync` (filtres, pagination), `UpdateIdentityAsync`
 - [x] Tests de contrat FrigateAdapter (ADR-15) : vérifier que le ProfileId est résolu uniquement si le profil est lié à la caméra ; sans lien défini, la reconnaissance s'applique sur toutes les caméras
 
-#### Documentation utilisateur
-
-- [ ] Rédiger la documentation utilisateur de gestion des profils : ajouter une personne, uploader des photos, modifier et supprimer un profil, comprendre le statut de synchronisation Frigate
-- [ ] Rédiger la documentation utilisateur de configuration de détection : activer ou désactiver des catégories par caméra, associer des profils à des caméras, comprendre les limites de la reconnaissance faciale locale
-
 **Critères d'acceptation :**
 - L'utilisateur peut créer un profil, y ajouter une ou plusieurs photos et voir la synchronisation confirmée vers Frigate depuis l'interface, sans ouvrir un terminal ni modifier un fichier
 - L'utilisateur peut configurer, par caméra, les catégories de détection actives (personnes, animaux, véhicules, etc.) depuis l'interface ; la configuration est appliquée à Frigate sans intervention manuelle
@@ -111,10 +106,64 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 > But : Avoir depuis l'interface une vue en direct du flux de chaque caméra. Avoir une courte vidéo en replay des dernières secondes avant et après une détection, pour pouvoir vérifier rapidement ce qui s'est passé sans devoir aller chercher les fichiers d'enregistrement. Avoir la possibilité d'activer un enregistrement continu sur certaines caméras, pour pouvoir faire du time-lapse ou de la recherche d'événements sur une période donnée.
 
 **Taches :**
-TODO
 
-### US-P3.8 — UI uniformisee, coherent et guidant
-> But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit ... La vue principale devra aussi être repensé pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live camera, notifications, statuts ...)
+#### Cadrage préalable — aligner SAD avant implémentation
+
+- [ ] Documenter dans le SAD la stratégie d'accès au live feed : URL HLS directe vers Frigate ou proxy Vyzio, implications réseau et authentification
+- [ ] Documenter dans le SAD la stratégie d'accès aux clips : URL directe Frigate ou endpoint Vyzio, cycle de rétention, taille estimée par caméra
+- [ ] Documenter dans le SAD la stratégie d'enregistrement continu : activation par caméra dans la config Frigate générée, impact sur le stockage, politique de rétention configurable
+
+#### Configuration Frigate
+
+- [ ] Activer l'enregistrement des clips dans la config Frigate générée par défaut (tous les événements ont actuellement `has_clip: false`)
+- [ ] Exposer l'activation de l'enregistrement continu par caméra dans `CameraDetectionConfig` et le projeter dans la config Frigate générée
+
+#### API
+
+- [ ] Exposer par caméra l'URL du flux live (HLS ou WebRTC) : `GET /api/cameras/{id}/stream-url`
+- [ ] Vérifier que les clips Frigate sont accessibles depuis le navigateur (CORS, auth) et documenter l'URL de référence
+
+#### Interface utilisateur
+
+- [ ] Construire la vue live feed : player embarqué (HLS.js ou video natif) par caméra, accessible depuis la liste des caméras ou la vue principale
+- [ ] Construire le replay des détections : depuis l'historique, afficher le clip de l'événement dans un player inline ou une modale si `has_clip: true`
+- [ ] Permettre d'activer ou désactiver l'enregistrement continu par caméra depuis l'interface de configuration, avec indication de l'impact stockage
+
+#### Tests
+
+- [ ] Vérifier que la config Frigate générée inclut bien `record` et `clips` quand activés, sans régression sur les caméras non concernées
+
+### US-P3.8 — UI uniformisee, coherente et guidante
+> But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit. La vue principale devra aussi être repensée pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live caméra, notifications, statuts).
+
+**Taches :**
+
+#### Audit et cadrage
+
+- [ ] Auditer la cohérence cross-pages : terminologie (noms des actions, labels, statuts), patterns de navigation (boutons retour, accès aux sections), comportements des formulaires
+- [ ] Identifier les composants UI dupliqués entre pages et définir les abstractions communes à extraire
+
+#### Vue principale (hub)
+
+- [ ] Repenser la vue principale pour orienter clairement l'utilisateur selon son état : première configuration (aucune caméra), système opérationnel (lien vers live feed), système dégradé (guidage vers la correction)
+- [ ] Intégrer un accès rapide au live feed sur la vue principale une fois P3.7 livré
+- [ ] Afficher sur la vue principale un résumé actionnable des statuts : caméras actives, profils synchronisés, dernière notification, alertes en attente
+
+#### Guidage utilisateur — reconnaissance
+
+- [ ] Avertir l'utilisateur si une caméra n'a plus `person` dans ses labels de détection alors qu'elle a des profils associés — la reconnaissance ne pourra pas s'exécuter sans ce label
+- [ ] Donner un retour lors de l'upload d'une photo de profil si aucun visage n'est détectable dans l'image (photo de dos, qualité insuffisante, etc.)
+- [ ] Afficher le nombre de photos par profil et une indication sur le minimum recommandé pour une reconnaissance fiable (3 à 5 photos, angles variés)
+- [ ] Valider le flow end-to-end `sub_label` → profil : vérifier que lorsque Frigate pose un `sub_label` reconnu, l'événement remonte dans l'historique avec le nom du profil (non encore confirmé en conditions réelles)
+
+#### Cohérence composants et navigation
+
+- [ ] Uniformiser les patterns de navigation entre toutes les vues (position et libellé du bouton retour, fil d'Ariane, transitions)
+- [ ] Harmoniser les composants de feedback (messages d'erreur, états de chargement, confirmations) pour qu'ils aient le même rendu et le même comportement quelle que soit la page
+
+
+### US-P3.9 - Privacy mode
+> But : permettre à l'utilisateur de couper une caméra temporairement ou de manière récurrente (ex. tous les soirs de 22h à 6h) pour préserver la vie privée, avec un impact minimal sur les autres fonctionnalités (notifications, reconnaissance, etc.) et une indication claire du statut de confidentialité de chaque caméra. La caméra doit réellement être coupé et le flux RTSP ne doit être visible de personne sur le réseau, y compris de Frigate.
 
 **Taches :**
 TODO
