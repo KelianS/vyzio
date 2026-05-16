@@ -57,7 +57,7 @@ export function NotificationSettingsView({
 
   useEffect(() => {
     getNotificationLabels.execute().then(setDetectionLabels).catch(() => setDetectionLabels([]))
-  }, [getDetectionLabels])
+  }, [getNotificationLabels])
 
   useEffect(() => {
     getNotificationLog.execute(selectedChannel).then(setNotifLog).catch(() => setNotifLog([]))
