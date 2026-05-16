@@ -159,18 +159,13 @@ export function ProfilesView({
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
               <h2>Profils</h2>
-              <button type="button" className="primary-cta" style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }} onClick={handleNew}>
-                + Nouveau
-              </button>
+              <span className="camera-sidebar-count">{profiles.length}</span>
             </div>
+            <button type="button" className="primary-cta camera-sidebar-btn" onClick={handleNew}>
+              + Nouveau profil
+            </button>
 
             {loading && <p style={{ padding: '12px 16px', opacity: 0.6 }}>Chargement…</p>}
-
-            {!loading && profiles.length === 0 && (
-              <p style={{ padding: '12px 16px', opacity: 0.6, fontSize: '0.88rem' }}>
-                Aucun profil. Cliquez sur + Nouveau.
-              </p>
-            )}
 
             {profiles.map((profile) => (
               <button

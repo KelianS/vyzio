@@ -41,9 +41,6 @@ import {
   formatEventDetail,
   formatEventTime,
   formatEventTitle,
-  formatLastSeen,
-  formatNotificationStatus,
-  formatProfileMeta,
   getEventTone,
 } from './ui/formatters/hub'
 import { AppHeader } from './ui/components/AppHeader'
@@ -286,7 +283,6 @@ interface HubOperationalStateProps {
 
 function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateProps) {
   const recentEvents = data?.recentEvents ?? []
-  const recentProfiles = data?.profiles.slice(0, 3) ?? []
   const notifications = data?.notifications
   const warnings = data?.warnings ?? []
   const lastEvent = recentEvents[0]
@@ -361,9 +357,6 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
           <div className="panel-heading">
             <h2>Détections récentes</h2>
           </div>
-          {notifications && (
-            <p className="hub-notif-status">{formatNotificationStatus(notifications)}</p>
-          )}
           <div className="event-list">
             {recentEvents.length > 0 ? (
               recentEvents.map((event) => (
@@ -424,37 +417,29 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
         </article>
 
         <aside className="hub-sidebar">
-          <article className="panel panel-dark" id="profiles">
+          <article className="panel hub-alert-status">
             <div className="panel-heading">
-              <h2>Personnes reconnues</h2>
+              <h2>Notifications</h2>
             </div>
-            <div className="profile-list">
-              {recentProfiles.length > 0 ? (
-                recentProfiles.map((profile) => (
-                  <article key={profile.id} className="profile-card">
-                    <div>
-                      <h3>{profile.name}</h3>
-                      <p>{formatProfileMeta(profile)}</p>
-                    </div>
-                    <span>{formatLastSeen(profile.lastSeenAt)}</span>
-                  </article>
-                ))
-              ) : (
-                <article className="profile-card empty">
-                  <div>
-                    <h3>Aucun profil configuré</h3>
-                    <p>Ajoutez des profils pour reconnaître les personnes dans vos flux.</p>
-                  </div>
-                </article>
-              )}
+            <div className="hub-alert-items">
+              <div className={`hub-alert-item${notifications?.telegramConfigured ? ' hub-alert-item--ok' : ' hub-alert-item--warn'}`}>
+                <span className="hub-alert-dot" />
+                <div className="hub-alert-body">
+                  <strong>{notifications?.telegramConfigured ? 'Telegram configuré' : 'Telegram non configuré'}</strong>
+                  <p>
+                    {notifications?.telegramConfigured
+                      ? `${notifications.sentCount} alerte${notifications.sentCount !== 1 ? 's' : ''} envoyée${notifications.sentCount !== 1 ? 's' : ''}${notifications?.lastSentAt ? ` · dernière à ${formatEventTime(notifications.lastSentAt)}` : ''}`
+                      : 'Aucun canal de notification actif'}
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="panel-cta-row">
-              <a className="primary-cta hub-cta-inverse" href="#profiles">
-                Gérer les profils
+              <a href="#notifications" className="secondary-cta">
+                Configurer les alertes →
               </a>
             </div>
           </article>
-
         </aside>
       </section>
     </main>

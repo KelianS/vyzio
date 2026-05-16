@@ -2129,6 +2129,66 @@
 }
 
 
+/* ── Hub alert status panel ── */
+
+.hub-alert-items {
+  display: grid;
+  gap: 10px;
+}
+
+.hub-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: rgba(24, 32, 29, 0.04);
+  border: 1px solid var(--line-soft);
+}
+
+.hub-alert-item--ok {
+  background: rgba(45, 122, 82, 0.07);
+  border-color: rgba(45, 122, 82, 0.18);
+}
+
+.hub-alert-item--warn {
+  background: rgba(217, 179, 122, 0.12);
+  border-color: rgba(217, 179, 122, 0.28);
+}
+
+.hub-alert-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 6px;
+  background: var(--line-soft);
+}
+
+.hub-alert-item--ok .hub-alert-dot {
+  background: var(--alert-ok);
+  box-shadow: 0 0 6px rgba(45, 122, 82, 0.4);
+}
+
+.hub-alert-item--warn .hub-alert-dot {
+  background: var(--brand-sand);
+}
+
+.hub-alert-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hub-alert-body strong {
+  font-size: 0.9rem;
+}
+
+.hub-alert-body p {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+
 /* ── Expert view (Frigate iframe) ── */
 
 .expert-shell {
