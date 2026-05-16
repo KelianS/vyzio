@@ -99,7 +99,7 @@
 
 .camera-sidebar-header {
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
@@ -116,8 +116,16 @@
   padding: 0 14px;
 }
 
+.camera-sidebar-btn {
+  width: 100%;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  font-size: 0.84rem !important;
+}
+
 .camera-sidebar-header h2 {
-  font-size: 1.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .camera-sidebar-count {
@@ -2168,6 +2176,7 @@
   font-family: var(--heading);
   letter-spacing: -0.01em;
   line-height: 1.2;
+  color: var(--brand-moss);
 }
 
 /* ── Detection config person warning ── */

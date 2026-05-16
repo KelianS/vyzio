@@ -331,7 +331,6 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
 
       <section className="hub-live-section">
         <div className="hub-section-header">
-          <p className="section-kicker">Live</p>
           <h2>Flux en direct</h2>
           <a href="#cameras" className="hub-section-link">
             Gérer les caméras →
@@ -360,7 +359,6 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
       <section className="hub-bottom">
         <article className="panel hub-events" id="events">
           <div className="panel-heading">
-            <p className="section-kicker">Événements</p>
             <h2>Détections récentes</h2>
           </div>
           {notifications && (
@@ -428,7 +426,6 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
         <aside className="hub-sidebar">
           <article className="panel panel-dark" id="profiles">
             <div className="panel-heading">
-              <p className="section-kicker">Profils</p>
               <h2>Personnes reconnues</h2>
             </div>
             <div className="profile-list">

@@ -193,10 +193,10 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 > But : donner accès à l'interface Frigate directement dans Vyzio, sans ouvrir un onglet externe. L'utilisateur accède aux réglages avancés dans le même contexte que le reste du produit, avec le header Vyzio visible au-dessus. La route `#expert` est ajoutée à la navigation principale.
 
 **Tâches :**
-- [ ] Ajouter la route `#expert` dans le router hash de l'application et l'entrée correspondante dans `AppHeader`
-- [ ] Construire la vue `ExpertView` : iframe pointant vers `frigateBaseUrl`, pleine hauteur disponible sous le header
-- [ ] Gérer les cas d'indisponibilité Frigate : message d'erreur clair si l'iframe ne charge pas (timeout ou erreur réseau)
-- [ ] Vérifier que l'iframe ne pose pas de problème CORS ou X-Frame-Options selon la configuration Frigate locale (ADR à documenter si contrainte)
+- [x] Ajouter la route `#expert` dans le router hash de l'application et l'entrée correspondante dans `AppHeader`
+- [x] Construire la vue `ExpertView` : iframe pointant vers `frigateBaseUrl`, pleine hauteur disponible sous le header
+- [x] Gérer les cas d'indisponibilité Frigate : message d'erreur clair si l'iframe ne charge pas (timeout 10s)
+- [x] Vérifier que l'iframe ne pose pas de problème CORS ou X-Frame-Options selon la configuration Frigate locale (Frigate ne pose pas de X-Frame-Options par défaut ; si bloqué, un lien "Ouvrir dans un onglet" est proposé)
 
 **Critères d'acceptation :**
 - L'utilisateur peut accéder à Frigate depuis `#expert` sans quitter Vyzio

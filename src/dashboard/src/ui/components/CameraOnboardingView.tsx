@@ -823,22 +823,17 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         <aside className="panel camera-sidebar">
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
-              <div>
-                <p className="section-kicker">Configuration</p>
-                <h2>Cameras configurees</h2>
-              </div>
-              <div className="camera-sidebar-actions">
-                <span className="camera-sidebar-count">{camerasState.data.length}</span>
-                <button
-                  className="secondary-cta"
-                  type="button"
-                  onClick={handleApplyConfiguration}
-                  disabled={actionLoading || !canApplyConfiguration}
-                >
-                  Appliquer
-                </button>
-              </div>
+              <h2>Cameras configurees</h2>
+              <span className="camera-sidebar-count">{camerasState.data.length}</span>
             </div>
+            <button
+              className="primary-cta camera-sidebar-btn"
+              type="button"
+              onClick={handleApplyConfiguration}
+              disabled={actionLoading || !canApplyConfiguration}
+            >
+              Appliquer
+            </button>
 
             {camerasState.data.length > 0 ? (
               camerasState.data.map((camera) => (
@@ -868,22 +863,17 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
-              <div>
-                <p className="section-kicker">Detection</p>
-                <h2>Candidats</h2>
-              </div>
-              <div className="camera-sidebar-actions">
-                <span className="camera-sidebar-count">{discoveryResults.length}</span>
-                <button
-                  className="secondary-cta"
-                  type="button"
-                  onClick={handleDiscovery}
-                  disabled={discoveryLoading || actionLoading}
-                >
-                  {discoveryLoading ? 'Recherche...' : 'Scanner'}
-                </button>
-              </div>
+              <h2>Candidats</h2>
+              <span className="camera-sidebar-count">{discoveryResults.length}</span>
             </div>
+            <button
+              className="primary-cta camera-sidebar-btn"
+              type="button"
+              onClick={handleDiscovery}
+              disabled={discoveryLoading || actionLoading}
+            >
+              {discoveryLoading ? 'Recherche...' : 'Scanner'}
+            </button>
 
             {discoveryError ? <p className="camera-inline-state error">{discoveryError}</p> : null}
 
