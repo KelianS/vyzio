@@ -40,6 +40,9 @@ public class NotificationChannelConfig
     [MaxLength(20)]
     public string? MediaMode { get; set; }
 
+    /// <summary>Minimum minutes between two notifications for the same (camera, label). Null = no cooldown.</summary>
+    public int? CooldownMinutes { get; set; }
+
     public DateTimeOffset? ConfiguredAt { get; set; }
 
     public DateTimeOffset? LastTestedAt { get; set; }

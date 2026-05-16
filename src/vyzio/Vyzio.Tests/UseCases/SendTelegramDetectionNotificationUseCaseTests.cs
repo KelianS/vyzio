@@ -36,7 +36,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _snapshotProvider,
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
-            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance);
+            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
+            clipFetchDelaySeconds: 0);
     }
 
     [Fact]
@@ -51,6 +52,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         Assert.True(sent);
         await _telegramSender.Received(1).SendVideoAsync(
             clipStream,
+            Arg.Any<Stream?>(),
             Arg.Any<string>(),
             "bot-token",
             "chat-id",
@@ -79,9 +81,11 @@ public class SendTelegramDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_sends_photo_on_end_when_has_clip_false_but_has_snapshot_true()
+    public async Task Execute_sends_photo_on_end_when_clip_unavailable_but_snapshot_available()
     {
+        // has_clip flag is unreliable — we always attempt fetch; here clip returns null, snapshot wins.
         var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: true);
+        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
         _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
@@ -94,7 +98,6 @@ public class SendTelegramDetectionNotificationUseCaseTests
             "bot-token",
             "chat-id",
             Arg.Any<CancellationToken>());
-        await _clipProvider.DidNotReceive().TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

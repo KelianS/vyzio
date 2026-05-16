@@ -59,7 +59,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             Substitute.For<IFrigateSnapshotProvider>(),
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
-            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance);
+            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
+            clipFetchDelaySeconds: 0);
 
         _sut = new FrigateAdapter(
             new FrigateEventContractAdapter(new FrigateLabelFilter(["person"])),
@@ -177,7 +178,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             return Task.CompletedTask;
         }
 
-        public Task SendVideoAsync(Stream video, string caption, string botToken, string chatId, CancellationToken ct = default)
+        public Task SendVideoAsync(Stream video, Stream? thumbnail, string caption, string botToken, string chatId, CancellationToken ct = default)
         {
             Videos.Add(caption);
             return Task.CompletedTask;

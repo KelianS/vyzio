@@ -25,6 +25,19 @@ public sealed class NotificationRepository(VyzioDbContext db) : INotificationRep
             .Select(notification => (DateTimeOffset?)notification.SentAt)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<DateTimeOffset?> GetLastSentAtForAsync(
+        string channel, string camera, string label, CancellationToken ct = default)
+        => await (
+            from n in db.Notifications
+            join e in db.DetectionEvents on n.EventId equals e.Id
+            where n.Channel == channel
+               && n.Status == "sent"
+               && e.Camera == camera
+               && e.Label == label
+            orderby n.SentAt descending
+            select (DateTimeOffset?)n.SentAt
+        ).FirstOrDefaultAsync(ct);
+
     public async Task AddAsync(Notification notification, CancellationToken ct = default)
     {
         db.Notifications.Add(notification);

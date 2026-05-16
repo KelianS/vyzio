@@ -17,7 +17,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     IFrigateSnapshotProvider snapshotProvider,
     IFrigateClipProvider clipProvider,
     DetectionTelegramMessageFormatter formatter,
-    ILogger<SendTelegramDetectionNotificationUseCase> logger) : IDetectionNotificationDispatcher
+    ILogger<SendTelegramDetectionNotificationUseCase> logger,
+    int clipFetchDelaySeconds = 10) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
     private static readonly string[] DefaultAllowedLabels = ["person"];
@@ -71,6 +72,20 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             return false;
         }
 
+        if (config.CooldownMinutes is > 0)
+        {
+            var lastSent = await notifications.GetLastSentAtForAsync(
+                TelegramChannel, detectionEvent.Camera, detectionEvent.Label, ct);
+            if (lastSent.HasValue
+                && (DateTimeOffset.UtcNow - lastSent.Value).TotalMinutes < config.CooldownMinutes.Value)
+            {
+                logger.LogDebug(
+                    "Telegram skipped for event {EventId}: cooldown {Minutes}min (last sent {LastSent})",
+                    detectionEvent.Id, config.CooldownMinutes.Value, lastSent.Value);
+                return false;
+            }
+        }
+
         var enabledFields = ParseMessageFields(config.MessageFieldsJson);
         var mediaMode = config.MediaMode ?? "clip_or_photo";
 
@@ -81,15 +96,35 @@ public sealed class SendTelegramDetectionNotificationUseCase(
         {
             var caption = formatter.Format(detectionEvent, enabledFields);
 
-            // Priority 1: send clip as video when mode allows it and clip is available.
-            if (mediaMode == "clip_or_photo" && detectionEvent.HasClip && enabledFields.Contains(MessageField.Snapshot))
+            // has_clip/has_snapshot in the MQTT end payload are unreliable: Frigate may report false
+            // and finalize the file a few seconds later. We always attempt the fetch after the delay,
+            // regardless of the flags, and fall through on 404.
+            var wantMedia = mediaMode != "text" && enabledFields.Contains(MessageField.Snapshot);
+
+            if (wantMedia && clipFetchDelaySeconds > 0)
+            {
+                logger.LogDebug("Waiting {Seconds}s for Frigate to finalize media for event {EventId}",
+                    clipFetchDelaySeconds, detectionEvent.Id);
+                await Task.Delay(TimeSpan.FromSeconds(clipFetchDelaySeconds), ct);
+            }
+
+            // Priority 1: send clip as video when mode allows it.
+            if (mediaMode == "clip_or_photo" && enabledFields.Contains(MessageField.Snapshot))
             {
                 var clip = await clipProvider.TryGetClipAsync(detectionEvent.FrigateEventId, ct);
                 if (clip is not null)
                 {
                     logger.LogInformation("Sending Telegram video for event {EventId}", detectionEvent.Id);
-                    await using (clip)
-                        await telegramSender.SendVideoAsync(clip, caption, config.BotToken!, config.ChatId!, ct);
+                    var thumbnail = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
+                    try
+                    {
+                        await telegramSender.SendVideoAsync(clip, thumbnail, caption, config.BotToken!, config.ChatId!, ct);
+                    }
+                    finally
+                    {
+                        await clip.DisposeAsync();
+                        if (thumbnail is not null) await thumbnail.DisposeAsync();
+                    }
                     await notifications.AddAsync(new Notification
                     {
                         EventId = detectionEvent.Id,
@@ -101,8 +136,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 logger.LogWarning("Clip unavailable for event {EventId} — falling back to snapshot", detectionEvent.Id);
             }
 
-            // Photo: send snapshot when mode allows it and snapshot is available.
-            if (mediaMode is "clip_or_photo" or "photo" && detectionEvent.HasSnapshot && enabledFields.Contains(MessageField.Snapshot))
+            // Photo: send snapshot when mode allows it.
+            if (mediaMode is "clip_or_photo" or "photo" && enabledFields.Contains(MessageField.Snapshot))
             {
                 var snapshot = await snapshotProvider.TryGetSnapshotAsync(detectionEvent.FrigateEventId, ct);
                 if (snapshot is not null)

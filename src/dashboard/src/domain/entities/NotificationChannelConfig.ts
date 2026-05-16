@@ -11,6 +11,7 @@ export interface NotificationChannelConfig {
   activeToHour: number | null
   messageFields: string[]
   mediaMode: MediaMode
+  cooldownMinutes: number | null
   configuredAt: string | null
   lastTestedAt: string | null
   lastTestStatus: 'success' | 'failure' | null
@@ -27,6 +28,8 @@ export interface SaveNotificationChannelConfigRequest {
   activeToHour?: number | null
   messageFields?: string[]
   mediaMode?: MediaMode
+  cooldownMinutes?: number | null
+  clearCooldown?: boolean
 }
 
 export interface TestNotificationChannelResult {

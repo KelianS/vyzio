@@ -274,6 +274,60 @@ function MediaModeSelector({
   )
 }
 
+function CooldownPicker({
+  cooldownMinutes,
+  onChange,
+}: {
+  cooldownMinutes: number | null
+  onChange: (minutes: number | null) => void
+}) {
+  const enabled = cooldownMinutes !== null
+
+  function handleToggle(on: boolean) {
+    onChange(on ? 5 : null)
+  }
+
+  return (
+    <div className="camera-form-field">
+      <label>Anti-spam (cooldown)</label>
+      <div className="camera-form-field-inline" style={{ marginTop: 6 }}>
+        <input
+          id="cooldown-enabled"
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => handleToggle(e.target.checked)}
+        />
+        <label htmlFor="cooldown-enabled" style={{ marginLeft: 4 }}>
+          Limiter a une notification par detection unique
+        </label>
+      </div>
+      {enabled && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <label htmlFor="cooldown-minutes" style={{ fontSize: '0.88rem' }}>
+            Silence pendant
+          </label>
+          <input
+            id="cooldown-minutes"
+            type="number"
+            min={1}
+            max={60}
+            step={1}
+            value={cooldownMinutes ?? 5}
+            onChange={(e) => onChange(Math.max(1, Number(e.target.value)))}
+            style={{ width: 64 }}
+          />
+          <span style={{ fontSize: '0.88rem' }}>minutes apres chaque envoi (par camera et type)</span>
+        </div>
+      )}
+      {!enabled && (
+        <p style={{ fontSize: '0.84rem', color: 'var(--ink-soft)', marginTop: 4 }}>
+          Chaque detection Frigate peut declencher une notification independante.
+        </p>
+      )}
+    </div>
+  )
+}
+
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
   value: h,
   label: `${String(h).padStart(2, '0')}:00`,
@@ -521,6 +575,7 @@ function TelegramConfigPanel({
   const [activeToHour, setActiveToHour] = useState<number | null>(null)
   const [messageFields, setMessageFields] = useState<string[]>(['camera', 'time', 'label', 'confidence', 'snapshot'])
   const [mediaMode, setMediaMode] = useState<MediaMode>('clip_or_photo')
+  const [cooldownMinutes, setCooldownMinutes] = useState<number | null>(null)
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
 
   useEffect(() => {
@@ -533,6 +588,7 @@ function TelegramConfigPanel({
       setActiveToHour(config.activeToHour ?? null)
       setMessageFields(config.messageFields?.length > 0 ? config.messageFields : ['camera', 'time', 'label', 'confidence', 'snapshot'])
       setMediaMode(config.mediaMode ?? 'clip_or_photo')
+      setCooldownMinutes(config.cooldownMinutes ?? null)
       setSyncedConfig(config)
     }
   }, [config, syncedConfig])
@@ -551,6 +607,8 @@ function TelegramConfigPanel({
       activeToHour,
       messageFields,
       mediaMode,
+      cooldownMinutes: cooldownMinutes ?? undefined,
+      clearCooldown: cooldownMinutes === null,
     })
     setBotToken('')
   }
@@ -651,6 +709,8 @@ function TelegramConfigPanel({
           <MessageFieldsSelector selected={messageFields} onChange={setMessageFields} />
 
           <MediaModeSelector value={mediaMode} onChange={setMediaMode} />
+
+          <CooldownPicker cooldownMinutes={cooldownMinutes} onChange={setCooldownMinutes} />
 
           <SchedulePicker
             fromHour={activeFromHour}

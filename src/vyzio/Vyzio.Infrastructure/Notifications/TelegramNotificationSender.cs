@@ -43,7 +43,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : ITelegra
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task SendVideoAsync(Stream video, string caption, string botToken, string chatId, CancellationToken ct = default)
+    public async Task SendVideoAsync(Stream video, Stream? thumbnail, string caption, string botToken, string chatId, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(video);
         ArgumentException.ThrowIfNullOrWhiteSpace(botToken);
@@ -53,6 +53,8 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : ITelegra
         content.Add(new StringContent(chatId), "chat_id");
         content.Add(new StringContent(caption), "caption");
         content.Add(new StreamContent(video), "video", "clip.mp4");
+        if (thumbnail is not null)
+            content.Add(new StreamContent(thumbnail), "thumbnail", "thumbnail.jpg");
 
         using var response = await httpClient.PostAsync(
             $"https://api.telegram.org/bot{botToken}/sendVideo",
