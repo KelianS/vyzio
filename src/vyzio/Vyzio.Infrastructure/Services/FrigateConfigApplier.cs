@@ -76,6 +76,10 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                 camera =>
                 {
                     var labels = camera.GetDetectionLabels();
+                    // face must be tracked whenever person is — Frigate needs it for face recognition.
+                    var frigateLabels = labels.Contains("person")
+                        ? labels.Union(["face"], StringComparer.OrdinalIgnoreCase).ToList()
+                        : labels;
                     return new FrigateCameraConfig
                     {
                         Enabled = true,
@@ -97,7 +101,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                         },
                         Objects = new FrigateObjectsConfig
                         {
-                            Track = [.. labels],
+                            Track = [.. frigateLabels],
                         },
                         Snapshots = new FrigateSnapshotsConfig
                         {

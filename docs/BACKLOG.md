@@ -150,6 +150,15 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 - [x] Vérifier que la config Frigate générée inclut bien `record` et `clips` quand activés, sans régression sur les caméras non concernées
 
+#### Refonte modèle de labels (post-P3.7)
+
+- [x] **Séparation labels détection / labels notification** : introduction de deux endpoints distincts (`GET /api/detection-labels/camera` et `GET /api/detection-labels/notifications`) comme source de vérité unique côté backend — les deux contextes n'exposent plus la même liste
+- [x] **Disparition de `face` de l'UI** : le label `face` n'apparaît ni en config caméra ni dans les notifications ; sélectionner "Personne" en config caméra couvre implicitement `person` + `face` ; côté notifications, les événements `face` sont absorbés dans `person_unknown` ou `person_known` selon l'identity
+- [x] **Introduction de `person_unknown` / `person_known`** : les labels de notification utilisent désormais une sémantique explicite (inconnu / reconnu) indépendante des labels Frigate ; `person_known` couvre toute personne avec une identité, qu'elle vienne d'un événement `person` ou `face`
+- [x] **`ResolveNotificationLabel`** : mapping centralisé `(label Frigate, identity?) → label notification` — `person|face` sans identity → `person_unknown`, avec identity → `person_known`, tout autre label → identique ; `IsLabelAllowed` réduit à une vérification simple après résolution
+- [x] **Frontend aligné** : `getCameraLabels` et `getNotificationLabels` deux use cases distincts ; chaque vue (config caméra, notifications, historique) branchée sur le bon endpoint sans filtre ad hoc ; `DetectionLabel` simplifié (plus de `notificationOnly`)
+- [x] **Tests unitaires** : couverture de `ResolveNotificationLabel` (person/face avec et sans identity, autres labels) et `IsLabelAllowed` (tous les cas known/unknown/other)
+
 ### US-P3.8 — UI uniformisee, coherente et guidante
 > But : mettre de la cohérence entre les pages, les noms, comportements, actions de navigation toujours au même endroit. La vue principale devra aussi être repensée pour guider l'utilisateur vers les actions de configuration ou la vue d'utilisation du système (feed live caméra, notifications, statuts).
 
