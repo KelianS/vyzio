@@ -2,9 +2,36 @@
 
 ## Get started
 
-1. Install .NET SDK, Node.js, pnpm, and Docker.
-2. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build`
-3. Start the frontend dev server with `cd src/dashboard; pnpm dev`
+1. Install .NET SDK 10, Node.js 24, pnpm, and Docker Engine 25+.
+2. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
+3. Start the frontend dev server with `cd src/dashboard && pnpm dev`
+
+## Build Docker images
+
+Both images must be built from the **repository root** (the Docker build context is `.`).
+
+```bash
+# Backend (.NET API)
+docker build -f src/vyzio/Vyzio.Api/Dockerfile -t ghcr.io/kelians/vyzio-api:VERSION .
+
+# Frontend (React dashboard + nginx)
+docker build -f src/dashboard/Dockerfile -t ghcr.io/kelians/vyzio-dashboard:VERSION .
+```
+
+Push to GHCR:
+
+```bash
+echo $GITHUB_TOKEN | docker login ghcr.io -u KelianS --password-stdin
+
+docker push ghcr.io/kelians/vyzio-api:VERSION
+docker push ghcr.io/kelians/vyzio-dashboard:VERSION
+
+# Update the latest tag on stable releases
+docker tag ghcr.io/kelians/vyzio-api:VERSION     ghcr.io/kelians/vyzio-api:latest
+docker tag ghcr.io/kelians/vyzio-dashboard:VERSION ghcr.io/kelians/vyzio-dashboard:latest
+docker push ghcr.io/kelians/vyzio-api:latest
+docker push ghcr.io/kelians/vyzio-dashboard:latest
+```
 
 ## Project layout
 

@@ -13,7 +13,9 @@ time_zone: "Europe/Paris"
 
 documentation:
   # Dossier contenant les fiches constructeur au format Markdown.
-  vendor_catalog_path: ./vendors
+  # En production Docker, les fiches sont integrees dans l'image a /app/vendors (chemin par defaut si vide).
+  # En developpement local, pointer vers src/vyzio/vendors.
+  vendor_catalog_path: ./src/vyzio/vendors
 
 frigate:
   # URL interne utilisee par Vyzio pour joindre l'API Frigate.

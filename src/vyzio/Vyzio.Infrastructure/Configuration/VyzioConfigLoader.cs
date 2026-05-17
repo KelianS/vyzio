@@ -97,7 +97,7 @@ public static class VyzioConfigLoader
             },
             Documentation = new VyzioRuntimeSettings.DocumentationSettings
             {
-                VendorCatalogPath = ResolvePath(root.Documentation.VendorCatalogPath, configDirectory, Path.Combine("vendors")),
+                VendorCatalogPath = ResolvePath(root.Documentation.VendorCatalogPath, configDirectory, "/app/vendors"),
             },
             Notifications = new VyzioRuntimeSettings.NotificationsSettings
             {

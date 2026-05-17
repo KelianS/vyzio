@@ -121,14 +121,14 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 > But : préparer le déploiement du projet sur une infrastructure de production.
 
 **Taches :**
-- [ ] Configurer un pipeline CI/CD pour automatiser les tests, la construction et le déploiement de l'application
+- [ ] Configurer un pipeline CI/CD (github) pour automatiser les tests, la construction et le déploiement de l'application
 - [ ] Retirer tous les fichiers de configuration pour l'utilisateur, il ne doit avoir aucun fichier a écrire, tout ce fait depuis l'interface (ex. config Frigate générée, config Vyzio, etc.)
 - [ ] Monter la config Frigate dans un volume Docker plutôt que de devoir monter un dossier commun
 - [ ] Retirer l'exposition de Frigate, tout doit passer par Vyzio (live feed, clips, etc.) pour éviter les problèmes de CORS et d'authentification
-- [ ] Configurer NGINX et Dockerfile pour la partie frontend 
-- [ ] Intégrer les docs 'vendors' dans l'image backend, ne doit pas être monté par l'utilisateur
+- [x] Configurer NGINX et Dockerfile pour la partie frontend (`src/dashboard/Dockerfile` multi-stage + `nginx.conf` avec proxy `/api/` vers vyzio-api ; service `dashboard` sur `:8080` dans docker-compose)
+- [x] Intégrer les docs 'vendors' dans l'image backend (déplacés vers `src/vyzio/vendors/`, `COPY` dans le Dockerfile backend, fallback par défaut `/app/vendors`)
 - [ ] Mettre en place une surveillance systeme wide sur le dashboard (CPU, RAM, stockage). Pour monitorer l'utilisation, principalement de Frigate, et alerter si trop de caméras ou détection pour le systeme.
-- [ ] Configurer Mosquitto sans fichier supplémentaire si possible, pour faciliter le déploiement avec un docker compose unique
+- [x] Configurer Mosquitto sans fichier supplémentaire (`entrypoint` inline dans docker-compose, suppression du volume `mosquitto.conf`)
 - [ ] SAST et sanity check de l'app avant release MVP
 - [ ] Documenter le processus de déploiement et les prérequis système dans le README
 

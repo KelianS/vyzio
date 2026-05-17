@@ -66,6 +66,20 @@ Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'e
 
 ---
 
+## Démarrage rapide
+
+> Prérequis : Linux avec Docker Engine 25+ et Docker Compose v2.
+
+Télécharger le fichier [`docker-compose.yml`](./docker-compose.yml) et lancer la stack :
+
+```bash
+docker compose up -d
+```
+
+Ouvrir `http://<IP_SERVEUR>:8080` et configurer depuis l'interface.
+
+---
+
 ## Statut du projet
 
 > ⚠️ Vyzio est actuellement en **phase de conception**. Ce dépôt contient la vision du produit, les spécifications fonctionnelles, les décisions d'architecture et le plan de reprise. Le développement actif reprend une fois ces documents alignés.
