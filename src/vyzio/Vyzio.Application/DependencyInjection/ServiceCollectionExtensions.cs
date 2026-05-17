@@ -5,6 +5,7 @@ using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Hub;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Application.UseCases.Profiles;
+using Vyzio.Application.UseCases.Monitoring;
 
 namespace Vyzio.Application.DependencyInjection;
 
@@ -53,6 +54,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
         services.AddScoped<TestNotificationChannelUseCase>();
         services.AddScoped<GetNotificationLogUseCase>();
+
+        // System
+        services.AddScoped<GetSystemStatsUseCase>();
 
         // Profile use cases
         services.AddScoped<CreateProfileUseCase>();

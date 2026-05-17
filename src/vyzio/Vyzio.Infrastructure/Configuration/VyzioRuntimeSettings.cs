@@ -7,7 +7,6 @@ public class VyzioRuntimeSettings
     public FrigateSettings Frigate { get; init; } = new();
     public DiscoverySettings Discovery { get; init; } = new();
     public DocumentationSettings Documentation { get; init; } = new();
-    public NotificationsSettings Notifications { get; init; } = new();
 
     public sealed class DatabaseSettings
     {
@@ -18,8 +17,8 @@ public class VyzioRuntimeSettings
     {
         public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
         public string ApiBaseUrl { get; init; } = "http://frigate:5000";
-        public string ConfigPath { get; init; } = string.Empty;
-        public string ApplyCommand { get; init; } = string.Empty;
+        public string ConfigPath { get; init; } = "/config/config.yml";
+        public string ApplyCommand { get; init; } = "docker restart vyzio-frigate";
         public string DatabasePath { get; init; } = "/media/frigate/frigate.db";
         public MqttSettings Mqtt { get; init; } = new();
     }
@@ -45,22 +44,8 @@ public class VyzioRuntimeSettings
         public int MaxConcurrentProbes { get; init; } = 32;
     }
 
-    public sealed class NotificationsSettings
-    {
-        public float MinimumConfidence { get; init; } = 0.75f;
-        public TelegramSettings Telegram { get; init; } = new();
-    }
-
     public sealed class DocumentationSettings
     {
         public string VendorCatalogPath { get; init; } = string.Empty;
-    }
-
-    public sealed class TelegramSettings
-    {
-        public string BotToken { get; init; } = string.Empty;
-        public string ChatId { get; init; } = string.Empty;
-
-        public bool IsEnabled => !string.IsNullOrWhiteSpace(BotToken) && !string.IsNullOrWhiteSpace(ChatId);
     }
 }

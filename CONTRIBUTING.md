@@ -1,27 +1,110 @@
 # Contributing
 
-## Setup
+## Get started
 
-1. Install .NET SDK, Node.js, pnpm, and Docker.
-2. Review `config/vyzio.yml`, `config/frigate.dev.yml`, `config/frigate.mock.yml`, and `config/mosquitto.conf`.
-3. Replace the placeholder RTSP URL in `config/frigate.dev.yml` and enable `test_camera` only when you are ready to validate a real stream.
-4. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.override.yml up --build`.
-5. Open `http://127.0.0.1:8443/health` for the API and `http://127.0.0.1:5000` for the Frigate UI when the override file is active.
-6. Use `127.0.0.1:1883` only for local MQTT inspection or tooling when the override file is active.
+1. Install .NET SDK 10, Node.js 24, pnpm, and Docker Engine 25+.
+2. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
+3. Start the frontend dev server with `pnpm --prefix src/dashboard dev`
+
+All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only).
+
+### Environment variables reference
+
+#### General
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_TIME_ZONE` | *(system TZ via `/etc/localtime`)* | IANA timezone, e.g. `Europe/Paris` |
+
+#### Database
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_DATABASE_CONNECTION_STRING` | `Data Source=./data/vyzio.db` | SQLite connection string |
+
+#### Frigate integration
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_FRIGATE_API_BASE_URL` | `http://frigate:5000` | Frigate REST API base URL |
+| `VYZIO_FRIGATE_CONFIG_PATH` | `/config/config.yml` | Where Vyzio writes the generated Frigate config |
+| `VYZIO_FRIGATE_APPLY_COMMAND` | `docker restart vyzio-frigate` | Shell command run after config is written. Set to empty string to disable. |
+| `VYZIO_FRIGATE_DATABASE_PATH` | `/media/frigate/frigate.db` | Frigate SQLite DB path (read by Vyzio for clip/snapshot lookups) |
+| `VYZIO_FRIGATE_RETAINED_LABELS` | *(all)* | Comma-separated Frigate labels Vyzio keeps, e.g. `person,car` |
+
+#### MQTT
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_FRIGATE_MQTT_HOST` | `mqtt` | MQTT broker hostname |
+| `VYZIO_FRIGATE_MQTT_PORT` | `1883` | MQTT broker port |
+| `VYZIO_FRIGATE_MQTT_TOPIC` | `frigate/events` | Topic Frigate publishes events on |
+| `VYZIO_FRIGATE_MQTT_CLIENT_ID` | `vyzio-api` | MQTT client identifier |
+
+#### Camera discovery
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS` | `false` | Auto-detect local subnets from network interfaces |
+| `VYZIO_DISCOVERY_PROBE_HOSTS` | *(none)* | Comma-separated hosts to always probe, e.g. `192.168.1.10,192.168.1.20` |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated CIDRs for unicast scan, e.g. `192.168.1.0/24` |
+| `VYZIO_DISCOVERY_RTSP_PORTS` | `554` | Comma-separated RTSP ports to test |
+| `VYZIO_DISCOVERY_RTSP_PATHS` | `/stream1,/stream2,/Streaming/Channels/101,...` | Comma-separated RTSP paths to probe |
+| `VYZIO_DISCOVERY_HTTP_PORTS` | `80,443,8080` | Comma-separated HTTP ports to test |
+| `VYZIO_DISCOVERY_ONVIF_PORTS` | `80,2020` | Comma-separated ONVIF ports to test |
+| `VYZIO_DISCOVERY_PROBE_TIMEOUT_MS` | `250` | Per-host connection timeout in ms (50–5000) |
+| `VYZIO_DISCOVERY_MAX_CONCURRENT_PROBES` | `32` | Max parallel probes (1–256) |
+
+#### Documentation
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_DOCUMENTATION_VENDOR_CATALOG_PATH` | `/app/vendors` | Directory containing vendor Markdown docs (embedded in image) |
+
+## Build Docker images
+
+Both images must be built from the **repository root** (the Docker build context is `.`).
+
+```bash
+# Backend (.NET API)
+docker build -f src/vyzio/Vyzio.Api/Dockerfile -t ghcr.io/kelians/vyzio-api:VERSION .
+
+# Frontend (React dashboard + nginx)
+docker build -f src/dashboard/Dockerfile -t ghcr.io/kelians/vyzio-dashboard:VERSION .
+```
+
+Push to GHCR:
+
+```bash
+echo $GITHUB_TOKEN | docker login ghcr.io -u KelianS --password-stdin
+
+docker push ghcr.io/kelians/vyzio-api:VERSION
+docker push ghcr.io/kelians/vyzio-dashboard:VERSION
+
+# Update the latest tag on stable releases
+docker tag ghcr.io/kelians/vyzio-api:VERSION     ghcr.io/kelians/vyzio-api:latest
+docker tag ghcr.io/kelians/vyzio-dashboard:VERSION ghcr.io/kelians/vyzio-dashboard:latest
+docker push ghcr.io/kelians/vyzio-api:latest
+docker push ghcr.io/kelians/vyzio-dashboard:latest
+```
+
+## Project layout
+
+- src/vyzio: backend (.NET)
+- src/dashboard: frontend (React + TypeScript)
+- config: runtime configuration templates
+- docs: architectural and strategic documentation
 
 ## Mock video stream
-
-- Start the synthetic RTSP stack with `docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.mock.yml up -d mqtt mediamtx mock-camera frigate`.
+> If you don't have a physical camera available, you can still work on Frigate integration and related features using a synthetic RTSP stream.
+- Start the synthetic RTSP stack with `docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d`.
 - This swaps Frigate onto `config/frigate.mock.yml`, enables `test_camera`, and publishes a synthetic 1280x720 RTSP stream at `rtsp://mediamtx:8554/test-camera`.
-- The same compose overlay is suitable for transport-level end-to-end tests because it removes the dependency on a physical camera.
-- For future detection-level end-to-end tests, keep this same stack and replace the FFmpeg `lavfi` source with a repository-owned sample clip that contains known Frigate-detectable scenes.
 
-## Local runtime contract
+## Workflow
 
-- `docker-compose.yml` is the minimal retained runtime: `vyzio-api` + `mqtt` + `frigate`, nothing else.
-- `docker-compose.override.yml` only exposes developer-facing ports and development environment overrides.
-- `config/frigate.dev.yml` is a fallback boot config for repository reset work. It is intentionally minimal and keeps the sample camera disabled until a real stream is available.
-- `docker-compose.mock.yml` is an optional overlay for development and automated transport tests. It adds a synthetic RTSP source without changing the nominal runtime path.
+The mandatory workflow is defined in the repository rules file: `.instructions.md`.
+
+Use this file as the single source of truth for sequencing documentation, implementation, tests, and user-facing docs.
 
 ## Frigate responsibilities in dev
 
@@ -31,16 +114,3 @@
 - The mock overlay can enable `test_camera` automatically against a synthetic RTSP source when no physical camera is available.
 - The effective product config remains Vyzio-managed in the target architecture. `config/frigate.dev.yml` is only a temporary fallback for repository restart work.
 - The fallback config is mounted read-only on purpose. If a future Frigate version requires a config migration, refresh `config/frigate.dev.yml` in the repo instead of relying on in-container rewrite.
-
-## Project layout
-
-- src/vyzio: backend (.NET)
-- src/dashboard: frontend (React + TypeScript)
-- config: runtime configuration templates
-- docs: architectural and strategic documentation
-
-## Workflow
-
-The mandatory workflow is defined in the repository rules file: `.instructions.md`.
-
-Use this file as the single source of truth for sequencing documentation, implementation, tests, and user-facing docs.

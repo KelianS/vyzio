@@ -14,6 +14,7 @@ import { GetCameras } from '../application/use-cases/GetCameras'
 import { GetDetectionHistory } from '../application/use-cases/GetDetectionHistory'
 import { GetDetectionLabels } from '../application/use-cases/GetDetectionLabels'
 import { GetHubOverview } from '../application/use-cases/GetHubOverview'
+import { GetSystemStats } from '../application/use-cases/GetSystemStats'
 import { GetNotificationLog } from '../application/use-cases/GetNotificationLog'
 import { GetNotificationChannelConfig } from '../application/use-cases/GetNotificationChannelConfig'
 import { GetProfileCameraLinks } from '../application/use-cases/GetProfileCameraLinks'
@@ -36,9 +37,11 @@ import { HttpCameraLabelsRepository, HttpNotificationLabelsRepository } from '..
 import { HttpHubRepository } from '../infrastructure/repositories/HttpHubRepository'
 import { HttpNotificationSettingsRepository } from '../infrastructure/repositories/HttpNotificationSettingsRepository'
 import { HttpProfileRepository } from '../infrastructure/repositories/HttpProfileRepository'
+import { HttpSystemRepository } from '../infrastructure/repositories/HttpSystemRepository'
 
 const runtime = getDashboardRuntime()
 const hubRepository = new HttpHubRepository(runtime.apiBaseUrl)
+const systemRepository = new HttpSystemRepository(runtime.apiBaseUrl)
 const cameraRepository = new HttpCameraRepository(runtime.apiBaseUrl)
 const notificationSettingsRepository = new HttpNotificationSettingsRepository(runtime.apiBaseUrl)
 const profileRepository = new HttpProfileRepository(runtime.apiBaseUrl)
@@ -46,6 +49,7 @@ const cameraLabelsRepository = new HttpCameraLabelsRepository(runtime.apiBaseUrl
 const notificationLabelsRepository = new HttpNotificationLabelsRepository(runtime.apiBaseUrl)
 
 export const dashboardRuntime = runtime
+export const getSystemStats = new GetSystemStats(systemRepository)
 export const applyCamera = new ApplyCamera(cameraRepository)
 export const applyCameraConfiguration = new ApplyCameraConfiguration(cameraRepository)
 export const createCamera = new CreateCamera(cameraRepository)

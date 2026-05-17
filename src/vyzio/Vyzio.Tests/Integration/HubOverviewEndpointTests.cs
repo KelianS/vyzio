@@ -53,7 +53,6 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
-        builder.UseSetting("VYZIO_CONFIG_PATH", FindRepoFile("config", "vyzio.yml"));
 
         builder.ConfigureServices(services =>
         {
@@ -109,21 +108,4 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
         }
     }
 
-    private static string FindRepoFile(params string[] segments)
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var candidate = Path.Combine(directory.FullName, segments[0], segments.Length > 1 ? Path.Combine(segments[1..]) : string.Empty);
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new FileNotFoundException($"Unable to locate {Path.Combine(segments)} from test output directory.");
-    }
 }

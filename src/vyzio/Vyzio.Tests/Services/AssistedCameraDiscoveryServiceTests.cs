@@ -372,7 +372,7 @@ public class AssistedCameraDiscoveryServiceTests
         {
             Documentation = new VyzioRuntimeSettings.DocumentationSettings
             {
-                VendorCatalogPath = FindRepoPath("config", "vendors")
+                VendorCatalogPath = FindRepoPath("src", "vyzio", "vendors")
             },
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {

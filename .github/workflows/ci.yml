@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  backend:
+    name: Backend — build & test
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj
+
+      - name: Build
+        run: dotnet build src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj -c Release --no-restore
+
+      - name: Test
+        run: dotnet test src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj --no-build -c Release --collect:"XPlat Code Coverage" --results-directory coverage
+
+      - name: Write backend coverage to summary
+        if: always()
+        run: |
+          xml=$(find coverage -name "coverage.cobertura.xml" | head -1)
+          if [ -z "$xml" ]; then
+            echo "No coverage report found." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          python3 - "$xml" >> $GITHUB_STEP_SUMMARY <<'EOF'
+          import sys, xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          lr = float(root.get('line-rate', 0)) * 100
+          br = float(root.get('branch-rate', 0)) * 100
+          print(f"## Backend Coverage\n| Metric | Rate |\n|---|---|\n| Lines | {lr:.1f}% |\n| Branches | {br:.1f}% |")
+          EOF
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/**/coverage.cobertura.xml
+
+  frontend:
+    name: Frontend — build & test
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: src/dashboard/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm --prefix src/dashboard install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm --prefix src/dashboard exec tsc --noEmit
+
+      - name: Test
+        run: |
+          set -o pipefail
+          pnpm --prefix src/dashboard run test --coverage 2>&1 | tee /tmp/frontend-coverage.txt
+
+      - name: Write frontend coverage to summary
+        if: always()
+        run: |
+          echo "## Frontend Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/frontend-coverage.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: src/dashboard/coverage/
+
+      - name: Build
+        run: pnpm --prefix src/dashboard build
+
+  docker-build-check:
+    name: Docker — build images (no push)
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/vyzio/Vyzio.Api/Dockerfile
+          push: false
+          tags: vyzio-api:ci
+          load: true
+
+      - name: Install Trivy
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Scan API image
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-api:ci
+
+      - name: Build dashboard image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/dashboard/Dockerfile
+          push: false
+          tags: vyzio-dashboard:ci
+          load: true
+
+      - name: Scan dashboard image
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-dashboard:ci
