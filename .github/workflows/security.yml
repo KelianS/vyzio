@@ -57,10 +57,11 @@ jobs:
   semgrep:
     name: Semgrep — SAST
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    container:
-      image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        run: pip3 install semgrep
 
       - name: Scan
         run: semgrep scan --config auto --error src/

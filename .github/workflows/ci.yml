@@ -110,13 +110,11 @@ jobs:
           tags: vyzio-api:ci
           load: true
 
+      - name: Install Trivy
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Scan API image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: vyzio-api:ci
-          format: table
-          exit-code: '1'
-          severity: HIGH,CRITICAL
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-api:ci
 
       - name: Build dashboard image
         uses: docker/build-push-action@v6
@@ -128,9 +126,4 @@ jobs:
           load: true
 
       - name: Scan dashboard image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: vyzio-dashboard:ci
-          format: table
-          exit-code: '1'
-          severity: HIGH,CRITICAL
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-dashboard:ci
