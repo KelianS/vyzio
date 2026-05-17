@@ -28,7 +28,7 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [ ] SAST et sanity check de l'app avant release MVP
 - [x] Documenter le processus de déploiement et les prérequis système dans le README
 
-*** additional tasks from development: ***
+**additional tasks from development:**
 - [x] La découverte réseau ne fonctionne pas si l'on ne spécifie pas le subnet dans les options, il faudrait que ce soit automatique (ex. `ip addr` pour trouver le subnet de l'interface réseau principale) pour éviter d'avoir à configurer une option qui n'est pas censé être utilisée par l'utilisateur final.
 - [x] Les photos et clips de détection s'ouvre dans une page externe (fait pour les liens dans le markdown), mais les photos internes ne devrait pas subir cette règle et devrait s'ouvrir dans une modale pour rester dans le contexte de l'application.
 - [x] La lecture de clip ne fonctionne plus depuis que Proxifier par Vyzio — `GetStreamAsync` throw sur 400 Frigate ; corrigé en `GetAsync + ResponseHeadersRead` avec retour null gracieux.
