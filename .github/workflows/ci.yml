@@ -10,10 +10,12 @@ jobs:
   backend:
     name: Backend — build & test
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    container:
-      image: mcr.microsoft.com/dotnet/sdk:10.0
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
 
       - name: Restore
         run: dotnet restore src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj
@@ -27,13 +29,18 @@ jobs:
   frontend:
     name: Frontend — build & type-check
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    container:
-      image: node:24
     steps:
       - uses: actions/checkout@v4
 
-      - name: Enable pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: src/dashboard/pnpm-lock.yaml
 
       - name: Install
         run: pnpm --prefix src/dashboard install --frozen-lockfile
