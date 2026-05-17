@@ -16,19 +16,20 @@ WORKDIR /app
 # docker-cli: restart Frigate on config apply
 # tzdata: IANA timezone database (Europe/Paris, etc.)
 # icu-libs: .NET globalization — disabled by default in Alpine-based images
-RUN apk add --no-cache docker-cli tzdata icu-libs
+RUN apk add --no-cache docker-cli tzdata icu-libs su-exec
 
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 COPY --from=build /app/publish .
 COPY src/vyzio/vendors /app/vendors
+COPY src/vyzio/Vyzio.Api/entrypoint.sh /entrypoint.sh
 
-# Non-root user. Docker socket access relies on group_add in docker-compose (see docs/DEPLOYMENT.md).
+# Non-root user. The entrypoint runs as root briefly to join the Docker socket group, then drops to vyzio.
 RUN addgroup -S vyzio \
 	&& adduser -S -G vyzio vyzio \
 	&& mkdir -p /app/data /config \
-	&& chown -R vyzio:vyzio /app /config
+	&& chown -R vyzio:vyzio /app /config \
+	&& chmod +x /entrypoint.sh
 
-USER vyzio
 EXPOSE 8443
-ENTRYPOINT ["dotnet", "Vyzio.Api.dll"]
+ENTRYPOINT ["/entrypoint.sh"]

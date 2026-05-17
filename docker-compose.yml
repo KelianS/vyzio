@@ -34,9 +34,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    # The vyzio user (non-root) must access the Docker socket to restart Frigate.
-    # If the host docker socket GID is not 999: add group_add: ["<GID>"]
-    # Inspect GID with: stat -c '%g' /var/run/docker.sock
     networks:
       - vyzio-net
     ports:
