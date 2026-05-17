@@ -15,8 +15,10 @@ services:
     restart: unless-stopped
     depends_on:
       - vyzio-api
+    environment:
+      - VITE_API_PROXY_TARGET=http://vyzio-api:8443
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8080:8080"
     networks:
       - vyzio-net
 
@@ -37,8 +39,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
     networks:
       - vyzio-net
-    ports:
-      - "127.0.0.1:8443:8443"
 
   mqtt:
     image: eclipse-mosquitto:2
@@ -54,7 +54,7 @@ services:
       - vyzio-net
 
   frigate:
-    image: ghcr.io/blakeblackshear/frigate:stable
+    image: ghcr.io/blakeblackshear/frigate:0.17.1
     container_name: vyzio-frigate
     restart: unless-stopped
     depends_on:
