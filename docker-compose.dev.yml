@@ -1,8 +1,23 @@
+# Development override — builds images locally instead of pulling from GHCR.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
 services:
+  vyzio-dashboard:
+    build:
+      context: .
+      dockerfile: src/dashboard/Dockerfile
+
+  vyzio-api:
+    build:
+      context: .
+      dockerfile: src/vyzio/Vyzio.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  frigate:
+    ports:
+      - "127.0.0.1:5000:5000"
+
   mqtt:
     ports:
       - "127.0.0.1:1883:1883"
-
-  vyzio-api:
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development

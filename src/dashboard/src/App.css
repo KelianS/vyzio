@@ -1764,6 +1764,15 @@
   opacity: 0.7;
 }
 
+.live-thumb--expandable {
+  cursor: pointer;
+}
+
+.live-thumb--expandable:hover .live-thumb-frame {
+  outline: 2px solid rgba(247, 244, 237, 0.35);
+  outline-offset: -2px;
+}
+
 .live-thumb-frame {
   aspect-ratio: 16 / 9;
   position: relative;
@@ -2206,6 +2215,79 @@
 .hub-alert-body p {
   font-size: 0.84rem;
   color: var(--ink-soft);
+}
+
+/* ── System monitor panel ── */
+
+.hub-monitor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hub-monitor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-monitor-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.hub-monitor-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(247, 244, 237, 0.1);
+  overflow: hidden;
+}
+
+.hub-monitor-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.hub-monitor-bar-legend {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.hub-monitor-camera-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hub-monitor-camera-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.hub-monitor-camera-name {
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.hub-monitor-fps {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.hub-monitor-fps--warn {
+  color: #e5a050;
 }
 
 /* ── Expert view (Frigate iframe) ── */

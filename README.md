@@ -66,11 +66,59 @@ Voulez installer vous-même ? Repo open source complet, Docker Compose. Mais c'e
 
 ---
 
+## Démarrage rapide
+
+> **Prérequis** : Linux avec Docker Engine 25+ et Docker Compose v2. Testé sur Debian, Ubuntu, Raspberry Pi OS (64-bit).
+
+### Installation
+
+```bash
+# Télécharger le docker-compose.yml
+curl -O https://raw.githubusercontent.com/KelianS/vyzio/main/docker-compose.yml
+
+# Lancer la stack
+docker compose up -d
+```
+
+Ouvrir `http://<IP_SERVEUR>:8080` et configurer depuis l'interface.
+
+### Variables d'environnement
+
+Toutes les valeurs ont des défauts prêts pour la production. Surcharger via les variables `VYZIO_*` dans `docker-compose.yml` :
+
+| Variable | Défaut | Description |
+|---|---|---|
+| `VYZIO_TIME_ZONE` | TZ système | Fuseau horaire IANA, ex. `Europe/Paris` |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(aucun)* | Plage réseau pour la détection des caméras, ex. `192.168.1.0/24` |
+| `VYZIO_FRIGATE_API_BASE_URL` | `http://frigate:5000` | URL interne Frigate (ne pas modifier sauf déploiement custom) |
+
+Liste complète dans [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+### Mise à jour
+
+```bash
+# Mettre à jour vers la dernière version stable
+docker compose pull
+docker compose up -d
+```
+
+### Prérequis matériel recommandés
+
+| | Minimum | Recommandé |
+|---|:---:|:---:|
+| CPU | 4 cœurs | 6+ cœurs |
+| RAM | 4 Go | 8 Go |
+| Stockage | 32 Go | 500 Go+ (selon rétention vidéo) |
+
+> La détection IA (Frigate) est gourmande en CPU. Une NPU ou un GPU dédié améliore significativement les performances au-delà de 2-3 caméras.
+
+---
+
 ## Statut du projet
 
-> ⚠️ Vyzio est actuellement en **phase de conception**. Ce dépôt contient la vision du produit, les spécifications fonctionnelles, les décisions d'architecture et le plan de reprise. Le développement actif reprend une fois ces documents alignés.
+> Vyzio est en **développement actif**. L'infrastructure de production est en place (CI/CD, images Docker, déploiement Docker Compose). Les fonctionnalités core sont opérationnelles : gestion des caméras, détection IA via Frigate, reconnaissance de personnes, notifications Telegram, live feed, clips et historique des détections.
 
-Les contributions sur la vision, les cas d'usage et les spécifications sont les bienvenues dès maintenant.
+Les contributions sont bienvenues, voir [`CONTRIBUTING.md`](./CONTRIBUTING.md) pour le workflow de développement.
 
 ---
 

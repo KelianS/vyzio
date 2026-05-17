@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   addProfilePhoto,
@@ -23,6 +23,7 @@ import {
   getProfileCameraLinks,
   getProfilePhotos,
   getProfiles,
+  getSystemStats,
   getVendorAssistance,
   removeProfilePhoto,
   resyncFaceLibrary,
@@ -58,6 +59,11 @@ function App() {
   const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash))
   const { data, loading: hubLoading, error: hubError } = useHubOverview(getHubOverview)
   const { data: cameras, loading: camerasLoading } = useCameras(getCameras)
+  const [modalMedia, setModalMedia] = useState<
+    | { type: 'image' | 'video'; url: string }
+    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string }
+    | null
+  >(null)
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -131,7 +137,6 @@ function App() {
             getCameraLabels={getCameraLabels}
             correctDetectionIdentity={correctDetectionIdentity}
             getProfiles={getProfiles}
-            frigateBaseUrl={dashboardRuntime.frigateBaseUrl}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
             onBack={navigateBack}
           />
@@ -148,7 +153,34 @@ function App() {
             hubError={hubError}
             data={data}
             cameras={cameras}
+            getSystemStats={getSystemStats}
+            onOpenMedia={(type, url) => setModalMedia({ type, url })}
+            onOpenLive={(camera) => setModalMedia({ type: 'live', cameraId: camera.id, apiBaseUrl: dashboardRuntime.apiBaseUrl, label: camera.displayName })}
           />
+        )}
+
+        {modalMedia && (
+          <div
+            onClick={() => setModalMedia(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setModalMedia(null)}
+                style={{ position: 'absolute', top: -40, right: 0, background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+              {modalMedia.type === 'live' ? (
+                <LiveFeedModal cameraId={modalMedia.cameraId} apiBaseUrl={modalMedia.apiBaseUrl} label={modalMedia.label} />
+              ) : modalMedia.type === 'image' ? (
+                <img src={modalMedia.url} alt="Aperçu détection" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
+              ) : (
+                <video src={modalMedia.url} controls autoPlay style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
+              )}
+            </div>
+          </div>
         )}
       </div>
     </ToastProvider>
@@ -164,9 +196,12 @@ interface HubViewProps {
   hubError: string | null
   data: HubOverviewData
   cameras: CamerasData
+  getSystemStats: GetSystemStats
+  onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenLive: (camera: Camera) => void
 }
 
-function HubView({ hubLoading, camerasLoading, hubError, data, cameras }: HubViewProps) {
+function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSystemStats, onOpenMedia, onOpenLive }: HubViewProps) {
   const isLoading = hubLoading || camerasLoading
 
   if (isLoading) {
@@ -183,7 +218,7 @@ function HubView({ hubLoading, camerasLoading, hubError, data, cameras }: HubVie
     return <HubSetupState />
   }
 
-  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} />
+  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} getSystemStats={getSystemStats} onOpenMedia={onOpenMedia} onOpenLive={onOpenLive} />
 }
 
 function HubLoadingState() {
@@ -274,14 +309,26 @@ function HubSetupState() {
 
 import type { Camera } from './domain/entities/Camera'
 import type { HubOverview } from './domain/entities/HubOverview'
+import type { GetSystemStats } from './application/use-cases/GetSystemStats'
+import type { SystemStats } from './domain/entities/SystemStats'
+import { SystemMonitorPanel } from './ui/components/SystemMonitorPanel'
 
 interface HubOperationalStateProps {
   data: HubOverview | null
   cameras: Camera[]
   allCameras: Camera[]
+  getSystemStats: GetSystemStats
+  onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenLive: (camera: Camera) => void
 }
 
-function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateProps) {
+function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpenMedia, onOpenLive }: HubOperationalStateProps) {
+  const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
+
+  useEffect(() => {
+    getSystemStats.execute().then(setSystemStats).catch(() => {})
+  }, [getSystemStats])
+
   const recentEvents = data?.recentEvents ?? []
   const notifications = data?.notifications
   const warnings = data?.warnings ?? []
@@ -339,6 +386,7 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
                 key={camera.id}
                 camera={camera}
                 apiBaseUrl={dashboardRuntime.apiBaseUrl}
+                onExpand={() => onOpenLive(camera)}
               />
             ))}
           </div>
@@ -362,19 +410,19 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
               recentEvents.map((event) => (
                 <article key={event.eventId} className={`event-card ${getEventTone(event)}`}>
                   {event.hasSnapshot && (
-                    <a
+                    <button
+                      type="button"
                       className="event-card-thumb"
-                      href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={() => onOpenMedia('image', `${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)}
                       title="Voir l'aperçu"
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                     >
                       <img
-                        src={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                        src={`${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`}
                         alt={formatEventTitle(event)}
                         loading="lazy"
                       />
-                    </a>
+                    </button>
                   )}
                   <div className="event-card-body">
                     <h3>{formatEventTitle(event)}</h3>
@@ -385,14 +433,14 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
                         </span>
                       )}
                       {event.hasClip && (
-                        <a
+                        <button
+                          type="button"
                           className="event-card-clip"
-                          href={`${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/clip`}
-                          target="_blank"
-                          rel="noreferrer"
+                          onClick={() => onOpenMedia('video', `${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/clip`)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                         >
                           ▶ Clip
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -442,10 +490,26 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
               </a>
             </div>
           </article>
+
+          {systemStats && <SystemMonitorPanel stats={systemStats} />}
         </aside>
       </section>
     </main>
   )
+}
+
+function LiveFeedModal({ cameraId, apiBaseUrl, label }: { cameraId: string; apiBaseUrl: string; label: string }) {
+  const [src, setSrc] = useState(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setSrc(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+    }, 1000)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [cameraId, apiBaseUrl])
+
+  return <img src={src} alt={label} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
 }
 
 function getViewFromHash(hash: string): AppView {

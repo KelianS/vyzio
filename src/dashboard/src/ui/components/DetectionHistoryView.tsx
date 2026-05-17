@@ -14,7 +14,6 @@ interface DetectionHistoryViewProps {
   getCameraLabels: GetCameraLabels
   correctDetectionIdentity: CorrectDetectionIdentity
   getProfiles: GetProfiles
-  frigateBaseUrl: string
   apiBaseUrl: string
   onBack: () => void
 }
@@ -24,7 +23,6 @@ export function DetectionHistoryView({
   getCameraLabels,
   correctDetectionIdentity,
   getProfiles,
-  frigateBaseUrl,
   apiBaseUrl,
 }: DetectionHistoryViewProps) {
   const [page, setPage] = useState<DetectionHistoryPage | null>(null)
@@ -32,6 +30,7 @@ export function DetectionHistoryView({
   const [detectionLabels, setDetectionLabels] = useState<DetectionLabel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null)
 
   const [filterCamera, setFilterCamera] = useState('')
   const [filterLabel, setFilterLabel] = useState('')
@@ -103,6 +102,23 @@ export function DetectionHistoryView({
 
   return (
     <div className="app-shell app-shell-cameras">
+      {snapshotUrl && (
+        <div
+          onClick={() => setSnapshotUrl(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setSnapshotUrl(null)}
+              style={{ position: 'absolute', top: -36, right: 0, background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}
+            >
+              ✕
+            </button>
+            <img src={snapshotUrl} alt="Aperçu détection" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
+          </div>
+        </div>
+      )}
       <div className="camera-toolbar panel">
         <div className="camera-toolbar-copy">
           <p className="eyebrow">Historique</p>
@@ -197,10 +213,10 @@ export function DetectionHistoryView({
                           key={event.eventId}
                           event={event}
                           profiles={profiles}
-                          frigateBaseUrl={frigateBaseUrl}
                           apiBaseUrl={apiBaseUrl}
                           correcting={correcting === event.eventId}
                           onCorrect={(profileId) => handleCorrect(event.eventId, profileId)}
+                          onShowSnapshot={(url) => setSnapshotUrl(url)}
                         />
                       ))}
                     </tbody>
@@ -245,17 +261,17 @@ export function DetectionHistoryView({
 function EventRow({
   event,
   profiles,
-  frigateBaseUrl,
   apiBaseUrl,
   correcting,
   onCorrect,
+  onShowSnapshot,
 }: {
   event: DetectionEvent
   profiles: Profile[]
-  frigateBaseUrl: string
   apiBaseUrl: string
   correcting: boolean
   onCorrect: (profileId: string | null) => Promise<void>
+  onShowSnapshot: (url: string) => void
 }) {
   const [showCorrect, setShowCorrect] = useState(false)
   const [showClip, setShowClip] = useState(false)
@@ -282,14 +298,14 @@ function EventRow({
         <td style={{ padding: '8px 12px' }}>{confidence}</td>
         <td style={{ padding: '8px 12px' }}>
           {event.hasSnapshot && (
-            <a
-              href={`${frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
-              target="_blank"
-              rel="noreferrer"
-              style={{ marginRight: 6, opacity: 0.7, fontSize: '0.8rem' }}
+            <button
+              type="button"
+              onClick={() => onShowSnapshot(`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)}
+              style={{ marginRight: 6, opacity: 0.7, fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              title="Voir l'aperçu"
             >
               🖼
-            </a>
+            </button>
           )}
           {identity}
         </td>

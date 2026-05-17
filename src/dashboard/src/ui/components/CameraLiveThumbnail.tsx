@@ -4,9 +4,10 @@ import type { Camera } from '../../domain/entities/Camera'
 interface CameraLiveThumbnailProps {
   camera: Camera
   apiBaseUrl: string
+  onExpand?: () => void
 }
 
-export function CameraLiveThumbnail({ camera, apiBaseUrl }: CameraLiveThumbnailProps) {
+export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand }: CameraLiveThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(
     `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
   )
@@ -28,7 +29,13 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl }: CameraLiveThumbnailP
   }, [camera.id, apiBaseUrl])
 
   return (
-    <article className={`live-thumb${offline ? ' live-thumb--offline' : ''}`}>
+    <article
+      className={`live-thumb${offline ? ' live-thumb--offline' : ''}${onExpand ? ' live-thumb--expandable' : ''}`}
+      onClick={onExpand}
+      role={onExpand ? 'button' : undefined}
+      tabIndex={onExpand ? 0 : undefined}
+      onKeyDown={onExpand ? (e) => { if (e.key === 'Enter' || e.key === ' ') onExpand() } : undefined}
+    >
       <div className="live-thumb-frame">
         {offline ? (
           <div className="live-thumb-offline">Hors ligne</div>

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
 
 namespace Vyzio.Tests.Integration;
@@ -332,7 +333,6 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
-        builder.UseSetting("VYZIO_CONFIG_PATH", FindRepoFile("config", "vyzio.yml"));
 
         builder.ConfigureServices(services =>
         {
@@ -345,6 +345,14 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<ICameraVerifier>();
             services.RemoveAll<IFrigateConfigApplier>();
             services.RemoveAll<IVendorAssistanceService>();
+            services.RemoveAll<VyzioRuntimeSettings>();
+            services.AddSingleton(new VyzioRuntimeSettings
+            {
+                Documentation = new VyzioRuntimeSettings.DocumentationSettings
+                {
+                    VendorCatalogPath = FindRepoPath("src", "vyzio", "vendors")
+                }
+            });
 
             services.AddDbContext<VyzioDbContext>(options =>
                 options.UseSqlite(_connection)
@@ -371,22 +379,12 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
         }
     }
 
-    private static string FindRepoFile(params string[] segments)
+    private static string FindRepoPath(params string[] parts)
     {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var candidate = Path.Combine(directory.FullName, segments[0], segments.Length > 1 ? Path.Combine(segments[1..]) : string.Empty);
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new FileNotFoundException($"Unable to locate {Path.Combine(segments)} from test output directory.");
+        var segments = new[] { AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".." }
+            .Concat(parts)
+            .ToArray();
+        return Path.GetFullPath(Path.Combine(segments));
     }
 
     private sealed class StubCameraDiscoveryService : ICameraDiscoveryService
