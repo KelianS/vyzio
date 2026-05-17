@@ -26,8 +26,8 @@ COPY src/vyzio/vendors /app/vendors
 # Non-root user. Docker socket access relies on group_add in docker-compose (see docs/DEPLOYMENT.md).
 RUN addgroup -S vyzio \
 	&& adduser -S -G vyzio vyzio \
-	&& mkdir -p /app/data \
-	&& chown -R vyzio:vyzio /app
+	&& mkdir -p /app/data /config \
+	&& chown -R vyzio:vyzio /app /config
 
 USER vyzio
 EXPOSE 8443

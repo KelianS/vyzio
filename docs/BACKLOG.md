@@ -138,6 +138,10 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 **Taches :**
 TODO
 
+### BUGFIX
+- [ ] Dans le menu caméra, "appliquer" ne déclenche aucun feedback utilisateur, on ne sait pas s'il se passe quelque chose. Le message d'erreur est toujours en dehors dans le panel de détail.
+- [ ] Plus d'acces Docker quand non root : permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+
 ---
 
 ## Definition of done

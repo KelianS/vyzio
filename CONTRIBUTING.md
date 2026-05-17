@@ -4,7 +4,62 @@
 
 1. Install .NET SDK 10, Node.js 24, pnpm, and Docker Engine 25+.
 2. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
-3. Start the frontend dev server with `cd src/dashboard && pnpm dev`
+3. Start the frontend dev server with `pnpm --prefix src/dashboard dev`
+
+All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only).
+
+### Environment variables reference
+
+#### General
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_TIME_ZONE` | *(system TZ via `/etc/localtime`)* | IANA timezone, e.g. `Europe/Paris` |
+
+#### Database
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_DATABASE_CONNECTION_STRING` | `Data Source=./data/vyzio.db` | SQLite connection string |
+
+#### Frigate integration
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_FRIGATE_API_BASE_URL` | `http://frigate:5000` | Frigate REST API base URL |
+| `VYZIO_FRIGATE_CONFIG_PATH` | `/config/config.yml` | Where Vyzio writes the generated Frigate config |
+| `VYZIO_FRIGATE_APPLY_COMMAND` | `docker restart vyzio-frigate` | Shell command run after config is written. Set to empty string to disable. |
+| `VYZIO_FRIGATE_DATABASE_PATH` | `/media/frigate/frigate.db` | Frigate SQLite DB path (read by Vyzio for clip/snapshot lookups) |
+| `VYZIO_FRIGATE_RETAINED_LABELS` | *(all)* | Comma-separated Frigate labels Vyzio keeps, e.g. `person,car` |
+
+#### MQTT
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_FRIGATE_MQTT_HOST` | `mqtt` | MQTT broker hostname |
+| `VYZIO_FRIGATE_MQTT_PORT` | `1883` | MQTT broker port |
+| `VYZIO_FRIGATE_MQTT_TOPIC` | `frigate/events` | Topic Frigate publishes events on |
+| `VYZIO_FRIGATE_MQTT_CLIENT_ID` | `vyzio-api` | MQTT client identifier |
+
+#### Camera discovery
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS` | `false` | Auto-detect local subnets from network interfaces |
+| `VYZIO_DISCOVERY_PROBE_HOSTS` | *(none)* | Comma-separated hosts to always probe, e.g. `192.168.1.10,192.168.1.20` |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated CIDRs for unicast scan, e.g. `192.168.1.0/24` |
+| `VYZIO_DISCOVERY_RTSP_PORTS` | `554` | Comma-separated RTSP ports to test |
+| `VYZIO_DISCOVERY_RTSP_PATHS` | `/stream1,/stream2,/Streaming/Channels/101,...` | Comma-separated RTSP paths to probe |
+| `VYZIO_DISCOVERY_HTTP_PORTS` | `80,443,8080` | Comma-separated HTTP ports to test |
+| `VYZIO_DISCOVERY_ONVIF_PORTS` | `80,2020` | Comma-separated ONVIF ports to test |
+| `VYZIO_DISCOVERY_PROBE_TIMEOUT_MS` | `250` | Per-host connection timeout in ms (50–5000) |
+| `VYZIO_DISCOVERY_MAX_CONCURRENT_PROBES` | `32` | Max parallel probes (1–256) |
+
+#### Documentation
+
+| Variable | Default | Description |
+|---|---|---|
+| `VYZIO_DOCUMENTATION_VENDOR_CATALOG_PATH` | `/app/vendors` | Directory containing vendor Markdown docs (embedded in image) |
 
 ## Build Docker images
 

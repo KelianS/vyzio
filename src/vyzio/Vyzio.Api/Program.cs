@@ -3,7 +3,6 @@ using Vyzio.Application.DependencyInjection;
 using Vyzio.Application.Options;
 using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
-using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Services;
 using Vyzio.Infrastructure.Configuration;
@@ -13,10 +12,7 @@ using Vyzio.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var configPath = builder.Configuration["VYZIO_CONFIG_PATH"]
-    ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", "config", "vyzio.yml"));
-
-var runtimeSettings = VyzioConfigLoader.Load(configPath);
+var runtimeSettings = VyzioConfigLoader.Load();
 
 var connStr = runtimeSettings.Database.ConnectionString;
 var dataSource = connStr.Split(';', StringSplitOptions.RemoveEmptyEntries)
@@ -58,28 +54,10 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
     dbContext.Database.Migrate();
-
-    // Seed telegram config from vyzio.yml if no DB config exists yet
-    var channelConfigs = scope.ServiceProvider.GetRequiredService<INotificationChannelConfigRepository>();
-    var existing = await channelConfigs.GetByChannelAsync("telegram");
-    if (existing is null)
-    {
-        var telegram = runtimeSettings.Notifications.Telegram;
-        var seeded = new NotificationChannelConfig
-        {
-            Channel = "telegram",
-            IsEnabled = telegram.IsEnabled,
-            BotToken = string.IsNullOrWhiteSpace(telegram.BotToken) ? null : telegram.BotToken,
-            ChatId = string.IsNullOrWhiteSpace(telegram.ChatId) ? null : telegram.ChatId,
-            MinimumConfidence = runtimeSettings.Notifications.MinimumConfidence,
-            ConfiguredAt = telegram.IsEnabled ? DateTimeOffset.UtcNow : null
-        };
-        await channelConfigs.UpsertAsync(seeded);
-    }
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-app.MapGet("/", () => Results.Ok(new { service = "vyzio-api", config = configPath }));
+app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" }));
 app.MapHub();
 app.MapDetectionLabels();
 app.MapCameras();
