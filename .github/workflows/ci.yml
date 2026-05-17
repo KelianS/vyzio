@@ -26,6 +26,19 @@ jobs:
       - name: Test
         run: dotnet test src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj --no-build -c Release --collect:"XPlat Code Coverage" --results-directory coverage
 
+      - name: Coverage summary
+        if: always()
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage/**/coverage.cobertura.xml
+          badge: false
+          format: markdown
+          output: file
+
+      - name: Write backend coverage to summary
+        if: always()
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4
         with:
@@ -55,7 +68,17 @@ jobs:
         run: pnpm --prefix src/dashboard exec tsc --noEmit
 
       - name: Test
-        run: pnpm --prefix src/dashboard run test --coverage
+        run: |
+          set -o pipefail
+          pnpm --prefix src/dashboard run test --coverage 2>&1 | tee /tmp/frontend-coverage.txt
+
+      - name: Write frontend coverage to summary
+        if: always()
+        run: |
+          echo "## Frontend Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/frontend-coverage.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload frontend coverage
         uses: actions/upload-artifact@v4
