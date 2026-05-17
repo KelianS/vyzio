@@ -49,6 +49,9 @@ jobs:
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     needs: [backend, frontend]
     steps:
+      - name: Fix workspace ownership (container jobs run as root)
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" 2>/dev/null || true
+
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
