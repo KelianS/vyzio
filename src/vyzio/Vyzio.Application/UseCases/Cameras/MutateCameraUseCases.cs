@@ -41,7 +41,7 @@ public sealed class CreateCameraUseCase(ICameraRepository cameras)
         ArgumentException.ThrowIfNullOrWhiteSpace(request.DisplayName);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Host);
 
-        var baseSlug = Slugify(request.DisplayName);
+        var baseSlug = CameraDraftFactory.Slugify(request.DisplayName);
         var slug = await EnsureUniqueSlugAsync(baseSlug, ct);
 
         var camera = BuildCameraDraft(request, slug);
@@ -63,37 +63,6 @@ public sealed class CreateCameraUseCase(ICameraRepository cameras)
 
         return slug;
     }
-
-    private static string Slugify(string value)
-    {
-        var builder = new StringBuilder();
-        var previousDash = false;
-
-        foreach (var character in value.Trim().ToLowerInvariant())
-        {
-            if (char.IsLetterOrDigit(character))
-            {
-                builder.Append(character);
-                previousDash = false;
-                continue;
-            }
-
-            if (!previousDash)
-            {
-                builder.Append('-');
-                previousDash = true;
-            }
-        }
-
-        var slug = builder.ToString().Trim('-');
-        return string.IsNullOrWhiteSpace(slug) ? "camera" : slug;
-    }
-
-    private static string? NormalizeOptional(string? value)
-        => CameraDraftFactory.NormalizeOptional(value);
-
-    private static string? NormalizeStreamPath(string? value)
-        => CameraDraftFactory.NormalizeStreamPath(value);
 
     internal static Camera BuildCameraDraft(CreateCameraRequest request, string slug)
         => CameraDraftFactory.Build(request, slug);
@@ -169,7 +138,13 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
             || !string.Equals(camera.VendorFamily, normalizedVendorFamily, StringComparison.Ordinal)
             || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
 
-        camera.DisplayName = request.DisplayName.Trim();
+        var normalizedDisplayName = request.DisplayName.Trim();
+        if (!string.Equals(camera.DisplayName, normalizedDisplayName, StringComparison.Ordinal))
+        {
+            camera.DisplayName = normalizedDisplayName;
+            camera.FrigateCameraName = CameraDraftFactory.Slugify(normalizedDisplayName).Replace('-', '_');
+        }
+
         camera.Host = normalizedHost;
         camera.Port = normalizedPort;
         camera.Username = normalizedUsername;
@@ -371,5 +346,30 @@ internal static class CameraDraftFactory
 
         var trimmed = value.Trim();
         return trimmed.StartsWith('/') ? trimmed : $"/{trimmed}";
+    }
+
+    public static string Slugify(string value)
+    {
+        var builder = new StringBuilder();
+        var previousDash = false;
+
+        foreach (var character in value.Trim().ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(character);
+                previousDash = false;
+                continue;
+            }
+
+            if (!previousDash)
+            {
+                builder.Append('-');
+                previousDash = true;
+            }
+        }
+
+        var slug = builder.ToString().Trim('-');
+        return string.IsNullOrWhiteSpace(slug) ? "camera" : slug;
     }
 }

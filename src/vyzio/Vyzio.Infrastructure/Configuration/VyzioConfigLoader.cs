@@ -10,8 +10,8 @@ public static class VyzioConfigLoader
         static int EnvInt(string name, int @default) =>
             int.TryParse(Env(name), out var i) ? i : @default;
 
-        static bool EnvBool(string name) =>
-            bool.TryParse(Env(name), out var b) && b;
+        static bool EnvBool(string name, bool @default = false) =>
+            Env(name) is { Length: > 0 } raw ? bool.TryParse(raw, out var b) && b : @default;
 
         static string[] EnvList(string name, string[]? @default = null) =>
             Env(name) is { Length: > 0 } raw

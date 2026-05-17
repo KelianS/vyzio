@@ -3,7 +3,7 @@
 #
 # All Vyzio settings have sensible defaults. Override with VYZIO_* environment variables, e.g.:
 #   VYZIO_TIME_ZONE: Europe/Paris
-#   VYZIO_DISCOVERY_PROBE_CIDRS: 192.168.1.0/24
+#   VYZIO_DISCOVERY_PROBE_CIDRS: 192.168.1.0/24,192.168.2.0/24
 #
 # For local development with live builds, apply the dev override:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
@@ -28,6 +28,7 @@ services:
       - frigate
     environment:
       ASPNETCORE_HTTP_PORTS: 8443
+      VYZIO_DISCOVERY_PROBE_CIDRS: 192.168.0.0/24,192.168.1.0/24
     volumes:
       - vyzio-config:/config           # shared with frigate: API writes config.yml, Frigate reads it
       - vyzio-data:/app/data           # contains DB
