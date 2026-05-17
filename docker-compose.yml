@@ -23,12 +23,12 @@ services:
     depends_on:
       - frigate
     environment:
-      ASPNETCORE_URLS: http://+:8443
+      ASPNETCORE_HTTP_PORTS: 8443
       VYZIO_CONFIG_PATH: /app/config/vyzio.yml
     volumes:
-      - ./config:/app/config
-      - vyzio-data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config:/app/config # replace by volume mount with frigate
+      - vyzio-data:/app/data # contains DB
+      - /var/run/docker.sock:/var/run/docker.sock # used to reload Frigate config on changes
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     # The vyzio user (non-root) must write to ./config (frigate.generated.yml).
