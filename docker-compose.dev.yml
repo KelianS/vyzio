@@ -14,6 +14,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
 
+  frigate:
+    ports:
+      - "127.0.0.1:5000:5000"
+
   mqtt:
     ports:
       - "127.0.0.1:1883:1883"

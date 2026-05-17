@@ -121,16 +121,16 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 > But : préparer le déploiement du projet sur une infrastructure de production.
 
 **Taches :**
-- [ ] Configurer un pipeline CI/CD (github) pour automatiser les tests, la construction et le déploiement de l'application
-- [ ] Retirer tous les fichiers de configuration pour l'utilisateur, il ne doit avoir aucun fichier a écrire, tout ce fait depuis l'interface (ex. config Frigate générée, config Vyzio, etc.)
-- [ ] Monter la config Frigate dans un volume Docker plutôt que de devoir monter un dossier commun
-- [ ] Retirer l'exposition de Frigate, tout doit passer par Vyzio (live feed, clips, etc.) pour éviter les problèmes de CORS et d'authentification
+- [x] Configurer un pipeline CI/CD (github) pour automatiser les tests, la construction et le déploiement de l'application
+- [x] Retirer tous les fichiers de configuration pour l'utilisateur, il ne doit avoir aucun fichier a écrire, tout ce fait depuis l'interface (ex. config Frigate générée, config Vyzio, etc.)
+- [x] Monter la config Frigate dans un volume Docker plutôt que de devoir monter un dossier commun
+- [x] Retirer l'exposition de Frigate, tout doit passer par Vyzio (live feed, clips, etc.) pour éviter les problèmes de CORS et d'authentification
 - [x] Configurer NGINX et Dockerfile pour la partie frontend (`src/dashboard/Dockerfile` multi-stage + `nginx.conf` avec proxy `/api/` vers vyzio-api ; service `dashboard` sur `:8080` dans docker-compose)
 - [x] Intégrer les docs 'vendors' dans l'image backend (déplacés vers `src/vyzio/vendors/`, `COPY` dans le Dockerfile backend, fallback par défaut `/app/vendors`)
-- [ ] Mettre en place une surveillance systeme wide sur le dashboard (CPU, RAM, stockage). Pour monitorer l'utilisation, principalement de Frigate, et alerter si trop de caméras ou détection pour le systeme.
+- [x] Mettre en place une surveillance systeme wide sur le dashboard (CPU, RAM, stockage). Pour monitorer l'utilisation, principalement de Frigate, et alerter si trop de caméras ou détection pour le systeme. (Hint: Frigate a une page avec plein de metrics, certaines données peuvent être utilisé ou la page entière peut être intégrée — widget simplifié dans le hub + vue expert pour les détails techniques)
 - [x] Configurer Mosquitto sans fichier supplémentaire (`entrypoint` inline dans docker-compose, suppression du volume `mosquitto.conf`)
 - [ ] SAST et sanity check de l'app avant release MVP
-- [ ] Documenter le processus de déploiement et les prérequis système dans le README
+- [x] Documenter le processus de déploiement et les prérequis système dans le README
 
 ### US-P3.11 — Privacy mode
 > But : permettre à l'utilisateur de couper une caméra temporairement ou de manière récurrente (ex. tous les soirs de 22h à 6h) pour préserver la vie privée, avec un impact minimal sur les autres fonctionnalités (notifications, reconnaissance, etc.) et une indication claire du statut de confidentialité de chaque caméra. La caméra doit réellement être coupé et le flux RTSP ne doit être visible de personne sur le réseau, y compris de Frigate.
@@ -138,11 +138,16 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 **Taches :**
 TODO
 
+### US-P3.12 — PTZ
+> But : permettre à l'utilisateur de contrôler les caméras PTZ compatibles depuis l'interface Vyzio, avec des commandes de base (panoramique, inclinaison, zoom) et la possibilité de définir des positions prédéfinies pour un accès rapide.
+
+**Taches :**
+TODO
 ---
 
 ### BUGFIX
 - [ ] Dans le menu caméra, "appliquer" ne déclenche aucun feedback utilisateur, on ne sait pas s'il se passe quelque chose. Le message d'erreur est toujours en dehors dans le panel de détail.
-- [x] Plus d'acces Docker quand non root : permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+- [x] Plus d'acces Docker quand non root : permission denied while trying to connect to the docker API at unix:///var/run/docker.sock (entrypoint.sh reads socket GID at runtime, adds vyzio user to group, drops to vyzio via su-exec)
 - [ ] Les photos et clips de détection s'ouvre dans une page externe (fait pour les liens dans le markdown), mais les photos internes ne devrait pas subir cette règle et devrait s'ouvrir dans une modale pour rester dans le contexte de l'application.
 - [ ] Pouvoir agrandir le live feed dans une modale comme pour les miniatures de détections
 ---

@@ -23,6 +23,7 @@ import {
   getProfileCameraLinks,
   getProfilePhotos,
   getProfiles,
+  getSystemStats,
   getVendorAssistance,
   removeProfilePhoto,
   resyncFaceLibrary,
@@ -131,7 +132,6 @@ function App() {
             getCameraLabels={getCameraLabels}
             correctDetectionIdentity={correctDetectionIdentity}
             getProfiles={getProfiles}
-            frigateBaseUrl={dashboardRuntime.frigateBaseUrl}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
             onBack={navigateBack}
           />
@@ -148,6 +148,7 @@ function App() {
             hubError={hubError}
             data={data}
             cameras={cameras}
+            getSystemStats={getSystemStats}
           />
         )}
       </div>
@@ -164,9 +165,10 @@ interface HubViewProps {
   hubError: string | null
   data: HubOverviewData
   cameras: CamerasData
+  getSystemStats: GetSystemStats
 }
 
-function HubView({ hubLoading, camerasLoading, hubError, data, cameras }: HubViewProps) {
+function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSystemStats }: HubViewProps) {
   const isLoading = hubLoading || camerasLoading
 
   if (isLoading) {
@@ -183,7 +185,7 @@ function HubView({ hubLoading, camerasLoading, hubError, data, cameras }: HubVie
     return <HubSetupState />
   }
 
-  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} />
+  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} getSystemStats={getSystemStats} />
 }
 
 function HubLoadingState() {
@@ -274,14 +276,24 @@ function HubSetupState() {
 
 import type { Camera } from './domain/entities/Camera'
 import type { HubOverview } from './domain/entities/HubOverview'
+import type { GetSystemStats } from './application/use-cases/GetSystemStats'
+import type { SystemStats } from './domain/entities/SystemStats'
+import { SystemMonitorPanel } from './ui/components/SystemMonitorPanel'
 
 interface HubOperationalStateProps {
   data: HubOverview | null
   cameras: Camera[]
   allCameras: Camera[]
+  getSystemStats: GetSystemStats
 }
 
-function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateProps) {
+function HubOperationalState({ data, cameras, allCameras, getSystemStats }: HubOperationalStateProps) {
+  const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
+
+  useEffect(() => {
+    getSystemStats.execute().then(setSystemStats).catch(() => {})
+  }, [getSystemStats])
+
   const recentEvents = data?.recentEvents ?? []
   const notifications = data?.notifications
   const warnings = data?.warnings ?? []
@@ -364,13 +376,13 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
                   {event.hasSnapshot && (
                     <a
                       className="event-card-thumb"
-                      href={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                      href={`${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`}
                       target="_blank"
                       rel="noreferrer"
                       title="Voir l'aperçu"
                     >
                       <img
-                        src={`${dashboardRuntime.frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+                        src={`${dashboardRuntime.apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`}
                         alt={formatEventTitle(event)}
                         loading="lazy"
                       />
@@ -442,6 +454,8 @@ function HubOperationalState({ data, cameras, allCameras }: HubOperationalStateP
               </a>
             </div>
           </article>
+
+          {systemStats && <SystemMonitorPanel stats={systemStats} />}
         </aside>
       </section>
     </main>

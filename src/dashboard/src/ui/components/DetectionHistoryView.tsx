@@ -14,7 +14,6 @@ interface DetectionHistoryViewProps {
   getCameraLabels: GetCameraLabels
   correctDetectionIdentity: CorrectDetectionIdentity
   getProfiles: GetProfiles
-  frigateBaseUrl: string
   apiBaseUrl: string
   onBack: () => void
 }
@@ -24,7 +23,6 @@ export function DetectionHistoryView({
   getCameraLabels,
   correctDetectionIdentity,
   getProfiles,
-  frigateBaseUrl,
   apiBaseUrl,
 }: DetectionHistoryViewProps) {
   const [page, setPage] = useState<DetectionHistoryPage | null>(null)
@@ -197,7 +195,6 @@ export function DetectionHistoryView({
                           key={event.eventId}
                           event={event}
                           profiles={profiles}
-                          frigateBaseUrl={frigateBaseUrl}
                           apiBaseUrl={apiBaseUrl}
                           correcting={correcting === event.eventId}
                           onCorrect={(profileId) => handleCorrect(event.eventId, profileId)}
@@ -245,14 +242,12 @@ export function DetectionHistoryView({
 function EventRow({
   event,
   profiles,
-  frigateBaseUrl,
   apiBaseUrl,
   correcting,
   onCorrect,
 }: {
   event: DetectionEvent
   profiles: Profile[]
-  frigateBaseUrl: string
   apiBaseUrl: string
   correcting: boolean
   onCorrect: (profileId: string | null) => Promise<void>
@@ -283,7 +278,7 @@ function EventRow({
         <td style={{ padding: '8px 12px' }}>
           {event.hasSnapshot && (
             <a
-              href={`${frigateBaseUrl}/api/events/${event.frigateEventId}/snapshot.jpg`}
+              href={`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`}
               target="_blank"
               rel="noreferrer"
               style={{ marginRight: 6, opacity: 0.7, fontSize: '0.8rem' }}

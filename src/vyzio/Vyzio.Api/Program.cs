@@ -40,6 +40,10 @@ builder.Services.AddHttpClient<IFrigateClipProvider, FrigateClipProvider>(client
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
+builder.Services.AddHttpClient<IFrigateStatsProvider, FrigateStatsProvider>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
 builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
@@ -64,6 +68,7 @@ app.MapCameras();
 app.MapDetectionEvents();
 app.MapProfiles();
 app.MapNotifications();
+app.MapSystem();
 
 app.Run();
 

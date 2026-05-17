@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build & push Docker images to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/vyzio/Vyzio.Api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/kelians/vyzio-api:${{ steps.version.outputs.version }}
+            ghcr.io/kelians/vyzio-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push dashboard image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/dashboard/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/kelians/vyzio-dashboard:${{ steps.version.outputs.version }}
+            ghcr.io/kelians/vyzio-dashboard:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
