@@ -100,6 +100,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [discoveryError, setDiscoveryError] = useState<string | null>(null)
   const [discoveryResults, setDiscoveryResults] = useState<DiscoveryCandidate[]>([])
   const [actionLoading, setActionLoading] = useState(false)
+  const [applyLoading, setApplyLoading] = useState(false)
   const [formMessage, setFormMessage] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [detailMessage, setDetailMessage] = useState<string | null>(null)
@@ -370,6 +371,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   async function handleApplyConfiguration() {
     setActionLoading(true)
+    setApplyLoading(true)
     setFormError(null)
     setDetailError(null)
 
@@ -399,6 +401,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       }
     } finally {
       setActionLoading(false)
+      setApplyLoading(false)
     }
   }
 
@@ -832,7 +835,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               onClick={handleApplyConfiguration}
               disabled={actionLoading || !canApplyConfiguration}
             >
-              Appliquer
+              {applyLoading ? 'Application...' : 'Appliquer'}
             </button>
 
             {camerasState.data.length > 0 ? (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   addProfilePhoto,
@@ -59,7 +59,11 @@ function App() {
   const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash))
   const { data, loading: hubLoading, error: hubError } = useHubOverview(getHubOverview)
   const { data: cameras, loading: camerasLoading } = useCameras(getCameras)
-  const [modalMedia, setModalMedia] = useState<{ type: 'image' | 'video'; url: string } | null>(null)
+  const [modalMedia, setModalMedia] = useState<
+    | { type: 'image' | 'video'; url: string }
+    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string }
+    | null
+  >(null)
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -151,6 +155,7 @@ function App() {
             cameras={cameras}
             getSystemStats={getSystemStats}
             onOpenMedia={(type, url) => setModalMedia({ type, url })}
+            onOpenLive={(camera) => setModalMedia({ type: 'live', cameraId: camera.id, apiBaseUrl: dashboardRuntime.apiBaseUrl, label: camera.displayName })}
           />
         )}
 
@@ -167,7 +172,9 @@ function App() {
               >
                 ✕
               </button>
-              {modalMedia.type === 'image' ? (
+              {modalMedia.type === 'live' ? (
+                <LiveFeedModal cameraId={modalMedia.cameraId} apiBaseUrl={modalMedia.apiBaseUrl} label={modalMedia.label} />
+              ) : modalMedia.type === 'image' ? (
                 <img src={modalMedia.url} alt="Aperçu détection" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
               ) : (
                 <video src={modalMedia.url} controls autoPlay style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
@@ -191,9 +198,10 @@ interface HubViewProps {
   cameras: CamerasData
   getSystemStats: GetSystemStats
   onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenLive: (camera: Camera) => void
 }
 
-function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSystemStats, onOpenMedia }: HubViewProps) {
+function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSystemStats, onOpenMedia, onOpenLive }: HubViewProps) {
   const isLoading = hubLoading || camerasLoading
 
   if (isLoading) {
@@ -210,7 +218,7 @@ function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSyste
     return <HubSetupState />
   }
 
-  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} getSystemStats={getSystemStats} onOpenMedia={onOpenMedia} />
+  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} getSystemStats={getSystemStats} onOpenMedia={onOpenMedia} onOpenLive={onOpenLive} />
 }
 
 function HubLoadingState() {
@@ -311,9 +319,10 @@ interface HubOperationalStateProps {
   allCameras: Camera[]
   getSystemStats: GetSystemStats
   onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenLive: (camera: Camera) => void
 }
 
-function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpenMedia }: HubOperationalStateProps) {
+function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpenMedia, onOpenLive }: HubOperationalStateProps) {
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
 
   useEffect(() => {
@@ -377,6 +386,7 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
                 key={camera.id}
                 camera={camera}
                 apiBaseUrl={dashboardRuntime.apiBaseUrl}
+                onExpand={() => onOpenLive(camera)}
               />
             ))}
           </div>
@@ -486,6 +496,20 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
       </section>
     </main>
   )
+}
+
+function LiveFeedModal({ cameraId, apiBaseUrl, label }: { cameraId: string; apiBaseUrl: string; label: string }) {
+  const [src, setSrc] = useState(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setSrc(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+    }, 1000)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [cameraId, apiBaseUrl])
+
+  return <img src={src} alt={label} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
 }
 
 function getViewFromHash(hash: string): AppView {
