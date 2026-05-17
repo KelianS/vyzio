@@ -108,6 +108,15 @@ jobs:
           file: src/vyzio/Vyzio.Api/Dockerfile
           push: false
           tags: vyzio-api:ci
+          load: true
+
+      - name: Scan API image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: vyzio-api:ci
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
 
       - name: Build dashboard image
         uses: docker/build-push-action@v6
@@ -116,3 +125,12 @@ jobs:
           file: src/dashboard/Dockerfile
           push: false
           tags: vyzio-dashboard:ci
+          load: true
+
+      - name: Scan dashboard image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: vyzio-dashboard:ci
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
