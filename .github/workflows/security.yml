@@ -1,0 +1,78 @@
+name: Security
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  codeql-backend:
+    name: CodeQL — C#
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+
+      - name: Build
+        run: dotnet build src/vyzio/Vyzio.slnx -c Release
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+
+  codeql-frontend:
+    name: CodeQL — TypeScript
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore .NET packages
+        run: dotnet restore src/vyzio/Vyzio.slnx
+
+      - name: Check .NET vulnerable packages
+        run: dotnet list src/vyzio/Vyzio.slnx package --vulnerable --include-transitive
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Frontend dependency audit
+        run: pnpm --prefix src/dashboard audit --audit-level high
