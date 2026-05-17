@@ -8,7 +8,7 @@ public interface IFrigateRestClient
 {
     Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default);
     Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default);
-    Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default);
+    Task<Stream?> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default);
 }
 
 public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClient
@@ -22,8 +22,12 @@ public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClien
     public Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default)
         => httpClient.GetAsync($"api/{cameraSlug}/latest.jpg", HttpCompletionOption.ResponseHeadersRead, ct);
 
-    public Task<Stream> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
-        => httpClient.GetStreamAsync($"api/events/{frigateEventId}/clip.mp4", ct);
+    public async Task<Stream?> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
+    {
+        var response = await httpClient.GetAsync($"api/events/{frigateEventId}/clip.mp4", HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadAsStreamAsync(ct);
+    }
 
     private static string? ResolveSubLabel(JsonElement? subLabel)
     {

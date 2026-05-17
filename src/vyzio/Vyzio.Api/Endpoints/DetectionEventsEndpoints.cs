@@ -48,6 +48,7 @@ public static class DetectionEventsEndpoints
             if (!evt.HasClip) return Results.NotFound();
 
             var stream = await frigateClient.GetClipStreamAsync(evt.FrigateEventId, ct);
+            if (stream is null) return Results.NotFound();
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });
 

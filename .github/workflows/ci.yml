@@ -24,7 +24,13 @@ jobs:
         run: dotnet build src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj -c Release --no-restore
 
       - name: Test
-        run: dotnet test src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj --no-build -c Release
+        run: dotnet test src/vyzio/Vyzio.Tests/Vyzio.Tests.csproj --no-build -c Release --collect:"XPlat Code Coverage" --results-directory coverage
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/**/coverage.cobertura.xml
 
   frontend:
     name: Frontend — build & type-check
@@ -47,6 +53,15 @@ jobs:
 
       - name: Type-check
         run: pnpm --prefix src/dashboard exec tsc --noEmit
+
+      - name: Test
+        run: pnpm --prefix src/dashboard run test --coverage
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: src/dashboard/coverage/
 
       - name: Build
         run: pnpm --prefix src/dashboard build
