@@ -46,7 +46,7 @@ jobs:
           path: coverage/**/coverage.cobertura.xml
 
   frontend:
-    name: Frontend — build & type-check
+    name: Frontend — build & test
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
