@@ -3,11 +3,12 @@
 
 services:
   vyzio-dashboard:
-    build:
-      context: .
-      dockerfile: src/dashboard/Dockerfile
     profiles:
       - donotstart
+    # <= comment the build section to use pnpm dev server instead of the built dashboard image =>
+    # build:
+    #   context: .
+    #   dockerfile: src/dashboard/Dockerfile
 
   vyzio-api:
     build:

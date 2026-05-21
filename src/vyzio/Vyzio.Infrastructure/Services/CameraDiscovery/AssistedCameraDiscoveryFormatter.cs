@@ -64,7 +64,7 @@ internal sealed class AssistedCameraDiscoveryFormatter
             "onvif_unicast" => 60,
             "onvif" => 55,
             "rtsp_describe" => 50,
-            "icsee_probe" => 45,
+            "dvrip_probe" => 45,
             "http_probe" => 40,
             "network_scan" => 30,
             "hostname_probe" => 20,

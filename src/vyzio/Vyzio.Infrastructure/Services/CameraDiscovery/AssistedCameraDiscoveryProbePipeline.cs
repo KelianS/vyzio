@@ -15,7 +15,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     private static readonly IPAddress DiscoveryAddress = IPAddress.Parse("239.255.255.250");
     private static readonly IPEndPoint DiscoveryEndpoint = new(DiscoveryAddress, 3702);
     private const int MaxConfiguredProbeHosts = 1024;
-    private const int IcseePort = 34567;
+    private const int DvripPort = 34567;
 
     private readonly ILogger? _logger;
     private readonly VyzioRuntimeSettings _settings;
@@ -51,7 +51,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, _settings.Discovery.HttpPorts, ct);
         var hostnameTask = DiscoverHostnameSignalsAsync(configuredHosts, ct);
         var macTask = DiscoverMacVendorSignalsAsync(configuredHosts, ct);
-        var icseeTask = DiscoverIcseeSignalsAsync(configuredHosts, ct);
+        var dvripTask = DiscoverDvripSignalsAsync(configuredHosts, ct);
 
         await Task.WhenAll(
             onvifTask,
@@ -60,7 +60,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             configuredHttpTask,
             hostnameTask,
             macTask,
-            icseeTask);
+            dvripTask);
 
         var signals = new List<RawCameraDiscoverySignal>();
 
@@ -88,9 +88,9 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         _logger?.LogInformation("MAC/OUI discovery returned {CandidateCount} candidate(s).", macSignals.Count);
         signals.AddRange(macSignals);
 
-        var icseeSignals = await icseeTask;
-        _logger?.LogInformation("ICSee discovery returned {CandidateCount} candidate(s).", icseeSignals.Count);
-        signals.AddRange(icseeSignals);
+        var dvripSignals = await dvripTask;
+        _logger?.LogInformation("DVRIP discovery returned {CandidateCount} candidate(s).", dvripSignals.Count);
+        signals.AddRange(dvripSignals);
 
         return signals;
     }
@@ -113,16 +113,16 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(hosts, httpPorts, ct);
         var hostnameTask = DiscoverHostnameSignalsAsync(hosts, ct);
         var macTask = DiscoverMacVendorSignalsAsync(hosts, ct);
-        var icseeTask = DiscoverIcseeSignalsAsync(hosts, ct);
+        var dvripTask = DiscoverDvripSignalsAsync(hosts, ct);
 
-        await Task.WhenAll(configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask, icseeTask);
+        await Task.WhenAll(configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask, dvripTask);
 
         return (await configuredRtspTask)
             .Concat(await configuredOnvifTask)
             .Concat(await configuredHttpTask)
             .Concat(await hostnameTask)
             .Concat(await macTask)
-            .Concat(await icseeTask)
+            .Concat(await dvripTask)
             .ToList();
     }
 
@@ -458,7 +458,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverIcseeSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverDvripSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
     {
         if (hosts.Count == 0)
         {
@@ -468,7 +468,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var results = new List<RawCameraDiscoverySignal>();
         using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
 
-        var tasks = hosts.Select(host => ProbeIcseeHostAsync(host, gate, ct)).ToArray();
+        var tasks = hosts.Select(host => ProbeDvripHostAsync(host, gate, ct)).ToArray();
         var probed = await Task.WhenAll(tasks);
 
         foreach (var candidate in probed)
@@ -482,12 +482,12 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return results;
     }
 
-    private async Task<RawCameraDiscoverySignal?> ProbeIcseeHostAsync(string host, SemaphoreSlim gate, CancellationToken ct)
+    private async Task<RawCameraDiscoverySignal?> ProbeDvripHostAsync(string host, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
         try
         {
-            return await ProbeIcseeEndpointAsync(host, IcseePort, _settings.Discovery.ProbeTimeoutMs, ct);
+            return await ProbeDvripEndpointAsync(host, DvripPort, _settings.Discovery.ProbeTimeoutMs, ct);
         }
         finally
         {
@@ -495,7 +495,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<RawCameraDiscoverySignal?> ProbeIcseeEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private static async Task<RawCameraDiscoverySignal?> ProbeDvripEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
@@ -506,13 +506,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             await client.ConnectAsync(host, port, timeout.Token);
 
             using var stream = client.GetStream();
-            await stream.WriteAsync(BuildIcseeProbePacket(), timeout.Token);
+            await stream.WriteAsync(BuildDvripProbePacket(), timeout.Token);
             await stream.FlushAsync(timeout.Token);
 
             var buffer = new byte[512];
             var read = await stream.ReadAsync(buffer, timeout.Token);
 
-            // XMEye/ICSee responses always start with 0xFF magic byte
+            // All XMEye/DVRIP responses start with 0xFF magic byte
             if (read < 1 || buffer[0] != 0xFF)
             {
                 return null;
@@ -520,16 +520,16 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
             var macAddress = await ResolveMacAddressAsync(host, ct);
             return BuildRawSignal(
-                "Camera ICSee",
+                ToDisplayName(host),
                 host,
                 554,
                 "rtsp_manual",
                 null,
-                "icsee_probe",
-                $"Camera ICSee/XMEye detectee sur {host}:{port}. Activez le RTSP dans l'application ICSee pour finaliser la configuration.",
+                "dvrip_probe",
+                $"Protocole DVRIP/XMEye detecte sur {host}:{port}. Ce protocole est utilise par les cameras ICSee, Annke, Sannce et autres OEM Xiongmai. Le flux RTSP peut ne pas etre disponible ; une integration via go2rtc est possible.",
                 macAddress,
                 null,
-                ["icsee_port_detected"]);
+                ["dvrip_port_detected"]);
         }
         catch
         {
@@ -537,9 +537,9 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static byte[] BuildIcseeProbePacket()
+    private static byte[] BuildDvripProbePacket()
     {
-        // XMEye/ICSee binary protocol — login request (msgId 0x03E8 = 1000)
+        // DVRIP/XMEye binary protocol — login request (msgId 0x03E8 = 1000)
         // Header: [FF][01][00 00][sessionId 4B LE][seqNo 4B LE][00][00][msgId 2B LE][dataLen 4B LE]
         var json = Encoding.UTF8.GetBytes("{\"EncryptType\":\"MD5\",\"LoginType\":\"DVRIP\",\"PassWord\":\"tlJwpbo6\",\"UserName\":\"admin\"}");
         var packet = new byte[20 + json.Length];

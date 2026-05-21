@@ -36,6 +36,24 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Pouvoir agrandir le live feed dans une modale comme pour les miniatures de détections
 
 
+### US-P3.13 — Support protocole dvrip/XMEye comme fallback (cameras sans RTSP)
+> But : permettre l'integration de cameras qui n'exposent pas de RTSP natif (tout firmware Xiongmai : ICSee, Annke, Sannce, Zosi, etc.) via go2rtc comme passerelle transparente. **Le RTSP reste le chemin principal** ; dvrip est propose uniquement quand le port 34567 est detecte et que RTSP est absent. Voir [ADR-19](./SAD.md).
+
+**Taches :**
+- [ ] Ajouter le champ `StreamProtocol` (`"rtsp"` | `"dvrip"`, defaut `"rtsp"`) sur l'entite `Camera` + migration EF Core
+- [ ] Mettre a jour `FrigateConfigApplier` : generer la section `go2rtc` quand au moins une camera active a `StreamProtocol == "dvrip"`, et pointer l'input ffmpeg vers `rtsp://127.0.0.1:8554/{slug}` pour ces cameras
+- [ ] Mettre a jour le parcours UI d'ajout de camera : quand le signal `dvrip_port_detected` est present (toute marque), proposer le mode dvrip comme fallback si RTSP indisponible, avec explication contextuelle sur les limitations (batterie, reveil necessaire)
+- [ ] Tests unitaires sur `FrigateConfigApplier` : generation correcte de la section `go2rtc` pour les cameras dvrip, absence de la section pour les cameras RTSP seules
+- [ ] Mettre a jour `vendors/icsee.md` : presenter dvrip comme chemin de fallback (apres tentative RTSP)
+
+**Criteres de validation :**
+- Une camera avec `dvrip_port_detected` peut etre ajoutee en mode dvrip via le parcours guide
+- Une camera RTSP classique n'est pas affectee (pas de section `go2rtc` generee inutilement)
+- Le parcours propose toujours RTSP en premier ; dvrip n'apparait que si RTSP echoue ou est absent
+- L'utilisateur comprend la contrainte de reveil sans connaitre le protocole dvrip
+
+---
+
 ### US-P3.11 — Privacy mode
 > But : permettre à l'utilisateur de couper une caméra temporairement ou de manière récurrente (ex. tous les soirs de 22h à 6h) pour préserver la vie privée, avec un impact minimal sur les autres fonctionnalités (notifications, reconnaissance, etc.) et une indication claire du statut de confidentialité de chaque caméra. La caméra doit réellement être coupé et le flux RTSP ne doit être visible de personne sur le réseau, y compris de Frigate.
 
