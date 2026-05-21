@@ -57,6 +57,7 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] `HttpCameraRepository` : le champ `streamProtocol` manquait dans l'interface locale `CameraDto` et dans `mapCamera` — la valeur etait `undefined` a l'usage malgre la presence dans l'API. Ajoute avec fallback `'rtsp'`.
 - [x] `canUpdateConfiguredCamera` exigeait `streamPath` truthy, ce qui bloquait le bouton Enregistrer pour toute camera DVRIP (`streamPath = null`). Corrige en excluant le check streamPath quand `streamProtocol === 'dvrip'`.
 - [x] Boutons `.primary-cta` et `.secondary-cta` sans style `:disabled` — visuellement identiques qu'ils soient actifs ou non. Ajoute `opacity: 0.4; cursor: not-allowed` sur `:disabled`.
+- [ ] **Réveil a distance des cameras DVRIP sur batterie — investigation close, non implementable.** Le chipset WiFi reste en 802.11 PSM (Power Save Mode) : il repond aux pings ICMP (~510ms) au niveau NIC sans reveiller le processeur principal. TCP knock et UDP discovery (payload DVRIP 0x0590, WS-Discovery ONVIF, WoL magic packet) ont tous echoue — aucun port n'est ouvert en veille. Le seul mecanisme de reveil est un WoWLAN pattern filter proprietaire programme dans le NIC par le firmware ICSee, declenche via leur canal cloud (connexion persistante maintenue par le NIC). Non accessible sans reverse-engineering. **Limitation acceptee** : l'utilisateur doit reveiller la camera manuellement via l'app ICSee avant la verification DVRIP.
 
 ---
 
@@ -72,8 +73,8 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 **Taches :**
 TODO
 
-### US-P3.12 — PTZ
-> But : permettre à l'utilisateur de contrôler les caméras PTZ compatibles depuis l'interface Vyzio, avec des commandes de base (panoramique, inclinaison, zoom) et la possibilité de définir des positions prédéfinies pour un accès rapide.
+### US-P3.12 — PTZ, camera info et controle avancé
+> But : permettre à l'utilisateur de contrôler les caméras PTZ compatibles depuis l'interface Vyzio, avec des commandes de base (panoramique, inclinaison, zoom) et la possibilité de définir des positions prédéfinies pour un accès rapide. Toute info système exposée par la caméra (ex. température, état de la connexion, batterie, etc.) doit être affichée dans l'interface pour aider à la maintenance et au diagnostic.
 
 **Taches :**
 TODO

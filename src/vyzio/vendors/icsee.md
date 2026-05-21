@@ -59,7 +59,9 @@ Certains modeles sur batterie ne supportent pas le RTSP local et communiquent un
 
 En mode DVRIP, Vyzio passe par **go2rtc** (integre dans Frigate) comme passerelle transparente. Vous n'avez rien a configurer manuellement — cochez simplement l'option dans le parcours d'ajout.
 
-**Contrainte batterie :** la camera doit etre **eveilllee** au moment de la verification et de l'application de la configuration. Reveillez-la via l'application ICSee avant de cliquer "Verifier la connexion DVRIP". Une fois le flux etabli, go2rtc maintient la connexion et la camera reste active.
+**Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'application de la configuration. Reveillez-la via l'application ICSee avant de cliquer "Verifier la connexion DVRIP". Une fois le flux etabli, go2rtc maintient la connexion et la camera reste active.
+
+> **Pourquoi Vyzio ne peut pas reveiller la camera automatiquement ?** En veille, le chipset WiFi reste associe au reseau (la camera apparait dans la liste des clients de votre box) mais le processeur principal est eteint. Les protocoles standard (TCP, UDP DVRIP, WoL, ONVIF) n'atteignent pas le processeur — seul un mecanisme proprietaire ICSee integre dans le firmware du chipset peut le reveiller, via leur infrastructure cloud. Ce mecanisme n'est pas accessible localement.
 
 ## A savoir
 
