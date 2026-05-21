@@ -350,8 +350,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       })
 
       const refreshedCandidate = candidates.find(
-        (candidate) =>
-          candidate.host === selectedCandidate.host && candidate.port === selectedCandidate.port,
+        (candidate) => candidate.host === selectedCandidate.host,
       )
 
       if (!refreshedCandidate) {
@@ -1051,6 +1050,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 </div>
               ) : null}
 
+              {formMessage ? (
+                <p className="camera-inline-state success action-feedback">{formMessage}</p>
+              ) : null}
+              {formError ? (
+                <p className="camera-inline-state error action-feedback">{formError}</p>
+              ) : null}
+
               {canShowCandidateForm ? (
                 <>
                   <div className="camera-form-grid compact">
@@ -1142,12 +1148,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </button>
                   </div>
 
-                  {formMessage ? (
-                    <p className="camera-inline-state success action-feedback">{formMessage}</p>
-                  ) : null}
-                  {formError ? (
-                    <p className="camera-inline-state error action-feedback">{formError}</p>
-                  ) : null}
                 </>
               ) : null}
             </>
