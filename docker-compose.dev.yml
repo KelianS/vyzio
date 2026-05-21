@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: src/dashboard/Dockerfile
+    profiles:
+      - donotstart
 
   vyzio-api:
     build:
@@ -13,6 +15,8 @@ services:
       dockerfile: src/vyzio/Vyzio.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "8443:8443"
 
   frigate:
     ports:

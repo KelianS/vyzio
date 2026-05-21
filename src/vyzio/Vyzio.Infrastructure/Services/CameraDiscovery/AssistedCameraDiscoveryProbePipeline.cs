@@ -15,6 +15,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     private static readonly IPAddress DiscoveryAddress = IPAddress.Parse("239.255.255.250");
     private static readonly IPEndPoint DiscoveryEndpoint = new(DiscoveryAddress, 3702);
     private const int MaxConfiguredProbeHosts = 1024;
+    private const int IcseePort = 34567;
 
     private readonly ILogger? _logger;
     private readonly VyzioRuntimeSettings _settings;
@@ -50,6 +51,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, _settings.Discovery.HttpPorts, ct);
         var hostnameTask = DiscoverHostnameSignalsAsync(configuredHosts, ct);
         var macTask = DiscoverMacVendorSignalsAsync(configuredHosts, ct);
+        var icseeTask = DiscoverIcseeSignalsAsync(configuredHosts, ct);
 
         await Task.WhenAll(
             onvifTask,
@@ -57,7 +59,8 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             configuredOnvifTask,
             configuredHttpTask,
             hostnameTask,
-            macTask);
+            macTask,
+            icseeTask);
 
         var signals = new List<RawCameraDiscoverySignal>();
 
@@ -85,6 +88,10 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         _logger?.LogInformation("MAC/OUI discovery returned {CandidateCount} candidate(s).", macSignals.Count);
         signals.AddRange(macSignals);
 
+        var icseeSignals = await icseeTask;
+        _logger?.LogInformation("ICSee discovery returned {CandidateCount} candidate(s).", icseeSignals.Count);
+        signals.AddRange(icseeSignals);
+
         return signals;
     }
 
@@ -106,14 +113,16 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(hosts, httpPorts, ct);
         var hostnameTask = DiscoverHostnameSignalsAsync(hosts, ct);
         var macTask = DiscoverMacVendorSignalsAsync(hosts, ct);
+        var icseeTask = DiscoverIcseeSignalsAsync(hosts, ct);
 
-        await Task.WhenAll(configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask);
+        await Task.WhenAll(configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask, icseeTask);
 
         return (await configuredRtspTask)
             .Concat(await configuredOnvifTask)
             .Concat(await configuredHttpTask)
             .Concat(await hostnameTask)
             .Concat(await macTask)
+            .Concat(await icseeTask)
             .ToList();
     }
 
@@ -447,6 +456,100 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         {
             gate.Release();
         }
+    }
+
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverIcseeSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    {
+        if (hosts.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new List<RawCameraDiscoverySignal>();
+        using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
+
+        var tasks = hosts.Select(host => ProbeIcseeHostAsync(host, gate, ct)).ToArray();
+        var probed = await Task.WhenAll(tasks);
+
+        foreach (var candidate in probed)
+        {
+            if (candidate is not null)
+            {
+                results.Add(candidate);
+            }
+        }
+
+        return results;
+    }
+
+    private async Task<RawCameraDiscoverySignal?> ProbeIcseeHostAsync(string host, SemaphoreSlim gate, CancellationToken ct)
+    {
+        await gate.WaitAsync(ct);
+        try
+        {
+            return await ProbeIcseeEndpointAsync(host, IcseePort, _settings.Discovery.ProbeTimeoutMs, ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private static async Task<RawCameraDiscoverySignal?> ProbeIcseeEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            using var stream = client.GetStream();
+            await stream.WriteAsync(BuildIcseeProbePacket(), timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var buffer = new byte[512];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+
+            // XMEye/ICSee responses always start with 0xFF magic byte
+            if (read < 1 || buffer[0] != 0xFF)
+            {
+                return null;
+            }
+
+            var macAddress = await ResolveMacAddressAsync(host, ct);
+            return BuildRawSignal(
+                "Camera ICSee",
+                host,
+                554,
+                "rtsp_manual",
+                null,
+                "icsee_probe",
+                $"Camera ICSee/XMEye detectee sur {host}:{port}. Activez le RTSP dans l'application ICSee pour finaliser la configuration.",
+                macAddress,
+                null,
+                ["icsee_port_detected"]);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static byte[] BuildIcseeProbePacket()
+    {
+        // XMEye/ICSee binary protocol — login request (msgId 0x03E8 = 1000)
+        // Header: [FF][01][00 00][sessionId 4B LE][seqNo 4B LE][00][00][msgId 2B LE][dataLen 4B LE]
+        var json = Encoding.UTF8.GetBytes("{\"EncryptType\":\"MD5\",\"LoginType\":\"DVRIP\",\"PassWord\":\"tlJwpbo6\",\"UserName\":\"admin\"}");
+        var packet = new byte[20 + json.Length];
+        packet[0] = 0xFF; // magic
+        packet[1] = 0x01; // version
+        packet[14] = 0xE8; packet[15] = 0x03; // msgId 1000 LE
+        packet[16] = (byte)(json.Length & 0xFF);
+        packet[17] = (byte)(json.Length >> 8);
+        Buffer.BlockCopy(json, 0, packet, 20, json.Length);
+        return packet;
     }
 
     private IReadOnlyList<string> BuildConfiguredHostList()
@@ -1033,7 +1136,9 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             "amcrest",
             "foscam",
             "uniview",
-            "axis"
+            "axis",
+            "icsee",
+            "xmeye",
         };
 
         return markers.Any(marker => combined.Contains(marker, StringComparison.OrdinalIgnoreCase));
