@@ -33,6 +33,9 @@ public class Camera
     [MaxLength(500)]
     public string? StreamPath { get; set; }
 
+    [Required, MaxLength(20)]
+    public string StreamProtocol { get; set; } = "rtsp";
+
     [MaxLength(100)]
     public string? VendorFamily { get; set; }
 

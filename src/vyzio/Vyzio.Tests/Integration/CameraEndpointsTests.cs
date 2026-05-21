@@ -417,6 +417,9 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubFrigateConfigApplier : IFrigateConfigApplier
     {
+        public Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+            => Task.CompletedTask;
+
         public Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
             => Task.FromResult(new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", "config/frigate.generated.yml"));
     }

@@ -10,7 +10,8 @@ public sealed record CreateCameraRequest(
     string? Password,
     string? StreamPath,
     string? SourceType,
-    string? VendorFamily = null);
+    string? VendorFamily = null,
+    string? StreamProtocol = null);
 
 public sealed record UpdateCameraRequest(
     string DisplayName,
@@ -20,7 +21,8 @@ public sealed record UpdateCameraRequest(
     string? Password,
     string? StreamPath,
     string? SourceType,
-    string? VendorFamily = null);
+    string? VendorFamily = null,
+    string? StreamProtocol = null);
 
 public sealed record DiscoverCamerasRequest(
     string? Host,

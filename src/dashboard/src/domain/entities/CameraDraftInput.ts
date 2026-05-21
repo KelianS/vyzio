@@ -7,4 +7,5 @@ export interface CameraDraftInput {
   streamPath: string | null
   vendorFamily?: string | null
   sourceType: string
+  streamProtocol?: string | null
 }

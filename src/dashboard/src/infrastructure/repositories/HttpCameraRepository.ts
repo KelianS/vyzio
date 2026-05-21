@@ -19,6 +19,7 @@ interface CameraDto {
   port: number
   username: string | null
   streamPath: string | null
+  streamProtocol: string
   status: string
   validationState: string
   isEnabled: boolean
@@ -190,6 +191,7 @@ function mapCamera(camera: CameraDto): Camera {
     port: camera.port,
     username: camera.username,
     streamPath: camera.streamPath,
+    streamProtocol: camera.streamProtocol ?? 'rtsp',
     status: camera.status,
     validationState: camera.validationState,
     isEnabled: camera.isEnabled,
