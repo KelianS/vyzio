@@ -52,6 +52,18 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - Le parcours propose toujours RTSP en premier ; dvrip n'apparait que si RTSP echoue ou est absent
 - L'utilisateur comprend la contrainte de reveil sans connaitre le protocole dvrip
 
+**additional tasks from development:**
+- [x] `handleRefreshCandidate` : le find matchait sur `host + port`, or une camera en veille a `port = 0` dans le candidat initial — apres reveil et probe DVRIP reussi le port change, le candidat n'etait plus trouve. Corrige en matchant sur `host` uniquement.
+- [x] `HttpCameraRepository` : le champ `streamProtocol` manquait dans l'interface locale `CameraDto` et dans `mapCamera` — la valeur etait `undefined` a l'usage malgre la presence dans l'API. Ajoute avec fallback `'rtsp'`.
+- [x] `canUpdateConfiguredCamera` exigeait `streamPath` truthy, ce qui bloquait le bouton Enregistrer pour toute camera DVRIP (`streamPath = null`). Corrige en excluant le check streamPath quand `streamProtocol === 'dvrip'`.
+- [x] Boutons `.primary-cta` et `.secondary-cta` sans style `:disabled` — visuellement identiques qu'ils soient actifs ou non. Ajoute `opacity: 0.4; cursor: not-allowed` sur `:disabled`.
+
+---
+
+### US-P3.10 — fixes post-merge
+- [x] `FrigateConfigApplier.ApplyAsync` faisait ecriture YAML + reload Frigate en une seule operation — le bouton Enregistrer (detection config, update camera) declenchait un reload inutile et lent. Separe en `WriteConfigAsync` (ecriture seule, appelee a chaque save) et `ApplyAsync` (ecriture + reload, reserve au bouton Appliquer). La config est ainsi toujours a jour sur disque au reboot.
+- [x] `formatEventTime` affichait uniquement l'heure (HH:mm) meme pour les evenements d'un jour precedent. Affiche maintenant `JJ/MM · HH:mm` si la date n'est pas aujourd'hui.
+
 ---
 
 ### US-P3.11 — Privacy mode
