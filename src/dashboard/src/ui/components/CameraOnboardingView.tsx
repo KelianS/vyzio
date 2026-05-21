@@ -181,7 +181,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     selectedCamera &&
     editForm.displayName.trim() &&
     editForm.host.trim() &&
-    editForm.streamPath?.trim() &&
+    (editForm.streamProtocol === 'dvrip' || editForm.streamPath?.trim()) &&
     selectedCamera.validationState !== 'pending_removal',
   )
 
