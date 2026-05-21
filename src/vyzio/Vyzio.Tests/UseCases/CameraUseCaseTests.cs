@@ -336,9 +336,14 @@ public class ApplyCameraUseCaseTests
 public class DeleteCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly IFrigateConfigApplier _applier = Substitute.For<IFrigateConfigApplier>();
     private readonly DeleteCameraUseCase _sut;
 
-    public DeleteCameraUseCaseTests() => _sut = new DeleteCameraUseCase(_repo);
+    public DeleteCameraUseCaseTests()
+    {
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Camera>());
+        _sut = new DeleteCameraUseCase(_repo, _applier);
+    }
 
     [Fact]
     public async Task Execute_marks_camera_pending_removal_without_reapplying()
@@ -368,9 +373,14 @@ public class DeleteCameraUseCaseTests
 public class UpdateCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly IFrigateConfigApplier _applier = Substitute.For<IFrigateConfigApplier>();
     private readonly UpdateCameraUseCase _sut;
 
-    public UpdateCameraUseCaseTests() => _sut = new UpdateCameraUseCase(_repo);
+    public UpdateCameraUseCaseTests()
+    {
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Camera>());
+        _sut = new UpdateCameraUseCase(_repo, _applier);
+    }
 
     [Fact]
     public async Task Execute_updates_display_name_without_resetting_verified_state()

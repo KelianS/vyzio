@@ -88,6 +88,7 @@ const emptyForm: CameraDraftInput = {
   streamPath: null,
   vendorFamily: null,
   sourceType: 'rtsp_manual',
+  streamProtocol: 'rtsp',
 }
 
 export function CameraOnboardingView(props: CameraOnboardingViewProps) {
@@ -123,6 +124,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
+  const [dvripMode, setDvripMode] = useState(false)
 
   const { toast } = useToast()
 
@@ -156,16 +158,19 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     cameraStatusState.data?.connected ?? false,
   )
 
+  const hasDvripSignal = Boolean(selectedCandidate?.qualificationReasons.includes('dvrip_port_detected'))
+  const dvripFallbackAvailable = hasDvripSignal && !selectedCandidate?.streamPath
+
   const selectedCandidateNeedsRtspActivation = Boolean(
-    selectedCandidate && !selectedCandidate.streamPath,
+    selectedCandidate && !selectedCandidate.streamPath && !dvripMode,
   )
   const canShowCandidateForm =
-    selection.kind === 'manual' || Boolean(selectedCandidate && selectedCandidate.streamPath)
+    selection.kind === 'manual' || Boolean(selectedCandidate && selectedCandidate.streamPath) || dvripMode
   const canVerifyDraft =
     canShowCandidateForm &&
     !selectedCandidateNeedsRtspActivation &&
-    Boolean(form.displayName.trim() && form.host.trim() && form.streamPath?.trim())
-  const canAddConfiguredCamera = Boolean(draftVerification?.connected)
+    Boolean(form.displayName.trim() && form.host.trim() && (dvripMode || form.streamPath?.trim()))
+  const canAddConfiguredCamera = Boolean(draftVerification?.connected) || dvripMode
   const canApplyConfiguration = camerasState.data.some(
     (camera) =>
       camera.status === 'online' ||
@@ -176,7 +181,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     selectedCamera &&
     editForm.displayName.trim() &&
     editForm.host.trim() &&
-    editForm.streamPath?.trim() &&
+    (editForm.streamProtocol === 'dvrip' || editForm.streamPath?.trim()) &&
     selectedCamera.validationState !== 'pending_removal',
   )
 
@@ -213,6 +218,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       streamPath: selectedCamera.streamPath ?? null,
       vendorFamily: selectedCamera.vendorFamily ?? null,
       sourceType: selectedCamera.sourceType,
+      streamProtocol: selectedCamera.streamProtocol ?? 'rtsp',
     })
     setEditPassword('')
     setDetectionLabels(['person'])
@@ -256,7 +262,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   }
 
   async function handleCreate() {
-    if (!draftVerification?.connected) {
+    if (!dvripMode && !draftVerification?.connected) {
       setFormError('Verifiez d abord le flux avant d ajouter la camera.')
       return
     }
@@ -344,8 +350,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       })
 
       const refreshedCandidate = candidates.find(
-        (candidate) =>
-          candidate.host === selectedCandidate.host && candidate.port === selectedCandidate.port,
+        (candidate) => candidate.host === selectedCandidate.host,
       )
 
       if (!refreshedCandidate) {
@@ -475,6 +480,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
     setSelection({ kind: 'candidate', index })
     setDraftVerification(null)
+    setDvripMode(false)
     updateForm({
       displayName: candidate.displayName,
       host: candidate.host,
@@ -482,13 +488,32 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       sourceType: candidate.sourceType,
       streamPath: candidate.streamPath,
       vendorFamily: candidate.vendorFamily,
+      streamProtocol: 'rtsp',
     })
     setFormMessage(null)
+  }
+
+  function handleDvripModeToggle(enabled: boolean) {
+    setDvripMode(enabled)
+    setDraftVerification(null)
+    setFormMessage(null)
+    setFormError(null)
+    if (enabled) {
+      setForm((current) => ({ ...current, port: 34567, streamPath: null, streamProtocol: 'dvrip' }))
+    } else {
+      setForm((current) => ({
+        ...current,
+        port: selectedCandidate?.port ?? 554,
+        streamPath: selectedCandidate?.streamPath ?? null,
+        streamProtocol: 'rtsp',
+      }))
+    }
   }
 
   function selectManualEntry() {
     setSelection({ kind: 'manual' })
     setDraftVerification(null)
+    setDvripMode(false)
     setForm(emptyForm)
     setFormMessage(null)
     setDetailError(null)
@@ -538,6 +563,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'V380 PRO'
       case 'tplink_tapo':
         return 'TP-Link Tapo'
+      case 'icsee':
+        return 'ICSee / XMEye'
       default:
         return vendorFamily ?? 'Constructeur inconnu'
     }
@@ -589,6 +616,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'HTTP camera'
       case 'http_service':
         return 'HTTP generique'
+      case 'dvrip_probe':
+        return 'DVRIP/XMEye probe'
       default:
         return discoverySource
     }
@@ -614,6 +643,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         return 'Constructeur probable detecte'
       case 'mac_address_observed':
         return 'Adresse MAC observee'
+      case 'dvrip_port_detected':
+        return 'Port DVRIP/XMEye detecte'
       default:
         return reason
     }
@@ -976,6 +1007,30 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </section>
                 ) : null}
 
+                {dvripFallbackAvailable ? (
+                  <section className="camera-readiness-callout dvrip-fallback" aria-live="polite">
+                    <strong>Mode DVRIP disponible (fallback)</strong>
+                    <p>
+                      Ce protocole propriétaire (ICSee, Annke, Sannce, Zosi et autres OEM Xiongmai)
+                      peut être utilisé si le RTSP n'est pas accessible. Il passe par go2rtc comme
+                      passerelle transparente.
+                    </p>
+                    <p style={{ fontSize: '0.85rem', opacity: 0.75 }}>
+                      Si c'est une camera sur batterie, elle doit être éveillée via l'application
+                      ICSee avant la vérification. Elle restera active tant que le flux est ouvert.
+                    </p>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={dvripMode}
+                        onChange={(e) => handleDvripModeToggle(e.target.checked)}
+                        style={{ accentColor: 'currentColor' }}
+                      />
+                      Utiliser le mode DVRIP (ne pas activer si RTSP est disponible)
+                    </label>
+                  </section>
+                ) : null}
+
                 {renderVendorAssistanceSection()}
 
                 {selectedCandidate ? renderConfidenceDetails(selectedCandidate) : null}
@@ -993,6 +1048,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     {actionLoading ? 'Traitement...' : 'Rafraichir ce candidat'}
                   </button>
                 </div>
+              ) : null}
+
+              {formMessage ? (
+                <p className="camera-inline-state success action-feedback">{formMessage}</p>
+              ) : null}
+              {formError ? (
+                <p className="camera-inline-state error action-feedback">{formError}</p>
               ) : null}
 
               {canShowCandidateForm ? (
@@ -1024,14 +1086,21 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         }
                       />
                     </label>
-                    <label>
-                      <span>Chemin RTSP</span>
-                      <input
-                        value={form.streamPath ?? ''}
-                        onChange={(event) => updateForm({ streamPath: event.target.value || null })}
-                        placeholder="/Streaming/Channels/101"
-                      />
-                    </label>
+                    {!dvripMode ? (
+                      <label>
+                        <span>Chemin RTSP</span>
+                        <input
+                          value={form.streamPath ?? ''}
+                          onChange={(event) => updateForm({ streamPath: event.target.value || null })}
+                          placeholder="/Streaming/Channels/101"
+                        />
+                      </label>
+                    ) : (
+                      <label>
+                        <span>Protocole</span>
+                        <input value="DVRIP / XMEye" readOnly style={{ opacity: 0.6 }} />
+                      </label>
+                    )}
                     <label>
                       <span>Utilisateur</span>
                       <input
@@ -1050,30 +1119,35 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    <button
-                      className="secondary-cta"
-                      type="button"
-                      onClick={handleVerifyDraft}
-                      disabled={actionLoading || !canVerifyDraft}
-                    >
-                      {actionLoading ? 'Traitement...' : 'Verifier le flux'}
-                    </button>
+                    {!dvripMode ? (
+                      <button
+                        className="secondary-cta"
+                        type="button"
+                        onClick={handleVerifyDraft}
+                        disabled={actionLoading || !canVerifyDraft}
+                      >
+                        {actionLoading ? 'Traitement...' : 'Verifier le flux'}
+                      </button>
+                    ) : (
+                      <button
+                        className="secondary-cta"
+                        type="button"
+                        onClick={handleVerifyDraft}
+                        disabled={actionLoading || !canVerifyDraft}
+                      >
+                        {actionLoading ? 'Traitement...' : 'Verifier la connexion DVRIP'}
+                      </button>
+                    )}
                     <button
                       className="primary-cta"
                       type="button"
                       onClick={handleCreate}
                       disabled={actionLoading || !canAddConfiguredCamera}
                     >
-                      {actionLoading ? 'Traitement...' : 'Ajouter'}
+                      {actionLoading ? 'Traitement...' : dvripMode ? 'Ajouter en mode DVRIP' : 'Ajouter'}
                     </button>
                   </div>
 
-                  {formMessage ? (
-                    <p className="camera-inline-state success action-feedback">{formMessage}</p>
-                  ) : null}
-                  {formError ? (
-                    <p className="camera-inline-state error action-feedback">{formError}</p>
-                  ) : null}
                 </>
               ) : null}
             </>
@@ -1166,15 +1240,22 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                             }
                           />
                         </label>
-                        <label>
-                          <span>Chemin RTSP</span>
-                          <input
-                            value={editForm.streamPath ?? ''}
-                            onChange={(event) =>
-                              updateEditForm({ streamPath: event.target.value || null })
-                            }
-                          />
-                        </label>
+                        {editForm.streamProtocol !== 'dvrip' ? (
+                          <label>
+                            <span>Chemin RTSP</span>
+                            <input
+                              value={editForm.streamPath ?? ''}
+                              onChange={(event) =>
+                                updateEditForm({ streamPath: event.target.value || null })
+                              }
+                            />
+                          </label>
+                        ) : (
+                          <label>
+                            <span>Protocole</span>
+                            <input value="DVRIP / XMEye" readOnly style={{ opacity: 0.6 }} />
+                          </label>
+                        )}
                         <label>
                           <span>Utilisateur</span>
                           <input

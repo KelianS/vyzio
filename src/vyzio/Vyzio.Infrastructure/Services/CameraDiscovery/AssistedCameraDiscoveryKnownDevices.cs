@@ -19,6 +19,11 @@ internal static class AssistedCameraDiscoveryKnownDevices
             return "tplink_tapo";
         }
 
+        if (fingerprint.Contains("icsee") || fingerprint.Contains("xmeye") || fingerprint.Contains("wonsdar") || fingerprint.Contains("netcam") || fingerprint.Contains("ieq"))
+        {
+            return "icsee";
+        }
+
         if (oui is "E0:09:BF")
         {
             return "v380_pro";
@@ -29,6 +34,12 @@ internal static class AssistedCameraDiscoveryKnownDevices
             return "tplink_tapo";
         }
 
+        // Xiongmai Technology — ICSee/XMEye firmware
+        if (oui is "00:12:68")
+        {
+            return "icsee";
+        }
+
         return null;
     }
 
@@ -36,6 +47,7 @@ internal static class AssistedCameraDiscoveryKnownDevices
     {
         "v380_pro" => "V380 PRO",
         "tplink_tapo" => "TP-Link Tapo",
+        "icsee" => "ICSee",
         _ => vendorFamily,
     };
 
@@ -50,6 +62,8 @@ internal static class AssistedCameraDiscoveryKnownDevices
             || normalized.Contains("webcam")
             || normalized.Contains("v380")
             || normalized.Contains("tapo")
+            || normalized.Contains("icsee")
+            || normalized.Contains("xmeye")
             || Regex.IsMatch(normalized, @"\bc\d{2,3}\b")
             || Regex.IsMatch(normalized, @"^mv\d");
     }

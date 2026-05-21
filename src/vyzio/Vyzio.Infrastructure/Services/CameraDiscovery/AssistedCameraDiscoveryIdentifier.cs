@@ -74,6 +74,7 @@ internal sealed class AssistedCameraDiscoveryIdentifier
     private static string DetermineQualification(IReadOnlyList<string> qualificationReasons)
     {
         if (qualificationReasons.Contains("onvif_detected", StringComparer.Ordinal)
+            || qualificationReasons.Contains("dvrip_port_detected", StringComparer.Ordinal)
             || (qualificationReasons.Contains("rtsp_responding", StringComparer.Ordinal)
                 && qualificationReasons.Contains("rtsp_path_known", StringComparer.Ordinal)))
         {
@@ -95,6 +96,7 @@ internal sealed class AssistedCameraDiscoveryIdentifier
     {
         "v380_pro" => "guided",
         "tplink_tapo" => "guided",
+        "icsee" => "guided",
         _ => "unknown",
     };
 

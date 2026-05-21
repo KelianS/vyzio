@@ -7,6 +7,7 @@ export interface Camera {
   port: number
   username?: string | null
   streamPath?: string | null
+  streamProtocol: string
   status: string
   validationState: string
   isEnabled: boolean

@@ -37,7 +37,17 @@ public class VyzioRuntimeSettings
         public IReadOnlyList<string> ProbeHosts { get; init; } = Array.Empty<string>();
         public IReadOnlyList<string> ProbeCidrs { get; init; } = Array.Empty<string>();
         public IReadOnlyList<int> RtspPorts { get; init; } = [554];
-        public IReadOnlyList<string> RtspPaths { get; init; } = ["/stream1", "/stream2", "/Streaming/Channels/101", "/live/ch00_1", "/h264Preview_01_main"];
+        public IReadOnlyList<string> RtspPaths { get; init; } =
+        [
+            "/stream1", "/stream2",
+            "/Streaming/Channels/101",
+            "/live/ch00_1",
+            "/h264Preview_01_main",
+            // ICSee / XMEye
+            "/user=admin&password=&channel=1&stream=0.sdp",
+            "/user=admin&password=&channel=1&stream=1.sdp",
+            "/cam/realmonitor?channel=1&subtype=0",
+        ];
         public IReadOnlyList<int> HttpPorts { get; init; } = [80, 443, 8080];
         public IReadOnlyList<int> OnvifPorts { get; init; } = [80, 2020];
         public int ProbeTimeoutMs { get; init; } = 250;

@@ -861,6 +861,12 @@
   background: rgba(255, 250, 242, 0.7);
 }
 
+.primary-cta:disabled,
+.secondary-cta:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .event-list {
   display: grid;
   gap: 8px;

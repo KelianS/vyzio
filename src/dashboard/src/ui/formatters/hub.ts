@@ -7,8 +7,21 @@ const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
   minute: '2-digit',
 })
 
+const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: '2-digit',
+  month: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
 export function formatEventTime(value: string): string {
-  return timeFormatter.format(new Date(value))
+  const date = new Date(value)
+  const now = new Date()
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  return isToday ? timeFormatter.format(date) : dateTimeFormatter.format(date)
 }
 
 export function formatEventTitle(event: DetectionEvent): string {
