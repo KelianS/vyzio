@@ -47,15 +47,19 @@ Les cameras sur batterie ICSee entrent en **veille** quand elles ne detectent pa
 - Si la camera est sur batterie, veillez a ce qu'elle soit en mode actif au moment de la configuration.
 - Essayez les deux formats d'URL RTSP disponibles — certains modeles repondent uniquement a l'un d'eux.
 
-## Cameras cloud-only (pas de RTSP local)
+## Cameras cloud-only — integration via DVRIP (fallback)
 
 Certains modeles sur batterie ne supportent pas le RTSP local et communiquent uniquement via le relais P2P ICSee (internet). Signes caracteristiques :
 
 - L'onglet **Reglages avances** est vide dans l'application ICSee
 - Le port 554 est ferme sur la camera
-- Le port 34567 repond mais uniquement au protocole XMEye proprietaire
+- Le port **34567** repond (protocole DVRIP/XMEye)
 
-Dans ce cas, il n'est pas possible d'integrer directement la camera dans Vyzio. Une alternative avancee consiste a utiliser **go2rtc** comme passerelle avec une URL de type `dvrip://admin:password@ip:34567`, mais ce mode n'est pas supporte sur tous les modeles et necessite une configuration manuelle de Frigate.
+**Chemin recommande : essayer le RTSP d'abord.** Si le RTSP est indisponible apres activation dans l'application, Vyzio vous proposera automatiquement le **mode DVRIP** comme fallback lors de la decouverte de la camera (signal "Port DVRIP/XMEye detecte").
+
+En mode DVRIP, Vyzio passe par **go2rtc** (integre dans Frigate) comme passerelle transparente. Vous n'avez rien a configurer manuellement — cochez simplement l'option dans le parcours d'ajout.
+
+**Contrainte batterie :** la camera doit etre **eveilllee** au moment de la verification et de l'application de la configuration. Reveillez-la via l'application ICSee avant de cliquer "Verifier la connexion DVRIP". Une fois le flux etabli, go2rtc maintient la connexion et la camera reste active.
 
 ## A savoir
 

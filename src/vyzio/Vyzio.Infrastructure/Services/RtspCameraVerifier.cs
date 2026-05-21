@@ -9,6 +9,11 @@ public sealed class RtspCameraVerifier : ICameraVerifier
 {
     public async Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
     {
+        if (string.Equals(camera.StreamProtocol, "dvrip", StringComparison.OrdinalIgnoreCase))
+        {
+            return await VerifyDvripAsync(camera, ct);
+        }
+
         var checkedAt = DateTimeOffset.UtcNow;
 
         try
@@ -52,6 +57,35 @@ public sealed class RtspCameraVerifier : ICameraVerifier
                 false,
                 "offline",
                 "Camera injoignable. Verifiez l'hote, le port et le chemin RTSP.",
+                checkedAt,
+                null);
+        }
+    }
+
+    private static async Task<CameraVerificationResult> VerifyDvripAsync(Camera camera, CancellationToken ct)
+    {
+        var checkedAt = DateTimeOffset.UtcNow;
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(5));
+            await client.ConnectAsync(camera.Host, camera.Port, timeout.Token);
+            return new CameraVerificationResult(
+                true,
+                true,
+                "online",
+                "Port DVRIP/XMEye joignable. La camera sera integree via go2rtc au moment de l'application de la configuration.",
+                checkedAt,
+                checkedAt);
+        }
+        catch
+        {
+            return new CameraVerificationResult(
+                false,
+                false,
+                "needs_attention",
+                "Camera DVRIP injoignable. Si c'est une camera sur batterie, réveillez-la via l'application ICSee/XMEye puis relancez la verification.",
                 checkedAt,
                 null);
         }

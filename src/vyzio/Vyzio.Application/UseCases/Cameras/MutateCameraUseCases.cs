@@ -66,6 +66,8 @@ public sealed class CreateCameraUseCase(ICameraRepository cameras)
 
     internal static Camera BuildCameraDraft(CreateCameraRequest request, string slug)
         => CameraDraftFactory.Build(request, slug);
+
+
 }
 
 public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier)
@@ -128,6 +130,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
         var normalizedStreamPath = CameraDraftFactory.NormalizeStreamPath(request.StreamPath);
         var normalizedVendorFamily = CameraDraftFactory.NormalizeOptional(request.VendorFamily);
         var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
+        var normalizedStreamProtocol = string.IsNullOrWhiteSpace(request.StreamProtocol) ? camera.StreamProtocol : request.StreamProtocol.Trim().ToLowerInvariant();
         var normalizedPassword = request.Password is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
 
         var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
@@ -136,6 +139,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
             || !string.Equals(camera.StreamPath, normalizedStreamPath, StringComparison.Ordinal)
             || !string.Equals(camera.SourceType, normalizedSourceType, StringComparison.Ordinal)
             || !string.Equals(camera.VendorFamily, normalizedVendorFamily, StringComparison.Ordinal)
+            || !string.Equals(camera.StreamProtocol, normalizedStreamProtocol, StringComparison.OrdinalIgnoreCase)
             || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
 
         var normalizedDisplayName = request.DisplayName.Trim();
@@ -151,6 +155,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
         camera.StreamPath = normalizedStreamPath;
         camera.SourceType = normalizedSourceType;
         camera.VendorFamily = normalizedVendorFamily;
+        camera.StreamProtocol = normalizedStreamProtocol;
 
         if (normalizedPassword is not null)
         {
@@ -327,6 +332,7 @@ internal static class CameraDraftFactory
             StreamPath = NormalizeStreamPath(request.StreamPath),
             VendorFamily = NormalizeOptional(request.VendorFamily),
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
+            StreamProtocol = string.IsNullOrWhiteSpace(request.StreamProtocol) ? "rtsp" : request.StreamProtocol.Trim().ToLowerInvariant(),
             Status = "needs_attention",
             ValidationState = "draft",
             IsEnabled = false,
