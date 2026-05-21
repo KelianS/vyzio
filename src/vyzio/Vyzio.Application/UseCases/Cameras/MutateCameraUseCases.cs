@@ -111,7 +111,7 @@ public sealed class VerifyCameraUseCase(ICameraRepository cameras, ICameraVerifi
     }
 }
 
-public sealed class UpdateCameraUseCase(ICameraRepository cameras)
+public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
 {
     public async Task<CameraDto?> ExecuteAsync(string id, UpdateCameraRequest request, CancellationToken ct = default)
     {
@@ -174,6 +174,13 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras)
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         await cameras.UpdateAsync(camera, ct);
+
+        var catalog = await cameras.GetAllAsync(ct);
+        var applicable = catalog
+            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        await frigateConfigApplier.WriteConfigAsync(applicable, ct);
+
         return CameraDto.From(camera);
     }
 }
@@ -231,7 +238,7 @@ public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfig
     }
 }
 
-public sealed class DeleteCameraUseCase(ICameraRepository cameras)
+public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
 {
     public async Task<DeleteCameraResultDto?> ExecuteAsync(string id, CancellationToken ct = default)
     {
@@ -246,6 +253,13 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras)
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         await cameras.UpdateAsync(camera, ct);
+
+        var catalog = await cameras.GetAllAsync(ct);
+        var applicable = catalog
+            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        await frigateConfigApplier.WriteConfigAsync(applicable, ct);
+
         return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" queued for removal. Apply the configuration to update Frigate.", string.Empty);
     }
 }

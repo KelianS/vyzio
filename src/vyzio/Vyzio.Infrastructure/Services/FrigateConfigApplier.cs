@@ -11,14 +11,11 @@ namespace Vyzio.Infrastructure.Services;
 
 public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<FrigateConfigApplier> logger) : IFrigateConfigApplier
 {
-    public async Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
         var configPath = settings.Frigate.ConfigPath;
-
         if (string.IsNullOrWhiteSpace(configPath))
-        {
-            return new FrigateConfigApplyResult(false, "Frigate config path is not configured.", string.Empty);
-        }
+            return;
 
         var serializer = new SerializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -28,13 +25,23 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
         var yaml = serializer.Serialize(BuildDocument(cameras));
         var directory = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrWhiteSpace(directory))
-        {
             Directory.CreateDirectory(directory);
-        }
 
         var tempPath = $"{configPath}.tmp";
         await File.WriteAllTextAsync(tempPath, yaml, ct);
         File.Move(tempPath, configPath, true);
+    }
+
+    public async Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+    {
+        var configPath = settings.Frigate.ConfigPath;
+
+        if (string.IsNullOrWhiteSpace(configPath))
+        {
+            return new FrigateConfigApplyResult(false, "Frigate config path is not configured.", string.Empty);
+        }
+
+        await WriteConfigAsync(cameras, ct);
 
         if (string.IsNullOrWhiteSpace(settings.Frigate.ApplyCommand))
         {

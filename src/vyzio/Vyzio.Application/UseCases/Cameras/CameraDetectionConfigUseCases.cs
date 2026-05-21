@@ -42,11 +42,10 @@ public sealed class SaveCameraDetectionConfigUseCase(
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
 
-        // Regenerate Frigate config if the camera is active
         if (camera.IsEnabled && string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
         {
             var allCameras = await cameras.GetAllAsync(ct);
-            await frigateConfigApplier.ApplyAsync(allCameras, ct);
+            await frigateConfigApplier.WriteConfigAsync(allCameras, ct);
         }
 
         return CameraDetectionConfigDto.From(camera);
