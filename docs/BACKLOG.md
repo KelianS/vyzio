@@ -87,6 +87,12 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [ ] Tests unitaires `FrigateConfigApplier` : `enabled: false` pour camera en mode vie privee, absent pour camera normale
 - [ ] Tests unitaires `TapoCameraAdapter` : handshake KLAP mocke, verifier que `set_lens_mask` est envoye avec la bonne valeur
 
+*UI/UX — polish dashboard*
+- [ ] Miniature live : ajouter une marge intérieure au texte de l'overlay vie privée (le texte actuel colle les bords et génère un retour à la ligne disgracieux)
+- [ ] Bouton batch privacy : remplacer "Tout couper / Tout réactiver" par un bouton "Mode vie privée global" avec libellé d'état explicite (ex. "Activer sur toutes les caméras" / "Désactiver sur toutes les caméras") et confirmation visuelle avant l'action — l'action est irréversible sans un second clic
+- [ ] Menu caméra : supprimer la mise en page 2 colonnes (boites Résumé/Live/Modifier vs sections Détection/Vie privée sans boites) ; passer à une liste verticale unique, homogène, compatible mobile
+- [ ] Scroll horizontal parasite sur mobile : identifier et corriger l'élément qui déborde de quelques px (suspect : tableaux, conteneurs flex sans `overflow: hidden`, ou padding asymétrique)
+
 *Documentation utilisateur*
 - [ ] `docs/user/PRIVACY_MODE.md` : toggle manuel, planification, distinction "camera vraiment eteinte" vs "enregistrement desactive", comportement au redemarrage, marques supportees
 
