@@ -81,11 +81,11 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Fiche `v380_pro.md` : section "Mode vie privee" avec niveau de garantie
 
 *Tests*
-- [ ] Tests unitaires `ToggleCameraPrivacyModeUseCase` : adaptateur vendor appele si supporte ; reload toujours declenche ; `PrivacyVendorCut` correctement mis a jour
-- [ ] Tests unitaires `BatchToggleCameraPrivacyModeUseCase` : un seul reload pour N cameras
-- [ ] Tests unitaires `PrivacySchedulerService` : activation a l'entree de fenetre, pas de desactivation si `source = "manual"`, desactivation a la sortie si `source = "schedule"`
-- [ ] Tests unitaires `FrigateConfigApplier` : `enabled: false` pour camera en mode vie privee, absent pour camera normale
-- [ ] Tests unitaires `TapoCameraAdapter` : handshake KLAP mocke, verifier que `set_lens_mask` est envoye avec la bonne valeur
+- [x] Tests unitaires `ToggleCameraPrivacyModeUseCase` : adaptateur vendor appele si supporte ; reload toujours declenche ; `PrivacyVendorCut` correctement mis a jour
+- [x] Tests unitaires `BatchToggleCameraPrivacyModeUseCase` : un seul reload pour N cameras
+- [x] Tests unitaires `PrivacySchedulerService` : activation a l'entree de fenetre, pas de desactivation si `source = "manual"`, desactivation a la sortie si `source = "schedule"`
+- [x] Tests unitaires `FrigateConfigApplier` : `enabled: false` pour camera en mode vie privee, absent pour camera normale
+- [x] Tests unitaires `TapoCameraAdapter` : handshake KLAP mocke, verifier que `set_lens_mask` est envoye avec la bonne valeur
 
 *UI/UX — polish dashboard*
 - [x] Miniature live : padding intérieur + `text-align: center` + classe `live-thumb-privacy-label` avec `word-break: break-word` — le texte ne colle plus les bords
@@ -94,7 +94,7 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] Scroll horizontal mobile : `overflow-x: hidden` sur le body + `flex-wrap: wrap` sur `.hub-section-header` et `.hub-section-actions`
 
 *Documentation utilisateur*
-- [ ] `docs/user/PRIVACY_MODE.md` : toggle manuel, planification, distinction "camera vraiment eteinte" vs "enregistrement desactive", comportement au redemarrage, marques supportees
+- [x] `docs/user/PRIVACY_MODE.md` : toggle manuel, planification, distinction "camera vraiment eteinte" vs "enregistrement desactive", comportement au redemarrage, marques supportees
 
 **Criteres de validation :**
 - Camera Tapo en mode vie privee : le voyant LED physique de la camera s'eteint — signal non falsifiable que la capture est arretee au niveau materiel
