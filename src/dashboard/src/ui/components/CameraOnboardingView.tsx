@@ -1505,8 +1505,8 @@ function PrivacyScheduleSection({
     : null
 
   return (
-    <section className="camera-form-section" style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: '0.92rem', marginBottom: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+    <section className="camera-detail-section">
+      <h3 style={{ fontSize: '0.88rem', opacity: 0.65, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         Vie privée — planification
       </h3>
 
@@ -1566,7 +1566,7 @@ function PrivacyScheduleSection({
             <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </label>
         </div>
-        {error && <p style={{ color: '#f87272', fontSize: '0.82rem', margin: '4px 0' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--alert-high)', fontSize: '0.82rem', margin: '4px 0' }}>{error}</p>}
         <div className="privacy-schedule-actions">
           <button
             type="button"
@@ -1618,9 +1618,9 @@ function DetectionConfigSection({
       : allLabels
 
   return (
-    <section className="camera-form-section" style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: '0.92rem', marginBottom: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        Detection — etiquettes actives
+    <section className="camera-detail-section">
+      <h3 style={{ fontSize: '0.88rem', opacity: 0.65, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Détection — étiquettes actives
       </h3>
       {loading ? (
         <p style={{ opacity: 0.6, fontSize: '0.88rem' }}>Chargement…</p>
@@ -1638,8 +1638,8 @@ function DetectionConfigSection({
                   fontSize: '0.9rem',
                   padding: '4px 10px',
                   borderRadius: 4,
-                  background: labels.includes(value) ? 'rgba(247,244,237,0.15)' : 'rgba(247,244,237,0.05)',
-                  border: `1px solid ${labels.includes(value) ? 'rgba(247,244,237,0.4)' : 'rgba(247,244,237,0.12)'}`,
+                  background: labels.includes(value) ? 'rgba(24,32,29,0.08)' : 'rgba(24,32,29,0.03)',
+                  border: `1px solid ${labels.includes(value) ? 'rgba(24,32,29,0.25)' : 'rgba(24,32,29,0.1)'}`,
                 }}
               >
                 <input
@@ -1658,7 +1658,7 @@ function DetectionConfigSection({
             </p>
           )}
 
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(247,244,237,0.1)' }}>
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(24,32,29,0.1)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem' }}>
               <input
                 type="checkbox"

@@ -112,6 +112,48 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 **Taches :**
 TODO
 
+### TECH - Modale commune pour les actions destructives
+
+> But : toute action irréversible ou à fort impact (batch privacy, suppression de caméra, réinitialisation de config…) doit passer par un composant `ConfirmModal` partagé, réutilisable, accessible (`role="dialog"`, `aria-modal`, focus trap). Aujourd'hui `PrivacyConfirmModal` dans `App.tsx` est isolé et non réutilisable.
+
+**Taches :**
+- [ ] Créer `src/dashboard/src/ui/components/ConfirmModal.tsx` : props `title`, `body`, `confirmLabel`, `cancelLabel`, `tone` (`"warn"` | `"danger"` | `"default"`), `onConfirm`, `onCancel`, `loading`
+- [ ] Ajouter le focus trap (premier élément focusable à l'ouverture, piège focus dans la modale, `Escape` annule)
+- [ ] Remplacer `PrivacyConfirmModal` dans `App.tsx` par `ConfirmModal`
+- [ ] Remplacer `window.confirm` ou les confirmations inline restantes dans le code (supprimer caméra, etc.) par `ConfirmModal`
+
+**Critères de validation :**
+- Aucune action destructive n'est déclenchée sans passer par `ConfirmModal`
+- Le composant est dans `ui/components/` et n'importe rien de `application/` ou `infrastructure/`
+
+---
+
+### TECH - Architecture frontend — conformité Clean Architecture
+
+> But : le code frontend (`App.tsx`, `CameraOnboardingView.tsx`) ne respecte plus la séparation des couches. Des logiques qui appartiennent à la couche `application/` (orchestration d'actions, gestion d'état global) sont directement dans `App.tsx`. Des composants `ui/components/` contiennent des sous-composants internes, des types locaux, et des styles inline qui devraient être en CSS. Le résultat est un fichier App.tsx de 600+ lignes et des composants non réutilisables.
+
+**Problèmes identifiés :**
+- `App.tsx` orchestre `HubView`, `HubOperationalState`, `PrivacyConfirmModal`, `LiveFeedModal` — il est à la fois root component et logique métier
+- `CameraOnboardingView.tsx` embarque `DetectionConfigSection`, `PrivacyScheduleSection`, `CameraLiveView` comme fonctions locales non exportées — impossible à tester isolément
+- Les couleurs et espacements en `style={{ ... }}` inline rendent le CSS impossible à auditer
+- Les types locaux (`DiscoveryCandidate`, `CameraSelection`) dupliquent potentiellement des types du domaine
+
+**Taches :**
+- [ ] Extraire `HubOperationalState` dans `ui/components/HubView.tsx` (ou `ui/views/HubView.tsx`)
+- [ ] Extraire `DetectionConfigSection` dans `ui/components/DetectionConfigSection.tsx`
+- [ ] Extraire `PrivacyScheduleSection` dans `ui/components/PrivacyScheduleSection.tsx`
+- [ ] Extraire `LiveFeedModal` dans `ui/components/LiveFeedModal.tsx`
+- [ ] Migrer les `style={{ ... }}` inline restants vers des classes CSS dans `App.css`
+- [ ] Vérifier que `ui/components/` n'importe rien de `infrastructure/` (dépendance via props uniquement)
+- [ ] Auditer `DiscoveryCandidate` : si c'est un concept du domaine, créer `domain/entities/DiscoveryCandidate.ts`
+
+**Critères de validation :**
+- `App.tsx` ne dépasse pas 150 lignes
+- Chaque composant dans `ui/components/` est importable et testable sans monter `App`
+- Aucun import `infrastructure/` dans un fichier `ui/`
+
+---
+
 ### TECH - Refactoring VendorFamily — source unique typée
 
 > But : éliminer les chaînes littérales dispersées qui représentent les familles constructeur (`"tplink_tapo"`, `"icsee"`, `"v380_pro"`). Le bug `TapoCameraAdapter.VendorFamily = "tapo"` (au lieu de `"tplink_tapo"`) a existé sans qu'aucune erreur de compilation ne le signale — preuve que le couplage implicite par string est fragile.

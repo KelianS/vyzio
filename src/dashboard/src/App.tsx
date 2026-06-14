@@ -400,42 +400,15 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
           <h2>Flux en direct</h2>
           <div className="hub-section-actions">
             {allCameras.length > 0 && (
-              batchPending !== null ? (
-                <div className="hub-privacy-global-confirm">
-                  <span className="hub-privacy-global-confirm-label">
-                    {batchPending
-                      ? `Couper ${allCameras.length} caméra${allCameras.length > 1 ? 's' : ''} ?`
-                      : `Réactiver ${allCameras.length} caméra${allCameras.length > 1 ? 's' : ''} ?`}
-                  </span>
-                  <button
-                    type="button"
-                    className="hub-privacy-confirm-yes"
-                    onClick={async () => {
-                      await onBatchTogglePrivacy(allCameras.map((c) => c.id), batchPending)
-                      setBatchPending(null)
-                    }}
-                  >
-                    Confirmer
-                  </button>
-                  <button
-                    type="button"
-                    className="hub-privacy-confirm-no"
-                    onClick={() => setBatchPending(null)}
-                  >
-                    Annuler
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className={`hub-privacy-global-btn${allCameras.every((c) => c.privacyModeActive) ? ' hub-privacy-global-btn--active' : ''}`}
-                  onClick={() => setBatchPending(!allCameras.every((c) => c.privacyModeActive))}
-                >
-                  {allCameras.every((c) => c.privacyModeActive)
-                    ? 'Désactiver le mode vie privée'
-                    : 'Mode vie privée global'}
-                </button>
-              )
+              <button
+                type="button"
+                className={`hub-privacy-global-btn${allCameras.every((c) => c.privacyModeActive) ? ' hub-privacy-global-btn--active' : ''}`}
+                onClick={() => setBatchPending(!allCameras.every((c) => c.privacyModeActive))}
+              >
+                {allCameras.every((c) => c.privacyModeActive)
+                  ? 'Désactiver le mode vie privée'
+                  : 'Mode vie privée global'}
+              </button>
             )}
             <a href="#cameras" className="hub-section-link">
               Gérer les caméras →
@@ -558,7 +531,69 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
           {systemStats && <SystemMonitorPanel stats={systemStats} />}
         </aside>
       </section>
+
+      {batchPending !== null && (
+        <PrivacyConfirmModal
+          active={batchPending}
+          cameraCount={allCameras.length}
+          onConfirm={async () => {
+            await onBatchTogglePrivacy(allCameras.map((c) => c.id), batchPending)
+            setBatchPending(null)
+          }}
+          onCancel={() => setBatchPending(null)}
+        />
+      )}
     </main>
+  )
+}
+
+function PrivacyConfirmModal({
+  active,
+  cameraCount,
+  onConfirm,
+  onCancel,
+}: {
+  active: boolean
+  cameraCount: number
+  onConfirm: () => Promise<void>
+  onCancel: () => void
+}) {
+  const [loading, setLoading] = useState(false)
+
+  const handleConfirm = async () => {
+    setLoading(true)
+    try { await onConfirm() } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="privacy-modal-backdrop" onClick={onCancel}>
+      <div className="privacy-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <div className="privacy-modal-icon" aria-hidden="true">
+          {active ? '🔇' : '🔒'}
+        </div>
+        <h2 className="privacy-modal-title">
+          {active ? 'Activer le mode vie privée' : 'Désactiver le mode vie privée'}
+        </h2>
+        <p className="privacy-modal-body">
+          {active
+            ? `Vyzio va arrêter l'enregistrement sur ${cameraCount > 1 ? `les ${cameraCount} caméras` : 'la caméra'}. Aucune alerte ne sera générée pendant cette période.`
+            : `Vyzio va reprendre la surveillance sur ${cameraCount > 1 ? `les ${cameraCount} caméras` : 'la caméra'}.`}
+        </p>
+        <div className="privacy-modal-actions">
+          <button
+            type="button"
+            className={`privacy-modal-confirm${active ? ' privacy-modal-confirm--warn' : ''}`}
+            onClick={handleConfirm}
+            disabled={loading}
+          >
+            {loading ? 'Traitement…' : active ? 'Couper toutes les caméras' : 'Réactiver toutes les caméras'}
+          </button>
+          <button type="button" className="privacy-modal-cancel" onClick={onCancel} disabled={loading}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
