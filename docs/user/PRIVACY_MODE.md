@@ -43,7 +43,7 @@ Vyzio affiche l'une des deux mentions dans l'aperçu live d'une caméra en mode 
 
 | Mention | Signification |
 |---|---|
-| **Caméra coupée — matériel** | La caméra a baissé son cache physique (objectif masqué, LED éteinte). Aucune image n'est captée, même en dehors de Vyzio. Réservé aux caméras compatibles (ex. Tapo). |
+| **Caméra coupée — matériel** | Le flux vidéo est bloqué par la caméra elle-même (cache physique Tapo, ou masque plein écran ICSee/XMEye). Aucune image n'est transmise, même via un accès direct à la caméra. |
 | **Caméra en pause — enregistrement désactivé** | L'enregistrement et la détection sont désactivés dans Vyzio, mais le flux vidéo reste actif sur la caméra. |
 
 La coupure matérielle est appliquée automatiquement sur les caméras compatibles. Pour les autres modèles, seul l'enregistrement est suspendu.
@@ -62,6 +62,6 @@ La coupure matérielle est appliquée automatiquement sur les caméras compatibl
 | Marque / Famille | Coupure matérielle | Mécanisme |
 |---|---|---|
 | TP-Link Tapo | Oui | Cache objectif physique via API KLAP locale |
-| V380 Pro | Oui | Commande locale propriétaire |
-| ICSee / XMEye | Oui | Commande locale propriétaire |
+| V380 Pro | Non | Enregistrement désactivé uniquement |
+| ICSee / XMEye | Non | Enregistrement désactivé uniquement |
 | Autres (ONVIF, RTSP générique) | Non | Enregistrement désactivé uniquement |

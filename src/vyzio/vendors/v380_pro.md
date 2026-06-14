@@ -55,7 +55,28 @@ Remplacez :
 
 **Niveau de garantie : enregistrement désactivé** — lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Vyzio n'enregistre plus et ne génère plus d'alertes pour cette caméra.
 
-Les cameras V380 PRO n'exposent pas d'API locale permettant de commander un cache physique ou d'éteindre le capteur à distance. Le flux RTSP reste techniquement accessible depuis votre réseau local via l'URL habituelle.
+**Évolution prévue (v1.0.1-P2) :** Les caméras V380 Pro PTZ supporteront un mode de **parking physique** via ONVIF — la caméra pivotera vers une butée mécanique à l'activation et reviendra à sa position de surveillance à la désactivation.
+
+---
+
+## Notes d'investigation — protocole ONVIF PTZ (juin 2026)
+
+> Section technique à destination des contributeurs. Résultats des tests live sur V380 Pro 192.168.1.135.
+
+**Ports ouverts :** 554 (RTSP), 8800 (protocole propriétaire binaire, non documenté), 8899 (ONVIF).
+
+**ONVIF capabilities :** Media ✅, PTZ ✅, Imaging ❌ (pas de contrôle exposition/obturateur).
+
+**PTZ ONVIF :**
+- `ContinuousMove` + `Stop` → **fonctionnels**, mouvement physique confirmé
+- `RelativeMove`, `AbsoluteMove`, `GetStatus`, `SetHomePosition`, `GotoHomePosition` → "not implemented"
+- `GetPresets` / `GotoPreset` → à re-tester (retournaient "not implemented" lors des tests initiaux, mais ICSee DVRIP a des presets fonctionnels — comportement peut différer)
+
+**Stratégie parking envisagée :**
+- Privacy ON : `ContinuousMove(pan=-1, tilt=-1)` pendant ~6-8s → butée mécanique
+- Privacy OFF : `GotoPreset` (si supporté) ou `ContinuousMove(+1, +1)` ~4s retour approximatif
+
+**Limitation principale :** sans `AbsoluteMove` ni presets confirmés, le retour à la position exacte n'est pas garanti. À valider lors de l'implémentation P2.
 
 ## Liens utiles
 

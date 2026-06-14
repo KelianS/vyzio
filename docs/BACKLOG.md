@@ -108,9 +108,49 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 ### 1.0.1 - P2 - PTZ, camera info et controle avancé
 > But : permettre à l'utilisateur de contrôler les caméras PTZ compatibles depuis l'interface Vyzio, avec des commandes de base (panoramique, inclinaison, zoom) et la possibilité de définir des positions prédéfinies pour un accès rapide. Toute info système exposée par la caméra (ex. température, état de la connexion, batterie, etc.) doit être affichée dans l'interface pour aider à la maintenance et au diagnostic.
+>
+> **Contexte privacy mode — PTZ parking :** Investigation approfondie sur ICSee/XMEye (juin 2026). Les seules commandes DVRIP capables d'affecter le flux vidéo sont les commandes PTZ (OPPTZControl, cmd 1400). Les approches VideoEnable, PrivacyMask, VideoColor, OPSleep/OPStandby ont toutes été testées et échouent (soit bloquées par le firmware Ret=606, soit sans effet sur le flux cloud P2P XMEye). Le PTZ parking — pivoter la caméra vers une butée mécanique (face au mur/plafond) — est la seule solution hardware viable. Confirmé sur ICSee : SetPreset + DirectionLeftUp 8s + GotoPreset. Le mode privacy doit donc être configurable par caméra : l'utilisateur choisit la stratégie (logicielle, PTZ parking, ou hardware si la caméra le supporte nativement comme Tapo), et pour le parking il doit pouvoir définir la position de surveillance depuis l'interface.
 
 **Taches :**
-TODO
+
+*Domaine / Core*
+- [ ] Ajouter `PtzSupported` (bool), `PrivacyModeStrategy` (`"software"` | `"ptz_parking"` | `"hardware"`) sur l'entité `Camera` + migration EF Core
+- [ ] Créer use case `ConfigurePtzParkingPositionUseCase` : ordonne à l'adaptateur de sauvegarder la position actuelle comme position de surveillance (preset "home")
+- [ ] Étendre `IVendorCameraAdapter` : ajouter `SupportsPtzAsync`, `PtzMoveAsync` (direction + vitesse), `PtzStopAsync`, `PtzGoToPresetAsync`, `PtzSavePresetAsync`
+
+*Infrastructure — adaptateurs PTZ*
+- [ ] `ICSeeXMEyeCameraAdapter` : implémenter PTZ via DVRIP OPPTZControl (cmd 1400) — `DirectionUp/Down/Left/Right/LeftUp/RightUp` + `SetPreset` + `GotoPreset`. Privacy parking : SetPreset 1 (home) → DirectionLeftUp 8s → GotoPreset 1 au retour. Mettre à jour `SetPrivacyModeAsync` pour utiliser la stratégie `ptz_parking` si configurée.
+- [ ] `V380ProCameraAdapter` : implémenter PTZ via ONVIF (ContinuousMove + Stop confirmés fonctionnels). Investiguer si GetPresets/GotoPreset sont supportés par le firmware V380 pour valider la stratégie parking (AbsoluteMove et presets retournaient "not implemented" lors des tests initiaux).
+- [ ] Mettre à jour `ToggleCameraPrivacyModeUseCase` : brancher la stratégie selon `Camera.PrivacyModeStrategy` — `"hardware"` → appel adaptateur direct (Tapo), `"ptz_parking"` → séquence parking/retour via PTZ, `"software"` → Frigate only
+
+*Configuration utilisateur — privacy strategy*
+- [ ] Écran de configuration caméra : choix de la stratégie privacy (`software` / `ptz_parking` / `hardware`) avec explication contextuelle pour chaque option ; `ptz_parking` n'est proposé que si `PtzSupported = true`
+- [ ] Bouton "Définir position de surveillance" : déclenche `ConfigurePtzParkingPositionUseCase` — l'utilisateur oriente la caméra manuellement via les contrôles PTZ, puis clique pour sauvegarder le preset
+- [ ] Contrôles PTZ live dans la fiche caméra : flèches directionnelles + zoom + bouton "Retour position surveillance"
+
+*API*
+- [ ] Endpoints PTZ : `POST /api/cameras/{id}/ptz/move`, `POST /api/cameras/{id}/ptz/stop`, `POST /api/cameras/{id}/ptz/preset/save`, `POST /api/cameras/{id}/ptz/preset/goto`
+- [ ] Endpoint configuration stratégie privacy : `PATCH /api/cameras/{id}/privacy-strategy`
+
+*Dashboard*
+- [ ] Contrôles PTZ (joystick ou flèches) dans la vue live d'une caméra PTZ
+- [ ] Section "Mode vie privée" dans la fiche caméra : sélecteur de stratégie + bouton "Définir position de surveillance" (si ptz_parking)
+- [ ] Indicateur dans le badge vie privée selon la stratégie active : "Caméra orientée (parking PTZ)" vs "Enregistrement désactivé" vs "Cache objectif"
+
+*Tests*
+- [ ] Tests unitaires `ICSeeXMEyeCameraAdapter` PTZ : connexion DVRIP, séquence login → SetPreset → DirectionLeftUp → Stop → GotoPreset
+- [ ] Tests unitaires `ToggleCameraPrivacyModeUseCase` : branching correct selon `PrivacyModeStrategy`
+
+*Catalogue constructeur*
+- [ ] Mettre à jour `vendors/icsee.md` : PTZ parking comme stratégie privacy hardware ; protocole DVRIP OPPTZControl cmd 1400 ; résultats investigation complète (VideoEnable bloqué, PrivacyMask sans effet sur cloud P2P, OPSleep non autorisé, PTZ parking confirmé)
+- [ ] Mettre à jour `vendors/v380_pro.md` : PTZ ONVIF ContinuousMove confirmé ; presets à investiguer pour valider parking
+
+**Critères de validation :**
+- Camera ICSee PTZ parking : la caméra pivote face au mur à l'activation et revient à la position de surveillance à la désactivation
+- L'utilisateur peut définir sa position de surveillance via les contrôles live et un bouton dédié
+- Une caméra sans PTZ ne propose pas l'option "PTZ parking" dans la configuration
+- Une caméra Tapo continue d'utiliser le cache objectif physique (non impacté par cet item)
+- La stratégie choisie persiste après redémarrage de Vyzio
 
 ### TECH - Modale commune pour les actions destructives
 
