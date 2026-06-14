@@ -35,9 +35,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
 
-        // Vendor camera adapters
+        // Vendor camera adapters — one entry per supported VendorFamily
         services.AddHttpClient("tapo");
         services.AddSingleton<IVendorCameraAdapter, TapoCameraAdapter>();
+        services.AddSingleton<IVendorCameraAdapter, ICSeeXMEyeCameraAdapter>();
+        services.AddSingleton<IVendorCameraAdapter, V380ProCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapterFactory, VendorCameraAdapterFactory>();
 
         return services;

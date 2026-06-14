@@ -38,7 +38,7 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
 
   return (
     <article
-      className={`live-thumb${offline ? ' live-thumb--offline' : ''}${camera.privacyModeActive ? ' live-thumb--privacy' : ''}${onExpand ? ' live-thumb--expandable' : ''}`}
+      className={`live-thumb${offline ? ' live-thumb--offline' : ''}${camera.privacyModeActive ? (camera.privacyVendorCut ? ' live-thumb--privacy-hw' : ' live-thumb--privacy') : ''}${onExpand && !camera.privacyModeActive ? ' live-thumb--expandable' : ''}`}
       onClick={camera.privacyModeActive ? undefined : onExpand}
       role={onExpand && !camera.privacyModeActive ? 'button' : undefined}
       tabIndex={onExpand && !camera.privacyModeActive ? 0 : undefined}
@@ -46,9 +46,11 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
     >
       <div className="live-thumb-frame">
         {camera.privacyModeActive ? (
-          <div className="live-thumb-privacy-screen">
-            <span className="live-thumb-privacy-icon" aria-hidden="true">&#x1F6AB;</span>
-            <span>Caméra en pause — vie privée</span>
+          <div className={`live-thumb-privacy-screen${camera.privacyVendorCut ? ' live-thumb-privacy-screen--hw' : ''}`}>
+            <span className="live-thumb-privacy-icon" aria-hidden="true">
+              {camera.privacyVendorCut ? '🔒' : '🔇'}
+            </span>
+            <span>{camera.privacyVendorCut ? 'Caméra coupée — matériel' : 'Caméra en pause — enregistrement désactivé'}</span>
           </div>
         ) : offline ? (
           <div className="live-thumb-offline">Hors ligne</div>
@@ -63,7 +65,7 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
       </div>
       <div className="live-thumb-footer">
         {camera.privacyModeActive ? (
-          <span className="live-dot live-dot--privacy" aria-hidden="true" />
+          <span className={`live-dot${camera.privacyVendorCut ? ' live-dot--privacy-hw' : ' live-dot--privacy'}`} aria-hidden="true" />
         ) : (
           <span className={`live-dot${offline ? '' : ' live-dot--on'}`} aria-hidden="true" />
         )}

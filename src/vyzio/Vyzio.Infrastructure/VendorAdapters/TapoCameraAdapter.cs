@@ -15,7 +15,7 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILogger<TapoCameraAdapter> logger)
     : IVendorCameraAdapter
 {
-    public string VendorFamily => "tapo";
+    public string VendorFamily => "tplink_tapo";
 
     public Task<bool> SupportsPrivacyModeAsync(Camera camera, CancellationToken ct = default)
         => Task.FromResult(true);

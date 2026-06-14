@@ -51,6 +51,12 @@ Remplacez :
 - Cette methode vient d'une procedure communautaire, pas d'un guide officiel du fabricant.
 - Certaines variantes V380 peuvent reagir un peu differemment, mais cette methode fonctionne souvent.
 
+## Mode vie privée
+
+**Niveau de garantie : enregistrement désactivé** — lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Vyzio n'enregistre plus et ne génère plus d'alertes pour cette caméra.
+
+Les cameras V380 PRO n'exposent pas d'API locale permettant de commander un cache physique ou d'éteindre le capteur à distance. Le flux RTSP reste techniquement accessible depuis votre réseau local via l'URL habituelle.
+
 ## Liens utiles
 
 - [Telecharger le fichier ceshi.ini](/api/cameras/vendor-assets/ceshi.ini)

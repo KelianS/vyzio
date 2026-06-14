@@ -8,6 +8,12 @@ import type { DiscoverCameras } from '../../application/use-cases/DiscoverCamera
 import type { GetCameraDetectionConfig } from '../../application/use-cases/GetCameraDetectionConfig'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
+import type { GetCameraPrivacySchedules } from '../../application/use-cases/GetCameraPrivacySchedules'
+import type { CreateCameraPrivacySchedule } from '../../application/use-cases/CreateCameraPrivacySchedule'
+import type { DeleteCameraPrivacySchedule } from '../../application/use-cases/DeleteCameraPrivacySchedule'
+import type { BatchToggleCameraPrivacyMode } from '../../application/use-cases/BatchToggleCameraPrivacyMode'
+import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
+import type { Camera } from '../../domain/entities/Camera'
 import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import type { SaveCameraDetectionConfig } from '../../application/use-cases/SaveCameraDetectionConfig'
@@ -43,6 +49,11 @@ interface CameraOnboardingViewProps {
   getCameraDetectionConfig: GetCameraDetectionConfig
   saveCameraDetectionConfig: SaveCameraDetectionConfig
   getCameraLabels: GetCameraLabels
+  getPrivacySchedules: GetCameraPrivacySchedules
+  createPrivacySchedule: CreateCameraPrivacySchedule
+  deletePrivacySchedule: DeleteCameraPrivacySchedule
+  batchTogglePrivacyMode: BatchToggleCameraPrivacyMode
+  allCameras: Camera[]
   apiBaseUrl: string
 }
 
@@ -1293,6 +1304,18 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       onToggleContinuousRecording={() => setDetectionContinuousRecording((v) => !v)}
                     />
 
+                    {selectedCamera && selectedCameraId && (
+                      <PrivacyScheduleSection
+                        camera={selectedCamera}
+                        cameraId={selectedCameraId}
+                        allCameras={props.allCameras}
+                        getSchedules={props.getPrivacySchedules}
+                        createSchedule={props.createPrivacySchedule}
+                        deleteSchedule={props.deletePrivacySchedule}
+                        batchTogglePrivacyMode={props.batchTogglePrivacyMode}
+                      />
+                    )}
+
                     <div className="camera-debug-stack">
                       {renderConfidenceDetails(matchedDiscoveryCandidate)}
                       {renderTechnicalDetails(
@@ -1397,6 +1420,178 @@ function CameraLiveView({ cameraId, apiBaseUrl }: { cameraId: string; apiBaseUrl
       alt="Flux live"
       style={{ width: '100%', borderRadius: 4, background: '#000' }}
     />
+  )
+}
+
+const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+
+function PrivacyScheduleSection({
+  camera,
+  cameraId,
+  allCameras,
+  getSchedules,
+  createSchedule,
+  deleteSchedule,
+  batchTogglePrivacyMode,
+}: {
+  camera: Camera
+  cameraId: string
+  allCameras: Camera[]
+  getSchedules: GetCameraPrivacySchedules
+  createSchedule: CreateCameraPrivacySchedule
+  deleteSchedule: DeleteCameraPrivacySchedule
+  batchTogglePrivacyMode: BatchToggleCameraPrivacyMode
+}) {
+  const [schedules, setSchedules] = useState<CameraPrivacySchedule[]>([])
+  const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5])
+  const [startTime, setStartTime] = useState('22:00')
+  const [endTime, setEndTime] = useState('06:00')
+  const [adding, setAdding] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const reload = () => {
+    setLoading(true)
+    getSchedules.execute(cameraId)
+      .then(setSchedules)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { reload() }, [cameraId])
+
+  const toggleDay = (d: number) =>
+    setDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort())
+
+  const handleAdd = async () => {
+    if (days.length === 0) { setError('Sélectionnez au moins un jour.'); return }
+    setError(null)
+    setAdding(true)
+    try {
+      await createSchedule.execute(cameraId, { daysOfWeek: days, startTime, endTime })
+      reload()
+    } catch {
+      setError('Erreur lors de la création du schedule.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleDelete = async (scheduleId: string) => {
+    await deleteSchedule.execute(cameraId, scheduleId)
+    setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
+  }
+
+  const handleApplyToAll = async () => {
+    if (days.length === 0) { setError('Sélectionnez au moins un jour.'); return }
+    setError(null)
+    setAdding(true)
+    try {
+      for (const cam of allCameras) {
+        await createSchedule.execute(cam.id, { daysOfWeek: days, startTime, endTime })
+      }
+      reload()
+    } catch {
+      setError('Erreur lors de l\'application à toutes les caméras.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const privacyCutLabel = camera.privacyVendorCut
+    ? { text: 'Coupure matérielle confirmée', cls: 'privacy-cut-badge--hw' }
+    : camera.privacyModeActive
+    ? { text: 'Enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
+    : null
+
+  return (
+    <section className="camera-form-section" style={{ marginTop: 24 }}>
+      <h3 style={{ fontSize: '0.92rem', marginBottom: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Vie privée — planification
+      </h3>
+
+      {privacyCutLabel && (
+        <div className={`privacy-cut-badge ${privacyCutLabel.cls}`} style={{ marginBottom: 12 }}>
+          {camera.privacyVendorCut ? '🔒' : '🔇'} {privacyCutLabel.text}
+        </div>
+      )}
+
+      {loading ? (
+        <p style={{ opacity: 0.6, fontSize: '0.88rem' }}>Chargement…</p>
+      ) : schedules.length === 0 ? (
+        <p style={{ opacity: 0.5, fontSize: '0.85rem', marginBottom: 12 }}>Aucune planification configurée.</p>
+      ) : (
+        <ul className="privacy-schedule-list">
+          {schedules.map((s) => (
+            <li key={s.id} className="privacy-schedule-item">
+              <span className="privacy-schedule-days">
+                {s.daysOfWeek.map((d) => DAY_LABELS[d]).join(', ')}
+              </span>
+              <span className="privacy-schedule-time">{s.startTime} → {s.endTime}</span>
+              {!s.enabled && <span className="privacy-schedule-disabled">désactivé</span>}
+              <button
+                type="button"
+                className="privacy-schedule-delete"
+                onClick={() => handleDelete(s.id)}
+                title="Supprimer"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="privacy-schedule-form">
+        <div className="privacy-schedule-days-row">
+          {DAY_LABELS.map((label, d) => (
+            <button
+              key={d}
+              type="button"
+              className={`privacy-day-btn${days.includes(d) ? ' privacy-day-btn--on' : ''}`}
+              onClick={() => toggleDay(d)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="privacy-schedule-time-row">
+          <label>
+            <span>Début</span>
+            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </label>
+          <span className="privacy-schedule-arrow">→</span>
+          <label>
+            <span>Fin</span>
+            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </label>
+        </div>
+        {error && <p style={{ color: '#f87272', fontSize: '0.82rem', margin: '4px 0' }}>{error}</p>}
+        <div className="privacy-schedule-actions">
+          <button
+            type="button"
+            className="secondary-cta"
+            style={{ fontSize: '0.82rem', padding: '4px 12px' }}
+            onClick={handleAdd}
+            disabled={adding}
+          >
+            Ajouter à cette caméra
+          </button>
+          {allCameras.length > 1 && (
+            <button
+              type="button"
+              className="secondary-cta"
+              style={{ fontSize: '0.82rem', padding: '4px 12px' }}
+              onClick={handleApplyToAll}
+              disabled={adding}
+              title={`Appliquer ce schedule aux ${allCameras.length} caméras`}
+            >
+              Appliquer à toutes ({allCameras.length})
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
   )
 }
 

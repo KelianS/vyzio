@@ -37,6 +37,9 @@ import {
   verifyDraftCamera,
   toggleCameraPrivacyMode,
   batchToggleCameraPrivacyMode,
+  getCameraPrivacySchedules,
+  createCameraPrivacySchedule,
+  deleteCameraPrivacySchedule,
 } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import { useCameras } from './ui/hooks/useCameras'
@@ -100,6 +103,11 @@ function App() {
             getCameraDetectionConfig={getCameraDetectionConfig}
             saveCameraDetectionConfig={saveCameraDetectionConfig}
             getCameraLabels={getCameraLabels}
+            getPrivacySchedules={getCameraPrivacySchedules}
+            createPrivacySchedule={createCameraPrivacySchedule}
+            deletePrivacySchedule={deleteCameraPrivacySchedule}
+            batchTogglePrivacyMode={batchToggleCameraPrivacyMode}
+            allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
           />
         )}
