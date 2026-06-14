@@ -4,6 +4,15 @@
   display: grid;
   gap: 24px;
   padding-top: 20px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Tous les enfants directs des grids peuvent se réduire à 0 — évite
+   le débordement du aux min-width: auto par défaut des grid items. */
+.layout-root > *,
+.app-shell > * {
+  min-width: 0;
 }
 
 /* ── App shell (hub + sub-views) ── */
@@ -12,6 +21,7 @@
   display: grid;
   gap: 24px;
   padding-bottom: 48px;
+  min-width: 0;
 
   @media (max-width: 720px) {
     padding-bottom: 28px;
@@ -1680,7 +1690,7 @@
 
 .hub-live-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
   gap: 14px;
 }
 

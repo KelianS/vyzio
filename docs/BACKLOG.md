@@ -88,10 +88,10 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [ ] Tests unitaires `TapoCameraAdapter` : handshake KLAP mocke, verifier que `set_lens_mask` est envoye avec la bonne valeur
 
 *UI/UX — polish dashboard*
-- [ ] Miniature live : ajouter une marge intérieure au texte de l'overlay vie privée (le texte actuel colle les bords et génère un retour à la ligne disgracieux)
-- [ ] Bouton batch privacy : remplacer "Tout couper / Tout réactiver" par un bouton "Mode vie privée global" avec libellé d'état explicite (ex. "Activer sur toutes les caméras" / "Désactiver sur toutes les caméras") et confirmation visuelle avant l'action — l'action est irréversible sans un second clic
-- [ ] Menu caméra : supprimer la mise en page 2 colonnes (boites Résumé/Live/Modifier vs sections Détection/Vie privée sans boites) ; passer à une liste verticale unique, homogène, compatible mobile
-- [ ] Scroll horizontal parasite sur mobile : identifier et corriger l'élément qui déborde de quelques px (suspect : tableaux, conteneurs flex sans `overflow: hidden`, ou padding asymétrique)
+- [x] Miniature live : padding intérieur + `text-align: center` + classe `live-thumb-privacy-label` avec `word-break: break-word` — le texte ne colle plus les bords
+- [x] Bouton batch privacy : remplacé par un bouton pill "🔇 Mode vie privée global" (ambre) / "🔒 Désactiver" (vert) + vraie modale de confirmation (`PrivacyConfirmModal`) avec backdrop flouté, texte fonctionnel non-tech, bouton Annuler
+- [x] Menu caméra : colonne unique (`camera-detail-sections` 1fr) — `DetectionConfigSection` et `PrivacyScheduleSection` migrent en `camera-detail-section` (boîte blanche) avec couleurs light-theme corrigées
+- [x] Scroll horizontal mobile : `overflow-x: hidden` sur le body + `flex-wrap: wrap` sur `.hub-section-header` et `.hub-section-actions`
 
 *Documentation utilisateur*
 - [ ] `docs/user/PRIVACY_MODE.md` : toggle manuel, planification, distinction "camera vraiment eteinte" vs "enregistrement desactive", comportement au redemarrage, marques supportees
