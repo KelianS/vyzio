@@ -50,7 +50,9 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
             <span className="live-thumb-privacy-icon" aria-hidden="true">
               {camera.privacyVendorCut ? '🔒' : '🔇'}
             </span>
-            <span>{camera.privacyVendorCut ? 'Caméra coupée — matériel' : 'Caméra en pause — enregistrement désactivé'}</span>
+            <span className="live-thumb-privacy-label">
+              {camera.privacyVendorCut ? 'Caméra coupée — matériel' : 'Caméra en pause — enregistrement désactivé'}
+            </span>
           </div>
         ) : offline ? (
           <div className="live-thumb-offline">Hors ligne</div>

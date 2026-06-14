@@ -346,6 +346,7 @@ interface HubOperationalStateProps {
 
 function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpenMedia, onOpenLive, onTogglePrivacy, onBatchTogglePrivacy }: HubOperationalStateProps) {
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
+  const [batchPending, setBatchPending] = useState<boolean | null>(null)
 
   useEffect(() => {
     getSystemStats.execute().then(setSystemStats).catch(() => {})
@@ -399,21 +400,40 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
           <h2>Flux en direct</h2>
           <div className="hub-section-actions">
             {allCameras.length > 0 && (
-              allCameras.every((c) => c.privacyModeActive) ? (
-                <button
-                  type="button"
-                  className="secondary-cta hub-privacy-batch-btn"
-                  onClick={() => onBatchTogglePrivacy(allCameras.map((c) => c.id), false)}
-                >
-                  Tout réactiver
-                </button>
+              batchPending !== null ? (
+                <div className="hub-privacy-global-confirm">
+                  <span className="hub-privacy-global-confirm-label">
+                    {batchPending
+                      ? `Couper ${allCameras.length} caméra${allCameras.length > 1 ? 's' : ''} ?`
+                      : `Réactiver ${allCameras.length} caméra${allCameras.length > 1 ? 's' : ''} ?`}
+                  </span>
+                  <button
+                    type="button"
+                    className="hub-privacy-confirm-yes"
+                    onClick={async () => {
+                      await onBatchTogglePrivacy(allCameras.map((c) => c.id), batchPending)
+                      setBatchPending(null)
+                    }}
+                  >
+                    Confirmer
+                  </button>
+                  <button
+                    type="button"
+                    className="hub-privacy-confirm-no"
+                    onClick={() => setBatchPending(null)}
+                  >
+                    Annuler
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"
-                  className="secondary-cta hub-privacy-batch-btn"
-                  onClick={() => onBatchTogglePrivacy(allCameras.map((c) => c.id), true)}
+                  className={`hub-privacy-global-btn${allCameras.every((c) => c.privacyModeActive) ? ' hub-privacy-global-btn--active' : ''}`}
+                  onClick={() => setBatchPending(!allCameras.every((c) => c.privacyModeActive))}
                 >
-                  Tout couper
+                  {allCameras.every((c) => c.privacyModeActive)
+                    ? 'Désactiver le mode vie privée'
+                    : 'Mode vie privée global'}
                 </button>
               )
             )}
