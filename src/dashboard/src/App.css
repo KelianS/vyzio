@@ -1673,7 +1673,6 @@
 }
 
 .hub-section-link {
-  margin-left: auto;
   font-size: 0.88rem;
   color: var(--brand-moss);
   font-weight: 600;
@@ -1834,6 +1833,92 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Privacy mode thumbnail states ── */
+
+.live-thumb--privacy {
+  border-color: rgba(247, 180, 0, 0.4);
+}
+
+.live-thumb-privacy-screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: rgba(247, 244, 237, 0.55);
+  font-weight: 600;
+  background: rgba(16, 24, 20, 0.96);
+}
+
+.live-thumb-privacy-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.live-dot--privacy {
+  background: rgba(247, 180, 0, 0.7);
+  box-shadow: 0 0 5px rgba(247, 180, 0, 0.4);
+}
+
+.live-thumb-badge {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.live-thumb-badge--schedule {
+  background: rgba(247, 180, 0, 0.18);
+  color: rgba(247, 180, 0, 0.9);
+  border: 1px solid rgba(247, 180, 0, 0.3);
+}
+
+.live-thumb-privacy-btn {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(247, 244, 237, 0.2);
+  background: rgba(247, 244, 237, 0.07);
+  color: rgba(247, 244, 237, 0.7);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.live-thumb-privacy-btn:hover {
+  background: rgba(247, 244, 237, 0.14);
+}
+
+.live-thumb-privacy-btn--active {
+  border-color: rgba(82, 214, 138, 0.4);
+  color: rgba(82, 214, 138, 0.9);
+  background: rgba(82, 214, 138, 0.08);
+}
+
+.live-thumb-privacy-btn--active:hover {
+  background: rgba(82, 214, 138, 0.15);
+}
+
+/* ── Hub section header with actions row ── */
+
+.hub-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.hub-privacy-batch-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
 }
 
 /* ── Toast system ── */

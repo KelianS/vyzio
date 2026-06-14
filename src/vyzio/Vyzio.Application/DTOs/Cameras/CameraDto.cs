@@ -20,7 +20,10 @@ public sealed record CameraDto(
     DateTimeOffset? LastReachabilityCheckAt,
     DateTimeOffset? LastSuccessfulFrameAt,
     string? FrigateCameraName,
-    string? VendorFamily)
+    string? VendorFamily,
+    bool PrivacyModeActive,
+    string? PrivacyModeSource,
+    bool PrivacyVendorCut)
 {
     public static CameraDto From(Camera camera) => new(
         camera.Id,
@@ -40,5 +43,8 @@ public sealed record CameraDto(
         camera.LastReachabilityCheckAt,
         camera.LastSuccessfulFrameAt,
         camera.FrigateCameraName,
-        camera.VendorFamily);
+        camera.VendorFamily,
+        camera.PrivacyModeActive,
+        camera.PrivacyModeSource,
+        camera.PrivacyVendorCut);
 }

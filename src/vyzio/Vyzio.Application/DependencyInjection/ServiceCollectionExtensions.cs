@@ -37,6 +37,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetCameraStatusUseCase>();
         services.AddScoped<GetCameraDetectionConfigUseCase>();
         services.AddScoped<SaveCameraDetectionConfigUseCase>();
+        services.AddScoped<ToggleCameraPrivacyModeUseCase>();
+        services.AddScoped<BatchToggleCameraPrivacyModeUseCase>();
+        services.AddScoped<GetCameraPrivacySchedulesUseCase>();
+        services.AddScoped<CreateCameraPrivacyScheduleUseCase>();
+        services.AddScoped<UpdateCameraPrivacyScheduleUseCase>();
+        services.AddScoped<DeleteCameraPrivacyScheduleUseCase>();
 
         // Detection event use cases
         services.AddScoped<GetRecentDetectionEventsUseCase>();

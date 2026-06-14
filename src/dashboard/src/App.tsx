@@ -35,6 +35,8 @@ import {
   updateProfile,
   verifyCamera,
   verifyDraftCamera,
+  toggleCameraPrivacyMode,
+  batchToggleCameraPrivacyMode,
 } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import { useCameras } from './ui/hooks/useCameras'
@@ -58,7 +60,7 @@ type AppView = 'hub' | 'cameras' | 'notifications' | 'profiles' | 'history' | 'e
 function App() {
   const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash))
   const { data, loading: hubLoading, error: hubError } = useHubOverview(getHubOverview)
-  const { data: cameras, loading: camerasLoading } = useCameras(getCameras)
+  const { data: cameras, loading: camerasLoading, reload: reloadCameras } = useCameras(getCameras)
   const [modalMedia, setModalMedia] = useState<
     | { type: 'image' | 'video'; url: string }
     | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string }
@@ -156,6 +158,14 @@ function App() {
             getSystemStats={getSystemStats}
             onOpenMedia={(type, url) => setModalMedia({ type, url })}
             onOpenLive={(camera) => setModalMedia({ type: 'live', cameraId: camera.id, apiBaseUrl: dashboardRuntime.apiBaseUrl, label: camera.displayName })}
+            onTogglePrivacy={async (camera, active) => {
+              await toggleCameraPrivacyMode.execute(camera.id, active)
+              reloadCameras()
+            }}
+            onBatchTogglePrivacy={async (cameraIds, active) => {
+              await batchToggleCameraPrivacyMode.execute(cameraIds, active)
+              reloadCameras()
+            }}
           />
         )}
 
@@ -199,9 +209,11 @@ interface HubViewProps {
   getSystemStats: GetSystemStats
   onOpenMedia: (type: 'image' | 'video', url: string) => void
   onOpenLive: (camera: Camera) => void
+  onTogglePrivacy: (camera: Camera, active: boolean) => Promise<void>
+  onBatchTogglePrivacy: (cameraIds: string[], active: boolean) => Promise<void>
 }
 
-function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSystemStats, onOpenMedia, onOpenLive }: HubViewProps) {
+function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSystemStats, onOpenMedia, onOpenLive, onTogglePrivacy, onBatchTogglePrivacy }: HubViewProps) {
   const isLoading = hubLoading || camerasLoading
 
   if (isLoading) {
@@ -218,7 +230,7 @@ function HubView({ hubLoading, camerasLoading, hubError, data, cameras, getSyste
     return <HubSetupState />
   }
 
-  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} getSystemStats={getSystemStats} onOpenMedia={onOpenMedia} onOpenLive={onOpenLive} />
+  return <HubOperationalState data={data} cameras={activeCameras} allCameras={cameras} getSystemStats={getSystemStats} onOpenMedia={onOpenMedia} onOpenLive={onOpenLive} onTogglePrivacy={onTogglePrivacy} onBatchTogglePrivacy={onBatchTogglePrivacy} />
 }
 
 function HubLoadingState() {
@@ -320,9 +332,11 @@ interface HubOperationalStateProps {
   getSystemStats: GetSystemStats
   onOpenMedia: (type: 'image' | 'video', url: string) => void
   onOpenLive: (camera: Camera) => void
+  onTogglePrivacy: (camera: Camera, active: boolean) => Promise<void>
+  onBatchTogglePrivacy: (cameraIds: string[], active: boolean) => Promise<void>
 }
 
-function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpenMedia, onOpenLive }: HubOperationalStateProps) {
+function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpenMedia, onOpenLive, onTogglePrivacy, onBatchTogglePrivacy }: HubOperationalStateProps) {
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
 
   useEffect(() => {
@@ -375,18 +389,40 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
       <section className="hub-live-section">
         <div className="hub-section-header">
           <h2>Flux en direct</h2>
-          <a href="#cameras" className="hub-section-link">
-            Gérer les caméras →
-          </a>
+          <div className="hub-section-actions">
+            {allCameras.length > 0 && (
+              allCameras.every((c) => c.privacyModeActive) ? (
+                <button
+                  type="button"
+                  className="secondary-cta hub-privacy-batch-btn"
+                  onClick={() => onBatchTogglePrivacy(allCameras.map((c) => c.id), false)}
+                >
+                  Tout réactiver
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="secondary-cta hub-privacy-batch-btn"
+                  onClick={() => onBatchTogglePrivacy(allCameras.map((c) => c.id), true)}
+                >
+                  Tout couper
+                </button>
+              )
+            )}
+            <a href="#cameras" className="hub-section-link">
+              Gérer les caméras →
+            </a>
+          </div>
         </div>
-        {cameras.length > 0 ? (
+        {cameras.length > 0 || allCameras.some((c) => c.privacyModeActive) ? (
           <div className="hub-live-grid">
             {allCameras.map((camera) => (
               <CameraLiveThumbnail
                 key={camera.id}
                 camera={camera}
                 apiBaseUrl={dashboardRuntime.apiBaseUrl}
-                onExpand={() => onOpenLive(camera)}
+                onExpand={camera.privacyModeActive ? undefined : () => onOpenLive(camera)}
+                onTogglePrivacy={onTogglePrivacy}
               />
             ))}
           </div>

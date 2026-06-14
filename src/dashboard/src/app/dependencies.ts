@@ -31,6 +31,12 @@ import { UpdateCamera } from '../application/use-cases/UpdateCamera'
 import { UpdateProfile } from '../application/use-cases/UpdateProfile'
 import { VerifyDraftCamera } from '../application/use-cases/VerifyDraftCamera'
 import { VerifyCamera } from '../application/use-cases/VerifyCamera'
+import { ToggleCameraPrivacyMode } from '../application/use-cases/ToggleCameraPrivacyMode'
+import { BatchToggleCameraPrivacyMode } from '../application/use-cases/BatchToggleCameraPrivacyMode'
+import { GetCameraPrivacySchedules } from '../application/use-cases/GetCameraPrivacySchedules'
+import { CreateCameraPrivacySchedule } from '../application/use-cases/CreateCameraPrivacySchedule'
+import { UpdateCameraPrivacySchedule } from '../application/use-cases/UpdateCameraPrivacySchedule'
+import { DeleteCameraPrivacySchedule } from '../application/use-cases/DeleteCameraPrivacySchedule'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
 import { HttpCameraLabelsRepository, HttpNotificationLabelsRepository } from '../infrastructure/repositories/HttpDetectionLabelsRepository'
@@ -91,3 +97,11 @@ export const getDetectionHistory = new GetDetectionHistory(profileRepository)
 export const correctDetectionIdentity = new CorrectDetectionIdentity(profileRepository)
 export const getCameraLabels = new GetDetectionLabels(cameraLabelsRepository)
 export const getNotificationLabels = new GetDetectionLabels(notificationLabelsRepository)
+
+// Privacy use cases
+export const toggleCameraPrivacyMode = new ToggleCameraPrivacyMode(cameraRepository)
+export const batchToggleCameraPrivacyMode = new BatchToggleCameraPrivacyMode(cameraRepository)
+export const getCameraPrivacySchedules = new GetCameraPrivacySchedules(cameraRepository)
+export const createCameraPrivacySchedule = new CreateCameraPrivacySchedule(cameraRepository)
+export const updateCameraPrivacySchedule = new UpdateCameraPrivacySchedule(cameraRepository)
+export const deleteCameraPrivacySchedule = new DeleteCameraPrivacySchedule(cameraRepository)

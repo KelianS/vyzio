@@ -17,4 +17,7 @@ export interface Camera {
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string | null
   vendorFamily: string | null
+  privacyModeActive: boolean
+  privacyModeSource: 'manual' | 'schedule' | null
+  privacyVendorCut: boolean
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
 using Vyzio.Application.Options;
+using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Interfaces;
@@ -51,6 +52,7 @@ builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(cl
 builder.Services.AddHttpClient<ITelegramNotificationSender, TelegramNotificationSender>();
 builder.Services.AddScoped<FrigateAdapter>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
+builder.Services.AddHostedService<PrivacySchedulerService>();
 
 var app = builder.Build();
 

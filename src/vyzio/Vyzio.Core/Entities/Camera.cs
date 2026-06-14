@@ -60,6 +60,15 @@ public class Camera
 
     public bool IsEnabled { get; set; }
 
+    public bool PrivacyModeActive { get; set; }
+
+    // "manual" | "schedule" | null
+    [MaxLength(20)]
+    public string? PrivacyModeSource { get; set; }
+
+    // true if the vendor API confirmed the hardware-level cut during last toggle
+    public bool PrivacyVendorCut { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

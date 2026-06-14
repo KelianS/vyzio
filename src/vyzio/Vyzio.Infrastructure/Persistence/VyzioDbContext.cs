@@ -7,6 +7,7 @@ namespace Vyzio.Infrastructure.Persistence;
 public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContext(options)
 {
     public DbSet<Camera> Cameras => Set<Camera>();
+    public DbSet<CameraPrivacySchedule> CameraPrivacySchedules => Set<CameraPrivacySchedule>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
     public DbSet<ProfileCameraLink> ProfileCameraLinks => Set<ProfileCameraLink>();
@@ -18,6 +19,17 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ConfigureSqliteDateTimeOffsets(modelBuilder);
+
+        modelBuilder.Entity<CameraPrivacySchedule>(schedule =>
+        {
+            schedule.HasOne(s => s.Camera)
+                    .WithMany()
+                    .HasForeignKey(s => s.CameraId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+            schedule.HasIndex(s => new { s.CameraId, s.Enabled })
+                    .HasDatabaseName("idx_privacy_schedules_camera");
+        });
 
         modelBuilder.Entity<Camera>(camera =>
         {
