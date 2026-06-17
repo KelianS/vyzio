@@ -14,25 +14,34 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
 {
     private const int DefaultOnvifPort = 8899;
 
+    // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid
+    // a GetProfiles round-trip before every PTZ command (which was the main source of step overshoot).
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _profileCache = new();
+
     public async Task<string> GetFirstProfileTokenAsync(Camera camera, CancellationToken ct)
     {
+        if (_profileCache.TryGetValue(camera.Id, out var cached))
+            return cached;
+
         var body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
         var response = await PostOnvifAsync(camera, "media_service", body, ct);
-        if (response is null) return "profile1";
 
-        try
+        string token = "profile1";
+        if (response is not null)
         {
-            var doc = XDocument.Parse(response);
-            XNamespace trt = "http://www.onvif.org/ver10/media/wsdl";
-            var token = doc.Descendants(trt + "Profiles")
+            try
+            {
+                var doc = XDocument.Parse(response);
+                XNamespace trt = "http://www.onvif.org/ver10/media/wsdl";
+                token = doc.Descendants(trt + "Profiles")
                            .FirstOrDefault()
-                           ?.Attribute("token")?.Value;
-            return token ?? "profile1";
+                           ?.Attribute("token")?.Value ?? "profile1";
+            }
+            catch { }
         }
-        catch
-        {
-            return "profile1";
-        }
+
+        _profileCache[camera.Id] = token;
+        return token;
     }
 
     public async Task ContinuousMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)

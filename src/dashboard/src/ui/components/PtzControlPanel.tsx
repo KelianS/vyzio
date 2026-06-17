@@ -20,7 +20,6 @@ type Direction = 'Up' | 'Down' | 'Left' | 'Right' | 'UpLeft' | 'UpRight' | 'Down
 // Tap: single step of STEP_MS on server (Move → wait → Stop in one HTTP call).
 // Hold: once HOLD_THRESHOLD_MS has elapsed, chain repeated step calls until release.
 const HOLD_THRESHOLD_MS = 300
-const STEP_MS = 80
 
 const SURVEILLANCE_PRESET = 1
 
@@ -42,7 +41,7 @@ export function PtzControlPanel({
 
   const runStep = useCallback(
     (direction: Direction) => {
-      ptzStep.execute(cameraId, direction, speed, STEP_MS).then(() => {
+      ptzStep.execute(cameraId, direction, speed).then(() => {
         if (isHoldingRef.current) runStep(direction) // chain next step while held
       }).catch(() => {
         isHoldingRef.current = false
@@ -59,7 +58,7 @@ export function PtzControlPanel({
       isHoldingRef.current = false
 
       // Fire the first step immediately (tap behavior).
-      ptzStep.execute(cameraId, direction, speed, STEP_MS).catch(() => {
+      ptzStep.execute(cameraId, direction, speed).catch(() => {
         isPressedRef.current = false
       })
 

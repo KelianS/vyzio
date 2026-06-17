@@ -6,12 +6,13 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record PtzMoveRequest(string Direction, int Speed = 50);
 
-// Moves the camera for a fixed duration then stops — all server-side to avoid double round-trip latency.
-// Default 80ms gives a small, controllable step even on cameras that ignore velocity.
-// For hold mode the frontend chains repeated Step calls, giving smooth continuous movement.
+// Step: sends Move then immediately Stop. The camera moves only for the duration of the Stop
+// round-trip (~20ms on LAN), giving a small predictable nudge. Profile tokens are cached in
+// OnvifPtzClient so neither command incurs an extra GetProfiles HTTP call.
+// For hold mode the frontend chains repeated Step calls, producing continuous movement.
 public sealed class PtzStepUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
 {
-    public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, int durationMs = 80, CancellationToken ct = default)
+    public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return false;
@@ -23,7 +24,6 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, IVendorCameraAdapt
         if (!await adapter.SupportsPtzAsync(camera, ct)) return false;
 
         await adapter.PtzMoveAsync(camera, direction, Math.Clamp(request.Speed, 1, 100), ct);
-        await Task.Delay(Math.Clamp(durationMs, 30, 2000), ct);
         await adapter.PtzStopAsync(camera, ct);
         return true;
     }

@@ -244,10 +244,10 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCamera(payload)
   }
 
-  async ptzStep(cameraId: string, direction: string, speed: number, durationMs: number): Promise<void> {
+  async ptzStep(cameraId: string, direction: string, speed: number): Promise<void> {
     await postJson<null>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/step`,
-      { direction, speed, durationMs },
+      { direction, speed },
     )
   }
 

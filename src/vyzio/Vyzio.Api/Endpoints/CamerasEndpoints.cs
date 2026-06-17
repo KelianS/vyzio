@@ -13,7 +13,7 @@ file sealed record TogglePrivacyRequest(bool Active);
 file sealed record BatchTogglePrivacyRequest(IReadOnlyList<string> CameraIds, bool Active);
 
 // Request types for PTZ endpoints
-file sealed record PtzStepApiRequest(string Direction, int Speed = 50, int DurationMs = 80);
+file sealed record PtzStepApiRequest(string Direction, int Speed = 50);
 file sealed record PtzPresetApiRequest(int PresetId);
 file sealed record PrivacyStrategyApiRequest(string Strategy);
 
@@ -160,7 +160,7 @@ public static class CamerasEndpoints
         {
             try
             {
-                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), request.DurationMs, ct);
+                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct);
                 return ok ? Results.NoContent() : Results.NotFound();
             }
             catch (ArgumentException ex)
