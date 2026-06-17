@@ -18,22 +18,23 @@ public class ToggleCameraPrivacyModeUseCaseTests
     {
         _adapterFactory.Resolve(Arg.Any<Camera>()).Returns(_adapter);
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _schedules, _adapterFactory, _frigateConfig);
+        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _adapterFactory, _frigateConfig);
     }
 
-    private static Camera MakeCamera(string id = "cam1") => new()
+    private static Camera MakeCamera(string id = "cam1", string strategy = "software") => new()
     {
         Id = id,
         Slug = id,
         DisplayName = id,
         Host = "192.168.1.10",
         Port = 554,
+        PrivacyModeStrategy = strategy,
     };
 
     [Fact]
-    public async Task Execute_calls_vendor_adapter_and_sets_vendor_cut_when_supported()
+    public async Task Execute_calls_vendor_adapter_and_sets_vendor_cut_when_strategy_is_hardware()
     {
-        var camera = MakeCamera();
+        var camera = MakeCamera(strategy: "hardware");
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _adapter.SupportsPrivacyModeAsync(camera, Arg.Any<CancellationToken>()).Returns(true);
 
@@ -45,9 +46,22 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_leaves_vendor_cut_false_when_adapter_not_supported()
+    public async Task Execute_leaves_vendor_cut_false_when_strategy_is_software()
     {
-        var camera = MakeCamera();
+        var camera = MakeCamera(strategy: "software");
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        var result = await _sut.ExecuteAsync("cam1", active: true);
+
+        Assert.NotNull(result);
+        Assert.False(result!.PrivacyVendorCut);
+        await _adapter.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_leaves_vendor_cut_false_when_hardware_adapter_not_supported()
+    {
+        var camera = MakeCamera(strategy: "hardware");
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _adapter.SupportsPrivacyModeAsync(camera, Arg.Any<CancellationToken>()).Returns(false);
 

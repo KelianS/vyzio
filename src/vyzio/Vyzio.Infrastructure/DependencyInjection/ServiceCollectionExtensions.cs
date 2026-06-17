@@ -37,9 +37,12 @@ public static class ServiceCollectionExtensions
 
         // Vendor camera adapters — one entry per supported VendorFamily
         services.AddHttpClient("tapo");
+        services.AddHttpClient("onvif");
+        services.AddSingleton<OnvifPtzClient>();
         services.AddSingleton<IVendorCameraAdapter, TapoCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapter, ICSeeXMEyeCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapter, V380ProCameraAdapter>();
+        services.AddSingleton<IVendorCameraAdapter, OnvifCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapterFactory, VendorCameraAdapterFactory>();
 
         return services;

@@ -23,7 +23,9 @@ public sealed record CameraDto(
     string? VendorFamily,
     bool PrivacyModeActive,
     string? PrivacyModeSource,
-    bool PrivacyVendorCut)
+    bool PrivacyVendorCut,
+    bool PtzSupported,
+    string PrivacyModeStrategy)
 {
     public static CameraDto From(Camera camera) => new(
         camera.Id,
@@ -46,5 +48,7 @@ public sealed record CameraDto(
         camera.VendorFamily,
         camera.PrivacyModeActive,
         camera.PrivacyModeSource,
-        camera.PrivacyVendorCut);
+        camera.PrivacyVendorCut,
+        camera.PtzSupported,
+        string.IsNullOrEmpty(camera.PrivacyModeStrategy) ? "software" : camera.PrivacyModeStrategy);
 }

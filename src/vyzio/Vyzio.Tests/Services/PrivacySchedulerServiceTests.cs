@@ -26,7 +26,7 @@ public class PrivacySchedulerServiceTests
     private PrivacySchedulerService MakeService()
     {
         var toggleUseCase = new ToggleCameraPrivacyModeUseCase(
-            _cameras, _schedules, _adapterFactory, _frigateConfig);
+            _cameras, _adapterFactory, _frigateConfig);
 
         var provider = Substitute.For<IServiceProvider>();
         provider.GetService(typeof(ICameraPrivacyRepository)).Returns(_schedules);

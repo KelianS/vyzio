@@ -158,5 +158,21 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         return ([.. seqBytes, .. ciphertext, .. tag], seq);
     }
 
+    // Tapo cameras have no PTZ in the current scope — spatial privacy is lens mask only.
+    public Task<bool> SupportsPtzAsync(Camera camera, CancellationToken ct = default)
+        => Task.FromResult(false);
+
+    public Task PtzMoveAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzStopAsync(Camera camera, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzSavePresetAsync(Camera camera, int presetId, CancellationToken ct = default)
+        => Task.CompletedTask;
+
     private sealed record KlapSession(byte[] Key, byte[] Iv, string Cookie, int Seq);
 }

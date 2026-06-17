@@ -7,34 +7,57 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
-    ICameraPrivacyRepository schedules,
     IVendorCameraAdapterFactory adapterFactory,
     IFrigateConfigApplier frigateConfig)
 {
+    // PTZ parking move duration: drive camera to corner for this long, then stop.
+    private static readonly TimeSpan ParkingMoveDuration = TimeSpan.FromSeconds(8);
+
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, string source = "manual", CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
+        var strategy = string.IsNullOrEmpty(camera.PrivacyModeStrategy) ? "software" : camera.PrivacyModeStrategy;
+        var adapter = adapterFactory.Resolve(camera);
+
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
         camera.PrivacyVendorCut = false;
 
-        if (active)
+        switch (strategy)
         {
-            var adapter = adapterFactory.Resolve(camera);
-            if (await adapter.SupportsPrivacyModeAsync(camera, ct))
-            {
-                await adapter.SetPrivacyModeAsync(camera, active: true, ct);
-                camera.PrivacyVendorCut = true;
-            }
-        }
-        else
-        {
-            // Restore camera via vendor API if it was previously cut at hardware level
-            var adapter = adapterFactory.Resolve(camera);
-            if (await adapter.SupportsPrivacyModeAsync(camera, ct))
-                await adapter.SetPrivacyModeAsync(camera, active: false, ct);
+            case "hardware":
+                // Vendor cuts the lens at firmware level (e.g. Tapo KLAP lens mask).
+                if (await adapter.SupportsPrivacyModeAsync(camera, ct))
+                {
+                    await adapter.SetPrivacyModeAsync(camera, active, ct);
+                    camera.PrivacyVendorCut = active;
+                }
+                break;
+
+            case "ptz_parking":
+                // Camera pivots to a neutral zone AND Frigate is disabled — dual protection.
+                if (active)
+                {
+                    // Start continuous move toward lower-left corner.
+                    // Fire-and-forget stop after duration so the API response is immediate.
+                    if (await adapter.SupportsPtzAsync(camera, ct))
+                    {
+                        await adapter.PtzMoveAsync(camera, PtzDirection.DownLeft, speed: 80, ct);
+                        _ = StopAfterDelayAsync(adapter, camera, ParkingMoveDuration);
+                    }
+                }
+                else
+                {
+                    // Return to surveillance position (preset 1).
+                    // Frigate re-enabled below regardless; stream may briefly see a moving frame.
+                    if (await adapter.SupportsPtzAsync(camera, ct))
+                        await adapter.PtzGoToPresetAsync(camera, presetId: 1, ct);
+                }
+                break;
+
+            // "software" or any unknown value → Frigate only (no vendor call).
         }
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -44,6 +67,19 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         await frigateConfig.ApplyAsync(allCameras, ct);
 
         return CameraDto.From(camera);
+    }
+
+    private static async Task StopAfterDelayAsync(IVendorCameraAdapter adapter, Camera camera, TimeSpan delay)
+    {
+        try
+        {
+            await Task.Delay(delay);
+            await adapter.PtzStopAsync(camera);
+        }
+        catch
+        {
+            // Best-effort; camera will stop at mechanical limit if this fails.
+        }
     }
 }
 

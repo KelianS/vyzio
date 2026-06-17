@@ -14,4 +14,19 @@ public sealed class NullVendorCameraAdapter : IVendorCameraAdapter
 
     public Task SetPrivacyModeAsync(Camera camera, bool active, CancellationToken ct = default)
         => Task.CompletedTask;
+
+    public Task<bool> SupportsPtzAsync(Camera camera, CancellationToken ct = default)
+        => Task.FromResult(false);
+
+    public Task PtzMoveAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzStopAsync(Camera camera, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzSavePresetAsync(Camera camera, int presetId, CancellationToken ct = default)
+        => Task.CompletedTask;
 }

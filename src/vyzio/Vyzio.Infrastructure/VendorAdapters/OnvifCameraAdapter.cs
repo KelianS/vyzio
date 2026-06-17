@@ -4,16 +4,18 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
-// V380 Pro cameras: RTSP via ceshi.ini SD card unlock.
-// No hardware privacy cut (ONVIF SetVideoEncoderConfiguration blocked by firmware, see investigations/v380_onvif_privacy.md).
-// PTZ is fully functional via ONVIF ContinuousMove/Stop/SetPreset/GotoPreset on port 8899.
-internal sealed class V380ProCameraAdapter(OnvifPtzClient ptz, ILogger<V380ProCameraAdapter> logger) : IVendorCameraAdapter
+// Generic ONVIF adapter for PTZ cameras detected at onboarding (vendorFamily = "onvif").
+// Covers Hikvision, Dahua, Reolink, Axis, and any ONVIF-compliant PTZ camera.
+// Hardware privacy is not implemented here — ONVIF VideoEncoder manipulation is blocked
+// on most consumer firmware (see investigations/v380_onvif_privacy.md for context).
+// PTZ parking is the privacy mechanism for this adapter.
+internal sealed class OnvifCameraAdapter(OnvifPtzClient ptz, ILogger<OnvifCameraAdapter> logger) : IVendorCameraAdapter
 {
-    public string VendorFamily => "v380_pro";
+    public string VendorFamily => "onvif";
 
     public Task<bool> SupportsPrivacyModeAsync(Camera camera, CancellationToken ct = default)
     {
-        logger.LogDebug("V380 PRO: no hardware privacy cut for {Camera}.", camera.DisplayName);
+        logger.LogDebug("ONVIF generic: no hardware privacy cut for {Camera}.", camera.DisplayName);
         return Task.FromResult(false);
     }
 

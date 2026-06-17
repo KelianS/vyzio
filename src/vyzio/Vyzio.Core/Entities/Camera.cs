@@ -69,6 +69,13 @@ public class Camera
     // true if the vendor API confirmed the hardware-level cut during last toggle
     public bool PrivacyVendorCut { get; set; }
 
+    // PTZ + privacy strategy (ADR-21)
+    public bool PtzSupported { get; set; }
+
+    // "software" | "ptz_parking" | "hardware"
+    [Required, MaxLength(20)]
+    public string PrivacyModeStrategy { get; set; } = "software";
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
