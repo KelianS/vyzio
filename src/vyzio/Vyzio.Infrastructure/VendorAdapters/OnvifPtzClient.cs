@@ -59,6 +59,52 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
         await PostOnvifAsync(camera, "ptz_service", body, ct);
     }
 
+    // Returns (pan, tilt) in ONVIF normalized space [-1, 1], or null if camera doesn't report position.
+    public async Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CancellationToken ct)
+    {
+        var token = await GetFirstProfileTokenAsync(camera, ct);
+        var body = $"""
+            <GetStatus xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+              <ProfileToken>{token}</ProfileToken>
+            </GetStatus>
+            """;
+        var response = await PostOnvifAsync(camera, "ptz_service", body, ct);
+        if (response is null) return null;
+
+        try
+        {
+            var doc = XDocument.Parse(response);
+            XNamespace tt = "http://www.onvif.org/ver10/schema";
+            var panTilt = doc.Descendants(tt + "PanTilt").FirstOrDefault();
+            if (panTilt is null) return null;
+
+            var xAttr = panTilt.Attribute("x")?.Value;
+            var yAttr = panTilt.Attribute("y")?.Value;
+            if (xAttr is null || yAttr is null) return null;
+
+            if (!float.TryParse(xAttr, NumberStyles.Float, CultureInfo.InvariantCulture, out var pan)) return null;
+            if (!float.TryParse(yAttr, NumberStyles.Float, CultureInfo.InvariantCulture, out var tilt)) return null;
+
+            return (pan, tilt);
+        }
+        catch { return null; }
+    }
+
+    public async Task RelativeMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)
+    {
+        var panStr = pan.ToString("F4", CultureInfo.InvariantCulture);
+        var tiltStr = tilt.ToString("F4", CultureInfo.InvariantCulture);
+        var body = $"""
+            <RelativeMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+              <ProfileToken>{profileToken}</ProfileToken>
+              <Translation>
+                <PanTilt x="{panStr}" y="{tiltStr}" xmlns="http://www.onvif.org/ver10/schema"/>
+              </Translation>
+            </RelativeMove>
+            """;
+        await PostOnvifAsync(camera, "ptz_service", body, ct);
+    }
+
     public async Task StopAsync(Camera camera, string profileToken, CancellationToken ct)
     {
         var body = $"""

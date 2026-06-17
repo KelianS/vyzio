@@ -6,10 +6,10 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record PtzMoveRequest(string Direction, int Speed = 50);
 
-// Step: sends Move then immediately Stop. The camera moves only for the duration of the Stop
-// round-trip (~20ms on LAN), giving a small predictable nudge. Profile tokens are cached in
-// OnvifPtzClient so neither command incurs an extra GetProfiles HTTP call.
-// For hold mode the frontend chains repeated Step calls, producing continuous movement.
+// Step: delegates to adapter.PtzStepAsync which uses ONVIF RelativeMove when supported.
+// RelativeMove sends a precise fraction of the pan/tilt range and the camera stops itself —
+// no Stop command needed, no network-latency overshoot.
+// Adapters that don't support RelativeMove fall back to the default Move+Stop in IVendorCameraAdapter.
 public sealed class PtzStepUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
 {
     public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
@@ -23,8 +23,7 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, IVendorCameraAdapt
         var adapter = adapterFactory.Resolve(camera);
         if (!await adapter.SupportsPtzAsync(camera, ct)) return false;
 
-        await adapter.PtzMoveAsync(camera, direction, Math.Clamp(request.Speed, 1, 100), ct);
-        await adapter.PtzStopAsync(camera, ct);
+        await adapter.PtzStepAsync(camera, direction, Math.Clamp(request.Speed, 1, 100), ct);
         return true;
     }
 }

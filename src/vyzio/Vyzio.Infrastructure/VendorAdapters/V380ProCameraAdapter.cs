@@ -36,6 +36,13 @@ internal sealed class V380ProCameraAdapter(OnvifPtzClient ptz, ILogger<V380ProCa
         await ptz.StopAsync(camera, token, ct);
     }
 
+    public async Task PtzStepAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
+    {
+        var (pan, tilt) = DirectionToStep(direction, speed);
+        var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
+        await ptz.RelativeMoveAsync(camera, token, pan, tilt, ct);
+    }
+
     public async Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
     {
         var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
@@ -46,6 +53,24 @@ internal sealed class V380ProCameraAdapter(OnvifPtzClient ptz, ILogger<V380ProCa
     {
         var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
         await ptz.SetPresetAsync(camera, token, presetId, ct);
+    }
+
+    // step = fraction of full pan/tilt range: speed=50 → 0.025 (≈4.5° on a 180° camera)
+    private static (float pan, float tilt) DirectionToStep(PtzDirection direction, int speed)
+    {
+        var s = Math.Clamp(speed / 2000f, 0.01f, 0.08f);
+        return direction switch
+        {
+            PtzDirection.Up        => (0f, s),
+            PtzDirection.Down      => (0f, -s),
+            PtzDirection.Left      => (-s, 0f),
+            PtzDirection.Right     => (s, 0f),
+            PtzDirection.UpLeft    => (-s, s),
+            PtzDirection.UpRight   => (s, s),
+            PtzDirection.DownLeft  => (-s, -s),
+            PtzDirection.DownRight => (s, -s),
+            _                      => (0f, 0f)
+        };
     }
 
     private static (float pan, float tilt) DirectionToVelocity(PtzDirection direction, int speed)

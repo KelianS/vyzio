@@ -169,6 +169,42 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - Une caméra Tapo continue d'utiliser le cache objectif physique (non impacté par cet item)
 - La stratégie choisie persiste après redémarrage de Vyzio
 
+---
+
+### TECH - Pipeline d'erreur frontend — clean architecture
+
+> But : rendre les erreurs backend prévisibles et visibles dans toute l'application sans que chaque composant ait à gérer manuellement le feedback utilisateur. Aujourd'hui les erreurs HTTP sont des `Error` génériques opaques ; certains composants toastent, d'autres silencient (`.catch(() => {})`). La clean architecture offre les seams nécessaires pour une pipeline typée de bout en bout : infrastructure → domaine → use case → hook UI.
+
+**Pipeline cible :**
+```
+fetch → HttpError (status, url) → use case → AppError (kind discriminé) → useAsync → toast / état
+```
+
+*Infrastructure — erreur typée*
+- [ ] Créer `infrastructure/http/HttpError.ts` : classe `HttpError extends Error` avec `status: number` et `url: string` — remplace `throw new Error(\`HTTP ${status}\`)` dans tous les helpers fetch
+- [ ] Centraliser `postJson`, `deleteJson`, `patchJson`, `putJson` dans `infrastructure/http/fetchJson.ts` — ils sont aujourd'hui dupliqués dans `HttpCameraRepository.ts` uniquement ; un seul fichier pour tous les verbes HTTP
+
+*Domaine — erreur métier*
+- [ ] Créer `domain/errors/AppError.ts` : type discriminé `AppError = { kind: 'not_found' } | { kind: 'network' } | { kind: 'server'; status: number } | { kind: 'unknown'; message: string }` — les use cases lèvent ce type, pas des strings ou des `HttpError` brutes
+- [ ] Créer `domain/errors/toAppError.ts` : fonction pure `toAppError(e: unknown): AppError` qui mappe `HttpError` → `AppError` selon le status (404 → `not_found`, 5xx → `server`, NetworkError → `network`, reste → `unknown`)
+
+*Application — use cases comme frontière*
+- [ ] Chaque use case encapsule son `execute()` dans un try/catch qui appelle `toAppError` et relève une `AppError` — le domaine ne laisse plus fuiter d'erreurs HTTP vers l'UI
+
+*UI — hook central*
+- [ ] Créer `ui/hooks/useAsync.ts` : `useAsync<T>(fn: () => Promise<T>): { data: T | null, loading: boolean, error: AppError | null }` — catch automatique, pas de `useToast` à brancher dans chaque composant
+- [ ] Créer `ui/hooks/useAsyncAction.ts` : variante pour les actions manuelles (boutons) — retourne `{ run, loading, error }`, toaste automatiquement selon `error.kind` (`not_found` → silencieux, `network` → "Impossible de joindre le serveur", `server` → "Erreur serveur", `unknown` → message brut)
+- [ ] Migrer les hooks de chargement existants (`useCameras`, `useCameraStatus`, `useHubOverview`, etc.) vers `useAsync`
+- [ ] Remplacer les blocs `.catch(() => {})` et les try/catch manuels dans les composants par `useAsyncAction`
+
+**Critères de validation :**
+- Toute erreur HTTP remontée d'un use case est de type `AppError` — aucune `Error` générique ne traverse la frontière application → UI
+- Un appel backend en échec sans gestion explicite dans le composant affiche un toast automatique adapté au kind
+- Aucun `.catch(() => {})` silencieux dans les composants (sauf intention documentée)
+- Les use cases existants compilent sans modification de leur interface publique (breaking change zéro pour les tests)
+
+---
+
 ### TECH - Modale commune pour les actions destructives
 
 > But : toute action irréversible ou à fort impact (batch privacy, suppression de caméra, réinitialisation de config…) doit passer par un composant `ConfirmModal` partagé, réutilisable, accessible (`role="dialog"`, `aria-modal`, focus trap). Aujourd'hui `PrivacyConfirmModal` dans `App.tsx` est isolé et non réutilisable.

@@ -16,4 +16,12 @@ public interface IVendorCameraAdapter
     Task PtzStopAsync(Camera camera, CancellationToken ct = default);
     Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default);
     Task PtzSavePresetAsync(Camera camera, int presetId, CancellationToken ct = default);
+
+    // Single precise step. Adapters that support native relative moves (ONVIF RelativeMove)
+    // should override — the default fallback is ContinuousMove + Stop which is imprecise.
+    virtual async Task PtzStepAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
+    {
+        await PtzMoveAsync(camera, direction, speed, ct);
+        await PtzStopAsync(camera, ct);
+    }
 }
