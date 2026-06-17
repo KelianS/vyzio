@@ -145,7 +145,7 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 *Dashboard — fiche caméra (configuration)*
 - [ ] Intégrer `PtzControlPanel` dans la fiche caméra, accompagné du bouton **"Définir position de surveillance"** (déclenche `ConfigurePtzParkingPositionUseCase`, feedback de confirmation) — permet de positionner et sauvegarder le preset home dans un contexte dédié
-- [ ] **Section "Mode vie privée"** : sélecteur de stratégie (`Enregistrement désactivé` / `Parking PTZ` / `Cache objectif`) avec description contextuelle ; `Parking PTZ` n'est proposé que si `PtzSupported = true`, `Cache objectif` que si `SupportsHardwarePrivacy = true`
+- [ ] **Section "Mode vie privée"** : sélecteur de stratégie (`Enregistrement désactivé` / `Parking PTZ` / `Cache objectif`) avec description contextuelle ; `Parking PTZ` n'est proposé que si `PtzSupported = true`, `Cache objectif` que si `SupportsHardwarePrivacy = true`. Quand l'utilisateur sélectionne `Parking PTZ`, afficher un avertissement inline : *"La caméra pivote vers une zone neutre et l'enregistrement est désactivé dans Vyzio. Le flux vidéo reste techniquement accessible sur votre réseau local si quelqu'un connaît l'adresse de la caméra."*
 - [ ] **Badge vie privée** : libellé selon la stratégie active — "Cache objectif" / "Caméra orientée — enregistrement désactivé" / "Enregistrement désactivé"
 
 *Dashboard — parcours d'ajout (onboarding)*

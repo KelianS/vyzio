@@ -274,7 +274,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers la butée mécanique ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ;
 - l'utilisateur doit pouvoir définir la position de surveillance (preset "home") via des contrôles PTZ live dans l'interface — une fois orientée, il clique "Définir comme position de surveillance" ;
 - les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) — c'est le parcours d'usage quotidien ;
-- si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et de la position de surveillance avant de terminer.
+- si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et de la position de surveillance avant de terminer ;
+- lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers une zone neutre ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix.
 
 ---
 
