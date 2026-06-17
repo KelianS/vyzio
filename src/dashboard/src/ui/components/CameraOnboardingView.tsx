@@ -246,6 +246,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       vendorFamily: selectedCamera.vendorFamily ?? null,
       sourceType: selectedCamera.sourceType,
       streamProtocol: selectedCamera.streamProtocol ?? 'rtsp',
+      ptzSupported: selectedCamera.ptzSupported,
     })
     setEditPassword('')
     setDetectionLabels(['person'])
@@ -1372,6 +1373,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           />
                         </label>
                       </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem', marginTop: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={editForm.ptzSupported ?? false}
+                          onChange={(e) => updateEditForm({ ptzSupported: e.target.checked })}
+                          style={{ accentColor: 'currentColor' }}
+                        />
+                        Cette caméra supporte le contrôle PTZ (orientation motorisée)
+                      </label>
                     </section>
 
                     {renderVendorAssistanceSection()}
