@@ -40,6 +40,12 @@ import {
   getCameraPrivacySchedules,
   createCameraPrivacySchedule,
   deleteCameraPrivacySchedule,
+  setPrivacyStrategy,
+  ptzMove,
+  ptzStop,
+  ptzSavePreset,
+  ptzGoToPreset,
+  configurePtzParking,
 } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import { useCameras } from './ui/hooks/useCameras'
@@ -53,6 +59,7 @@ import { AppHeader } from './ui/components/AppHeader'
 import { CameraLiveThumbnail } from './ui/components/CameraLiveThumbnail'
 import { ToastProvider } from './ui/components/Toast'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
+import { PtzControlPanel } from './ui/components/PtzControlPanel'
 import { DetectionHistoryView } from './ui/components/DetectionHistoryView'
 import { ExpertView } from './ui/components/ExpertView'
 import { NotificationSettingsView } from './ui/components/NotificationSettingsView'
@@ -66,7 +73,7 @@ function App() {
   const { data: cameras, loading: camerasLoading, reload: reloadCameras } = useCameras(getCameras)
   const [modalMedia, setModalMedia] = useState<
     | { type: 'image' | 'video'; url: string }
-    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string }
+    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string; ptzSupported: boolean }
     | null
   >(null)
 
@@ -107,6 +114,12 @@ function App() {
             createPrivacySchedule={createCameraPrivacySchedule}
             deletePrivacySchedule={deleteCameraPrivacySchedule}
             batchTogglePrivacyMode={batchToggleCameraPrivacyMode}
+            setPrivacyStrategy={setPrivacyStrategy}
+            ptzMove={ptzMove}
+            ptzStop={ptzStop}
+            ptzGoToPreset={ptzGoToPreset}
+            ptzSavePreset={ptzSavePreset}
+            configurePtzParking={configurePtzParking}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
           />
@@ -165,7 +178,7 @@ function App() {
             cameras={cameras}
             getSystemStats={getSystemStats}
             onOpenMedia={(type, url) => setModalMedia({ type, url })}
-            onOpenLive={(camera) => setModalMedia({ type: 'live', cameraId: camera.id, apiBaseUrl: dashboardRuntime.apiBaseUrl, label: camera.displayName })}
+            onOpenLive={(camera) => setModalMedia({ type: 'live', cameraId: camera.id, apiBaseUrl: dashboardRuntime.apiBaseUrl, label: camera.displayName, ptzSupported: camera.ptzSupported })}
             onTogglePrivacy={async (camera, active) => {
               await toggleCameraPrivacyMode.execute(camera.id, active)
               reloadCameras()
@@ -191,7 +204,7 @@ function App() {
                 ✕
               </button>
               {modalMedia.type === 'live' ? (
-                <LiveFeedModal cameraId={modalMedia.cameraId} apiBaseUrl={modalMedia.apiBaseUrl} label={modalMedia.label} />
+                <LiveFeedModal cameraId={modalMedia.cameraId} apiBaseUrl={modalMedia.apiBaseUrl} label={modalMedia.label} ptzSupported={modalMedia.ptzSupported} />
               ) : modalMedia.type === 'image' ? (
                 <img src={modalMedia.url} alt="Aperçu détection" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
               ) : (
@@ -296,7 +309,7 @@ function HubSetupState() {
             <div className="hub-setup-step-num">1</div>
             <div>
               <strong>Ajouter une caméra</strong>
-              <p>Détection automatique ou saisie manuelle de votre flux RTSP.</p>
+              <p>Détection automatique ou saisie manuelle de votre caméra.</p>
             </div>
           </div>
           <div className="hub-setup-step">
@@ -597,7 +610,7 @@ function PrivacyConfirmModal({
   )
 }
 
-function LiveFeedModal({ cameraId, apiBaseUrl, label }: { cameraId: string; apiBaseUrl: string; label: string }) {
+function LiveFeedModal({ cameraId, apiBaseUrl, label, ptzSupported }: { cameraId: string; apiBaseUrl: string; label: string; ptzSupported: boolean }) {
   const [src, setSrc] = useState(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -608,7 +621,22 @@ function LiveFeedModal({ cameraId, apiBaseUrl, label }: { cameraId: string; apiB
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [cameraId, apiBaseUrl])
 
-  return <img src={src} alt={label} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <img src={src} alt={label} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
+      {ptzSupported && (
+        <div className="live-feed-ptz-overlay">
+          <PtzControlPanel
+            cameraId={cameraId}
+            ptzMove={ptzMove}
+            ptzStop={ptzStop}
+            ptzGoToPreset={ptzGoToPreset}
+            compact
+          />
+        </div>
+      )}
+    </div>
+  )
 }
 
 function getViewFromHash(hash: string): AppView {

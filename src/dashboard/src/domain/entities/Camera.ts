@@ -20,4 +20,6 @@ export interface Camera {
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
+  ptzSupported: boolean
+  privacyModeStrategy: 'software' | 'ptz_parking' | 'hardware'
 }

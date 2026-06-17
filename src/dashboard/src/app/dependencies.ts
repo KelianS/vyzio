@@ -37,6 +37,12 @@ import { GetCameraPrivacySchedules } from '../application/use-cases/GetCameraPri
 import { CreateCameraPrivacySchedule } from '../application/use-cases/CreateCameraPrivacySchedule'
 import { UpdateCameraPrivacySchedule } from '../application/use-cases/UpdateCameraPrivacySchedule'
 import { DeleteCameraPrivacySchedule } from '../application/use-cases/DeleteCameraPrivacySchedule'
+import { SetPrivacyStrategy } from '../application/use-cases/SetPrivacyStrategy'
+import { PtzMove } from '../application/use-cases/PtzMove'
+import { PtzStop } from '../application/use-cases/PtzStop'
+import { PtzSavePreset } from '../application/use-cases/PtzSavePreset'
+import { PtzGoToPreset } from '../application/use-cases/PtzGoToPreset'
+import { ConfigurePtzParking } from '../application/use-cases/ConfigurePtzParking'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
 import { HttpCameraLabelsRepository, HttpNotificationLabelsRepository } from '../infrastructure/repositories/HttpDetectionLabelsRepository'
@@ -105,3 +111,11 @@ export const getCameraPrivacySchedules = new GetCameraPrivacySchedules(cameraRep
 export const createCameraPrivacySchedule = new CreateCameraPrivacySchedule(cameraRepository)
 export const updateCameraPrivacySchedule = new UpdateCameraPrivacySchedule(cameraRepository)
 export const deleteCameraPrivacySchedule = new DeleteCameraPrivacySchedule(cameraRepository)
+export const setPrivacyStrategy = new SetPrivacyStrategy(cameraRepository)
+
+// PTZ use cases
+export const ptzMove = new PtzMove(cameraRepository)
+export const ptzStop = new PtzStop(cameraRepository)
+export const ptzSavePreset = new PtzSavePreset(cameraRepository)
+export const ptzGoToPreset = new PtzGoToPreset(cameraRepository)
+export const configurePtzParking = new ConfigurePtzParking(cameraRepository)

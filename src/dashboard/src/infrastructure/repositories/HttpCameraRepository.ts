@@ -34,6 +34,8 @@ interface CameraDto {
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
+  ptzSupported: boolean
+  privacyModeStrategy: string
 }
 
 interface CameraStatusDto {
@@ -233,6 +235,43 @@ export class HttpCameraRepository implements CameraRepository {
       `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
     )
   }
+
+  async setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera> {
+    const payload = await patchJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy-strategy`,
+      { strategy },
+    )
+    return mapCamera(payload)
+  }
+
+  async ptzMove(cameraId: string, direction: string, speed: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/move`,
+      { direction, speed },
+    )
+  }
+
+  async ptzStop(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/stop`)
+  }
+
+  async ptzSavePreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`,
+      { presetId },
+    )
+  }
+
+  async ptzGoToPreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/goto`,
+      { presetId },
+    )
+  }
+
+  async ptzConfigureParking(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
+  }
 }
 
 function mapCamera(camera: CameraDto): Camera {
@@ -258,6 +297,8 @@ function mapCamera(camera: CameraDto): Camera {
     privacyModeActive: camera.privacyModeActive ?? false,
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
+    ptzSupported: camera.ptzSupported ?? false,
+    privacyModeStrategy: (camera.privacyModeStrategy || 'software') as Camera['privacyModeStrategy'],
   }
 }
 

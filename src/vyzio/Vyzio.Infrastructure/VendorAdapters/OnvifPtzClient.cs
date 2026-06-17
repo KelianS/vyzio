@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
@@ -36,11 +37,13 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
 
     public async Task ContinuousMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)
     {
+        var panStr = pan.ToString("F2", CultureInfo.InvariantCulture);
+        var tiltStr = tilt.ToString("F2", CultureInfo.InvariantCulture);
         var body = $"""
             <ContinuousMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
               <ProfileToken>{profileToken}</ProfileToken>
               <Velocity>
-                <PanTilt x="{pan:F2}" y="{tilt:F2}" xmlns="http://www.onvif.org/ver10/schema"/>
+                <PanTilt x="{panStr}" y="{tiltStr}" xmlns="http://www.onvif.org/ver10/schema"/>
               </Velocity>
             </ContinuousMove>
             """;
@@ -91,7 +94,7 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
         var url = $"http://{camera.Host}:{port}/onvif/{service}";
         var envelope = BuildEnvelope(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
 
-        using var http = httpClientFactory.CreateClient("onvif");
+        var http = httpClientFactory.CreateClient("onvif");  // factory manages lifetime — don't dispose
         using var content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml");
 
         try

@@ -22,6 +22,13 @@ import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftC
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
+import type { PtzMove } from '../../application/use-cases/PtzMove'
+import type { PtzStop } from '../../application/use-cases/PtzStop'
+import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
+import type { PtzSavePreset } from '../../application/use-cases/PtzSavePreset'
+import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
+import { PtzControlPanel } from './PtzControlPanel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
 import { useVendorAssistance } from '../hooks/useVendorAssistance'
@@ -53,6 +60,12 @@ interface CameraOnboardingViewProps {
   createPrivacySchedule: CreateCameraPrivacySchedule
   deletePrivacySchedule: DeleteCameraPrivacySchedule
   batchTogglePrivacyMode: BatchToggleCameraPrivacyMode
+  setPrivacyStrategy: SetPrivacyStrategy
+  ptzMove: PtzMove
+  ptzStop: PtzStop
+  ptzGoToPreset: PtzGoToPreset
+  ptzSavePreset: PtzSavePreset
+  configurePtzParking: ConfigurePtzParking
   allCameras: Camera[]
   apiBaseUrl: string
 }
@@ -136,6 +149,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
   const [dvripMode, setDvripMode] = useState(false)
+  const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
+  const [strategySaving, setStrategySaving] = useState(false)
+  const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
 
   const { toast } = useToast()
 
@@ -236,6 +252,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setDetectionAvailableLabels([])
     setDetectionContinuousRecording(false)
     setShowLive(false)
+    setPendingStrategy(selectedCamera.privacyModeStrategy ?? 'software')
+    setStrategyFeedback(null)
     setDetectionConfigLoading(true)
     props.getCameraDetectionConfig.execute(selectedCamera.id)
       .then((config) => {
@@ -375,7 +393,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       selectDiscoveryCandidate(selection.index, nextResults)
       setFormMessage(
         refreshedCandidate.streamPath
-          ? 'Candidat rafraichi. Le flux RTSP semble maintenant exploitable.'
+          ? 'Candidat rafraichi. La camera semble maintenant joignable.'
           : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.',
       )
     } catch (error: unknown) {
@@ -620,15 +638,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       case 'hostname_probe':
         return 'Nom reseau'
       case 'rtsp_probe':
-        return 'RTSP local'
+        return 'Flux local'
       case 'network_scan':
-        return 'Scan RTSP'
+        return 'Scan reseau'
       case 'http_probe':
         return 'HTTP camera'
       case 'http_service':
         return 'HTTP generique'
       case 'dvrip_probe':
-        return 'DVRIP/XMEye probe'
+        return 'Connexion alternative detectee'
       default:
         return discoverySource
     }
@@ -645,17 +663,17 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       case 'hostname_camera_hint':
         return 'Nom reseau evocateur d une camera'
       case 'rtsp_responding':
-        return 'Port RTSP joignable'
+        return 'Port de flux joignable'
       case 'http_camera_signature':
         return 'Interface web camera reconnue'
       case 'rtsp_path_known':
-        return 'Chemin RTSP deja connu'
+        return 'Chemin de flux deja connu'
       case 'vendor_hint_detected':
         return 'Constructeur probable detecte'
       case 'mac_address_observed':
         return 'Adresse MAC observee'
       case 'dvrip_port_detected':
-        return 'Port DVRIP/XMEye detecte'
+        return 'Connexion alternative possible'
       default:
         return reason
     }
@@ -687,7 +705,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <dd>{formatVendorFamily(vendorFamily)}</dd>
           </div>
           <div>
-            <dt>RTSP actif</dt>
+            <dt>Connexion active</dt>
             <dd>
               <span className={`camera-rtsp-badge ${rtspActive ? 'ready' : 'missing'}`}>
                 {rtspActive ? 'Oui' : 'Non'}
@@ -787,11 +805,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               <dd>{formatMutedList(technicalDetails?.onvifPortsDetected)}</dd>
             </div>
             <div>
-              <dt>Ports RTSP detectes</dt>
+              <dt>Ports flux detectes</dt>
               <dd>{formatMutedList(technicalDetails?.rtspPortsDetected)}</dd>
             </div>
             <div>
-              <dt>Flux RTSP detectes</dt>
+              <dt>Chemins de flux detectes</dt>
               <dd>{formatMutedList(technicalDetails?.rtspPathsDetected)}</dd>
             </div>
           </dl>
@@ -1004,14 +1022,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   <section className="camera-readiness-callout" aria-live="polite">
                     <strong>Camera non prete pour l'ajout</strong>
                     <p>
-                      Le flux RTSP n'est pas encore actif. Activez-le d'abord sur la camera, puis
-                      revenez ici pour l'ajouter au catalogue.
+                      La connexion a la camera n'est pas encore active. Configurez-la d'abord via son
+                      application, puis revenez ici pour l'ajouter au catalogue.
                     </p>
                     {vendorAssistanceState.data?.markdown ? (
                       <p>Suivez la notice constructeur ci-dessous pour l'activer pas a pas.</p>
                     ) : (
                       <p>
-                        Quand le RTSP sera disponible, le formulaire d'ajout reapparaitra
+                        Quand la camera sera accessible, le formulaire d'ajout reapparaitra
                         automatiquement.
                       </p>
                     )}
@@ -1020,15 +1038,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
                 {dvripFallbackAvailable ? (
                   <section className="camera-readiness-callout dvrip-fallback" aria-live="polite">
-                    <strong>Mode DVRIP disponible (fallback)</strong>
+                    <strong>Mode de connexion alternatif disponible</strong>
                     <p>
-                      Ce protocole propriétaire (ICSee, Annke, Sannce, Zosi et autres OEM Xiongmai)
-                      peut être utilisé si le RTSP n'est pas accessible. Il passe par go2rtc comme
-                      passerelle transparente.
+                      Ce mode de connexion alternatif (ICSee, Annke, Sannce, Zosi et marques
+                      similaires) peut être utilisé si la connexion standard n'est pas accessible.
                     </p>
                     <p style={{ fontSize: '0.85rem', opacity: 0.75 }}>
-                      Si c'est une camera sur batterie, elle doit être éveillée via l'application
-                      ICSee avant la vérification. Elle restera active tant que le flux est ouvert.
+                      Si c'est une camera sur batterie, elle doit être éveillée via son application
+                      avant la vérification. Elle restera active tant que la connexion est ouverte.
                     </p>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 8 }}>
                       <input
@@ -1037,7 +1054,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         onChange={(e) => handleDvripModeToggle(e.target.checked)}
                         style={{ accentColor: 'currentColor' }}
                       />
-                      Utiliser le mode DVRIP (ne pas activer si RTSP est disponible)
+                      Utiliser ce mode alternatif (ne pas activer si la connexion standard fonctionne)
                     </label>
                   </section>
                 ) : null}
@@ -1099,7 +1116,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </label>
                     {!dvripMode ? (
                       <label>
-                        <span>Chemin RTSP</span>
+                        <span>Chemin de flux</span>
                         <input
                           value={form.streamPath ?? ''}
                           onChange={(event) => updateForm({ streamPath: event.target.value || null })}
@@ -1109,7 +1126,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     ) : (
                       <label>
                         <span>Protocole</span>
-                        <input value="DVRIP / XMEye" readOnly style={{ opacity: 0.6 }} />
+                        <input value="Mode alternatif (ICSee / XMEye)" readOnly style={{ opacity: 0.6 }} />
                       </label>
                     )}
                     <label>
@@ -1130,32 +1147,21 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    {!dvripMode ? (
-                      <button
+                    <button
                         className="secondary-cta"
                         type="button"
                         onClick={handleVerifyDraft}
                         disabled={actionLoading || !canVerifyDraft}
                       >
-                        {actionLoading ? 'Traitement...' : 'Verifier le flux'}
+                        {actionLoading ? 'Traitement...' : 'Verifier la connexion'}
                       </button>
-                    ) : (
-                      <button
-                        className="secondary-cta"
-                        type="button"
-                        onClick={handleVerifyDraft}
-                        disabled={actionLoading || !canVerifyDraft}
-                      >
-                        {actionLoading ? 'Traitement...' : 'Verifier la connexion DVRIP'}
-                      </button>
-                    )}
                     <button
                       className="primary-cta"
                       type="button"
                       onClick={handleCreate}
                       disabled={actionLoading || !canAddConfiguredCamera}
                     >
-                      {actionLoading ? 'Traitement...' : dvripMode ? 'Ajouter en mode DVRIP' : 'Ajouter'}
+                      {actionLoading ? 'Traitement...' : 'Ajouter'}
                     </button>
                   </div>
 
@@ -1222,6 +1228,86 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </div>
                     </section>
 
+                    {selectedCamera?.ptzSupported && selectedCameraId && (
+                      <section className="camera-detail-section">
+                        <h3>Contrôle PTZ</h3>
+                        <PtzControlPanel
+                          cameraId={selectedCameraId}
+                          ptzMove={props.ptzMove}
+                          ptzStop={props.ptzStop}
+                          ptzGoToPreset={props.ptzGoToPreset}
+                          ptzSavePreset={props.ptzSavePreset}
+                          configurePtzParking={props.configurePtzParking}
+                        />
+                      </section>
+                    )}
+
+                    {selectedCamera && selectedCameraId && (
+                      <section className="camera-detail-section">
+                        <h3>Mode vie privée</h3>
+                        <div className="privacy-strategy-selector">
+                          {(
+                            [
+                              { value: 'software', label: 'Logiciel uniquement', desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.' },
+                              { value: 'ptz_parking', label: 'Orientation vers zone neutre', desc: 'La caméra pivote vers un endroit non filmé et l\'enregistrement est désactivé.', requiresPtz: true },
+                              { value: 'hardware', label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresHw: true },
+                            ] as const
+                          ).map(({ value, label, desc, requiresPtz, requiresHw }) => {
+                            const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && !selectedCamera.privacyVendorCut && selectedCamera.vendorFamily !== 'tplink_tapo')
+                            return (
+                              <label key={value} className={`privacy-strategy-option${disabled ? ' opacity-50' : ''}`} style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}>
+                                <input
+                                  type="radio"
+                                  name="privacyStrategy"
+                                  value={value}
+                                  checked={pendingStrategy === value}
+                                  disabled={disabled}
+                                  onChange={() => { setPendingStrategy(value); setStrategyFeedback(null) }}
+                                />
+                                <span className="privacy-strategy-label">
+                                  <strong>{label}</strong>
+                                  <span>{desc}</span>
+                                </span>
+                              </label>
+                            )
+                          })}
+
+                          {pendingStrategy === 'ptz_parking' && (
+                            <div className="privacy-strategy-warning">
+                              <span className="privacy-strategy-warning-icon">⚠</span>
+                              <span>La caméra pivote vers une zone non sensible et l'enregistrement est désactivé dans Vyzio, mais elle reste physiquement accessible sur votre réseau local.</span>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            className="privacy-strategy-save-btn"
+                            disabled={strategySaving || pendingStrategy === selectedCamera.privacyModeStrategy}
+                            onClick={async () => {
+                              if (!pendingStrategy) return
+                              setStrategySaving(true)
+                              setStrategyFeedback(null)
+                              try {
+                                await props.setPrivacyStrategy.execute(selectedCameraId, pendingStrategy)
+                                setStrategyFeedback('Stratégie enregistrée.')
+                                camerasState.reload()
+                              } catch {
+                                setStrategyFeedback('Erreur lors de la sauvegarde.')
+                              } finally {
+                                setStrategySaving(false)
+                              }
+                            }}
+                          >
+                            {strategySaving ? 'Enregistrement...' : 'Enregistrer la stratégie'}
+                          </button>
+
+                          {strategyFeedback && (
+                            <p className="ptz-feedback">{strategyFeedback}</p>
+                          )}
+                        </div>
+                      </section>
+                    )}
+
                     <section className="camera-detail-section">
                       <h3>Modifier</h3>
                       <div className="camera-form-grid compact">
@@ -1253,7 +1339,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         </label>
                         {editForm.streamProtocol !== 'dvrip' ? (
                           <label>
-                            <span>Chemin RTSP</span>
+                            <span>Chemin de flux</span>
                             <input
                               value={editForm.streamPath ?? ''}
                               onChange={(event) =>
@@ -1264,7 +1350,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         ) : (
                           <label>
                             <span>Protocole</span>
-                            <input value="DVRIP / XMEye" readOnly style={{ opacity: 0.6 }} />
+                            <input value="Mode alternatif (ICSee / XMEye)" readOnly style={{ opacity: 0.6 }} />
                           </label>
                         )}
                         <label>
@@ -1365,7 +1451,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         actionLoading || selectedCamera?.validationState === 'pending_removal'
                       }
                     >
-                      Verifier le flux
+                      Verifier la connexion
                     </button>
                     <button
                       className="danger-cta"

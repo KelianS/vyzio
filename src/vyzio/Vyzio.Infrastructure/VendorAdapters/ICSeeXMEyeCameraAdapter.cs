@@ -195,8 +195,8 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
         return Encoding.UTF8.GetString(body, 0, len);
     }
 
-    // Sofia hash: pairs of MD5 hex chars (lowercase) summed mod 62, mapped to [0-9A-Za-z].
-    // Validated: sofia_hash("a4m3h5") == "6DDKEOQCGQGGILIK"
+    // Sofia hash: pairs of nibble values (0-15) from MD5 hex, summed mod 62, mapped to [0-9A-Za-z].
+    // Validated live against 192.168.1.193: sofia_hash("a4m3h5") == "6DDKEOQCGQGGILIK"
     internal static string SofiaHash(string password)
     {
         var md5 = MD5.HashData(Encoding.UTF8.GetBytes(password));
@@ -204,11 +204,14 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
         var sb = new StringBuilder(16);
         for (var i = 0; i < 32; i += 2)
         {
-            var b = (hex[i] + hex[i + 1]) % 62;
+            // Each hex digit gives its nibble value 0–15, NOT its ASCII value.
+            var b = (HexNibble(hex[i]) + HexNibble(hex[i + 1])) % 62;
             sb.Append(b < 10 ? (char)('0' + b) : b < 36 ? (char)('A' + b - 10) : (char)('a' + b - 36));
         }
         return sb.ToString();
     }
+
+    private static int HexNibble(char c) => c >= 'a' ? c - 'a' + 10 : c - '0';
 
     private static string DirectionToCommand(PtzDirection direction) => direction switch
     {
