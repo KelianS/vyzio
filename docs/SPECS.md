@@ -249,13 +249,32 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le mode vie privee doit empecher toute ingestion du flux camera par le moteur de detection ; aucun enregistrement, aucune detection, aucune notification ne doit etre genere pour une camera en mode vie privee ;
 - le flux RTSP de la camera ne doit pas etre accessible depuis Vyzio ni depuis Frigate pendant la periode de vie privee ;
 - le mode vie privee peut etre active manuellement (bascule instantanee) ou via une planification recurrente (jours de la semaine + plage horaire) ;
-- le statut vie privee de chaque camera doit etre clairement visible dans l'interface (icone ou badge distinct de l'etat "hors ligne") ;
+- le statut vie privee de chaque camera doit etre clairement visible dans l'interface (icone ou badge distinct de l'etat "hors ligne") ; le libelle du badge doit reflechir la strategie active ("Cache objectif", "Camera orientee — enregistrement desactive", "Enregistrement desactive") ;
 - la vue live d'une camera en mode vie privee doit afficher un etat explicite ("Camera en pause — vie privee") plutot qu'un echec de chargement ;
 - une planification ne doit pas pouvoir etre creee sans plage horaire valide (heure de debut < heure de fin ou gestion explicite du passage minuit) ;
 - en cas de conflit entre une activation manuelle et une planification, l'activation manuelle est prioritaire : la planification ne peut pas reactivation automatiquement une camera desactivee manuellement ; l'utilisateur doit reactiver manuellement pour revenir au pilotage automatique ;
 - l'etat du mode vie privee doit survivre a un redemarrage du systeme (persistance) ;
 - la desactivation du mode vie privee (manuelle ou fin de planification) doit restaurer le flux camera sans intervention utilisateur supplementaire ;
 - l'interface doit permettre d'activer ou de desactiver le mode vie privee sur plusieurs cameras simultanement (selection multiple ou action globale "tout couper / tout reactiver"), sans reload Frigate separe par camera — un seul rechargement pour l'ensemble de la selection.
+
+### 9.3 Stratégie de coupure par caméra (PTZ parking)
+
+> **En tant qu'utilisateur avec une caméra PTZ**, je veux qu'elle pivote physiquement à l'activation du mode vie privée, afin d'avoir un signal visuel et physique que la caméra ne capture plus ma pièce.
+
+> **En tant qu'utilisateur**, je veux choisir la stratégie de mode vie privée pour chaque caméra (logiciel, parking PTZ, ou cache matériel si disponible), afin d'adapter le niveau de protection aux capacités de chaque modèle.
+
+> **En tant qu'utilisateur avec une caméra PTZ**, je veux définir la position de surveillance depuis l'interface en orientant la caméra manuellement puis en cliquant "Enregistrer", afin que Vyzio sache toujours où la ramener après le mode vie privée.
+
+> **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue live, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien.
+
+**Règles fonctionnelles :**
+
+- chaque caméra peut avoir une stratégie de mode vie privée indépendante : `"software"` (désactivation Frigate uniquement), `"ptz_parking"` (mouvement physique + désactivation Frigate), `"hardware"` (coupure native firmware, ex. Tapo) ;
+- l'option `ptz_parking` n'est proposée que si la caméra supporte le PTZ — cette capacité doit être détectée automatiquement à l'onboarding et configurable manuellement ;
+- le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers la butée mécanique ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ;
+- l'utilisateur doit pouvoir définir la position de surveillance (preset "home") via des contrôles PTZ live dans l'interface — une fois orientée, il clique "Définir comme position de surveillance" ;
+- les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) — c'est le parcours d'usage quotidien ;
+- si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et de la position de surveillance avant de terminer.
 
 ---
 
