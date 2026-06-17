@@ -1420,6 +1420,8 @@
 .camera-form-field input[type='datetime-local'] {
   padding-right: 10px;
   color-scheme: light;
+  min-width: 0;
+  font-size: 0.82rem;
 }
 
 .camera-form-field input[type='range'] {
@@ -2540,9 +2542,11 @@
 
 .history-filters {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   padding: 16px;
   align-content: start;
+  min-width: 0;
 }
 
 
@@ -2822,16 +2826,14 @@
   opacity: 0.75;
 }
 
-.ptz-btn--stop {
-  background: var(--alert-high);
-  color: #fff;
-  border-color: var(--alert-high);
-  font-size: 0.75rem;
+.ptz-btn--home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
 }
-
-.ptz-btn--stop:hover {
-  background: #a84030;
-  border-color: #a84030;
+.ptz-btn--home:hover {
+  opacity: 1;
 }
 
 .ptz-actions {
@@ -2873,6 +2875,9 @@
   color: var(--alert-ok);
   margin: 0;
 }
+.ptz-feedback--error {
+  color: var(--alert-high);
+}
 
 /* PTZ overlay on live feed */
 .live-feed-ptz-overlay {
@@ -2896,10 +2901,6 @@
   border-color: transparent;
 }
 
-.live-feed-ptz-overlay .ptz-btn--stop {
-  background: rgba(198, 92, 61, 0.75);
-  border-color: transparent;
-}
 
 .live-feed-ptz-overlay .ptz-return-btn {
   font-size: 0.72rem;

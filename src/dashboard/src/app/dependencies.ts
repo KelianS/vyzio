@@ -38,8 +38,7 @@ import { CreateCameraPrivacySchedule } from '../application/use-cases/CreateCame
 import { UpdateCameraPrivacySchedule } from '../application/use-cases/UpdateCameraPrivacySchedule'
 import { DeleteCameraPrivacySchedule } from '../application/use-cases/DeleteCameraPrivacySchedule'
 import { SetPrivacyStrategy } from '../application/use-cases/SetPrivacyStrategy'
-import { PtzMove } from '../application/use-cases/PtzMove'
-import { PtzStop } from '../application/use-cases/PtzStop'
+import { PtzStep } from '../application/use-cases/PtzStep'
 import { PtzSavePreset } from '../application/use-cases/PtzSavePreset'
 import { PtzGoToPreset } from '../application/use-cases/PtzGoToPreset'
 import { ConfigurePtzParking } from '../application/use-cases/ConfigurePtzParking'
@@ -114,8 +113,7 @@ export const deleteCameraPrivacySchedule = new DeleteCameraPrivacySchedule(camer
 export const setPrivacyStrategy = new SetPrivacyStrategy(cameraRepository)
 
 // PTZ use cases
-export const ptzMove = new PtzMove(cameraRepository)
-export const ptzStop = new PtzStop(cameraRepository)
+export const ptzStep = new PtzStep(cameraRepository)
 export const ptzSavePreset = new PtzSavePreset(cameraRepository)
 export const ptzGoToPreset = new PtzGoToPreset(cameraRepository)
 export const configurePtzParking = new ConfigurePtzParking(cameraRepository)

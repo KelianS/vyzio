@@ -91,6 +91,13 @@ export function DetectionHistoryView({
     }
   }
 
+  function isoToDatetimeLocal(iso: string): string {
+    if (!iso) return ''
+    const d = new Date(iso)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
   function resetFilters() {
     setFilterCamera('')
     setFilterLabel('')
@@ -172,12 +179,12 @@ export function DetectionHistoryView({
 
           <div className="camera-form-field">
             <label>Depuis</label>
-            <input type="datetime-local" value={filterFrom} onChange={(e) => { setFilterFrom(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
+            <input type="datetime-local" value={isoToDatetimeLocal(filterFrom)} onChange={(e) => { setFilterFrom(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
           </div>
 
           <div className="camera-form-field">
             <label>Jusqu'à</label>
-            <input type="datetime-local" value={filterTo} onChange={(e) => { setFilterTo(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
+            <input type="datetime-local" value={isoToDatetimeLocal(filterTo)} onChange={(e) => { setFilterTo(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
           </div>
 
           <button type="button" className="secondary-cta" onClick={resetFilters}>

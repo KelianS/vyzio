@@ -41,8 +41,7 @@ import {
   createCameraPrivacySchedule,
   deleteCameraPrivacySchedule,
   setPrivacyStrategy,
-  ptzMove,
-  ptzStop,
+  ptzStep,
   ptzSavePreset,
   ptzGoToPreset,
   configurePtzParking,
@@ -115,8 +114,7 @@ function App() {
             deletePrivacySchedule={deleteCameraPrivacySchedule}
             batchTogglePrivacyMode={batchToggleCameraPrivacyMode}
             setPrivacyStrategy={setPrivacyStrategy}
-            ptzMove={ptzMove}
-            ptzStop={ptzStop}
+            ptzStep={ptzStep}
             ptzGoToPreset={ptzGoToPreset}
             ptzSavePreset={ptzSavePreset}
             configurePtzParking={configurePtzParking}
@@ -628,8 +626,7 @@ function LiveFeedModal({ cameraId, apiBaseUrl, label, ptzSupported }: { cameraId
         <div className="live-feed-ptz-overlay">
           <PtzControlPanel
             cameraId={cameraId}
-            ptzMove={ptzMove}
-            ptzStop={ptzStop}
+            ptzStep={ptzStep}
             ptzGoToPreset={ptzGoToPreset}
             compact
           />

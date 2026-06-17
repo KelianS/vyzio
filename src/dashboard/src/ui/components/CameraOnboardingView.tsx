@@ -23,8 +23,7 @@ import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
-import type { PtzMove } from '../../application/use-cases/PtzMove'
-import type { PtzStop } from '../../application/use-cases/PtzStop'
+import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { PtzSavePreset } from '../../application/use-cases/PtzSavePreset'
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
@@ -61,8 +60,7 @@ interface CameraOnboardingViewProps {
   deletePrivacySchedule: DeleteCameraPrivacySchedule
   batchTogglePrivacyMode: BatchToggleCameraPrivacyMode
   setPrivacyStrategy: SetPrivacyStrategy
-  ptzMove: PtzMove
-  ptzStop: PtzStop
+  ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   ptzSavePreset: PtzSavePreset
   configurePtzParking: ConfigurePtzParking
@@ -1234,8 +1232,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         <h3>Contrôle PTZ</h3>
                         <PtzControlPanel
                           cameraId={selectedCameraId}
-                          ptzMove={props.ptzMove}
-                          ptzStop={props.ptzStop}
+                          ptzStep={props.ptzStep}
                           ptzGoToPreset={props.ptzGoToPreset}
                           ptzSavePreset={props.ptzSavePreset}
                           configurePtzParking={props.configurePtzParking}

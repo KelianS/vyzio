@@ -43,8 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreateCameraPrivacyScheduleUseCase>();
         services.AddScoped<UpdateCameraPrivacyScheduleUseCase>();
         services.AddScoped<DeleteCameraPrivacyScheduleUseCase>();
-        services.AddScoped<PtzMoveUseCase>();
-        services.AddScoped<PtzStopUseCase>();
+        services.AddScoped<PtzStepUseCase>();
         services.AddScoped<PtzSavePresetUseCase>();
         services.AddScoped<PtzGoToPresetUseCase>();
         services.AddScoped<ConfigurePtzParkingPositionUseCase>();

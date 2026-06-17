@@ -13,7 +13,7 @@ file sealed record TogglePrivacyRequest(bool Active);
 file sealed record BatchTogglePrivacyRequest(IReadOnlyList<string> CameraIds, bool Active);
 
 // Request types for PTZ endpoints
-file sealed record PtzMoveApiRequest(string Direction, int Speed = 50);
+file sealed record PtzStepApiRequest(string Direction, int Speed = 50, int DurationMs = 80);
 file sealed record PtzPresetApiRequest(int PresetId);
 file sealed record PrivacyStrategyApiRequest(string Strategy);
 
@@ -155,24 +155,18 @@ public static class CamerasEndpoints
             return deleted ? Results.NoContent() : Results.NotFound();
         });
 
-        // PTZ control
-        group.MapPost("/{id}/ptz/move", async (string id, PtzMoveApiRequest request, PtzMoveUseCase useCase, CancellationToken ct) =>
+        // PTZ control — single step endpoint handles both tap (durationMs=80) and hold (chained calls)
+        group.MapPost("/{id}/ptz/step", async (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
         {
             try
             {
-                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct);
+                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), request.DurationMs, ct);
                 return ok ? Results.NoContent() : Results.NotFound();
             }
             catch (ArgumentException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        });
-
-        group.MapPost("/{id}/ptz/stop", async (string id, PtzStopUseCase useCase, CancellationToken ct) =>
-        {
-            var ok = await useCase.ExecuteAsync(id, ct);
-            return ok ? Results.NoContent() : Results.NotFound();
         });
 
         group.MapPost("/{id}/ptz/preset/save", async (string id, PtzPresetApiRequest request, PtzSavePresetUseCase useCase, CancellationToken ct) =>
