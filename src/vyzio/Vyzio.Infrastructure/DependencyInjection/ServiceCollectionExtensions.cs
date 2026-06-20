@@ -41,7 +41,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<OnvifPtzClient>();
         services.AddSingleton<IVendorCameraAdapter, TapoCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapter, ICSeeXMEyeCameraAdapter>();
-        services.AddSingleton<IVendorCameraAdapter, V380ProCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapter, OnvifCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapterFactory, VendorCameraAdapterFactory>();
 
