@@ -13,6 +13,10 @@ internal sealed class OnvifCameraAdapter(OnvifPtzClient ptz, ILogger<OnvifCamera
 {
     public string VendorFamily => "onvif";
 
+    // Serializes step commands per camera: prevents concurrent ContinuousMove/Stop sequences
+    // that would overwhelm budget cameras (V380 only handles one ONVIF connection at a time).
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Threading.SemaphoreSlim> _stepLocks = new();
+
     public Task<bool> SupportsPrivacyModeAsync(Camera camera, CancellationToken ct = default)
     {
         logger.LogDebug("ONVIF generic: no hardware privacy cut for {Camera}.", camera.DisplayName);
@@ -43,42 +47,67 @@ internal sealed class OnvifCameraAdapter(OnvifPtzClient ptz, ILogger<OnvifCamera
 
     public async Task PtzStepAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
     {
-        var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
-        var caps = await ptz.GetPtzCapabilitiesAsync(camera, ct);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        logger.LogInformation("PTZ [{Camera}] step {Dir} speed={Speed} — start", camera.DisplayName, direction, speed);
 
-        if (caps.SupportsRelativeMove)
+        var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
+        logger.LogInformation("PTZ [{Camera}] +{Ms}ms — profile token ready", camera.DisplayName, sw.ElapsedMilliseconds);
+
+        var caps = await ptz.GetPtzCapabilitiesAsync(camera, ct);
+        logger.LogInformation("PTZ [{Camera}] +{Ms}ms — caps ready (RelativeMove={Rel})", camera.DisplayName, sw.ElapsedMilliseconds, caps.SupportsRelativeMove);
+
+        var stepLock = _stepLocks.GetOrAdd(camera.Id, _ => new SemaphoreSlim(1, 1));
+        if (!await stepLock.WaitAsync(TimeSpan.FromMilliseconds(300), ct))
         {
-            var (pan, tilt) = DirectionToStep(direction, speed);
-            await ptz.RelativeMoveAsync(camera, token, pan, tilt, ct);
+            logger.LogInformation("PTZ [{Camera}] +{Ms}ms — skipped (previous step still in progress)", camera.DisplayName, sw.ElapsedMilliseconds);
+            return;
         }
-        else if (caps.SupportsTimeout)
+        logger.LogInformation("PTZ [{Camera}] +{Ms}ms — lock acquired", camera.DisplayName, sw.ElapsedMilliseconds);
+
+        try
         {
-            var (pan, tilt) = DirectionToSign(direction);
-            var timeoutMs = Math.Clamp(speed * 2, 40, 200);
-            await ptz.ContinuousMoveWithTimeoutAsync(camera, token, pan, tilt, timeoutMs, ct);
+            if (caps.SupportsRelativeMove)
+            {
+                var (pan, tilt) = DirectionToStep(direction, speed);
+                logger.LogInformation("PTZ [{Camera}] +{Ms}ms — sending RelativeMove pan={Pan:F4} tilt={Tilt:F4}", camera.DisplayName, sw.ElapsedMilliseconds, pan, tilt);
+                await ptz.RelativeMoveAsync(camera, token, pan, tilt);
+                logger.LogInformation("PTZ [{Camera}] +{Ms}ms — RelativeMove done", camera.DisplayName, sw.ElapsedMilliseconds);
+            }
+            else
+            {
+                var (pan, tilt) = DirectionToSign(direction);
+                var stepMs = Math.Clamp(speed * 2, 40, 200);
+                logger.LogInformation("PTZ [{Camera}] +{Ms}ms — sending ContinuousMove delay={StepMs}ms", camera.DisplayName, sw.ElapsedMilliseconds, stepMs);
+                await ptz.ContinuousMoveAsync(camera, token, pan, tilt);
+                logger.LogInformation("PTZ [{Camera}] +{Ms}ms — ContinuousMove done, waiting delay", camera.DisplayName, sw.ElapsedMilliseconds);
+                try
+                {
+                    await Task.Delay(stepMs, ct);
+                }
+                finally
+                {
+                    logger.LogInformation("PTZ [{Camera}] +{Ms}ms — sending Stop", camera.DisplayName, sw.ElapsedMilliseconds);
+                    await ptz.StopAsync(camera, token);
+                    logger.LogInformation("PTZ [{Camera}] +{Ms}ms — Stop done", camera.DisplayName, sw.ElapsedMilliseconds);
+                }
+            }
         }
-        else
+        finally
         {
-            // Fallback for cameras that only support ContinuousMove + Stop (e.g. V380 Pro).
-            // Server-side delay controls step amplitude; camera speed is ignored by firmware.
-            var (pan, tilt) = DirectionToSign(direction);
-            await ptz.ContinuousMoveAsync(camera, token, pan, tilt, ct);
-            var stepMs = Math.Clamp(speed * 2, 40, 200);
-            await Task.Delay(stepMs, ct);
-            await ptz.StopAsync(camera, token, ct);
+            stepLock.Release();
         }
     }
 
     public async Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
     {
         var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
-        await ptz.GotoPresetAsync(camera, token, presetId, ct);
+        await ptz.GotoPresetAsync(camera, token, presetId);
     }
 
     public async Task PtzSavePresetAsync(Camera camera, int presetId, CancellationToken ct = default)
     {
         var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
-        await ptz.SetPresetAsync(camera, token, presetId, ct);
+        await ptz.SetPresetAsync(camera, token, presetId);
     }
 
     // sign-only velocity for cameras that ignore magnitude (e.g. V380 Pro)

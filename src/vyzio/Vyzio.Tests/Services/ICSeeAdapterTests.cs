@@ -36,20 +36,26 @@ public class ICSeeAdapterTests
         Assert.All(result, c => Assert.Contains(c, allowed));
     }
 
-    [Theory]
-    [InlineData("Up", "DirectionUp")]
-    [InlineData("Down", "DirectionDown")]
-    [InlineData("Left", "DirectionLeft")]
-    [InlineData("Right", "DirectionRight")]
-    [InlineData("UpLeft", "DirectionLeftUp")]
-    [InlineData("UpRight", "DirectionRightUp")]
-    [InlineData("DownLeft", "DirectionLeftDown")]
-    [InlineData("DownRight", "DirectionRightDown")]
-    public void SupportsPtz_returns_true(string _, string __)
+    [Fact]
+    public void VendorFamily_is_icsee()
     {
-        // Verifies that the VendorFamily is correct and SupportsPtzAsync returns true
-        // via the direction mapping (tested indirectly via the constant table).
-        // Direct PTZ command tests require a live camera — skipped in unit tests.
-        Assert.True(true); // structural placeholder — real test is SofiaHash above
+        var adapter = new ICSeeXMEyeCameraAdapter(Microsoft.Extensions.Logging.Abstractions.NullLogger<ICSeeXMEyeCameraAdapter>.Instance);
+        Assert.Equal("icsee", adapter.VendorFamily);
+    }
+
+    [Fact]
+    public async Task SupportsPtz_returns_true()
+    {
+        var adapter = new ICSeeXMEyeCameraAdapter(Microsoft.Extensions.Logging.Abstractions.NullLogger<ICSeeXMEyeCameraAdapter>.Instance);
+        var camera = new Vyzio.Core.Entities.Camera { Slug = "c", DisplayName = "c", Host = "192.168.1.1" };
+        Assert.True(await adapter.SupportsPtzAsync(camera));
+    }
+
+    [Fact]
+    public async Task SupportsPrivacyMode_returns_false()
+    {
+        var adapter = new ICSeeXMEyeCameraAdapter(Microsoft.Extensions.Logging.Abstractions.NullLogger<ICSeeXMEyeCameraAdapter>.Instance);
+        var camera = new Vyzio.Core.Entities.Camera { Slug = "c", DisplayName = "c", Host = "192.168.1.1" };
+        Assert.False(await adapter.SupportsPrivacyModeAsync(camera));
     }
 }

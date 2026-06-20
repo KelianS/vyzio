@@ -113,82 +113,89 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 >
 > **ICSee/XMEye :** Les seules commandes DVRIP capables d'affecter le flux vidéo sont les commandes PTZ (OPPTZControl, cmd 1400). VideoEnable, PrivacyMask, VideoColor, OPSleep/OPStandby ont toutes été testées et échouent (soit Ret=606 firmware, soit sans effet sur le flux cloud P2P XMEye). PTZ parking confirmé : SetPreset + DirectionLeftUp 8s + GotoPreset.
 >
-> **V380 Pro :** ONVIF disponible (port 8899) mais privacy masks non implémentés (`GetPrivacyMasks` → "Service has no operation"), OSD non implémenté, `SetVideoEncoderConfiguration` échoue ("Missing element Multicast" — bug firmware, même sans modification du payload), `RemoveVideoEncoderConfiguration` non implémenté. La seule solution hardware viable reste le PTZ parking via ONVIF `ContinuousMove + Stop` (confirmés fonctionnels).
+> **V380 Pro :** ONVIF disponible (port 8899) mais privacy masks non implémentés (`GetPrivacyMasks` → "Service has no operation"), OSD non implémenté, `SetVideoEncoderConfiguration` échoue ("Missing element Multicast" — bug firmware, même sans modification du payload), `RemoveVideoEncoderConfiguration` non implémenté. La seule solution hardware viable reste le PTZ parking via ONVIF `ContinuousMove + Stop` (confirmés fonctionnels). Investigation port 8800 (protocole propriétaire) : port ouvert, répond à un paquet binaire Sofia-like (`9c ff ff ff` = -100 en LE, rejection), 205ms de réponse. Non standard, nécessite reverse-engineering du protocole V380 propriétaire pour contrôle précis — voir NEXTS.
 >
 > **Stratégie combinée :** Le mode `ptz_parking` est **cumulatif** avec le fallback software — la caméra pivote physiquement vers la butée ET Frigate reste désactivé (`enabled: false`). Ce double mécanisme garantit un feedback visuel clair dans l'UI ("Caméra orientée — enregistrement désactivé") et une protection même si le mouvement PTZ échoue. L'utilisateur choisit la stratégie par caméra (logicielle, PTZ parking, ou hardware natif comme Tapo) et peut définir la position de surveillance via l'interface.
 >
-> **Architecture adaptateurs — ne pas réinventer la roue :** ONVIF PTZ est un standard supporté par la quasi-totalité des PTZ du marché (V380, Hikvision, Dahua, Reolink, Axis…). L'implémentation doit être un **`OnvifCameraAdapter` générique** couvrant toutes ces caméras d'un coup — pas un adaptateur par marque. Seul ICSee nécessite un adaptateur spécifique (DVRIP, cloud-only, pas d'ONVIF). La `VendorCameraAdapterFactory` résout : `"icsee"` → DVRIP, `"tplink_tapo"` → KLAP, `"onvif"` → ONVIF générique, défaut → Null. Le parcours d'ajout doit détecter la présence d'ONVIF PTZ (port 8899 + service PTZ) et assigner `vendorFamily = "onvif"` à l'onboarding pour que toute nouvelle caméra compatible fonctionne sans code supplémentaire.
+> **Architecture adaptateurs :** ONVIF PTZ est un standard supporté par la quasi-totalité des PTZ du marché (V380, Hikvision, Dahua, Reolink, Axis…). `OnvifCameraAdapter` est générique et couvre toutes ces caméras. `VendorCameraAdapterFactory` résout : `"icsee"` → DVRIP, `"tplink_tapo"` → KLAP, `"onvif"` → ONVIF générique, `"v380_pro"` → alias `"onvif"`, défaut → Null.
+>
+> **Limitation ONVIF V380 Pro :** Le firmware V380 Pro traite toutes les commandes PTZ (ContinuousMove, Stop) en ~3s indépendamment de la connexion (keep-alive testé). Le serveur ONVIF est mono-thread. Stop est toujours exécuté ~3s après ContinuousMove. Le step précis est impossible via ONVIF sur ce firmware. L'app native V380 utilise le protocole propriétaire port 8800. `SendCommandAsync` utilise fire-and-forget 500ms pour ne pas bloquer le thread serveur.
 
 **Taches :**
 
 *Domaine / Core*
-- [ ] Ajouter `PtzSupported` (bool), `PrivacyModeStrategy` (`"software"` | `"ptz_parking"` | `"hardware"`) sur l'entité `Camera` + migration EF Core
-- [ ] Créer use case `ConfigurePtzParkingPositionUseCase` : ordonne à l'adaptateur de sauvegarder la position actuelle comme position de surveillance (preset "home")
-- [ ] Étendre `IVendorCameraAdapter` : ajouter `SupportsPtzAsync`, `PtzMoveAsync` (direction + vitesse), `PtzStopAsync`, `PtzGoToPresetAsync`, `PtzSavePresetAsync`
+- [x] Ajouter `PtzSupported` (bool), `PrivacyModeStrategy` (`"software"` | `"ptz_parking"` | `"hardware"`) sur l'entité `Camera` + migration EF Core
+- [x] Créer use case `ConfigurePtzParkingPositionUseCase` : ordonne à l'adaptateur de sauvegarder la position actuelle comme position de surveillance (preset 1)
+- [x] Étendre `IVendorCameraAdapter` : ajouter `SupportsPtzAsync`, `PtzMoveAsync`, `PtzStopAsync`, `PtzStepAsync` (default fallback Move+Stop), `PtzGoToPresetAsync`, `PtzSavePresetAsync`, `GetPtzPositionAsync`
 
 *Infrastructure — adaptateurs PTZ*
-- [ ] **`OnvifCameraAdapter`** (nouveau, générique) : implémenter PTZ via ONVIF standard — `ContinuousMove` + `Stop`, `GetPresets`, `GotoPreset`, `SetPreset`. Privacy parking : `ContinuousMove(pan=-1, tilt=-1)` ~8s → `Stop` ; retour via `GotoPreset` (preset "home" sauvegardé à la configuration) ou `ContinuousMove` inverse si presets non supportés. Couvre V380 Pro et toute future caméra ONVIF PTZ sans adaptateur supplémentaire. `VendorFamily = "onvif"`.
-- [ ] `ICSeeXMEyeCameraAdapter` : implémenter PTZ via DVRIP OPPTZControl (cmd 1400) — `DirectionUp/Down/Left/Right/LeftUp/RightUp` + `SetPreset` + `GotoPreset`. Privacy parking : SetPreset 1 (home) → DirectionLeftUp 8s → GotoPreset 1 au retour. Mettre à jour `SetPrivacyModeAsync` pour utiliser la stratégie `ptz_parking` si configurée.
-- [ ] Mettre à jour `VendorCameraAdapterFactory` : résolution `"onvif"` → `OnvifCameraAdapter`, `"icsee"` → `ICSeeXMEyeCameraAdapter`, `"tplink_tapo"` → `TapoCameraAdapter`, défaut → `NullVendorCameraAdapter`. Supprimer tout adaptateur V380-spécifique — couvert par ONVIF générique.
-- [ ] Mettre à jour le parcours d'onboarding : détecter ONVIF PTZ (port 8899 + `GetCapabilities` service PTZ présent) → assigner `vendorFamily = "onvif"` et `PtzSupported = true` automatiquement, quelle que soit la marque.
-- [ ] Mettre à jour `ToggleCameraPrivacyModeUseCase` : brancher la stratégie selon `Camera.PrivacyModeStrategy` — `"hardware"` → appel adaptateur direct (Tapo), `"ptz_parking"` → séquence parking/retour via PTZ **ET** Frigate désactivé (cumulatif), `"software"` → Frigate only
+- [x] **`OnvifCameraAdapter`** (générique) : `ContinuousMove` + `Stop` + `RelativeMove` (si `GetConfigurationOptions` déclare `RelativePanTiltTranslationSpace`). `PtzStepAsync` : RelativeMove si capable, sinon ContinuousMove + `Task.Delay(stepMs)` + Stop. `GetPtzCapabilitiesAsync` caché par caméra. `VendorFamily = "onvif"`. V380ProCameraAdapter supprimé.
+- [x] `ICSeeXMEyeCameraAdapter` : PTZ via DVRIP OPPTZControl (cmd 1400) — 8 directions + `SetPreset` + `GotoPreset`. Sofia hash MD5 validé live.
+- [x] `VendorCameraAdapterFactory` : alias `"v380_pro"` → `"onvif"`. Résolution `"onvif"` → `OnvifCameraAdapter`, `"icsee"` → `ICSeeXMEyeCameraAdapter`, `"tplink_tapo"` → `TapoCameraAdapter`, défaut → `NullVendorCameraAdapter`.
+- [x] `ToggleCameraPrivacyModeUseCase` : branching selon `Camera.PrivacyModeStrategy` — `"hardware"` → adaptateur vendor, `"ptz_parking"` → `PtzMoveAsync(DownLeft, 8s)` fire-and-forget Stop **ET** Frigate désactivé, retour → `PtzGoToPresetAsync(1)`, `"software"` → Frigate only.
+- [ ] Onboarding : détecter ONVIF PTZ à l'ajout (port 8899 + GetCapabilities) → assigner `vendorFamily = "onvif"` et `PtzSupported = true` automatiquement. Actuellement : checkbox manuelle dans la fiche caméra.
 
 *API*
-- [ ] Endpoints PTZ : `POST /api/cameras/{id}/ptz/move`, `POST /api/cameras/{id}/ptz/stop`, `POST /api/cameras/{id}/ptz/preset/save`, `POST /api/cameras/{id}/ptz/preset/goto`
-- [ ] Endpoint configuration stratégie privacy : `PATCH /api/cameras/{id}/privacy-strategy`
+- [x] `POST /api/cameras/{id}/ptz/step` — tap + hold (chaining côté UI)
+- [x] `POST /api/cameras/{id}/ptz/preset/save`
+- [x] `POST /api/cameras/{id}/ptz/preset/goto`
+- [x] `POST /api/cameras/{id}/ptz/configure-parking` — sauvegarde preset 1
+- [x] `GET /api/cameras/{id}/ptz/position` — diagnostic GetStatus
+- [x] `PATCH /api/cameras/{id}/privacy-strategy`
 
 *Dashboard — composant partagé `PtzControlPanel`*
-- [ ] Créer `ui/components/PtzControlPanel.tsx` : joystick directionnel (8 directions) + bouton stop central + bouton "Retour position surveillance" (si preset home défini). Utilisé dans deux contextes — même composant, props identiques, rendu adapté au contexte parent. N'affiche rien si `PtzSupported = false`.
+- [x] `ui/components/PtzControlPanel.tsx` : joystick 8 directions, bouton home (GotoPreset 1), bouton "Définir position de surveillance" (optionnel, contexte fiche caméra). Tap = 1 step, hold = chaining de steps jusqu'au relâcher.
 
 *Dashboard — vue live (`LiveFeedModal`)*
-- [ ] Intégrer `PtzControlPanel` en overlay sur le flux vidéo (coins ou barre basse) si `PtzSupported = true` — l'utilisateur oriente la caméra directement depuis la vue live sans quitter le flux
+- [x] `LiveFeedModal` (inline dans `App.tsx`) : overlay `PtzControlPanel` si `ptzSupported = true`
 
 *Dashboard — fiche caméra (configuration)*
-- [ ] Intégrer `PtzControlPanel` dans la fiche caméra, accompagné du bouton **"Définir position de surveillance"** (déclenche `ConfigurePtzParkingPositionUseCase`, feedback de confirmation) — permet de positionner et sauvegarder le preset home dans un contexte dédié
-- [ ] **Section "Mode vie privée"** : sélecteur de stratégie (`Enregistrement désactivé` / `Parking PTZ` / `Cache objectif`) avec description contextuelle ; `Parking PTZ` n'est proposé que si `PtzSupported = true`, `Cache objectif` que si `SupportsHardwarePrivacy = true`. Quand l'utilisateur sélectionne `Parking PTZ`, afficher un avertissement inline : *"La caméra pivote vers une zone neutre et l'enregistrement est désactivé dans Vyzio. Le flux vidéo reste techniquement accessible sur votre réseau local si quelqu'un connaît l'adresse de la caméra."*
-- [ ] **Badge vie privée** : libellé selon la stratégie active — "Cache objectif" / "Caméra orientée — enregistrement désactivé" / "Enregistrement désactivé"
+- [x] `PtzControlPanel` intégré dans `CameraOnboardingView` avec `ptzSavePreset` + `configurePtzParking`
+- [x] Sélecteur de stratégie privacy (`software` / `ptz_parking` / `hardware`) avec descriptions et contraintes (`ptz_parking` masqué si `!ptzSupported`, `hardware` masqué si pas Tapo)
+- [x] Badge vie privée : "Coupure matérielle confirmée" / "Caméra orientée — enregistrement désactivé" (ptz_parking) / "Enregistrement désactivé"
 
 *Dashboard — parcours d'ajout (onboarding)*
-- [ ] Si PTZ détecté à l'ajout (`PtzSupported = true`) : étape "Configurer le mode vie privée" avec sélecteur de stratégie et, si `ptz_parking` choisi, `PtzControlPanel` intégré pour orienter et sauvegarder la position de surveillance immédiatement — même composant, troisième contexte
+- [ ] Si PTZ détecté automatiquement à l'ajout : étape dédiée "Configurer position de surveillance". Actuellement la fiche caméra couvre ce cas manuellement.
 
 *Tests*
-- [ ] Tests unitaires `OnvifCameraAdapter` PTZ : mock ONVIF, séquence ContinuousMove → Stop → GotoPreset ; fallback ContinuousMove inverse si preset absent
-- [ ] Tests unitaires `ICSeeXMEyeCameraAdapter` PTZ : connexion DVRIP, séquence login → SetPreset → DirectionLeftUp → Stop → GotoPreset
-- [ ] Tests unitaires `ToggleCameraPrivacyModeUseCase` : branching correct selon `PrivacyModeStrategy`
+- [x] Tests unitaires `OnvifCameraAdapter` : VendorFamily, SupportsPrivacyMode, SupportsPtz, PtzMoveAsync (GetProfiles + ContinuousMove), PtzStopAsync, direction → velocity mapping
+- [x] Tests unitaires `ICSeeXMEyeCameraAdapter` : SofiaHash validé live, structure hash (16 chars, charset)
+- [x] Tests unitaires `ToggleCameraPrivacyModeUseCase` : branching hardware/software/ptz_parking, PtzMove appelé, GoToPreset au retour, skip si SupportsPtz=false
+- [x] Tests unitaires `SetCameraPrivacyStrategyUseCase` : valeurs valides, rejet valeur inconnue, camera not found
 
 *Catalogue constructeur*
-- [ ] Mettre à jour `vendors/icsee.md` : PTZ parking comme stratégie privacy, mention que les caméras ICSee avec ONVIF utilisent l'adaptateur générique
-- [ ] Mettre à jour `vendors/v380_pro.md` : PTZ parking via adaptateur ONVIF générique
+- [ ] Mettre à jour `vendors/icsee.md` : PTZ parking comme stratégie privacy, mention ONVIF générique si disponible
+- [ ] Mettre à jour `vendors/v380_pro.md` : adaptateur ONVIF générique, limitation firmware 3s, port 8800 investigation
 
 **Critères de validation :**
-- Caméra ICSee PTZ parking : pivote face au mur à l'activation et revient à la position de surveillance à la désactivation
-- Caméra V380 Pro PTZ parking : idem via ONVIF, sans adaptateur V380-spécifique
-- Ajout d'une nouvelle caméra ONVIF PTZ inconnue : fonctionne automatiquement avec `vendorFamily = "onvif"`, sans code ajouté
-- L'utilisateur peut définir sa position de surveillance via les contrôles live et un bouton dédié
-- Une caméra sans PTZ ne propose pas l'option "PTZ parking" dans la configuration
-- Une caméra Tapo continue d'utiliser le cache objectif physique (non impacté par cet item)
-- La stratégie choisie persiste après redémarrage de Vyzio
+- Caméra ICSee PTZ parking : pivote à l'activation, revient à la position de surveillance à la désactivation ✓
+- Caméra V380 Pro PTZ parking : idem via ONVIF générique ✓ (step imprécis — limitation firmware, voir NEXTS)
+- Nouvelle caméra ONVIF PTZ : fonctionne avec `vendorFamily = "onvif"` sans code supplémentaire ✓
+- L'utilisateur peut définir sa position de surveillance depuis la vue live et la fiche caméra ✓
+- Caméra sans PTZ : pas d'option "PTZ parking" dans la configuration ✓
+- Caméra Tapo : non impactée ✓
+- La stratégie choisie persiste après redémarrage ✓
 
 ---
 
-### 1.0.2 - P2 - PTZ step précis et bouton Home sur V380 Pro
+### 1.0.2 - P2 - PTZ step précis V380 Pro — investigation close
 
-> **Contexte** : Investigation ONVIF juin 2026 sur `192.168.1.135`. Le firmware V380 Pro n'implémente que `ContinuousMove` + `Stop` — `RelativeMove`, `GetStatus`, `SetPreset`, `GotoPreset` retournent tous HTTP 400 "method not implemented". La `PTZConfiguration` ne déclare aucun espace AbsoluteMove ni RelativeMove. Seul `DefaultContinuousPanTiltVelocitySpace` est présent. Probe confirmé par script SOAP brut (`tools/camera-probe/probe_v380_ptz.py`).
-
-**Problème 1 — Steps trop grands (90°/tap)** : La V380 ignore vraisemblablement le paramètre vitesse dans `ContinuousMove` et tourne à pleine vitesse (~360°/s). Avec ~50ms de latence réseau entre Move et Stop, chaque tap fait ~18°. En pratique l'utilisateur constate ~90° → la latence réelle est plus proche de 250ms (pipeline HTTP + traitement firmware).
-
-**Problème 2 — Bouton Home sans effet** : `PtzGoToPresetAsync` → `GotoPreset` ONVIF → HTTP 400. Le bouton n'a aucun effet sur V380.
+> **Contexte** : Investigation ONVIF juin 2026 sur `192.168.1.135`. Le firmware V380 Pro est mono-thread côté ONVIF : chaque commande moteur (ContinuousMove, Stop) prend ~3s à répondre, indépendamment de la connexion (keep-alive testé, connexions parallèles testées — aucune différence). Stop est systématiquement exécuté ~3s après ContinuousMove — le step précis est impossible via ONVIF sur ce firmware. `SendCommandAsync` fire-and-forget 500ms est le meilleur compromis. `GetConfigurationOptions` répond en 16ms — seules les commandes moteur sont bloquantes.
+>
+> **Port 8800 (propriétaire) :** port ouvert, répond à un paquet DVRIP-like en 205ms avec `9c ff ff ff` (= -100 en LE int32, code de rejet). Protocole non standard, nécessite reverse-engineering. Estimation : 2-3 jours pour un PTZ de base. L'app native utilise ce protocole et n'a pas la limitation 3s.
+>
+> **`RelativeMove`, `GetStatus`, `SetPreset`, `GotoPreset`** : HTTP 400 "method not implemented" sur V380 Pro. `GotoPreset` retourne 400 — le bouton Home ONVIF n'a pas d'effet sur V380 (pas masqué actuellement dans l'UI).
 
 **Tâches :**
 
-- [ ] **V380 — step timing** : override `PtzStepAsync` dans `V380ProCameraAdapter` avec `ContinuousMove` → `Task.Delay(durationMs)` → `Stop`, où `durationMs = Math.Clamp(speed * 1, 20, 150)` (speed=50 → 50ms). Rend le step déterministe et indépendant de la latence réseau. Tester empiriquement sur la caméra pour trouver la bonne constante.
-- [ ] **V380 — bouton Home masqué** : `PtzGoToPresetAsync` override retourne sans appel ONVIF. Ajouter `SupportsHomeAsync` (default `true`) sur `IVendorCameraAdapter`, override V380 → `false`. `PtzControlPanel` masque le bouton Home si `!supportsHome`.
-- [ ] **Doc** : mettre à jour `vendors/v380_pro.md` — documenter les limites firmware ONVIF confirmées et la stratégie step timing.
+- [x] **V380 — step via ContinuousMove + Delay + Stop** : `PtzStepAsync` dans `OnvifCameraAdapter` — `stepMs = Math.Clamp(speed * 2, 40, 200)` — fire-and-forget avec `SemaphoreSlim(1,1)` par caméra pour éviter les collisions Move/Stop. `GetPtzCapabilitiesAsync` détecte RelativeMove via `GetConfigurationOptions` et l'utilise si présent (caméras ONVIF conformes).
+- [ ] **V380 — bouton Home masqué** : `GotoPreset` retourne HTTP 400 sur V380, le bouton home tente l'appel sans effet. Option : ajouter `SupportsPresetAsync` sur l'interface ou détecter à l'exécution. Non bloquant pour la release.
+- [ ] **Protocole port 8800** : reverse-engineering V380 propriétaire pour step précis et contrôle temps réel. Estimation 2-3j. Voir NEXTS.
 
 **Critères de validation :**
-- Un tap sur la V380 fait bouger la caméra d'environ 5–15° (contrôlable)
-- Le bouton Home n'apparaît pas dans `PtzControlPanel` pour une V380
-- Les caméras ONVIF génériques (Hikvision, Dahua) utilisent toujours `RelativeMove` et ne sont pas impactées
+- Step via ONVIF : la caméra bouge, même si l'amplitude est difficile à contrôler précisément sur V380 ✓
+- Les caméras ONVIF conformes (Hikvision, Dahua) utilisent RelativeMove ✓
+- Home sur V380 : tentative ONVIF sans effet visible (pas bloquant)
 
 ---
 
@@ -285,6 +292,8 @@ fetch → HttpError (status, url) → use case → AppError (kind discriminé) �
 ---
 
 ### NEXTS
+
+- [ ] **PTZ précis V380 Pro via port 8800 (protocole propriétaire)** : port ouvert, répond à un paquet binaire Sofia-like en 205ms (`9c ff ff ff` = -100 LE = rejet de notre format). Protocole non standard, magic bytes différents du DVRIP classique (`ff000000`). Estimation 2-3j de reverse-engineering pour obtenir login + ContinuousMove + Stop. L'app native V380 utilise ce protocole et permet un contrôle précis sans la limitation 3s du serveur ONVIF. Scripts de probe dans `tools/camera-probe/probe_8800.py`.
 
 - [ ] **Réveil a distance des cameras DVRIP sur batterie — investigation close, non implementable.** Le chipset WiFi reste en 802.11 PSM (Power Save Mode) : il repond aux pings ICMP (~510ms) au niveau NIC sans reveiller le processeur principal. TCP knock et UDP discovery (payload DVRIP 0x0590, WS-Discovery ONVIF, WoL magic packet) ont tous echoue — aucun port n'est ouvert en veille. Le seul mecanisme de reveil est un WoWLAN pattern filter proprietaire programme dans le NIC par le firmware ICSee, declenche via leur canal cloud (connexion persistante maintenue par le NIC). Non accessible sans reverse-engineering. **Limitation acceptee** : l'utilisateur doit reveiller la camera manuellement via l'app ICSee avant la verification DVRIP.
 ==> non acceptable, il faudra implémenter un WoL et faire une inspection de paquet pour déclencher le réveil de la caméra.
