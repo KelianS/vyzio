@@ -24,4 +24,8 @@ public interface IVendorCameraAdapter
         await PtzMoveAsync(camera, direction, speed, ct);
         await PtzStopAsync(camera, ct);
     }
+
+    // Returns current pan/tilt position in normalized ONVIF space [-1, 1], or null if not supported.
+    virtual Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CancellationToken ct = default)
+        => Task.FromResult<(float Pan, float Tilt)?>(null);
 }

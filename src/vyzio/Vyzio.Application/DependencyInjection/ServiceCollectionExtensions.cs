@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PtzSavePresetUseCase>();
         services.AddScoped<PtzGoToPresetUseCase>();
         services.AddScoped<ConfigurePtzParkingPositionUseCase>();
+        services.AddScoped<GetPtzPositionUseCase>();
         services.AddScoped<SetCameraPrivacyStrategyUseCase>();
 
         // Detection event use cases

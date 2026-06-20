@@ -38,6 +38,9 @@ internal sealed class OnvifCameraAdapter(OnvifPtzClient ptz, ILogger<OnvifCamera
         await ptz.StopAsync(camera, token, ct);
     }
 
+    public async Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CancellationToken ct = default)
+        => await ptz.GetPtzPositionAsync(camera, ct);
+
     public async Task PtzStepAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
     {
         var (pan, tilt) = DirectionToStep(direction, speed);

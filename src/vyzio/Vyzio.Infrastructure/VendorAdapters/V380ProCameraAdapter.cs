@@ -36,11 +36,21 @@ internal sealed class V380ProCameraAdapter(OnvifPtzClient ptz, ILogger<V380ProCa
         await ptz.StopAsync(camera, token, ct);
     }
 
+    public async Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CancellationToken ct = default)
+        => await ptz.GetPtzPositionAsync(camera, ct);
+
+    // V380 ignores velocity magnitude, Timeout, and all advanced PTZ commands (RelativeMove,
+    // GetStatus, SetPreset, GotoPreset — all HTTP 400). Only ContinuousMove + Stop work.
+    // Step control: server-side delay between Move and Stop gives a deterministic amplitude.
+    // At ~120°/s measured speed: speed=50 → 80ms ≈ 10°.
     public async Task PtzStepAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
     {
-        var (pan, tilt) = DirectionToStep(direction, speed);
+        var (pan, tilt) = DirectionToSign(direction);
         var token = await ptz.GetFirstProfileTokenAsync(camera, ct);
-        await ptz.RelativeMoveAsync(camera, token, pan, tilt, ct);
+        await ptz.ContinuousMoveAsync(camera, token, pan, tilt, ct);
+        var stepMs = Math.Clamp(speed * 2, 40, 200);
+        await Task.Delay(stepMs, ct);
+        await ptz.StopAsync(camera, token, ct);
     }
 
     public async Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
@@ -56,22 +66,19 @@ internal sealed class V380ProCameraAdapter(OnvifPtzClient ptz, ILogger<V380ProCa
     }
 
     // step = fraction of full pan/tilt range: speed=50 → 0.025 (≈4.5° on a 180° camera)
-    private static (float pan, float tilt) DirectionToStep(PtzDirection direction, int speed)
+    // V380 ignores velocity magnitude — only sign matters for direction.
+    private static (float pan, float tilt) DirectionToSign(PtzDirection direction) => direction switch
     {
-        var s = Math.Clamp(speed / 2000f, 0.01f, 0.08f);
-        return direction switch
-        {
-            PtzDirection.Up        => (0f, s),
-            PtzDirection.Down      => (0f, -s),
-            PtzDirection.Left      => (-s, 0f),
-            PtzDirection.Right     => (s, 0f),
-            PtzDirection.UpLeft    => (-s, s),
-            PtzDirection.UpRight   => (s, s),
-            PtzDirection.DownLeft  => (-s, -s),
-            PtzDirection.DownRight => (s, -s),
-            _                      => (0f, 0f)
-        };
-    }
+        PtzDirection.Up        => (0f,  1f),
+        PtzDirection.Down      => (0f, -1f),
+        PtzDirection.Left      => (-1f, 0f),
+        PtzDirection.Right     => (1f,  0f),
+        PtzDirection.UpLeft    => (-1f, 1f),
+        PtzDirection.UpRight   => (1f,  1f),
+        PtzDirection.DownLeft  => (-1f,-1f),
+        PtzDirection.DownRight => (1f, -1f),
+        _                      => (0f,  0f),
+    };
 
     private static (float pan, float tilt) DirectionToVelocity(PtzDirection direction, int speed)
     {

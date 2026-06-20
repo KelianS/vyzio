@@ -187,6 +187,14 @@ public static class CamerasEndpoints
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
+        // Diagnostic: check if camera supports position reporting (needed for AbsoluteMove home).
+        group.MapGet("/{id}/ptz/position", async (string id, GetPtzPositionUseCase useCase, CancellationToken ct) =>
+        {
+            var pos = await useCase.ExecuteAsync(id, ct);
+            if (pos is null) return Results.Ok(new { supported = false, pan = (float?)null, tilt = (float?)null });
+            return Results.Ok(new { supported = true, pan = pos.Value.Pan, tilt = pos.Value.Tilt });
+        });
+
         // Privacy strategy selection
         group.MapPatch("/{id}/privacy-strategy", async (string id, PrivacyStrategyApiRequest request, SetCameraPrivacyStrategyUseCase useCase, CancellationToken ct) =>
         {

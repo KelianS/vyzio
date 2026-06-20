@@ -78,6 +78,19 @@ public sealed class ConfigurePtzParkingPositionUseCase(
     }
 }
 
+// Diagnostic only — checks if camera reports its current pan/tilt position via ONVIF GetStatus.
+// Used to verify GetStatus support before implementing AbsoluteMove-based home positioning.
+public sealed class GetPtzPositionUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
+{
+    public async Task<(float Pan, float Tilt)?> ExecuteAsync(string cameraId, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return null;
+        var adapter = adapterFactory.Resolve(camera);
+        return await adapter.GetPtzPositionAsync(camera, ct);
+    }
+}
+
 public sealed record SetPrivacyStrategyRequest(string Strategy);
 
 public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)

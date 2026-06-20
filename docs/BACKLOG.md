@@ -171,6 +171,27 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 ---
 
+### 1.0.2 - P2 - PTZ step précis et bouton Home sur V380 Pro
+
+> **Contexte** : Investigation ONVIF juin 2026 sur `192.168.1.135`. Le firmware V380 Pro n'implémente que `ContinuousMove` + `Stop` — `RelativeMove`, `GetStatus`, `SetPreset`, `GotoPreset` retournent tous HTTP 400 "method not implemented". La `PTZConfiguration` ne déclare aucun espace AbsoluteMove ni RelativeMove. Seul `DefaultContinuousPanTiltVelocitySpace` est présent. Probe confirmé par script SOAP brut (`tools/camera-probe/probe_v380_ptz.py`).
+
+**Problème 1 — Steps trop grands (90°/tap)** : La V380 ignore vraisemblablement le paramètre vitesse dans `ContinuousMove` et tourne à pleine vitesse (~360°/s). Avec ~50ms de latence réseau entre Move et Stop, chaque tap fait ~18°. En pratique l'utilisateur constate ~90° → la latence réelle est plus proche de 250ms (pipeline HTTP + traitement firmware).
+
+**Problème 2 — Bouton Home sans effet** : `PtzGoToPresetAsync` → `GotoPreset` ONVIF → HTTP 400. Le bouton n'a aucun effet sur V380.
+
+**Tâches :**
+
+- [ ] **V380 — step timing** : override `PtzStepAsync` dans `V380ProCameraAdapter` avec `ContinuousMove` → `Task.Delay(durationMs)` → `Stop`, où `durationMs = Math.Clamp(speed * 1, 20, 150)` (speed=50 → 50ms). Rend le step déterministe et indépendant de la latence réseau. Tester empiriquement sur la caméra pour trouver la bonne constante.
+- [ ] **V380 — bouton Home masqué** : `PtzGoToPresetAsync` override retourne sans appel ONVIF. Ajouter `SupportsHomeAsync` (default `true`) sur `IVendorCameraAdapter`, override V380 → `false`. `PtzControlPanel` masque le bouton Home si `!supportsHome`.
+- [ ] **Doc** : mettre à jour `vendors/v380_pro.md` — documenter les limites firmware ONVIF confirmées et la stratégie step timing.
+
+**Critères de validation :**
+- Un tap sur la V380 fait bouger la caméra d'environ 5–15° (contrôlable)
+- Le bouton Home n'apparaît pas dans `PtzControlPanel` pour une V380
+- Les caméras ONVIF génériques (Hikvision, Dahua) utilisent toujours `RelativeMove` et ne sont pas impactées
+
+---
+
 ### TECH - Pipeline d'erreur frontend — clean architecture
 
 > But : rendre les erreurs backend prévisibles et visibles dans toute l'application sans que chaque composant ait à gérer manuellement le feedback utilisateur. Aujourd'hui les erreurs HTTP sont des `Error` génériques opaques ; certains composants toastent, d'autres silencient (`.catch(() => {})`). La clean architecture offre les seams nécessaires pour une pipeline typée de bout en bout : infrastructure → domaine → use case → hook UI.
