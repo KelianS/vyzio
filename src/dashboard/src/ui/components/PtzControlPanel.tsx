@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
@@ -36,10 +36,12 @@ export function PtzControlPanel({
   const isHoldingRef = useRef(false)
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const runStepRef = useRef<((direction: Direction) => void) | null>(null)
+
   const runStep = useCallback(
     (direction: Direction) => {
       ptzStep.execute(cameraId, direction, speed).then(() => {
-        if (isHoldingRef.current) runStep(direction) // chain next step while held
+        if (isHoldingRef.current) runStepRef.current?.(direction) // chain next step while held
       }).catch(() => {
         isHoldingRef.current = false
         isPressedRef.current = false
@@ -47,6 +49,10 @@ export function PtzControlPanel({
     },
     [cameraId, ptzStep, speed],
   )
+
+  useLayoutEffect(() => {
+    runStepRef.current = runStep
+  })
 
   const handlePress = useCallback(
     (direction: Direction) => {

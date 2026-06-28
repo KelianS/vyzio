@@ -8,7 +8,8 @@ import type {
   CreateProfileRequest,
   UpdateProfileRequest,
 } from '../../domain/ports/ProfileRepository'
-import { fetchJson } from '../http/fetchJson'
+import { fetchJson, postJson, putJson, deleteReq } from '../http/fetchJson'
+import { HttpError } from '../http/HttpError'
 
 export class HttpProfileRepository implements ProfileRepository {
   constructor(private readonly apiBaseUrl: string) {}
@@ -33,6 +34,7 @@ export class HttpProfileRepository implements ProfileRepository {
     await deleteReq(`${this.apiBaseUrl}/api/profiles/${id}`)
   }
 
+
   async getPhotos(profileId: string): Promise<ProfilePhoto[]> {
     return fetchJson<ProfilePhoto[]>(`${this.apiBaseUrl}/api/profiles/${profileId}/photos`)
   }
@@ -40,11 +42,9 @@ export class HttpProfileRepository implements ProfileRepository {
   async addPhoto(profileId: string, file: File): Promise<ProfilePhoto> {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await fetch(`${this.apiBaseUrl}/api/profiles/${profileId}/photos`, {
-      method: 'POST',
-      body: formData,
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const url = `${this.apiBaseUrl}/api/profiles/${profileId}/photos`
+    const response = await fetch(url, { method: 'POST', body: formData })
+    if (!response.ok) throw new HttpError(response.status, url)
     return response.json() as Promise<ProfilePhoto>
   }
 
@@ -69,11 +69,10 @@ export class HttpProfileRepository implements ProfileRepository {
   }
 
   async getCameraDetectionConfig(cameraId: string): Promise<DetectionConfig | null> {
-    const response = await fetch(`${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`, {
-      headers: { Accept: 'application/json' },
-    })
+    const url = `${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`
+    const response = await fetch(url, { headers: { Accept: 'application/json' } })
     if (response.status === 404) return null
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    if (!response.ok) throw new HttpError(response.status, url)
     return response.json() as Promise<DetectionConfig>
   }
 
@@ -99,36 +98,13 @@ export class HttpProfileRepository implements ProfileRepository {
   }
 
   async correctDetectionIdentity(eventId: string, profileId: string | null): Promise<void> {
-    const response = await fetch(`${this.apiBaseUrl}/api/detection-events/${eventId}/identity`, {
+    const url = `${this.apiBaseUrl}/api/detection-events/${eventId}/identity`
+    const response = await fetch(url, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ profileId }),
     })
-    if (!response.ok && response.status !== 204) throw new Error(`HTTP ${response.status}`)
+    if (!response.ok) throw new HttpError(response.status, url)
   }
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status} on ${url}`)
-  return response.json() as Promise<T>
-}
-
-async function putJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status} on ${url}`)
-  return response.json() as Promise<T>
-}
-
-async function deleteReq(url: string): Promise<void> {
-  const response = await fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
-  if (!response.ok && response.status !== 204) throw new Error(`HTTP ${response.status} on ${url}`)
-}

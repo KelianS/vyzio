@@ -5,7 +5,8 @@ import type {
   TestNotificationChannelResult,
 } from '../../domain/entities/NotificationChannelConfig'
 import type { NotificationSettingsRepository } from '../../domain/ports/NotificationSettingsRepository'
-import { fetchJson } from '../http/fetchJson'
+import { fetchJson, postJson, putJson } from '../http/fetchJson'
+import { HttpError } from '../http/HttpError'
 
 export class HttpNotificationSettingsRepository implements NotificationSettingsRepository {
   constructor(private readonly apiBaseUrl: string) {}
@@ -37,12 +38,10 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
   }
 
   async deleteChannel(channel: string): Promise<boolean> {
-    const response = await fetch(`${this.apiBaseUrl}/api/notifications/settings/${channel}`, {
-      method: 'DELETE',
-      headers: { Accept: 'application/json' },
-    })
+    const url = `${this.apiBaseUrl}/api/notifications/settings/${channel}`
+    const response = await fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
     if (response.status === 404) return false
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    if (!response.ok) throw new HttpError(response.status, url)
     return true
   }
 
@@ -57,28 +56,3 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
   }
 }
 
-async function postJson<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status} on ${url}`)
-  return response.json() as Promise<T>
-}
-
-async function putJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status} on ${url}`)
-  return response.json() as Promise<T>
-}
