@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ConfirmModal } from './ConfirmModal'
 import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
 import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
@@ -607,6 +608,7 @@ function TelegramConfigPanel({
   const [mediaMode, setMediaMode] = useState<MediaMode>('clip_or_photo')
   const [cooldownMinutes, setCooldownMinutes] = useState<number | null>(null)
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
+  const [pendingSaveReq, setPendingSaveReq] = useState<SaveNotificationChannelConfigRequest | null>(null)
 
   useEffect(() => {
     if (config && config !== syncedConfig) {
@@ -628,7 +630,7 @@ function TelegramConfigPanel({
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    await onSave({
+    const req: SaveNotificationChannelConfigRequest = {
       isEnabled,
       botToken: botToken.trim() || undefined,
       chatId: chatId.trim() || undefined,
@@ -640,7 +642,19 @@ function TelegramConfigPanel({
       mediaMode,
       cooldownMinutes: cooldownMinutes ?? undefined,
       clearCooldown: cooldownMinutes === null,
-    })
+    }
+    if (isEnabled && !config?.isEnabled) {
+      setPendingSaveReq(req)
+      return
+    }
+    await onSave(req)
+    setBotToken('')
+  }
+
+  async function handleConfirmSave() {
+    if (!pendingSaveReq) return
+    await onSave(pendingSaveReq)
+    setPendingSaveReq(null)
     setBotToken('')
   }
 
@@ -654,6 +668,17 @@ function TelegramConfigPanel({
 
   return (
     <>
+      {pendingSaveReq && (
+        <ConfirmModal
+          title="Activer les notifications Telegram"
+          body="Les alertes (photos, clips, noms de caméra) seront envoyées via les serveurs de Telegram. Ces données quitteront votre réseau local — Telegram en aura connaissance. Si vous souhaitez garder vos données strictement locales, n'activez pas ce canal."
+          confirmLabel="Activer Telegram"
+          cancelLabel="Annuler"
+          onConfirm={handleConfirmSave}
+          onCancel={() => setPendingSaveReq(null)}
+        />
+      )}
+
       <section className="camera-detail-section">
         <h3>Etat du canal</h3>
         <dl className="camera-summary-list">

@@ -66,6 +66,7 @@ export function ProfilesView({
   const [error, setError] = useState<string | null>(null)
   const [resyncMessage, setResyncMessage] = useState<string | null>(null)
   const [confirmDeleteProfileId, setConfirmDeleteProfileId] = useState<string | null>(null)
+  const [confirmResync, setConfirmResync] = useState(false)
   const resyncAction = useAsyncAction(
     () => resyncFaceLibrary.execute(),
     {
@@ -227,7 +228,7 @@ export function ProfilesView({
                   addProfilePhoto={addProfilePhoto}
                   removeProfilePhoto={removeProfilePhoto}
                   apiBaseUrl={apiBaseUrl}
-                  onResync={handleResync}
+                  onResync={() => setConfirmResync(true)}
                   resyncing={resyncAction.loading}
                   resyncMessage={resyncMessage}
                 />
@@ -240,6 +241,19 @@ export function ProfilesView({
                 />
               )}
             </>
+          )}
+
+          {confirmResync && (
+            <ConfirmModal
+              title="Resynchroniser la bibliothèque de visages"
+              body="Vyzio va retransmettre toutes les photos de profil à Frigate pour recalculer les embeddings de reconnaissance. Cette opération peut prendre de quelques secondes à plusieurs minutes selon le nombre de photos."
+              confirmLabel="Resynchroniser"
+              onConfirm={async () => {
+                setConfirmResync(false)
+                await handleResync()
+              }}
+              onCancel={() => setConfirmResync(false)}
+            />
           )}
 
           {confirmDeleteProfileId && (() => {

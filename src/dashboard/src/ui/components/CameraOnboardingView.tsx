@@ -143,6 +143,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
   const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmScan, setConfirmScan] = useState(false)
+  const [confirmApply, setConfirmApply] = useState(false)
 
   const { toast } = useToast()
 
@@ -890,7 +892,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <button
               className="primary-cta camera-sidebar-btn"
               type="button"
-              onClick={handleApplyConfiguration}
+              onClick={() => setConfirmApply(true)}
               disabled={actionLoading || !canApplyConfiguration}
             >
               {applyLoading ? 'Application...' : 'Appliquer'}
@@ -930,7 +932,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <button
               className="primary-cta camera-sidebar-btn"
               type="button"
-              onClick={handleDiscovery}
+              onClick={() => setConfirmScan(true)}
               disabled={discoverAction.loading || actionLoading}
             >
               {discoverAction.loading ? 'Recherche...' : 'Scanner'}
@@ -1480,6 +1482,33 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           )}
         </article>
       </section>
+
+      {confirmScan && (
+        <ConfirmModal
+          title="Scanner le réseau"
+          body="Vyzio va sonder l'ensemble de votre réseau local à la recherche de caméras IP. Cette opération peut prendre entre 15 et 30 secondes et génère du trafic réseau."
+          confirmLabel="Lancer le scan"
+          onConfirm={async () => {
+            setConfirmScan(false)
+            await handleDiscovery()
+          }}
+          onCancel={() => setConfirmScan(false)}
+        />
+      )}
+
+      {confirmApply && (
+        <ConfirmModal
+          title="Appliquer la configuration"
+          body="Vyzio va regénérer la configuration et redémarrer Frigate. La surveillance sera interrompue brièvement (quelques secondes à quelques dizaines de secondes selon votre machine)."
+          confirmLabel="Appliquer"
+          tone="warn"
+          onConfirm={async () => {
+            setConfirmApply(false)
+            await handleApplyConfiguration()
+          }}
+          onCancel={() => setConfirmApply(false)}
+        />
+      )}
 
       {confirmDelete && selectedCameraId && (
         <ConfirmModal
