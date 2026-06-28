@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useToast } from './Toast'
+import { appErrorMessage } from '../../domain/errors/AppError'
+import { toAppError } from '../../domain/errors/toAppError'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
 import type { GetDetectionHistory } from '../../application/use-cases/GetDetectionHistory'
 import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
@@ -43,13 +45,17 @@ export function DetectionHistoryView({
   const [correcting, setCorrecting] = useState<string | null>(null)
 
   useEffect(() => {
-    getProfiles.execute().then(setProfiles).catch(() => {})
+    getProfiles.execute().then(setProfiles).catch((e: unknown) => {
+      toast(appErrorMessage(toAppError(e)), 'error')
+    })
   }, [getProfiles])
 
   useEffect(() => {
     getCameraLabels.execute()
       .then(setDetectionLabels)
-      .catch(() => {})
+      .catch((e: unknown) => {
+        toast(appErrorMessage(toAppError(e)), 'error')
+      })
   }, [getCameraLabels])
 
   useEffect(() => {

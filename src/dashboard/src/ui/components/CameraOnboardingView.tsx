@@ -40,6 +40,7 @@ import {
   formatValidationStateLabel,
 } from '../formatters/cameras'
 import { appErrorMessage } from '../../domain/errors/AppError'
+import { toAppError } from '../../domain/errors/toAppError'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -140,7 +141,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   useEffect(() => {
     props.getCameraLabels.execute()
       .then(setAllDetectionLabels)
-      .catch(() => {})
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
   }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
@@ -260,7 +261,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           setDetectionContinuousRecording(config.continuousRecordingEnabled)
         }
       })
-      .catch(() => {})
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
       .finally(() => setDetectionConfigLoading(false))
   }, [selectedCamera])
 
@@ -281,7 +282,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           : 'Aucune camera detectee automatiquement.',
       )
     } catch (error: unknown) {
-      setDiscoveryError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setDiscoveryError(appErrorMessage(toAppError(error)))
     } finally {
       setDiscoveryLoading(false)
     }
@@ -310,7 +311,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         'success',
       )
     } catch (error: unknown) {
-      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setFormError(appErrorMessage(toAppError(error)))
     } finally {
       setActionLoading(false)
     }
@@ -333,7 +334,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setFormMessage(status.guidance ?? 'Flux valide. Vous pouvez maintenant ajouter cette camera.')
     } catch (error: unknown) {
       setDraftVerification(null)
-      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setFormError(appErrorMessage(toAppError(error)))
     } finally {
       setActionLoading(false)
     }
@@ -354,7 +355,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       cameraStatusState.reload()
       setDetailMessage(status.guidance ?? 'Verification terminee.')
     } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setDetailError(appErrorMessage(toAppError(error)))
     } finally {
       setActionLoading(false)
     }
@@ -394,7 +395,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.',
       )
     } catch (error: unknown) {
-      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setFormError(appErrorMessage(toAppError(error)))
     } finally {
       setActionLoading(false)
     }
@@ -424,7 +425,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
       toast(`${result.message} (${result.configPath})`, 'success')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      const message = appErrorMessage(toAppError(error))
       if (selection.kind === 'camera') {
         setDetailError(message)
       } else {
@@ -451,7 +452,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       cameraStatusState.reload()
       toast(result.message, 'info')
     } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setDetailError(appErrorMessage(toAppError(error)))
     } finally {
       setActionLoading(false)
     }
@@ -485,7 +486,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         'success',
       )
     } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
+      setDetailError(appErrorMessage(toAppError(error)))
     } finally {
       setActionLoading(false)
     }
@@ -1288,8 +1289,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                                 await props.setPrivacyStrategy.execute(selectedCameraId, pendingStrategy)
                                 setStrategyFeedback('Stratégie enregistrée.')
                                 camerasState.reload()
-                              } catch {
-                                setStrategyFeedback('Erreur lors de la sauvegarde.')
+                              } catch (e: unknown) {
+                                setStrategyFeedback(appErrorMessage(toAppError(e)))
                               } finally {
                                 setStrategySaving(false)
                               }
@@ -1543,7 +1544,7 @@ function PrivacyScheduleSection({
     setLoading(true)
     getSchedules.execute(cameraId)
       .then(setSchedules)
-      .catch(() => {})
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
       .finally(() => setLoading(false))
   }
 
@@ -1559,16 +1560,20 @@ function PrivacyScheduleSection({
     try {
       await createSchedule.execute(cameraId, { daysOfWeek: days, startTime, endTime })
       reload()
-    } catch {
-      setError('Erreur lors de la création du schedule.')
+    } catch (e: unknown) {
+      setError(appErrorMessage(toAppError(e)))
     } finally {
       setAdding(false)
     }
   }
 
   const handleDelete = async (scheduleId: string) => {
-    await deleteSchedule.execute(cameraId, scheduleId)
-    setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
+    try {
+      await deleteSchedule.execute(cameraId, scheduleId)
+      setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
+    } catch (e: unknown) {
+      setError(appErrorMessage(toAppError(e)))
+    }
   }
 
   const handleApplyToAll = async () => {
@@ -1580,8 +1585,8 @@ function PrivacyScheduleSection({
         await createSchedule.execute(cam.id, { daysOfWeek: days, startTime, endTime })
       }
       reload()
-    } catch {
-      setError('Erreur lors de l\'application à toutes les caméras.')
+    } catch (e: unknown) {
+      setError(appErrorMessage(toAppError(e)))
     } finally {
       setAdding(false)
     }
