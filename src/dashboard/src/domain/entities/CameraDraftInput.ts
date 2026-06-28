@@ -8,4 +8,5 @@ export interface CameraDraftInput {
   vendorFamily?: string | null
   sourceType: string
   streamProtocol?: string | null
+  ptzSupported?: boolean | null
 }

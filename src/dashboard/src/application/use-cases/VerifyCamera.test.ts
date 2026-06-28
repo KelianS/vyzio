@@ -17,7 +17,7 @@ describe('VerifyCamera', () => {
       lastSuccessfulFrameAt: null,
     }
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -31,7 +31,7 @@ describe('VerifyCamera', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new VerifyCamera(repository)
+    const useCase = new VerifyCamera(repository as unknown as CameraRepository)
 
     await expect(useCase.execute('camera-1')).resolves.toEqual(status)
     expect(repository.verify).toHaveBeenCalledWith('camera-1')

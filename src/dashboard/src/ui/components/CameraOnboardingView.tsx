@@ -8,6 +8,11 @@ import type { DiscoverCameras } from '../../application/use-cases/DiscoverCamera
 import type { GetCameraDetectionConfig } from '../../application/use-cases/GetCameraDetectionConfig'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
+import type { GetCameraPrivacySchedules } from '../../application/use-cases/GetCameraPrivacySchedules'
+import type { CreateCameraPrivacySchedule } from '../../application/use-cases/CreateCameraPrivacySchedule'
+import type { DeleteCameraPrivacySchedule } from '../../application/use-cases/DeleteCameraPrivacySchedule'
+import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
+import type { Camera } from '../../domain/entities/Camera'
 import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import type { SaveCameraDetectionConfig } from '../../application/use-cases/SaveCameraDetectionConfig'
@@ -16,6 +21,12 @@ import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftC
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
+import type { PtzStep } from '../../application/use-cases/PtzStep'
+import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
+
+import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
+import { PtzControlPanel } from './PtzControlPanel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
 import { useVendorAssistance } from '../hooks/useVendorAssistance'
@@ -43,6 +54,14 @@ interface CameraOnboardingViewProps {
   getCameraDetectionConfig: GetCameraDetectionConfig
   saveCameraDetectionConfig: SaveCameraDetectionConfig
   getCameraLabels: GetCameraLabels
+  getPrivacySchedules: GetCameraPrivacySchedules
+  createPrivacySchedule: CreateCameraPrivacySchedule
+  deletePrivacySchedule: DeleteCameraPrivacySchedule
+  setPrivacyStrategy: SetPrivacyStrategy
+  ptzStep: PtzStep
+  ptzGoToPreset: PtzGoToPreset
+  configurePtzParking: ConfigurePtzParking
+  allCameras: Camera[]
   apiBaseUrl: string
 }
 
@@ -125,6 +144,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
   const [dvripMode, setDvripMode] = useState(false)
+  const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
+  const [strategySaving, setStrategySaving] = useState(false)
+  const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
 
   const { toast } = useToast()
 
@@ -219,12 +241,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       vendorFamily: selectedCamera.vendorFamily ?? null,
       sourceType: selectedCamera.sourceType,
       streamProtocol: selectedCamera.streamProtocol ?? 'rtsp',
+      ptzSupported: selectedCamera.ptzSupported,
     })
     setEditPassword('')
     setDetectionLabels(['person'])
     setDetectionAvailableLabels([])
     setDetectionContinuousRecording(false)
     setShowLive(false)
+    setPendingStrategy(selectedCamera.privacyModeStrategy ?? 'software')
+    setStrategyFeedback(null)
     setDetectionConfigLoading(true)
     props.getCameraDetectionConfig.execute(selectedCamera.id)
       .then((config) => {
@@ -364,7 +389,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       selectDiscoveryCandidate(selection.index, nextResults)
       setFormMessage(
         refreshedCandidate.streamPath
-          ? 'Candidat rafraichi. Le flux RTSP semble maintenant exploitable.'
+          ? 'Candidat rafraichi. La camera semble maintenant joignable.'
           : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.',
       )
     } catch (error: unknown) {
@@ -609,15 +634,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       case 'hostname_probe':
         return 'Nom reseau'
       case 'rtsp_probe':
-        return 'RTSP local'
+        return 'Flux local'
       case 'network_scan':
-        return 'Scan RTSP'
+        return 'Scan reseau'
       case 'http_probe':
         return 'HTTP camera'
       case 'http_service':
         return 'HTTP generique'
       case 'dvrip_probe':
-        return 'DVRIP/XMEye probe'
+        return 'Connexion alternative detectee'
       default:
         return discoverySource
     }
@@ -634,17 +659,17 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       case 'hostname_camera_hint':
         return 'Nom reseau evocateur d une camera'
       case 'rtsp_responding':
-        return 'Port RTSP joignable'
+        return 'Port de flux joignable'
       case 'http_camera_signature':
         return 'Interface web camera reconnue'
       case 'rtsp_path_known':
-        return 'Chemin RTSP deja connu'
+        return 'Chemin de flux deja connu'
       case 'vendor_hint_detected':
         return 'Constructeur probable detecte'
       case 'mac_address_observed':
         return 'Adresse MAC observee'
       case 'dvrip_port_detected':
-        return 'Port DVRIP/XMEye detecte'
+        return 'Connexion alternative possible'
       default:
         return reason
     }
@@ -676,7 +701,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <dd>{formatVendorFamily(vendorFamily)}</dd>
           </div>
           <div>
-            <dt>RTSP actif</dt>
+            <dt>Connexion active</dt>
             <dd>
               <span className={`camera-rtsp-badge ${rtspActive ? 'ready' : 'missing'}`}>
                 {rtspActive ? 'Oui' : 'Non'}
@@ -776,11 +801,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               <dd>{formatMutedList(technicalDetails?.onvifPortsDetected)}</dd>
             </div>
             <div>
-              <dt>Ports RTSP detectes</dt>
+              <dt>Ports flux detectes</dt>
               <dd>{formatMutedList(technicalDetails?.rtspPortsDetected)}</dd>
             </div>
             <div>
-              <dt>Flux RTSP detectes</dt>
+              <dt>Chemins de flux detectes</dt>
               <dd>{formatMutedList(technicalDetails?.rtspPathsDetected)}</dd>
             </div>
           </dl>
@@ -993,14 +1018,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   <section className="camera-readiness-callout" aria-live="polite">
                     <strong>Camera non prete pour l'ajout</strong>
                     <p>
-                      Le flux RTSP n'est pas encore actif. Activez-le d'abord sur la camera, puis
-                      revenez ici pour l'ajouter au catalogue.
+                      La connexion a la camera n'est pas encore active. Configurez-la d'abord via son
+                      application, puis revenez ici pour l'ajouter au catalogue.
                     </p>
                     {vendorAssistanceState.data?.markdown ? (
                       <p>Suivez la notice constructeur ci-dessous pour l'activer pas a pas.</p>
                     ) : (
                       <p>
-                        Quand le RTSP sera disponible, le formulaire d'ajout reapparaitra
+                        Quand la camera sera accessible, le formulaire d'ajout reapparaitra
                         automatiquement.
                       </p>
                     )}
@@ -1009,15 +1034,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
                 {dvripFallbackAvailable ? (
                   <section className="camera-readiness-callout dvrip-fallback" aria-live="polite">
-                    <strong>Mode DVRIP disponible (fallback)</strong>
+                    <strong>Mode de connexion alternatif disponible</strong>
                     <p>
-                      Ce protocole propriétaire (ICSee, Annke, Sannce, Zosi et autres OEM Xiongmai)
-                      peut être utilisé si le RTSP n'est pas accessible. Il passe par go2rtc comme
-                      passerelle transparente.
+                      Ce mode de connexion alternatif (ICSee, Annke, Sannce, Zosi et marques
+                      similaires) peut être utilisé si la connexion standard n'est pas accessible.
                     </p>
                     <p style={{ fontSize: '0.85rem', opacity: 0.75 }}>
-                      Si c'est une camera sur batterie, elle doit être éveillée via l'application
-                      ICSee avant la vérification. Elle restera active tant que le flux est ouvert.
+                      Si c'est une camera sur batterie, elle doit être éveillée via son application
+                      avant la vérification. Elle restera active tant que la connexion est ouverte.
                     </p>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 8 }}>
                       <input
@@ -1026,7 +1050,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         onChange={(e) => handleDvripModeToggle(e.target.checked)}
                         style={{ accentColor: 'currentColor' }}
                       />
-                      Utiliser le mode DVRIP (ne pas activer si RTSP est disponible)
+                      Utiliser ce mode alternatif (ne pas activer si la connexion standard fonctionne)
                     </label>
                   </section>
                 ) : null}
@@ -1088,7 +1112,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </label>
                     {!dvripMode ? (
                       <label>
-                        <span>Chemin RTSP</span>
+                        <span>Chemin de flux</span>
                         <input
                           value={form.streamPath ?? ''}
                           onChange={(event) => updateForm({ streamPath: event.target.value || null })}
@@ -1098,7 +1122,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     ) : (
                       <label>
                         <span>Protocole</span>
-                        <input value="DVRIP / XMEye" readOnly style={{ opacity: 0.6 }} />
+                        <input value="Mode alternatif (ICSee / XMEye)" readOnly style={{ opacity: 0.6 }} />
                       </label>
                     )}
                     <label>
@@ -1119,32 +1143,21 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    {!dvripMode ? (
-                      <button
+                    <button
                         className="secondary-cta"
                         type="button"
                         onClick={handleVerifyDraft}
                         disabled={actionLoading || !canVerifyDraft}
                       >
-                        {actionLoading ? 'Traitement...' : 'Verifier le flux'}
+                        {actionLoading ? 'Traitement...' : 'Verifier la connexion'}
                       </button>
-                    ) : (
-                      <button
-                        className="secondary-cta"
-                        type="button"
-                        onClick={handleVerifyDraft}
-                        disabled={actionLoading || !canVerifyDraft}
-                      >
-                        {actionLoading ? 'Traitement...' : 'Verifier la connexion DVRIP'}
-                      </button>
-                    )}
                     <button
                       className="primary-cta"
                       type="button"
                       onClick={handleCreate}
                       disabled={actionLoading || !canAddConfiguredCamera}
                     >
-                      {actionLoading ? 'Traitement...' : dvripMode ? 'Ajouter en mode DVRIP' : 'Ajouter'}
+                      {actionLoading ? 'Traitement...' : 'Ajouter'}
                     </button>
                   </div>
 
@@ -1211,6 +1224,85 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </div>
                     </section>
 
+                    {selectedCamera?.ptzSupported && selectedCameraId && (
+                      <section className="camera-detail-section">
+                        <h3>Contrôle PTZ</h3>
+                        <PtzControlPanel
+                          cameraId={selectedCameraId}
+                          ptzStep={props.ptzStep}
+                          ptzGoToPreset={props.ptzGoToPreset}
+
+                          configurePtzParking={props.configurePtzParking}
+                        />
+                      </section>
+                    )}
+
+                    {selectedCamera && selectedCameraId && (
+                      <section className="camera-detail-section">
+                        <h3>Mode vie privée</h3>
+                        <div className="privacy-strategy-selector">
+                          {(
+                            [
+                              { value: 'software' as const, label: 'Logiciel uniquement', desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.', requiresPtz: false, requiresHw: false },
+                              { value: 'ptz_parking' as const, label: 'Orientation vers zone neutre', desc: 'La caméra pivote vers un endroit non filmé et l\'enregistrement est désactivé.', requiresPtz: true, requiresHw: false },
+                              { value: 'hardware' as const, label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresPtz: false, requiresHw: true },
+                            ]
+                          ).map(({ value, label, desc, requiresPtz, requiresHw }) => {
+                            const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && !selectedCamera.privacyVendorCut && selectedCamera.vendorFamily !== 'tplink_tapo')
+                            return (
+                              <label key={value} className={`privacy-strategy-option${disabled ? ' opacity-50' : ''}`} style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}>
+                                <input
+                                  type="radio"
+                                  name="privacyStrategy"
+                                  value={value}
+                                  checked={pendingStrategy === value}
+                                  disabled={disabled}
+                                  onChange={() => { setPendingStrategy(value); setStrategyFeedback(null) }}
+                                />
+                                <span className="privacy-strategy-label">
+                                  <strong>{label}</strong>
+                                  <span>{desc}</span>
+                                </span>
+                              </label>
+                            )
+                          })}
+
+                          {pendingStrategy === 'ptz_parking' && (
+                            <div className="privacy-strategy-warning">
+                              <span className="privacy-strategy-warning-icon">⚠</span>
+                              <span>La caméra pivote vers une zone non sensible et l'enregistrement est désactivé dans Vyzio, mais elle reste physiquement accessible sur votre réseau local.</span>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            className="privacy-strategy-save-btn"
+                            disabled={strategySaving || pendingStrategy === selectedCamera.privacyModeStrategy}
+                            onClick={async () => {
+                              if (!pendingStrategy) return
+                              setStrategySaving(true)
+                              setStrategyFeedback(null)
+                              try {
+                                await props.setPrivacyStrategy.execute(selectedCameraId, pendingStrategy)
+                                setStrategyFeedback('Stratégie enregistrée.')
+                                camerasState.reload()
+                              } catch {
+                                setStrategyFeedback('Erreur lors de la sauvegarde.')
+                              } finally {
+                                setStrategySaving(false)
+                              }
+                            }}
+                          >
+                            {strategySaving ? 'Enregistrement...' : 'Enregistrer la stratégie'}
+                          </button>
+
+                          {strategyFeedback && (
+                            <p className="ptz-feedback">{strategyFeedback}</p>
+                          )}
+                        </div>
+                      </section>
+                    )}
+
                     <section className="camera-detail-section">
                       <h3>Modifier</h3>
                       <div className="camera-form-grid compact">
@@ -1242,7 +1334,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         </label>
                         {editForm.streamProtocol !== 'dvrip' ? (
                           <label>
-                            <span>Chemin RTSP</span>
+                            <span>Chemin de flux</span>
                             <input
                               value={editForm.streamPath ?? ''}
                               onChange={(event) =>
@@ -1253,7 +1345,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         ) : (
                           <label>
                             <span>Protocole</span>
-                            <input value="DVRIP / XMEye" readOnly style={{ opacity: 0.6 }} />
+                            <input value="Mode alternatif (ICSee / XMEye)" readOnly style={{ opacity: 0.6 }} />
                           </label>
                         )}
                         <label>
@@ -1275,6 +1367,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           />
                         </label>
                       </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem', marginTop: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={editForm.ptzSupported ?? false}
+                          onChange={(e) => updateEditForm({ ptzSupported: e.target.checked })}
+                          style={{ accentColor: 'currentColor' }}
+                        />
+                        Cette caméra supporte le contrôle PTZ (orientation motorisée)
+                      </label>
                     </section>
 
                     {renderVendorAssistanceSection()}
@@ -1292,6 +1393,17 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       }
                       onToggleContinuousRecording={() => setDetectionContinuousRecording((v) => !v)}
                     />
+
+                    {selectedCamera && selectedCameraId && (
+                      <PrivacyScheduleSection
+                        camera={selectedCamera}
+                        cameraId={selectedCameraId}
+                        allCameras={props.allCameras}
+                        getSchedules={props.getPrivacySchedules}
+                        createSchedule={props.createPrivacySchedule}
+                        deleteSchedule={props.deletePrivacySchedule}
+                      />
+                    )}
 
                     <div className="camera-debug-stack">
                       {renderConfidenceDetails(matchedDiscoveryCandidate)}
@@ -1342,7 +1454,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         actionLoading || selectedCamera?.validationState === 'pending_removal'
                       }
                     >
-                      Verifier le flux
+                      Verifier la connexion
                     </button>
                     <button
                       className="danger-cta"
@@ -1400,6 +1512,178 @@ function CameraLiveView({ cameraId, apiBaseUrl }: { cameraId: string; apiBaseUrl
   )
 }
 
+const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+
+function PrivacyScheduleSection({
+  camera,
+  cameraId,
+  allCameras,
+  getSchedules,
+  createSchedule,
+  deleteSchedule,
+}: {
+  camera: Camera
+  cameraId: string
+  allCameras: Camera[]
+  getSchedules: GetCameraPrivacySchedules
+  createSchedule: CreateCameraPrivacySchedule
+  deleteSchedule: DeleteCameraPrivacySchedule
+}) {
+  const [schedules, setSchedules] = useState<CameraPrivacySchedule[]>([])
+  const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5])
+  const [startTime, setStartTime] = useState('22:00')
+  const [endTime, setEndTime] = useState('06:00')
+  const [adding, setAdding] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const reload = () => {
+    setLoading(true)
+    getSchedules.execute(cameraId)
+      .then(setSchedules)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { reload() }, [cameraId])
+
+  const toggleDay = (d: number) =>
+    setDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort())
+
+  const handleAdd = async () => {
+    if (days.length === 0) { setError('Sélectionnez au moins un jour.'); return }
+    setError(null)
+    setAdding(true)
+    try {
+      await createSchedule.execute(cameraId, { daysOfWeek: days, startTime, endTime })
+      reload()
+    } catch {
+      setError('Erreur lors de la création du schedule.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleDelete = async (scheduleId: string) => {
+    await deleteSchedule.execute(cameraId, scheduleId)
+    setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
+  }
+
+  const handleApplyToAll = async () => {
+    if (days.length === 0) { setError('Sélectionnez au moins un jour.'); return }
+    setError(null)
+    setAdding(true)
+    try {
+      for (const cam of allCameras) {
+        await createSchedule.execute(cam.id, { daysOfWeek: days, startTime, endTime })
+      }
+      reload()
+    } catch {
+      setError('Erreur lors de l\'application à toutes les caméras.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const privacyCutLabel = camera.privacyVendorCut
+    ? { text: 'Coupure matérielle confirmée', cls: 'privacy-cut-badge--hw' }
+    : camera.privacyModeActive && camera.privacyModeStrategy === 'ptz_parking'
+    ? { text: 'Caméra orientée — enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
+    : camera.privacyModeActive
+    ? { text: 'Enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
+    : null
+
+  return (
+    <section className="camera-detail-section">
+      <h3 style={{ fontSize: '0.88rem', opacity: 0.65, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Vie privée — planification
+      </h3>
+
+      {privacyCutLabel && (
+        <div className={`privacy-cut-badge ${privacyCutLabel.cls}`} style={{ marginBottom: 12 }}>
+          {camera.privacyVendorCut ? '🔒' : '🔇'} {privacyCutLabel.text}
+        </div>
+      )}
+
+      {loading ? (
+        <p style={{ opacity: 0.6, fontSize: '0.88rem' }}>Chargement…</p>
+      ) : schedules.length === 0 ? (
+        <p style={{ opacity: 0.5, fontSize: '0.85rem', marginBottom: 12 }}>Aucune planification configurée.</p>
+      ) : (
+        <ul className="privacy-schedule-list">
+          {schedules.map((s) => (
+            <li key={s.id} className="privacy-schedule-item">
+              <span className="privacy-schedule-days">
+                {s.daysOfWeek.map((d) => DAY_LABELS[d]).join(', ')}
+              </span>
+              <span className="privacy-schedule-time">{s.startTime} → {s.endTime}</span>
+              {!s.enabled && <span className="privacy-schedule-disabled">désactivé</span>}
+              <button
+                type="button"
+                className="privacy-schedule-delete"
+                onClick={() => handleDelete(s.id)}
+                title="Supprimer"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="privacy-schedule-form">
+        <div className="privacy-schedule-days-row">
+          {DAY_LABELS.map((label, d) => (
+            <button
+              key={d}
+              type="button"
+              className={`privacy-day-btn${days.includes(d) ? ' privacy-day-btn--on' : ''}`}
+              onClick={() => toggleDay(d)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="privacy-schedule-time-row">
+          <label>
+            <span>Début</span>
+            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </label>
+          <span className="privacy-schedule-arrow">→</span>
+          <label>
+            <span>Fin</span>
+            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </label>
+        </div>
+        {error && <p style={{ color: 'var(--alert-high)', fontSize: '0.82rem', margin: '4px 0' }}>{error}</p>}
+        <div className="privacy-schedule-actions">
+          <button
+            type="button"
+            className="secondary-cta"
+            style={{ fontSize: '0.82rem', padding: '4px 12px' }}
+            onClick={handleAdd}
+            disabled={adding}
+          >
+            Ajouter à cette caméra
+          </button>
+          {allCameras.length > 1 && (
+            <button
+              type="button"
+              className="secondary-cta"
+              style={{ fontSize: '0.82rem', padding: '4px 12px' }}
+              onClick={handleApplyToAll}
+              disabled={adding}
+              title={`Appliquer ce schedule aux ${allCameras.length} caméras`}
+            >
+              Appliquer à toutes ({allCameras.length})
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function DetectionConfigSection({
   labels,
   availableLabels,
@@ -1423,9 +1707,9 @@ function DetectionConfigSection({
       : allLabels
 
   return (
-    <section className="camera-form-section" style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: '0.92rem', marginBottom: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        Detection — etiquettes actives
+    <section className="camera-detail-section">
+      <h3 style={{ fontSize: '0.88rem', opacity: 0.65, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Détection — étiquettes actives
       </h3>
       {loading ? (
         <p style={{ opacity: 0.6, fontSize: '0.88rem' }}>Chargement…</p>
@@ -1443,8 +1727,8 @@ function DetectionConfigSection({
                   fontSize: '0.9rem',
                   padding: '4px 10px',
                   borderRadius: 4,
-                  background: labels.includes(value) ? 'rgba(247,244,237,0.15)' : 'rgba(247,244,237,0.05)',
-                  border: `1px solid ${labels.includes(value) ? 'rgba(247,244,237,0.4)' : 'rgba(247,244,237,0.12)'}`,
+                  background: labels.includes(value) ? 'rgba(24,32,29,0.08)' : 'rgba(24,32,29,0.03)',
+                  border: `1px solid ${labels.includes(value) ? 'rgba(24,32,29,0.25)' : 'rgba(24,32,29,0.1)'}`,
                 }}
               >
                 <input
@@ -1463,7 +1747,7 @@ function DetectionConfigSection({
             </p>
           )}
 
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(247,244,237,0.1)' }}>
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(24,32,29,0.1)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem' }}>
               <input
                 type="checkbox"

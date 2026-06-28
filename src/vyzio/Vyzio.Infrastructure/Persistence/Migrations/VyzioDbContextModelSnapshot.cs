@@ -74,6 +74,29 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("port");
 
+                    b.Property<bool>("PrivacyModeActive")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("privacy_mode_active");
+
+                    b.Property<string>("PrivacyModeSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("privacy_mode_source");
+
+                    b.Property<string>("PrivacyModeStrategy")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("privacy_mode_strategy");
+
+                    b.Property<bool>("PrivacyVendorCut")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("privacy_vendor_cut");
+
+                    b.Property<bool>("PtzSupported")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("ptz_supported");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -137,6 +160,52 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("idx_cameras_status");
 
                     b.ToTable("cameras", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraPrivacySchedule", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CameraId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("camera_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DaysOfWeek")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("days_of_week");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("EndTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("end_time");
+
+                    b.Property<string>("StartTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("start_time");
+
+                    b.HasKey("Id")
+                        .HasName("pk_camera_privacy_schedules");
+
+                    b.HasIndex("CameraId", "Enabled")
+                        .HasDatabaseName("idx_privacy_schedules_camera");
+
+                    b.ToTable("camera_privacy_schedules", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>
@@ -294,6 +363,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("configured_at");
 
+                    b.Property<int?>("CooldownMinutes")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("cooldown_minutes");
+
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_enabled");
@@ -315,10 +388,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT")
                         .HasColumnName("media_mode");
-
-                    b.Property<int?>("CooldownMinutes")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("cooldown_minutes");
 
                     b.Property<string>("MessageFieldsJson")
                         .HasMaxLength(200)
@@ -482,6 +551,18 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasName("pk_sessions");
 
                     b.ToTable("sessions", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraPrivacySchedule", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_camera_privacy_schedules_cameras_camera_id");
+
+                    b.Navigation("Camera");
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>

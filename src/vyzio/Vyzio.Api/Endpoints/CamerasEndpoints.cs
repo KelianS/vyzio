@@ -8,6 +8,15 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Endpoints;
 
+// Request types for privacy endpoints
+file sealed record TogglePrivacyRequest(bool Active);
+file sealed record BatchTogglePrivacyRequest(IReadOnlyList<string> CameraIds, bool Active);
+
+// Request types for PTZ endpoints
+file sealed record PtzStepApiRequest(string Direction, int Speed = 50);
+file sealed record PtzPresetApiRequest(int PresetId);
+file sealed record PrivacyStrategyApiRequest(string Strategy);
+
 public static class CamerasEndpoints
 {
     private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
@@ -111,6 +120,93 @@ public static class CamerasEndpoints
 
             var stream = await response.Content.ReadAsStreamAsync(ct);
             return Results.Stream(stream, "image/jpeg");
+        });
+
+        // Privacy mode — toggle unitaire
+        group.MapPost("/{id}/privacy/toggle", async (string id, TogglePrivacyRequest request, ToggleCameraPrivacyModeUseCase useCase, CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(id, request.Active, "manual", ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        // Privacy mode — toggle batch (un seul reload Frigate)
+        group.MapPost("/privacy/batch-toggle", async (BatchTogglePrivacyRequest request, BatchToggleCameraPrivacyModeUseCase useCase, CancellationToken ct) =>
+            Results.Ok(await useCase.ExecuteAsync(request.CameraIds, request.Active, ct)));
+
+        // Privacy schedules
+        group.MapGet("/{id}/privacy/schedules", async (string id, GetCameraPrivacySchedulesUseCase useCase, CancellationToken ct) =>
+            Results.Ok(await useCase.ExecuteAsync(id, ct)));
+
+        group.MapPost("/{id}/privacy/schedules", async (string id, CreatePrivacyScheduleRequest request, CreateCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(id, request, ct);
+            return dto is null ? Results.NotFound() : Results.Created($"/api/cameras/{id}/privacy/schedules/{dto.Id}", dto);
+        });
+
+        group.MapPatch("/{id}/privacy/schedules/{scheduleId}", async (string id, string scheduleId, UpdatePrivacyScheduleRequest request, UpdateCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(scheduleId, request, ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        group.MapDelete("/{id}/privacy/schedules/{scheduleId}", async (string id, string scheduleId, DeleteCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
+        {
+            var deleted = await useCase.ExecuteAsync(scheduleId, ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
+        });
+
+        // PTZ control — single step endpoint handles both tap (durationMs=80) and hold (chained calls)
+        group.MapPost("/{id}/ptz/step", async (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
+        {
+            try
+            {
+                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct);
+                return ok ? Results.NoContent() : Results.NotFound();
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        group.MapPost("/{id}/ptz/preset/save", async (string id, PtzPresetApiRequest request, PtzSavePresetUseCase useCase, CancellationToken ct) =>
+        {
+            var ok = await useCase.ExecuteAsync(id, request.PresetId, ct);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        group.MapPost("/{id}/ptz/preset/goto", async (string id, PtzPresetApiRequest request, PtzGoToPresetUseCase useCase, CancellationToken ct) =>
+        {
+            var ok = await useCase.ExecuteAsync(id, request.PresetId, ct);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        group.MapPost("/{id}/ptz/configure-parking", async (string id, ConfigurePtzParkingPositionUseCase useCase, CancellationToken ct) =>
+        {
+            var ok = await useCase.ExecuteAsync(id, ct);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        // Diagnostic: check if camera supports position reporting (needed for AbsoluteMove home).
+        group.MapGet("/{id}/ptz/position", async (string id, GetPtzPositionUseCase useCase, CancellationToken ct) =>
+        {
+            var pos = await useCase.ExecuteAsync(id, ct);
+            if (pos is null) return Results.Ok(new { supported = false, pan = (float?)null, tilt = (float?)null });
+            return Results.Ok(new { supported = true, pan = pos.Value.Pan, tilt = pos.Value.Tilt });
+        });
+
+        // Privacy strategy selection
+        group.MapPatch("/{id}/privacy-strategy", async (string id, PrivacyStrategyApiRequest request, SetCameraPrivacyStrategyUseCase useCase, CancellationToken ct) =>
+        {
+            try
+            {
+                var dto = await useCase.ExecuteAsync(id, new SetPrivacyStrategyRequest(request.Strategy), ct);
+                return dto is null ? Results.NotFound() : Results.Ok(dto);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         });
 
         // Profile links

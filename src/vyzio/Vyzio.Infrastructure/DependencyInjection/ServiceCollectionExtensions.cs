@@ -5,6 +5,7 @@ using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
 using Vyzio.Infrastructure.Services;
+using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.DependencyInjection;
 
@@ -22,6 +23,7 @@ public static class ServiceCollectionExtensions
 
         // Repository implementations (ports → adapters)
         services.AddScoped<ICameraRepository, CameraRepository>();
+        services.AddScoped<ICameraPrivacyRepository, CameraPrivacyRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IProfilePhotoRepository, ProfilePhotoRepository>();
         services.AddScoped<IProfileCameraLinkRepository, ProfileCameraLinkRepository>();
@@ -32,6 +34,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
+
+        // Vendor camera adapters — one entry per supported VendorFamily
+        services.AddHttpClient("tapo");
+        services.AddHttpClient("onvif");
+        services.AddSingleton<OnvifPtzClient>();
+        services.AddSingleton<IVendorCameraAdapter, TapoCameraAdapter>();
+        services.AddSingleton<IVendorCameraAdapter, ICSeeXMEyeCameraAdapter>();
+        services.AddSingleton<IVendorCameraAdapter, OnvifCameraAdapter>();
+        services.AddSingleton<IVendorCameraAdapterFactory, VendorCameraAdapterFactory>();
 
         return services;
     }

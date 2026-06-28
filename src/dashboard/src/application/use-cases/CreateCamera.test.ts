@@ -22,7 +22,7 @@ describe('CreateCamera', () => {
       vendorFamily: null,
     }
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -36,7 +36,7 @@ describe('CreateCamera', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new CreateCamera(repository)
+    const useCase = new CreateCamera(repository as unknown as CameraRepository)
     const input = {
       displayName: 'Front Door',
       host: '192.168.1.10',

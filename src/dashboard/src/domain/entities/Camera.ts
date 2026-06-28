@@ -17,4 +17,9 @@ export interface Camera {
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string | null
   vendorFamily: string | null
+  privacyModeActive: boolean
+  privacyModeSource: 'manual' | 'schedule' | null
+  privacyVendorCut: boolean
+  ptzSupported: boolean
+  privacyModeStrategy: 'software' | 'ptz_parking' | 'hardware'
 }

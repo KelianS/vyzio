@@ -51,6 +51,12 @@ Remplacez :
 - Cette methode vient d'une procedure communautaire, pas d'un guide officiel du fabricant.
 - Certaines variantes V380 peuvent reagir un peu differemment, mais cette methode fonctionne souvent.
 
+## Mode vie privée
+
+**Niveau de garantie : enregistrement désactivé** — lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Vyzio n'enregistre plus et ne génère plus d'alertes pour cette caméra.
+
+**Évolution prévue (v1.0.1-P2) :** Les caméras V380 Pro PTZ supporteront un mode de **parking physique** — la caméra pivotera vers une butée mécanique à l'activation et reviendra à sa position de surveillance à la désactivation.
+
 ## Liens utiles
 
 - [Telecharger le fichier ceshi.ini](/api/cameras/vendor-assets/ceshi.ini)

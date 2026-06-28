@@ -28,6 +28,7 @@
   align-items: center;
   gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .app-header-nav-link {
@@ -58,27 +59,24 @@
 
 @media (max-width: 640px) {
   .app-header {
-    gap: 12px;
-    padding: 0 14px;
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 14px;
+    gap: 4px 12px;
+  }
+
+  .app-header-brand {
+    flex-shrink: 0;
+  }
+
+  .app-header-nav {
+    flex-basis: 100%;
+    gap: 0;
   }
 
   .app-header-nav-link {
     padding: 0 8px;
     font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .app-header-brand {
-    font-size: 1rem;
-  }
-
-  .app-header-nav {
-    gap: 0;
-  }
-
-  .app-header-nav-link {
-    padding: 0 6px;
-    font-size: 0.76rem;
+    height: 30px;
   }
 }

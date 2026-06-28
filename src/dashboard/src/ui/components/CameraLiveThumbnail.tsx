@@ -5,9 +5,10 @@ interface CameraLiveThumbnailProps {
   camera: Camera
   apiBaseUrl: string
   onExpand?: () => void
+  onTogglePrivacy?: (camera: Camera, active: boolean) => void
 }
 
-export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand }: CameraLiveThumbnailProps) {
+export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePrivacy }: CameraLiveThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(
     `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
   )
@@ -17,27 +18,43 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand }: CameraLive
   useEffect(() => {
     setOffline(false)
 
-    intervalRef.current = setInterval(() => {
-      setImgSrc(
-        `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
-      )
-    }, 1000)
+    if (!camera.privacyModeActive) {
+      intervalRef.current = setInterval(() => {
+        setImgSrc(
+          `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
+        )
+      }, 1000)
+    }
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [camera.id, apiBaseUrl])
+  }, [camera.id, camera.privacyModeActive, apiBaseUrl])
+
+  const handleTogglePrivacy = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onTogglePrivacy?.(camera, !camera.privacyModeActive)
+  }
 
   return (
     <article
-      className={`live-thumb${offline ? ' live-thumb--offline' : ''}${onExpand ? ' live-thumb--expandable' : ''}`}
-      onClick={onExpand}
-      role={onExpand ? 'button' : undefined}
-      tabIndex={onExpand ? 0 : undefined}
-      onKeyDown={onExpand ? (e) => { if (e.key === 'Enter' || e.key === ' ') onExpand() } : undefined}
+      className={`live-thumb${offline ? ' live-thumb--offline' : ''}${camera.privacyModeActive ? (camera.privacyVendorCut ? ' live-thumb--privacy-hw' : ' live-thumb--privacy') : ''}${onExpand && !camera.privacyModeActive ? ' live-thumb--expandable' : ''}`}
+      onClick={camera.privacyModeActive ? undefined : onExpand}
+      role={onExpand && !camera.privacyModeActive ? 'button' : undefined}
+      tabIndex={onExpand && !camera.privacyModeActive ? 0 : undefined}
+      onKeyDown={onExpand && !camera.privacyModeActive ? (e) => { if (e.key === 'Enter' || e.key === ' ') onExpand() } : undefined}
     >
       <div className="live-thumb-frame">
-        {offline ? (
+        {camera.privacyModeActive ? (
+          <div className={`live-thumb-privacy-screen${camera.privacyVendorCut ? ' live-thumb-privacy-screen--hw' : ''}`}>
+            <span className="live-thumb-privacy-icon" aria-hidden="true">
+              {camera.privacyVendorCut ? '🔒' : '🔇'}
+            </span>
+            <span className="live-thumb-privacy-label">
+              {camera.privacyVendorCut ? 'Caméra coupée — matériel' : 'Caméra en pause — enregistrement désactivé'}
+            </span>
+          </div>
+        ) : offline ? (
           <div className="live-thumb-offline">Hors ligne</div>
         ) : (
           <img
@@ -49,8 +66,25 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand }: CameraLive
         )}
       </div>
       <div className="live-thumb-footer">
-        <span className={`live-dot${offline ? '' : ' live-dot--on'}`} aria-hidden="true" />
+        {camera.privacyModeActive ? (
+          <span className={`live-dot${camera.privacyVendorCut ? ' live-dot--privacy-hw' : ' live-dot--privacy'}`} aria-hidden="true" />
+        ) : (
+          <span className={`live-dot${offline ? '' : ' live-dot--on'}`} aria-hidden="true" />
+        )}
         <span className="live-thumb-name">{camera.displayName}</span>
+        {camera.privacyModeSource === 'schedule' && (
+          <span className="live-thumb-badge live-thumb-badge--schedule" title="Activé par planification">planifié</span>
+        )}
+        {onTogglePrivacy && (
+          <button
+            type="button"
+            className={`live-thumb-privacy-btn${camera.privacyModeActive ? ' live-thumb-privacy-btn--active' : ''}`}
+            onClick={handleTogglePrivacy}
+            title={camera.privacyModeActive ? 'Désactiver le mode vie privée' : 'Activer le mode vie privée'}
+          >
+            {camera.privacyModeActive ? 'Réactiver' : 'Pause'}
+          </button>
+        )}
       </div>
     </article>
   )

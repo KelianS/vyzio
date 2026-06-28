@@ -24,7 +24,7 @@ describe('GetCameras', () => {
       },
     ]
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn().mockResolvedValue(cameras),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -38,7 +38,7 @@ describe('GetCameras', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new GetCameras(repository)
+    const useCase = new GetCameras(repository as unknown as CameraRepository)
 
     await expect(useCase.execute()).resolves.toEqual(cameras)
     expect(repository.getAll).toHaveBeenCalledOnce()

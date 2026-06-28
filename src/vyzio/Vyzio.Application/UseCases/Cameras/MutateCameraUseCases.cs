@@ -171,6 +171,11 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
             camera.LastSuccessfulFrameAt = null;
         }
 
+        if (request.PtzSupported.HasValue)
+        {
+            camera.PtzSupported = request.PtzSupported.Value;
+        }
+
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         await cameras.UpdateAsync(camera, ct);

@@ -9,7 +9,8 @@ on:
 jobs:
   backend:
     name: Backend — build & test
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # SQLitePCLRaw 3.x requires GLIBC >= 2.33; ubuntu-24.04 ships 2.36
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +51,7 @@ jobs:
 
   frontend:
     name: Frontend — build & test
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -94,7 +95,7 @@ jobs:
 
   docker-build-check:
     name: Docker — build images (no push)
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4

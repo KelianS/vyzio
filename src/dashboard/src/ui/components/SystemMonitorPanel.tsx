@@ -12,7 +12,7 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
           <h2>Système</h2>
         </div>
         <p style={{ fontSize: '0.85rem', opacity: 0.6, padding: '0 0 8px' }}>
-          Frigate inaccessible — métriques indisponibles.
+          Système de détection inaccessible — métriques indisponibles.
         </p>
         <div className="panel-cta-row">
           <a href="#expert" className="secondary-cta">Diagnostiquer →</a>
@@ -59,7 +59,7 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
       )}
 
       <div className="panel-cta-row">
-        <a href="#expert" className="secondary-cta">Détails Frigate →</a>
+        <a href="#expert" className="secondary-cta">Détails techniques →</a>
       </div>
     </article>
   )

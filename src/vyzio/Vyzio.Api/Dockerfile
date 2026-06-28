@@ -32,5 +32,5 @@ RUN addgroup -S vyzio \
 	&& chmod +x /entrypoint.sh
 
 EXPOSE 8443
-# nosemgrep: dockerfile.security.missing-user-entrypoint
+# nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
