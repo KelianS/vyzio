@@ -39,6 +39,7 @@ export function useNotificationSettings(
   useEffect(() => {
     abortRef.current?.abort()
     abortRef.current = new AbortController()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
 
     getConfig

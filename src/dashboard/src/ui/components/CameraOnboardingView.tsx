@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import { useToast } from './Toast'
+import { useAsyncAction } from '../hooks/useAsyncAction'
 import ReactMarkdown from 'react-markdown'
 import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
@@ -39,6 +40,8 @@ import {
   formatStatusTone,
   formatValidationStateLabel,
 } from '../formatters/cameras'
+import { appErrorMessage } from '../../domain/errors/AppError'
+import { toAppError } from '../../domain/errors/toAppError'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -116,10 +119,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const selectedCameraId = selection.kind === 'camera' ? selection.cameraId : null
   const cameraStatusState = useCameraStatus(props.getCameraStatus, selectedCameraId)
   const [form, setForm] = useState<CameraDraftInput>(emptyForm)
-  const [discoveryLoading, setDiscoveryLoading] = useState(false)
   const [discoveryError, setDiscoveryError] = useState<string | null>(null)
   const [discoveryResults, setDiscoveryResults] = useState<DiscoveryCandidate[]>([])
-  const [actionLoading, setActionLoading] = useState(false)
   const [applyLoading, setApplyLoading] = useState(false)
   const [formMessage, setFormMessage] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -135,20 +136,157 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [detectionAvailableLabels, setDetectionAvailableLabels] = useState<string[]>([])
   const [allDetectionLabels, setAllDetectionLabels] = useState<DetectionLabel[]>([])
   const [detectionContinuousRecording, setDetectionContinuousRecording] = useState(false)
-
-  useEffect(() => {
-    props.getCameraLabels.execute()
-      .then(setAllDetectionLabels)
-      .catch(() => {})
-  }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
   const [dvripMode, setDvripMode] = useState(false)
   const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
-  const [strategySaving, setStrategySaving] = useState(false)
   const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    props.getCameraLabels.execute()
+      .then(setAllDetectionLabels)
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
+  }, [props.getCameraLabels, toast])
+
+  const discoverAction = useAsyncAction(
+    () => props.discoverCameras.execute(),
+    {
+      onSuccess: (candidates) => {
+        setDiscoveryResults(candidates)
+        if (candidates.length > 0) selectDiscoveryCandidate(0, candidates)
+        setFormMessage(
+          candidates.length > 0
+            ? `${candidates.length} camera(s) candidate(s) detectee(s).`
+            : 'Aucune camera detectee automatiquement.',
+        )
+      },
+      onError: (e) => setDiscoveryError(appErrorMessage(e)),
+    },
+  )
+
+  const createAction = useAsyncAction(
+    async () => {
+      const created = await props.createCamera.execute(form)
+      const verified = await props.verifyCamera.execute(created.id)
+      camerasState.reload()
+      setSelection({ kind: 'camera', cameraId: created.id })
+      setDraftVerification(null)
+      toast(
+        verified.guidance ??
+          `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour activer la surveillance.`,
+        'success',
+      )
+    },
+    { onError: (e) => setFormError(appErrorMessage(e)) },
+  )
+
+  const verifyDraftAction = useAsyncAction(
+    async () => {
+      const status = await props.verifyDraftCamera.execute(form)
+      if (!status.connected) {
+        setDraftVerification(null)
+        setFormError(status.guidance ?? 'Le flux n a pas pu etre valide.')
+        return
+      }
+      setDraftVerification({ connected: status.connected, guidance: status.guidance })
+      setFormMessage(status.guidance ?? 'Flux valide. Vous pouvez maintenant ajouter cette camera.')
+    },
+    {
+      onError: (e) => {
+        setDraftVerification(null)
+        setFormError(appErrorMessage(e))
+      },
+    },
+  )
+
+  const verifyAction = useAsyncAction(
+    async () => {
+      const status = await props.verifyCamera.execute(selectedCameraId!)
+      camerasState.reload()
+      cameraStatusState.reload()
+      setDetailMessage(status.guidance ?? 'Verification terminee.')
+    },
+    { onError: (e) => setDetailError(appErrorMessage(e)) },
+  )
+
+  const refreshAction = useAsyncAction(
+    async () => {
+      const candidates = await props.discoverCameras.execute({
+        host: selectedCandidate!.host,
+        port: selectedCandidate!.port,
+      })
+      const refreshed = candidates.find((c) => c.host === selectedCandidate!.host)
+      if (!refreshed) {
+        setFormMessage('Aucune nouvelle information detectee pour ce candidat.')
+        return
+      }
+      const idx = selection.kind === 'candidate' ? selection.index : 0
+      const nextResults = [...discoveryResults]
+      nextResults[idx] = refreshed
+      setDiscoveryResults(nextResults)
+      selectDiscoveryCandidate(idx, nextResults)
+      setFormMessage(
+        refreshed.streamPath
+          ? 'Candidat rafraichi. La camera semble maintenant joignable.'
+          : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.',
+      )
+    },
+    { onError: (e) => setFormError(appErrorMessage(e)) },
+  )
+
+  const deleteCameraAction = useAsyncAction(
+    async () => {
+      const result = await props.deleteCamera.execute(selectedCameraId!)
+      camerasState.reload()
+      cameraStatusState.reload()
+      toast(result.message, 'info')
+    },
+    { onError: (e) => setDetailError(appErrorMessage(e)) },
+  )
+
+  const updateAction = useAsyncAction(
+    async () => {
+      const [updated] = await Promise.all([
+        props.updateCamera.execute(selectedCameraId!, {
+          ...editForm,
+          password: editPassword.trim() ? editPassword : null,
+        }),
+        props.saveCameraDetectionConfig.execute(selectedCameraId!, detectionLabels, detectionContinuousRecording),
+      ])
+      camerasState.reload()
+      cameraStatusState.reload()
+      setEditPassword('')
+      toast(
+        updated.validationState === 'draft'
+          ? 'Camera mise a jour. Reverifiez le flux avant d appliquer la configuration.'
+          : 'Camera mise a jour. Appliquez la configuration pour prendre en compte les modifications.',
+        'success',
+      )
+    },
+    { onError: (e) => setDetailError(appErrorMessage(e)) },
+  )
+
+  const saveStrategyAction = useAsyncAction(
+    () => props.setPrivacyStrategy.execute(selectedCameraId!, pendingStrategy!),
+    {
+      onSuccess: () => {
+        setStrategyFeedback('Stratégie enregistrée.')
+        camerasState.reload()
+      },
+      onError: (e) => setStrategyFeedback(appErrorMessage(e)),
+    },
+  )
+
+  const actionLoading =
+    applyLoading ||
+    createAction.loading ||
+    verifyDraftAction.loading ||
+    verifyAction.loading ||
+    refreshAction.loading ||
+    deleteCameraAction.loading ||
+    updateAction.loading
 
   const selectedCandidate =
     selection.kind === 'candidate' ? (discoveryResults[selection.index] ?? null) : null
@@ -212,6 +350,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       selection.kind === 'camera' &&
       !camerasState.data.some((camera) => camera.id === selection.cameraId)
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection(
         camerasState.data.length > 0
           ? { kind: 'camera', cameraId: camerasState.data[0].id }
@@ -222,6 +361,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   useEffect(() => {
     if (selection.kind === 'candidate' && !discoveryResults[selection.index]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection({ kind: 'manual' })
     }
   }, [discoveryResults, selection])
@@ -231,6 +371,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       return
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditForm({
       displayName: selectedCamera.displayName,
       host: selectedCamera.host,
@@ -259,31 +400,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           setDetectionContinuousRecording(config.continuousRecordingEnabled)
         }
       })
-      .catch(() => {})
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
       .finally(() => setDetectionConfigLoading(false))
-  }, [selectedCamera])
+  }, [selectedCamera, props.getCameraDetectionConfig, toast])
 
   async function handleDiscovery() {
-    setDiscoveryLoading(true)
     setDiscoveryError(null)
     setFormError(null)
-
-    try {
-      const candidates = await props.discoverCameras.execute()
-      setDiscoveryResults(candidates)
-      if (candidates.length > 0) {
-        selectDiscoveryCandidate(0, candidates)
-      }
-      setFormMessage(
-        candidates.length > 0
-          ? `${candidates.length} camera(s) candidate(s) detectee(s).`
-          : 'Aucune camera detectee automatiquement.',
-      )
-    } catch (error: unknown) {
-      setDiscoveryError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setDiscoveryLoading(false)
-    }
+    await discoverAction.run()
   }
 
   async function handleCreate() {
@@ -291,116 +415,33 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       setFormError('Verifiez d abord le flux avant d ajouter la camera.')
       return
     }
-
-    setActionLoading(true)
     setFormError(null)
     setFormMessage(null)
     setDetailMessage(null)
-
-    try {
-      const created = await props.createCamera.execute(form)
-      const verified = await props.verifyCamera.execute(created.id)
-      camerasState.reload()
-      setSelection({ kind: 'camera', cameraId: created.id })
-      setDraftVerification(null)
-      toast(
-        verified.guidance ??
-          `Camera "${created.displayName}" ajoutee. Appliquez la configuration pour activer la surveillance.`,
-        'success',
-      )
-    } catch (error: unknown) {
-      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setActionLoading(false)
-    }
+    await createAction.run()
   }
 
   async function handleVerifyDraft() {
-    setActionLoading(true)
     setFormError(null)
     setFormMessage(null)
-
-    try {
-      const status = await props.verifyDraftCamera.execute(form)
-      if (!status.connected) {
-        setDraftVerification(null)
-        setFormError(status.guidance ?? 'Le flux n a pas pu etre valide.')
-        return
-      }
-
-      setDraftVerification({ connected: status.connected, guidance: status.guidance })
-      setFormMessage(status.guidance ?? 'Flux valide. Vous pouvez maintenant ajouter cette camera.')
-    } catch (error: unknown) {
-      setDraftVerification(null)
-      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setActionLoading(false)
-    }
+    await verifyDraftAction.run()
   }
 
   async function handleVerify() {
-    if (!selectedCameraId) {
-      return
-    }
-
-    setActionLoading(true)
+    if (!selectedCameraId) return
     setDetailError(null)
     setDetailMessage(null)
-
-    try {
-      const status = await props.verifyCamera.execute(selectedCameraId)
-      camerasState.reload()
-      cameraStatusState.reload()
-      setDetailMessage(status.guidance ?? 'Verification terminee.')
-    } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setActionLoading(false)
-    }
+    await verifyAction.run()
   }
 
   async function handleRefreshCandidate() {
-    if (!selectedCandidate || selection.kind !== 'candidate') {
-      return
-    }
-
-    setActionLoading(true)
+    if (!selectedCandidate || selection.kind !== 'candidate') return
     setFormError(null)
     setFormMessage(null)
-
-    try {
-      const candidates = await props.discoverCameras.execute({
-        host: selectedCandidate.host,
-        port: selectedCandidate.port,
-      })
-
-      const refreshedCandidate = candidates.find(
-        (candidate) => candidate.host === selectedCandidate.host,
-      )
-
-      if (!refreshedCandidate) {
-        setFormMessage('Aucune nouvelle information detectee pour ce candidat.')
-        return
-      }
-
-      const nextResults = [...discoveryResults]
-      nextResults[selection.index] = refreshedCandidate
-      setDiscoveryResults(nextResults)
-      selectDiscoveryCandidate(selection.index, nextResults)
-      setFormMessage(
-        refreshedCandidate.streamPath
-          ? 'Candidat rafraichi. La camera semble maintenant joignable.'
-          : 'Candidat rafraichi. Les informations de detection ont ete mises a jour.',
-      )
-    } catch (error: unknown) {
-      setFormError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setActionLoading(false)
-    }
+    await refreshAction.run()
   }
 
   async function handleApplyConfiguration() {
-    setActionLoading(true)
     setApplyLoading(true)
     setFormError(null)
     setDetailError(null)
@@ -423,71 +464,29 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
       toast(`${result.message} (${result.configPath})`, 'success')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      const message = appErrorMessage(toAppError(error))
       if (selection.kind === 'camera') {
         setDetailError(message)
       } else {
         setFormError(message)
       }
     } finally {
-      setActionLoading(false)
       setApplyLoading(false)
     }
   }
 
   async function handleDelete() {
-    if (!selectedCameraId) {
-      return
-    }
-
-    setActionLoading(true)
+    if (!selectedCameraId) return
     setDetailError(null)
     setDetailMessage(null)
-
-    try {
-      const result = await props.deleteCamera.execute(selectedCameraId)
-      camerasState.reload()
-      cameraStatusState.reload()
-      toast(result.message, 'info')
-    } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setActionLoading(false)
-    }
+    await deleteCameraAction.run()
   }
 
   async function handleUpdate() {
-    if (!selectedCameraId) {
-      return
-    }
-
-    setActionLoading(true)
+    if (!selectedCameraId) return
     setDetailError(null)
     setDetailMessage(null)
-
-    try {
-      const [updated] = await Promise.all([
-        props.updateCamera.execute(selectedCameraId, {
-          ...editForm,
-          password: editPassword.trim() ? editPassword : null,
-        }),
-        props.saveCameraDetectionConfig.execute(selectedCameraId, detectionLabels, detectionContinuousRecording),
-      ])
-
-      camerasState.reload()
-      cameraStatusState.reload()
-      setEditPassword('')
-      toast(
-        updated.validationState === 'draft'
-          ? 'Camera mise a jour. Reverifiez le flux avant d appliquer la configuration.'
-          : 'Camera mise a jour. Appliquez la configuration pour prendre en compte les modifications.',
-        'success',
-      )
-    } catch (error: unknown) {
-      setDetailError(error instanceof Error ? error.message : 'Erreur inconnue')
-    } finally {
-      setActionLoading(false)
-    }
+    await updateAction.run()
   }
 
   function updateForm(patch: Partial<CameraDraftInput>) {
@@ -734,7 +733,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         {vendorAssistanceState.loading ? (
           <p className="camera-section-copy">Chargement de la notice constructeur...</p>
         ) : vendorAssistanceState.error ? (
-          <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
+          <p className="camera-inline-state error">{appErrorMessage(vendorAssistanceState.error)}</p>
         ) : vendorAssistanceState.data?.markdown ? (
           <div className="camera-vendor-markdown">
             <ReactMarkdown
@@ -871,8 +870,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 : 'Catalogue pret'}
           </div>
           <p>
-            {camerasState.error ??
-              `${camerasState.data.length} camera(s) dans le catalogue actuel.`}
+            {camerasState.error
+              ? appErrorMessage(camerasState.error)
+              : `${camerasState.data.length} camera(s) dans le catalogue actuel.`}
           </p>
           {discoveryError ? <p className="status-inline error">{discoveryError}</p> : null}
         </div>
@@ -929,9 +929,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               className="primary-cta camera-sidebar-btn"
               type="button"
               onClick={handleDiscovery}
-              disabled={discoveryLoading || actionLoading}
+              disabled={discoverAction.loading || actionLoading}
             >
-              {discoveryLoading ? 'Recherche...' : 'Scanner'}
+              {discoverAction.loading ? 'Recherche...' : 'Scanner'}
             </button>
 
             {discoveryError ? <p className="camera-inline-state error">{discoveryError}</p> : null}
@@ -1184,7 +1184,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p>
               ) : null}
               {cameraStatusState.error ? (
-                <p className="camera-inline-state error">{cameraStatusState.error}</p>
+                <p className="camera-inline-state error">{appErrorMessage(cameraStatusState.error)}</p>
               ) : null}
 
               {cameraStatusState.data ? (
@@ -1277,23 +1277,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           <button
                             type="button"
                             className="privacy-strategy-save-btn"
-                            disabled={strategySaving || pendingStrategy === selectedCamera.privacyModeStrategy}
+                            disabled={saveStrategyAction.loading || pendingStrategy === selectedCamera.privacyModeStrategy}
                             onClick={async () => {
                               if (!pendingStrategy) return
-                              setStrategySaving(true)
                               setStrategyFeedback(null)
-                              try {
-                                await props.setPrivacyStrategy.execute(selectedCameraId, pendingStrategy)
-                                setStrategyFeedback('Stratégie enregistrée.')
-                                camerasState.reload()
-                              } catch {
-                                setStrategyFeedback('Erreur lors de la sauvegarde.')
-                              } finally {
-                                setStrategySaving(false)
-                              }
+                              await saveStrategyAction.run()
                             }}
                           >
-                            {strategySaving ? 'Enregistrement...' : 'Enregistrer la stratégie'}
+                            {saveStrategyAction.loading ? 'Enregistrement...' : 'Enregistrer la stratégie'}
                           </button>
 
                           {strategyFeedback && (
@@ -1529,6 +1520,7 @@ function PrivacyScheduleSection({
   createSchedule: CreateCameraPrivacySchedule
   deleteSchedule: DeleteCameraPrivacySchedule
 }) {
+  const { toast } = useToast()
   const [schedules, setSchedules] = useState<CameraPrivacySchedule[]>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5])
@@ -1541,10 +1533,11 @@ function PrivacyScheduleSection({
     setLoading(true)
     getSchedules.execute(cameraId)
       .then(setSchedules)
-      .catch(() => {})
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
       .finally(() => setLoading(false))
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps,react-hooks/set-state-in-effect
   useEffect(() => { reload() }, [cameraId])
 
   const toggleDay = (d: number) =>
@@ -1557,16 +1550,20 @@ function PrivacyScheduleSection({
     try {
       await createSchedule.execute(cameraId, { daysOfWeek: days, startTime, endTime })
       reload()
-    } catch {
-      setError('Erreur lors de la création du schedule.')
+    } catch (e: unknown) {
+      setError(appErrorMessage(toAppError(e)))
     } finally {
       setAdding(false)
     }
   }
 
   const handleDelete = async (scheduleId: string) => {
-    await deleteSchedule.execute(cameraId, scheduleId)
-    setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
+    try {
+      await deleteSchedule.execute(cameraId, scheduleId)
+      setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
+    } catch (e: unknown) {
+      setError(appErrorMessage(toAppError(e)))
+    }
   }
 
   const handleApplyToAll = async () => {
@@ -1578,8 +1575,8 @@ function PrivacyScheduleSection({
         await createSchedule.execute(cam.id, { daysOfWeek: days, startTime, endTime })
       }
       reload()
-    } catch {
-      setError('Erreur lors de l\'application à toutes les caméras.')
+    } catch (e: unknown) {
+      setError(appErrorMessage(toAppError(e)))
     } finally {
       setAdding(false)
     }

@@ -56,6 +56,8 @@ import {
 import { AppHeader } from './ui/components/AppHeader'
 import { CameraLiveThumbnail } from './ui/components/CameraLiveThumbnail'
 import { ToastProvider } from './ui/components/Toast'
+import type { AppError } from './domain/errors/AppError'
+import { appErrorMessage } from './domain/errors/AppError'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
 import { PtzControlPanel } from './ui/components/PtzControlPanel'
 import { DetectionHistoryView } from './ui/components/DetectionHistoryView'
@@ -219,7 +221,7 @@ type CamerasData = ReturnType<typeof useCameras>['data']
 interface HubViewProps {
   hubLoading: boolean
   camerasLoading: boolean
-  hubError: string | null
+  hubError: AppError | null
   data: HubOverviewData
   cameras: CamerasData
   getSystemStats: GetSystemStats
@@ -262,7 +264,7 @@ function HubLoadingState() {
   )
 }
 
-function HubDegradedState({ error }: { error: string | null }) {
+function HubDegradedState({ error }: { error: AppError | null }) {
   return (
     <main className="app-shell">
       <section className="hub-degraded-panel panel">
@@ -281,7 +283,7 @@ function HubDegradedState({ error }: { error: string | null }) {
             <li>Le conteneur Docker est en cours d'exécution</li>
             <li>L'adresse du backend est correcte dans la configuration</li>
           </ol>
-          {error && <p className="hub-degraded-error">{error}</p>}
+          {error && <p className="hub-degraded-error">{appErrorMessage(error)}</p>}
         </div>
       </section>
     </main>
@@ -606,7 +608,7 @@ function PrivacyConfirmModal({
 }
 
 function LiveFeedModal({ cameraId, apiBaseUrl, label, ptzSupported }: { cameraId: string; apiBaseUrl: string; label: string; ptzSupported: boolean }) {
-  const [src, setSrc] = useState(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+  const [src, setSrc] = useState(() => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {

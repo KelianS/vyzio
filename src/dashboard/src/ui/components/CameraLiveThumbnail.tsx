@@ -10,12 +10,13 @@ interface CameraLiveThumbnailProps {
 
 export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePrivacy }: CameraLiveThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(
-    `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
+    () => `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
   )
   const [offline, setOffline] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOffline(false)
 
     if (!camera.privacyModeActive) {

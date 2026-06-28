@@ -10,7 +10,7 @@ import type { DiscoveryRequest } from '../../domain/ports/CameraRepository'
 import type { VendorAssistanceRequest } from '../../domain/ports/CameraRepository'
 import type { CreatePrivacyScheduleInput, UpdatePrivacyScheduleInput } from '../../domain/ports/CameraRepository'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
-import { fetchJson } from '../http/fetchJson'
+import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetchJson'
 
 interface CameraDto {
   id: string
@@ -231,7 +231,7 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void> {
-    await deleteJson<void>(
+    await deleteReq(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
     )
   }
@@ -345,79 +345,4 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
         }
       : null,
   }
-}
-
-async function postJson<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} on ${url}`)
-  }
-
-  if (response.status === 204) {
-    return null as T
-  }
-
-  const payload = await response.text()
-  if (!payload.trim()) {
-    return null as T
-  }
-
-  return JSON.parse(payload) as T
-}
-
-async function deleteJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      Accept: 'application/json',
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} on ${url}`)
-  }
-
-  return response.json() as Promise<T>
-}
-
-async function patchJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'PATCH',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} on ${url}`)
-  }
-
-  return response.json() as Promise<T>
-}
-
-async function putJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} on ${url}`)
-  }
-
-  return response.json() as Promise<T>
 }

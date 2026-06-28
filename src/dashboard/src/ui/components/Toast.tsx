@@ -62,6 +62,7 @@ function ToastChip({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   return useContext(ToastContext)
 }
