@@ -27,6 +27,7 @@ import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
+import { ConfirmModal } from './ConfirmModal'
 import { PtzControlPanel } from './PtzControlPanel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
@@ -141,6 +142,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [dvripMode, setDvripMode] = useState(false)
   const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
   const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmScan, setConfirmScan] = useState(false)
+  const [confirmApply, setConfirmApply] = useState(false)
 
   const { toast } = useToast()
 
@@ -888,7 +892,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <button
               className="primary-cta camera-sidebar-btn"
               type="button"
-              onClick={handleApplyConfiguration}
+              onClick={() => setConfirmApply(true)}
               disabled={actionLoading || !canApplyConfiguration}
             >
               {applyLoading ? 'Application...' : 'Appliquer'}
@@ -928,7 +932,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             <button
               className="primary-cta camera-sidebar-btn"
               type="button"
-              onClick={handleDiscovery}
+              onClick={() => setConfirmScan(true)}
               disabled={discoverAction.loading || actionLoading}
             >
               {discoverAction.loading ? 'Recherche...' : 'Scanner'}
@@ -1450,7 +1454,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <button
                       className="danger-cta"
                       type="button"
-                      onClick={handleDelete}
+                      onClick={() => setConfirmDelete(true)}
                       disabled={
                         actionLoading || selectedCamera?.validationState === 'pending_removal'
                       }
@@ -1478,6 +1482,47 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           )}
         </article>
       </section>
+
+      {confirmScan && (
+        <ConfirmModal
+          title="Scanner le réseau"
+          body="Vyzio va sonder l'ensemble de votre réseau local à la recherche de caméras IP. Cette opération peut prendre entre 15 et 30 secondes et génère du trafic réseau."
+          confirmLabel="Lancer le scan"
+          onConfirm={async () => {
+            setConfirmScan(false)
+            await handleDiscovery()
+          }}
+          onCancel={() => setConfirmScan(false)}
+        />
+      )}
+
+      {confirmApply && (
+        <ConfirmModal
+          title="Appliquer la configuration"
+          body="Vyzio va regénérer la configuration et redémarrer Frigate. La surveillance sera interrompue brièvement (quelques secondes à quelques dizaines de secondes selon votre machine)."
+          confirmLabel="Appliquer"
+          tone="warn"
+          onConfirm={async () => {
+            setConfirmApply(false)
+            await handleApplyConfiguration()
+          }}
+          onCancel={() => setConfirmApply(false)}
+        />
+      )}
+
+      {confirmDelete && selectedCameraId && (
+        <ConfirmModal
+          title="Supprimer la caméra"
+          body={`Supprimer "${selectedCamera?.displayName ?? 'cette caméra'}" du catalogue ? La configuration Frigate sera mise à jour et l'enregistrement sur cette caméra sera arrêté.`}
+          confirmLabel="Supprimer la caméra"
+          tone="danger"
+          onConfirm={async () => {
+            await handleDelete()
+            setConfirmDelete(false)
+          }}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
     </main>
   )
 }
