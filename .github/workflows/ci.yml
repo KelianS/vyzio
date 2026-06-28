@@ -9,7 +9,8 @@ on:
 jobs:
   backend:
     name: Backend — build & test
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # SQLitePCLRaw 3.x requires GLIBC >= 2.33; ubuntu-24.04 ships 2.36
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
 
