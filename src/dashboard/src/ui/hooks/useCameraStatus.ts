@@ -1,4 +1,3 @@
-import type { CameraStatus } from '../../domain/entities/CameraStatus'
 import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatus'
 import { useAsync } from './useAsync'
 

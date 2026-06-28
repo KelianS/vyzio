@@ -610,6 +610,7 @@ function TelegramConfigPanel({
 
   useEffect(() => {
     if (config && config !== syncedConfig) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setChatId(config.chatId ?? '')
       setIsEnabled(config.isEnabled)
       setMinimumConfidence(Math.round(config.minimumConfidence * 100))

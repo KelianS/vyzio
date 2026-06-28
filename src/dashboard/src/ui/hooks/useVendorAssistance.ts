@@ -1,4 +1,3 @@
-import type { VendorAssistance } from '../../domain/entities/VendorAssistance'
 import type { GetVendorAssistance } from '../../application/use-cases/GetVendorAssistance'
 import { useAsync } from './useAsync'
 

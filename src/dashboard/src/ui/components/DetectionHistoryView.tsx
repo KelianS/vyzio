@@ -48,7 +48,7 @@ export function DetectionHistoryView({
     getProfiles.execute().then(setProfiles).catch((e: unknown) => {
       toast(appErrorMessage(toAppError(e)), 'error')
     })
-  }, [getProfiles])
+  }, [getProfiles, toast])
 
   useEffect(() => {
     getCameraLabels.execute()
@@ -56,9 +56,10 @@ export function DetectionHistoryView({
       .catch((e: unknown) => {
         toast(appErrorMessage(toAppError(e)), 'error')
       })
-  }, [getCameraLabels])
+  }, [getCameraLabels, toast])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
     getDetectionHistory

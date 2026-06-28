@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AppError } from '../../domain/errors/AppError'
 import { toAppError } from '../../domain/errors/toAppError'
 
@@ -24,10 +24,13 @@ export function useAsync<T>(
   })
 
   const fnRef = useRef(fn)
-  fnRef.current = fn
+  useLayoutEffect(() => {
+    fnRef.current = fn
+  })
 
   useEffect(() => {
     if (skip) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ data: null, loading: false, error: null })
       return
     }

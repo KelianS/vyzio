@@ -91,9 +91,8 @@ export function ProfilesView({
       })
   }, [getProfiles])
 
-  useEffect(() => {
-    loadProfiles()
-  }, [loadProfiles])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadProfiles() }, [loadProfiles])
 
   function handleSelect(id: string) {
     setSelectedId(id)
@@ -433,6 +432,7 @@ function ProfilePhotosTab({
       .catch(() => { toast('Impossible de charger les photos.', 'error'); setLoading(false) })
   }, [profileId, getProfilePhotos, toast])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -575,6 +575,7 @@ function ProfileCamerasTab({
       .catch(() => { toast('Impossible de charger les caméras liées.', 'error'); setLoading(false) })
   }, [profileId, getProfileCameraLinks, toast])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   function toggle(cameraId: string) {

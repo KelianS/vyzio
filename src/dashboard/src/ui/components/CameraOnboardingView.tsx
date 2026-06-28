@@ -136,12 +136,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [detectionAvailableLabels, setDetectionAvailableLabels] = useState<string[]>([])
   const [allDetectionLabels, setAllDetectionLabels] = useState<DetectionLabel[]>([])
   const [detectionContinuousRecording, setDetectionContinuousRecording] = useState(false)
-
-  useEffect(() => {
-    props.getCameraLabels.execute()
-      .then(setAllDetectionLabels)
-      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
-  }, [props.getCameraLabels])
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
   const [showLive, setShowLive] = useState(false)
   const [dvripMode, setDvripMode] = useState(false)
@@ -149,6 +143,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    props.getCameraLabels.execute()
+      .then(setAllDetectionLabels)
+      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
+  }, [props.getCameraLabels, toast])
 
   const discoverAction = useAsyncAction(
     () => props.discoverCameras.execute(),
@@ -350,6 +350,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       selection.kind === 'camera' &&
       !camerasState.data.some((camera) => camera.id === selection.cameraId)
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection(
         camerasState.data.length > 0
           ? { kind: 'camera', cameraId: camerasState.data[0].id }
@@ -360,6 +361,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   useEffect(() => {
     if (selection.kind === 'candidate' && !discoveryResults[selection.index]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection({ kind: 'manual' })
     }
   }, [discoveryResults, selection])
@@ -369,6 +371,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       return
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditForm({
       displayName: selectedCamera.displayName,
       host: selectedCamera.host,
@@ -399,7 +402,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       })
       .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
       .finally(() => setDetectionConfigLoading(false))
-  }, [selectedCamera])
+  }, [selectedCamera, props.getCameraDetectionConfig, toast])
 
   async function handleDiscovery() {
     setDiscoveryError(null)
@@ -1517,6 +1520,7 @@ function PrivacyScheduleSection({
   createSchedule: CreateCameraPrivacySchedule
   deleteSchedule: DeleteCameraPrivacySchedule
 }) {
+  const { toast } = useToast()
   const [schedules, setSchedules] = useState<CameraPrivacySchedule[]>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5])
@@ -1533,6 +1537,7 @@ function PrivacyScheduleSection({
       .finally(() => setLoading(false))
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps,react-hooks/set-state-in-effect
   useEffect(() => { reload() }, [cameraId])
 
   const toggleDay = (d: number) =>
