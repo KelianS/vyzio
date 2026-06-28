@@ -609,6 +609,7 @@ function TelegramConfigPanel({
   const [cooldownMinutes, setCooldownMinutes] = useState<number | null>(null)
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
   const [pendingSaveReq, setPendingSaveReq] = useState<SaveNotificationChannelConfigRequest | null>(null)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   useEffect(() => {
     if (config && config !== syncedConfig) {
@@ -668,6 +669,20 @@ function TelegramConfigPanel({
 
   return (
     <>
+      {confirmRemove && (
+        <ConfirmModal
+          title="Supprimer le canal Telegram"
+          body="Le token et le Chat ID seront effacés. Les notifications Telegram seront désactivées et vous devrez reconfigurer le bot pour les réactiver."
+          confirmLabel="Supprimer le canal"
+          tone="danger"
+          onConfirm={async () => {
+            await onRemove()
+            setConfirmRemove(false)
+          }}
+          onCancel={() => setConfirmRemove(false)}
+        />
+      )}
+
       {pendingSaveReq && (
         <ConfirmModal
           title="Activer les notifications Telegram"
@@ -802,7 +817,7 @@ function TelegramConfigPanel({
               <button
                 type="button"
                 className="secondary-cta"
-                onClick={onRemove}
+                onClick={() => setConfirmRemove(true)}
                 disabled={removing}
                 style={{ color: 'var(--status-degraded, #e05252)', marginLeft: 'auto' }}
               >
