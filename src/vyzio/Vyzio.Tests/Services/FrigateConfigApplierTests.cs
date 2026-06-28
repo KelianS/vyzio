@@ -102,4 +102,15 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.Contains("admin", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("secret", yaml, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task Privacy_camera_emits_enabled_false_in_frigate_config()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.PrivacyModeActive = true;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.Contains("enabled: false", yaml, StringComparison.OrdinalIgnoreCase);
+    }
 }

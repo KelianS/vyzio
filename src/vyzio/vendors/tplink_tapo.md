@@ -46,6 +46,12 @@ Remplacez :
 - Cette fonction marche surtout pour les modeles Tapo branches en continu.
 - Certaines cameras ou sonnettes sur batterie peuvent ne pas etre compatibles.
 
+## Mode vie privée
+
+**Niveau de garantie : coupure matérielle** — lorsque vous activez le mode vie privée sur une caméra Tapo, Vyzio commande directement la caméra via son API locale (protocole KLAP). Le cache physique de l'objectif se ferme et le **voyant LED s'éteint** : signal non falsifiable que la caméra ne capture plus rien, indépendamment de tout logiciel.
+
+Le même identifiant et mot de passe **compte camera** est utilisé pour cette commande.
+
 ## Liens utiles
 
 - [Guide TP-Link Tapo](https://www.tapo.com/en/faq/34/)

@@ -10,7 +10,7 @@ describe('DeleteCamera', () => {
       configPath: 'config/frigate.generated.yml',
     }
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -24,7 +24,7 @@ describe('DeleteCamera', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new DeleteCamera(repository)
+    const useCase = new DeleteCamera(repository as unknown as CameraRepository)
 
     await expect(useCase.execute('camera-1')).resolves.toEqual(result)
     expect(repository.delete).toHaveBeenCalledWith('camera-1')

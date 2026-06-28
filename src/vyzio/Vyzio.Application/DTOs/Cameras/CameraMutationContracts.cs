@@ -22,7 +22,8 @@ public sealed record UpdateCameraRequest(
     string? StreamPath,
     string? SourceType,
     string? VendorFamily = null,
-    string? StreamProtocol = null);
+    string? StreamProtocol = null,
+    bool? PtzSupported = null);
 
 public sealed record DiscoverCamerasRequest(
     string? Host,

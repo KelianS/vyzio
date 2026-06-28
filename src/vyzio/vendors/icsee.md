@@ -63,6 +63,14 @@ En mode DVRIP, Vyzio passe par **go2rtc** (integre dans Frigate) comme passerell
 
 > **Pourquoi Vyzio ne peut pas reveiller la camera automatiquement ?** En veille, le chipset WiFi reste associe au reseau (la camera apparait dans la liste des clients de votre box) mais le processeur principal est eteint. Les protocoles standard (TCP, UDP DVRIP, WoL, ONVIF) n'atteignent pas le processeur — seul un mecanisme proprietaire ICSee integre dans le firmware du chipset peut le reveiller, via leur infrastructure cloud. Ce mecanisme n'est pas accessible localement.
 
+## Mode vie privée
+
+**Niveau de garantie : enregistrement désactivé** — lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Le RTSP (via la passerelle go2rtc) est arrêté ; Vyzio n'enregistre plus et ne génère plus d'alertes.
+
+Le protocole DVRIP natif (port 34567) reste techniquement ouvert sur votre réseau local, mais nécessite les identifiants de la caméra.
+
+**Évolution prévue (v1.0.1-P2) :** Les caméras ICSee PTZ supportent un mode de **parking physique** — la caméra pivote automatiquement vers une butée mécanique (face au mur ou au plafond) à l'activation du mode vie privée, et revient à sa position de surveillance à la désactivation. Cette fonctionnalité sera disponible dans une prochaine version avec une interface de configuration dédiée.
+
 ## A savoir
 
 - Le firmware ICSee/XMEye est utilise par de nombreux fabricants OEM (WONSDAR, ieGeek, etc.) ; les menus varient selon le modele.

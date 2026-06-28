@@ -91,7 +91,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                         : labels;
                     return new FrigateCameraConfig
                     {
-                        Enabled = true,
+                        Enabled = !camera.PrivacyModeActive,
                         Ffmpeg = new FrigateFfmpegConfig
                         {
                             Inputs =

@@ -17,7 +17,7 @@ describe('VerifyDraftCamera', () => {
       lastSuccessfulFrameAt: null,
     }
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -31,7 +31,7 @@ describe('VerifyDraftCamera', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new VerifyDraftCamera(repository)
+    const useCase = new VerifyDraftCamera(repository as unknown as CameraRepository)
     const input = {
       displayName: 'Front Door',
       host: '192.168.1.10',

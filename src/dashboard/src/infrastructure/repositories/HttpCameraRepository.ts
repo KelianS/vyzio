@@ -8,6 +8,8 @@ import type { VendorAssistance } from '../../domain/entities/VendorAssistance'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
 import type { DiscoveryRequest } from '../../domain/ports/CameraRepository'
 import type { VendorAssistanceRequest } from '../../domain/ports/CameraRepository'
+import type { CreatePrivacyScheduleInput, UpdatePrivacyScheduleInput } from '../../domain/ports/CameraRepository'
+import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
 import { fetchJson } from '../http/fetchJson'
 
 interface CameraDto {
@@ -29,6 +31,11 @@ interface CameraDto {
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string | null
   vendorFamily: string | null
+  privacyModeActive: boolean
+  privacyModeSource: 'manual' | 'schedule' | null
+  privacyVendorCut: boolean
+  ptzSupported: boolean
+  privacyModeStrategy: string
 }
 
 interface CameraStatusDto {
@@ -179,6 +186,88 @@ export class HttpCameraRepository implements CameraRepository {
   ): Promise<{ deleted: boolean; message: string; configPath: string }> {
     return deleteJson<DeleteCameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`)
   }
+
+  async togglePrivacyMode(cameraId: string, active: boolean): Promise<Camera> {
+    const payload = await postJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/toggle`,
+      { active },
+    )
+    return mapCamera(payload)
+  }
+
+  async batchTogglePrivacyMode(cameraIds: string[], active: boolean): Promise<Camera[]> {
+    const payload = await postJson<CameraDto[]>(
+      `${this.apiBaseUrl}/api/cameras/privacy/batch-toggle`,
+      { cameraIds, active },
+    )
+    return payload.map(mapCamera)
+  }
+
+  async getPrivacySchedules(cameraId: string): Promise<CameraPrivacySchedule[]> {
+    return fetchJson<CameraPrivacySchedule[]>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules`,
+    )
+  }
+
+  async createPrivacySchedule(
+    cameraId: string,
+    input: CreatePrivacyScheduleInput,
+  ): Promise<CameraPrivacySchedule> {
+    return postJson<CameraPrivacySchedule>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules`,
+      input,
+    )
+  }
+
+  async updatePrivacySchedule(
+    cameraId: string,
+    scheduleId: string,
+    input: UpdatePrivacyScheduleInput,
+  ): Promise<CameraPrivacySchedule> {
+    return patchJson<CameraPrivacySchedule>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
+      input,
+    )
+  }
+
+  async deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void> {
+    await deleteJson<void>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
+    )
+  }
+
+  async setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera> {
+    const payload = await patchJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy-strategy`,
+      { strategy },
+    )
+    return mapCamera(payload)
+  }
+
+  async ptzStep(cameraId: string, direction: string, speed: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/step`,
+      { direction, speed },
+    )
+  }
+
+  async ptzSavePreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`,
+      { presetId },
+    )
+  }
+
+  async ptzGoToPreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/goto`,
+      { presetId },
+    )
+  }
+
+  async ptzConfigureParking(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
+  }
 }
 
 function mapCamera(camera: CameraDto): Camera {
@@ -201,6 +290,11 @@ function mapCamera(camera: CameraDto): Camera {
     lastSuccessfulFrameAt: camera.lastSuccessfulFrameAt,
     frigateCameraName: camera.frigateCameraName,
     vendorFamily: camera.vendorFamily,
+    privacyModeActive: camera.privacyModeActive ?? false,
+    privacyModeSource: camera.privacyModeSource ?? null,
+    privacyVendorCut: camera.privacyVendorCut ?? false,
+    ptzSupported: camera.ptzSupported ?? false,
+    privacyModeStrategy: (camera.privacyModeStrategy || 'software') as Camera['privacyModeStrategy'],
   }
 }
 
@@ -285,6 +379,23 @@ async function deleteJson<T>(url: string): Promise<T> {
     headers: {
       Accept: 'application/json',
     },
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} on ${url}`)
+  }
+
+  return response.json() as Promise<T>
+}
+
+async function patchJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {

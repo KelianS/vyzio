@@ -349,7 +349,7 @@ function CooldownPicker({
       )}
       {!enabled && (
         <p style={{ fontSize: '0.84rem', color: 'var(--ink-soft)', marginTop: 4 }}>
-          Chaque detection Frigate peut declencher une notification independante.
+          Chaque detection peut declencher une notification independante.
         </p>
       )}
     </div>
