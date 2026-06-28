@@ -60,6 +60,7 @@ import type { AppError } from './domain/errors/AppError'
 import { appErrorMessage } from './domain/errors/AppError'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
 import { PtzControlPanel } from './ui/components/PtzControlPanel'
+import { ConfirmModal } from './ui/components/ConfirmModal'
 import { DetectionHistoryView } from './ui/components/DetectionHistoryView'
 import { ExpertView } from './ui/components/ExpertView'
 import { NotificationSettingsView } from './ui/components/NotificationSettingsView'
@@ -543,9 +544,13 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
       </section>
 
       {batchPending !== null && (
-        <PrivacyConfirmModal
-          active={batchPending}
-          cameraCount={allCameras.length}
+        <ConfirmModal
+          title={batchPending ? 'Activer le mode vie privée' : 'Désactiver le mode vie privée'}
+          body={batchPending
+            ? `Vyzio va arrêter l'enregistrement sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}. Aucune alerte ne sera générée pendant cette période.`
+            : `Vyzio va reprendre la surveillance sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}.`}
+          confirmLabel={batchPending ? 'Couper toutes les caméras' : 'Réactiver toutes les caméras'}
+          tone={batchPending ? 'warn' : 'default'}
           onConfirm={async () => {
             await onBatchTogglePrivacy(allCameras.map((c) => c.id), batchPending)
             setBatchPending(null)
@@ -554,56 +559,6 @@ function HubOperationalState({ data, cameras, allCameras, getSystemStats, onOpen
         />
       )}
     </main>
-  )
-}
-
-function PrivacyConfirmModal({
-  active,
-  cameraCount,
-  onConfirm,
-  onCancel,
-}: {
-  active: boolean
-  cameraCount: number
-  onConfirm: () => Promise<void>
-  onCancel: () => void
-}) {
-  const [loading, setLoading] = useState(false)
-
-  const handleConfirm = async () => {
-    setLoading(true)
-    try { await onConfirm() } finally { setLoading(false) }
-  }
-
-  return (
-    <div className="privacy-modal-backdrop" onClick={onCancel}>
-      <div className="privacy-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-        <div className="privacy-modal-icon" aria-hidden="true">
-          {active ? '🔇' : '🔒'}
-        </div>
-        <h2 className="privacy-modal-title">
-          {active ? 'Activer le mode vie privée' : 'Désactiver le mode vie privée'}
-        </h2>
-        <p className="privacy-modal-body">
-          {active
-            ? `Vyzio va arrêter l'enregistrement sur ${cameraCount > 1 ? `les ${cameraCount} caméras` : 'la caméra'}. Aucune alerte ne sera générée pendant cette période.`
-            : `Vyzio va reprendre la surveillance sur ${cameraCount > 1 ? `les ${cameraCount} caméras` : 'la caméra'}.`}
-        </p>
-        <div className="privacy-modal-actions">
-          <button
-            type="button"
-            className={`privacy-modal-confirm${active ? ' privacy-modal-confirm--warn' : ''}`}
-            onClick={handleConfirm}
-            disabled={loading}
-          >
-            {loading ? 'Traitement…' : active ? 'Couper toutes les caméras' : 'Réactiver toutes les caméras'}
-          </button>
-          <button type="button" className="privacy-modal-cancel" onClick={onCancel} disabled={loading}>
-            Annuler
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }
 

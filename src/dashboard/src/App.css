@@ -2078,6 +2078,16 @@
   background: rgba(247, 180, 0, 0.22);
 }
 
+.privacy-modal-confirm--danger {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.1);
+  color: #991b1b;
+}
+
+.privacy-modal-confirm--danger:hover {
+  background: rgba(220, 38, 38, 0.18);
+}
+
 .privacy-modal-cancel {
   display: inline-flex;
   align-items: center;

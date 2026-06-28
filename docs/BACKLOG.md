@@ -199,50 +199,15 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 ---
 
-### TECH - Pipeline d'erreur frontend — clean architecture ✓
-
-> But : rendre les erreurs backend prévisibles et visibles dans toute l'application sans que chaque composant ait à gérer manuellement le feedback utilisateur. Aujourd'hui les erreurs HTTP sont des `Error` génériques opaques ; certains composants toastent, d'autres silencient (`.catch(() => {})`). La clean architecture offre les seams nécessaires pour une pipeline typée de bout en bout : infrastructure → domaine → use case → hook UI.
-
-**Pipeline implémentée :**
-```
-fetch → HttpError (status, url) → toAppError → AppError (kind discriminé) → useAsync / useAsyncAction → toast / état
-```
-
-*Infrastructure — erreur typée*
-- [x] Créer `infrastructure/http/HttpError.ts` : classe `HttpError extends Error` avec `status: number` et `url: string`
-- [x] Centraliser `postJson`, `deleteJson`, `patchJson`, `putJson`, `deleteReq` dans `infrastructure/http/fetchJson.ts` — helpers locaux dupliqués supprimés de tous les repositories
-
-*Domaine — erreur métier*
-- [x] Créer `domain/errors/AppError.ts` : type discriminé + helper `appErrorMessage()` pour les renders
-- [x] Créer `domain/errors/toAppError.ts` : mapping duck-typed sans import infrastructure (domain pur)
-
-*Application — use cases comme frontière*
-- ~~[ ] Chaque use case encapsule son `execute()` dans un try/catch~~ — **décision** : `toAppError` est appelé au niveau des hooks UI ; les use cases restent des pass-through sans try/catch, ce qui préserve leur simplicité et évite de toucher 30 fichiers pour le même résultat. La frontière HTTP/domaine est garantie par `fetchJson.ts` qui ne lève que des `HttpError`.
-
-*UI — hook central*
-- [x] Créer `ui/hooks/useAsync.ts` : `useAsync<T>(fn, deps, options?)` avec `skip`, `reload`, `initialLoading`
-- [x] Créer `ui/hooks/useAsyncAction.ts` : toast automatique selon `error.kind`, option `silent`
-- [x] Migrer `useCameras`, `useCameraStatus`, `useHubOverview`, `useVendorAssistance` vers `useAsync`
-- [x] Supprimer tous les `.catch(() => {})` silencieux dans les composants — chaque erreur toaste ou affiche un message via `appErrorMessage(toAppError(e))`. Migration vers `useAsyncAction` possible progressivement sur les prochaines features.
-- [x] Ajouter une section dans `.instructions.md` sur la gestion des erreurs frontend — pipeline `HttpError → AppError → useAsync/useAsyncAction`, règles d'usage, exemples
-
-**Critères de validation :**
-- Toute erreur HTTP est une `HttpError` typée, mappée en `AppError` par `toAppError` ✓
-- Les hooks de chargement retournent `error: AppError | null` au lieu de `string | null` ✓
-- Un appel via `useAsyncAction` toaste automatiquement sans code dans le composant ✓
-- Les use cases compilent sans modification (breaking change zéro pour les tests) ✓
-
----
-
 ### TECH - Modale commune pour les actions destructives
 
 > But : toute action irréversible ou à fort impact (batch privacy, suppression de caméra, réinitialisation de config…) doit passer par un composant `ConfirmModal` partagé, réutilisable, accessible (`role="dialog"`, `aria-modal`, focus trap). Aujourd'hui `PrivacyConfirmModal` dans `App.tsx` est isolé et non réutilisable.
 
 **Taches :**
-- [ ] Créer `src/dashboard/src/ui/components/ConfirmModal.tsx` : props `title`, `body`, `confirmLabel`, `cancelLabel`, `tone` (`"warn"` | `"danger"` | `"default"`), `onConfirm`, `onCancel`, `loading`
-- [ ] Ajouter le focus trap (premier élément focusable à l'ouverture, piège focus dans la modale, `Escape` annule)
-- [ ] Remplacer `PrivacyConfirmModal` dans `App.tsx` par `ConfirmModal`
-- [ ] Remplacer `window.confirm` ou les confirmations inline restantes dans le code (supprimer caméra, etc.) par `ConfirmModal`
+- [x] Créer `src/dashboard/src/ui/components/ConfirmModal.tsx` : props `title`, `body`, `confirmLabel`, `cancelLabel`, `tone` (`"warn"` | `"danger"` | `"default"`), `onConfirm`, `onCancel`, `loading`
+- [x] Ajouter le focus trap (premier élément focusable à l'ouverture, piège focus dans la modale, `Escape` annule)
+- [x] Remplacer `PrivacyConfirmModal` dans `App.tsx` par `ConfirmModal`
+- [x] Remplacer `window.confirm` ou les confirmations inline restantes dans le code (supprimer caméra, etc.) par `ConfirmModal`
 
 **Critères de validation :**
 - Aucune action destructive n'est déclenchée sans passer par `ConfirmModal`
