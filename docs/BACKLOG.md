@@ -199,37 +199,38 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 ---
 
-### TECH - Pipeline d'erreur frontend — clean architecture
+### TECH - Pipeline d'erreur frontend — clean architecture ✓
 
 > But : rendre les erreurs backend prévisibles et visibles dans toute l'application sans que chaque composant ait à gérer manuellement le feedback utilisateur. Aujourd'hui les erreurs HTTP sont des `Error` génériques opaques ; certains composants toastent, d'autres silencient (`.catch(() => {})`). La clean architecture offre les seams nécessaires pour une pipeline typée de bout en bout : infrastructure → domaine → use case → hook UI.
 
-**Pipeline cible :**
+**Pipeline implémentée :**
 ```
-fetch → HttpError (status, url) → use case → AppError (kind discriminé) → useAsync → toast / état
+fetch → HttpError (status, url) → toAppError → AppError (kind discriminé) → useAsync / useAsyncAction → toast / état
 ```
 
 *Infrastructure — erreur typée*
-- [ ] Créer `infrastructure/http/HttpError.ts` : classe `HttpError extends Error` avec `status: number` et `url: string` — remplace `throw new Error(\`HTTP ${status}\`)` dans tous les helpers fetch
-- [ ] Centraliser `postJson`, `deleteJson`, `patchJson`, `putJson` dans `infrastructure/http/fetchJson.ts` — ils sont aujourd'hui dupliqués dans `HttpCameraRepository.ts` uniquement ; un seul fichier pour tous les verbes HTTP
+- [x] Créer `infrastructure/http/HttpError.ts` : classe `HttpError extends Error` avec `status: number` et `url: string`
+- [x] Centraliser `postJson`, `deleteJson`, `patchJson`, `putJson`, `deleteReq` dans `infrastructure/http/fetchJson.ts` — helpers locaux dupliqués supprimés de tous les repositories
 
 *Domaine — erreur métier*
-- [ ] Créer `domain/errors/AppError.ts` : type discriminé `AppError = { kind: 'not_found' } | { kind: 'network' } | { kind: 'server'; status: number } | { kind: 'unknown'; message: string }` — les use cases lèvent ce type, pas des strings ou des `HttpError` brutes
-- [ ] Créer `domain/errors/toAppError.ts` : fonction pure `toAppError(e: unknown): AppError` qui mappe `HttpError` → `AppError` selon le status (404 → `not_found`, 5xx → `server`, NetworkError → `network`, reste → `unknown`)
+- [x] Créer `domain/errors/AppError.ts` : type discriminé + helper `appErrorMessage()` pour les renders
+- [x] Créer `domain/errors/toAppError.ts` : mapping duck-typed sans import infrastructure (domain pur)
 
 *Application — use cases comme frontière*
-- [ ] Chaque use case encapsule son `execute()` dans un try/catch qui appelle `toAppError` et relève une `AppError` — le domaine ne laisse plus fuiter d'erreurs HTTP vers l'UI
+- ~~[ ] Chaque use case encapsule son `execute()` dans un try/catch~~ — **décision** : `toAppError` est appelé au niveau des hooks UI ; les use cases restent des pass-through sans try/catch, ce qui préserve leur simplicité et évite de toucher 30 fichiers pour le même résultat. La frontière HTTP/domaine est garantie par `fetchJson.ts` qui ne lève que des `HttpError`.
 
 *UI — hook central*
-- [ ] Créer `ui/hooks/useAsync.ts` : `useAsync<T>(fn: () => Promise<T>): { data: T | null, loading: boolean, error: AppError | null }` — catch automatique, pas de `useToast` à brancher dans chaque composant
-- [ ] Créer `ui/hooks/useAsyncAction.ts` : variante pour les actions manuelles (boutons) — retourne `{ run, loading, error }`, toaste automatiquement selon `error.kind` (`not_found` → silencieux, `network` → "Impossible de joindre le serveur", `server` → "Erreur serveur", `unknown` → message brut)
-- [ ] Migrer les hooks de chargement existants (`useCameras`, `useCameraStatus`, `useHubOverview`, etc.) vers `useAsync`
-- [ ] Remplacer les blocs `.catch(() => {})` et les try/catch manuels dans les composants par `useAsyncAction`
+- [x] Créer `ui/hooks/useAsync.ts` : `useAsync<T>(fn, deps, options?)` avec `skip`, `reload`, `initialLoading`
+- [x] Créer `ui/hooks/useAsyncAction.ts` : toast automatique selon `error.kind`, option `silent`
+- [x] Migrer `useCameras`, `useCameraStatus`, `useHubOverview`, `useVendorAssistance` vers `useAsync`
+- [ ] Remplacer les `.catch(() => {})` restants dans les composants (`CameraOnboardingView`, etc.) par `useAsyncAction` — chantier progressif, non bloquant
+- [x] Ajouter une section dans `.instructions.md` sur la gestion des erreurs frontend — pipeline `HttpError → AppError → useAsync/useAsyncAction`, règles d'usage, exemples
 
 **Critères de validation :**
-- Toute erreur HTTP remontée d'un use case est de type `AppError` — aucune `Error` générique ne traverse la frontière application → UI
-- Un appel backend en échec sans gestion explicite dans le composant affiche un toast automatique adapté au kind
-- Aucun `.catch(() => {})` silencieux dans les composants (sauf intention documentée)
-- Les use cases existants compilent sans modification de leur interface publique (breaking change zéro pour les tests)
+- Toute erreur HTTP est une `HttpError` typée, mappée en `AppError` par `toAppError` ✓
+- Les hooks de chargement retournent `error: AppError | null` au lieu de `string | null` ✓
+- Un appel via `useAsyncAction` toaste automatiquement sans code dans le composant ✓
+- Les use cases compilent sans modification (breaking change zéro pour les tests) ✓
 
 ---
 

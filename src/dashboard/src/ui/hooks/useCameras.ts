@@ -1,56 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Camera } from '../../domain/entities/Camera'
+import type { AppError } from '../../domain/errors/AppError'
 import type { GetCameras } from '../../application/use-cases/GetCameras'
-
-interface CamerasState {
-  data: Camera[]
-  loading: boolean
-  error: string | null
-}
+import { useAsync } from './useAsync'
 
 export function useCameras(useCase: GetCameras) {
-  const [reloadToken, setReloadToken] = useState(0)
-  const [state, setState] = useState<CamerasState>({
-    data: [],
-    loading: true,
-    error: null,
-  })
+  const [localData, setLocalData] = useState<Camera[] | null>(null)
+  const async_ = useAsync<Camera[]>(() => useCase.execute(), [useCase])
 
-  useEffect(() => {
-    let cancelled = false
+  const data = localData ?? async_.data ?? []
 
-    setState((current) => ({ ...current, loading: true, error: null }))
+  const removeById = (cameraId: string) => {
+    setLocalData((async_.data ?? []).filter((c) => c.id !== cameraId))
+  }
 
-    useCase
-      .execute()
-      .then((data) => {
-        if (!cancelled) {
-          setState({ data, loading: false, error: null })
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setState({
-            data: [],
-            loading: false,
-            error: error instanceof Error ? error.message : 'Erreur inconnue',
-          })
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [reloadToken, useCase])
+  const reload = () => {
+    setLocalData(null)
+    async_.reload()
+  }
 
   return {
-    ...state,
-    reload: () => setReloadToken((value) => value + 1),
-    removeById: (cameraId: string) => {
-      setState((current) => ({
-        ...current,
-        data: current.data.filter((camera) => camera.id !== cameraId),
-      }))
-    },
+    data,
+    loading: async_.loading,
+    error: async_.error as AppError | null,
+    reload,
+    removeById,
   }
 }

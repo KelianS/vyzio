@@ -39,6 +39,7 @@ import {
   formatStatusTone,
   formatValidationStateLabel,
 } from '../formatters/cameras'
+import { appErrorMessage } from '../../domain/errors/AppError'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -734,7 +735,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
         {vendorAssistanceState.loading ? (
           <p className="camera-section-copy">Chargement de la notice constructeur...</p>
         ) : vendorAssistanceState.error ? (
-          <p className="camera-inline-state error">{vendorAssistanceState.error}</p>
+          <p className="camera-inline-state error">{appErrorMessage(vendorAssistanceState.error)}</p>
         ) : vendorAssistanceState.data?.markdown ? (
           <div className="camera-vendor-markdown">
             <ReactMarkdown
@@ -871,8 +872,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 : 'Catalogue pret'}
           </div>
           <p>
-            {camerasState.error ??
-              `${camerasState.data.length} camera(s) dans le catalogue actuel.`}
+            {camerasState.error
+              ? appErrorMessage(camerasState.error)
+              : `${camerasState.data.length} camera(s) dans le catalogue actuel.`}
           </p>
           {discoveryError ? <p className="status-inline error">{discoveryError}</p> : null}
         </div>
@@ -1184,7 +1186,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                 <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p>
               ) : null}
               {cameraStatusState.error ? (
-                <p className="camera-inline-state error">{cameraStatusState.error}</p>
+                <p className="camera-inline-state error">{appErrorMessage(cameraStatusState.error)}</p>
               ) : null}
 
               {cameraStatusState.data ? (
