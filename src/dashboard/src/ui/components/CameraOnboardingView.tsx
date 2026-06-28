@@ -27,6 +27,7 @@ import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
+import { ConfirmModal } from './ConfirmModal'
 import { PtzControlPanel } from './PtzControlPanel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
@@ -141,6 +142,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [dvripMode, setDvripMode] = useState(false)
   const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
   const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { toast } = useToast()
 
@@ -1450,7 +1452,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <button
                       className="danger-cta"
                       type="button"
-                      onClick={handleDelete}
+                      onClick={() => setConfirmDelete(true)}
                       disabled={
                         actionLoading || selectedCamera?.validationState === 'pending_removal'
                       }
@@ -1478,6 +1480,20 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           )}
         </article>
       </section>
+
+      {confirmDelete && selectedCameraId && (
+        <ConfirmModal
+          title="Supprimer la caméra"
+          body={`Supprimer "${selectedCamera?.displayName ?? 'cette caméra'}" du catalogue ? La configuration Frigate sera mise à jour et l'enregistrement sur cette caméra sera arrêté.`}
+          confirmLabel="Supprimer la caméra"
+          tone="danger"
+          onConfirm={async () => {
+            await handleDelete()
+            setConfirmDelete(false)
+          }}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
     </main>
   )
 }

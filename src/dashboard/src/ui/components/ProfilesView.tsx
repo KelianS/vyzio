@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ConfirmModal } from './ConfirmModal'
 import { useToast } from './Toast'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import type { AddProfilePhoto } from '../../application/use-cases/AddProfilePhoto'
@@ -64,6 +65,7 @@ export function ProfilesView({
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resyncMessage, setResyncMessage] = useState<string | null>(null)
+  const [confirmDeleteProfileId, setConfirmDeleteProfileId] = useState<string | null>(null)
   const resyncAction = useAsyncAction(
     () => resyncFaceLibrary.execute(),
     {
@@ -121,11 +123,11 @@ export function ProfilesView({
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer ce profil ?')) return
     await deleteProfile.execute(id)
     setProfiles((prev) => prev.filter((p) => p.id !== id))
     setSelectedId(null)
     setCreating(false)
+    setConfirmDeleteProfileId(null)
     toast('Profil supprimé', 'info')
   }
 
@@ -215,7 +217,7 @@ export function ProfilesView({
                 <ProfileInfoTab
                   profile={selectedProfile}
                   onSave={(name, category, alertMode) => handleUpdate(selectedProfile.id, name, category, alertMode)}
-                  onDelete={() => handleDelete(selectedProfile.id)}
+                  onDelete={() => setConfirmDeleteProfileId(selectedProfile.id)}
                 />
               )}
               {tab === 'photos' && (
@@ -239,6 +241,20 @@ export function ProfilesView({
               )}
             </>
           )}
+
+          {confirmDeleteProfileId && (() => {
+            const profile = profiles.find((p) => p.id === confirmDeleteProfileId)
+            return (
+              <ConfirmModal
+                title="Supprimer le profil"
+                body={`Supprimer le profil "${profile?.name ?? ''}" ? Toutes les photos associées seront perdues et la reconnaissance faciale ne fonctionnera plus pour cette personne.`}
+                confirmLabel="Supprimer le profil"
+                tone="danger"
+                onConfirm={() => handleDelete(confirmDeleteProfileId)}
+                onCancel={() => setConfirmDeleteProfileId(null)}
+              />
+            )
+          })()}
 
           {!creating && !selectedProfile && !loading && (
             <div className="camera-detail-section">
@@ -337,7 +353,7 @@ function ProfileInfoTab({
 }: {
   profile: Profile
   onSave: (name: string, category: string, alertMode: string) => Promise<void>
-  onDelete: () => Promise<void>
+  onDelete: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -420,6 +436,7 @@ function ProfilePhotosTab({
   const [photos, setPhotos] = useState<ProfilePhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [confirmDeletePhotoId, setConfirmDeletePhotoId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const MIN_PHOTOS = 3
@@ -451,14 +468,15 @@ function ProfilePhotosTab({
     }
   }
 
-  async function handleDelete(photoId: string) {
-    if (!window.confirm('Supprimer cette photo ?')) return
+  async function handleDeletePhoto(photoId: string) {
     try {
       await removeProfilePhoto.execute(profileId, photoId)
       setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+      setConfirmDeletePhotoId(null)
       toast('Photo supprimée', 'info')
     } catch {
       toast('Impossible de supprimer la photo.', 'error')
+      setConfirmDeletePhotoId(null)
     }
   }
 
@@ -535,7 +553,7 @@ function ProfilePhotosTab({
               <button
                 type="button"
                 className="profile-photo-delete"
-                onClick={() => handleDelete(photo.id)}
+                onClick={() => setConfirmDeletePhotoId(photo.id)}
                 title="Supprimer"
               >
                 ×
@@ -543,6 +561,17 @@ function ProfilePhotosTab({
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDeletePhotoId && (
+        <ConfirmModal
+          title="Supprimer la photo"
+          body="Cette photo sera définitivement supprimée. Si c'est la dernière photo du profil, la reconnaissance faciale sera désactivée pour cette personne."
+          confirmLabel="Supprimer la photo"
+          tone="danger"
+          onConfirm={() => handleDeletePhoto(confirmDeletePhotoId)}
+          onCancel={() => setConfirmDeletePhotoId(null)}
+        />
       )}
     </section>
   )
