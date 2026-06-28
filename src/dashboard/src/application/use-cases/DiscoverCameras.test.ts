@@ -23,7 +23,7 @@ describe('DiscoverCameras', () => {
       },
     ]
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn().mockResolvedValue(candidates),
@@ -37,14 +37,14 @@ describe('DiscoverCameras', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new DiscoverCameras(repository)
+    const useCase = new DiscoverCameras(repository as unknown as CameraRepository)
 
     await expect(useCase.execute()).resolves.toEqual(candidates)
     expect(repository.discover).toHaveBeenCalledOnce()
   })
 
   it('passes a targeted refresh request to the camera repository', async () => {
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn().mockResolvedValue([]),
@@ -58,7 +58,7 @@ describe('DiscoverCameras', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new DiscoverCameras(repository)
+    const useCase = new DiscoverCameras(repository as unknown as CameraRepository)
 
     await expect(useCase.execute({ host: '192.168.1.20', port: 554 })).resolves.toEqual([])
     expect(repository.discover).toHaveBeenCalledWith({ host: '192.168.1.20', port: 554 })

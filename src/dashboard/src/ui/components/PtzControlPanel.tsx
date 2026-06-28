@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
-import type { PtzSavePreset } from '../../application/use-cases/PtzSavePreset'
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
 
 interface PtzControlPanelProps {
@@ -9,7 +8,6 @@ interface PtzControlPanelProps {
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   // Only provided in fiche caméra context (not live overlay)
-  ptzSavePreset?: PtzSavePreset
   configurePtzParking?: ConfigurePtzParking
   speed?: number
   compact?: boolean
@@ -27,7 +25,6 @@ export function PtzControlPanel({
   cameraId,
   ptzStep,
   ptzGoToPreset,
-  ptzSavePreset,
   configurePtzParking,
   speed = 50,
   compact = false,

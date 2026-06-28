@@ -11,7 +11,7 @@ describe('ApplyCameraConfiguration', () => {
       cameraCount: 2,
     }
 
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -25,7 +25,7 @@ describe('ApplyCameraConfiguration', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new ApplyCameraConfiguration(repository)
+    const useCase = new ApplyCameraConfiguration(repository as unknown as CameraRepository)
 
     await expect(useCase.execute()).resolves.toEqual(result)
     expect(repository.applyConfiguration).toHaveBeenCalledWith()

@@ -42,7 +42,6 @@ import {
   deleteCameraPrivacySchedule,
   setPrivacyStrategy,
   ptzStep,
-  ptzSavePreset,
   ptzGoToPreset,
   configurePtzParking,
 } from './app/dependencies'
@@ -112,11 +111,9 @@ function App() {
             getPrivacySchedules={getCameraPrivacySchedules}
             createPrivacySchedule={createCameraPrivacySchedule}
             deletePrivacySchedule={deleteCameraPrivacySchedule}
-            batchTogglePrivacyMode={batchToggleCameraPrivacyMode}
             setPrivacyStrategy={setPrivacyStrategy}
             ptzStep={ptzStep}
             ptzGoToPreset={ptzGoToPreset}
-            ptzSavePreset={ptzSavePreset}
             configurePtzParking={configurePtzParking}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}

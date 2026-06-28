@@ -11,7 +11,6 @@ import type { GetCameras } from '../../application/use-cases/GetCameras'
 import type { GetCameraPrivacySchedules } from '../../application/use-cases/GetCameraPrivacySchedules'
 import type { CreateCameraPrivacySchedule } from '../../application/use-cases/CreateCameraPrivacySchedule'
 import type { DeleteCameraPrivacySchedule } from '../../application/use-cases/DeleteCameraPrivacySchedule'
-import type { BatchToggleCameraPrivacyMode } from '../../application/use-cases/BatchToggleCameraPrivacyMode'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
 import type { Camera } from '../../domain/entities/Camera'
 import type { GetDetectionLabels as GetCameraLabels } from '../../application/use-cases/GetDetectionLabels'
@@ -25,7 +24,7 @@ import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
-import type { PtzSavePreset } from '../../application/use-cases/PtzSavePreset'
+
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
 import { PtzControlPanel } from './PtzControlPanel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
@@ -58,11 +57,9 @@ interface CameraOnboardingViewProps {
   getPrivacySchedules: GetCameraPrivacySchedules
   createPrivacySchedule: CreateCameraPrivacySchedule
   deletePrivacySchedule: DeleteCameraPrivacySchedule
-  batchTogglePrivacyMode: BatchToggleCameraPrivacyMode
   setPrivacyStrategy: SetPrivacyStrategy
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
-  ptzSavePreset: PtzSavePreset
   configurePtzParking: ConfigurePtzParking
   allCameras: Camera[]
   apiBaseUrl: string
@@ -1234,7 +1231,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           cameraId={selectedCameraId}
                           ptzStep={props.ptzStep}
                           ptzGoToPreset={props.ptzGoToPreset}
-                          ptzSavePreset={props.ptzSavePreset}
+
                           configurePtzParking={props.configurePtzParking}
                         />
                       </section>
@@ -1246,10 +1243,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         <div className="privacy-strategy-selector">
                           {(
                             [
-                              { value: 'software', label: 'Logiciel uniquement', desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.' },
-                              { value: 'ptz_parking', label: 'Orientation vers zone neutre', desc: 'La caméra pivote vers un endroit non filmé et l\'enregistrement est désactivé.', requiresPtz: true },
-                              { value: 'hardware', label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresHw: true },
-                            ] as const
+                              { value: 'software' as const, label: 'Logiciel uniquement', desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.', requiresPtz: false, requiresHw: false },
+                              { value: 'ptz_parking' as const, label: 'Orientation vers zone neutre', desc: 'La caméra pivote vers un endroit non filmé et l\'enregistrement est désactivé.', requiresPtz: true, requiresHw: false },
+                              { value: 'hardware' as const, label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresPtz: false, requiresHw: true },
+                            ]
                           ).map(({ value, label, desc, requiresPtz, requiresHw }) => {
                             const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && !selectedCamera.privacyVendorCut && selectedCamera.vendorFamily !== 'tplink_tapo')
                             return (
@@ -1405,7 +1402,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         getSchedules={props.getPrivacySchedules}
                         createSchedule={props.createPrivacySchedule}
                         deleteSchedule={props.deletePrivacySchedule}
-                        batchTogglePrivacyMode={props.batchTogglePrivacyMode}
                       />
                     )}
 
@@ -1525,7 +1521,6 @@ function PrivacyScheduleSection({
   getSchedules,
   createSchedule,
   deleteSchedule,
-  batchTogglePrivacyMode,
 }: {
   camera: Camera
   cameraId: string
@@ -1533,7 +1528,6 @@ function PrivacyScheduleSection({
   getSchedules: GetCameraPrivacySchedules
   createSchedule: CreateCameraPrivacySchedule
   deleteSchedule: DeleteCameraPrivacySchedule
-  batchTogglePrivacyMode: BatchToggleCameraPrivacyMode
 }) {
   const [schedules, setSchedules] = useState<CameraPrivacySchedule[]>([])
   const [loading, setLoading] = useState(true)

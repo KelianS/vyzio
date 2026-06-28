@@ -4,7 +4,7 @@ import type { CameraRepository } from '../../domain/ports/CameraRepository'
 
 describe('UpdateCamera', () => {
   it('updates a configured camera through the repository', async () => {
-    const repository: CameraRepository = {
+    const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
       discover: vi.fn(),
@@ -34,7 +34,7 @@ describe('UpdateCamera', () => {
       delete: vi.fn(),
     }
 
-    const useCase = new UpdateCamera(repository)
+    const useCase = new UpdateCamera(repository as unknown as CameraRepository)
     const result = await useCase.execute('camera-1', {
       displayName: 'Entry',
       host: '192.168.1.10',
