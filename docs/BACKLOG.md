@@ -223,7 +223,7 @@ fetch → HttpError (status, url) → toAppError → AppError (kind discriminé)
 - [x] Créer `ui/hooks/useAsync.ts` : `useAsync<T>(fn, deps, options?)` avec `skip`, `reload`, `initialLoading`
 - [x] Créer `ui/hooks/useAsyncAction.ts` : toast automatique selon `error.kind`, option `silent`
 - [x] Migrer `useCameras`, `useCameraStatus`, `useHubOverview`, `useVendorAssistance` vers `useAsync`
-- [ ] Remplacer les `.catch(() => {})` restants dans les composants (`CameraOnboardingView`, etc.) par `useAsyncAction` — chantier progressif, non bloquant
+- [x] Supprimer tous les `.catch(() => {})` silencieux dans les composants — chaque erreur toaste ou affiche un message via `appErrorMessage(toAppError(e))`. Migration vers `useAsyncAction` possible progressivement sur les prochaines features.
 - [x] Ajouter une section dans `.instructions.md` sur la gestion des erreurs frontend — pipeline `HttpError → AppError → useAsync/useAsyncAction`, règles d'usage, exemples
 
 **Critères de validation :**

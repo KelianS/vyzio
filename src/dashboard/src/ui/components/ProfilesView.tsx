@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from './Toast'
+import { useAsyncAction } from '../hooks/useAsyncAction'
 import type { AddProfilePhoto } from '../../application/use-cases/AddProfilePhoto'
 import type { CreateProfile } from '../../application/use-cases/CreateProfile'
 import type { DeleteProfile } from '../../application/use-cases/DeleteProfile'
@@ -62,8 +63,14 @@ export function ProfilesView({
   const [tab, setTab] = useState<DetailTab>('info')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [resyncing, setResyncing] = useState(false)
   const [resyncMessage, setResyncMessage] = useState<string | null>(null)
+  const resyncAction = useAsyncAction(
+    () => resyncFaceLibrary.execute(),
+    {
+      onSuccess: (count) => setResyncMessage(`${count} visage(s) synchronisé(s).`),
+      onError: () => setResyncMessage('Erreur lors de la synchronisation.'),
+    },
+  )
 
   const selectedProfile = profiles.find((p) => p.id === selectedId) ?? null
 
@@ -124,16 +131,8 @@ export function ProfilesView({
   }
 
   async function handleResync() {
-    setResyncing(true)
     setResyncMessage(null)
-    try {
-      const count = await resyncFaceLibrary.execute()
-      setResyncMessage(`${count} photo${count !== 1 ? 's' : ''} synchronisee${count !== 1 ? 's' : ''}.`)
-    } catch {
-      setResyncMessage('Erreur lors de la synchronisation.')
-    } finally {
-      setResyncing(false)
-    }
+    await resyncAction.run()
   }
 
   return (
@@ -228,7 +227,7 @@ export function ProfilesView({
                   removeProfilePhoto={removeProfilePhoto}
                   apiBaseUrl={apiBaseUrl}
                   onResync={handleResync}
-                  resyncing={resyncing}
+                  resyncing={resyncAction.loading}
                   resyncMessage={resyncMessage}
                 />
               )}

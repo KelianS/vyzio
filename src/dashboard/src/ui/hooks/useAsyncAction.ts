@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { AppError } from '../../domain/errors/AppError'
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { toAppError } from '../../domain/errors/toAppError'
@@ -12,24 +12,37 @@ export interface AsyncActionResult<TArgs extends unknown[], TResult> {
 
 export function useAsyncAction<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,
-  options: { onSuccess?: (result: TResult) => void; silent?: boolean } = {},
+  options: {
+    onSuccess?: (result: TResult) => void
+    onError?: (error: AppError) => void
+    silent?: boolean
+  } = {},
 ): AsyncActionResult<TArgs, TResult> {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<AppError | null>(null)
+
+  const fnRef = useRef(fn)
+  const optionsRef = useRef(options)
+  useLayoutEffect(() => {
+    fnRef.current = fn
+    optionsRef.current = options
+  })
 
   const run = useCallback(
     async (...args: TArgs): Promise<TResult | undefined> => {
       setLoading(true)
       setError(null)
       try {
-        const result = await fn(...args)
-        options.onSuccess?.(result)
+        const result = await fnRef.current(...args)
+        optionsRef.current.onSuccess?.(result)
         return result
       } catch (e) {
         const appError = toAppError(e)
         setError(appError)
-        if (!options.silent) {
+        if (optionsRef.current.onError) {
+          optionsRef.current.onError(appError)
+        } else if (!optionsRef.current.silent) {
           toast(appErrorMessage(appError), 'error')
         }
         return undefined
@@ -37,8 +50,7 @@ export function useAsyncAction<TArgs extends unknown[], TResult>(
         setLoading(false)
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fn, options.silent, options.onSuccess, toast],
+    [toast],
   )
 
   return { run, loading, error }
