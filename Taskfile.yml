@@ -1,0 +1,113 @@
+version: '3'
+
+vars:
+  COMPOSE_DEV: docker compose -f docker-compose.yml -f docker-compose.dev.yml
+  COMPOSE_MOCK: docker compose -f docker-compose.yml -f docker-compose.mock.yml
+  DASHBOARD_DIR: src/dashboard
+  BACKEND_DIR: src/vyzio
+  BACKEND_SLN: Vyzio.slnx
+
+tasks:
+  default:
+    desc: Liste les tasks disponibles
+    cmds:
+      - task --list
+    silent: true
+
+  # --- Infra (docker, via WSL) ---
+
+  up:
+    desc: Demarre l'infra dev (API, Frigate, MQTT...) en arriere-plan
+    cmds:
+      - wsl {{.COMPOSE_DEV}} up -d --build
+
+  down:
+    desc: Arrete l'infra dev
+    cmds:
+      - wsl {{.COMPOSE_DEV}} down
+
+  logs:
+    desc: Suit les logs de l'infra dev
+    cmds:
+      - wsl {{.COMPOSE_DEV}} logs -f
+
+  mock:up:
+    desc: Demarre le flux RTSP synthetique (camera mock) en plus de l'infra dev
+    cmds:
+      - wsl {{.COMPOSE_MOCK}} up -d
+
+  mock:down:
+    desc: Arrete le flux RTSP synthetique
+    cmds:
+      - wsl {{.COMPOSE_MOCK}} down
+
+  # --- Frontend (pnpm) ---
+
+  front:dev:
+    desc: Lance le serveur de dev du dashboard (Vite)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm dev
+
+  front:test:
+    desc: Lance les tests frontend (vitest)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm test
+
+  front:lint:
+    desc: Lint le frontend (eslint)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm lint
+
+  front:build:
+    desc: Build le frontend (tsc + vite build)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm build
+
+  front:format:
+    desc: Formate le frontend (prettier --write)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm format
+
+  # --- Backend (.NET) ---
+
+  back:test:
+    desc: Lance les tests backend (dotnet test sur Vyzio.slnx)
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - dotnet test {{.BACKEND_SLN}}
+
+  back:build:
+    desc: Build le backend (dotnet build sur Vyzio.slnx)
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - dotnet build {{.BACKEND_SLN}}
+
+  back:run:
+    desc: Lance l'API backend en local (hors docker)
+    dir: '{{.BACKEND_DIR}}/Vyzio.Api'
+    cmds:
+      - dotnet run
+
+  # --- Agrege backend + frontend ---
+
+  test:
+    desc: Lance tous les tests (backend + frontend)
+    cmds:
+      - task: back:test
+      - task: front:test
+
+  build:
+    desc: Build backend + frontend
+    cmds:
+      - task: back:build
+      - task: front:build
+
+  lint:
+    desc: Lint le frontend (le backend n'a pas de linter dedie)
+    cmds:
+      - task: front:lint
