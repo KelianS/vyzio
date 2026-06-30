@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
@@ -69,7 +70,7 @@ public sealed class PrivacySchedulerService(
             var shouldBeActive = desiredActive.TryGetValue(camera.Id, out var v) && v;
 
             // Manual activations are never overridden by the scheduler
-            if (string.Equals(camera.PrivacyModeSource, "manual", StringComparison.OrdinalIgnoreCase))
+            if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
                 continue;
 
             var currentlyActive = camera.PrivacyModeActive;
@@ -77,12 +78,12 @@ public sealed class PrivacySchedulerService(
             if (shouldBeActive && !currentlyActive)
             {
                 logger.LogInformation("PrivacyScheduler: activating privacy mode on {Camera} (schedule).", camera.DisplayName);
-                await toggleUseCase.ExecuteAsync(camera.Id, active: true, source: "schedule", ct);
+                await toggleUseCase.ExecuteAsync(camera.Id, active: true, source: PrivacyModeSource.Schedule, ct);
             }
-            else if (!shouldBeActive && currentlyActive && string.Equals(camera.PrivacyModeSource, "schedule", StringComparison.OrdinalIgnoreCase))
+            else if (!shouldBeActive && currentlyActive && camera.PrivacyModeSource == PrivacyModeSource.Schedule)
             {
                 logger.LogInformation("PrivacyScheduler: deactivating privacy mode on {Camera} (schedule ended).", camera.DisplayName);
-                await toggleUseCase.ExecuteAsync(camera.Id, active: false, source: "schedule", ct);
+                await toggleUseCase.ExecuteAsync(camera.Id, active: false, source: PrivacyModeSource.Schedule, ct);
             }
         }
     }

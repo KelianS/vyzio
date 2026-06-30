@@ -26,7 +26,7 @@ public class FrigateConfigApplierTests : IDisposable
         if (File.Exists(_configPath)) File.Delete(_configPath);
     }
 
-    private static Camera MakeValidatedCamera(string slug, string streamProtocol = "rtsp", string? streamPath = "/stream1", int port = 554) => new()
+    private static Camera MakeValidatedCamera(string slug, StreamProtocol streamProtocol = StreamProtocol.Rtsp, string? streamPath = "/stream1", int port = 554) => new()
     {
         Slug = slug,
         DisplayName = slug,
@@ -58,7 +58,7 @@ public class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task Dvrip_camera_produces_go2rtc_section()
     {
-        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", "dvrip", null, 34567)]);
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567)]);
 
         Assert.Contains("go2rtc:", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("streams:", yaml, StringComparison.OrdinalIgnoreCase);
@@ -68,7 +68,7 @@ public class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task Dvrip_camera_ffmpeg_input_points_to_go2rtc_rtsp_bridge()
     {
-        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", "dvrip", null, 34567)]);
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567)]);
 
         Assert.Contains("rtsp://127.0.0.1:8554/garden", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("rtsp://192.168.1.10", yaml, StringComparison.OrdinalIgnoreCase);
@@ -80,7 +80,7 @@ public class FrigateConfigApplierTests : IDisposable
         var yaml = await ApplyAndReadYamlAsync(
         [
             MakeValidatedCamera("front-door"),
-            MakeValidatedCamera("garden", "dvrip", null, 34567),
+            MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567),
         ]);
 
         Assert.Contains("go2rtc:", yaml, StringComparison.OrdinalIgnoreCase);
@@ -93,7 +93,7 @@ public class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task Dvrip_camera_with_credentials_includes_credentials_in_go2rtc_url()
     {
-        var camera = MakeValidatedCamera("garden", "dvrip", null, 34567);
+        var camera = MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567);
         camera.Username = "admin";
         camera.Password = "secret";
 

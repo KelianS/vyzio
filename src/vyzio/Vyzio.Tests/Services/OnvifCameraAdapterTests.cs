@@ -19,7 +19,7 @@ public class OnvifCameraAdapterTests
         Username = "admin",
         Password = "pass",
         PtzSupported = true,
-        PrivacyModeStrategy = "ptz_parking",
+        PrivacyModeStrategy = PrivacyModeStrategy.PtzParking,
     };
 
     private static (OnvifCameraAdapter adapter, List<HttpRequestMessage> requests) MakeAdapter(

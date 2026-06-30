@@ -1,4 +1,5 @@
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -95,17 +96,15 @@ public sealed record SetPrivacyStrategyRequest(string Strategy);
 
 public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)
 {
-    private static readonly HashSet<string> ValidStrategies = ["software", "ptz_parking", "hardware"];
-
     public async Task<CameraDto?> ExecuteAsync(string cameraId, SetPrivacyStrategyRequest request, CancellationToken ct = default)
     {
-        if (!ValidStrategies.Contains(request.Strategy))
-            throw new ArgumentException($"Invalid privacy strategy '{request.Strategy}'. Valid values: {string.Join(", ", ValidStrategies)}.");
+        if (!SnakeCaseEnum.TryFromSnakeCase<PrivacyModeStrategy>(request.Strategy, out var strategy))
+            throw new ArgumentException($"Invalid privacy strategy '{request.Strategy}'. Valid values: software, ptz_parking, hardware.");
 
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        camera.PrivacyModeStrategy = request.Strategy;
+        camera.PrivacyModeStrategy = strategy;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
 

@@ -125,7 +125,7 @@ public static class CamerasEndpoints
         // Privacy mode — toggle unitaire
         group.MapPost("/{id}/privacy/toggle", async (string id, TogglePrivacyRequest request, ToggleCameraPrivacyModeUseCase useCase, CancellationToken ct) =>
         {
-            var dto = await useCase.ExecuteAsync(id, request.Active, "manual", ct);
+            var dto = await useCase.ExecuteAsync(id, request.Active, Vyzio.Core.Entities.PrivacyModeSource.Manual, ct);
             return dto is null ? Results.NotFound() : Results.Ok(dto);
         });
 

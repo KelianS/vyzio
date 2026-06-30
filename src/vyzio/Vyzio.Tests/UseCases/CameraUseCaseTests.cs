@@ -205,7 +205,7 @@ public class CreateCameraUseCaseTests
         Assert.Equal("needs_attention", result.Status);
         await _repo.Received(1).AddAsync(Arg.Is<Camera>(camera =>
             camera.DisplayName == "Front Door"
-            && camera.VendorFamily == "tplink_tapo"
+            && camera.VendorFamily == VendorFamily.TplinkTapo
             && camera.ValidationState == "draft"
             && camera.IsEnabled == false), Arg.Any<CancellationToken>());
     }

@@ -13,12 +13,12 @@ public sealed class ToggleCameraPrivacyModeUseCase(
     // PTZ parking move duration: drive camera to corner for this long, then stop.
     private static readonly TimeSpan ParkingMoveDuration = TimeSpan.FromSeconds(8);
 
-    public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, string source = "manual", CancellationToken ct = default)
+    public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        var strategy = string.IsNullOrEmpty(camera.PrivacyModeStrategy) ? "software" : camera.PrivacyModeStrategy;
+        var strategy = camera.PrivacyModeStrategy;
         var adapter = adapterFactory.Resolve(camera);
 
         camera.PrivacyModeActive = active;
@@ -27,7 +27,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
         switch (strategy)
         {
-            case "hardware":
+            case PrivacyModeStrategy.Hardware:
                 // Vendor cuts the lens at firmware level (e.g. Tapo KLAP lens mask).
                 if (await adapter.SupportsPrivacyModeAsync(camera, ct))
                 {
@@ -36,7 +36,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
                 }
                 break;
 
-            case "ptz_parking":
+            case PrivacyModeStrategy.PtzParking:
                 // Camera pivots to a neutral zone AND Frigate is disabled — dual protection.
                 if (active)
                 {
@@ -100,7 +100,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
         foreach (var camera in targets)
         {
             camera.PrivacyModeActive = active;
-            camera.PrivacyModeSource = active ? "manual" : null;
+            camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
             camera.PrivacyVendorCut = false;
 
             var adapter = adapterFactory.Resolve(camera);
