@@ -4,9 +4,14 @@ using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.Profiles;
+using Vyzio.Core.Common;
+using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Endpoints;
+
+// Request type for capability endpoints
+file sealed record ConfigureCameraCapabilityRequest(string Protocol, string? ConfigJson);
 
 // Request types for privacy endpoints
 file sealed record TogglePrivacyRequest(bool Active);
@@ -207,6 +212,44 @@ public static class CamerasEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
+        });
+
+        // Capability bindings (ADR-22) — lists, configures and probes camera capabilities
+        group.MapGet("/{id}/capabilities", async (string id, GetCameraCapabilitiesUseCase useCase, CancellationToken ct) =>
+        {
+            var list = await useCase.ExecuteAsync(id, ct);
+            return list is null ? Results.NotFound() : Results.Ok(list);
+        });
+
+        group.MapPut("/{id}/capabilities/{capability}", async (
+            string id,
+            string capability,
+            ConfigureCameraCapabilityRequest request,
+            ConfigureCameraCapabilityUseCase useCase,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var binding = await useCase.ExecuteAsync(id, new Vyzio.Application.UseCases.Cameras.ConfigureCameraCapabilityRequest(capability, request.Protocol, request.ConfigJson), ct);
+                return binding is null ? Results.NotFound() : Results.Ok(binding);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        group.MapPost("/{id}/capabilities/{capability}/probe", async (
+            string id,
+            string capability,
+            ProbeCameraCapabilityUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
+                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+
+            var result = await useCase.ExecuteAsync(id, cap, ct);
+            return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
         // Profile links

@@ -239,18 +239,18 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] `ToggleCameraPrivacyModeUseCase` / `BatchToggleCameraPrivacyModeUseCase` / `PtzStepUseCase` / `PtzSavePresetUseCase` / `PtzGoToPresetUseCase` / `ConfigurePtzParkingPositionUseCase` / `GetPtzPositionUseCase` : résolution via `ICapabilityProviderRegistry` + `CameraCapabilityBinding` (binding absent ou non vérifié → capacité non actionnée, jamais d'exception), plus via `IVendorCameraAdapterFactory`/`VendorFamily`
 - [x] Tests unitaires réécrits (`CameraPrivacyUseCaseTests`, `PrivacySchedulerServiceTests`) pour mocker `ICameraCapabilityBindingRepository`/`ICapabilityProviderRegistry` au lieu de `IVendorCameraAdapterFactory`
 
-**Phase 4 — API :**
-- [ ] `POST /api/cameras/{id}/capabilities/{capability}/probe` — déclenche `ProbeAsync`, retourne `Verified` + `LastError`
-- [ ] `PUT /api/cameras/{id}/capabilities/{capability}` — configure un binding manuel (protocole + config), probe automatique avant activation
-- [ ] `GET /api/cameras/{id}/capabilities` — liste les bindings et leur statut vérifié
-- [ ] Étendre la réponse `GET /api/cameras` avec les capacités vérifiées (remplace l'usage direct de `vendorFamily`/`ptzSupported` côté frontend pour le branching fonctionnel)
+**Phase 4 — API :** ✅ terminée
+- [x] `POST /api/cameras/{id}/capabilities/{capability}/probe` — déclenche `ProbeAsync`, retourne `Verified` + `LastError`
+- [x] `PUT /api/cameras/{id}/capabilities/{capability}` — configure un binding manuel (protocole + config), probe automatique avant activation
+- [x] `GET /api/cameras/{id}/capabilities` — liste les bindings et leur statut vérifié
+- [ ] Étendre la réponse `GET /api/cameras` avec les capacités vérifiées dans un champ dédié (réservé à une itération suivante — `ptzSupported` booléen reste pour l'instant, calculé côté backend depuis `Camera.PtzSupported`)
 
-**Phase 5 — Frontend (onboarding caméra non répertoriée) :**
-- [ ] Étape "Configuration avancée — caméra non répertoriée" dans `CameraOnboardingView` : affichée quand `vendorFamily` est inconnu après détection
-- [ ] Pour chaque capacité (PTZ, mode vie privée) : sélecteur de protocole (ONVIF / DVRIP / Aucun) + formulaire de connexion (adresse, port, credentials selon protocole)
-- [ ] Bouton "Tester" → appelle l'endpoint probe ; affichage explicite de l'échec (jamais d'activation silencieuse sur déclaration non vérifiée — SPECS §2.3)
-- [ ] Remplacer la checkbox manuelle `ptzSupported` actuelle par ce parcours protocole + probe
-- [ ] Marque reconnue : aucun changement perçu pour l'utilisateur — prefill + probe automatique silencieux, mêmes écrans qu'aujourd'hui
+**Phase 5 — Frontend (onboarding caméra non répertoriée) :** ✅ terminée
+- [x] `CapabilitySection` : nouvelle section dans la fiche caméra — affiche les capacités connues (preset vendor) avec leur statut vérifié, bouton "Tester" par capacité, et formule de configuration manuelle pour les caméras non répertoriées (`vendorFamily === null`)
+- [x] Remplacer la checkbox manuelle `ptzSupported` par la `CapabilitySection` (probe obligatoire, jamais d'activation déclarative)
+- [x] Architecture frontend : entité `CameraCapabilityBinding.ts`, port étendu (`CameraRepository.ts`), 3 use cases (`GetCameraCapabilities`, `ConfigureCameraCapability`, `ProbeCameraCapability`), `HttpCameraRepository` étendu, `dependencies.ts` mis à jour
+- [ ] Marque reconnue : probe automatique silencieux à l'onboarding initial (auto-probe des bindings preset dès l'ajout d'une caméra connue, sans étape UI visible) — réservé à une itération suivante ; actuellement probe déclenché par l'utilisateur via le bouton "Tester"
+- [ ] Tapo PTZ opt-in : après un probe PTZ réussi, mettre à jour `Camera.ptzSupported = true` automatiquement pour que le panneau PTZ apparaisse dans le live feed — réservé à une itération suivante (limitation documentée)
 
 **Phase 6 — Tests :**
 - [ ] Tests unitaires `OnvifPtzProvider`, `DvripPtzProvider`, `TapoKlapProvider` (reprise des tests existants des adaptateurs, NSubstitute)

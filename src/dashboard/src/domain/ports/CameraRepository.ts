@@ -6,6 +6,7 @@ import type { CameraPrivacySchedule } from '../entities/CameraPrivacySchedule'
 import type { DiscoveredCamera } from '../entities/DiscoveredCamera'
 import type { CameraConfigurationApplyResult } from '../entities/CameraConfigurationApplyResult'
 import type { VendorAssistance } from '../entities/VendorAssistance'
+import type { CameraCapabilityBinding, Capability, CapabilityProtocol } from '../entities/CameraCapabilityBinding'
 
 export interface CreatePrivacyScheduleInput {
   daysOfWeek: number[]
@@ -55,4 +56,8 @@ export interface CameraRepository {
   ptzSavePreset(cameraId: string, presetId: number): Promise<void>
   ptzGoToPreset(cameraId: string, presetId: number): Promise<void>
   ptzConfigureParking(cameraId: string): Promise<void>
+  // Capability bindings (ADR-22)
+  getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
+  configureCapability(cameraId: string, capability: Capability, protocol: CapabilityProtocol, configJson?: string): Promise<CameraCapabilityBinding>
+  probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
 }
