@@ -11,7 +11,9 @@ public sealed class SnakeCaseEnumConverter<TEnum> : ValueConverter<TEnum, string
 {
     public SnakeCaseEnumConverter() : base(
         v => SnakeCaseEnum.ToSnakeCase(v),
-        v => SnakeCaseEnum.FromSnakeCase<TEnum>(v))
+        // Null or empty DB values fall back to the enum's default (value 0) rather than throwing.
+        // This protects against rows written before the column had a NOT NULL default.
+        v => string.IsNullOrWhiteSpace(v) ? default : SnakeCaseEnum.FromSnakeCase<TEnum>(v))
     {
     }
 }
@@ -21,7 +23,8 @@ public sealed class NullableSnakeCaseEnumConverter<TEnum> : ValueConverter<TEnum
 {
     public NullableSnakeCaseEnumConverter() : base(
         v => v.HasValue ? SnakeCaseEnum.ToSnakeCase(v.Value) : null,
-        v => v == null ? null : (TEnum?)SnakeCaseEnum.FromSnakeCase<TEnum>(v))
+        // Empty string treated the same as SQL NULL — both map to null enum.
+        v => string.IsNullOrWhiteSpace(v) ? null : (TEnum?)SnakeCaseEnum.FromSnakeCase<TEnum>(v))
     {
     }
 }
