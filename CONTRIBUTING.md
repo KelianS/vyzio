@@ -2,11 +2,27 @@
 
 ## Get started
 
-1. Install .NET SDK 10, Node.js 24, pnpm, and Docker Engine 25+.
-2. Start the local runtime with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
-3. Start the frontend dev server with `pnpm --prefix src/dashboard dev`
+1. Install .NET SDK 10, Node.js 24, pnpm, Docker Engine 25+, and [go-task](https://taskfile.dev) (`winget install Task.Task`).
+2. From the repo root, run `task up` to start the local runtime (API, Frigate, MQTT...).
+3. Run `task front:dev` to start the frontend dev server.
 
 All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only).
+
+### Task runner
+
+`Taskfile.yml` at the repo root centralizes the commands for both projects so you don't have to `cd` into `src/dashboard` or `src/vyzio` (or shell out to WSL for docker) by hand. Run `task` with no arguments to list everything; the main ones:
+
+| Task | What it does |
+|---|---|
+| `task up` / `task down` | Start/stop the dev docker stack |
+| `task mock:up` / `task mock:down` | Start/stop the synthetic RTSP camera stack |
+| `task front:dev` | Vite dev server |
+| `task front:test` / `task back:test` / `task test` | Run frontend / backend / both test suites |
+| `task front:lint` | ESLint |
+| `task front:build` / `task back:build` / `task build` | Build frontend / backend / both |
+| `task back:run` | Run the API locally outside docker |
+
+Docker commands run via `wsl docker compose ...` under the hood, since Docker is only reachable through WSL on Windows dev machines.
 
 ### Environment variables reference
 

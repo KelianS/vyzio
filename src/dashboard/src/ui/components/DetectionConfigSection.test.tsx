@@ -1,0 +1,150 @@
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { DetectionConfigSection } from './DetectionConfigSection'
+import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+
+const ALL_LABELS: DetectionLabel[] = [
+  { value: 'person', displayName: 'Personne', emoji: '🧑' },
+  { value: 'car', displayName: 'Voiture', emoji: '🚗' },
+  { value: 'dog', displayName: 'Chien', emoji: '🐕' },
+]
+
+describe('DetectionConfigSection', () => {
+  it('shows a loading state instead of the label grid', () => {
+    render(
+      <DetectionConfigSection
+        labels={[]}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading
+        continuousRecordingEnabled={false}
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Chargement…')).toBeInTheDocument()
+    expect(screen.queryByText('Personne')).not.toBeInTheDocument()
+  })
+
+  it('restricts displayed labels to availableLabels when provided', () => {
+    render(
+      <DetectionConfigSection
+        labels={['person']}
+        availableLabels={['person', 'car']}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled={false}
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/Personne/)).toBeInTheDocument()
+    expect(screen.getByText(/Voiture/)).toBeInTheDocument()
+    expect(screen.queryByText(/Chien/)).not.toBeInTheDocument()
+  })
+
+  it('calls onToggle with the label value when a chip is clicked', async () => {
+    const onToggle = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <DetectionConfigSection
+        labels={['person']}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled={false}
+        onToggle={onToggle}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByText(/Voiture/))
+
+    expect(onToggle).toHaveBeenCalledWith('car')
+  })
+
+  it('warns when the person label is not selected', () => {
+    render(
+      <DetectionConfigSection
+        labels={['car']}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled={false}
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/reconnaissance faciale ne fonctionnera pas/)).toBeInTheDocument()
+  })
+
+  it('does not warn when the person label is selected', () => {
+    render(
+      <DetectionConfigSection
+        labels={['person']}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled={false}
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText(/reconnaissance faciale ne fonctionnera pas/)).not.toBeInTheDocument()
+  })
+
+  it('shows the storage warning only when continuous recording is enabled', () => {
+    const { rerender } = render(
+      <DetectionConfigSection
+        labels={['person']}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled={false}
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText(/1 a 3 Go par jour/)).not.toBeInTheDocument()
+
+    rerender(
+      <DetectionConfigSection
+        labels={['person']}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/1 a 3 Go par jour/)).toBeInTheDocument()
+  })
+
+  it('calls onToggleContinuousRecording when the checkbox is toggled', async () => {
+    const onToggleContinuousRecording = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <DetectionConfigSection
+        labels={['person']}
+        availableLabels={[]}
+        allLabels={ALL_LABELS}
+        loading={false}
+        continuousRecordingEnabled={false}
+        onToggle={vi.fn()}
+        onToggleContinuousRecording={onToggleContinuousRecording}
+      />,
+    )
+
+    await user.click(screen.getByText('Enregistrement continu'))
+
+    expect(onToggleContinuousRecording).toHaveBeenCalledOnce()
+  })
+})
