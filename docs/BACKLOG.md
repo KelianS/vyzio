@@ -199,34 +199,6 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 ---
 
-### TECH - Architecture frontend — conformité Clean Architecture ✅
-
-> But : le code frontend (`App.tsx`, `CameraOnboardingView.tsx`) ne respecte plus la séparation des couches. Des logiques qui appartiennent à la couche `application/` (orchestration d'actions, gestion d'état global) sont directement dans `App.tsx`. Des composants `ui/components/` contiennent des sous-composants internes, des types locaux, et des styles inline qui devraient être en CSS. Le résultat est un fichier App.tsx de 600+ lignes et des composants non réutilisables.
-
-**Problèmes identifiés :**
-- `App.tsx` orchestre `HubView`, `HubOperationalState`, `PrivacyConfirmModal`, `LiveFeedModal` — il est à la fois root component et logique métier
-- `CameraOnboardingView.tsx` embarque `DetectionConfigSection`, `PrivacyScheduleSection`, `CameraLiveView` comme fonctions locales non exportées — impossible à tester isolément
-- Les couleurs et espacements en `style={{ ... }}` inline rendent le CSS impossible à auditer
-- Les types locaux (`DiscoveryCandidate`, `CameraSelection`) dupliquent potentiellement des types du domaine
-
-**Taches :**
-- [x] Extraire `HubOperationalState` dans `ui/components/HubView.tsx`
-- [x] Extraire `DetectionConfigSection` dans `ui/components/DetectionConfigSection.tsx`
-- [x] Extraire `PrivacyScheduleSection` dans `ui/components/PrivacyScheduleSection.tsx`
-- [x] Extraire `LiveFeedModal` dans `ui/components/LiveFeedModal.tsx`
-- [x] Extraire `CameraLiveView` dans `ui/components/CameraLiveView.tsx`
-- [x] Migrer les `style={{ ... }}` inline restants vers des classes CSS dans `App.css`
-- [x] Vérifier que `ui/components/` n'importe rien de `infrastructure/` (dépendance via props uniquement)
-- [x] Auditer `DiscoveryCandidate` : alias vers le type domaine existant `domain/entities/DiscoveredCamera.ts` (structure identique, pas de duplication)
-
-**Critères de validation :**
-- `App.tsx` : 602 → 227 lignes. Reste au-dessus de la cible de 150 lignes car c'est le composition-root qui câble ~50 use-cases vers 6 vues (wiring incompressible sans complexifier ailleurs) ; toute la logique métier/état des vues en a été retirée
-- Chaque composant extrait dans `ui/components/` est importable et testable sans monter `App` (props-only)
-- Aucun import `infrastructure/` dans un fichier `ui/` (vérifié par grep)
-- `pnpm build` (tsc -b + vite build) passe sans erreur
-
----
-
 ### TECH - Refactoring VendorFamily — source unique typée
 
 > But : éliminer les chaînes littérales dispersées qui représentent les familles constructeur (`"tplink_tapo"`, `"icsee"`, `"v380_pro"`). Le bug `TapoCameraAdapter.VendorFamily = "tapo"` (au lieu de `"tplink_tapo"`) a existé sans qu'aucune erreur de compilation ne le signale — preuve que le couplage implicite par string est fragile.
