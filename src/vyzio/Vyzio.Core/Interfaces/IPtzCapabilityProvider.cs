@@ -11,25 +11,27 @@ public interface IPtzCapabilityProvider
 
     // Executes a real connectivity/capability check against the camera. Verified must only
     // ever be set to true as a result of this call — never declaratively.
-    Task<bool> ProbeAsync(CameraCapabilityBinding binding, CancellationToken ct = default);
+    // camera: provides Host, Username, Password (base connectivity)
+    // binding: provides ConfigJson (protocol-specific overrides, e.g. custom ONVIF port)
+    Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
-    Task PtzMoveAsync(CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default);
+    Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default);
 
-    Task PtzStopAsync(CameraCapabilityBinding binding, CancellationToken ct = default);
+    Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
-    Task PtzGoToPresetAsync(CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
+    Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    Task PtzSavePresetAsync(CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
+    Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
     // Single precise step. Implementations that support native relative moves (ONVIF
     // RelativeMove) should override — the default fallback is Move+Stop which is imprecise.
-    virtual async Task PtzStepAsync(CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    virtual async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
-        await PtzMoveAsync(binding, direction, speed, ct);
-        await PtzStopAsync(binding, ct);
+        await PtzMoveAsync(camera, binding, direction, speed, ct);
+        await PtzStopAsync(camera, binding, ct);
     }
 
     // Returns current pan/tilt position in normalized ONVIF space [-1, 1], or null if not supported.
-    virtual Task<(float Pan, float Tilt)?> GetPtzPositionAsync(CameraCapabilityBinding binding, CancellationToken ct = default)
+    virtual Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<(float Pan, float Tilt)?>(null);
 }

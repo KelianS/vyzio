@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
 
         // Vendor camera adapters — one entry per supported VendorFamily
+        // Slated for removal once use cases migrate to ICapabilityProviderRegistry (ADR-22 phase 3).
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
         services.AddSingleton<OnvifPtzClient>();
@@ -43,6 +45,19 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVendorCameraAdapter, ICSeeXMEyeCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapter, OnvifCameraAdapter>();
         services.AddSingleton<IVendorCameraAdapterFactory, VendorCameraAdapterFactory>();
+
+        // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
+        // Scoped: PtzParkingPrivacyProvider depends on the scoped binding repository, and the
+        // registry/TapoKlapProvider follow the same lifetime to avoid captive dependencies.
+        services.AddScoped<ICameraCapabilityBindingRepository, CameraCapabilityBindingRepository>();
+        services.AddScoped<IPtzCapabilityProvider, OnvifPtzProvider>();
+        services.AddScoped<IPtzCapabilityProvider, DvripPtzProvider>();
+        services.AddScoped<TapoKlapProvider>();
+        services.AddScoped<IPtzCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
+        services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
+        services.AddScoped<IPrivacyCapabilityProvider, PtzParkingPrivacyProvider>();
+        services.AddScoped<IPrivacyCapabilityProvider, SoftwareOnlyPrivacyProvider>();
+        services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
         return services;
     }

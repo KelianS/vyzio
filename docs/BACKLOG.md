@@ -205,33 +205,33 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 >
 > Ce ticket **remplace** l'ancien ticket TECH "Refactoring VendorFamily — source unique typée" : typer `VendorFamily` seul ne corrigeait que le symptôme (bug `"tapo"` vs `"tplink_tapo"`) sans traiter le couplage de fond. Ses critères de validation (constante typée, test fichier `vendors/*.md` ↔ constante) sont repris dans la phase 1 ci-dessous.
 
-**Phase 1 — Core (domaine, sans dépendance EF/ASP.NET) :**
-- [ ] Enum `VendorFamily` (`TpLinkTapo`, `ICSee`, `V380Pro`) — remplace la string `Camera.VendorFamily` (nullable : `VendorFamily?`)
-- [ ] Enum `StreamProtocol` (`Rtsp`, `Dvrip`) — remplace la string `Camera.StreamProtocol` (ADR-19, aucun changement de comportement)
-- [ ] Enum `PrivacyModeSource` (`Manual`, `Schedule`) — remplace la string `Camera.PrivacyModeSource` (nullable : `PrivacyModeSource?`)
-- [ ] Enum `PrivacyModeStrategy` (`Software`, `PtzParking`, `Hardware`) — remplace la string `Camera.PrivacyModeStrategy`
-- [ ] Enum `CameraCapability` (`Ptz`, `PrivacyMode`) et `CapabilityProtocol` (`Onvif`, `Dvrip`, `TapoKlap`, `PtzParking`, `SoftwareOnly`, `None`)
-- [ ] Entité `CameraCapabilityBinding` (`CameraId`, `Capability`, `Protocol`, `ConfigJson`, `Verified`, `VerifiedAt`, `LastError`)
-- [ ] Record `VendorCapabilityPreset` (marque → liste de bindings par défaut)
-- [ ] Interfaces `IPtzCapabilityProvider` et `IPrivacyCapabilityProvider` (remplacent `IVendorCameraAdapter` pour PTZ/Privacy — le `Stream` RTSP/DVRIP, ADR-19, reste hors périmètre fonctionnel mais migre vers l'enum `StreamProtocol`)
-- [ ] Interface `ICapabilityProviderRegistry` (résolution par `(Capability, Protocol)`)
-- [ ] Interface `ICameraCapabilityBindingRepository`
+**Phase 1 — Core (domaine, sans dépendance EF/ASP.NET) :** ✅ terminée
+- [x] Enum `VendorFamily` (`TplinkTapo`, `Icsee`, `V380Pro` — noms choisis pour matcher exactement les valeurs déjà en base via `SnakeCaseLower`) — remplace la string `Camera.VendorFamily` (nullable : `VendorFamily?`)
+- [x] Enum `StreamProtocol` (`Rtsp`, `Dvrip`) — remplace la string `Camera.StreamProtocol` (ADR-19, aucun changement de comportement)
+- [x] Enum `PrivacyModeSource` (`Manual`, `Schedule`) — remplace la string `Camera.PrivacyModeSource` (nullable : `PrivacyModeSource?`)
+- [x] Enum `PrivacyModeStrategy` (`Software`, `PtzParking`, `Hardware`) — remplace la string `Camera.PrivacyModeStrategy`
+- [x] Enum `CameraCapability` (`Ptz`, `PrivacyMode`) et `CapabilityProtocol` (`Onvif`, `Dvrip`, `TapoKlap`, `PtzParking`, `SoftwareOnly`, `None`)
+- [x] Entité `CameraCapabilityBinding` (`CameraId`, `Capability`, `Protocol`, `ConfigJson`, `Verified`, `VerifiedAt`, `LastError`)
+- [x] Record `VendorCapabilityPreset` (marque → liste de bindings par défaut)
+- [x] Interfaces `IPtzCapabilityProvider` et `IPrivacyCapabilityProvider` — prennent `(Camera camera, CameraCapabilityBinding binding, ...)` : `Camera` porte le host/credentials de base, `binding.ConfigJson` les overrides protocole-spécifiques
+- [x] Interface `ICapabilityProviderRegistry` (résolution par `(Capability, Protocol)`)
+- [x] Interface `ICameraCapabilityBindingRepository`
+- [x] `SnakeCaseEnum` (Vyzio.Core.Common) : conversion enum ↔ snake_case générique, basée sur `JsonNamingPolicy.SnakeCaseLower` — un seul endroit, pas de mapping en dur par enum
 
-**Phase 2 — Infrastructure (extraction des adaptateurs existants, sans changement de protocole bas niveau) :**
-- [ ] `OnvifPtzProvider` : extrait la logique PTZ de `OnvifCameraAdapter` (ContinuousMove/Stop/RelativeMove/presets)
-- [ ] `DvripPtzProvider` : extrait la logique PTZ de `ICSeeXMEyeCameraAdapter` (OPPTZControl cmd 1400)
-- [ ] `TapoKlapProvider` : extrait le transport KLAP de `TapoCameraAdapter` (handshake, AES-128-GCM) et implémente **les deux** `IPrivacyCapabilityProvider` (`set_lens_mask`, comportement inchangé) **et** `IPtzCapabilityProvider` (commande `motorMove`, **nouvelle implémentation** — le transport existe déjà, seule la commande PTZ manquait ; cf. ADR-22 note "un protocole n'est pas limité à une seule capacité")
-- [ ] `PtzParkingPrivacyProvider` : décore un `IPtzCapabilityProvider` quelconque pour réaliser la manœuvre de parking (généralise ADR-21 à tout protocole PTZ futur, pas seulement Onvif/Dvrip)
-- [ ] `SoftwareOnlyPrivacyProvider` : no-op, fallback universel (ADR-20 inchangé)
-- [ ] `CapabilityProviderRegistry` : DI lookup par `(Capability, Protocol)`
-- [ ] `CameraCapabilityBindingRepository` (EF Core)
-- [ ] Conversions EF Core (`HasConversion<string>()`) pour `VendorFamily`, `StreamProtocol`, `PrivacyModeSource`, `PrivacyModeStrategy`, `CameraCapability`, `CapabilityProtocol` — colonnes `TEXT` inchangées, lecture/écriture typée côté code
-- [ ] Presets vendor (`VendorCapabilityPreset` pour `TpLinkTapo`, `ICSee`, `V380Pro`) — preset Tapo inclut désormais `Ptz/TapoKlap` en plus de `PrivacyMode/TapoKlap`
-- [ ] Test : chaque valeur de l'enum `VendorFamily` a un fichier `vendors/*.md` correspondant — clôt le critère "convention mécanique" de l'ancien ticket TECH
-- [ ] Suppression de `IVendorCameraAdapter`, `IVendorCameraAdapterFactory`, `VendorCameraAdapterFactory`, `NullVendorCameraAdapter` une fois la phase 3 migrée
+**Phase 2 — Infrastructure (extraction des adaptateurs existants, sans changement de protocole bas niveau) :** ✅ terminée
+- [x] `SnakeCaseEnumConverter<TEnum>` / `NullableSnakeCaseEnumConverter<TEnum>` (EF Core) appliqués aux 4 colonnes existantes de `Camera` — migration générée et vérifiée : **uniquement un `CreateTable` pour `camera_capability_bindings`, aucune opération sur les colonnes `cameras` existantes**
+- [x] `OnvifPtzProvider` : extrait la logique PTZ de `OnvifCameraAdapter` (ContinuousMove/Stop/RelativeMove/presets, délègue à `OnvifPtzClient` partagé)
+- [x] `DvripPtzProvider` : extrait la logique PTZ de `ICSeeXMEyeCameraAdapter` (OPPTZControl cmd 1400)
+- [x] `TapoKlapProvider` : extrait le transport KLAP de `TapoCameraAdapter` (handshake, AES-128-GCM) et implémente **les deux** `IPrivacyCapabilityProvider` (`set_lens_mask`, comportement inchangé) **et** `IPtzCapabilityProvider` (commande `motorMove`, **nouvelle implémentation** — le transport existe déjà, seule la commande PTZ manquait ; cf. ADR-22 note "un protocole n'est pas limité à une seule capacité"). ⚠️ Payload `motorMove` dérivé de la documentation communautaire KLAP (python-kasa), **non encore validé sur matériel réel** — à confirmer avant d'exposer comme binding vérifiable par défaut
+- [x] `PtzParkingPrivacyProvider` : décore n'importe quel `IPtzCapabilityProvider` enregistré pour réaliser la manœuvre de parking (généralise ADR-21 à tout protocole PTZ futur, pas seulement Onvif/Dvrip). Dépend de `IEnumerable<IPtzCapabilityProvider>` directement (pas de `ICapabilityProviderRegistry`) pour éviter un cycle DI (le registre dépend de tous les `IPrivacyCapabilityProvider`, dont lui-même)
+- [x] `SoftwareOnlyPrivacyProvider` : no-op, fallback universel (ADR-20 inchangé)
+- [x] `CapabilityProviderRegistry` : DI lookup par `(Capability, Protocol)`, exception explicite si non enregistré
+- [x] `CameraCapabilityBindingRepository` (EF Core)
+- [x] Presets vendor (`VendorCapabilityPresets` pour `TplinkTapo`, `Icsee`, `V380Pro`) — preset Tapo inclut désormais `Ptz/TapoKlap` en plus de `PrivacyMode/TapoKlap`
+- [ ] Test : chaque valeur de l'enum `VendorFamily` a un fichier `vendors/*.md` correspondant — clôt le critère "convention mécanique" de l'ancien ticket TECH (reporté en Phase 6)
+- [ ] Suppression de `IVendorCameraAdapter`, `IVendorCameraAdapterFactory`, `VendorCameraAdapterFactory`, `NullVendorCameraAdapter` une fois la phase 3 migrée — **conservés pour l'instant**, `VendorCameraAdapterFactory` fait le pont enum→string vers les anciens adaptateurs
 
 **Phase 3 — Application / migration de données :**
-- [ ] Migration EF Core : table `camera_capability_bindings` (colonnes `capability`/`protocol` en `TEXT`, conversion enum côté EF)
 - [ ] Script de backfill : reconstruire les bindings des caméras existantes depuis `VendorFamily` / `PtzSupported` / `PrivacyModeStrategy` / `PrivacyVendorCut` actuels (comportement déjà actif reconstruit à l'identique) — le binding `Ptz/TapoKlap` n'est **pas** backfillé automatiquement pour les caméras Tapo existantes (capacité nouvelle, jamais vérifiée) : proposé en probe optionnel post-migration
 - [ ] `ProbeCameraCapabilityUseCase` : exécute `ProbeAsync` sur un binding (déclaratif → vérifié), jamais l'inverse
 - [ ] `ConfigureCameraCapabilityUseCase` : crée/met à jour un binding manuel (protocole + config) pour une caméra non répertoriée, déclenche le probe avant d'autoriser l'activation
