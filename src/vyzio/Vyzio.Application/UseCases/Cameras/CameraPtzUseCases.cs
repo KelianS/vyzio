@@ -7,11 +7,16 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record PtzMoveRequest(string Direction, int Speed = 50);
 
-// Step: delegates to adapter.PtzStepAsync which uses ONVIF RelativeMove when supported.
+// Resolution is via the camera's verified Ptz binding + ICapabilityProviderRegistry (ADR-22)
+// — never via VendorFamily/IVendorCameraAdapter. No binding, or a binding that hasn't been
+// probed successfully, means PTZ is not offered — consistent with "never activate on
+// declaration alone" (SPECS §2.3).
+//
+// Step: delegates to provider.PtzStepAsync which uses ONVIF RelativeMove when supported.
 // RelativeMove sends a precise fraction of the pan/tilt range and the camera stops itself —
-// no Stop command needed, no network-latency overshoot.
-// Adapters that don't support RelativeMove fall back to the default Move+Stop in IVendorCameraAdapter.
-public sealed class PtzStepUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
+// no Stop command needed, no network-latency overshoot. Providers that don't support
+// RelativeMove fall back to the default Move+Stop in IPtzCapabilityProvider.
+public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
 {
     public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
     {
@@ -21,40 +26,40 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, IVendorCameraAdapt
         if (!Enum.TryParse<PtzDirection>(request.Direction, ignoreCase: true, out var direction))
             throw new ArgumentException($"Unknown PTZ direction '{request.Direction}'.");
 
-        var adapter = adapterFactory.Resolve(camera);
-        if (!await adapter.SupportsPtzAsync(camera, ct)) return false;
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        await adapter.PtzStepAsync(camera, direction, Math.Clamp(request.Speed, 1, 100), ct);
+        var provider = registry.ResolvePtz(binding.Protocol);
+        await provider.PtzStepAsync(camera, binding, direction, Math.Clamp(request.Speed, 1, 100), ct);
         return true;
     }
 }
 
-public sealed class PtzSavePresetUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
+public sealed class PtzSavePresetUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
 {
     public async Task<bool> ExecuteAsync(string cameraId, int presetId, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return false;
 
-        var adapter = adapterFactory.Resolve(camera);
-        if (!await adapter.SupportsPtzAsync(camera, ct)) return false;
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        await adapter.PtzSavePresetAsync(camera, presetId, ct);
+        var provider = registry.ResolvePtz(binding.Protocol);
+        await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
         return true;
     }
 }
 
-public sealed class PtzGoToPresetUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
+public sealed class PtzGoToPresetUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
 {
     public async Task<bool> ExecuteAsync(string cameraId, int presetId, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return false;
 
-        var adapter = adapterFactory.Resolve(camera);
-        if (!await adapter.SupportsPtzAsync(camera, ct)) return false;
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        await adapter.PtzGoToPresetAsync(camera, presetId, ct);
+        var provider = registry.ResolvePtz(binding.Protocol);
+        await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
         return true;
     }
 }
@@ -63,32 +68,36 @@ public sealed class PtzGoToPresetUseCase(ICameraRepository cameras, IVendorCamer
 // Called from the fiche caméra when the user clicks "Définir position de surveillance".
 public sealed class ConfigurePtzParkingPositionUseCase(
     ICameraRepository cameras,
-    IVendorCameraAdapterFactory adapterFactory)
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry)
 {
     public async Task<bool> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return false;
 
-        var adapter = adapterFactory.Resolve(camera);
-        if (!await adapter.SupportsPtzAsync(camera, ct)) return false;
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
+        var provider = registry.ResolvePtz(binding.Protocol);
         // Preset 1 = surveillance/home position by convention.
-        await adapter.PtzSavePresetAsync(camera, presetId: 1, ct);
+        await provider.PtzSavePresetAsync(camera, binding, presetId: 1, ct);
         return true;
     }
 }
 
 // Diagnostic only — checks if camera reports its current pan/tilt position via ONVIF GetStatus.
 // Used to verify GetStatus support before implementing AbsoluteMove-based home positioning.
-public sealed class GetPtzPositionUseCase(ICameraRepository cameras, IVendorCameraAdapterFactory adapterFactory)
+public sealed class GetPtzPositionUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
 {
     public async Task<(float Pan, float Tilt)?> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
-        var adapter = adapterFactory.Resolve(camera);
-        return await adapter.GetPtzPositionAsync(camera, ct);
+
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return null;
+
+        var provider = registry.ResolvePtz(binding.Protocol);
+        return await provider.GetPtzPositionAsync(camera, binding, ct);
     }
 }
 

@@ -231,11 +231,13 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [ ] Test : chaque valeur de l'enum `VendorFamily` a un fichier `vendors/*.md` correspondant — clôt le critère "convention mécanique" de l'ancien ticket TECH (reporté en Phase 6)
 - [ ] Suppression de `IVendorCameraAdapter`, `IVendorCameraAdapterFactory`, `VendorCameraAdapterFactory`, `NullVendorCameraAdapter` une fois la phase 3 migrée — **conservés pour l'instant**, `VendorCameraAdapterFactory` fait le pont enum→string vers les anciens adaptateurs
 
-**Phase 3 — Application / migration de données :**
-- [ ] Script de backfill : reconstruire les bindings des caméras existantes depuis `VendorFamily` / `PtzSupported` / `PrivacyModeStrategy` / `PrivacyVendorCut` actuels (comportement déjà actif reconstruit à l'identique) — le binding `Ptz/TapoKlap` n'est **pas** backfillé automatiquement pour les caméras Tapo existantes (capacité nouvelle, jamais vérifiée) : proposé en probe optionnel post-migration
-- [ ] `ProbeCameraCapabilityUseCase` : exécute `ProbeAsync` sur un binding (déclaratif → vérifié), jamais l'inverse
-- [ ] `ConfigureCameraCapabilityUseCase` : crée/met à jour un binding manuel (protocole + config) pour une caméra non répertoriée, déclenche le probe avant d'autoriser l'activation
-- [ ] Mise à jour `ToggleCameraPrivacyModeUseCase` / use cases PTZ existants : résolution via `ICapabilityProviderRegistry` + `CameraCapabilityBinding`, plus via `VendorFamily`
+**Phase 3 — Application / migration de données :** ✅ terminée
+- [x] `BackfillCameraCapabilityBindingsUseCase` : reconstruit les bindings des caméras existantes depuis `VendorFamily` / `PtzSupported` / `PrivacyModeStrategy` / `PrivacyVendorCut` actuels (idempotent, exécuté à chaque démarrage juste après `dbContext.Database.Migrate()` dans `Program.cs`) — le binding `Ptz/TapoKlap` n'est **pas** backfillé automatiquement pour les caméras Tapo existantes (capacité nouvelle, jamais vérifiée) : reste à proposer en probe optionnel post-migration côté UI (Phase 5)
+- [x] `ProbeCameraCapabilityUseCase` : exécute `ProbeAsync` sur un binding (déclaratif → vérifié), jamais l'inverse
+- [x] `ConfigureCameraCapabilityUseCase` : crée/met à jour un binding manuel (protocole + config) pour une caméra non répertoriée, déclenche le probe avant d'autoriser l'activation
+- [x] `GetCameraCapabilitiesUseCase` : liste les bindings d'une caméra et leur statut vérifié
+- [x] `ToggleCameraPrivacyModeUseCase` / `BatchToggleCameraPrivacyModeUseCase` / `PtzStepUseCase` / `PtzSavePresetUseCase` / `PtzGoToPresetUseCase` / `ConfigurePtzParkingPositionUseCase` / `GetPtzPositionUseCase` : résolution via `ICapabilityProviderRegistry` + `CameraCapabilityBinding` (binding absent ou non vérifié → capacité non actionnée, jamais d'exception), plus via `IVendorCameraAdapterFactory`/`VendorFamily`
+- [x] Tests unitaires réécrits (`CameraPrivacyUseCaseTests`, `PrivacySchedulerServiceTests`) pour mocker `ICameraCapabilityBindingRepository`/`ICapabilityProviderRegistry` au lieu de `IVendorCameraAdapterFactory`
 
 **Phase 4 — API :**
 - [ ] `POST /api/cameras/{id}/capabilities/{capability}/probe` — déclenche `ProbeAsync`, retourne `Verified` + `LastError`

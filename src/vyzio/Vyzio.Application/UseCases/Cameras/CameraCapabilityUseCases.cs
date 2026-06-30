@@ -1,0 +1,111 @@
+using Vyzio.Core.Common;
+using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
+
+namespace Vyzio.Application.UseCases.Cameras;
+
+public sealed record CameraCapabilityBindingDto(
+    string Capability,
+    string Protocol,
+    string? ConfigJson,
+    bool Verified,
+    DateTimeOffset? VerifiedAt,
+    string? LastError)
+{
+    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding) => new(
+        SnakeCaseEnum.ToSnakeCase(binding.Capability),
+        SnakeCaseEnum.ToSnakeCase(binding.Protocol),
+        binding.ConfigJson,
+        binding.Verified,
+        binding.VerifiedAt,
+        binding.LastError);
+}
+
+// Executes a real connectivity/capability check (ADR-22) — Verified is only ever set as a
+// result of this call, never declaratively.
+public sealed class ProbeCameraCapabilityUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry)
+{
+    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return null;
+
+        var binding = await bindings.GetAsync(cameraId, capability, ct);
+        if (binding is null) return null;
+
+        bool verified;
+        string? error = null;
+        try
+        {
+            verified = capability switch
+            {
+                CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
+                CameraCapability.PrivacyMode => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
+                _ => false,
+            };
+        }
+        catch (Exception ex)
+        {
+            verified = false;
+            error = ex.Message;
+        }
+
+        binding.Verified = verified;
+        binding.VerifiedAt = DateTimeOffset.UtcNow;
+        binding.LastError = verified ? null : error;
+        await bindings.SaveAsync(binding, ct);
+
+        return CameraCapabilityBindingDto.From(binding);
+    }
+}
+
+public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? ConfigJson);
+
+// Manual onboarding for non-listed cameras (SPECS §2.3): creates/updates a binding then
+// immediately probes it — a binding is never offered as activatable on declaration alone.
+public sealed class ConfigureCameraCapabilityUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ProbeCameraCapabilityUseCase probe)
+{
+    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, ConfigureCameraCapabilityRequest request, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return null;
+
+        if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(request.Capability, out var capability))
+            throw new ArgumentException($"Invalid capability '{request.Capability}'.");
+        if (!SnakeCaseEnum.TryFromSnakeCase<CapabilityProtocol>(request.Protocol, out var protocol))
+            throw new ArgumentException($"Invalid protocol '{request.Protocol}'.");
+
+        var binding = await bindings.GetAsync(cameraId, capability, ct) ?? new CameraCapabilityBinding
+        {
+            CameraId = cameraId,
+            Capability = capability,
+        };
+
+        binding.Protocol = protocol;
+        binding.ConfigJson = request.ConfigJson;
+        binding.Verified = false;
+        binding.LastError = null;
+
+        await bindings.SaveAsync(binding, ct);
+
+        return await probe.ExecuteAsync(cameraId, capability, ct);
+    }
+}
+
+public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings)
+{
+    public async Task<IReadOnlyList<CameraCapabilityBindingDto>?> ExecuteAsync(string cameraId, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return null;
+
+        var list = await bindings.GetByCameraAsync(cameraId, ct);
+        return list.Select(CameraCapabilityBindingDto.From).ToList();
+    }
+}

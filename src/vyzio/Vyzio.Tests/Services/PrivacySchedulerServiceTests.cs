@@ -11,14 +11,12 @@ public class PrivacySchedulerServiceTests
 {
     private readonly ICameraPrivacyRepository _schedules = Substitute.For<ICameraPrivacyRepository>();
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly IVendorCameraAdapterFactory _adapterFactory = Substitute.For<IVendorCameraAdapterFactory>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
     private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
 
     public PrivacySchedulerServiceTests()
     {
-        var adapter = Substitute.For<IVendorCameraAdapter>();
-        adapter.SupportsPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(false);
-        _adapterFactory.Resolve(Arg.Any<Camera>()).Returns(adapter);
         _frigateConfig.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
             .Returns(new FrigateConfigApplyResult(true, "ok", "frigate.yml"));
     }
@@ -26,7 +24,7 @@ public class PrivacySchedulerServiceTests
     private PrivacySchedulerService MakeService()
     {
         var toggleUseCase = new ToggleCameraPrivacyModeUseCase(
-            _cameras, _adapterFactory, _frigateConfig);
+            _cameras, _bindings, _registry, _frigateConfig);
 
         var provider = Substitute.For<IServiceProvider>();
         provider.GetService(typeof(ICameraPrivacyRepository)).Returns(_schedules);

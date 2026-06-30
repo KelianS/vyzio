@@ -8,17 +8,19 @@ namespace Vyzio.Tests.UseCases;
 public class ToggleCameraPrivacyModeUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly ICameraPrivacyRepository _schedules = Substitute.For<ICameraPrivacyRepository>();
-    private readonly IVendorCameraAdapterFactory _adapterFactory = Substitute.For<IVendorCameraAdapterFactory>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
     private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
-    private readonly IVendorCameraAdapter _adapter = Substitute.For<IVendorCameraAdapter>();
+    private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
+    private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly ToggleCameraPrivacyModeUseCase _sut;
 
     public ToggleCameraPrivacyModeUseCaseTests()
     {
-        _adapterFactory.Resolve(Arg.Any<Camera>()).Returns(_adapter);
+        _registry.ResolvePrivacy(Arg.Any<CapabilityProtocol>()).Returns(_privacyProvider);
+        _registry.ResolvePtz(Arg.Any<CapabilityProtocol>()).Returns(_ptzProvider);
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _adapterFactory, _frigateConfig);
+        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig);
     }
 
     private static Camera MakeCamera(string id = "cam1", PrivacyModeStrategy strategy = PrivacyModeStrategy.Software) => new()
@@ -31,18 +33,27 @@ public class ToggleCameraPrivacyModeUseCaseTests
         PrivacyModeStrategy = strategy,
     };
 
+    private static CameraCapabilityBinding MakeBinding(string cameraId, CameraCapability capability, CapabilityProtocol protocol, bool verified = true) => new()
+    {
+        CameraId = cameraId,
+        Capability = capability,
+        Protocol = protocol,
+        Verified = verified,
+    };
+
     [Fact]
-    public async Task Execute_calls_vendor_adapter_and_sets_vendor_cut_when_strategy_is_hardware()
+    public async Task Execute_calls_privacy_provider_and_sets_vendor_cut_when_strategy_is_hardware()
     {
         var camera = MakeCamera(strategy: PrivacyModeStrategy.Hardware);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _adapter.SupportsPrivacyModeAsync(camera, Arg.Any<CancellationToken>()).Returns(true);
+        var binding = MakeBinding("cam1", CameraCapability.PrivacyMode, CapabilityProtocol.TapoKlap);
+        _bindings.GetAsync("cam1", CameraCapability.PrivacyMode, Arg.Any<CancellationToken>()).Returns(binding);
 
         var result = await _sut.ExecuteAsync("cam1", active: true);
 
         Assert.NotNull(result);
         Assert.True(result!.PrivacyVendorCut);
-        await _adapter.Received(1).SetPrivacyModeAsync(camera, true, Arg.Any<CancellationToken>());
+        await _privacyProvider.Received(1).SetPrivacyModeAsync(camera, binding, true, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -55,21 +66,22 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         Assert.NotNull(result);
         Assert.False(result!.PrivacyVendorCut);
-        await _adapter.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await _privacyProvider.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Execute_leaves_vendor_cut_false_when_hardware_adapter_not_supported()
+    public async Task Execute_leaves_vendor_cut_false_when_hardware_binding_not_verified()
     {
         var camera = MakeCamera(strategy: PrivacyModeStrategy.Hardware);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _adapter.SupportsPrivacyModeAsync(camera, Arg.Any<CancellationToken>()).Returns(false);
+        _bindings.GetAsync("cam1", CameraCapability.PrivacyMode, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.PrivacyMode, CapabilityProtocol.TapoKlap, verified: false));
 
         var result = await _sut.ExecuteAsync("cam1", active: true);
 
         Assert.NotNull(result);
         Assert.False(result!.PrivacyVendorCut);
-        await _adapter.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await _privacyProvider.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -78,13 +90,14 @@ public class ToggleCameraPrivacyModeUseCaseTests
         var camera = MakeCamera(strategy: PrivacyModeStrategy.PtzParking);
         camera.PtzSupported = true;
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _adapter.SupportsPtzAsync(camera, Arg.Any<CancellationToken>()).Returns(true);
+        var binding = MakeBinding("cam1", CameraCapability.Ptz, CapabilityProtocol.Onvif);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
 
         var result = await _sut.ExecuteAsync("cam1", active: true);
 
         Assert.NotNull(result);
         Assert.False(result!.PrivacyVendorCut); // no hardware cut for ptz_parking
-        await _adapter.Received(1).PtzMoveAsync(camera, PtzDirection.DownLeft, 80, Arg.Any<CancellationToken>());
+        await _ptzProvider.Received(1).PtzMoveAsync(camera, binding, PtzDirection.DownLeft, 80, Arg.Any<CancellationToken>());
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
     }
 
@@ -94,23 +107,25 @@ public class ToggleCameraPrivacyModeUseCaseTests
         var camera = MakeCamera(strategy: PrivacyModeStrategy.PtzParking);
         camera.PtzSupported = true;
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _adapter.SupportsPtzAsync(camera, Arg.Any<CancellationToken>()).Returns(true);
+        var binding = MakeBinding("cam1", CameraCapability.Ptz, CapabilityProtocol.Onvif);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
 
         await _sut.ExecuteAsync("cam1", active: false);
 
-        await _adapter.Received(1).PtzGoToPresetAsync(camera, 1, Arg.Any<CancellationToken>());
+        await _ptzProvider.Received(1).PtzGoToPresetAsync(camera, binding, 1, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Execute_ptz_parking_skips_ptz_when_not_supported()
+    public async Task Execute_ptz_parking_skips_ptz_when_binding_not_verified()
     {
         var camera = MakeCamera(strategy: PrivacyModeStrategy.PtzParking);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _adapter.SupportsPtzAsync(camera, Arg.Any<CancellationToken>()).Returns(false);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, CapabilityProtocol.Onvif, verified: false));
 
         await _sut.ExecuteAsync("cam1", active: true);
 
-        await _adapter.DidNotReceive().PtzMoveAsync(Arg.Any<Camera>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _ptzProvider.DidNotReceive().PtzMoveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -118,7 +133,6 @@ public class ToggleCameraPrivacyModeUseCaseTests
     {
         var camera = MakeCamera();
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _adapter.SupportsPrivacyModeAsync(camera, Arg.Any<CancellationToken>()).Returns(false);
 
         await _sut.ExecuteAsync("cam1", active: true);
 
@@ -139,15 +153,16 @@ public class ToggleCameraPrivacyModeUseCaseTests
 public class BatchToggleCameraPrivacyModeUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly IVendorCameraAdapterFactory _adapterFactory = Substitute.For<IVendorCameraAdapterFactory>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
     private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
-    private readonly IVendorCameraAdapter _adapter = Substitute.For<IVendorCameraAdapter>();
+    private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly BatchToggleCameraPrivacyModeUseCase _sut;
 
     public BatchToggleCameraPrivacyModeUseCaseTests()
     {
-        _adapterFactory.Resolve(Arg.Any<Camera>()).Returns(_adapter);
-        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _adapterFactory, _frigateConfig);
+        _registry.ResolvePrivacy(Arg.Any<CapabilityProtocol>()).Returns(_privacyProvider);
+        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig);
     }
 
     private static Camera MakeCamera(string id) => new()
@@ -164,7 +179,6 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns([MakeCamera("cam1"), MakeCamera("cam2")]);
-        _adapter.SupportsPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(false);
 
         await _sut.ExecuteAsync(["cam1", "cam2"], active: true);
 
@@ -172,11 +186,18 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_sets_vendor_cut_for_cameras_with_adapter_support()
+    public async Task Execute_sets_vendor_cut_for_cameras_with_verified_binding()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns([MakeCamera("cam1"), MakeCamera("cam2")]);
-        _adapter.SupportsPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(true);
+        _bindings.GetAsync(Arg.Any<string>(), CameraCapability.PrivacyMode, Arg.Any<CancellationToken>())
+            .Returns(ci => new CameraCapabilityBinding
+            {
+                CameraId = ci.ArgAt<string>(0),
+                Capability = CameraCapability.PrivacyMode,
+                Protocol = CapabilityProtocol.TapoKlap,
+                Verified = true,
+            });
 
         var result = await _sut.ExecuteAsync(["cam1", "cam2"], active: true);
 

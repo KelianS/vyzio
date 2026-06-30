@@ -60,6 +60,9 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
     dbContext.Database.Migrate();
+
+    var backfill = scope.ServiceProvider.GetRequiredService<BackfillCameraCapabilityBindingsUseCase>();
+    await backfill.ExecuteAsync();
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));

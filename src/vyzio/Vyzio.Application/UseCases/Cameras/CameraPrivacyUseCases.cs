@@ -5,9 +5,14 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
+// Resolution is via CameraCapabilityBinding + ICapabilityProviderRegistry (ADR-22) — never
+// via VendorFamily/IVendorCameraAdapter. A strategy that requires a binding (hardware,
+// ptz_parking) only calls the provider if a *verified* binding exists; otherwise it silently
+// falls back to the Frigate-only software path rather than failing the whole toggle.
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
-    IVendorCameraAdapterFactory adapterFactory,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig)
 {
     // PTZ parking move duration: drive camera to corner for this long, then stop.
@@ -19,7 +24,6 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         if (camera is null) return null;
 
         var strategy = camera.PrivacyModeStrategy;
-        var adapter = adapterFactory.Resolve(camera);
 
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
@@ -29,31 +33,31 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         {
             case PrivacyModeStrategy.Hardware:
                 // Vendor cuts the lens at firmware level (e.g. Tapo KLAP lens mask).
-                if (await adapter.SupportsPrivacyModeAsync(camera, ct))
+                if (await bindings.GetAsync(cameraId, CameraCapability.PrivacyMode, ct) is { Verified: true } privacyBinding)
                 {
-                    await adapter.SetPrivacyModeAsync(camera, active, ct);
+                    var provider = registry.ResolvePrivacy(privacyBinding.Protocol);
+                    await provider.SetPrivacyModeAsync(camera, privacyBinding, active, ct);
                     camera.PrivacyVendorCut = active;
                 }
                 break;
 
             case PrivacyModeStrategy.PtzParking:
                 // Camera pivots to a neutral zone AND Frigate is disabled — dual protection.
-                if (active)
+                if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
                 {
-                    // Start continuous move toward lower-left corner.
-                    // Fire-and-forget stop after duration so the API response is immediate.
-                    if (await adapter.SupportsPtzAsync(camera, ct))
+                    var ptzProvider = registry.ResolvePtz(ptzBinding.Protocol);
+                    if (active)
                     {
-                        await adapter.PtzMoveAsync(camera, PtzDirection.DownLeft, speed: 80, ct);
-                        _ = StopAfterDelayAsync(adapter, camera, ParkingMoveDuration);
+                        // Fire-and-forget stop after duration so the API response is immediate.
+                        await ptzProvider.PtzMoveAsync(camera, ptzBinding, PtzDirection.DownLeft, speed: 80, ct);
+                        _ = StopAfterDelayAsync(ptzProvider, camera, ptzBinding, ParkingMoveDuration);
                     }
-                }
-                else
-                {
-                    // Return to surveillance position (preset 1).
-                    // Frigate re-enabled below regardless; stream may briefly see a moving frame.
-                    if (await adapter.SupportsPtzAsync(camera, ct))
-                        await adapter.PtzGoToPresetAsync(camera, presetId: 1, ct);
+                    else
+                    {
+                        // Return to surveillance position (preset 1).
+                        // Frigate re-enabled below regardless; stream may briefly see a moving frame.
+                        await ptzProvider.PtzGoToPresetAsync(camera, ptzBinding, presetId: 1, ct);
+                    }
                 }
                 break;
 
@@ -69,12 +73,12 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         return CameraDto.From(camera);
     }
 
-    private static async Task StopAfterDelayAsync(IVendorCameraAdapter adapter, Camera camera, TimeSpan delay)
+    private static async Task StopAfterDelayAsync(IPtzCapabilityProvider provider, Camera camera, CameraCapabilityBinding binding, TimeSpan delay)
     {
         try
         {
             await Task.Delay(delay);
-            await adapter.PtzStopAsync(camera);
+            await provider.PtzStopAsync(camera, binding);
         }
         catch
         {
@@ -85,7 +89,8 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
 public sealed class BatchToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
-    IVendorCameraAdapterFactory adapterFactory,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
@@ -103,10 +108,10 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
             camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
             camera.PrivacyVendorCut = false;
 
-            var adapter = adapterFactory.Resolve(camera);
-            if (await adapter.SupportsPrivacyModeAsync(camera, ct))
+            if (await bindings.GetAsync(camera.Id, CameraCapability.PrivacyMode, ct) is { Verified: true } privacyBinding)
             {
-                await adapter.SetPrivacyModeAsync(camera, active, ct);
+                var provider = registry.ResolvePrivacy(privacyBinding.Protocol);
+                await provider.SetPrivacyModeAsync(camera, privacyBinding, active, ct);
                 camera.PrivacyVendorCut = active;
             }
 
