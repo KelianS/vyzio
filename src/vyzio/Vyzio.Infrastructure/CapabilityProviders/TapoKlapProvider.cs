@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -6,21 +5,26 @@ using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
-namespace Vyzio.Infrastructure.VendorAdapters;
+namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// Tapo KLAP local API adapter (TP-Link cameras).
-// Protocol: Key-based Local Authentication Protocol (community-documented reverse engineering).
-// Reference: https://github.com/python-kasa/python-kasa
-// When privacy mode is active: lens mask is engaged + LED turns off (physical signal).
-public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILogger<TapoCameraAdapter> logger)
-    : IVendorCameraAdapter
+// Tapo KLAP local API — implements BOTH IPrivacyCapabilityProvider (set_lens_mask, proven in
+// production via TapoCameraAdapter) AND IPtzCapabilityProvider (motorMove, NEW — see ADR-22).
+//
+// This is the concrete example that motivated the capability/protocol split: Tapo pan-tilt
+// cameras (C200, C210, C225...) support PTZ over the exact same KLAP transport already used
+// for privacy mode, but the old per-vendor adapter only exposed the capability it was
+// originally written for. The transport (handshake, AES-128-GCM) is unchanged from
+// TapoCameraAdapter — only the PTZ command payload is new and needs hardware validation.
+public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogger<TapoKlapProvider> logger)
+    : IPrivacyCapabilityProvider, IPtzCapabilityProvider
 {
-    public string VendorFamily => "tplink_tapo";
+    CapabilityProtocol IPrivacyCapabilityProvider.Protocol => CapabilityProtocol.TapoKlap;
+    CapabilityProtocol IPtzCapabilityProvider.Protocol => CapabilityProtocol.TapoKlap;
 
-    public Task<bool> SupportsPrivacyModeAsync(Camera camera, CancellationToken ct = default)
-        => Task.FromResult(true);
+    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => await AuthenticateAsync(camera, ct) is not null;
 
-    public async Task SetPrivacyModeAsync(Camera camera, bool active, CancellationToken ct = default)
+    public async Task SetPrivacyModeAsync(Camera camera, CameraCapabilityBinding binding, bool active, CancellationToken ct = default)
     {
         var session = await AuthenticateAsync(camera, ct)
             ?? throw new InvalidOperationException($"KLAP authentication failed for camera {camera.DisplayName} ({camera.Host}).");
@@ -36,6 +40,60 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
             active, camera.Host, active ? "off" : "on");
     }
 
+    // NEW — continuous pan/tilt via KLAP motorMove. Direction/speed mapping is a first
+    // implementation derived from community KLAP documentation (python-kasa); the exact
+    // payload shape should be confirmed against real Tapo pan-tilt hardware before this
+    // provider is offered as a verified preset binding (see ADR-22 migration/backfill notes —
+    // Ptz/TapoKlap is never auto-activated for existing cameras, probe-gated only).
+    public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    {
+        var session = await AuthenticateAsync(camera, ct)
+            ?? throw new InvalidOperationException($"KLAP authentication failed for camera {camera.DisplayName} ({camera.Host}).");
+
+        var (x, y) = DirectionToVelocity(direction, speed);
+        var command = new
+        {
+            method = "motorMove",
+            @params = new { x, y }
+        };
+
+        await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
+    }
+
+    public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    {
+        var session = await AuthenticateAsync(camera, ct)
+            ?? throw new InvalidOperationException($"KLAP authentication failed for camera {camera.DisplayName} ({camera.Host}).");
+
+        var command = new { method = "motorMove", @params = new { x = 0, y = 0 } };
+        await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
+    }
+
+    // Tapo consumer firmware does not expose ONVIF-style presets over KLAP — parking relies
+    // on PtzParkingPrivacyProvider's mechanical-limit move, not a saved preset position.
+    public Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    internal static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
+    {
+        var s = Math.Clamp(speed, 1, 100);
+        return direction switch
+        {
+            PtzDirection.Up        => (0,  s),
+            PtzDirection.Down      => (0, -s),
+            PtzDirection.Left      => (-s, 0),
+            PtzDirection.Right     => (s,  0),
+            PtzDirection.UpLeft    => (-s,  s),
+            PtzDirection.UpRight   => (s,   s),
+            PtzDirection.DownLeft  => (-s, -s),
+            PtzDirection.DownRight => (s,  -s),
+            _                      => (0,  0),
+        };
+    }
+
     private async Task<KlapSession?> AuthenticateAsync(Camera camera, CancellationToken ct)
     {
         var http = httpClientFactory.CreateClient("tapo");
@@ -46,7 +104,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         var localSeed = RandomNumberGenerator.GetBytes(16);
         var credHash = ComputeCredentialHash(username, password);
 
-        // Handshake 1: send local seed, receive server seed + server hash
         using var hs1Content = new ByteArrayContent(localSeed);
         var hs1Response = await http.PostAsync($"{baseUrl}/app/handshake1", hs1Content, ct);
         if (!hs1Response.IsSuccessStatusCode)
@@ -65,7 +122,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         var serverSeed = hs1Body[..16];
         var serverHash = hs1Body[16..48];
 
-        // Verify the server hash to authenticate the device
         var expectedServerHash = SHA256.HashData([.. serverSeed, .. localSeed, .. credHash]);
         if (!expectedServerHash.AsSpan().SequenceEqual(serverHash))
         {
@@ -73,7 +129,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
             return null;
         }
 
-        // Handshake 2: send client hash to authenticate ourselves
         var clientHash = SHA256.HashData([.. localSeed, .. serverSeed, .. credHash]);
         using var hs2Content = new ByteArrayContent(clientHash);
         var hs2Response = await http.PostAsync($"{baseUrl}/app/handshake2", hs2Content, ct);
@@ -83,7 +138,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
             return null;
         }
 
-        // Extract session cookie
         var cookie = hs2Response.Headers.TryGetValues("Set-Cookie", out var cookies)
             ? cookies.FirstOrDefault(c => c.StartsWith("TP_SESSIONID=", StringComparison.OrdinalIgnoreCase))
             : null;
@@ -114,7 +168,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         response.EnsureSuccessStatusCode();
     }
 
-    // Credential hash as per KLAP spec: inner SHA256 is hex-encoded before outer SHA256
     private static byte[] ComputeCredentialHash(string username, string password)
     {
         var unHex = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(username))).ToLowerInvariant();
@@ -122,7 +175,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         return SHA256.HashData(Encoding.UTF8.GetBytes(unHex + pwHex));
     }
 
-    // Key derivation with KLAP-specific labels ("lsk" and "iv")
     private static (byte[] key, byte[] iv) DeriveKeyAndIv(byte[] localSeed, byte[] serverSeed, byte[] credHash)
     {
         var payload = (byte[])[.. localSeed, .. serverSeed, .. credHash];
@@ -131,7 +183,6 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         return (key, iv);
     }
 
-    // AES-128-GCM encryption per KLAP: IV last 4 bytes XORed with seq (big-endian), AAD = seq bytes
     private static (byte[] payload, int seq) Encrypt(KlapSession session, string plaintext)
     {
         var seq = session.Seq;
@@ -154,25 +205,8 @@ public sealed class TapoCameraAdapter(IHttpClientFactory httpClientFactory, ILog
         using var aes = new AesGcm(session.Key, 16);
         aes.Encrypt(iv, plaintextBytes, ciphertext, tag, seqBytes);
 
-        // Payload: seq (4 bytes) + ciphertext + tag (16 bytes)
         return ([.. seqBytes, .. ciphertext, .. tag], seq);
     }
-
-    // Tapo cameras have no PTZ in the current scope — spatial privacy is lens mask only.
-    public Task<bool> SupportsPtzAsync(Camera camera, CancellationToken ct = default)
-        => Task.FromResult(false);
-
-    public Task PtzMoveAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
-        => Task.CompletedTask;
-
-    public Task PtzStopAsync(Camera camera, CancellationToken ct = default)
-        => Task.CompletedTask;
-
-    public Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
-        => Task.CompletedTask;
-
-    public Task PtzSavePresetAsync(Camera camera, int presetId, CancellationToken ct = default)
-        => Task.CompletedTask;
 
     private sealed record KlapSession(byte[] Key, byte[] Iv, string Cookie, int Seq);
 }

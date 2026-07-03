@@ -46,6 +46,7 @@ import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import { CameraLiveView } from './CameraLiveView'
 import { DetectionConfigSection } from './DetectionConfigSection'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
+import { CapabilitySection } from './CapabilitySection'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -1229,7 +1230,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                               { value: 'hardware' as const, label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresPtz: false, requiresHw: true },
                             ]
                           ).map(({ value, label, desc, requiresPtz, requiresHw }) => {
-                            const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && !selectedCamera.privacyVendorCut && selectedCamera.vendorFamily !== 'tplink_tapo')
+                            const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && selectedCamera.vendorFamily !== 'tplink_tapo')
                             return (
                               <label key={value} className={`privacy-strategy-option${disabled ? ' opacity-50' : ''}`} style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}>
                                 <input
@@ -1339,16 +1340,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           />
                         </label>
                       </div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem', marginTop: 12 }}>
-                        <input
-                          type="checkbox"
-                          checked={editForm.ptzSupported ?? false}
-                          onChange={(e) => updateEditForm({ ptzSupported: e.target.checked })}
-                          style={{ accentColor: 'currentColor' }}
-                        />
-                        Cette caméra supporte le contrôle PTZ (orientation motorisée)
-                      </label>
                     </section>
+
+                    {selectedCamera && (
+                      <CapabilitySection camera={selectedCamera} />
+                    )}
 
                     {renderVendorAssistanceSection()}
 

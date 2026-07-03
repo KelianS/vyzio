@@ -33,11 +33,9 @@ public class Camera
     [MaxLength(500)]
     public string? StreamPath { get; set; }
 
-    [Required, MaxLength(20)]
-    public string StreamProtocol { get; set; } = "rtsp";
+    public StreamProtocol StreamProtocol { get; set; } = StreamProtocol.Rtsp;
 
-    [MaxLength(100)]
-    public string? VendorFamily { get; set; }
+    public VendorFamily? VendorFamily { get; set; }
 
     // JSON array of active detection labels e.g. ["person","dog"]. Null defaults to ["person"].
     [MaxLength(500)]
@@ -62,9 +60,7 @@ public class Camera
 
     public bool PrivacyModeActive { get; set; }
 
-    // "manual" | "schedule" | null
-    [MaxLength(20)]
-    public string? PrivacyModeSource { get; set; }
+    public PrivacyModeSource? PrivacyModeSource { get; set; }
 
     // true if the vendor API confirmed the hardware-level cut during last toggle
     public bool PrivacyVendorCut { get; set; }
@@ -72,9 +68,7 @@ public class Camera
     // PTZ + privacy strategy (ADR-21)
     public bool PtzSupported { get; set; }
 
-    // "software" | "ptz_parking" | "hardware"
-    [Required, MaxLength(20)]
-    public string PrivacyModeStrategy { get; set; } = "software";
+    public PrivacyModeStrategy PrivacyModeStrategy { get; set; } = PrivacyModeStrategy.Software;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

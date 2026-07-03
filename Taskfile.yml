@@ -29,7 +29,7 @@ tasks:
   logs:
     desc: Suit les logs de l'infra dev
     cmds:
-      - wsl {{.COMPOSE_DEV}} logs -f
+      - wsl {{.COMPOSE_DEV}} logs vyzio-api -f
 
   mock:up:
     desc: Demarre le flux RTSP synthetique (camera mock) en plus de l'infra dev

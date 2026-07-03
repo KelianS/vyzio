@@ -9,7 +9,7 @@ public sealed class RtspCameraVerifier : ICameraVerifier
 {
     public async Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
     {
-        if (string.Equals(camera.StreamProtocol, "dvrip", StringComparison.OrdinalIgnoreCase))
+        if (camera.StreamProtocol == StreamProtocol.Dvrip)
         {
             return await VerifyDvripAsync(camera, ct);
         }

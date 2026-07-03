@@ -1,3 +1,4 @@
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
@@ -36,7 +37,7 @@ public sealed record CameraDto(
         camera.Port,
         camera.Username,
         camera.StreamPath,
-        camera.StreamProtocol,
+        SnakeCaseEnum.ToSnakeCase(camera.StreamProtocol),
         camera.Status,
         camera.ValidationState,
         camera.IsEnabled,
@@ -45,10 +46,10 @@ public sealed record CameraDto(
         camera.LastReachabilityCheckAt,
         camera.LastSuccessfulFrameAt,
         camera.FrigateCameraName,
-        camera.VendorFamily,
+        camera.VendorFamily is { } vendorFamily ? SnakeCaseEnum.ToSnakeCase(vendorFamily) : null,
         camera.PrivacyModeActive,
-        camera.PrivacyModeSource,
+        camera.PrivacyModeSource is { } privacyModeSource ? SnakeCaseEnum.ToSnakeCase(privacyModeSource) : null,
         camera.PrivacyVendorCut,
         camera.PtzSupported,
-        string.IsNullOrEmpty(camera.PrivacyModeStrategy) ? "software" : camera.PrivacyModeStrategy);
+        SnakeCaseEnum.ToSnakeCase(camera.PrivacyModeStrategy));
 }
