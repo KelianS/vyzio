@@ -109,7 +109,7 @@ Dans `AssistedCameraDiscoveryKnownDevices.cs` :
 
 ### 4. Déclarer le preset de capacités
 
-Dans `Vyzio.Infrastructure/VendorPresets/VendorCapabilityPresets.cs` :
+Dans `Vyzio.Core/Entities/VendorCapabilityPresets.cs` :
 
 ```csharp
 new VendorCapabilityPreset(VendorFamily.MonConstructeur, [

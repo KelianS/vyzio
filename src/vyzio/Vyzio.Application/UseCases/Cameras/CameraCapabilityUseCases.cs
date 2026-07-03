@@ -10,15 +10,29 @@ public sealed record CameraCapabilityBindingDto(
     string? ConfigJson,
     bool Verified,
     DateTimeOffset? VerifiedAt,
-    string? LastError)
+    string? LastError,
+    bool IsPreset,
+    bool IsConfigured)
 {
-    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding) => new(
+    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, bool isPreset = false) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
         SnakeCaseEnum.ToSnakeCase(binding.Protocol),
         binding.ConfigJson,
         binding.Verified,
         binding.VerifiedAt,
-        binding.LastError);
+        binding.LastError,
+        IsPreset: isPreset,
+        IsConfigured: true);
+
+    public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, CapabilityProtocol protocol) => new(
+        SnakeCaseEnum.ToSnakeCase(capability),
+        SnakeCaseEnum.ToSnakeCase(protocol),
+        ConfigJson: null,
+        Verified: false,
+        VerifiedAt: null,
+        LastError: null,
+        IsPreset: true,
+        IsConfigured: false);
 }
 
 // Executes a real connectivity/capability check (ADR-22) — Verified is only ever set as a
@@ -105,7 +119,31 @@ public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICam
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        var list = await bindings.GetByCameraAsync(cameraId, ct);
-        return list.Select(CameraCapabilityBindingDto.From).ToList();
+        var dbBindings = await bindings.GetByCameraAsync(cameraId, ct);
+        var preset = camera.VendorFamily is { } vf ? VendorCapabilityPresets.GetByVendorFamily(vf) : null;
+
+        var result = new List<CameraCapabilityBindingDto>();
+
+        if (preset is not null)
+        {
+            // Preset capabilities first — existing binding if available, synthetic suggestion otherwise.
+            foreach (var (capability, protocol) in preset.DefaultBindings)
+            {
+                var binding = dbBindings.FirstOrDefault(b => b.Capability == capability);
+                result.Add(binding is not null
+                    ? CameraCapabilityBindingDto.From(binding, isPreset: true)
+                    : CameraCapabilityBindingDto.FromPreset(capability, protocol));
+            }
+        }
+
+        // Non-preset bindings (manually added on unlisted cameras).
+        var presetCaps = preset?.DefaultBindings.Select(b => b.Capability).ToHashSet() ?? [];
+        foreach (var binding in dbBindings)
+        {
+            if (!presetCaps.Contains(binding.Capability))
+                result.Add(CameraCapabilityBindingDto.From(binding, isPreset: false));
+        }
+
+        return result;
     }
 }

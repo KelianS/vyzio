@@ -8,4 +8,6 @@ export interface CameraCapabilityBinding {
   verified: boolean
   verifiedAt: string | null
   lastError: string | null
+  isPreset: boolean
+  isConfigured: boolean
 }

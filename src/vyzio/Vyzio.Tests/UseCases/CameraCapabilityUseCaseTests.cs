@@ -230,6 +230,15 @@ public class GetCameraCapabilitiesUseCaseTests
         _sut = new GetCameraCapabilitiesUseCase(_cameras, _bindings);
     }
 
+    private static Camera MakeCamera(string id = "cam1", VendorFamily? vendorFamily = null) => new()
+    {
+        Id = id,
+        Slug = id,
+        DisplayName = id,
+        Host = "h",
+        VendorFamily = vendorFamily,
+    };
+
     [Fact]
     public async Task ExecuteAsync_returns_null_when_camera_not_found()
     {
@@ -241,9 +250,9 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_empty_list_when_no_bindings()
+    public async Task ExecuteAsync_returns_empty_list_when_no_bindings_and_no_vendor()
     {
-        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h" });
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
 
         var result = await _sut.ExecuteAsync("cam1");
@@ -253,9 +262,9 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_maps_bindings_to_dtos()
+    public async Task ExecuteAsync_maps_non_preset_bindings_with_is_configured_true()
     {
-        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h" });
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([
             new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif, Verified = true },
             new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.PrivacyMode, Protocol = CapabilityProtocol.TapoKlap, Verified = false },
@@ -264,7 +273,42 @@ public class GetCameraCapabilitiesUseCaseTests
         var result = await _sut.ExecuteAsync("cam1");
 
         Assert.Equal(2, result!.Count);
-        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "onvif" && b.Verified);
-        Assert.Contains(result, b => b.Capability == "privacy_mode" && b.Protocol == "tapo_klap" && !b.Verified);
+        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "onvif" && b.Verified && !b.IsPreset && b.IsConfigured);
+        Assert.Contains(result, b => b.Capability == "privacy_mode" && b.Protocol == "tapo_klap" && !b.Verified && !b.IsPreset && b.IsConfigured);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_includes_preset_suggestion_when_no_binding_exists_yet()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(vendorFamily: VendorFamily.TplinkTapo));
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
+
+        var result = await _sut.ExecuteAsync("cam1");
+
+        // TplinkTapo preset: PrivacyMode/TapoKlap + Ptz/TapoKlap
+        Assert.Equal(2, result!.Count);
+        Assert.Contains(result, b => b.Capability == "privacy_mode" && b.Protocol == "tapo_klap" && b.IsPreset && !b.IsConfigured && !b.Verified);
+        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "tapo_klap" && b.IsPreset && !b.IsConfigured && !b.Verified);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_marks_existing_binding_as_preset_when_in_vendor_preset()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(vendorFamily: VendorFamily.TplinkTapo));
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([
+            new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.PrivacyMode, Protocol = CapabilityProtocol.TapoKlap, Verified = true },
+        ]);
+
+        var result = await _sut.ExecuteAsync("cam1");
+
+        // Ptz not configured yet → synthetic preset entry; PrivacyMode configured → isPreset=true, isConfigured=true
+        Assert.Equal(2, result!.Count);
+        var privacyDto = result.First(b => b.Capability == "privacy_mode");
+        Assert.True(privacyDto.IsPreset);
+        Assert.True(privacyDto.IsConfigured);
+        Assert.True(privacyDto.Verified);
+        var ptzDto = result.First(b => b.Capability == "ptz");
+        Assert.True(ptzDto.IsPreset);
+        Assert.False(ptzDto.IsConfigured);
     }
 }

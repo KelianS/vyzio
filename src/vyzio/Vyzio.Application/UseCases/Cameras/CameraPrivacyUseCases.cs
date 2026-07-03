@@ -6,18 +6,15 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.Cameras;
 
 // Resolution is via CameraCapabilityBinding + ICapabilityProviderRegistry (ADR-22) — never
-// via VendorFamily/IVendorCameraAdapter. A strategy that requires a binding (hardware,
-// ptz_parking) only calls the provider if a *verified* binding exists; otherwise it silently
-// falls back to the Frigate-only software path rather than failing the whole toggle.
+// via VendorFamily/IVendorCameraAdapter. Hardware strategy requires Verified=true on the
+// PrivacyMode binding. PtzParking delegates to PtzParkingPrivacyProvider unconditionally
+// (the provider checks its own PTZ binding); no binding → silent Frigate-only fallback.
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig)
 {
-    // PTZ parking move duration: drive camera to corner for this long, then stop.
-    private static readonly TimeSpan ParkingMoveDuration = TimeSpan.FromSeconds(8);
-
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
@@ -43,21 +40,13 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
             case PrivacyModeStrategy.PtzParking:
                 // Camera pivots to a neutral zone AND Frigate is disabled — dual protection.
-                if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
+                // No Verified guard here: PtzParkingPrivacyProvider checks its own PTZ binding
+                // internally, so a not-yet-probed PrivacyMode/PtzParking binding still works for
+                // cameras whose PTZ was backfilled as verified.
+                if (await bindings.GetAsync(cameraId, CameraCapability.PrivacyMode, ct) is { } parkingBinding)
                 {
-                    var ptzProvider = registry.ResolvePtz(ptzBinding.Protocol);
-                    if (active)
-                    {
-                        // Fire-and-forget stop after duration so the API response is immediate.
-                        await ptzProvider.PtzMoveAsync(camera, ptzBinding, PtzDirection.DownLeft, speed: 80, ct);
-                        _ = StopAfterDelayAsync(ptzProvider, camera, ptzBinding, ParkingMoveDuration);
-                    }
-                    else
-                    {
-                        // Return to surveillance position (preset 1).
-                        // Frigate re-enabled below regardless; stream may briefly see a moving frame.
-                        await ptzProvider.PtzGoToPresetAsync(camera, ptzBinding, presetId: 1, ct);
-                    }
+                    var provider = registry.ResolvePrivacy(parkingBinding.Protocol);
+                    await provider.SetPrivacyModeAsync(camera, parkingBinding, active, ct);
                 }
                 break;
 
@@ -71,19 +60,6 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         await frigateConfig.ApplyAsync(allCameras, ct);
 
         return CameraDto.From(camera);
-    }
-
-    private static async Task StopAfterDelayAsync(IPtzCapabilityProvider provider, Camera camera, CameraCapabilityBinding binding, TimeSpan delay)
-    {
-        try
-        {
-            await Task.Delay(delay);
-            await provider.PtzStopAsync(camera, binding);
-        }
-        catch
-        {
-            // Best-effort; camera will stop at mechanical limit if this fails.
-        }
     }
 }
 

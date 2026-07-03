@@ -31,8 +31,12 @@ public sealed class PtzParkingPrivacyProvider(
 
     public async Task SetPrivacyModeAsync(Camera camera, CameraCapabilityBinding binding, bool active, CancellationToken ct = default)
     {
-        var ptzBinding = await ResolvePtzBindingAsync(camera, ct)
-            ?? throw new InvalidOperationException($"Camera {camera.DisplayName} has no PTZ binding — ptz_parking requires one.");
+        var ptzBinding = await ResolvePtzBindingAsync(camera, ct);
+        if (ptzBinding is null || !ptzBinding.Verified)
+        {
+            logger.LogWarning("Camera {Camera} PTZ parking skipped — PTZ binding missing or not verified.", camera.DisplayName);
+            return;
+        }
 
         var ptzProvider = ResolvePtzProvider(ptzBinding.Protocol);
 

@@ -39,13 +39,6 @@ const PRIVACY_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
   { value: 'ptz_parking', label: 'PTZ Parking — orientation vers zone neutre' },
 ]
 
-// Capabilities the vendor preset declares for this camera, so we know what to suggest.
-const VENDOR_PRESET: Record<string, Capability[]> = {
-  tplink_tapo: ['privacy_mode', 'ptz'],
-  icsee: ['ptz', 'privacy_mode'],
-  v380_pro: ['ptz', 'privacy_mode'],
-}
-
 export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) {
   const { data: bindings, loading, reload } = useAsync(
     () => getCameraCapabilities.execute(camera.id),
@@ -57,10 +50,8 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
     onReload?.()
   }
 
-  const expectedCapabilities: Capability[] =
-    camera.vendorFamily ? (VENDOR_PRESET[camera.vendorFamily] ?? []) : []
-
-  const isUnlisted = !camera.vendorFamily
+  // Preset entries (isPreset=true) come from the server for listed cameras; absence means unlisted.
+  const isUnlisted = !bindings?.some((b) => b.isPreset)
 
   if (loading) {
     return (
@@ -70,10 +61,6 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
       </section>
     )
   }
-
-  const bindingMap = new Map<Capability, CameraCapabilityBinding>(
-    (bindings ?? []).map((b) => [b.capability, b]),
-  )
 
   return (
     <section className="camera-detail-section">
@@ -87,31 +74,15 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Known / expected capabilities from the vendor preset */}
-        {expectedCapabilities.map((cap) => (
+        {(bindings ?? []).map((b) => (
           <CapabilityRow
-            key={cap}
+            key={b.capability}
             cameraId={camera.id}
-            capability={cap}
-            binding={bindingMap.get(cap) ?? null}
+            binding={b}
             onDone={handleReload}
           />
         ))}
 
-        {/* Capabilities already configured but not in preset (e.g. manually added for unlisted) */}
-        {(bindings ?? [])
-          .filter((b) => !expectedCapabilities.includes(b.capability))
-          .map((b) => (
-            <CapabilityRow
-              key={b.capability}
-              cameraId={camera.id}
-              capability={b.capability}
-              binding={b}
-              onDone={handleReload}
-            />
-          ))}
-
-        {/* Manual capability configuration for unlisted cameras */}
         {isUnlisted && (
           <ManualCapabilityForm
             cameraId={camera.id}
@@ -127,42 +98,41 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
 
 interface CapabilityRowProps {
   cameraId: string
-  capability: Capability
-  binding: CameraCapabilityBinding | null
+  binding: CameraCapabilityBinding
   onDone: () => void
 }
 
-function CapabilityRow({ cameraId, capability, binding, onDone }: CapabilityRowProps) {
+function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
   const probeAction = useAsyncAction(
-    () => probeCameraCapability.execute(cameraId, capability),
+    () => probeCameraCapability.execute(cameraId, binding.capability),
     { onSuccess: onDone },
   )
 
-  const isVerified = binding?.verified === true
-  const hasBinding = binding !== null
+  const configureAction = useAsyncAction(
+    () => configureCameraCapability.execute(cameraId, binding.capability, binding.protocol),
+    { onSuccess: onDone },
+  )
+
+  const isVerified = binding.verified
+  const isConfigured = binding.isConfigured
+  const action = isConfigured ? probeAction : configureAction
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{CAPABILITY_LABELS[capability]}</div>
-        {hasBinding ? (
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
-            {PROTOCOL_LABELS[binding.protocol]}
-            {binding.lastError && !isVerified && (
-              <span style={{ color: 'var(--error, #ef4444)', marginLeft: 8 }}>
-                {binding.lastError}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
-            Non configurée
-          </div>
-        )}
+        <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{CAPABILITY_LABELS[binding.capability]}</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
+          {PROTOCOL_LABELS[binding.protocol]}
+          {binding.lastError && !isVerified && (
+            <span style={{ color: 'var(--error, #ef4444)', marginLeft: 8 }}>
+              {binding.lastError}
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {hasBinding && (
+        {isConfigured && (
           <span
             title={isVerified ? 'Capacité vérifiée' : 'Non vérifiée'}
             style={{
@@ -178,17 +148,15 @@ function CapabilityRow({ cameraId, capability, binding, onDone }: CapabilityRowP
           </span>
         )}
 
-        {hasBinding && (
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={probeAction.loading}
-            onClick={() => probeAction.run()}
-            style={{ fontSize: '0.82rem', padding: '4px 10px' }}
-          >
-            {probeAction.loading ? 'Test…' : 'Tester'}
-          </button>
-        )}
+        <button
+          type="button"
+          className={isConfigured ? 'btn-secondary' : 'btn-primary'}
+          disabled={action.loading}
+          onClick={() => action.run()}
+          style={{ fontSize: '0.82rem', padding: '4px 10px' }}
+        >
+          {action.loading ? 'Test…' : isConfigured ? 'Tester' : 'Configurer et tester'}
+        </button>
       </div>
     </div>
   )

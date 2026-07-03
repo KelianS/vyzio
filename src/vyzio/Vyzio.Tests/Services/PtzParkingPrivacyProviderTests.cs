@@ -75,13 +75,32 @@ public class PtzParkingPrivacyProviderTests
     }
 
     [Fact]
-    public async Task SetPrivacyModeAsync_throws_when_no_ptz_binding()
+    public async Task SetPrivacyModeAsync_skips_when_no_ptz_binding()
     {
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
             .Returns((CameraCapabilityBinding?)null);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => MakeProvider().SetPrivacyModeAsync(MakeCamera(), MakeParkingBinding("cam1"), active: true));
+        // Must not throw; provider silently skips when no PTZ binding available.
+        await MakeProvider().SetPrivacyModeAsync(MakeCamera(), MakeParkingBinding("cam1"), active: true);
+
+        await _ptzProvider.DidNotReceive().PtzMoveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SetPrivacyModeAsync_skips_when_ptz_binding_not_verified()
+    {
+        var unverifiedPtz = new CameraCapabilityBinding
+        {
+            CameraId = "cam1",
+            Capability = CameraCapability.Ptz,
+            Protocol = CapabilityProtocol.Onvif,
+            Verified = false,
+        };
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(unverifiedPtz);
+
+        await MakeProvider().SetPrivacyModeAsync(MakeCamera(), MakeParkingBinding("cam1"), active: true);
+
+        await _ptzProvider.DidNotReceive().PtzMoveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
