@@ -3,6 +3,7 @@ import type { CameraCapabilityBinding, Capability, CapabilityProtocol } from '..
 import type { Camera } from '../../domain/entities/Camera'
 import { useAsync } from '../hooks/useAsync'
 import { useAsyncAction } from '../hooks/useAsyncAction'
+import { useToast } from './Toast'
 import {
   getCameraCapabilities,
   configureCameraCapability,
@@ -103,45 +104,89 @@ interface CapabilityRowProps {
 }
 
 function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
+  const { toast } = useToast()
+
   const probeAction = useAsyncAction(
     () => probeCameraCapability.execute(cameraId, binding.capability),
-    { onSuccess: onDone },
+    {
+      onSuccess: (result) => {
+        if (result?.verified) {
+          toast('Connexion vérifiée — la capacité est opérationnelle.', 'success')
+        } else {
+          toast(
+            result?.lastError
+              ? `Connexion échouée : ${result.lastError}`
+              : 'Connexion échouée — vérifiez l\'accès réseau et les identifiants.',
+            'error',
+          )
+        }
+        onDone()
+      },
+    },
   )
 
   const configureAction = useAsyncAction(
     () => configureCameraCapability.execute(cameraId, binding.capability, binding.protocol),
-    { onSuccess: onDone },
+    {
+      onSuccess: (result) => {
+        if (result?.verified) {
+          toast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
+        } else {
+          toast(
+            result?.lastError
+              ? `Connexion échouée : ${result.lastError}`
+              : 'Connexion échouée — vérifiez l\'accès réseau et les identifiants.',
+            'error',
+          )
+        }
+        onDone()
+      },
+    },
   )
 
   const isVerified = binding.verified
   const isConfigured = binding.isConfigured
   const action = isConfigured ? probeAction : configureAction
 
+  const verifiedAtLabel = binding.verifiedAt
+    ? new Date(binding.verifiedAt).toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
+
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
-      <div style={{ flex: 1 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '12px 0', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{CAPABILITY_LABELS[binding.capability]}</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
           {PROTOCOL_LABELS[binding.protocol]}
-          {binding.lastError && !isVerified && (
-            <span style={{ color: 'var(--error, #ef4444)', marginLeft: 8 }}>
-              {binding.lastError}
-            </span>
-          )}
         </div>
+        {!isVerified && binding.lastError && (
+          <div style={{ fontSize: '0.8rem', color: 'var(--error, #ef4444)', marginTop: 3 }}>
+            {binding.lastError}
+          </div>
+        )}
+        {isVerified && verifiedAtLabel && (
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
+            Vérifié le {verifiedAtLabel}
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
         {isConfigured && (
           <span
-            title={isVerified ? 'Capacité vérifiée' : 'Non vérifiée'}
             style={{
-              fontSize: '0.78rem',
+              fontSize: '0.75rem',
               fontWeight: 600,
-              padding: '2px 7px',
+              padding: '2px 8px',
               borderRadius: 999,
               background: isVerified ? 'var(--green-bg, #dcfce7)' : 'var(--yellow-bg, #fef9c3)',
               color: isVerified ? 'var(--green, #16a34a)' : 'var(--yellow, #854d0e)',
+              whiteSpace: 'nowrap',
             }}
           >
             {isVerified ? '✓ Vérifiée' : '⚠ Non vérifiée'}
@@ -150,12 +195,17 @@ function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
 
         <button
           type="button"
+          title={
+            isConfigured
+              ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
+              : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
+          }
           className={isConfigured ? 'btn-secondary' : 'btn-primary'}
           disabled={action.loading}
           onClick={() => action.run()}
-          style={{ fontSize: '0.82rem', padding: '4px 10px' }}
+          style={{ fontSize: '0.82rem', padding: '5px 12px', whiteSpace: 'nowrap' }}
         >
-          {action.loading ? 'Test…' : isConfigured ? 'Tester' : 'Configurer et tester'}
+          {action.loading ? 'Test en cours…' : isConfigured ? 'Tester la connexion' : 'Configurer et tester'}
         </button>
       </div>
     </div>
