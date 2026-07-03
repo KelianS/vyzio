@@ -6,7 +6,7 @@ using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
 using Vyzio.Infrastructure.Services;
-using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Infrastructure.VendorAdapters; // OnvifPtzClient
 
 namespace Vyzio.Infrastructure.DependencyInjection;
 
@@ -36,15 +36,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
 
-        // Vendor camera adapters — one entry per supported VendorFamily
-        // Slated for removal once use cases migrate to ICapabilityProviderRegistry (ADR-22 phase 3).
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
         services.AddSingleton<OnvifPtzClient>();
-        services.AddSingleton<IVendorCameraAdapter, TapoCameraAdapter>();
-        services.AddSingleton<IVendorCameraAdapter, ICSeeXMEyeCameraAdapter>();
-        services.AddSingleton<IVendorCameraAdapter, OnvifCameraAdapter>();
-        services.AddSingleton<IVendorCameraAdapterFactory, VendorCameraAdapterFactory>();
 
         // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
         // Scoped: PtzParkingPrivacyProvider depends on the scoped binding repository, and the

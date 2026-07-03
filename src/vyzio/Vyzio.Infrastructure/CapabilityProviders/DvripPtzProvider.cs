@@ -187,7 +187,7 @@ public sealed class DvripPtzProvider(ILogger<DvripPtzProvider> logger) : IPtzCap
     }
 
     // Sofia hash: pairs of nibble values (0-15) from MD5 hex, summed mod 62, mapped to [0-9A-Za-z].
-    private static string SofiaHash(string password)
+    internal static string SofiaHash(string password)
     {
         var md5 = System.Security.Cryptography.MD5.HashData(Encoding.UTF8.GetBytes(password));
         var hex = Convert.ToHexString(md5).ToLowerInvariant();
@@ -202,7 +202,7 @@ public sealed class DvripPtzProvider(ILogger<DvripPtzProvider> logger) : IPtzCap
 
     private static int HexNibble(char c) => c >= 'a' ? c - 'a' + 10 : c - '0';
 
-    private static string DirectionToCommand(PtzDirection direction) => direction switch
+    internal static string DirectionToCommand(PtzDirection direction) => direction switch
     {
         PtzDirection.Up        => "DirectionUp",
         PtzDirection.Down      => "DirectionDown",

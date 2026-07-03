@@ -62,6 +62,16 @@ La coupure matérielle est appliquée automatiquement sur les caméras compatibl
 | Marque / Famille | Coupure matérielle | Mécanisme |
 |---|---|---|
 | TP-Link Tapo | Oui | Cache objectif physique via API KLAP locale |
-| V380 Pro | Non | Enregistrement désactivé uniquement |
-| ICSee / XMEye | Non | Enregistrement désactivé uniquement |
+| V380 Pro | Non | PTZ parking (rotation vers butée) + enregistrement désactivé |
+| ICSee / XMEye | Non | PTZ parking (rotation vers butée) + enregistrement désactivé |
 | Autres (ONVIF, RTSP générique) | Non | Enregistrement désactivé uniquement |
+
+---
+
+## Caméras Tapo pan-tilt — PTZ et vie privée
+
+Les modèles Tapo motorisés (C200, C210, C225…) exposent le contrôle PTZ via le même protocole KLAP que le mode vie privée.
+
+**Pour les caméras ajoutées avant la mise à jour 1.0.3**, le PTZ n'est pas activé automatiquement. Ouvrez la fiche de la caméra, section *Capacités*, et cliquez sur **Tester** à côté de "Contrôle PTZ". Si le test réussit, le panneau de contrôle PTZ apparaît dans la vue live lors de la prochaine ouverture.
+
+La coupure matérielle (cache objectif) reste inchangée et ne nécessite aucune action supplémentaire.

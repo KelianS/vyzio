@@ -77,7 +77,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
-    private static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
+    internal static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
     {
         var s = Math.Clamp(speed, 1, 100);
         return direction switch

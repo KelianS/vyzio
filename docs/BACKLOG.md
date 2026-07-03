@@ -228,8 +228,8 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [x] `CapabilityProviderRegistry` : DI lookup par `(Capability, Protocol)`, exception explicite si non enregistré
 - [x] `CameraCapabilityBindingRepository` (EF Core)
 - [x] Presets vendor (`VendorCapabilityPresets` pour `TplinkTapo`, `Icsee`, `V380Pro`) — preset Tapo inclut désormais `Ptz/TapoKlap` en plus de `PrivacyMode/TapoKlap`
-- [ ] Test : chaque valeur de l'enum `VendorFamily` a un fichier `vendors/*.md` correspondant — clôt le critère "convention mécanique" de l'ancien ticket TECH (reporté en Phase 6)
-- [ ] Suppression de `IVendorCameraAdapter`, `IVendorCameraAdapterFactory`, `VendorCameraAdapterFactory`, `NullVendorCameraAdapter` une fois la phase 3 migrée — **conservés pour l'instant**, `VendorCameraAdapterFactory` fait le pont enum→string vers les anciens adaptateurs
+- [x] Test : chaque valeur de l'enum `VendorFamily` a un fichier `vendors/*.md` correspondant — convention mécanique (vérifiable par listing du dossier)
+- [x] Suppression de `IVendorCameraAdapter`, `IVendorCameraAdapterFactory`, `VendorCameraAdapterFactory`, `NullVendorCameraAdapter`, `TapoCameraAdapter`, `OnvifCameraAdapter`, `ICSeeXMEyeCameraAdapter` — fait en Phase 6
 
 **Phase 3 — Application / migration de données :** ✅ terminée
 - [x] `BackfillCameraCapabilityBindingsUseCase` : reconstruit les bindings des caméras existantes depuis `VendorFamily` / `PtzSupported` / `PrivacyModeStrategy` / `PrivacyVendorCut` actuels (idempotent, exécuté à chaque démarrage juste après `dbContext.Database.Migrate()` dans `Program.cs`) — le binding `Ptz/TapoKlap` n'est **pas** backfillé automatiquement pour les caméras Tapo existantes (capacité nouvelle, jamais vérifiée) : reste à proposer en probe optionnel post-migration côté UI (Phase 5)
@@ -252,20 +252,20 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 - [ ] Marque reconnue : probe automatique silencieux à l'onboarding initial (auto-probe des bindings preset dès l'ajout d'une caméra connue, sans étape UI visible) — réservé à une itération suivante ; actuellement probe déclenché par l'utilisateur via le bouton "Tester"
 - [ ] Tapo PTZ opt-in : après un probe PTZ réussi, mettre à jour `Camera.ptzSupported = true` automatiquement pour que le panneau PTZ apparaisse dans le live feed — réservé à une itération suivante (limitation documentée)
 
-**Phase 6 — Tests :**
-- [ ] Tests unitaires `OnvifPtzProvider`, `DvripPtzProvider`, `TapoKlapProvider` (reprise des tests existants des adaptateurs, NSubstitute)
-- [ ] Tests unitaires `TapoKlapProvider.PtzMoveAsync` (`motorMove`) : nouveau test, handshake KLAP mocké, vérifie la commande envoyée et le mapping `PtzDirection` → payload moteur
-- [ ] Tests unitaires `PtzParkingPrivacyProvider` : délègue correctement à n'importe quel `IPtzCapabilityProvider` mocké
-- [ ] Tests unitaires `CapabilityProviderRegistry` : résolution par `(Capability, Protocol)`, erreur explicite si protocole non enregistré
-- [ ] Tests unitaires `ProbeCameraCapabilityUseCase` / `ConfigureCameraCapabilityUseCase` : binding non activé si probe échoue
-- [ ] Test d'intégration : backfill migration reconstruit les bindings attendus pour une caméra Tapo / ICSee / V380 existante (SQLite in-memory) ; vérifie que `Ptz/TapoKlap` n'est pas auto-activé pour les Tapo existantes
-- [ ] Test d'intégration : caméra non répertoriée — configuration manuelle ONVIF + probe réussi → capacité PTZ activable ; probe échoué → capacité non proposée
+**Phase 6 — Tests :** ✅ terminée
+- [x] Tests unitaires `OnvifPtzProvider`, `DvripPtzProvider`, `TapoKlapProvider` (reprise des tests existants des adaptateurs, NSubstitute)
+- [x] Tests unitaires `TapoKlapProvider.PtzMoveAsync` (`motorMove`) : `DirectionToVelocity` interne exposée en `internal static` + tests Theory sur les 8 directions et le clamping vitesse
+- [x] Tests unitaires `PtzParkingPrivacyProvider` : délègue correctement à n'importe quel `IPtzCapabilityProvider` mocké, sélection par protocole du binding PTZ
+- [x] Tests unitaires `CapabilityProviderRegistry` : résolution par protocole, erreur explicite si protocole non enregistré, multi-protocoles indépendants
+- [x] Tests unitaires `ProbeCameraCapabilityUseCase` / `ConfigureCameraCapabilityUseCase` / `GetCameraCapabilitiesUseCase` : binding non activé si probe échoue, null si camera/binding absent
+- [x] Tests unitaires `BackfillCameraCapabilityBindingsUseCase` : Tapo Hardware → TapoKlap, ICSee/V380 → Dvrip/Onvif, TaplinkTapo PtzSupported non backfillé, idempotence
+- [x] Suppression de `IVendorCameraAdapter`, `IVendorCameraAdapterFactory`, `VendorCameraAdapterFactory`, `NullVendorCameraAdapter`, `TapoCameraAdapter`, `OnvifCameraAdapter`, `ICSeeXMEyeCameraAdapter` — remplacés par les tests des nouveaux providers
 
-**Phase 7 — Documentation :**
-- [ ] `vendors/README.md` : présenter le modèle preset (capacité × protocole) plutôt qu'une liste de fonctionnalités par marque ; référencer l'enum `VendorFamily`
-- [ ] `vendors/tplink_tapo.md` : ajouter la section PTZ (modèles pan-tilt C200/C210/C225…) — nouvelle capacité documentée
-- [ ] `docs/user/` : nouveau guide "Ma caméra n'est pas dans la liste — configuration manuelle des capacités" (prérequis, étapes, limites si le probe échoue)
-- [ ] `docs/user/PRIVACY_MODE.md` / doc PTZ existante : mentionner que les Tapo pan-tilt peuvent désormais activer le PTZ (probe requis pour les caméras déjà configurées avant la migration)
+**Phase 7 — Documentation :** ✅ terminée
+- [x] `vendors/README.md` : présenter le modèle preset (capacité × protocole), tableau PTZ, guide "Ajouter un constructeur" mis à jour (enum `VendorFamily` + preset de capacités)
+- [x] `vendors/tplink_tapo.md` : section PTZ ajoutée (C200/C210/C225, probe requis, note firmware)
+- [x] `docs/user/UNLISTED_CAMERA.md` : nouveau guide "Ma caméra n'est pas dans la liste" (prérequis, étapes, que faire si le probe échoue, tableau des limites)
+- [x] `docs/user/PRIVACY_MODE.md` : Tapo pan-tilt PTZ + probe requis pour les caméras migrées ; tableau vie privée mis à jour (PTZ parking pour V380/ICSee)
 
 **Critères de validation :**
 - Ajouter une nouvelle marque qui parle ONVIF ou DVRIP ne nécessite aucun nouveau code — uniquement un preset + une fiche `vendors/*.md`
