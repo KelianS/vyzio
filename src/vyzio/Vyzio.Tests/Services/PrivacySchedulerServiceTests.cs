@@ -11,14 +11,12 @@ public class PrivacySchedulerServiceTests
 {
     private readonly ICameraPrivacyRepository _schedules = Substitute.For<ICameraPrivacyRepository>();
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly IVendorCameraAdapterFactory _adapterFactory = Substitute.For<IVendorCameraAdapterFactory>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
     private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
 
     public PrivacySchedulerServiceTests()
     {
-        var adapter = Substitute.For<IVendorCameraAdapter>();
-        adapter.SupportsPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(false);
-        _adapterFactory.Resolve(Arg.Any<Camera>()).Returns(adapter);
         _frigateConfig.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
             .Returns(new FrigateConfigApplyResult(true, "ok", "frigate.yml"));
     }
@@ -26,7 +24,7 @@ public class PrivacySchedulerServiceTests
     private PrivacySchedulerService MakeService()
     {
         var toggleUseCase = new ToggleCameraPrivacyModeUseCase(
-            _cameras, _adapterFactory, _frigateConfig);
+            _cameras, _bindings, _registry, _frigateConfig);
 
         var provider = Substitute.For<IServiceProvider>();
         provider.GetService(typeof(ICameraPrivacyRepository)).Returns(_schedules);
@@ -55,7 +53,7 @@ public class PrivacySchedulerServiceTests
         Enabled = true,
     };
 
-    private static Camera MakeCamera(string id, bool privacyActive = false, string? source = null) => new()
+    private static Camera MakeCamera(string id, bool privacyActive = false, PrivacyModeSource? source = null) => new()
     {
         Id = id,
         Slug = id,
@@ -85,14 +83,14 @@ public class PrivacySchedulerServiceTests
         await sut.StopAsync(CancellationToken.None);
 
         await _cameras.Received().UpdateAsync(
-            Arg.Is<Camera>(c => c.PrivacyModeActive && c.PrivacyModeSource == "schedule"),
+            Arg.Is<Camera>(c => c.PrivacyModeActive && c.PrivacyModeSource == PrivacyModeSource.Schedule),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Manual_privacy_mode_is_not_overridden_by_scheduler()
     {
-        var camera = MakeCamera("cam1", privacyActive: true, source: "manual");
+        var camera = MakeCamera("cam1", privacyActive: true, source: PrivacyModeSource.Manual);
         _schedules.GetAllActiveSchedulesAsync(Arg.Any<CancellationToken>())
             .Returns([AlwaysActiveSchedule("cam1")]);
 
@@ -113,7 +111,7 @@ public class PrivacySchedulerServiceTests
     public async Task Deactivates_camera_when_schedule_window_ends()
     {
         // Camera was activated by a schedule, and now no schedule is active
-        var camera = MakeCamera("cam1", privacyActive: true, source: "schedule");
+        var camera = MakeCamera("cam1", privacyActive: true, source: PrivacyModeSource.Schedule);
         _schedules.GetAllActiveSchedulesAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<CameraPrivacySchedule>());
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);

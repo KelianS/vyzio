@@ -76,6 +76,22 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
 - une perte de flux doit etre detectee et visible sans diagnostic technique avance.
 
+### 2.3 Catalogue de capacites et cameras non repertoriees
+
+> **En tant qu'utilisateur**, je veux que les fonctionnalites avancees (PTZ, mode vie privee materiel, etc.) ne dependent pas de la marque de ma camera mais de ce qu'elle sait reellement faire, afin de ne pas etre prive d'une fonctionnalite uniquement parce que ma marque n'est pas dans la liste officielle.
+
+> **En tant qu'utilisateur dont la camera n'est pas dans la liste des modeles officiellement supportes**, je veux pouvoir suivre un parcours de configuration manuelle plus long pour activer les memes fonctionnalites qu'une camera supportee, afin de profiter pleinement du produit sans devoir changer de materiel.
+
+> **En tant qu'utilisateur**, je veux que Vyzio teste reellement une capacite avant de me la proposer (ex. sonder le PTZ), afin de ne jamais me laisser activer une option qui ne fonctionnera pas sur ma camera.
+
+**Regles fonctionnelles :**
+
+- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, info systeme a venir) sont des **capacites independantes de la marque** ; une marque "officiellement supportee" est une marque pour laquelle Vyzio sait deja quelles capacites sont disponibles et comment les activer (preconfiguration), pas une marque qui beneficie de fonctionnalites reservees ;
+- une camera non repertoriee doit pouvoir acceder aux memes capacites qu'une camera supportee, a condition que son materiel le permette reellement ; le parcours est plus long (declaration et verification manuelle des capacites) mais jamais bloquant par principe ;
+- pour une camera non repertoriee, l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface — jamais sur simple declaration non verifiee ;
+- si une capacite ne peut pas etre verifiee ou echoue au test, l'interface doit l'indiquer clairement et ne pas la presenter comme disponible ;
+- le statut "officiellement supporte" reste affiche et utilise pour rassurer l'utilisateur (cf. 2.2) ; le parcours manuel est presente comme une alternative pour les cameras absentes de cette liste, pas comme le parcours par defaut.
+
 ---
 
 ## 3. Detection et reconnaissance

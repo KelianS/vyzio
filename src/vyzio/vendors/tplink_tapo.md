@@ -52,6 +52,20 @@ Remplacez :
 
 Le même identifiant et mot de passe **compte camera** est utilisé pour cette commande.
 
+---
+
+## Contrôle PTZ (caméras pan-tilt)
+
+Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) peuvent être orientés directement depuis Vyzio via la même connexion KLAP.
+
+**Cette capacité doit être testée et confirmée une fois depuis la fiche de la caméra.** Dans la section *Capacités*, cliquez sur **Tester** à côté de "Contrôle PTZ". Si la commande aboutit, le panneau de contrôle PTZ apparaît dans la vue live.
+
+> **Note** : la commande PTZ Tapo (`motorMove`) repose sur le protocole KLAP communautaire et n'a pas été testée sur tous les firmwares. Si le test échoue, le PTZ n'est pas proposé — la caméra continue de fonctionner normalement pour la surveillance et le mode vie privée.
+
+Pour les caméras Tapo configurées avant la mise à jour (migration 1.0.3), le PTZ n'est pas activé automatiquement : un probe manuel est requis une seule fois.
+
+---
+
 ## Liens utiles
 
 - [Guide TP-Link Tapo](https://www.tapo.com/en/faq/34/)

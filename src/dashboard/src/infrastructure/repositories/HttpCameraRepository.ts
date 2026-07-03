@@ -10,6 +10,7 @@ import type { DiscoveryRequest } from '../../domain/ports/CameraRepository'
 import type { VendorAssistanceRequest } from '../../domain/ports/CameraRepository'
 import type { CreatePrivacyScheduleInput, UpdatePrivacyScheduleInput } from '../../domain/ports/CameraRepository'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
+import type { CameraCapabilityBinding, Capability, CapabilityProtocol } from '../../domain/entities/CameraCapabilityBinding'
 import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetchJson'
 
 interface CameraDto {
@@ -267,6 +268,23 @@ export class HttpCameraRepository implements CameraRepository {
 
   async ptzConfigureParking(cameraId: string): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
+  }
+
+  async getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]> {
+    return fetchJson<CameraCapabilityBinding[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities`)
+  }
+
+  async configureCapability(cameraId: string, capability: Capability, protocol: CapabilityProtocol, configJson?: string): Promise<CameraCapabilityBinding> {
+    return putJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`,
+      { protocol, configJson: configJson ?? null },
+    )
+  }
+
+  async probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding> {
+    return postJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/probe`,
+    )
   }
 }
 

@@ -1,5 +1,6 @@
 using System.Text;
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -128,9 +129,13 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         var normalizedPort = request.Port > 0 ? request.Port : 554;
         var normalizedUsername = CameraDraftFactory.NormalizeOptional(request.Username);
         var normalizedStreamPath = CameraDraftFactory.NormalizeStreamPath(request.StreamPath);
-        var normalizedVendorFamily = CameraDraftFactory.NormalizeOptional(request.VendorFamily);
+        var normalizedVendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var parsedVendorFamily)
+            ? parsedVendorFamily
+            : (VendorFamily?)null;
         var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
-        var normalizedStreamProtocol = string.IsNullOrWhiteSpace(request.StreamProtocol) ? camera.StreamProtocol : request.StreamProtocol.Trim().ToLowerInvariant();
+        var normalizedStreamProtocol = SnakeCaseEnum.TryFromSnakeCase<StreamProtocol>(request.StreamProtocol, out var parsedStreamProtocol)
+            ? parsedStreamProtocol
+            : camera.StreamProtocol;
         var normalizedPassword = request.Password is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
 
         var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
@@ -138,8 +143,8 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
             || !string.Equals(camera.Username, normalizedUsername, StringComparison.Ordinal)
             || !string.Equals(camera.StreamPath, normalizedStreamPath, StringComparison.Ordinal)
             || !string.Equals(camera.SourceType, normalizedSourceType, StringComparison.Ordinal)
-            || !string.Equals(camera.VendorFamily, normalizedVendorFamily, StringComparison.Ordinal)
-            || !string.Equals(camera.StreamProtocol, normalizedStreamProtocol, StringComparison.OrdinalIgnoreCase)
+            || camera.VendorFamily != normalizedVendorFamily
+            || camera.StreamProtocol != normalizedStreamProtocol
             || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
 
         var normalizedDisplayName = request.DisplayName.Trim();
@@ -349,9 +354,9 @@ internal static class CameraDraftFactory
             Username = NormalizeOptional(request.Username),
             Password = NormalizeOptional(request.Password),
             StreamPath = NormalizeStreamPath(request.StreamPath),
-            VendorFamily = NormalizeOptional(request.VendorFamily),
+            VendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var vendorFamily) ? vendorFamily : null,
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
-            StreamProtocol = string.IsNullOrWhiteSpace(request.StreamProtocol) ? "rtsp" : request.StreamProtocol.Trim().ToLowerInvariant(),
+            StreamProtocol = SnakeCaseEnum.TryFromSnakeCase<StreamProtocol>(request.StreamProtocol, out var streamProtocol) ? streamProtocol : StreamProtocol.Rtsp,
             Status = "needs_attention",
             ValidationState = "draft",
             IsEnabled = false,

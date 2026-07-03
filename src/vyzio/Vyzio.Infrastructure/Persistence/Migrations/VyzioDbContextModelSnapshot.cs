@@ -15,7 +15,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.5");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
             modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>
                 {
@@ -79,13 +79,11 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnName("privacy_mode_active");
 
                     b.Property<string>("PrivacyModeSource")
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT")
                         .HasColumnName("privacy_mode_source");
 
                     b.Property<string>("PrivacyModeStrategy")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT")
                         .HasColumnName("privacy_mode_strategy");
 
@@ -122,7 +120,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("StreamProtocol")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT")
                         .HasColumnName("stream_protocol");
 
@@ -142,7 +139,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnName("validation_state");
 
                     b.Property<string>("VendorFamily")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT")
                         .HasColumnName("vendor_family");
 
@@ -160,6 +156,61 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("idx_cameras_status");
 
                     b.ToTable("cameras", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraCapabilityBinding", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CameraId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("camera_id");
+
+                    b.Property<string>("Capability")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("capability");
+
+                    b.Property<string>("ConfigJson")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("config_json");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_error");
+
+                    b.Property<string>("Protocol")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("protocol");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<bool>("Verified")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("verified");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("verified_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_camera_capability_bindings");
+
+                    b.HasIndex("CameraId", "Capability")
+                        .IsUnique()
+                        .HasDatabaseName("ux_capability_bindings_camera_capability");
+
+                    b.ToTable("camera_capability_bindings", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.CameraPrivacySchedule", b =>
@@ -551,6 +602,18 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasName("pk_sessions");
 
                     b.ToTable("sessions", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraCapabilityBinding", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_camera_capability_bindings_cameras_camera_id");
+
+                    b.Navigation("Camera");
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.CameraPrivacySchedule", b =>

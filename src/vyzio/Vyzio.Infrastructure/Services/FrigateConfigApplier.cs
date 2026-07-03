@@ -83,7 +83,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
                 camera =>
                 {
                     var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
-                    var isDvrip = string.Equals(camera.StreamProtocol, "dvrip", StringComparison.OrdinalIgnoreCase);
+                    var isDvrip = camera.StreamProtocol == StreamProtocol.Dvrip;
                     var labels = camera.GetDetectionLabels();
                     // face must be tracked whenever person is — Frigate needs it for face recognition.
                     var frigateLabels = labels.Contains("person")
@@ -152,7 +152,7 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
         // Build go2rtc section for DVRIP cameras — go2rtc bridges dvrip:// → rtsp://127.0.0.1:8554/{slug}
         var dvripStreams = cameras
             .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
-            .Where(c => string.Equals(c.StreamProtocol, "dvrip", StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.StreamProtocol == StreamProtocol.Dvrip)
             .ToDictionary(
                 c => c.FrigateCameraName ?? c.Slug.Replace('-', '_'),
                 c => new List<string> { BuildDvripUrl(c) },

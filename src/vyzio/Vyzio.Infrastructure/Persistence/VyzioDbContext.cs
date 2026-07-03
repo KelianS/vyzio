@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vyzio.Core.Entities;
+using Vyzio.Infrastructure.Persistence.Conversions;
 
 namespace Vyzio.Infrastructure.Persistence;
 
@@ -8,6 +9,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 {
     public DbSet<Camera> Cameras => Set<Camera>();
     public DbSet<CameraPrivacySchedule> CameraPrivacySchedules => Set<CameraPrivacySchedule>();
+    public DbSet<CameraCapabilityBinding> CameraCapabilityBindings => Set<CameraCapabilityBinding>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
     public DbSet<ProfileCameraLink> ProfileCameraLinks => Set<ProfileCameraLink>();
@@ -42,6 +44,27 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             camera.HasIndex(c => c.Status)
                 .HasDatabaseName("idx_cameras_status");
+
+            // ADR-22 point 0 — enum in code, same TEXT column/values already in the database.
+            camera.Property(c => c.StreamProtocol).HasConversion<SnakeCaseEnumConverter<StreamProtocol>>();
+            camera.Property(c => c.VendorFamily).HasConversion<NullableSnakeCaseEnumConverter<VendorFamily>>();
+            camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
+            camera.Property(c => c.PrivacyModeStrategy).HasConversion<SnakeCaseEnumConverter<PrivacyModeStrategy>>();
+        });
+
+        modelBuilder.Entity<CameraCapabilityBinding>(binding =>
+        {
+            binding.HasOne(b => b.Camera)
+                   .WithMany()
+                   .HasForeignKey(b => b.CameraId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            binding.HasIndex(b => new { b.CameraId, b.Capability })
+                   .IsUnique()
+                   .HasDatabaseName("ux_capability_bindings_camera_capability");
+
+            binding.Property(b => b.Capability).HasConversion<SnakeCaseEnumConverter<CameraCapability>>();
+            binding.Property(b => b.Protocol).HasConversion<SnakeCaseEnumConverter<CapabilityProtocol>>();
         });
 
         modelBuilder.Entity<ProfilePhoto>(photo =>

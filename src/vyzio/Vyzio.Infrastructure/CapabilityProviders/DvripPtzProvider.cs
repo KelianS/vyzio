@@ -1,64 +1,60 @@
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.VendorAdapters;
 
-namespace Vyzio.Infrastructure.VendorAdapters;
+namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// ICSee / XMEye cameras (Xiongmai chipset) — proprietary DVRIP protocol (port 34567).
-//
-// Privacy mode investigation (June 2026, 192.168.1.193): no local command cuts the XMEye P2P cloud stream.
-// See docs/investigations/icsee_dvrip_privacy.md for full results.
-// PTZ parking is the only viable hardware mechanism for these cameras.
-//
-// DVRIP header (22 bytes): FF 01 00 00 | sessionId(4 LE) | seqNo(4 LE) | 00 00 00 00 | cmdCode(2 LE) | dataLen(4 LE)
-// JSON body terminated by \n\0.
-// Sofia password hash: pairs of MD5 hex chars summed mod 62, mapped to [0-9A-Za-z].
-public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> logger) : IVendorCameraAdapter
+// IPtzCapabilityProvider for the DVRIP protocol (Xiongmai/XMEye chipset: ICSee, Annke,
+// Sannce, Zosi...). Same wire protocol as ICSeeXMEyeCameraAdapter (kept until Phase 3
+// removal) — duplicated here rather than shared, since the old adapter is slated for
+// deletion once use cases are migrated to the capability provider registry (ADR-22).
+public sealed class DvripPtzProvider(ILogger<DvripPtzProvider> logger) : IPtzCapabilityProvider
 {
     private const int DvripPort = 34567;
     private const int LoginCmd = 1000;
     private const int PtzCmd = 1400;
 
-    public string VendorFamily => "icsee";
+    public CapabilityProtocol Protocol => CapabilityProtocol.Dvrip;
 
-    public Task<bool> SupportsPrivacyModeAsync(Camera camera, CancellationToken ct = default)
+    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        logger.LogDebug("ICSee/XMEye: no hardware privacy cut for {Camera}. Frigate fallback applies.", camera.DisplayName);
-        return Task.FromResult(false);
+        try
+        {
+            using var tcp = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
+            using var stream = tcp.GetStream();
+            var sessionId = await LoginAsync(stream, camera, timeout.Token);
+            return sessionId is not null;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "DVRIP PTZ probe failed for {Camera}.", camera.DisplayName);
+            return false;
+        }
     }
 
-    public Task SetPrivacyModeAsync(Camera camera, bool active, CancellationToken ct = default)
-        => Task.CompletedTask;
-
-    public Task<bool> SupportsPtzAsync(Camera camera, CancellationToken ct = default)
-        => Task.FromResult(true);
-
-    public async Task PtzMoveAsync(Camera camera, PtzDirection direction, int speed, CancellationToken ct = default)
+    public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
         var command = DirectionToCommand(direction);
         var step = Math.Clamp(speed / 12, 1, 8); // map 0-100 → 1-8
         await ExecutePtzAsync(camera, "Start", command, 65535, step, ct);
     }
 
-    public async Task PtzStopAsync(Camera camera, CancellationToken ct = default)
-    {
-        await ExecutePtzAsync(camera, "Stop", "DirectionUp", 65535, 0, ct);
-    }
+    public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => await ExecutePtzAsync(camera, "Stop", "DirectionUp", 65535, 0, ct);
 
-    public async Task PtzGoToPresetAsync(Camera camera, int presetId, CancellationToken ct = default)
-    {
-        await ExecutePtzAsync(camera, "Start", "GotoPreset", presetId, 0, ct);
-    }
+    public async Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
+        => await ExecutePtzAsync(camera, "Start", "GotoPreset", presetId, 0, ct);
 
-    public async Task PtzSavePresetAsync(Camera camera, int presetId, CancellationToken ct = default)
-    {
-        await ExecutePtzAsync(camera, "Start", "SetPreset", presetId, 0, ct);
-    }
+    public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
+        => await ExecutePtzAsync(camera, "Start", "SetPreset", presetId, 0, ct);
 
     private async Task ExecutePtzAsync(Camera camera, string action, string command, int preset, int step, CancellationToken ct)
     {
@@ -71,7 +67,7 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
             var sessionId = await LoginAsync(stream, camera, ct);
             if (sessionId is null)
             {
-                logger.LogWarning("ICSee DVRIP login failed for {Camera} — PTZ skipped.", camera.DisplayName);
+                logger.LogWarning("DVRIP login failed for {Camera} — PTZ skipped.", camera.DisplayName);
                 return;
             }
 
@@ -80,17 +76,15 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
             var response = await ReceivePacketAsync(stream, ct);
 
             if (!IsRetOk(response))
-                logger.LogWarning("ICSee PTZ {Action}/{Command} returned non-OK for {Camera}: {Resp}.", action, command, camera.DisplayName, response);
-            else
-                logger.LogDebug("ICSee PTZ {Action}/{Command} OK for {Camera}.", action, command, camera.DisplayName);
+                logger.LogWarning("DVRIP PTZ {Action}/{Command} returned non-OK for {Camera}: {Resp}.", action, command, camera.DisplayName, response);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "ICSee DVRIP PTZ error for {Camera}.", camera.DisplayName);
+            logger.LogWarning(ex, "DVRIP PTZ error for {Camera}.", camera.DisplayName);
         }
     }
 
-    private async Task<string?> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
+    private static async Task<string?> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
     {
         var hash = SofiaHash(camera.Password ?? string.Empty);
         var loginPayload = JsonSerializer.Serialize(new
@@ -145,7 +139,6 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
 
     private static async Task SendPacketAsync(NetworkStream stream, int cmdCode, string json, int seqNo, string sessionId, CancellationToken ct)
     {
-        // Parse sessionId from "0x00000001" or "0x..." format
         var sessionInt = sessionId.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
             ? Convert.ToInt32(sessionId, 16)
             : 0;
@@ -158,7 +151,6 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
         header[3] = 0x00;
         WriteInt32Le(header, 4, sessionInt);
         WriteInt32Le(header, 8, seqNo);
-        // bytes 12-15: 00 00 00 00
         WriteInt16Le(header, 16, (short)cmdCode);
         WriteInt32Le(header, 18, body.Length);
 
@@ -189,22 +181,19 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
             read += n;
         }
 
-        // Strip trailing \n\0 if present
         var len = read;
         while (len > 0 && (body[len - 1] == 0 || body[len - 1] == '\n')) len--;
         return Encoding.UTF8.GetString(body, 0, len);
     }
 
     // Sofia hash: pairs of nibble values (0-15) from MD5 hex, summed mod 62, mapped to [0-9A-Za-z].
-    // Validated live against 192.168.1.193: sofia_hash("a4m3h5") == "6DDKEOQCGQGGILIK"
     internal static string SofiaHash(string password)
     {
-        var md5 = MD5.HashData(Encoding.UTF8.GetBytes(password));
+        var md5 = System.Security.Cryptography.MD5.HashData(Encoding.UTF8.GetBytes(password));
         var hex = Convert.ToHexString(md5).ToLowerInvariant();
         var sb = new StringBuilder(16);
         for (var i = 0; i < 32; i += 2)
         {
-            // Each hex digit gives its nibble value 0–15, NOT its ASCII value.
             var b = (HexNibble(hex[i]) + HexNibble(hex[i + 1])) % 62;
             sb.Append(b < 10 ? (char)('0' + b) : b < 36 ? (char)('A' + b - 10) : (char)('a' + b - 36));
         }
@@ -213,7 +202,7 @@ public sealed class ICSeeXMEyeCameraAdapter(ILogger<ICSeeXMEyeCameraAdapter> log
 
     private static int HexNibble(char c) => c >= 'a' ? c - 'a' + 10 : c - '0';
 
-    private static string DirectionToCommand(PtzDirection direction) => direction switch
+    internal static string DirectionToCommand(PtzDirection direction) => direction switch
     {
         PtzDirection.Up        => "DirectionUp",
         PtzDirection.Down      => "DirectionDown",
