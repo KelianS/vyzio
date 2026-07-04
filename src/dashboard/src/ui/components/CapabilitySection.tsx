@@ -17,8 +17,8 @@ interface CapabilitySectionProps {
 }
 
 const CAPABILITY_LABELS: Record<Capability, string> = {
-  ptz: 'Contrôle PTZ (orientation motorisée)',
-  privacy_mode: 'Coupure vie privée matérielle',
+  ptz: 'PTZ',
+  privacy_mode: 'Vie privée matérielle',
 }
 
 const PROTOCOL_LABELS: Record<CapabilityProtocol, string> = {
@@ -38,7 +38,6 @@ const PTZ_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
 
 const PRIVACY_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
   { value: 'tapo_klap', label: 'Tapo KLAP — cache objectif + LED' },
-  { value: 'ptz_parking', label: 'PTZ Parking — orientation vers zone neutre' },
 ]
 
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
@@ -52,36 +51,30 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     onReload?.()
   }
 
+  const visibleBindings = (bindings ?? []).filter((b) => b.protocol !== 'ptz_parking')
   const isUnlisted = !bindings?.some((b) => b.isPreset)
 
   if (loading) {
     return (
-      <section className="camera-detail-section">
-        <h3>Capacités</h3>
+      <section className="camera-detail-section capability-section-compact">
+        <h4>Capacités</h4>
         <p className="capability-protocol">Chargement…</p>
       </section>
     )
   }
 
   return (
-    <section className="camera-detail-section">
-      <h3>Capacités</h3>
+    <section className="camera-detail-section capability-section-compact">
+      <h4>Capacités</h4>
 
       {offline && (
-        <p className="camera-inline-state" style={{ marginBottom: 12 }}>
-          Caméra hors ligne — les tests de connexion seront disponibles dès que la caméra sera joignable.
-        </p>
-      )}
-
-      {isUnlisted && !offline && (
-        <p className="capability-protocol" style={{ marginBottom: 12 }}>
-          Cette caméra n'est pas dans le catalogue. Vous pouvez configurer manuellement ses
-          capacités — chaque capacité doit être testée et confirmée avant d'être activée.
+        <p className="camera-inline-state" style={{ marginBottom: 8 }}>
+          Caméra hors ligne — les tests seront disponibles dès que la caméra sera joignable.
         </p>
       )}
 
       <div className="capability-list">
-        {(bindings ?? []).map((b) => (
+        {visibleBindings.map((b) => (
           <CapabilityRow
             key={b.capability}
             cameraId={camera.id}
@@ -173,7 +166,12 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
   return (
     <div className="capability-row">
       <div className="capability-info">
-        <div className="capability-label">{CAPABILITY_LABELS[binding.capability]}</div>
+        <div className="capability-label">
+          {CAPABILITY_LABELS[binding.capability]}
+          {isConfigured && (
+            <span className={`capability-status-dot ${isVerified ? 'ok' : 'fail'}`} />
+          )}
+        </div>
         <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol]}</div>
         {!isVerified && (lastResult === 'fail' || binding.lastError) && (
           <div className="capability-error">
@@ -185,27 +183,19 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
         )}
       </div>
 
-      <div className="capability-actions">
-        {isConfigured && (
-          <span className={`camera-qualification-badge ${isVerified ? 'confirmed' : 'unknown'}`}>
-            {isVerified ? '✓ Vérifiée' : '✗ Non vérifiée'}
-          </span>
-        )}
-
-        <button
-          type="button"
-          title={
-            isConfigured
-              ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
-              : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
-          }
-          className={`${isConfigured ? 'secondary-cta' : 'primary-cta'} capability-btn`}
-          disabled={action.loading || offline}
-          onClick={() => action.run()}
-        >
-          {action.loading ? 'Test en cours…' : isConfigured ? 'Tester' : 'Configurer et tester'}
-        </button>
-      </div>
+      <button
+        type="button"
+        title={
+          isConfigured
+            ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
+            : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
+        }
+        className="secondary-cta capability-btn"
+        disabled={action.loading || offline}
+        onClick={() => action.run()}
+      >
+        {action.loading ? '…' : isConfigured ? 'Tester' : 'Configurer'}
+      </button>
     </div>
   )
 }
@@ -230,7 +220,7 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
 
   return (
     <div className="capability-manual-form">
-      <div className="capability-manual-form-title">Configurer une capacité manuellement</div>
+      <div className="capability-manual-form-title">Configurer manuellement</div>
       <div className="capability-manual-form-fields">
         <label>
           <span>Capacité</span>
@@ -238,8 +228,8 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
             value={selectedCapability}
             onChange={(e) => setSelectedCapability(e.target.value as Capability)}
           >
-            <option value="ptz">Contrôle PTZ</option>
-            <option value="privacy_mode">Coupure vie privée</option>
+            <option value="ptz">PTZ</option>
+            <option value="privacy_mode">Vie privée matérielle</option>
           </select>
         </label>
 
@@ -257,15 +247,15 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
 
         <button
           type="button"
-          className="primary-cta capability-btn"
+          className="secondary-cta capability-btn"
           disabled={configureAction.loading}
           onClick={() => configureAction.run()}
         >
-          {configureAction.loading ? 'Test en cours…' : 'Configurer et tester'}
+          {configureAction.loading ? '…' : 'Configurer'}
         </button>
       </div>
       <p className="capability-manual-form-hint">
-        La caméra est testée immédiatement. La capacité n'est proposée qu'en cas de succès.
+        La capacité est testée immédiatement et activée en cas de succès.
       </p>
     </div>
   )
