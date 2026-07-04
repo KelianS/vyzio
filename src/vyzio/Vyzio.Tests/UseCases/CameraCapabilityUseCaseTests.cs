@@ -219,6 +219,161 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 }
 
+public class ProbeCameraCapabilityUseCasePtzSupportedTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
+    private readonly ProbeCameraCapabilityUseCase _sut;
+
+    public ProbeCameraCapabilityUseCasePtzSupportedTests()
+    {
+        _registry.ResolvePtz(Arg.Any<CapabilityProtocol>()).Returns(_ptzProvider);
+        _sut = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_sets_ptz_supported_when_ptz_probe_succeeds()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = false };
+        var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
+        _ptzProvider.ProbeAsync(camera, binding, Arg.Any<CancellationToken>()).Returns(true);
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        Assert.True(camera.PtzSupported);
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PtzSupported), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_does_not_update_camera_when_ptz_already_supported()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = true };
+        var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
+        _ptzProvider.ProbeAsync(camera, binding, Arg.Any<CancellationToken>()).Returns(true);
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_does_not_set_ptz_supported_when_probe_fails()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = false };
+        var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
+        _ptzProvider.ProbeAsync(camera, binding, Arg.Any<CancellationToken>()).Returns(false);
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        Assert.False(camera.PtzSupported);
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+}
+
+public class SeedAndProbePresetsUseCaseTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
+    private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
+    private readonly SeedAndProbePresetsUseCase _sut;
+
+    public SeedAndProbePresetsUseCaseTests()
+    {
+        _registry.ResolvePtz(Arg.Any<CapabilityProtocol>()).Returns(_ptzProvider);
+        _registry.ResolvePrivacy(Arg.Any<CapabilityProtocol>()).Returns(_privacyProvider);
+        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
+        _sut = new SeedAndProbePresetsUseCase(_cameras, _bindings, probe);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_does_nothing_when_camera_not_found()
+    {
+        _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
+
+        await _sut.ExecuteAsync("x");
+
+        await _bindings.DidNotReceive().SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_seeds_preset_bindings_and_probes_each_for_known_vendor()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
+        // After SaveAsync, GetAsync returns the saved binding for the probe step
+        _bindings.GetAsync("cam1", CameraCapability.PrivacyMode, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null,
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.PrivacyMode, Protocol = CapabilityProtocol.TapoKlap });
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null,
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.TapoKlap });
+        _privacyProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        await _sut.ExecuteAsync("cam1");
+
+        // Two preset bindings → two SaveAsync calls to create + two to persist probe result
+        await _bindings.Received(4).SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_tries_onvif_ptz_and_removes_binding_when_probe_fails_for_unlisted_camera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null,
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif });
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        await _sut.ExecuteAsync("cam1");
+
+        // 1 SaveAsync to create tentative binding + 1 from ProbeCameraCapabilityUseCase persisting probe result
+        await _bindings.Received(2).SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+        await _bindings.Received(1).DeleteAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_keeps_onvif_ptz_binding_when_probe_succeeds_for_unlisted_camera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null, PtzSupported = false };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        var tentativeBinding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif };
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null, tentativeBinding);
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        await _sut.ExecuteAsync("cam1");
+
+        await _bindings.DidNotReceive().DeleteAsync(Arg.Any<string>(), Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>());
+        Assert.True(camera.PtzSupported);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_skips_onvif_probe_when_ptz_binding_already_exists_for_unlisted_camera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var existing = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Dvrip };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(existing);
+
+        await _sut.ExecuteAsync("cam1");
+
+        await _ptzProvider.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+}
+
 public class GetCameraCapabilitiesUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();

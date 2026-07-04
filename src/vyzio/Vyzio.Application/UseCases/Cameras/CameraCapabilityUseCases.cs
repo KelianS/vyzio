@@ -72,6 +72,13 @@ public sealed class ProbeCameraCapabilityUseCase(
         binding.LastError = verified ? null : error;
         await bindings.SaveAsync(binding, ct);
 
+        // A2: PTZ probe success → activate the PTZ panel without manual intervention.
+        if (capability == CameraCapability.Ptz && verified && !camera.PtzSupported)
+        {
+            camera.PtzSupported = true;
+            await cameras.UpdateAsync(camera, ct);
+        }
+
         return CameraCapabilityBindingDto.From(binding);
     }
 }

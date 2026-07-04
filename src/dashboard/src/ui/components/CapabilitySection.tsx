@@ -51,14 +51,13 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
     onReload?.()
   }
 
-  // Preset entries (isPreset=true) come from the server for listed cameras; absence means unlisted.
   const isUnlisted = !bindings?.some((b) => b.isPreset)
 
   if (loading) {
     return (
       <section className="camera-detail-section">
         <h3>Capacités</h3>
-        <p style={{ color: 'var(--text-muted, #888)', fontSize: '0.9rem' }}>Chargement…</p>
+        <p className="capability-protocol">Chargement…</p>
       </section>
     )
   }
@@ -68,13 +67,13 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
       <h3>Capacités</h3>
 
       {isUnlisted && (
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #888)', marginBottom: 12 }}>
+        <p className="capability-protocol" style={{ marginBottom: 12 }}>
           Cette caméra n'est pas dans le catalogue. Vous pouvez configurer manuellement ses
           capacités — chaque capacité doit être testée et confirmée avant d'être activée.
         </p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="capability-list">
         {(bindings ?? []).map((b) => (
           <CapabilityRow
             key={b.capability}
@@ -105,14 +104,17 @@ interface CapabilityRowProps {
 
 function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
   const { toast } = useToast()
+  const [lastResult, setLastResult] = useState<'ok' | 'fail' | null>(null)
 
   const probeAction = useAsyncAction(
     () => probeCameraCapability.execute(cameraId, binding.capability),
     {
       onSuccess: (result) => {
         if (result?.verified) {
+          setLastResult('ok')
           toast('Connexion vérifiée — la capacité est opérationnelle.', 'success')
         } else {
+          setLastResult('fail')
           toast(
             result?.lastError
               ? `Connexion échouée : ${result.lastError}`
@@ -130,8 +132,10 @@ function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
     {
       onSuccess: (result) => {
         if (result?.verified) {
+          setLastResult('ok')
           toast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
         } else {
+          setLastResult('fail')
           toast(
             result?.lastError
               ? `Connexion échouée : ${result.lastError}`
@@ -144,7 +148,7 @@ function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
     },
   )
 
-  const isVerified = binding.verified
+  const isVerified = lastResult === 'ok' || (lastResult === null && binding.verified)
   const isConfigured = binding.isConfigured
   const action = isConfigured ? probeAction : configureAction
 
@@ -158,38 +162,24 @@ function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
     : null
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '12px 0', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{CAPABILITY_LABELS[binding.capability]}</div>
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
-          {PROTOCOL_LABELS[binding.protocol]}
-        </div>
-        {!isVerified && binding.lastError && (
-          <div style={{ fontSize: '0.8rem', color: 'var(--error, #ef4444)', marginTop: 3 }}>
-            {binding.lastError}
+    <div className="capability-row">
+      <div className="capability-info">
+        <div className="capability-label">{CAPABILITY_LABELS[binding.capability]}</div>
+        <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol]}</div>
+        {!isVerified && (lastResult === 'fail' || binding.lastError) && (
+          <div className="capability-error">
+            {binding.lastError ?? 'Connexion échouée'}
           </div>
         )}
-        {isVerified && verifiedAtLabel && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #888)', marginTop: 2 }}>
-            Vérifié le {verifiedAtLabel}
-          </div>
+        {isVerified && verifiedAtLabel && lastResult === null && (
+          <div className="capability-verified-at">Vérifié le {verifiedAtLabel}</div>
         )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+      <div className="capability-actions">
         {isConfigured && (
-          <span
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              padding: '2px 8px',
-              borderRadius: 999,
-              background: isVerified ? 'var(--green-bg, #dcfce7)' : 'var(--yellow-bg, #fef9c3)',
-              color: isVerified ? 'var(--green, #16a34a)' : 'var(--yellow, #854d0e)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {isVerified ? '✓ Vérifiée' : '⚠ Non vérifiée'}
+          <span className={`camera-qualification-badge ${isVerified ? 'confirmed' : 'unknown'}`}>
+            {isVerified ? '✓ Vérifiée' : '✗ Non vérifiée'}
           </span>
         )}
 
@@ -200,12 +190,11 @@ function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
               ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
               : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
           }
-          className={isConfigured ? 'btn-secondary' : 'btn-primary'}
+          className={`${isConfigured ? 'secondary-cta' : 'primary-cta'} capability-btn`}
           disabled={action.loading}
           onClick={() => action.run()}
-          style={{ fontSize: '0.82rem', padding: '5px 12px', whiteSpace: 'nowrap' }}
         >
-          {action.loading ? 'Test en cours…' : isConfigured ? 'Tester la connexion' : 'Configurer et tester'}
+          {action.loading ? 'Test en cours…' : isConfigured ? 'Tester' : 'Configurer et tester'}
         </button>
       </div>
     </div>
@@ -227,38 +216,29 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
 
   const configureAction = useAsyncAction(
     () => configureCameraCapability.execute(cameraId, selectedCapability, selectedProtocol),
-    {
-      onSuccess: (result) => {
-        onDone()
-        if (!result?.verified) return
-      },
-    },
+    { onSuccess: () => onDone() },
   )
 
   return (
-    <div style={{ marginTop: 8, padding: 12, background: 'var(--surface-alt, #f9fafb)', borderRadius: 8, border: '1px solid var(--border, #e5e7eb)' }}>
-      <div style={{ fontWeight: 500, fontSize: '0.88rem', marginBottom: 10 }}>
-        Configurer une capacité manuellement
-      </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: '0.82rem' }}>
+    <div className="capability-manual-form">
+      <div className="capability-manual-form-title">Configurer une capacité manuellement</div>
+      <div className="capability-manual-form-fields">
+        <label>
           <span>Capacité</span>
           <select
             value={selectedCapability}
             onChange={(e) => setSelectedCapability(e.target.value as Capability)}
-            style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--border, #d1d5db)' }}
           >
             <option value="ptz">Contrôle PTZ</option>
             <option value="privacy_mode">Coupure vie privée</option>
           </select>
         </label>
 
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: '0.82rem' }}>
+        <label>
           <span>Protocole</span>
           <select
             value={selectedProtocol}
             onChange={(e) => setSelectedProtocol(e.target.value as CapabilityProtocol)}
-            style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--border, #d1d5db)' }}
           >
             {protocolOptions.map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
@@ -268,15 +248,14 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
 
         <button
           type="button"
-          className="btn-primary"
+          className="primary-cta capability-btn"
           disabled={configureAction.loading}
           onClick={() => configureAction.run()}
-          style={{ fontSize: '0.82rem', padding: '5px 12px', alignSelf: 'flex-end' }}
         >
           {configureAction.loading ? 'Test en cours…' : 'Configurer et tester'}
         </button>
       </div>
-      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #888)', marginTop: 8 }}>
+      <p className="capability-manual-form-hint">
         La caméra est testée immédiatement. La capacité n'est proposée qu'en cas de succès.
       </p>
     </div>

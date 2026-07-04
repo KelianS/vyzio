@@ -37,6 +37,7 @@ interface CameraDto {
   privacyVendorCut: boolean
   ptzSupported: boolean
   privacyModeStrategy: string
+  verifiedCapabilities: string[]
 }
 
 interface CameraStatusDto {
@@ -313,6 +314,7 @@ function mapCamera(camera: CameraDto): Camera {
     privacyVendorCut: camera.privacyVendorCut ?? false,
     ptzSupported: camera.ptzSupported ?? false,
     privacyModeStrategy: (camera.privacyModeStrategy || 'software') as Camera['privacyModeStrategy'],
+    verifiedCapabilities: camera.verifiedCapabilities ?? [],
   }
 }
 

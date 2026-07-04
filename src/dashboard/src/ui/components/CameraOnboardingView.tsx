@@ -1209,11 +1209,25 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     {selectedCamera?.ptzSupported && selectedCameraId && (
                       <section className="camera-detail-section">
                         <h3>Contrôle PTZ</h3>
+
+                        {selectedCamera.validationState === 'draft' && (
+                          <p style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--text-muted, #888)',
+                            background: 'var(--surface-alt, #f9fafb)',
+                            border: '1px solid var(--border, #e5e7eb)',
+                            borderRadius: 6,
+                            padding: '8px 12px',
+                            marginBottom: 12,
+                          }}>
+                            Caméra motorisée détectée — orientez-la vers sa position de surveillance puis cliquez <strong>Définir comme position de surveillance</strong> avant d'appliquer la configuration.
+                          </p>
+                        )}
+
                         <PtzControlPanel
                           cameraId={selectedCameraId}
                           ptzStep={props.ptzStep}
                           ptzGoToPreset={props.ptzGoToPreset}
-
                           configurePtzParking={props.configurePtzParking}
                         />
                       </section>
@@ -1343,7 +1357,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </section>
 
                     {selectedCamera && (
-                      <CapabilitySection camera={selectedCamera} />
+                      <CapabilitySection camera={selectedCamera} onReload={camerasState.reload} />
                     )}
 
                     {renderVendorAssistanceSection()}

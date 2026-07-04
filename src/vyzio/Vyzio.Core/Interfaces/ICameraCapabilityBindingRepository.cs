@@ -11,4 +11,6 @@ public interface ICameraCapabilityBindingRepository
     Task SaveAsync(CameraCapabilityBinding binding, CancellationToken ct = default);
 
     Task DeleteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default);
+
+    Task<IReadOnlyList<CameraCapabilityBinding>> GetAllVerifiedAsync(CancellationToken ct = default);
 }

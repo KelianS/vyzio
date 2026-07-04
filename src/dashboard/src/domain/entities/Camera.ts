@@ -22,4 +22,5 @@ export interface Camera {
   privacyVendorCut: boolean
   ptzSupported: boolean
   privacyModeStrategy: 'software' | 'ptz_parking' | 'hardware'
+  verifiedCapabilities: string[]
 }
