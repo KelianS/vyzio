@@ -1193,13 +1193,16 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     >
                       Voir le live
                     </button>
-                    {selectedCamera.ptzSupported && (
+                    {selectedCamera.ptzSupported && !cameraOffline && (
                       <button
                         type="button"
                         className="secondary-cta"
                         onClick={() => setConfirmSurveillancePosition(true)}
                       >
-                        Définir la position de surveillance
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden style={{ flexShrink: 0, marginRight: 6 }}>
+                          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                        Définir la position par défaut
                       </button>
                     )}
                   </div>
@@ -1394,6 +1397,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           )}
         </article>
       </section>
+
+      {confirmSurveillancePosition && selectedCamera && (
+        <ConfirmModal
+          title="Définir la position par défaut"
+          body="La vue live va s'ouvrir avec les contrôles PTZ. Orientez la caméra vers sa position de surveillance habituelle, puis fermez la vue — la position sera sauvegardée automatiquement."
+          confirmLabel="Ouvrir le live"
+          onConfirm={() => {
+            setConfirmSurveillancePosition(false)
+            props.onOpenLive(selectedCamera, {
+              onClose: async () => {
+                await props.configurePtzParking.execute(selectedCamera.id)
+                toast('Position de surveillance sauvegardée.', 'success')
+              },
+            })
+          }}
+          onCancel={() => setConfirmSurveillancePosition(false)}
+        />
+      )}
 
       {confirmScan && (
         <ConfirmModal
