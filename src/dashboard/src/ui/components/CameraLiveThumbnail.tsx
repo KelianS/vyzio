@@ -8,7 +8,12 @@ interface CameraLiveThumbnailProps {
   onTogglePrivacy?: (camera: Camera, active: boolean) => void
 }
 
-export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePrivacy }: CameraLiveThumbnailProps) {
+export function CameraLiveThumbnail({
+  camera,
+  apiBaseUrl,
+  onExpand,
+  onTogglePrivacy,
+}: CameraLiveThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
   )
@@ -21,9 +26,7 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
 
     if (!camera.privacyModeActive && camera.connected) {
       intervalRef.current = setInterval(() => {
-        setImgSrc(
-          `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
-        )
+        setImgSrc(`${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`)
       }, 1000)
     }
 
@@ -43,16 +46,26 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
       onClick={camera.privacyModeActive ? undefined : onExpand}
       role={onExpand && !camera.privacyModeActive ? 'button' : undefined}
       tabIndex={onExpand && !camera.privacyModeActive ? 0 : undefined}
-      onKeyDown={onExpand && !camera.privacyModeActive ? (e) => { if (e.key === 'Enter' || e.key === ' ') onExpand() } : undefined}
+      onKeyDown={
+        onExpand && !camera.privacyModeActive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') onExpand()
+            }
+          : undefined
+      }
     >
       <div className="live-thumb-frame">
         {camera.privacyModeActive ? (
-          <div className={`live-thumb-privacy-screen${camera.privacyVendorCut ? ' live-thumb-privacy-screen--hw' : ''}`}>
+          <div
+            className={`live-thumb-privacy-screen${camera.privacyVendorCut ? ' live-thumb-privacy-screen--hw' : ''}`}
+          >
             <span className="live-thumb-privacy-icon" aria-hidden="true">
               {camera.privacyVendorCut ? '🔒' : '🔇'}
             </span>
             <span className="live-thumb-privacy-label">
-              {camera.privacyVendorCut ? 'Caméra coupée — matériel' : 'Caméra en pause — enregistrement désactivé'}
+              {camera.privacyVendorCut
+                ? 'Caméra coupée — matériel'
+                : 'Caméra en pause — enregistrement désactivé'}
             </span>
           </div>
         ) : offline ? (
@@ -68,20 +81,32 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
       </div>
       <div className="live-thumb-footer">
         {camera.privacyModeActive ? (
-          <span className={`live-dot${camera.privacyVendorCut ? ' live-dot--privacy-hw' : ' live-dot--privacy'}`} aria-hidden="true" />
+          <span
+            className={`live-dot${camera.privacyVendorCut ? ' live-dot--privacy-hw' : ' live-dot--privacy'}`}
+            aria-hidden="true"
+          />
         ) : (
           <span className={`live-dot${offline ? '' : ' live-dot--on'}`} aria-hidden="true" />
         )}
         <span className="live-thumb-name">{camera.displayName}</span>
         {camera.privacyModeSource === 'schedule' && (
-          <span className="live-thumb-badge live-thumb-badge--schedule" title="Activé par planification">planifié</span>
+          <span
+            className="live-thumb-badge live-thumb-badge--schedule"
+            title="Activé par planification"
+          >
+            planifié
+          </span>
         )}
         {onTogglePrivacy && (
           <button
             type="button"
             className={`live-thumb-privacy-btn${camera.privacyModeActive ? ' live-thumb-privacy-btn--active' : ''}`}
             onClick={handleTogglePrivacy}
-            title={camera.privacyModeActive ? 'Désactiver le mode vie privée' : 'Activer le mode vie privée'}
+            title={
+              camera.privacyModeActive
+                ? 'Désactiver le mode vie privée'
+                : 'Activer le mode vie privée'
+            }
           >
             {camera.privacyModeActive ? 'Réactiver' : 'Pause'}
           </button>

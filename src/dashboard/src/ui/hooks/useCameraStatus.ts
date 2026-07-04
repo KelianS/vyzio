@@ -2,11 +2,10 @@ import type { GetCameraStatus } from '../../application/use-cases/GetCameraStatu
 import { useAsync } from './useAsync'
 
 export function useCameraStatus(useCase: GetCameraStatus, cameraId: string | null) {
-  const result = useAsync(
-    () => useCase.execute(cameraId!),
-    [useCase, cameraId],
-    { initialLoading: false, skip: !cameraId },
-  )
+  const result = useAsync(() => useCase.execute(cameraId!), [useCase, cameraId], {
+    initialLoading: false,
+    skip: !cameraId,
+  })
 
   return {
     ...result,

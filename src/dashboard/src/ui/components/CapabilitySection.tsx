@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import type { CameraCapabilityBinding, Capability, CapabilityProtocol } from '../../domain/entities/CameraCapabilityBinding'
+import type {
+  CameraCapabilityBinding,
+  Capability,
+  CapabilityProtocol,
+} from '../../domain/entities/CameraCapabilityBinding'
 import type { Camera } from '../../domain/entities/Camera'
 import { useAsync } from '../hooks/useAsync'
 import { useAsyncAction } from '../hooks/useAsyncAction'
@@ -41,10 +45,11 @@ const PRIVACY_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
 ]
 
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
-  const { data: bindings, loading, reload } = useAsync(
-    () => getCameraCapabilities.execute(camera.id),
-    [camera.id],
-  )
+  const {
+    data: bindings,
+    loading,
+    reload,
+  } = useAsync(() => getCameraCapabilities.execute(camera.id), [camera.id])
 
   const handleReload = () => {
     reload()
@@ -85,10 +90,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
         ))}
 
         {isUnlisted && !offline && (
-          <ManualCapabilityForm
-            cameraId={camera.id}
-            onDone={handleReload}
-          />
+          <ManualCapabilityForm cameraId={camera.id} onDone={handleReload} />
         )}
       </div>
     </section>
@@ -120,7 +122,7 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
           toast(
             result?.lastError
               ? `Connexion échouée : ${result.lastError}`
-              : 'Connexion échouée — vérifiez l\'accès réseau et les identifiants.',
+              : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
             'error',
           )
         }
@@ -141,7 +143,7 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
           toast(
             result?.lastError
               ? `Connexion échouée : ${result.lastError}`
-              : 'Connexion échouée — vérifiez l\'accès réseau et les identifiants.',
+              : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
             'error',
           )
         }
@@ -174,9 +176,7 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
         </div>
         <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol]}</div>
         {!isVerified && (lastResult === 'fail' || binding.lastError) && (
-          <div className="capability-error">
-            {binding.lastError ?? 'Connexion échouée'}
-          </div>
+          <div className="capability-error">{binding.lastError ?? 'Connexion échouée'}</div>
         )}
         {isVerified && verifiedAtLabel && lastResult === null && (
           <div className="capability-verified-at">Vérifié le {verifiedAtLabel}</div>
@@ -240,7 +240,9 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
             onChange={(e) => setSelectedProtocol(e.target.value as CapabilityProtocol)}
           >
             {protocolOptions.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
         </label>

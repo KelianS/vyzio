@@ -6,7 +6,11 @@ import type { CameraPrivacySchedule } from '../entities/CameraPrivacySchedule'
 import type { DiscoveredCamera } from '../entities/DiscoveredCamera'
 import type { CameraConfigurationApplyResult } from '../entities/CameraConfigurationApplyResult'
 import type { VendorAssistance } from '../entities/VendorAssistance'
-import type { CameraCapabilityBinding, Capability, CapabilityProtocol } from '../entities/CameraCapabilityBinding'
+import type {
+  CameraCapabilityBinding,
+  Capability,
+  CapabilityProtocol,
+} from '../entities/CameraCapabilityBinding'
 
 export interface CreatePrivacyScheduleInput {
   daysOfWeek: number[]
@@ -48,8 +52,15 @@ export interface CameraRepository {
   togglePrivacyMode(cameraId: string, active: boolean): Promise<Camera>
   batchTogglePrivacyMode(cameraIds: string[], active: boolean): Promise<Camera[]>
   getPrivacySchedules(cameraId: string): Promise<CameraPrivacySchedule[]>
-  createPrivacySchedule(cameraId: string, input: CreatePrivacyScheduleInput): Promise<CameraPrivacySchedule>
-  updatePrivacySchedule(cameraId: string, scheduleId: string, input: UpdatePrivacyScheduleInput): Promise<CameraPrivacySchedule>
+  createPrivacySchedule(
+    cameraId: string,
+    input: CreatePrivacyScheduleInput,
+  ): Promise<CameraPrivacySchedule>
+  updatePrivacySchedule(
+    cameraId: string,
+    scheduleId: string,
+    input: UpdatePrivacyScheduleInput,
+  ): Promise<CameraPrivacySchedule>
   deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void>
   setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera>
   ptzStep(cameraId: string, direction: string, speed: number): Promise<void>
@@ -58,6 +69,11 @@ export interface CameraRepository {
   ptzConfigureParking(cameraId: string): Promise<void>
   // Capability bindings (ADR-22)
   getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
-  configureCapability(cameraId: string, capability: Capability, protocol: CapabilityProtocol, configJson?: string): Promise<CameraCapabilityBinding>
+  configureCapability(
+    cameraId: string,
+    capability: Capability,
+    protocol: CapabilityProtocol,
+    configJson?: string,
+  ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
 }

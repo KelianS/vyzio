@@ -1643,8 +1643,13 @@
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .hub-skeleton {
@@ -2143,7 +2148,9 @@
   background: rgba(247, 180, 0, 0.1);
   color: rgba(247, 180, 0, 0.9);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
 
@@ -2415,7 +2422,7 @@
   color: var(--ink-soft);
 }
 
-.privacy-schedule-time-row input[type="time"] {
+.privacy-schedule-time-row input[type='time'] {
   font-size: 0.88rem;
   padding: 3px 6px;
   border-radius: 4px;
@@ -2479,8 +2486,14 @@
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .toast--success {
@@ -2551,7 +2564,9 @@
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .profile-tab-btn:hover {
@@ -2756,7 +2771,6 @@
   min-width: 0;
 }
 
-
 .history-events {
   display: grid;
   gap: 12px;
@@ -2779,7 +2793,6 @@
   background: rgba(198, 92, 61, 0.08);
   border: 1px solid rgba(198, 92, 61, 0.18);
 }
-
 
 /* ── Hub alert status panel ── */
 
@@ -3233,7 +3246,6 @@
   border-color: transparent;
 }
 
-
 .live-feed-ptz-overlay .ptz-return-btn {
   font-size: 0.72rem;
   background: rgba(255, 255, 255, 0.1);
@@ -3262,7 +3274,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   background: var(--bg-elevated);
-  transition: border-color 0.1s, background 0.1s;
+  transition:
+    border-color 0.1s,
+    background 0.1s;
 }
 
 .privacy-strategy-option:has(input:checked) {
@@ -3270,7 +3284,7 @@
   background: rgba(47, 107, 89, 0.06);
 }
 
-.privacy-strategy-option input[type="radio"] {
+.privacy-strategy-option input[type='radio'] {
   margin-top: 2px;
   accent-color: var(--brand-moss);
   flex-shrink: 0;

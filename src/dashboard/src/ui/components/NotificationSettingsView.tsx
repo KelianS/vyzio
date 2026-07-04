@@ -56,11 +56,17 @@ export function NotificationSettingsView({
   const [detectionLabels, setDetectionLabels] = useState<DetectionLabel[]>([])
 
   useEffect(() => {
-    getNotificationLabels.execute().then(setDetectionLabels).catch(() => setDetectionLabels([]))
+    getNotificationLabels
+      .execute()
+      .then(setDetectionLabels)
+      .catch(() => setDetectionLabels([]))
   }, [getNotificationLabels])
 
   useEffect(() => {
-    getNotificationLog.execute(selectedChannel).then(setNotifLog).catch(() => setNotifLog([]))
+    getNotificationLog
+      .execute(selectedChannel)
+      .then(setNotifLog)
+      .catch(() => setNotifLog([]))
   }, [selectedChannel, getNotificationLog, logRefreshKey])
 
   const refreshLog = () => setLogRefreshKey((k) => k + 1)
@@ -127,7 +133,6 @@ export function NotificationSettingsView({
               </button>
             ))}
           </div>
-
         </aside>
 
         <div className="camera-detail-panel panel">
@@ -173,8 +178,12 @@ function LabelCheckboxes({
 
   if (labels.length === 0) return null
 
-  const personGroup = labels.filter((l) => l.value === 'person_unknown' || l.value === 'person_known')
-  const otherLabels = labels.filter((l) => l.value !== 'person_unknown' && l.value !== 'person_known')
+  const personGroup = labels.filter(
+    (l) => l.value === 'person_unknown' || l.value === 'person_known',
+  )
+  const otherLabels = labels.filter(
+    (l) => l.value !== 'person_unknown' && l.value !== 'person_known',
+  )
 
   return (
     <div className="camera-form-field">
@@ -264,8 +273,16 @@ function MessageFieldsSelector({
 }
 
 const MEDIA_MODE_OPTIONS: { value: MediaMode; label: string; description: string }[] = [
-  { value: 'clip_or_photo', label: 'Album (photo + clip)', description: 'Envoie la photo avec zone de detection et le clip ensemble dans un album.' },
-  { value: 'photo', label: 'Photo uniquement', description: 'Envoie toujours une photo, jamais de clip.' },
+  {
+    value: 'clip_or_photo',
+    label: 'Album (photo + clip)',
+    description: 'Envoie la photo avec zone de detection et le clip ensemble dans un album.',
+  },
+  {
+    value: 'photo',
+    label: 'Photo uniquement',
+    description: 'Envoie toujours une photo, jamais de clip.',
+  },
   { value: 'text', label: 'Texte uniquement', description: 'Aucun media, juste le message texte.' },
 ]
 
@@ -294,7 +311,9 @@ function MediaModeSelector({
             />
             <span>
               <strong>{opt.label}</strong>
-              <span style={{ marginLeft: 6, fontSize: '0.85rem', opacity: 0.7 }}>{opt.description}</span>
+              <span style={{ marginLeft: 6, fontSize: '0.85rem', opacity: 0.7 }}>
+                {opt.description}
+              </span>
             </span>
           </label>
         ))}
@@ -345,7 +364,9 @@ function CooldownPicker({
             onChange={(e) => onChange(Math.max(1, Number(e.target.value)))}
             style={{ width: 64 }}
           />
-          <span style={{ fontSize: '0.88rem' }}>minutes apres chaque envoi (par camera et type)</span>
+          <span style={{ fontSize: '0.88rem' }}>
+            minutes apres chaque envoi (par camera et type)
+          </span>
         </div>
       )}
       {!enabled && (
@@ -459,9 +480,21 @@ function NotificationLogSection({
 }) {
   return (
     <section className="camera-detail-section">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}
+      >
         <h3 style={{ margin: 0 }}>Historique des envois</h3>
-        <button type="button" className="secondary-cta" style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }} onClick={onRefresh}>
+        <button
+          type="button"
+          className="secondary-cta"
+          style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
+          onClick={onRefresh}
+        >
           Rafraichir
         </button>
       </div>
@@ -485,9 +518,7 @@ function NotificationLogSection({
                 key={i}
                 style={{ borderBottom: '1px solid rgba(247,244,237,0.07)', opacity: 0.9 }}
               >
-                <td style={{ padding: '4px 8px' }}>
-                  {new Date(e.sentAt).toLocaleString('fr-FR')}
-                </td>
+                <td style={{ padding: '4px 8px' }}>{new Date(e.sentAt).toLocaleString('fr-FR')}</td>
                 <td style={{ padding: '4px 8px' }}>
                   <span
                     className={`camera-support-badge ${e.status === 'sent' ? 'supported' : 'unsupported'}`}
@@ -604,11 +635,19 @@ function TelegramConfigPanel({
   const [allowedLabels, setAllowedLabels] = useState<string[]>(['person_unknown', 'person_known'])
   const [activeFromHour, setActiveFromHour] = useState<number | null>(null)
   const [activeToHour, setActiveToHour] = useState<number | null>(null)
-  const [messageFields, setMessageFields] = useState<string[]>(['camera', 'time', 'label', 'confidence', 'snapshot'])
+  const [messageFields, setMessageFields] = useState<string[]>([
+    'camera',
+    'time',
+    'label',
+    'confidence',
+    'snapshot',
+  ])
   const [mediaMode, setMediaMode] = useState<MediaMode>('clip_or_photo')
   const [cooldownMinutes, setCooldownMinutes] = useState<number | null>(null)
   const [syncedConfig, setSyncedConfig] = useState<NotificationChannelConfig | null>(null)
-  const [pendingSaveReq, setPendingSaveReq] = useState<SaveNotificationChannelConfigRequest | null>(null)
+  const [pendingSaveReq, setPendingSaveReq] = useState<SaveNotificationChannelConfigRequest | null>(
+    null,
+  )
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   useEffect(() => {
@@ -617,10 +656,16 @@ function TelegramConfigPanel({
       setChatId(config.chatId ?? '')
       setIsEnabled(config.isEnabled)
       setMinimumConfidence(Math.round(config.minimumConfidence * 100))
-      setAllowedLabels(config.allowedLabels.length > 0 ? config.allowedLabels : ['person_unknown', 'person_known'])
+      setAllowedLabels(
+        config.allowedLabels.length > 0 ? config.allowedLabels : ['person_unknown', 'person_known'],
+      )
       setActiveFromHour(config.activeFromHour ?? null)
       setActiveToHour(config.activeToHour ?? null)
-      setMessageFields(config.messageFields?.length > 0 ? config.messageFields : ['camera', 'time', 'label', 'confidence', 'snapshot'])
+      setMessageFields(
+        config.messageFields?.length > 0
+          ? config.messageFields
+          : ['camera', 'time', 'label', 'confidence', 'snapshot'],
+      )
       setMediaMode(config.mediaMode ?? 'clip_or_photo')
       setCooldownMinutes(config.cooldownMinutes ?? null)
       setSyncedConfig(config)
@@ -775,7 +820,11 @@ function TelegramConfigPanel({
             />
           </div>
 
-          <LabelCheckboxes labels={detectionLabels} selected={allowedLabels} onChange={setAllowedLabels} />
+          <LabelCheckboxes
+            labels={detectionLabels}
+            selected={allowedLabels}
+            onChange={setAllowedLabels}
+          />
 
           <MessageFieldsSelector selected={messageFields} onChange={setMessageFields} />
 

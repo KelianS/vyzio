@@ -65,7 +65,14 @@ function App() {
   const { data: cameras, loading: camerasLoading, reload: reloadCameras } = useCameras(getCameras)
   const [modalMedia, setModalMedia] = useState<
     | { type: 'image' | 'video'; url: string }
-    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string; ptzSupported: boolean; onClose?: () => Promise<void> }
+    | {
+        type: 'live'
+        cameraId: string
+        apiBaseUrl: string
+        label: string
+        ptzSupported: boolean
+        onClose?: () => Promise<void>
+      }
     | null
   >(null)
 
@@ -118,14 +125,16 @@ function App() {
             configurePtzParking={configurePtzParking}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
-            onOpenLive={(camera, options) => setModalMedia({
-              type: 'live',
-              cameraId: camera.id,
-              apiBaseUrl: dashboardRuntime.apiBaseUrl,
-              label: camera.displayName,
-              ptzSupported: camera.ptzSupported,
-              onClose: options?.onClose,
-            })}
+            onOpenLive={(camera, options) =>
+              setModalMedia({
+                type: 'live',
+                cameraId: camera.id,
+                apiBaseUrl: dashboardRuntime.apiBaseUrl,
+                label: camera.displayName,
+                ptzSupported: camera.ptzSupported,
+                onClose: options?.onClose,
+              })
+            }
           />
         )}
 
@@ -169,9 +178,7 @@ function App() {
           />
         )}
 
-        {view === 'expert' && (
-          <ExpertView frigateBaseUrl={dashboardRuntime.frigateBaseUrl} />
-        )}
+        {view === 'expert' && <ExpertView frigateBaseUrl={dashboardRuntime.frigateBaseUrl} />}
 
         {view === 'hub' && (
           <HubView
@@ -183,7 +190,15 @@ function App() {
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
             getSystemStats={getSystemStats}
             onOpenMedia={(type, url) => setModalMedia({ type, url })}
-            onOpenLive={(camera) => setModalMedia({ type: 'live', cameraId: camera.id, apiBaseUrl: dashboardRuntime.apiBaseUrl, label: camera.displayName, ptzSupported: camera.ptzSupported })}
+            onOpenLive={(camera) =>
+              setModalMedia({
+                type: 'live',
+                cameraId: camera.id,
+                apiBaseUrl: dashboardRuntime.apiBaseUrl,
+                label: camera.displayName,
+                ptzSupported: camera.ptzSupported,
+              })
+            }
             onTogglePrivacy={async (camera, active) => {
               await toggleCameraPrivacyMode.execute(camera.id, active)
               reloadCameras()
@@ -197,13 +212,17 @@ function App() {
 
         {modalMedia && (
           <div
-            onClick={() => { void handleCloseModal() }}
+            onClick={() => {
+              void handleCloseModal()
+            }}
             className="media-modal-backdrop"
           >
             <div onClick={(e) => e.stopPropagation()} className="media-modal-content">
               <button
                 type="button"
-                onClick={() => { void handleCloseModal() }}
+                onClick={() => {
+                  void handleCloseModal()
+                }}
                 className="media-modal-close"
               >
                 ✕

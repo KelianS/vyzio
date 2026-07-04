@@ -8,9 +8,16 @@ import type { VendorAssistance } from '../../domain/entities/VendorAssistance'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
 import type { DiscoveryRequest } from '../../domain/ports/CameraRepository'
 import type { VendorAssistanceRequest } from '../../domain/ports/CameraRepository'
-import type { CreatePrivacyScheduleInput, UpdatePrivacyScheduleInput } from '../../domain/ports/CameraRepository'
+import type {
+  CreatePrivacyScheduleInput,
+  UpdatePrivacyScheduleInput,
+} from '../../domain/ports/CameraRepository'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
-import type { CameraCapabilityBinding, Capability, CapabilityProtocol } from '../../domain/entities/CameraCapabilityBinding'
+import type {
+  CameraCapabilityBinding,
+  Capability,
+  CapabilityProtocol,
+} from '../../domain/entities/CameraCapabilityBinding'
 import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetchJson'
 
 interface CameraDto {
@@ -233,9 +240,7 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void> {
-    await deleteReq(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
-    )
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`)
   }
 
   async setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera> {
@@ -247,24 +252,18 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async ptzStep(cameraId: string, direction: string, speed: number): Promise<void> {
-    await postJson<null>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/step`,
-      { direction, speed },
-    )
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/step`, {
+      direction,
+      speed,
+    })
   }
 
   async ptzSavePreset(cameraId: string, presetId: number): Promise<void> {
-    await postJson<null>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`,
-      { presetId },
-    )
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`, { presetId })
   }
 
   async ptzGoToPreset(cameraId: string, presetId: number): Promise<void> {
-    await postJson<null>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/goto`,
-      { presetId },
-    )
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/goto`, { presetId })
   }
 
   async ptzConfigureParking(cameraId: string): Promise<void> {
@@ -272,17 +271,27 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]> {
-    return fetchJson<CameraCapabilityBinding[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities`)
+    return fetchJson<CameraCapabilityBinding[]>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities`,
+    )
   }
 
-  async configureCapability(cameraId: string, capability: Capability, protocol: CapabilityProtocol, configJson?: string): Promise<CameraCapabilityBinding> {
+  async configureCapability(
+    cameraId: string,
+    capability: Capability,
+    protocol: CapabilityProtocol,
+    configJson?: string,
+  ): Promise<CameraCapabilityBinding> {
     return putJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`,
       { protocol, configJson: configJson ?? null },
     )
   }
 
-  async probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding> {
+  async probeCapability(
+    cameraId: string,
+    capability: Capability,
+  ): Promise<CameraCapabilityBinding> {
     return postJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/probe`,
     )
@@ -313,7 +322,8 @@ function mapCamera(camera: CameraDto): Camera {
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
     ptzSupported: camera.ptzSupported ?? false,
-    privacyModeStrategy: (camera.privacyModeStrategy || 'software') as Camera['privacyModeStrategy'],
+    privacyModeStrategy: (camera.privacyModeStrategy ||
+      'software') as Camera['privacyModeStrategy'],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     connected: camera.status === 'online',
   }

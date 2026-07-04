@@ -40,12 +40,15 @@ export function PtzControlPanel({
 
   const runStep = useCallback(
     (direction: Direction) => {
-      ptzStep.execute(cameraId, direction, speed).then(() => {
-        if (isHoldingRef.current) runStepRef.current?.(direction) // chain next step while held
-      }).catch(() => {
-        isHoldingRef.current = false
-        isPressedRef.current = false
-      })
+      ptzStep
+        .execute(cameraId, direction, speed)
+        .then(() => {
+          if (isHoldingRef.current) runStepRef.current?.(direction) // chain next step while held
+        })
+        .catch(() => {
+          isHoldingRef.current = false
+          isPressedRef.current = false
+        })
     },
     [cameraId, ptzStep, speed],
   )
@@ -113,18 +116,39 @@ export function PtzControlPanel({
     onMouseDown: () => handlePress(d),
     onMouseUp: handleRelease,
     onMouseLeave: handleRelease,
-    onTouchStart: (e: React.TouchEvent) => { e.preventDefault(); handlePress(d) },
+    onTouchStart: (e: React.TouchEvent) => {
+      e.preventDefault()
+      handlePress(d)
+    },
     onTouchEnd: handleRelease,
   })
 
   return (
     <div className={`ptz-panel${compact ? ' ptz-panel--compact' : ''}`}>
       <div className="ptz-grid">
-        <button type="button" className="ptz-btn ptz-btn--diag" title="Haut-gauche" {...dir('UpLeft')}>↖</button>
-        <button type="button" className="ptz-btn" title="Haut" {...dir('Up')}>↑</button>
-        <button type="button" className="ptz-btn ptz-btn--diag" title="Haut-droite" {...dir('UpRight')}>↗</button>
+        <button
+          type="button"
+          className="ptz-btn ptz-btn--diag"
+          title="Haut-gauche"
+          {...dir('UpLeft')}
+        >
+          ↖
+        </button>
+        <button type="button" className="ptz-btn" title="Haut" {...dir('Up')}>
+          ↑
+        </button>
+        <button
+          type="button"
+          className="ptz-btn ptz-btn--diag"
+          title="Haut-droite"
+          {...dir('UpRight')}
+        >
+          ↗
+        </button>
 
-        <button type="button" className="ptz-btn" title="Gauche" {...dir('Left')}>←</button>
+        <button type="button" className="ptz-btn" title="Gauche" {...dir('Left')}>
+          ←
+        </button>
         <button
           type="button"
           className={`ptz-btn ptz-btn--home${homeStatus === 'loading' ? ' ptz-btn--loading' : ''}`}
@@ -133,14 +157,32 @@ export function PtzControlPanel({
           disabled={homeStatus === 'loading'}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
           </svg>
         </button>
-        <button type="button" className="ptz-btn" title="Droite" {...dir('Right')}>→</button>
+        <button type="button" className="ptz-btn" title="Droite" {...dir('Right')}>
+          →
+        </button>
 
-        <button type="button" className="ptz-btn ptz-btn--diag" title="Bas-gauche" {...dir('DownLeft')}>↙</button>
-        <button type="button" className="ptz-btn" title="Bas" {...dir('Down')}>↓</button>
-        <button type="button" className="ptz-btn ptz-btn--diag" title="Bas-droite" {...dir('DownRight')}>↘</button>
+        <button
+          type="button"
+          className="ptz-btn ptz-btn--diag"
+          title="Bas-gauche"
+          {...dir('DownLeft')}
+        >
+          ↙
+        </button>
+        <button type="button" className="ptz-btn" title="Bas" {...dir('Down')}>
+          ↓
+        </button>
+        <button
+          type="button"
+          className="ptz-btn ptz-btn--diag"
+          title="Bas-droite"
+          {...dir('DownRight')}
+        >
+          ↘
+        </button>
       </div>
 
       {homeStatus === 'error' && (
@@ -162,9 +204,7 @@ export function PtzControlPanel({
         </div>
       )}
 
-      {parkingFeedback && (
-        <p className="ptz-feedback">{parkingFeedback}</p>
-      )}
+      {parkingFeedback && <p className="ptz-feedback">{parkingFeedback}</p>}
     </div>
   )
 }

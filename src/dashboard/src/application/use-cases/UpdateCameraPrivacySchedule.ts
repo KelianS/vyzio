@@ -1,5 +1,8 @@
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
-import type { CameraRepository, UpdatePrivacyScheduleInput } from '../../domain/ports/CameraRepository'
+import type {
+  CameraRepository,
+  UpdatePrivacyScheduleInput,
+} from '../../domain/ports/CameraRepository'
 
 export class UpdateCameraPrivacySchedule {
   constructor(private readonly repository: CameraRepository) {}
