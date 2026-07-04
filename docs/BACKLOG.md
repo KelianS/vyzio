@@ -19,15 +19,13 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 Itérations courtes, buildables indépendamment. Priorité décroissante.
 
-1. **Probe silencieux à l'onboarding** — à l'ajout d'une caméra reconnue (`VendorFamily` non null), lancer le probe de tous les bindings preset en arrière-plan (sans étape UI). La section Capacités est déjà remplie à la première ouverture de la fiche. Actuellement : probe toujours manuel via "Tester la connexion".
+1. **Tapo PTZ — activation automatique après probe réussi** — après un probe PTZ positif, mettre à jour `Camera.PtzSupported = true` pour que le panneau PTZ apparaisse dans le live feed sans action supplémentaire. Limitation documentée dans `docs/user/PRIVACY_MODE.md` et `vendors/tplink_tapo.md`.
 
-2. **Tapo PTZ — activation automatique après probe réussi** — après un probe PTZ positif, mettre à jour `Camera.PtzSupported = true` pour que le panneau PTZ apparaisse dans le live feed sans action supplémentaire. Limitation documentée dans `docs/user/PRIVACY_MODE.md` et `vendors/tplink_tapo.md`.
+2. **Auto-détection ONVIF PTZ à l'ajout** — pour les caméras sans `VendorFamily` connue, sonder le port 8899 + `GetCapabilities` ONVIF au moment de l'ajout ; si PTZ détecté, créer le binding `Ptz/Onvif` directement. Actuellement : checkbox manuelle dans la fiche caméra.
 
-3. **Auto-détection ONVIF PTZ à l'ajout** — pour les caméras sans `VendorFamily` connue, sonder le port 8899 + `GetCapabilities` ONVIF au moment de l'ajout ; si PTZ détecté, créer le binding `Ptz/Onvif` directement. Actuellement : checkbox manuelle dans la fiche caméra.
+3. **Étape "Position de surveillance" à l'onboarding PTZ** — si PTZ détecté à l'ajout (point 2), proposer une étape dédiée pour orienter la caméra avant de terminer l'onboarding. Dépend de 2.
 
-4. **Étape "Position de surveillance" à l'onboarding PTZ** — si PTZ détecté à l'ajout (point 3), proposer une étape dédiée pour orienter la caméra avant de terminer l'onboarding. Dépend de 3.
-
-5. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
+4. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
 
 ---
 
