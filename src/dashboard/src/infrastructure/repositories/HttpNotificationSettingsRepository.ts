@@ -55,4 +55,3 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
     }
   }
 }
-

@@ -17,11 +17,5 @@ export function CameraLiveView({ cameraId, apiBaseUrl }: CameraLiveViewProps) {
     return () => clearInterval(id)
   }, [cameraId, apiBaseUrl])
 
-  return (
-    <img
-      src={src}
-      alt="Flux live"
-      className="camera-live-view-img"
-    />
-  )
+  return <img src={src} alt="Flux live" className="camera-live-view-img" />
 }

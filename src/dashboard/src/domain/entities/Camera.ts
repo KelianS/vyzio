@@ -9,6 +9,7 @@ export interface Camera {
   streamPath?: string | null
   streamProtocol: string
   status: string
+  connected: boolean
   validationState: string
   isEnabled: boolean
   previewAvailable: boolean
@@ -22,4 +23,5 @@ export interface Camera {
   privacyVendorCut: boolean
   ptzSupported: boolean
   privacyModeStrategy: 'software' | 'ptz_parking' | 'hardware'
+  verifiedCapabilities: string[]
 }

@@ -2,7 +2,12 @@ import { AppErrorKind } from './AppError'
 import type { AppError } from './AppError'
 
 function isHttpLike(e: unknown): e is { status: number } {
-  return typeof e === 'object' && e !== null && 'status' in e && typeof (e as Record<string, unknown>).status === 'number'
+  return (
+    typeof e === 'object' &&
+    e !== null &&
+    'status' in e &&
+    typeof (e as Record<string, unknown>).status === 'number'
+  )
 }
 
 export function toAppError(e: unknown): AppError {

@@ -9,9 +9,14 @@ namespace Vyzio.Tests.UseCases;
 public class GetCamerasUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly GetCamerasUseCase _sut;
 
-    public GetCamerasUseCaseTests() => _sut = new GetCamerasUseCase(_repo);
+    public GetCamerasUseCaseTests()
+    {
+        _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _sut = new GetCamerasUseCase(_repo, _bindings);
+    }
 
     [Fact]
     public async Task Execute_returns_camera_dtos_with_status_projection()
@@ -37,6 +42,26 @@ public class GetCamerasUseCaseTests
         Assert.Equal("Front Door", camera.DisplayName);
         Assert.True(camera.PreviewAvailable);
         Assert.False(camera.NeedsAttention);
+        Assert.Empty(camera.VerifiedCapabilities);
+    }
+
+    [Fact]
+    public async Task Execute_includes_verified_capabilities_from_bindings()
+    {
+        var cameraId = "cam-1";
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new Camera { Id = cameraId, Slug = "garage", DisplayName = "Garage", Host = "192.168.1.11", Port = 554, Status = "online", ValidationState = "validated", IsEnabled = true }
+        ]);
+        _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif, Verified = true }
+        ]);
+
+        var result = await _sut.ExecuteAsync();
+
+        var camera = Assert.Single(result);
+        Assert.Contains("ptz", camera.VerifiedCapabilities);
     }
 }
 
@@ -190,9 +215,10 @@ public class GetVendorAssistanceUseCaseTests
 public class CreateCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityOnboardingQueue _queue = Substitute.For<ICameraCapabilityOnboardingQueue>();
     private readonly CreateCameraUseCase _sut;
 
-    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo);
+    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue);
 
     [Fact]
     public async Task Execute_creates_draft_camera_with_slug_and_defaults()
@@ -208,6 +234,16 @@ public class CreateCameraUseCaseTests
             && camera.VendorFamily == VendorFamily.TplinkTapo
             && camera.ValidationState == "draft"
             && camera.IsEnabled == false), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_enqueues_capability_probe_after_creation()
+    {
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", 554, null, null, null, null, "icsee"));
+
+        _queue.Received(1).Enqueue(Arg.Any<string>());
     }
 }
 

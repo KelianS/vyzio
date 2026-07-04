@@ -47,7 +47,10 @@ import { ConfigureCameraCapability } from '../application/use-cases/ConfigureCam
 import { ProbeCameraCapability } from '../application/use-cases/ProbeCameraCapability'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
-import { HttpCameraLabelsRepository, HttpNotificationLabelsRepository } from '../infrastructure/repositories/HttpDetectionLabelsRepository'
+import {
+  HttpCameraLabelsRepository,
+  HttpNotificationLabelsRepository,
+} from '../infrastructure/repositories/HttpDetectionLabelsRepository'
 import { HttpHubRepository } from '../infrastructure/repositories/HttpHubRepository'
 import { HttpNotificationSettingsRepository } from '../infrastructure/repositories/HttpNotificationSettingsRepository'
 import { HttpProfileRepository } from '../infrastructure/repositories/HttpProfileRepository'

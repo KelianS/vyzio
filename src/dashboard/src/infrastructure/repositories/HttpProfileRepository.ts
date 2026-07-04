@@ -2,7 +2,10 @@ import type { Profile } from '../../domain/entities/Profile'
 import type { ProfilePhoto } from '../../domain/entities/ProfilePhoto'
 import type { ProfileCameraLink } from '../../domain/entities/ProfileCameraLink'
 import type { DetectionConfig } from '../../domain/entities/DetectionConfig'
-import type { DetectionHistoryPage, DetectionHistoryQuery } from '../../domain/entities/DetectionHistory'
+import type {
+  DetectionHistoryPage,
+  DetectionHistoryQuery,
+} from '../../domain/entities/DetectionHistory'
 import type {
   ProfileRepository,
   CreateProfileRequest,
@@ -34,7 +37,6 @@ export class HttpProfileRepository implements ProfileRepository {
     await deleteReq(`${this.apiBaseUrl}/api/profiles/${id}`)
   }
 
-
   async getPhotos(profileId: string): Promise<ProfilePhoto[]> {
     return fetchJson<ProfilePhoto[]>(`${this.apiBaseUrl}/api/profiles/${profileId}/photos`)
   }
@@ -53,19 +55,32 @@ export class HttpProfileRepository implements ProfileRepository {
   }
 
   async getCameraLinks(profileId: string): Promise<ProfileCameraLink[]> {
-    return fetchJson<ProfileCameraLink[]>(`${this.apiBaseUrl}/api/profiles/${profileId}/camera-links`)
+    return fetchJson<ProfileCameraLink[]>(
+      `${this.apiBaseUrl}/api/profiles/${profileId}/camera-links`,
+    )
   }
 
   async setCameraLinks(profileId: string, cameraIds: string[]): Promise<ProfileCameraLink[]> {
-    return putJson<ProfileCameraLink[]>(`${this.apiBaseUrl}/api/profiles/${profileId}/camera-links`, { cameraIds })
+    return putJson<ProfileCameraLink[]>(
+      `${this.apiBaseUrl}/api/profiles/${profileId}/camera-links`,
+      { cameraIds },
+    )
   }
 
   async getCameraProfileLinks(cameraId: string): Promise<ProfileCameraLink[]> {
-    return fetchJson<ProfileCameraLink[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/profile-links`)
+    return fetchJson<ProfileCameraLink[]>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/profile-links`,
+    )
   }
 
-  async setCameraProfileLinks(cameraId: string, profileIds: string[]): Promise<ProfileCameraLink[]> {
-    return putJson<ProfileCameraLink[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/profile-links`, { profileIds })
+  async setCameraProfileLinks(
+    cameraId: string,
+    profileIds: string[],
+  ): Promise<ProfileCameraLink[]> {
+    return putJson<ProfileCameraLink[]>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/profile-links`,
+      { profileIds },
+    )
   }
 
   async getCameraDetectionConfig(cameraId: string): Promise<DetectionConfig | null> {
@@ -76,8 +91,15 @@ export class HttpProfileRepository implements ProfileRepository {
     return response.json() as Promise<DetectionConfig>
   }
 
-  async saveCameraDetectionConfig(cameraId: string, labels: string[], continuousRecordingEnabled: boolean): Promise<DetectionConfig> {
-    return putJson<DetectionConfig>(`${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`, { labels, continuousRecordingEnabled })
+  async saveCameraDetectionConfig(
+    cameraId: string,
+    labels: string[],
+    continuousRecordingEnabled: boolean,
+  ): Promise<DetectionConfig> {
+    return putJson<DetectionConfig>(`${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`, {
+      labels,
+      continuousRecordingEnabled,
+    })
   }
 
   async getDetectionHistory(query: DetectionHistoryQuery): Promise<DetectionHistoryPage> {
@@ -89,11 +111,16 @@ export class HttpProfileRepository implements ProfileRepository {
     if (query.to) params.set('to', query.to)
     if (query.page !== undefined) params.set('page', String(query.page))
     if (query.limit !== undefined) params.set('limit', String(query.limit))
-    return fetchJson<DetectionHistoryPage>(`${this.apiBaseUrl}/api/detection-events/history?${params}`)
+    return fetchJson<DetectionHistoryPage>(
+      `${this.apiBaseUrl}/api/detection-events/history?${params}`,
+    )
   }
 
   async resyncFaceLibrary(): Promise<number> {
-    const result = await postJson<{ synced: number }>(`${this.apiBaseUrl}/api/profiles/resync-face-library`, {})
+    const result = await postJson<{ synced: number }>(
+      `${this.apiBaseUrl}/api/profiles/resync-face-library`,
+      {},
+    )
     return result.synced
   }
 
@@ -107,4 +134,3 @@ export class HttpProfileRepository implements ProfileRepository {
     if (!response.ok) throw new HttpError(response.status, url)
   }
 }
-

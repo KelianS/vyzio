@@ -3,12 +3,15 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-public sealed class GetCamerasUseCase(ICameraRepository cameras)
+// A5: includes verified capability bindings in the list response to avoid a second API call
+// at hub load — the PTZ panel and capability badges can be shown immediately.
+public sealed class GetCamerasUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(CancellationToken ct = default)
     {
         var all = await cameras.GetAllAsync(ct);
-        return all.Select(CameraDto.From).ToList();
+        var verified = await bindings.GetAllVerifiedAsync(ct);
+        return all.Select(c => CameraDto.From(c, verified)).ToList();
     }
 }
 

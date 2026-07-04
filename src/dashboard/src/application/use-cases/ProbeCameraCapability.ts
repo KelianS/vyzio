@@ -1,4 +1,7 @@
-import type { CameraCapabilityBinding, Capability } from '../../domain/entities/CameraCapabilityBinding'
+import type {
+  CameraCapabilityBinding,
+  Capability,
+} from '../../domain/entities/CameraCapabilityBinding'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
 
 export class ProbeCameraCapability {
