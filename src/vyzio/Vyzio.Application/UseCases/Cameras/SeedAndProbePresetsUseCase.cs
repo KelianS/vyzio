@@ -44,6 +44,14 @@ public sealed class SeedAndProbePresetsUseCase(
                     Verified = false,
                 }, ct);
             }
+            else if (existing.Protocol != protocol)
+            {
+                // Preset protocol changed (e.g. V380Pro: Onvif → V380) — reset to current preset.
+                existing.Protocol = protocol;
+                existing.Verified = false;
+                existing.LastError = null;
+                await bindings.SaveAsync(existing, ct);
+            }
 
             await probe.ExecuteAsync(cameraId, capability, ct);
         }

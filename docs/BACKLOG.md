@@ -27,6 +27,14 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 4. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
 
+5. **Refacto système de capacités — priorité protocole, nettoyage legacy, UI éditable** — trois problèmes liés :
+
+   - **Priorité protocole** : aucun ordre de préférence n'est défini quand plusieurs protocoles sont candidats pour la même capacité (ex. une caméra inconnue qui répond à ONVIF et V380). Définir une priorité globale par `(CameraCapability, CapabilityProtocol)` — ex. pour `Ptz` : V380 > Onvif > Dvrip > TapoKlap. La détection auto sonde les protocoles dans cet ordre et retient le premier qui passe. La caméra certifiée (`VendorFamily` connu) conserve le preset comme protocole de référence mais passe quand même par la priorité si plusieurs protocoles sont disponibles.
+
+   - **Suppression du code legacy** : `BackfillCameraCapabilityBindingsUseCase` et toutes les correspondances hardcodées (`V380Pro → Onvif`, `Icsee → Dvrip`, etc.) sont du legacy de migration — à supprimer. Le système de bindings est maintenant la source de vérité ; les caméras qui n'ont pas encore de binding passent par le probe, pas par un backfill. Vérifier qu'aucune autre référence à l'ancien modèle ne subsiste (champ `PtzSupported` sur `Camera`, logique conditionnelle sur `VendorFamily` dans les use cases).
+
+   - **UI : capacités éditables après configuration** — le `PUT /api/cameras/{id}/capabilities/{capability}` existe mais n'est pas accessible depuis l'interface une fois la capacité configurée. L'UI doit permettre de changer le protocole d'un binding existant (ex. passer de ONVIF à V380 manuellement) et de désactiver une capacité (supprimer le binding). Le panneau capacités d'une caméra doit afficher un état "reconfigurable" pour chaque capability vérifiée.
+
 ---
 
 ### B — PTZ : positions configurables

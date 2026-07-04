@@ -19,7 +19,7 @@ public static class VendorCapabilityPresets
         ]),
         new VendorCapabilityPreset(VendorFamily.V380Pro,
         [
-            (CameraCapability.Ptz, CapabilityProtocol.Onvif),
+            (CameraCapability.Ptz, CapabilityProtocol.V380),
             (CameraCapability.PrivacyMode, CapabilityProtocol.PtzParking),
         ]),
     ];

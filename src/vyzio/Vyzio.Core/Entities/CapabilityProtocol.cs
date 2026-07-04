@@ -9,6 +9,7 @@ public enum CapabilityProtocol
     Onvif,
     Dvrip,
     TapoKlap,
+    V380,
     PtzParking,
     SoftwareOnly,
     None,

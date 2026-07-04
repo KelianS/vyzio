@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
         services.AddSingleton<OnvifPtzClient>();
+        services.AddSingleton<V380Client>();
 
         // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
         // Scoped: PtzParkingPrivacyProvider depends on the scoped binding repository, and the
@@ -46,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICameraCapabilityBindingRepository, CameraCapabilityBindingRepository>();
         services.AddScoped<IPtzCapabilityProvider, OnvifPtzProvider>();
         services.AddScoped<IPtzCapabilityProvider, DvripPtzProvider>();
+        services.AddScoped<IPtzCapabilityProvider, V380PtzProvider>();
         services.AddScoped<TapoKlapProvider>();
         services.AddScoped<IPtzCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());

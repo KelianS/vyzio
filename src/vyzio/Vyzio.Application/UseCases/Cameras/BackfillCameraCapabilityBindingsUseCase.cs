@@ -58,13 +58,11 @@ public sealed class BackfillCameraCapabilityBindingsUseCase(
         if (await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is not null)
             return;
 
-        // V380Pro resolves to the generic ONVIF adapter at runtime (VendorCameraAdapterFactory
-        // alias) — same mapping applies here.
         CapabilityProtocol? protocol = camera.VendorFamily switch
         {
-            VendorFamily.Icsee => CapabilityProtocol.Dvrip,
-            VendorFamily.V380Pro => CapabilityProtocol.Onvif,
-            _ => null,
+            VendorFamily.Icsee   => CapabilityProtocol.Dvrip,
+            VendorFamily.V380Pro => CapabilityProtocol.V380,
+            _                    => null,
         };
 
         if (protocol is null) return;
