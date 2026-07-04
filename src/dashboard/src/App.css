@@ -900,6 +900,47 @@
   gap: 16px;
 }
 
+.camera-panel-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+.camera-panel-meta-sep {
+  opacity: 0.4;
+}
+
+.camera-live-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.camera-connection-details summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  user-select: none;
+  padding: 2px 0;
+}
+
+.camera-connection-details summary:hover {
+  color: var(--ink);
+}
+
+.camera-connection-details .camera-form-grid {
+  margin-top: 12px;
+}
+
+.camera-connection-details .panel-cta-row {
+  margin-top: 12px;
+}
+
 @media (max-width: 640px) {
   .camera-panel-heading {
     flex-direction: column;

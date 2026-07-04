@@ -65,9 +65,16 @@ function App() {
   const { data: cameras, loading: camerasLoading, reload: reloadCameras } = useCameras(getCameras)
   const [modalMedia, setModalMedia] = useState<
     | { type: 'image' | 'video'; url: string }
-    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string; ptzSupported: boolean }
+    | { type: 'live'; cameraId: string; apiBaseUrl: string; label: string; ptzSupported: boolean; onClose?: () => Promise<void> }
     | null
   >(null)
+
+  const handleCloseModal = async () => {
+    if (modalMedia?.type === 'live' && modalMedia.onClose) {
+      await modalMedia.onClose()
+    }
+    setModalMedia(null)
+  }
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -111,6 +118,14 @@ function App() {
             configurePtzParking={configurePtzParking}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
+            onOpenLive={(camera, options) => setModalMedia({
+              type: 'live',
+              cameraId: camera.id,
+              apiBaseUrl: dashboardRuntime.apiBaseUrl,
+              label: camera.displayName,
+              ptzSupported: camera.ptzSupported,
+              onClose: options?.onClose,
+            })}
           />
         )}
 
@@ -182,13 +197,13 @@ function App() {
 
         {modalMedia && (
           <div
-            onClick={() => setModalMedia(null)}
+            onClick={() => { void handleCloseModal() }}
             className="media-modal-backdrop"
           >
             <div onClick={(e) => e.stopPropagation()} className="media-modal-content">
               <button
                 type="button"
-                onClick={() => setModalMedia(null)}
+                onClick={() => { void handleCloseModal() }}
                 className="media-modal-close"
               >
                 ✕

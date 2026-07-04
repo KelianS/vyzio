@@ -27,15 +27,12 @@ import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
 import { ConfirmModal } from './ConfirmModal'
-import { PtzControlPanel } from './PtzControlPanel'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
 import { useVendorAssistance } from '../hooks/useVendorAssistance'
 import { resolveVendorLinkTarget } from '../vendorLinks'
 import {
   formatCameraAddress,
-  formatCameraCheck,
-  formatCameraPreview,
   formatCameraStatusLabel,
   formatStatusTone,
   formatValidationStateLabel,
@@ -43,7 +40,6 @@ import {
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { toAppError } from '../../domain/errors/toAppError'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
-import { CameraLiveView } from './CameraLiveView'
 import { DetectionConfigSection } from './DetectionConfigSection'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { CapabilitySection } from './CapabilitySection'
@@ -71,6 +67,7 @@ interface CameraOnboardingViewProps {
   configurePtzParking: ConfigurePtzParking
   allCameras: Camera[]
   apiBaseUrl: string
+  onOpenLive: (camera: Camera, options?: { onClose?: () => Promise<void> }) => void
 }
 
 type DiscoveryCandidate = DiscoveredCamera
@@ -116,13 +113,13 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [allDetectionLabels, setAllDetectionLabels] = useState<DetectionLabel[]>([])
   const [detectionContinuousRecording, setDetectionContinuousRecording] = useState(false)
   const [detectionConfigLoading, setDetectionConfigLoading] = useState(false)
-  const [showLive, setShowLive] = useState(false)
   const [dvripMode, setDvripMode] = useState(false)
   const [pendingStrategy, setPendingStrategy] = useState<string | null>(null)
   const [strategyFeedback, setStrategyFeedback] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmScan, setConfirmScan] = useState(false)
   const [confirmApply, setConfirmApply] = useState(false)
+  const [confirmSurveillancePosition, setConfirmSurveillancePosition] = useState(false)
 
   const { toast } = useToast()
 
@@ -230,13 +227,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
   const updateAction = useAsyncAction(
     async () => {
-      const [updated] = await Promise.all([
-        props.updateCamera.execute(selectedCameraId!, {
-          ...editForm,
-          password: editPassword.trim() ? editPassword : null,
-        }),
-        props.saveCameraDetectionConfig.execute(selectedCameraId!, detectionLabels, detectionContinuousRecording),
-      ])
+      const updated = await props.updateCamera.execute(selectedCameraId!, {
+        ...editForm,
+        password: editPassword.trim() ? editPassword : null,
+      })
       camerasState.reload()
       cameraStatusState.reload()
       setEditPassword('')
@@ -378,7 +372,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setDetectionLabels(['person'])
     setDetectionAvailableLabels([])
     setDetectionContinuousRecording(false)
-    setShowLive(false)
     setPendingStrategy(selectedCamera.privacyModeStrategy ?? 'software')
     setStrategyFeedback(null)
     setDetectionConfigLoading(true)
@@ -1161,318 +1154,235 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               <div className="panel-heading camera-panel-heading">
                 <div>
                   <p className="section-kicker">Camera</p>
-                  <h2>{selectedCamera?.displayName ?? 'Camera selectionnee'}</h2>
+                  <h2>{selectedCamera?.displayName ?? '—'}</h2>
+                  {selectedCamera && (
+                    <div className="camera-panel-meta">
+                      <span>{formatCameraAddress(selectedCamera)}</span>
+                      {(selectedCamera.vendorFamily ?? matchedDiscoveryCandidate?.vendorFamily) && (
+                        <>
+                          <span className="camera-panel-meta-sep">·</span>
+                          <span>{formatVendorFamily(selectedCamera.vendorFamily ?? matchedDiscoveryCandidate?.vendorFamily ?? null)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {cameraStatusState.data ? (
-                  <div
-                    className={`status-pill camera-detail-status ${cameraStatusState.data.connected ? 'online' : 'warning'}`}
-                  >
+                {cameraStatusState.data && (
+                  <div className={`status-pill camera-detail-status ${cameraStatusState.data.connected ? 'online' : 'warning'}`}>
                     {formatCameraStatusLabel(cameraStatusState.data.status)}
                   </div>
-                ) : null}
+                )}
               </div>
 
-              {cameraStatusState.loading ? (
-                <p className="camera-inline-state">Chargement de l&apos;etat detaille...</p>
-              ) : null}
-              {cameraStatusState.error ? (
+              {cameraStatusState.loading && (
+                <p className="camera-inline-state">Vérification de la connexion…</p>
+              )}
+              {cameraStatusState.error && (
                 <p className="camera-inline-state error">{appErrorMessage(cameraStatusState.error)}</p>
-              ) : null}
+              )}
 
-              {cameraStatusState.data ? (
-                <div className="camera-detail-stack">
-                  <div className="camera-detail-summary">
-                    <p>{cameraStatusState.data.guidance}</p>
-                  </div>
+              {selectedCamera ? (
+                <div className="camera-detail-sections">
+                  <CapabilitySection camera={selectedCamera} offline={cameraOffline} onReload={camerasState.reload} />
 
-                  <div className="camera-detail-sections">
-                    {renderSummarySection({
-                      address: selectedCamera ? formatCameraAddress(selectedCamera) : '—',
-                      vendorFamily:
-                        selectedCamera?.vendorFamily ??
-                        matchedDiscoveryCandidate?.vendorFamily ??
-                        null,
-                      supportedCandidate: matchedDiscoveryCandidate,
-                      rtspActive: cameraStatusState.data.connected,
-                    })}
-
-                    <section className="camera-detail-section">
-                      <h3>Live</h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <button
-                          type="button"
-                          className="secondary-cta"
-                          style={{ alignSelf: 'flex-start', minHeight: 28, padding: '0 10px', fontSize: '0.82rem' }}
-                          onClick={() => setShowLive((v) => !v)}
-                        >
-                          {showLive ? 'Arreter le live' : 'Voir le live'}
-                        </button>
-                        {showLive && selectedCameraId && (
-                          <CameraLiveView
-                            cameraId={selectedCameraId}
-                            apiBaseUrl={props.apiBaseUrl}
-                          />
-                        )}
-                      </div>
-                    </section>
-
-                    {selectedCamera?.ptzSupported && selectedCameraId && (
-                      <section className="camera-detail-section">
-                        <h3>Contrôle PTZ</h3>
-
-                        {cameraOffline ? (
-                          <p className="camera-inline-state">
-                            Caméra hors ligne — le contrôle PTZ est indisponible.
-                          </p>
-                        ) : (
-                          <>
-                            {selectedCamera.validationState === 'draft' && (
-                              <p style={{
-                                fontSize: '0.85rem',
-                                color: 'var(--text-muted, #888)',
-                                background: 'var(--surface-alt, #f9fafb)',
-                                border: '1px solid var(--border, #e5e7eb)',
-                                borderRadius: 6,
-                                padding: '8px 12px',
-                                marginBottom: 12,
-                              }}>
-                                Caméra motorisée détectée — orientez-la vers sa position de surveillance puis cliquez <strong>Définir comme position de surveillance</strong> avant d'appliquer la configuration.
-                              </p>
-                            )}
-                            <PtzControlPanel
-                              cameraId={selectedCameraId}
-                              ptzStep={props.ptzStep}
-                              ptzGoToPreset={props.ptzGoToPreset}
-                              configurePtzParking={props.configurePtzParking}
-                            />
-                          </>
-                        )}
-                      </section>
-                    )}
-
-                    {selectedCamera && selectedCameraId && (
-                      <section className="camera-detail-section">
-                        <h3>Mode vie privée</h3>
-                        <div className="privacy-strategy-selector">
-                          {(
-                            [
-                              { value: 'software' as const, label: 'Logiciel uniquement', desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.', requiresPtz: false, requiresHw: false },
-                              { value: 'ptz_parking' as const, label: 'Orientation vers zone neutre', desc: 'La caméra pivote vers un endroit non filmé et l\'enregistrement est désactivé.', requiresPtz: true, requiresHw: false },
-                              { value: 'hardware' as const, label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresPtz: false, requiresHw: true },
-                            ]
-                          ).map(({ value, label, desc, requiresPtz, requiresHw }) => {
-                            const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && selectedCamera.vendorFamily !== 'tplink_tapo')
-                            return (
-                              <label key={value} className={`privacy-strategy-option${disabled ? ' opacity-50' : ''}`} style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}>
-                                <input
-                                  type="radio"
-                                  name="privacyStrategy"
-                                  value={value}
-                                  checked={pendingStrategy === value}
-                                  disabled={disabled}
-                                  onChange={() => { setPendingStrategy(value); setStrategyFeedback(null) }}
-                                />
-                                <span className="privacy-strategy-label">
-                                  <strong>{label}</strong>
-                                  <span>{desc}</span>
-                                </span>
-                              </label>
-                            )
-                          })}
-
-                          {pendingStrategy === 'ptz_parking' && (
-                            <div className="privacy-strategy-warning">
-                              <span className="privacy-strategy-warning-icon">⚠</span>
-                              <span>La caméra pivote vers une zone non sensible et l'enregistrement est désactivé dans Vyzio, mais elle reste physiquement accessible sur votre réseau local.</span>
-                            </div>
-                          )}
-
-                          <button
-                            type="button"
-                            className="privacy-strategy-save-btn"
-                            disabled={saveStrategyAction.loading || pendingStrategy === selectedCamera.privacyModeStrategy}
-                            onClick={async () => {
-                              if (!pendingStrategy) return
-                              setStrategyFeedback(null)
-                              await saveStrategyAction.run()
-                            }}
-                          >
-                            {saveStrategyAction.loading ? 'Enregistrement...' : 'Enregistrer la stratégie'}
-                          </button>
-
-                          {strategyFeedback && (
-                            <p className="ptz-feedback">{strategyFeedback}</p>
-                          )}
-                        </div>
-                      </section>
-                    )}
-
-                    <section className="camera-detail-section">
-                      <h3>Modifier</h3>
-                      <div className="camera-form-grid compact">
-                        <label>
-                          <span>Nom</span>
-                          <input
-                            value={editForm.displayName}
-                            onChange={(event) =>
-                              updateEditForm({ displayName: event.target.value })
-                            }
-                          />
-                        </label>
-                        <label>
-                          <span>Host</span>
-                          <input
-                            value={editForm.host}
-                            onChange={(event) => updateEditForm({ host: event.target.value })}
-                          />
-                        </label>
-                        <label>
-                          <span>Port</span>
-                          <input
-                            type="number"
-                            value={editForm.port}
-                            onChange={(event) =>
-                              updateEditForm({ port: Number(event.target.value) || 554 })
-                            }
-                          />
-                        </label>
-                        {editForm.streamProtocol !== 'dvrip' ? (
-                          <label>
-                            <span>Chemin de flux</span>
-                            <input
-                              value={editForm.streamPath ?? ''}
-                              onChange={(event) =>
-                                updateEditForm({ streamPath: event.target.value || null })
-                              }
-                            />
-                          </label>
-                        ) : (
-                          <label>
-                            <span>Protocole</span>
-                            <input value="Mode alternatif (ICSee / XMEye)" readOnly style={{ opacity: 0.6 }} />
-                          </label>
-                        )}
-                        <label>
-                          <span>Utilisateur</span>
-                          <input
-                            value={editForm.username ?? ''}
-                            onChange={(event) =>
-                              updateEditForm({ username: event.target.value || null })
-                            }
-                          />
-                        </label>
-                        <label>
-                          <span>Nouveau mot de passe</span>
-                          <input
-                            type="password"
-                            value={editPassword}
-                            onChange={(event) => setEditPassword(event.target.value)}
-                            placeholder="Laisser vide pour conserver"
-                          />
-                        </label>
-                      </div>
-                    </section>
-
-                    {selectedCamera && (
-                      <CapabilitySection camera={selectedCamera} offline={cameraOffline} onReload={camerasState.reload} />
-                    )}
-
-                    <DetectionConfigSection
-                      labels={detectionLabels}
-                      availableLabels={detectionAvailableLabels}
-                      allLabels={allDetectionLabels}
-                      loading={detectionConfigLoading}
-                      continuousRecordingEnabled={detectionContinuousRecording}
-                      onToggle={(value) =>
-                        setDetectionLabels((prev) =>
-                          prev.includes(value) ? prev.filter((l) => l !== value) : [...prev, value],
-                        )
-                      }
-                      onToggleContinuousRecording={() => setDetectionContinuousRecording((v) => !v)}
-                    />
-
-                    {selectedCamera && selectedCameraId && (
-                      <PrivacyScheduleSection
-                        camera={selectedCamera}
-                        cameraId={selectedCameraId}
-                        allCameras={props.allCameras}
-                        getSchedules={props.getPrivacySchedules}
-                        createSchedule={props.createPrivacySchedule}
-                        deleteSchedule={props.deletePrivacySchedule}
-                      />
-                    )}
-
-                    <div className="camera-debug-stack">
-                      {renderConfidenceDetails(matchedDiscoveryCandidate)}
-                      {renderTechnicalDetails(
-                        matchedDiscoveryCandidate,
-                        selectedCamera?.host ?? null,
-                      )}
-                      <details className="camera-debug-details">
-                        <summary>Etat technique</summary>
-                        <div className="camera-debug-content">
-                          <dl className="camera-summary-list debug">
-                            <div>
-                              <dt>Validation</dt>
-                              <dd>
-                                {formatValidationStateLabel(cameraStatusState.data.validationState)}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Derniere verification</dt>
-                              <dd>
-                                {formatCameraCheck(cameraStatusState.data.lastReachabilityCheckAt)}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Apercu</dt>
-                              <dd>{formatCameraPreview(cameraStatusState.data)}</dd>
-                            </div>
-                          </dl>
-                        </div>
-                      </details>
-                    </div>
-                  </div>
-
-                  <div className="panel-cta-row">
+                  <div className="camera-detail-section camera-live-actions">
                     <button
-                      className="primary-cta"
                       type="button"
-                      onClick={handleUpdate}
-                      disabled={actionLoading || !canUpdateConfiguredCamera}
-                    >
-                      Enregistrer
-                    </button>
-                    <button
                       className="secondary-cta"
-                      type="button"
-                      onClick={handleVerify}
-                      disabled={
-                        actionLoading || selectedCamera?.validationState === 'pending_removal'
-                      }
+                      onClick={() => props.onOpenLive(selectedCamera)}
                     >
-                      Verifier la connexion
+                      Voir le live
                     </button>
-                    <button
-                      className="danger-cta"
-                      type="button"
-                      onClick={() => setConfirmDelete(true)}
-                      disabled={
-                        actionLoading || selectedCamera?.validationState === 'pending_removal'
-                      }
-                    >
-                      {selectedCamera?.validationState === 'pending_removal'
-                        ? 'Suppression en attente'
-                        : 'Supprimer'}
-                    </button>
+                    {selectedCamera.ptzSupported && (
+                      <button
+                        type="button"
+                        className="secondary-cta"
+                        onClick={() => setConfirmSurveillancePosition(true)}
+                      >
+                        Définir la position de surveillance
+                      </button>
+                    )}
                   </div>
 
-                  {detailMessage ? (
-                    <p className="camera-inline-state success action-feedback">{detailMessage}</p>
-                  ) : null}
-                  {detailError ? (
-                    <p className="camera-inline-state error action-feedback">{detailError}</p>
-                  ) : null}
+                  <details className="camera-detail-section camera-connection-details">
+                    <summary>Paramètres de connexion</summary>
+                    <div className="camera-form-grid compact">
+                      <label>
+                        <span>Nom</span>
+                        <input
+                          value={editForm.displayName}
+                          onChange={(e) => updateEditForm({ displayName: e.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>Host</span>
+                        <input
+                          value={editForm.host}
+                          onChange={(e) => updateEditForm({ host: e.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>Port</span>
+                        <input
+                          type="number"
+                          value={editForm.port}
+                          onChange={(e) => updateEditForm({ port: Number(e.target.value) || 554 })}
+                        />
+                      </label>
+                      {editForm.streamProtocol !== 'dvrip' ? (
+                        <label>
+                          <span>Chemin de flux</span>
+                          <input
+                            value={editForm.streamPath ?? ''}
+                            onChange={(e) => updateEditForm({ streamPath: e.target.value || null })}
+                          />
+                        </label>
+                      ) : (
+                        <label>
+                          <span>Protocole</span>
+                          <input value="Mode alternatif (ICSee / XMEye)" readOnly style={{ opacity: 0.6 }} />
+                        </label>
+                      )}
+                      <label>
+                        <span>Utilisateur</span>
+                        <input
+                          value={editForm.username ?? ''}
+                          onChange={(e) => updateEditForm({ username: e.target.value || null })}
+                        />
+                      </label>
+                      <label>
+                        <span>Nouveau mot de passe</span>
+                        <input
+                          type="password"
+                          value={editPassword}
+                          onChange={(e) => setEditPassword(e.target.value)}
+                          placeholder="Laisser vide pour conserver"
+                        />
+                      </label>
+                    </div>
+                    <div className="panel-cta-row">
+                      <button
+                        className="primary-cta"
+                        type="button"
+                        onClick={handleUpdate}
+                        disabled={actionLoading || !canUpdateConfiguredCamera}
+                      >
+                        {updateAction.loading ? 'Enregistrement...' : 'Enregistrer'}
+                      </button>
+                      <button
+                        className="secondary-cta"
+                        type="button"
+                        onClick={handleVerify}
+                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
+                      >
+                        {verifyAction.loading ? 'Vérification...' : 'Vérifier la connexion'}
+                      </button>
+                      <button
+                        className="danger-cta"
+                        type="button"
+                        onClick={() => setConfirmDelete(true)}
+                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
+                      >
+                        {selectedCamera.validationState === 'pending_removal' ? 'Suppression en attente' : 'Supprimer'}
+                      </button>
+                    </div>
+                    {detailMessage && (
+                      <p className="camera-inline-state success action-feedback">{detailMessage}</p>
+                    )}
+                    {detailError && (
+                      <p className="camera-inline-state error action-feedback">{detailError}</p>
+                    )}
+                  </details>
+
+                  <DetectionConfigSection
+                    labels={detectionLabels}
+                    availableLabels={detectionAvailableLabels}
+                    allLabels={allDetectionLabels}
+                    loading={detectionConfigLoading}
+                    continuousRecordingEnabled={detectionContinuousRecording}
+                    onToggle={(value) => {
+                      const newLabels = detectionLabels.includes(value)
+                        ? detectionLabels.filter((l) => l !== value)
+                        : [...detectionLabels, value]
+                      setDetectionLabels(newLabels)
+                      if (selectedCameraId) {
+                        props.saveCameraDetectionConfig.execute(selectedCameraId, newLabels, detectionContinuousRecording)
+                          .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
+                      }
+                    }}
+                    onToggleContinuousRecording={() => {
+                      const newValue = !detectionContinuousRecording
+                      setDetectionContinuousRecording(newValue)
+                      if (selectedCameraId) {
+                        props.saveCameraDetectionConfig.execute(selectedCameraId, detectionLabels, newValue)
+                          .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
+                      }
+                    }}
+                  />
+
+                  <section className="camera-detail-section">
+                    <h3>Mode vie privée</h3>
+                    <div className="privacy-strategy-selector">
+                      {(
+                        [
+                          { value: 'software' as const, label: 'Logiciel uniquement', desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.', requiresPtz: false, requiresHw: false },
+                          { value: 'ptz_parking' as const, label: 'Orientation vers zone neutre', desc: 'La caméra pivote vers un endroit non filmé et l\'enregistrement est désactivé.', requiresPtz: true, requiresHw: false },
+                          { value: 'hardware' as const, label: 'Coupure matérielle', desc: 'Objectif masqué directement dans la caméra (Tapo uniquement).', requiresPtz: false, requiresHw: true },
+                        ]
+                      ).map(({ value, label, desc, requiresPtz, requiresHw }) => {
+                        const disabled = (requiresPtz && !selectedCamera.ptzSupported) || (requiresHw && selectedCamera.vendorFamily !== 'tplink_tapo')
+                        return (
+                          <label key={value} className="privacy-strategy-option" style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}>
+                            <input
+                              type="radio"
+                              name="privacyStrategy"
+                              value={value}
+                              checked={pendingStrategy === value}
+                              disabled={disabled}
+                              onChange={() => { setPendingStrategy(value); setStrategyFeedback(null) }}
+                            />
+                            <span className="privacy-strategy-label">
+                              <strong>{label}</strong>
+                              <span>{desc}</span>
+                            </span>
+                          </label>
+                        )
+                      })}
+
+                      {pendingStrategy === 'ptz_parking' && (
+                        <div className="privacy-strategy-warning">
+                          <span className="privacy-strategy-warning-icon">⚠</span>
+                          <span>La caméra pivote vers une zone non sensible et l'enregistrement est désactivé dans Vyzio, mais elle reste physiquement accessible sur votre réseau local.</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        className="privacy-strategy-save-btn"
+                        disabled={saveStrategyAction.loading || pendingStrategy === selectedCamera.privacyModeStrategy}
+                        onClick={async () => {
+                          if (!pendingStrategy) return
+                          setStrategyFeedback(null)
+                          await saveStrategyAction.run()
+                        }}
+                      >
+                        {saveStrategyAction.loading ? 'Enregistrement...' : 'Enregistrer la stratégie'}
+                      </button>
+
+                      {strategyFeedback && <p className="ptz-feedback">{strategyFeedback}</p>}
+                    </div>
+                  </section>
+
+                  {selectedCameraId && (
+                    <PrivacyScheduleSection
+                      camera={selectedCamera}
+                      cameraId={selectedCameraId}
+                      allCameras={props.allCameras}
+                      getSchedules={props.getPrivacySchedules}
+                      createSchedule={props.createPrivacySchedule}
+                      deleteSchedule={props.deletePrivacySchedule}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="camera-empty-state">

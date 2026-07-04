@@ -31,7 +31,13 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 ---
 
-### B — V380 Pro : PTZ précis
+### B — PTZ : positions configurables
+
+1. **Position de parking vie privée configurable** — actuellement, l'activation du mode vie privée PTZ déplace la caméra vers la butée mécanique bas-gauche pendant 8 secondes (hardcodé). L'utilisateur devrait pouvoir définir une position dédiée "zone neutre" (ex. face au mur) sauvegardée comme preset 2, et le provider devrait aller à ce preset à l'activation. Symétrique au "Définir la position de surveillance" (preset 1) déjà en place.
+
+---
+
+### C — V380 Pro : PTZ précis
 
 1. **Bouton Home masqué** — `GotoPreset(1)` retourne HTTP 400 sur V380 ; le bouton est visible mais sans effet. Fix : ajouter `SupportsGoToPresetAsync` sur `IPtzCapabilityProvider` (ou détecter au probe) et masquer le bouton si non supporté. Quick win, non bloquant.
 

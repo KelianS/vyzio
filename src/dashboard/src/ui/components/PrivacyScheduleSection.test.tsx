@@ -31,6 +31,8 @@ function makeCamera(overrides: Partial<Camera> = {}): Camera {
     privacyVendorCut: false,
     ptzSupported: false,
     privacyModeStrategy: 'software',
+    connected: true,
+    verifiedCapabilities: [],
     ...overrides,
   }
 }

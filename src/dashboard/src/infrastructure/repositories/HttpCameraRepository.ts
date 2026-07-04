@@ -38,7 +38,6 @@ interface CameraDto {
   ptzSupported: boolean
   privacyModeStrategy: string
   verifiedCapabilities: string[]
-  status: string
 }
 
 interface CameraStatusDto {
