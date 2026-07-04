@@ -1370,8 +1370,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       <CapabilitySection camera={selectedCamera} offline={cameraOffline} onReload={camerasState.reload} />
                     )}
 
-                    {renderVendorAssistanceSection()}
-
                     <DetectionConfigSection
                       labels={detectionLabels}
                       availableLabels={detectionAvailableLabels}
