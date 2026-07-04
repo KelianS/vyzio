@@ -287,6 +287,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
       ) ?? null)
     : null
 
+  const unclaimedDiscoveryResults = discoveryResults.filter(
+    (candidate) =>
+      !camerasState.data.some((c) => c.host === candidate.host),
+  )
+
   const activeVendorFamily =
     selectedCandidate?.vendorFamily ??
     selectedCamera?.vendorFamily ??
@@ -908,7 +913,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           <div className="camera-sidebar-group">
             <div className="camera-sidebar-header">
               <h2>Candidats</h2>
-              <span className="camera-sidebar-count">{discoveryResults.length}</span>
+              <span className="camera-sidebar-count">{unclaimedDiscoveryResults.length}</span>
             </div>
             <button
               className="primary-cta camera-sidebar-btn"
@@ -932,13 +937,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
               </div>
             </button>
 
-            {discoveryResults.length > 0 ? (
-              discoveryResults.map((candidate, index) => (
+            {unclaimedDiscoveryResults.length > 0 ? (
+              unclaimedDiscoveryResults.map((candidate) => {
+                const originalIndex = discoveryResults.indexOf(candidate)
+                return (
                 <button
-                  key={`${candidate.host}-${candidate.port}-${index}`}
+                  key={`${candidate.host}-${candidate.port}`}
                   type="button"
-                  className={`camera-nav-item candidate-preview-card ${selection.kind === 'candidate' && selection.index === index ? 'selected' : ''}`}
-                  onClick={() => selectDiscoveryCandidate(index)}
+                  className={`camera-nav-item candidate-preview-card ${selection.kind === 'candidate' && selection.index === originalIndex ? 'selected' : ''}`}
+                  onClick={() => selectDiscoveryCandidate(originalIndex)}
                 >
                   <div className="candidate-preview-main">
                     <strong>{formatCandidatePreviewTitle(candidate)}</strong>
@@ -963,7 +970,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     </div>
                   </div>
                 </button>
-              ))
+              )})
             ) : (
               <div className="camera-nav-empty">
                 <strong>Aucun candidat</strong>
