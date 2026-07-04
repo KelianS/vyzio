@@ -12,6 +12,7 @@ import {
 
 interface CapabilitySectionProps {
   camera: Camera
+  offline?: boolean
   onReload?: () => void
 }
 
@@ -40,7 +41,7 @@ const PRIVACY_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
   { value: 'ptz_parking', label: 'PTZ Parking — orientation vers zone neutre' },
 ]
 
-export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) {
+export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
   const { data: bindings, loading, reload } = useAsync(
     () => getCameraCapabilities.execute(camera.id),
     [camera.id],
@@ -66,7 +67,13 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
     <section className="camera-detail-section">
       <h3>Capacités</h3>
 
-      {isUnlisted && (
+      {offline && (
+        <p className="camera-inline-state" style={{ marginBottom: 12 }}>
+          Caméra hors ligne — les tests de connexion seront disponibles dès que la caméra sera joignable.
+        </p>
+      )}
+
+      {isUnlisted && !offline && (
         <p className="capability-protocol" style={{ marginBottom: 12 }}>
           Cette caméra n'est pas dans le catalogue. Vous pouvez configurer manuellement ses
           capacités — chaque capacité doit être testée et confirmée avant d'être activée.
@@ -79,11 +86,12 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
             key={b.capability}
             cameraId={camera.id}
             binding={b}
+            offline={offline}
             onDone={handleReload}
           />
         ))}
 
-        {isUnlisted && (
+        {isUnlisted && !offline && (
           <ManualCapabilityForm
             cameraId={camera.id}
             onDone={handleReload}
@@ -99,10 +107,11 @@ export function CapabilitySection({ camera, onReload }: CapabilitySectionProps) 
 interface CapabilityRowProps {
   cameraId: string
   binding: CameraCapabilityBinding
+  offline?: boolean
   onDone: () => void
 }
 
-function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
+function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProps) {
   const { toast } = useToast()
   const [lastResult, setLastResult] = useState<'ok' | 'fail' | null>(null)
 
@@ -191,7 +200,7 @@ function CapabilityRow({ cameraId, binding, onDone }: CapabilityRowProps) {
               : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
           }
           className={`${isConfigured ? 'secondary-cta' : 'primary-cta'} capability-btn`}
-          disabled={action.loading}
+          disabled={action.loading || offline}
           onClick={() => action.run()}
         >
           {action.loading ? 'Test en cours…' : isConfigured ? 'Tester' : 'Configurer et tester'}

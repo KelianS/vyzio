@@ -343,6 +343,7 @@
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.68);
   align-self: start;
+  min-width: 0;
 }
 
 .camera-detail-section.vendor {

@@ -38,6 +38,7 @@ interface CameraDto {
   ptzSupported: boolean
   privacyModeStrategy: string
   verifiedCapabilities: string[]
+  status: string
 }
 
 interface CameraStatusDto {
@@ -315,6 +316,7 @@ function mapCamera(camera: CameraDto): Camera {
     ptzSupported: camera.ptzSupported ?? false,
     privacyModeStrategy: (camera.privacyModeStrategy || 'software') as Camera['privacyModeStrategy'],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
+    connected: camera.status === 'online',
   }
 }
 

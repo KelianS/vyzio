@@ -12,14 +12,14 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
   const [imgSrc, setImgSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
   )
-  const [offline, setOffline] = useState(false)
+  const [offline, setOffline] = useState(() => !camera.connected)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOffline(false)
+    setOffline(!camera.connected)
 
-    if (!camera.privacyModeActive) {
+    if (!camera.privacyModeActive && camera.connected) {
       intervalRef.current = setInterval(() => {
         setImgSrc(
           `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
@@ -30,7 +30,7 @@ export function CameraLiveThumbnail({ camera, apiBaseUrl, onExpand, onTogglePriv
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [camera.id, camera.privacyModeActive, apiBaseUrl])
+  }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
 
   const handleTogglePrivacy = (e: React.MouseEvent) => {
     e.stopPropagation()
