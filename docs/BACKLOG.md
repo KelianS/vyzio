@@ -33,13 +33,15 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 1. **Position de parking vie privée configurable** — actuellement, l'activation du mode vie privée PTZ déplace la caméra vers la butée mécanique bas-gauche pendant 8 secondes (hardcodé). L'utilisateur devrait pouvoir définir une position dédiée "zone neutre" (ex. face au mur) sauvegardée comme preset 2, et le provider devrait aller à ce preset à l'activation. Symétrique au "Définir la position de surveillance" (preset 1) déjà en place.
 
+2. Ajouter le support de plusieurs positions 'preset' pour toutes les cameras PTZ, avec un minimum de 4 presets (1 = position de surveillance, 2 = position de vie privée, 3 et 4 = positions personnalisées). L'utilisateur peut configurer ces presets dans l'interface web. Le provider doit gérer la mémorisation et le rappel de ces presets.
 ---
+
+3. Configuration avancée des caméras : luminosité, constrate, IR etc. Tout ce qui est disponible via les protocoles connus et a venir (ONVIF, DVRIP, Tapo, v380, etc.). L'objectif est de centraliser la configuration avancée dans l'interface web Vyzio, plutôt que de passer par les applications propriétaires. Le provider doit exposer ces options et permettre leur modification via l'interface web.
 
 ### C — V380 Pro : PTZ précis
 
-1. **Bouton Home masqué** — `GotoPreset(1)` retourne HTTP 400 sur V380 ; le bouton est visible mais sans effet. Fix : ajouter `SupportsGoToPresetAsync` sur `IPtzCapabilityProvider` (ou détecter au probe) et masquer le bouton si non supporté. Quick win, non bloquant.
+1. **Protocole propriétaire port 8800** — port ouvert, répond en 205ms (`9c ff ff ff` = -100 LE = rejet de notre format). Magic bytes différents du DVRIP classique (`ff000000`). Objectif : login + ContinuousMove + Stop pour un contrôle PTZ sans la limitation 3s ONVIF. Scripts dans `tools/camera-probe/probe_8800.py`. **Estimation : 2-3j.** Peut démarrer indépendamment.
 
-2. **Protocole propriétaire port 8800** — port ouvert, répond en 205ms (`9c ff ff ff` = -100 LE = rejet de notre format). Magic bytes différents du DVRIP classique (`ff000000`). Objectif : login + ContinuousMove + Stop pour un contrôle PTZ sans la limitation 3s ONVIF. Scripts dans `tools/camera-probe/probe_8800.py`. **Estimation : 2-3j.** Peut démarrer indépendamment.
 
 ---
 
