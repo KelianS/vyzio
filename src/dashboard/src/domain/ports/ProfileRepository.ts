@@ -34,7 +34,11 @@ export interface ProfileRepository {
   setCameraProfileLinks(cameraId: string, profileIds: string[]): Promise<ProfileCameraLink[]>
 
   getCameraDetectionConfig(cameraId: string): Promise<DetectionConfig | null>
-  saveCameraDetectionConfig(cameraId: string, labels: string[], continuousRecordingEnabled: boolean): Promise<DetectionConfig>
+  saveCameraDetectionConfig(
+    cameraId: string,
+    labels: string[],
+    continuousRecordingEnabled: boolean,
+  ): Promise<DetectionConfig>
 
   resyncFaceLibrary(): Promise<number>
 

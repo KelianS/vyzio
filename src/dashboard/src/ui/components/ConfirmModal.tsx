@@ -48,9 +48,15 @@ export function ConfirmModal({
         const first = focusable[0]
         const last = focusable[focusable.length - 1]
         if (e.shiftKey) {
-          if (document.activeElement === first) { e.preventDefault(); last.focus() }
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
         } else {
-          if (document.activeElement === last) { e.preventDefault(); first.focus() }
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
         }
       }
     }
@@ -68,9 +74,11 @@ export function ConfirmModal({
   }
 
   const toneClass =
-    tone === 'warn' ? ' privacy-modal-confirm--warn'
-    : tone === 'danger' ? ' privacy-modal-confirm--danger'
-    : ''
+    tone === 'warn'
+      ? ' privacy-modal-confirm--warn'
+      : tone === 'danger'
+        ? ' privacy-modal-confirm--danger'
+        : ''
 
   return (
     <div className="privacy-modal-backdrop" onClick={() => !isLoading && onCancel()}>
@@ -82,7 +90,9 @@ export function ConfirmModal({
         aria-labelledby="confirm-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="confirm-modal-title" className="privacy-modal-title">{title}</h2>
+        <h2 id="confirm-modal-title" className="privacy-modal-title">
+          {title}
+        </h2>
         <p className="privacy-modal-body">{body}</p>
         <div className="privacy-modal-actions">
           <button

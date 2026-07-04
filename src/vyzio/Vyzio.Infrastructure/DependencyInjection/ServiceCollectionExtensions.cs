@@ -53,6 +53,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPrivacyCapabilityProvider, SoftwareOnlyPrivacyProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
+        // Background onboarding probe (A1 + A3): singleton queue so CreateCameraUseCase can enqueue.
+        services.AddSingleton<ICameraCapabilityOnboardingQueue, CameraCapabilityOnboardingQueue>();
+
         return services;
     }
 }

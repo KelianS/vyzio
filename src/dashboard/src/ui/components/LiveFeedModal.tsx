@@ -12,15 +12,26 @@ interface LiveFeedModalProps {
   ptzGoToPreset: PtzGoToPreset
 }
 
-export function LiveFeedModal({ cameraId, apiBaseUrl, label, ptzSupported, ptzStep, ptzGoToPreset }: LiveFeedModalProps) {
-  const [src, setSrc] = useState(() => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
+export function LiveFeedModal({
+  cameraId,
+  apiBaseUrl,
+  label,
+  ptzSupported,
+  ptzStep,
+  ptzGoToPreset,
+}: LiveFeedModalProps) {
+  const [src, setSrc] = useState(
+    () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
+  )
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       setSrc(`${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`)
     }, 1000)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [cameraId, apiBaseUrl])
 
   return (

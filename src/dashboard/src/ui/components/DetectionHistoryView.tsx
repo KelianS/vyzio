@@ -45,13 +45,17 @@ export function DetectionHistoryView({
   const [correcting, setCorrecting] = useState<string | null>(null)
 
   useEffect(() => {
-    getProfiles.execute().then(setProfiles).catch((e: unknown) => {
-      toast(appErrorMessage(toAppError(e)), 'error')
-    })
+    getProfiles
+      .execute()
+      .then(setProfiles)
+      .catch((e: unknown) => {
+        toast(appErrorMessage(toAppError(e)), 'error')
+      })
   }, [getProfiles, toast])
 
   useEffect(() => {
-    getCameraLabels.execute()
+    getCameraLabels
+      .execute()
       .then(setDetectionLabels)
       .catch((e: unknown) => {
         toast(appErrorMessage(toAppError(e)), 'error')
@@ -72,9 +76,23 @@ export function DetectionHistoryView({
         page: currentPage,
         limit: 20,
       })
-      .then((result) => { setPage(result); setLoading(false) })
-      .catch(() => { setError("Impossible de charger l'historique."); setLoading(false) })
-  }, [getDetectionHistory, filterCamera, filterLabel, filterProfileId, filterFrom, filterTo, currentPage])
+      .then((result) => {
+        setPage(result)
+        setLoading(false)
+      })
+      .catch(() => {
+        setError("Impossible de charger l'historique.")
+        setLoading(false)
+      })
+  }, [
+    getDetectionHistory,
+    filterCamera,
+    filterLabel,
+    filterProfileId,
+    filterFrom,
+    filterTo,
+    currentPage,
+  ])
 
   async function handleCorrect(eventId: string, profileId: string | null) {
     setCorrecting(eventId)
@@ -119,17 +137,40 @@ export function DetectionHistoryView({
       {snapshotUrl && (
         <div
           onClick={() => setSnapshotUrl(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.85)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
         >
           <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={() => setSnapshotUrl(null)}
-              style={{ position: 'absolute', top: -36, right: 0, background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}
+              style={{
+                position: 'absolute',
+                top: -36,
+                right: 0,
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                lineHeight: 1,
+              }}
             >
               ✕
             </button>
-            <img src={snapshotUrl} alt="Aperçu détection" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }} />
+            <img
+              src={snapshotUrl}
+              alt="Aperçu détection"
+              style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }}
+            />
           </div>
         </div>
       )}
@@ -160,38 +201,71 @@ export function DetectionHistoryView({
               type="text"
               placeholder="Nom de la caméra"
               value={filterCamera}
-              onChange={(e) => { setFilterCamera(e.target.value); setCurrentPage(1) }}
+              onChange={(e) => {
+                setFilterCamera(e.target.value)
+                setCurrentPage(1)
+              }}
             />
           </div>
 
           <div className="camera-form-field">
             <label>Type</label>
-            <select value={filterLabel} onChange={(e) => { setFilterLabel(e.target.value); setCurrentPage(1) }}>
+            <select
+              value={filterLabel}
+              onChange={(e) => {
+                setFilterLabel(e.target.value)
+                setCurrentPage(1)
+              }}
+            >
               <option value="">Tous</option>
               {detectionLabels.map(({ value, displayName, emoji }) => (
-                <option key={value} value={value}>{emoji} {displayName}</option>
+                <option key={value} value={value}>
+                  {emoji} {displayName}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="camera-form-field">
             <label>Profil</label>
-            <select value={filterProfileId} onChange={(e) => { setFilterProfileId(e.target.value); setCurrentPage(1) }}>
+            <select
+              value={filterProfileId}
+              onChange={(e) => {
+                setFilterProfileId(e.target.value)
+                setCurrentPage(1)
+              }}
+            >
               <option value="">Tous</option>
               {profiles.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="camera-form-field">
             <label>Depuis</label>
-            <input type="datetime-local" value={isoToDatetimeLocal(filterFrom)} onChange={(e) => { setFilterFrom(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
+            <input
+              type="datetime-local"
+              value={isoToDatetimeLocal(filterFrom)}
+              onChange={(e) => {
+                setFilterFrom(e.target.value ? new Date(e.target.value).toISOString() : '')
+                setCurrentPage(1)
+              }}
+            />
           </div>
 
           <div className="camera-form-field">
             <label>Jusqu'à</label>
-            <input type="datetime-local" value={isoToDatetimeLocal(filterTo)} onChange={(e) => { setFilterTo(e.target.value ? new Date(e.target.value).toISOString() : ''); setCurrentPage(1) }} />
+            <input
+              type="datetime-local"
+              value={isoToDatetimeLocal(filterTo)}
+              onChange={(e) => {
+                setFilterTo(e.target.value ? new Date(e.target.value).toISOString() : '')
+                setCurrentPage(1)
+              }}
+            />
           </div>
 
           <button type="button" className="secondary-cta" onClick={resetFilters}>
@@ -213,34 +287,58 @@ export function DetectionHistoryView({
               ) : (
                 <div className="panel">
                   <div style={{ overflowX: 'auto', minWidth: 0 }}>
-                  <table style={{ width: '100%', minWidth: 540, borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                    <thead>
-                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(247,244,237,0.15)' }}>
-                        {['Date', 'Camera', 'Type', 'Confiance', 'Identite', 'Action'].map((h) => (
-                          <th key={h} style={{ padding: '10px 12px', fontWeight: 600 }}>{h}</th>
+                    <table
+                      style={{
+                        width: '100%',
+                        minWidth: 540,
+                        borderCollapse: 'collapse',
+                        fontSize: '0.88rem',
+                      }}
+                    >
+                      <thead>
+                        <tr
+                          style={{
+                            textAlign: 'left',
+                            borderBottom: '1px solid rgba(247,244,237,0.15)',
+                          }}
+                        >
+                          {['Date', 'Camera', 'Type', 'Confiance', 'Identite', 'Action'].map(
+                            (h) => (
+                              <th key={h} style={{ padding: '10px 12px', fontWeight: 600 }}>
+                                {h}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {page.items.map((event) => (
+                          <EventRow
+                            key={event.eventId}
+                            event={event}
+                            profiles={profiles}
+                            apiBaseUrl={apiBaseUrl}
+                            correcting={correcting === event.eventId}
+                            onCorrect={(profileId) => handleCorrect(event.eventId, profileId)}
+                            onShowSnapshot={(url) => setSnapshotUrl(url)}
+                          />
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {page.items.map((event) => (
-                        <EventRow
-                          key={event.eventId}
-                          event={event}
-                          profiles={profiles}
-                          apiBaseUrl={apiBaseUrl}
-                          correcting={correcting === event.eventId}
-                          onCorrect={(profileId) => handleCorrect(event.eventId, profileId)}
-                          onShowSnapshot={(url) => setSnapshotUrl(url)}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
 
               {page.totalPages > 1 && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12, justifyContent: 'center' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    marginTop: 12,
+                    justifyContent: 'center',
+                  }}
+                >
                   <button
                     type="button"
                     className="secondary-cta"
@@ -314,8 +412,18 @@ function EventRow({
           {event.hasSnapshot && (
             <button
               type="button"
-              onClick={() => onShowSnapshot(`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)}
-              style={{ marginRight: 6, opacity: 0.7, fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              onClick={() =>
+                onShowSnapshot(`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)
+              }
+              style={{
+                marginRight: 6,
+                opacity: 0.7,
+                fontSize: '0.8rem',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
               title="Voir l'aperçu"
             >
               🖼
@@ -355,7 +463,9 @@ function EventRow({
                 >
                   <option value="">Inconnu</option>
                   {profiles.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
                   ))}
                 </select>
                 <button

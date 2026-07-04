@@ -38,7 +38,8 @@ export function useAsync<T>(
     let cancelled = false
     setState((prev) => ({ ...prev, loading: true, error: null }))
 
-    fnRef.current()
+    fnRef
+      .current()
       .then((data) => {
         if (!cancelled) setState({ data, loading: false, error: null })
       })

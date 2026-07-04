@@ -35,7 +35,7 @@ public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAs
     }
 }
 
-public sealed class CreateCameraUseCase(ICameraRepository cameras)
+public sealed class CreateCameraUseCase(ICameraRepository cameras, ICameraCapabilityOnboardingQueue onboardingQueue)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
     {
@@ -48,6 +48,11 @@ public sealed class CreateCameraUseCase(ICameraRepository cameras)
         var camera = BuildCameraDraft(request, slug);
 
         await cameras.AddAsync(camera, ct);
+
+        // Kick off background capability probe (A1 + A3): seeds preset bindings and probes each
+        // one so the capability section is pre-populated when the user opens the camera detail.
+        onboardingQueue.Enqueue(camera.Id);
+
         return CameraDto.From(camera);
     }
 

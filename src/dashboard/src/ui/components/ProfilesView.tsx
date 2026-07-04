@@ -67,13 +67,10 @@ export function ProfilesView({
   const [resyncMessage, setResyncMessage] = useState<string | null>(null)
   const [confirmDeleteProfileId, setConfirmDeleteProfileId] = useState<string | null>(null)
   const [confirmResync, setConfirmResync] = useState(false)
-  const resyncAction = useAsyncAction(
-    () => resyncFaceLibrary.execute(),
-    {
-      onSuccess: (count) => setResyncMessage(`${count} visage(s) synchronisé(s).`),
-      onError: () => setResyncMessage('Erreur lors de la synchronisation.'),
-    },
-  )
+  const resyncAction = useAsyncAction(() => resyncFaceLibrary.execute(), {
+    onSuccess: (count) => setResyncMessage(`${count} visage(s) synchronisé(s).`),
+    onError: () => setResyncMessage('Erreur lors de la synchronisation.'),
+  })
 
   const selectedProfile = profiles.find((p) => p.id === selectedId) ?? null
 
@@ -89,13 +86,15 @@ export function ProfilesView({
         setLoading(false)
       })
       .catch(() => {
-        setError("Impossible de charger les profils.")
+        setError('Impossible de charger les profils.')
         setLoading(false)
       })
   }, [getProfiles])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { loadProfiles() }, [loadProfiles])
+  useEffect(() => {
+    loadProfiles()
+  }, [loadProfiles])
 
   function handleSelect(id: string) {
     setSelectedId(id)
@@ -144,14 +143,27 @@ export function ProfilesView({
           <p className="eyebrow">Profils</p>
           <h1>Gestion des personnes connues</h1>
           <p className="camera-toolbar-lede">
-            Creez des profils pour les personnes que Vyzio doit reconnaitre et configurez leurs alertes.
+            Creez des profils pour les personnes que Vyzio doit reconnaitre et configurez leurs
+            alertes.
           </p>
         </div>
         <div className="camera-toolbar-status">
           <div className={`status-pill ${profiles.length > 0 ? 'online' : 'warning'}`}>
-            {profiles.length === 0 ? 'Aucun profil' : `${profiles.length} profil${profiles.length > 1 ? 's' : ''}`}
+            {profiles.length === 0
+              ? 'Aucun profil'
+              : `${profiles.length} profil${profiles.length > 1 ? 's' : ''}`}
           </div>
-          {error && <p style={{ color: 'var(--status-degraded, #e05252)', marginTop: 8, fontSize: '0.88rem' }}>{error}</p>}
+          {error && (
+            <p
+              style={{
+                color: 'var(--status-degraded, #e05252)',
+                marginTop: 8,
+                fontSize: '0.88rem',
+              }}
+            >
+              {error}
+            </p>
+          )}
         </div>
       </div>
 
@@ -177,17 +189,22 @@ export function ProfilesView({
               >
                 <div className="candidate-preview-main">
                   <strong>{profile.name}</strong>
-                  <p>{CATEGORY_OPTIONS.find((c) => c.value === profile.category)?.label ?? profile.category}</p>
+                  <p>
+                    {CATEGORY_OPTIONS.find((c) => c.value === profile.category)?.label ??
+                      profile.category}
+                  </p>
                 </div>
                 <div className="camera-nav-meta">
-                  <span className={`camera-support-badge ${profile.alertMode === 'never' ? 'unknown' : 'supported'}`}>
-                    {ALERT_MODE_OPTIONS.find((a) => a.value === profile.alertMode)?.label ?? profile.alertMode}
+                  <span
+                    className={`camera-support-badge ${profile.alertMode === 'never' ? 'unknown' : 'supported'}`}
+                  >
+                    {ALERT_MODE_OPTIONS.find((a) => a.value === profile.alertMode)?.label ??
+                      profile.alertMode}
                   </span>
                 </div>
               </button>
             ))}
           </div>
-
         </aside>
 
         <div className="camera-detail-panel panel">
@@ -217,7 +234,9 @@ export function ProfilesView({
               {tab === 'info' && (
                 <ProfileInfoTab
                   profile={selectedProfile}
-                  onSave={(name, category, alertMode) => handleUpdate(selectedProfile.id, name, category, alertMode)}
+                  onSave={(name, category, alertMode) =>
+                    handleUpdate(selectedProfile.id, name, category, alertMode)
+                  }
                   onDelete={() => setConfirmDeleteProfileId(selectedProfile.id)}
                 />
               )}
@@ -256,25 +275,24 @@ export function ProfilesView({
             />
           )}
 
-          {confirmDeleteProfileId && (() => {
-            const profile = profiles.find((p) => p.id === confirmDeleteProfileId)
-            return (
-              <ConfirmModal
-                title="Supprimer le profil"
-                body={`Supprimer le profil "${profile?.name ?? ''}" ? Toutes les photos associées seront perdues et la reconnaissance faciale ne fonctionnera plus pour cette personne.`}
-                confirmLabel="Supprimer le profil"
-                tone="danger"
-                onConfirm={() => handleDelete(confirmDeleteProfileId)}
-                onCancel={() => setConfirmDeleteProfileId(null)}
-              />
-            )
-          })()}
+          {confirmDeleteProfileId &&
+            (() => {
+              const profile = profiles.find((p) => p.id === confirmDeleteProfileId)
+              return (
+                <ConfirmModal
+                  title="Supprimer le profil"
+                  body={`Supprimer le profil "${profile?.name ?? ''}" ? Toutes les photos associées seront perdues et la reconnaissance faciale ne fonctionnera plus pour cette personne.`}
+                  confirmLabel="Supprimer le profil"
+                  tone="danger"
+                  onConfirm={() => handleDelete(confirmDeleteProfileId)}
+                  onCancel={() => setConfirmDeleteProfileId(null)}
+                />
+              )
+            })()}
 
           {!creating && !selectedProfile && !loading && (
             <div className="camera-detail-section">
-              <p className="camera-toolbar-lede">
-                Selectionnez un profil ou creez-en un nouveau.
-              </p>
+              <p className="camera-toolbar-lede">Selectionnez un profil ou creez-en un nouveau.</p>
             </div>
           )}
         </div>
@@ -300,7 +318,10 @@ function ProfileForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) { setErr('Le nom est requis.'); return }
+    if (!name.trim()) {
+      setErr('Le nom est requis.')
+      return
+    }
     setSaving(true)
     setErr(null)
     try {
@@ -329,23 +350,37 @@ function ProfileForm({
 
         <div className="camera-form-field">
           <label htmlFor="profile-category">Categorie</label>
-          <select id="profile-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            id="profile-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             {CATEGORY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
           </select>
         </div>
 
         <div className="camera-form-field">
           <label htmlFor="profile-alert">Mode d'alerte</label>
-          <select id="profile-alert" value={alertMode} onChange={(e) => setAlertMode(e.target.value)}>
+          <select
+            id="profile-alert"
+            value={alertMode}
+            onChange={(e) => setAlertMode(e.target.value)}
+          >
             {ALERT_MODE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
           </select>
         </div>
 
-        {err && <p style={{ color: 'var(--status-degraded, #e05252)', fontSize: '0.88rem' }}>{err}</p>}
+        {err && (
+          <p style={{ color: 'var(--status-degraded, #e05252)', fontSize: '0.88rem' }}>{err}</p>
+        )}
 
         <div className="camera-form-actions">
           <button type="submit" className="primary-cta" disabled={saving}>
@@ -388,14 +423,23 @@ function ProfileInfoTab({
       <section className="camera-detail-section">
         <h3>Informations</h3>
         <dl className="camera-summary-list">
-          <div><dt>Nom</dt><dd>{profile.name}</dd></div>
+          <div>
+            <dt>Nom</dt>
+            <dd>{profile.name}</dd>
+          </div>
           <div>
             <dt>Categorie</dt>
-            <dd>{CATEGORY_OPTIONS.find((c) => c.value === profile.category)?.label ?? profile.category}</dd>
+            <dd>
+              {CATEGORY_OPTIONS.find((c) => c.value === profile.category)?.label ??
+                profile.category}
+            </dd>
           </div>
           <div>
             <dt>Mode d'alerte</dt>
-            <dd>{ALERT_MODE_OPTIONS.find((a) => a.value === profile.alertMode)?.label ?? profile.alertMode}</dd>
+            <dd>
+              {ALERT_MODE_OPTIONS.find((a) => a.value === profile.alertMode)?.label ??
+                profile.alertMode}
+            </dd>
           </div>
           {profile.lastSeenAt && (
             <div>
@@ -411,7 +455,12 @@ function ProfileInfoTab({
       </section>
 
       <div className="camera-form-actions" style={{ padding: '0 0 16px' }}>
-        <button type="button" className="primary-cta" onClick={() => setEditing(true)} disabled={saving}>
+        <button
+          type="button"
+          className="primary-cta"
+          onClick={() => setEditing(true)}
+          disabled={saving}
+        >
           Modifier
         </button>
         <button
@@ -459,12 +508,20 @@ function ProfilePhotosTab({
     setLoading(true)
     getProfilePhotos
       .execute(profileId)
-      .then((list) => { setPhotos(list); setLoading(false) })
-      .catch(() => { toast('Impossible de charger les photos.', 'error'); setLoading(false) })
+      .then((list) => {
+        setPhotos(list)
+        setLoading(false)
+      })
+      .catch(() => {
+        toast('Impossible de charger les photos.', 'error')
+        setLoading(false)
+      })
   }, [profileId, getProfilePhotos, toast])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -494,8 +551,7 @@ function ProfilePhotosTab({
     }
   }
 
-  const photoTone =
-    photos.length === 0 ? 'none' : photos.length < MIN_PHOTOS ? 'warn' : 'ok'
+  const photoTone = photos.length === 0 ? 'none' : photos.length < MIN_PHOTOS ? 'warn' : 'ok'
 
   return (
     <section className="camera-detail-section">
@@ -545,8 +601,8 @@ function ProfilePhotosTab({
 
       {!loading && photos.length === 0 && (
         <p className="profile-empty-hint">
-          Ajoutez des photos nettes de face pour activer la reconnaissance.
-          Privilégiez des angles variés.
+          Ajoutez des photos nettes de face pour activer la reconnaissance. Privilégiez des angles
+          variés.
         </p>
       )}
 
@@ -560,7 +616,9 @@ function ProfilePhotosTab({
                 className="profile-photo-img"
               />
               <div className="profile-photo-sync">
-                <span className={`camera-support-badge ${photo.frigateSynced ? 'supported' : 'unknown'}`}>
+                <span
+                  className={`camera-support-badge ${photo.frigateSynced ? 'supported' : 'unknown'}`}
+                >
                   {photo.frigateSynced ? 'Sync' : 'En attente'}
                 </span>
               </div>
@@ -615,11 +673,16 @@ function ProfileCamerasTab({
         setSelected(new Set(list.filter((l) => l.enabled).map((l) => l.cameraId)))
         setLoading(false)
       })
-      .catch(() => { toast('Impossible de charger les caméras liées.', 'error'); setLoading(false) })
+      .catch(() => {
+        toast('Impossible de charger les caméras liées.', 'error')
+        setLoading(false)
+      })
   }, [profileId, getProfileCameraLinks, toast])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   function toggle(cameraId: string) {
     setSelected((prev) => {
@@ -648,7 +711,8 @@ function ProfileCamerasTab({
     <section className="camera-detail-section">
       <h3>Caméras associées</h3>
       <p className="camera-section-copy">
-        Limitez la reconnaissance de ce profil aux caméras sélectionnées. Sans sélection, le profil est reconnu sur toutes les caméras.
+        Limitez la reconnaissance de ce profil aux caméras sélectionnées. Sans sélection, le profil
+        est reconnu sur toutes les caméras.
       </p>
 
       {loading && <p className="profile-loading">Chargement…</p>}

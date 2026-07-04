@@ -31,6 +31,8 @@ function makeCamera(overrides: Partial<Camera> = {}): Camera {
     privacyVendorCut: false,
     ptzSupported: false,
     privacyModeStrategy: 'software',
+    connected: true,
+    verifiedCapabilities: [],
     ...overrides,
   }
 }
@@ -50,7 +52,9 @@ function makeSchedule(overrides: Partial<CameraPrivacySchedule> = {}): CameraPri
 
 describe('PrivacyScheduleSection', () => {
   it('shows an empty state when no schedules exist', async () => {
-    const getSchedules = { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+    const getSchedules = {
+      execute: vi.fn().mockResolvedValue([]),
+    } as unknown as GetCameraPrivacySchedules
     render(
       <PrivacyScheduleSection
         camera={makeCamera()}
@@ -86,7 +90,9 @@ describe('PrivacyScheduleSection', () => {
   })
 
   it('shows a hardware privacy cut badge when the camera reports vendor cut', async () => {
-    const getSchedules = { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+    const getSchedules = {
+      execute: vi.fn().mockResolvedValue([]),
+    } as unknown as GetCameraPrivacySchedules
 
     render(
       <PrivacyScheduleSection
@@ -103,7 +109,9 @@ describe('PrivacyScheduleSection', () => {
   })
 
   it('requires at least one day selected before adding a schedule', async () => {
-    const getSchedules = { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+    const getSchedules = {
+      execute: vi.fn().mockResolvedValue([]),
+    } as unknown as GetCameraPrivacySchedules
     const createSchedule = { execute: vi.fn() } as unknown as CreateCameraPrivacySchedule
     const user = userEvent.setup()
 
@@ -132,9 +140,7 @@ describe('PrivacyScheduleSection', () => {
 
   it('creates a schedule for the current camera and reloads the list', async () => {
     const getSchedules = {
-      execute: vi.fn()
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([makeSchedule()]),
+      execute: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([makeSchedule()]),
     } as unknown as GetCameraPrivacySchedules
     const createSchedule = {
       execute: vi.fn().mockResolvedValue(makeSchedule()),
@@ -166,7 +172,9 @@ describe('PrivacyScheduleSection', () => {
   })
 
   it('only offers "apply to all" when there is more than one camera', async () => {
-    const getSchedules = { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+    const getSchedules = {
+      execute: vi.fn().mockResolvedValue([]),
+    } as unknown as GetCameraPrivacySchedules
 
     const { rerender } = render(
       <PrivacyScheduleSection
@@ -199,7 +207,9 @@ describe('PrivacyScheduleSection', () => {
     const getSchedules = {
       execute: vi.fn().mockResolvedValue([makeSchedule()]),
     } as unknown as GetCameraPrivacySchedules
-    const deleteSchedule = { execute: vi.fn().mockResolvedValue(undefined) } as unknown as DeleteCameraPrivacySchedule
+    const deleteSchedule = {
+      execute: vi.fn().mockResolvedValue(undefined),
+    } as unknown as DeleteCameraPrivacySchedule
     const user = userEvent.setup()
 
     render(

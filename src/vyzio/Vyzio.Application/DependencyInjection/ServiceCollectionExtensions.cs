@@ -53,6 +53,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ConfigureCameraCapabilityUseCase>();
         services.AddScoped<GetCameraCapabilitiesUseCase>();
         services.AddScoped<BackfillCameraCapabilityBindingsUseCase>();
+        services.AddScoped<SeedAndProbePresetsUseCase>();
+        services.AddHostedService<Services.CameraCapabilityOnboardingWorker>();
+        services.AddHostedService<Services.CameraReachabilityPollerService>();
 
         // Detection event use cases
         services.AddScoped<GetRecentDetectionEventsUseCase>();

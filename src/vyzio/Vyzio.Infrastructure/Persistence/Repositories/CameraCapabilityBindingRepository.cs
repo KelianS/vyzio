@@ -48,4 +48,9 @@ public sealed class CameraCapabilityBindingRepository(VyzioDbContext db) : ICame
         db.CameraCapabilityBindings.Remove(existing);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<CameraCapabilityBinding>> GetAllVerifiedAsync(CancellationToken ct = default)
+        => await db.CameraCapabilityBindings
+            .Where(b => b.Verified)
+            .ToListAsync(ct);
 }

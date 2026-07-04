@@ -38,20 +38,28 @@ export function PrivacyScheduleSection({
 
   const reload = () => {
     setLoading(true)
-    getSchedules.execute(cameraId)
+    getSchedules
+      .execute(cameraId)
       .then(setSchedules)
-      .catch((e: unknown) => { toast(appErrorMessage(toAppError(e)), 'error') })
+      .catch((e: unknown) => {
+        toast(appErrorMessage(toAppError(e)), 'error')
+      })
       .finally(() => setLoading(false))
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps,react-hooks/set-state-in-effect
-  useEffect(() => { reload() }, [cameraId])
+  useEffect(() => {
+    reload()
+  }, [cameraId])
 
   const toggleDay = (d: number) =>
-    setDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort())
+    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()))
 
   const handleAdd = async () => {
-    if (days.length === 0) { setError('Sélectionnez au moins un jour.'); return }
+    if (days.length === 0) {
+      setError('Sélectionnez au moins un jour.')
+      return
+    }
     setError(null)
     setAdding(true)
     try {
@@ -74,7 +82,10 @@ export function PrivacyScheduleSection({
   }
 
   const handleApplyToAll = async () => {
-    if (days.length === 0) { setError('Sélectionnez au moins un jour.'); return }
+    if (days.length === 0) {
+      setError('Sélectionnez au moins un jour.')
+      return
+    }
     setError(null)
     setAdding(true)
     try {
@@ -92,16 +103,14 @@ export function PrivacyScheduleSection({
   const privacyCutLabel = camera.privacyVendorCut
     ? { text: 'Coupure matérielle confirmée', cls: 'privacy-cut-badge--hw' }
     : camera.privacyModeActive && camera.privacyModeStrategy === 'ptz_parking'
-    ? { text: 'Caméra orientée — enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
-    : camera.privacyModeActive
-    ? { text: 'Enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
-    : null
+      ? { text: 'Caméra orientée — enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
+      : camera.privacyModeActive
+        ? { text: 'Enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
+        : null
 
   return (
     <section className="camera-detail-section">
-      <h3 className="camera-detail-section-title">
-        Vie privée — planification
-      </h3>
+      <h3 className="camera-detail-section-title">Vie privée — planification</h3>
 
       {privacyCutLabel && (
         <div className={`privacy-cut-badge ${privacyCutLabel.cls}`}>
@@ -120,7 +129,9 @@ export function PrivacyScheduleSection({
               <span className="privacy-schedule-days">
                 {s.daysOfWeek.map((d) => DAY_LABELS[d]).join(', ')}
               </span>
-              <span className="privacy-schedule-time">{s.startTime} → {s.endTime}</span>
+              <span className="privacy-schedule-time">
+                {s.startTime} → {s.endTime}
+              </span>
               {!s.enabled && <span className="privacy-schedule-disabled">désactivé</span>}
               <button
                 type="button"

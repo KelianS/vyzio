@@ -74,7 +74,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le produit doit exposer une liste des constructeurs ou modeles officiellement supportes et l'utiliser pour rassurer l'utilisateur pendant l'onboarding ;
 - chaque camera doit avoir un nom, un statut visible et une configuration editable ;
 - l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
-- une perte de flux doit etre detectee et visible sans diagnostic technique avance.
+- une perte de flux doit etre detectee et visible sans diagnostic technique avance ;
+- lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, test de capacite) doivent etre suspendues avec un message explicite.
 
 ### 2.3 Catalogue de capacites et cameras non repertoriees
 

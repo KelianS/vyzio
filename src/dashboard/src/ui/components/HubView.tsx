@@ -34,7 +34,19 @@ interface HubViewProps {
   onBatchTogglePrivacy: (cameraIds: string[], active: boolean) => Promise<void>
 }
 
-export function HubView({ hubLoading, camerasLoading, hubError, data, cameras, apiBaseUrl, getSystemStats, onOpenMedia, onOpenLive, onTogglePrivacy, onBatchTogglePrivacy }: HubViewProps) {
+export function HubView({
+  hubLoading,
+  camerasLoading,
+  hubError,
+  data,
+  cameras,
+  apiBaseUrl,
+  getSystemStats,
+  onOpenMedia,
+  onOpenLive,
+  onTogglePrivacy,
+  onBatchTogglePrivacy,
+}: HubViewProps) {
   const isLoading = hubLoading || camerasLoading
 
   if (isLoading) {
@@ -83,13 +95,13 @@ function HubDegradedState({ error }: { error: AppError | null }) {
   return (
     <main className="app-shell">
       <section className="hub-degraded-panel panel">
-        <div className="hub-degraded-icon" aria-hidden="true">⚠</div>
+        <div className="hub-degraded-icon" aria-hidden="true">
+          ⚠
+        </div>
         <div>
           <p className="eyebrow">Système indisponible</p>
           <h1>Vyzio ne répond pas</h1>
-          <p className="lede">
-            Le hub ne peut pas joindre le service Vyzio pour le moment.
-          </p>
+          <p className="lede">Le hub ne peut pas joindre le service Vyzio pour le moment.</p>
         </div>
         <div className="hub-degraded-steps">
           <p>Vérifiez que :</p>
@@ -164,12 +176,25 @@ interface HubOperationalStateProps {
   onBatchTogglePrivacy: (cameraIds: string[], active: boolean) => Promise<void>
 }
 
-function HubOperationalState({ data, cameras, allCameras, apiBaseUrl, getSystemStats, onOpenMedia, onOpenLive, onTogglePrivacy, onBatchTogglePrivacy }: HubOperationalStateProps) {
+function HubOperationalState({
+  data,
+  cameras,
+  allCameras,
+  apiBaseUrl,
+  getSystemStats,
+  onOpenMedia,
+  onOpenLive,
+  onTogglePrivacy,
+  onBatchTogglePrivacy,
+}: HubOperationalStateProps) {
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
   const [batchPending, setBatchPending] = useState<boolean | null>(null)
 
   useEffect(() => {
-    getSystemStats.execute().then(setSystemStats).catch(() => {})
+    getSystemStats
+      .execute()
+      .then(setSystemStats)
+      .catch(() => {})
   }, [getSystemStats])
 
   const recentEvents = data?.recentEvents ?? []
@@ -186,7 +211,9 @@ function HubOperationalState({ data, cameras, allCameras, apiBaseUrl, getSystemS
       <section className="hub-status-bar">
         <div className="hub-status-facts">
           <div className="hub-status-fact">
-            <strong>{activeCameraCount}/{cameraCount}</strong>
+            <strong>
+              {activeCameraCount}/{cameraCount}
+            </strong>
             <span>caméras actives</span>
           </div>
           <div className="hub-status-fact">
@@ -270,7 +297,12 @@ function HubOperationalState({ data, cameras, allCameras, apiBaseUrl, getSystemS
                     <button
                       type="button"
                       className="event-card-thumb"
-                      onClick={() => onOpenMedia('image', `${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)}
+                      onClick={() =>
+                        onOpenMedia(
+                          'image',
+                          `${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`,
+                        )
+                      }
                       title="Voir l'aperçu"
                     >
                       <img
@@ -292,7 +324,12 @@ function HubOperationalState({ data, cameras, allCameras, apiBaseUrl, getSystemS
                         <button
                           type="button"
                           className="event-card-clip"
-                          onClick={() => onOpenMedia('video', `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`)}
+                          onClick={() =>
+                            onOpenMedia(
+                              'video',
+                              `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
+                            )
+                          }
                         >
                           ▶ Clip
                         </button>
@@ -327,10 +364,16 @@ function HubOperationalState({ data, cameras, allCameras, apiBaseUrl, getSystemS
               <h2>Notifications</h2>
             </div>
             <div className="hub-alert-items">
-              <div className={`hub-alert-item${notifications?.telegramConfigured ? ' hub-alert-item--ok' : ' hub-alert-item--warn'}`}>
+              <div
+                className={`hub-alert-item${notifications?.telegramConfigured ? ' hub-alert-item--ok' : ' hub-alert-item--warn'}`}
+              >
                 <span className="hub-alert-dot" />
                 <div className="hub-alert-body">
-                  <strong>{notifications?.telegramConfigured ? 'Telegram configuré' : 'Telegram non configuré'}</strong>
+                  <strong>
+                    {notifications?.telegramConfigured
+                      ? 'Telegram configuré'
+                      : 'Telegram non configuré'}
+                  </strong>
                   <p>
                     {notifications?.telegramConfigured
                       ? `${notifications.sentCount} alerte${notifications.sentCount !== 1 ? 's' : ''} envoyée${notifications.sentCount !== 1 ? 's' : ''}${notifications?.lastSentAt ? ` · dernière à ${formatEventTime(notifications.lastSentAt)}` : ''}`
@@ -353,13 +396,18 @@ function HubOperationalState({ data, cameras, allCameras, apiBaseUrl, getSystemS
       {batchPending !== null && (
         <ConfirmModal
           title={batchPending ? 'Activer le mode vie privée' : 'Désactiver le mode vie privée'}
-          body={batchPending
-            ? `Vyzio va arrêter l'enregistrement sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}. Aucune alerte ne sera générée pendant cette période.`
-            : `Vyzio va reprendre la surveillance sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}.`}
+          body={
+            batchPending
+              ? `Vyzio va arrêter l'enregistrement sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}. Aucune alerte ne sera générée pendant cette période.`
+              : `Vyzio va reprendre la surveillance sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}.`
+          }
           confirmLabel={batchPending ? 'Couper toutes les caméras' : 'Réactiver toutes les caméras'}
           tone={batchPending ? 'warn' : 'default'}
           onConfirm={async () => {
-            await onBatchTogglePrivacy(allCameras.map((c) => c.id), batchPending)
+            await onBatchTogglePrivacy(
+              allCameras.map((c) => c.id),
+              batchPending,
+            )
             setBatchPending(null)
           }}
           onCancel={() => setBatchPending(null)}

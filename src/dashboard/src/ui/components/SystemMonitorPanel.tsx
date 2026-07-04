@@ -15,7 +15,9 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
           Système de détection inaccessible — métriques indisponibles.
         </p>
         <div className="panel-cta-row">
-          <a href="#expert" className="secondary-cta">Diagnostiquer →</a>
+          <a href="#expert" className="secondary-cta">
+            Diagnostiquer →
+          </a>
         </div>
       </article>
     )
@@ -33,11 +35,17 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
           <div className="hub-monitor-bar-track">
             <div
               className="hub-monitor-bar-fill"
-              style={{ width: stats.storage.totalGb > 0 ? `${Math.min(100, (stats.storage.usedGb / stats.storage.totalGb) * 100).toFixed(1)}%` : '0%' }}
+              style={{
+                width:
+                  stats.storage.totalGb > 0
+                    ? `${Math.min(100, (stats.storage.usedGb / stats.storage.totalGb) * 100).toFixed(1)}%`
+                    : '0%',
+              }}
             />
           </div>
           <p className="hub-monitor-bar-legend">
-            {stats.storage.usedGb} Go utilisés · {stats.storage.freeGb} Go libres · {stats.storage.totalGb} Go total
+            {stats.storage.usedGb} Go utilisés · {stats.storage.freeGb} Go libres ·{' '}
+            {stats.storage.totalGb} Go total
           </p>
         </div>
       )}
@@ -59,7 +67,9 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
       )}
 
       <div className="panel-cta-row">
-        <a href="#expert" className="secondary-cta">Détails techniques →</a>
+        <a href="#expert" className="secondary-cta">
+          Détails techniques →
+        </a>
       </div>
     </article>
   )

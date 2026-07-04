@@ -19,19 +19,23 @@ Il traduit en ordre d'execution une direction deja decidee dans les SPECS et le 
 
 Itérations courtes, buildables indépendamment. Priorité décroissante.
 
-1. **Probe silencieux à l'onboarding** — à l'ajout d'une caméra reconnue (`VendorFamily` non null), lancer le probe de tous les bindings preset en arrière-plan (sans étape UI). La section Capacités est déjà remplie à la première ouverture de la fiche. Actuellement : probe toujours manuel via "Tester la connexion".
+1. **Tapo PTZ — activation automatique après probe réussi** — après un probe PTZ positif, mettre à jour `Camera.PtzSupported = true` pour que le panneau PTZ apparaisse dans le live feed sans action supplémentaire. Limitation documentée dans `docs/user/PRIVACY_MODE.md` et `vendors/tplink_tapo.md`.
 
-2. **Tapo PTZ — activation automatique après probe réussi** — après un probe PTZ positif, mettre à jour `Camera.PtzSupported = true` pour que le panneau PTZ apparaisse dans le live feed sans action supplémentaire. Limitation documentée dans `docs/user/PRIVACY_MODE.md` et `vendors/tplink_tapo.md`.
+2. **Auto-détection ONVIF PTZ à l'ajout** — pour les caméras sans `VendorFamily` connue, sonder le port 8899 + `GetCapabilities` ONVIF au moment de l'ajout ; si PTZ détecté, créer le binding `Ptz/Onvif` directement. Actuellement : checkbox manuelle dans la fiche caméra.
 
-3. **Auto-détection ONVIF PTZ à l'ajout** — pour les caméras sans `VendorFamily` connue, sonder le port 8899 + `GetCapabilities` ONVIF au moment de l'ajout ; si PTZ détecté, créer le binding `Ptz/Onvif` directement. Actuellement : checkbox manuelle dans la fiche caméra.
+3. **Étape "Position de surveillance" à l'onboarding PTZ** — si PTZ détecté à l'ajout (point 2), proposer une étape dédiée pour orienter la caméra avant de terminer l'onboarding. Dépend de 2.
 
-4. **Étape "Position de surveillance" à l'onboarding PTZ** — si PTZ détecté à l'ajout (point 3), proposer une étape dédiée pour orienter la caméra avant de terminer l'onboarding. Dépend de 3.
-
-5. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
+4. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
 
 ---
 
-### B — V380 Pro : PTZ précis
+### B — PTZ : positions configurables
+
+1. **Position de parking vie privée configurable** — actuellement, l'activation du mode vie privée PTZ déplace la caméra vers la butée mécanique bas-gauche pendant 8 secondes (hardcodé). L'utilisateur devrait pouvoir définir une position dédiée "zone neutre" (ex. face au mur) sauvegardée comme preset 2, et le provider devrait aller à ce preset à l'activation. Symétrique au "Définir la position de surveillance" (preset 1) déjà en place.
+
+---
+
+### C — V380 Pro : PTZ précis
 
 1. **Bouton Home masqué** — `GotoPreset(1)` retourne HTTP 400 sur V380 ; le bouton est visible mais sans effet. Fix : ajouter `SupportsGoToPresetAsync` sur `IPtzCapabilityProvider` (ou détecter au probe) et masquer le bouton si non supporté. Quick win, non bloquant.
 

@@ -26,9 +26,7 @@ export function DetectionConfigSection({
 
   return (
     <section className="camera-detail-section">
-      <h3 className="camera-detail-section-title">
-        Détection — étiquettes actives
-      </h3>
+      <h3 className="camera-detail-section-title">Détection — étiquettes actives</h3>
       {loading ? (
         <p className="camera-detail-section-loading">Chargement…</p>
       ) : (

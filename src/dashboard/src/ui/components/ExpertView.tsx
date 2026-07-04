@@ -26,7 +26,9 @@ export function ExpertView({ frigateBaseUrl }: ExpertViewProps) {
     return (
       <main className="app-shell">
         <div className="panel expert-error-panel">
-          <div className="hub-degraded-icon" aria-hidden="true">⚠</div>
+          <div className="hub-degraded-icon" aria-hidden="true">
+            ⚠
+          </div>
           <div>
             <p className="eyebrow">Expert</p>
             <h1>Frigate inaccessible</h1>
@@ -36,8 +38,12 @@ export function ExpertView({ frigateBaseUrl }: ExpertViewProps) {
             <p>Vérifiez que :</p>
             <ol>
               <li>Le service Frigate est bien démarré</li>
-              <li>L'adresse <code>{frigateBaseUrl}</code> est joignable depuis ce navigateur</li>
-              <li>Frigate n'est pas configuré avec <code>X-Frame-Options: DENY</code></li>
+              <li>
+                L'adresse <code>{frigateBaseUrl}</code> est joignable depuis ce navigateur
+              </li>
+              <li>
+                Frigate n'est pas configuré avec <code>X-Frame-Options: DENY</code>
+              </li>
             </ol>
           </div>
           <div className="panel-cta-row">
