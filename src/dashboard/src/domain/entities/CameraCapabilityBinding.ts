@@ -3,6 +3,7 @@ export type CapabilityProtocol =
   | 'onvif'
   | 'dvrip'
   | 'tapo_klap'
+  | 'v380'
   | 'ptz_parking'
   | 'software_only'
   | 'none'

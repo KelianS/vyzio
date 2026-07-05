@@ -687,6 +687,34 @@
   font-size: 0.78rem !important;
 }
 
+.capability-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.capability-btn-ghost {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 28px;
+  border-radius: var(--radius-sm, 4px);
+  transition: color 0.15s;
+}
+
+.capability-btn-ghost:hover:not(:disabled) {
+  color: var(--ink-strong);
+}
+
+.capability-btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .hero-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);

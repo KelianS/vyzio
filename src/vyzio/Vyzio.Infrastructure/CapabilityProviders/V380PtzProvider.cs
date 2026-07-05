@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -9,6 +10,11 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // Each step sends one 16-byte PTZ packet on the stream connection (~100ms movement).
 // Continuous move is not supported — the protocol requires a persistent stream loop for
 // sustained movement, which is not implemented here (step-based PTZ is sufficient, ADR-22).
+//
+// The V380 deviceId (required for auth) is obtained by UDP discovery at probe time and then
+// persisted in binding.ConfigJson as {"device_id": <uint>}. Subsequent PTZ commands read from
+// ConfigJson, so UDP discovery is not needed again — this makes Docker bridge mode work.
+// To bypass discovery entirely, set ConfigJson manually via PUT /cameras/{id}/capabilities/ptz.
 internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
     // 16-byte PTZ binary packets (opcode 0xAA). Pan/tilt are uint16 LE: neutral=1000.
@@ -27,13 +33,34 @@ internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider
 
     public CapabilityProtocol Protocol => CapabilityProtocol.V380;
 
-    public Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => client.ProbeAsync(camera, ct);
+    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    {
+        // Pre-load from ConfigJson — allows re-probe without UDP discovery.
+        if (TryReadDeviceId(binding.ConfigJson, out var storedId))
+            client.PreloadDeviceId(camera.Host, storedId);
+
+        var success = await client.ProbeAsync(camera, ct);
+
+        // Persist the discovered deviceId so future PTZ commands work without UDP discovery.
+        // (The use case layer calls binding.SaveAsync after ProbeAsync returns.)
+        if (success)
+        {
+            var discoveredId = client.GetCachedDeviceId(camera.Host);
+            if (discoveredId.HasValue)
+                binding.ConfigJson = JsonSerializer.Serialize(new { device_id = discoveredId.Value });
+        }
+
+        return success;
+    }
 
     // Sends a single PTZ step packet (~100ms movement per packet, ~200ms gap for smooth motion).
     // Overrides the default Move+Stop fallback — V380 has no persistent session concept here.
     public async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
+        // Pre-load deviceId from persisted ConfigJson — avoids UDP discovery on every command.
+        if (TryReadDeviceId(binding.ConfigJson, out var storedId))
+            client.PreloadDeviceId(camera.Host, storedId);
+
         try
         {
             await client.SendStreamCommandAsync(camera, DirectionToPacket(direction).ToArray(), ct);
@@ -57,6 +84,19 @@ internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider
 
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
+
+    private static bool TryReadDeviceId(string? configJson, out uint deviceId)
+    {
+        deviceId = 0;
+        if (string.IsNullOrEmpty(configJson)) return false;
+        try
+        {
+            var doc = JsonDocument.Parse(configJson);
+            return doc.RootElement.TryGetProperty("device_id", out var prop)
+                && prop.TryGetUInt32(out deviceId);
+        }
+        catch { return false; }
+    }
 
     private static ReadOnlySpan<byte> DirectionToPacket(PtzDirection direction) => direction switch
     {

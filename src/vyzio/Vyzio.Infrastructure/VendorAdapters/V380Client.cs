@@ -20,7 +20,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
 {
     private const int V380Port = 8800;
     private const int DiscoveryPort = 10008;
-    private const int DiscoveryTimeoutMs = 2000;
+    private const int DiscoveryTimeoutMs = 1500;
     private const int DefaultTimeoutMs = 5000;
 
     // Charset matches the Python probe: string.ascii_letters + string.digits + '!@#$%^&*()_+-='
@@ -31,6 +31,14 @@ internal sealed class V380Client(ILogger<V380Client> logger)
 
     // Device IDs are stable per physical camera — cache by IP for the lifetime of the process.
     private readonly ConcurrentDictionary<string, uint> _deviceIds = new();
+
+    // Called by V380PtzProvider to pre-populate the cache from persisted ConfigJson,
+    // so UDP discovery is not needed on every PTZ command after the initial probe.
+    internal void PreloadDeviceId(string host, uint deviceId)
+        => _deviceIds[host] = deviceId;
+
+    internal uint? GetCachedDeviceId(string host)
+        => _deviceIds.TryGetValue(host, out var id) ? id : null;
 
     // Returns true if UDP discovery succeeds and auth (cmd 1167) returns a valid ticket.
     public async Task<bool> ProbeAsync(Camera camera, CancellationToken ct = default)
@@ -62,7 +70,9 @@ internal sealed class V380Client(ILogger<V380Client> logger)
     public async Task SendStreamCommandAsync(Camera camera, byte[] packet, CancellationToken ct = default)
     {
         var deviceId = await GetOrDiscoverDeviceIdAsync(camera.Host, ct)
-            ?? throw new InvalidOperationException($"V380: device ID not found for {camera.Host}.");
+            ?? throw new InvalidOperationException(
+                $"V380: device ID not found for {camera.Host}. " +
+                $"Set {{\"device_id\": <id>}} in the binding ConfigJson (obtain via UDP discovery or the V380 app).");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(DefaultTimeoutMs);
@@ -146,28 +156,46 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         return ticket == 0 ? null : ticket;
     }
 
-    // Sends NVDEVSEARCH^100 to the camera's UDP port 10008 and parses the deviceId from the response.
-    // The camera responds with NVDEVRESULT^...^deviceId at parts[12].
+    // Sends NVDEVSEARCH^100 via UDP and parses the deviceId from the camera's NVDEVRESULT response.
+    // Tries unicast to the camera IP first, then subnet broadcast (/24 assumed) as a fallback —
+    // Docker bridge mode may not pass broadcast responses from the LAN, so unicast is preferred.
     private static async Task<uint?> DiscoverDeviceIdAsync(string host, CancellationToken ct)
     {
-        using var udp = new UdpClient(0);
         var msg = "NVDEVSEARCH^100"u8.ToArray();
-        var endpoint = new IPEndPoint(IPAddress.Parse(host), DiscoveryPort);
 
-        await udp.SendAsync(msg, endpoint, ct);
+        var id = await TrySendDiscoveryAsync(msg, host, ct);
+        if (id.HasValue) return id;
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeoutCts.CancelAfter(DiscoveryTimeoutMs);
+        // Subnet broadcast fallback (assumes /24; adequate for most home/SMB setups).
+        var parts = host.Split('.');
+        if (parts.Length == 4)
+        {
+            var broadcast = $"{parts[0]}.{parts[1]}.{parts[2]}.255";
+            id = await TrySendDiscoveryAsync(msg, broadcast, ct);
+            if (id.HasValue) return id;
+        }
+
+        return null;
+    }
+
+    private static async Task<uint?> TrySendDiscoveryAsync(byte[] msg, string target, CancellationToken ct)
+    {
         try
         {
+            using var udp = new UdpClient(0);
+            udp.EnableBroadcast = true;
+            var endpoint = new IPEndPoint(IPAddress.Parse(target), DiscoveryPort);
+            await udp.SendAsync(msg, endpoint, ct);
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(DiscoveryTimeoutMs);
             var result = await udp.ReceiveAsync(timeoutCts.Token);
             var response = Encoding.ASCII.GetString(result.Buffer);
-            var parts = response.Split('^');
-            if (parts.Length > 12 && uint.TryParse(parts[12], out var deviceId))
+            var fields = response.Split('^');
+            if (fields.Length > 12 && uint.TryParse(fields[12], out var deviceId))
                 return deviceId;
         }
-        catch (OperationCanceledException) { }
-
+        catch { }
         return null;
     }
 

@@ -29,12 +29,14 @@ const PROTOCOL_LABELS: Record<CapabilityProtocol, string> = {
   onvif: 'ONVIF',
   dvrip: 'DVRIP (ICSee / XMEye)',
   tapo_klap: 'Tapo KLAP',
+  v380: 'V380 natif',
   ptz_parking: 'Parking PTZ',
   software_only: 'Logiciel uniquement',
   none: '—',
 }
 
 const PTZ_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
+  { value: 'v380', label: 'V380 Pro (port 8800, natif)' },
   { value: 'onvif', label: 'ONVIF (Hikvision, Dahua, Reolink, V380…)' },
   { value: 'dvrip', label: 'DVRIP (ICSee / XMEye)' },
   { value: 'tapo_klap', label: 'Tapo KLAP (caméra motorisée Tapo)' },
@@ -109,6 +111,10 @@ interface CapabilityRowProps {
 function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProps) {
   const { toast } = useToast()
   const [lastResult, setLastResult] = useState<'ok' | 'fail' | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editProtocol, setEditProtocol] = useState<CapabilityProtocol>(binding.protocol)
+
+  const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
 
   const probeAction = useAsyncAction(
     () => probeCameraCapability.execute(cameraId, binding.capability),
@@ -132,11 +138,17 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
   )
 
   const configureAction = useAsyncAction(
-    () => configureCameraCapability.execute(cameraId, binding.capability, binding.protocol),
+    () =>
+      configureCameraCapability.execute(
+        cameraId,
+        binding.capability,
+        binding.isConfigured ? editProtocol : binding.protocol,
+      ),
     {
       onSuccess: (result) => {
         if (result?.verified) {
           setLastResult('ok')
+          setIsEditing(false)
           toast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
         } else {
           setLastResult('fail')
@@ -154,7 +166,6 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
 
   const isVerified = lastResult === 'ok' || (lastResult === null && binding.verified)
   const isConfigured = binding.isConfigured
-  const action = isConfigured ? probeAction : configureAction
 
   const verifiedAtLabel = binding.verifiedAt
     ? new Date(binding.verifiedAt).toLocaleString('fr-FR', {
@@ -165,6 +176,51 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
       })
     : null
 
+  if (isEditing) {
+    return (
+      <div className="capability-row capability-row--editing">
+        <div className="capability-info">
+          <div className="capability-label">{CAPABILITY_LABELS[binding.capability]}</div>
+          <div className="capability-manual-form-fields" style={{ marginTop: 6 }}>
+            <label>
+              <span>Protocole</span>
+              <select
+                value={editProtocol}
+                onChange={(e) => setEditProtocol(e.target.value as CapabilityProtocol)}
+              >
+                {protocolOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+        <div className="capability-actions">
+          <button
+            type="button"
+            className="secondary-cta capability-btn"
+            disabled={configureAction.loading}
+            onClick={() => configureAction.run()}
+          >
+            {configureAction.loading ? '…' : 'Enregistrer'}
+          </button>
+          <button
+            type="button"
+            className="capability-btn-ghost"
+            onClick={() => {
+              setEditProtocol(binding.protocol)
+              setIsEditing(false)
+            }}
+          >
+            Annuler
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="capability-row">
       <div className="capability-info">
@@ -174,7 +230,7 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
             <span className={`capability-status-dot ${isVerified ? 'ok' : 'fail'}`} />
           )}
         </div>
-        <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol]}</div>
+        <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}</div>
         {!isVerified && (lastResult === 'fail' || binding.lastError) && (
           <div className="capability-error">{binding.lastError ?? 'Connexion échouée'}</div>
         )}
@@ -183,19 +239,35 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
         )}
       </div>
 
-      <button
-        type="button"
-        title={
-          isConfigured
-            ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
-            : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
-        }
-        className="secondary-cta capability-btn"
-        disabled={action.loading || offline}
-        onClick={() => action.run()}
-      >
-        {action.loading ? '…' : isConfigured ? 'Tester' : 'Configurer'}
-      </button>
+      <div className="capability-actions">
+        <button
+          type="button"
+          title={
+            isConfigured
+              ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
+              : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
+          }
+          className="secondary-cta capability-btn"
+          disabled={probeAction.loading || (!isConfigured && configureAction.loading) || offline}
+          onClick={() => (isConfigured ? probeAction.run() : configureAction.run())}
+        >
+          {(isConfigured ? probeAction.loading : configureAction.loading)
+            ? '…'
+            : isConfigured
+              ? 'Tester'
+              : 'Configurer'}
+        </button>
+        {isConfigured && (
+          <button
+            type="button"
+            className="capability-btn-ghost"
+            disabled={offline}
+            onClick={() => setIsEditing(true)}
+          >
+            Modifier
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -209,7 +281,7 @@ interface ManualCapabilityFormProps {
 
 function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
   const [selectedCapability, setSelectedCapability] = useState<Capability>('ptz')
-  const [selectedProtocol, setSelectedProtocol] = useState<CapabilityProtocol>('onvif')
+  const [selectedProtocol, setSelectedProtocol] = useState<CapabilityProtocol>('v380')
 
   const protocolOptions = selectedCapability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
 
@@ -226,7 +298,11 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
           <span>Capacité</span>
           <select
             value={selectedCapability}
-            onChange={(e) => setSelectedCapability(e.target.value as Capability)}
+            onChange={(e) => {
+              const cap = e.target.value as Capability
+              setSelectedCapability(cap)
+              setSelectedProtocol(cap === 'ptz' ? 'v380' : 'tapo_klap')
+            }}
           >
             <option value="ptz">PTZ</option>
             <option value="privacy_mode">Vie privée matérielle</option>
