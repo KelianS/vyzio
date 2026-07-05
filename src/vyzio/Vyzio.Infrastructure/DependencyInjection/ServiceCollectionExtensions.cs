@@ -6,7 +6,7 @@ using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
 using Vyzio.Infrastructure.Services;
-using Vyzio.Infrastructure.VendorAdapters; // OnvifPtzClient
+using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.DependencyInjection;
 
@@ -38,19 +38,19 @@ public static class ServiceCollectionExtensions
 
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
-        services.AddSingleton<OnvifPtzClient>();
+        services.AddSingleton<OnvifClient>();
+        services.AddSingleton<V380Client>();
 
         // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
-        // Scoped: PtzParkingPrivacyProvider depends on the scoped binding repository, and the
-        // registry/TapoKlapProvider follow the same lifetime to avoid captive dependencies.
+        // Scoped: TapoKlapProvider authenticates per-request and the registry follows the same
+        // lifetime to avoid captive dependencies.
         services.AddScoped<ICameraCapabilityBindingRepository, CameraCapabilityBindingRepository>();
         services.AddScoped<IPtzCapabilityProvider, OnvifPtzProvider>();
         services.AddScoped<IPtzCapabilityProvider, DvripPtzProvider>();
+        services.AddScoped<IPtzCapabilityProvider, V380PtzProvider>();
         services.AddScoped<TapoKlapProvider>();
         services.AddScoped<IPtzCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
-        services.AddScoped<IPrivacyCapabilityProvider, PtzParkingPrivacyProvider>();
-        services.AddScoped<IPrivacyCapabilityProvider, SoftwareOnlyPrivacyProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
         // Background onboarding probe (A1 + A3): singleton queue so CreateCameraUseCase can enqueue.

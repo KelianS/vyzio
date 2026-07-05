@@ -7,96 +7,112 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
-internal record PtzCapabilities(bool SupportsRelativeMove)
-{
-    public static readonly PtzCapabilities Default = new(false);
-}
+public sealed record OnvifDeviceInfo(
+    string? Manufacturer,
+    string? Model,
+    string? FirmwareVersion,
+    string? SerialNumber);
 
-// Shared ONVIF PTZ client (raw SOAP over HTTP).
-// Covers ONVIF-compliant cameras: V380 Pro, Hikvision, Dahua, Reolink, Axis and any PTZ with ONVIF.
-// Authentication: WS-UsernameToken with PasswordDigest (SHA-1).
-internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogger<OnvifPtzClient> logger)
+// Pure ONVIF protocol client — SOAP over HTTP with WS-UsernameToken / PasswordDigest.
+// Covers any ONVIF-compliant device: V380 Pro, Hikvision, Dahua, Reolink, Axis, etc.
+// Feature orchestration (PTZ, privacy, device ID bootstrap) lives in the provider layer.
+// Registered as Singleton: shared across providers, stateless (no per-camera cache here).
+internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<OnvifClient> logger)
 {
     private const int DefaultOnvifPort = 8899;
 
-    // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid
-    // a GetProfiles round-trip before every PTZ command (which was the main source of step overshoot).
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _profileCache = new();
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _ptzConfigCache = new();
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, PtzCapabilities> _capabilitiesCache = new();
-
-    public async Task<string> GetFirstProfileTokenAsync(Camera camera, CancellationToken ct)
+    // Returns device identification info from ONVIF GetDeviceInformation.
+    // The SerialNumber field encodes the V380 device ID in bytes 2-5 as uint32 big-endian.
+    public async Task<OnvifDeviceInfo?> GetDeviceInformationAsync(Camera camera, CancellationToken ct)
     {
-        if (_profileCache.TryGetValue(camera.Id, out var cached))
-            return cached;
+        const string body = "<GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/>";
+        var xml = await PostSoapAsync(camera, "device_service", body, ct);
+        if (xml is null) return null;
 
-        var body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
-        var response = await PostOnvifAsync(camera, "media_service", body, ct);
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            return new OnvifDeviceInfo(
+                doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Manufacturer")?.Value,
+                doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Model")?.Value,
+                doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "FirmwareVersion")?.Value,
+                doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "SerialNumber")?.Value);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
-        string token = "profile1";
-        string ptzConfigToken = "ptz_config_0";
-        if (response is not null)
+    // Returns (profileToken, ptzConfigToken) for the first media profile.
+    public async Task<(string ProfileToken, string PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct)
+    {
+        const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
+        var xml = await PostSoapAsync(camera, "media_service", body, ct);
+
+        var profileToken = "profile1";
+        var ptzConfigToken = "ptz_config_0";
+
+        if (xml is not null)
         {
             try
             {
-                var doc = XDocument.Parse(response);
+                var doc = XDocument.Parse(xml);
                 XNamespace trt = "http://www.onvif.org/ver10/media/wsdl";
                 var profile = doc.Descendants(trt + "Profiles").FirstOrDefault();
-                token = profile?.Attribute("token")?.Value ?? "profile1";
+                profileToken = profile?.Attribute("token")?.Value ?? profileToken;
                 ptzConfigToken = profile?.Descendants()
                                          .FirstOrDefault(e => e.Name.LocalName == "PTZConfiguration")
-                                         ?.Attribute("token")?.Value ?? "ptz_config_0";
+                                         ?.Attribute("token")?.Value ?? ptzConfigToken;
             }
             catch { }
         }
 
-        _profileCache[camera.Id] = token;
-        _ptzConfigCache[camera.Id] = ptzConfigToken;
-        return token;
+        return (profileToken, ptzConfigToken);
     }
 
-    // Calls GetConfigurationOptions once per camera and caches the result.
-    // Detects whether the camera supports RelativeMove and/or the Timeout parameter.
-    public async Task<PtzCapabilities> GetPtzCapabilitiesAsync(Camera camera, CancellationToken ct)
+    // Returns raw GetConfigurationOptions XML for PTZ capability detection.
+    public Task<string?> GetPtzConfigurationOptionsAsync(Camera camera, string configToken, CancellationToken ct)
     {
-        if (_capabilitiesCache.TryGetValue(camera.Id, out var cached))
-            return cached;
-
-        await GetFirstProfileTokenAsync(camera, ct);
-        _ptzConfigCache.TryGetValue(camera.Id, out var configToken);
-        configToken ??= "ptz_config_0";
-
         var body = $"""
             <GetConfigurationOptions xmlns="http://www.onvif.org/ver20/ptz/wsdl">
               <ConfigurationToken>{configToken}</ConfigurationToken>
             </GetConfigurationOptions>
             """;
-        var response = await PostOnvifAsync(camera, "ptz_service", body, ct);
-
-        PtzCapabilities caps;
-        if (response is null)
-        {
-            caps = PtzCapabilities.Default;
-        }
-        else
-        {
-            try
-            {
-                var doc = XDocument.Parse(response);
-                bool supportsRelative = doc.Descendants()
-                    .Any(e => e.Name.LocalName == "RelativePanTiltTranslationSpace");
-                caps = new PtzCapabilities(supportsRelative);
-            }
-            catch { caps = PtzCapabilities.Default; }
-        }
-
-        _capabilitiesCache[camera.Id] = caps;
-        logger.LogDebug("ONVIF PTZ capabilities for {Host}: RelativeMove={Rel}.",
-            camera.Host, caps.SupportsRelativeMove);
-        return caps;
+        return PostSoapAsync(camera, "ptz_service", body, ct);
     }
 
-    public Task ContinuousMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct = default)
+    // Returns (pan, tilt) in ONVIF normalized space [-1, 1], or null if unsupported.
+    public async Task<(float Pan, float Tilt)?> GetStatusAsync(Camera camera, string profileToken, CancellationToken ct)
+    {
+        var body = $"""
+            <GetStatus xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+              <ProfileToken>{profileToken}</ProfileToken>
+            </GetStatus>
+            """;
+        var xml = await PostSoapAsync(camera, "ptz_service", body, ct);
+        if (xml is null) return null;
+
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            XNamespace tt = "http://www.onvif.org/ver10/schema";
+            var panTilt = doc.Descendants(tt + "PanTilt").FirstOrDefault();
+            if (panTilt is null) return null;
+
+            var x = panTilt.Attribute("x")?.Value;
+            var y = panTilt.Attribute("y")?.Value;
+            if (x is null || y is null) return null;
+
+            if (!float.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var pan)) return null;
+            if (!float.TryParse(y, NumberStyles.Float, CultureInfo.InvariantCulture, out var tilt)) return null;
+
+            return (pan, tilt);
+        }
+        catch { return null; }
+    }
+
+    public Task ContinuousMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)
     {
         var panStr = pan.ToString("F2", CultureInfo.InvariantCulture);
         var tiltStr = tilt.ToString("F2", CultureInfo.InvariantCulture);
@@ -111,38 +127,7 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
-    // Returns (pan, tilt) in ONVIF normalized space [-1, 1], or null if camera doesn't report position.
-    public async Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CancellationToken ct)
-    {
-        var token = await GetFirstProfileTokenAsync(camera, ct);
-        var body = $"""
-            <GetStatus xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-              <ProfileToken>{token}</ProfileToken>
-            </GetStatus>
-            """;
-        var response = await PostOnvifAsync(camera, "ptz_service", body, ct);
-        if (response is null) return null;
-
-        try
-        {
-            var doc = XDocument.Parse(response);
-            XNamespace tt = "http://www.onvif.org/ver10/schema";
-            var panTilt = doc.Descendants(tt + "PanTilt").FirstOrDefault();
-            if (panTilt is null) return null;
-
-            var xAttr = panTilt.Attribute("x")?.Value;
-            var yAttr = panTilt.Attribute("y")?.Value;
-            if (xAttr is null || yAttr is null) return null;
-
-            if (!float.TryParse(xAttr, NumberStyles.Float, CultureInfo.InvariantCulture, out var pan)) return null;
-            if (!float.TryParse(yAttr, NumberStyles.Float, CultureInfo.InvariantCulture, out var tilt)) return null;
-
-            return (pan, tilt);
-        }
-        catch { return null; }
-    }
-
-    public Task RelativeMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct = default)
+    public Task RelativeMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)
     {
         var panStr = pan.ToString("F4", CultureInfo.InvariantCulture);
         var tiltStr = tilt.ToString("F4", CultureInfo.InvariantCulture);
@@ -157,7 +142,7 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
-    public Task StopAsync(Camera camera, string profileToken, CancellationToken ct = default)
+    public Task StopAsync(Camera camera, string profileToken, CancellationToken ct)
     {
         var body = $"""
             <Stop xmlns="http://www.onvif.org/ver20/ptz/wsdl">
@@ -169,7 +154,7 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
-    public Task SetPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct = default)
+    public Task SetPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
     {
         var body = $"""
             <SetPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
@@ -181,7 +166,7 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
-    public Task GotoPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct = default)
+    public Task GotoPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
     {
         var body = $"""
             <GotoPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
@@ -198,8 +183,7 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
     // Fire-and-forget ONVIF command: sends the request and returns as soon as headers arrive
     // (or after 500ms timeout). Budget cameras (V380) take 2-3s to respond but execute the
     // command on TCP receipt — we don't need to wait for their HTTP response.
-    // ct is linked with the 500ms internal timeout so either cancels the wait first.
-    private async Task SendCommandAsync(Camera camera, string service, string soapBody, CancellationToken ct = default)
+    private async Task SendCommandAsync(Camera camera, string service, string soapBody, CancellationToken ct)
     {
         var url = $"http://{camera.Host}:{DefaultOnvifPort}/onvif/{service}";
         var envelope = BuildEnvelope(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
@@ -223,8 +207,8 @@ internal sealed class OnvifPtzClient(IHttpClientFactory httpClientFactory, ILogg
 
     // readBody=false: ResponseHeadersRead — returns as soon as status is known, without reading body.
     // Use for commands (Move, RelativeMove, Preset) where we only need the camera to receive the request.
-    // Use readBody=true (default) for queries (GetProfiles, GetConfigurationOptions) that need the response XML.
-    private async Task<string?> PostOnvifAsync(Camera camera, string service, string soapBody, CancellationToken ct,
+    // Use readBody=true (default) for queries (GetProfiles, GetDeviceInformation) that need the response XML.
+    internal async Task<string?> PostSoapAsync(Camera camera, string service, string soapBody, CancellationToken ct,
         bool readBody = true)
     {
         var url = $"http://{camera.Host}:{DefaultOnvifPort}/onvif/{service}";

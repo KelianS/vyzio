@@ -102,7 +102,7 @@ export function PrivacyScheduleSection({
 
   const privacyCutLabel = camera.privacyVendorCut
     ? { text: 'Coupure matérielle confirmée', cls: 'privacy-cut-badge--hw' }
-    : camera.privacyModeActive && camera.privacyModeStrategy === 'ptz_parking'
+    : camera.privacyModeActive && camera.privacyStrategy === 'ptz_parking'
       ? { text: 'Caméra orientée — enregistrement désactivé', cls: 'privacy-cut-badge--sw' }
       : camera.privacyModeActive
         ? { text: 'Enregistrement désactivé', cls: 'privacy-cut-badge--sw' }

@@ -24,7 +24,7 @@ public class TapoKlapProviderTests
     {
         CameraId = "cam1",
         Capability = capability,
-        Protocol = CapabilityProtocol.TapoKlap,
+        Protocol = SupportedProtocol.TapoKlap,
         Verified = true,
     };
 
@@ -39,14 +39,14 @@ public class TapoKlapProviderTests
     public void Protocol_as_privacy_provider_is_TapoKlap()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
-        Assert.Equal(CapabilityProtocol.TapoKlap, ((IPrivacyCapabilityProvider)provider).Protocol);
+        Assert.Equal(SupportedProtocol.TapoKlap, ((IPrivacyCapabilityProvider)provider).Protocol);
     }
 
     [Fact]
     public void Protocol_as_ptz_provider_is_TapoKlap()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
-        Assert.Equal(CapabilityProtocol.TapoKlap, ((IPtzCapabilityProvider)provider).Protocol);
+        Assert.Equal(SupportedProtocol.TapoKlap, ((IPtzCapabilityProvider)provider).Protocol);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class TapoKlapProviderTests
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
 
-        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding(CameraCapability.PrivacyMode));
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding(CameraCapability.HardwarePrivacy));
 
         Assert.False(result);
     }
@@ -67,7 +67,7 @@ public class TapoKlapProviderTests
             Content = new ByteArrayContent(new byte[10])
         }));
 
-        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding(CameraCapability.PrivacyMode));
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding(CameraCapability.HardwarePrivacy));
 
         Assert.False(result);
     }
@@ -78,7 +78,7 @@ public class TapoKlapProviderTests
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => provider.SetPrivacyModeAsync(MakeCamera(), MakeBinding(CameraCapability.PrivacyMode), active: true));
+            () => provider.SetPrivacyModeAsync(MakeCamera(), MakeBinding(CameraCapability.HardwarePrivacy), active: true));
     }
 
     [Fact]

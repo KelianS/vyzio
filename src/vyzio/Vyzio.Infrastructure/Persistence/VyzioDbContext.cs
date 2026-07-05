@@ -49,7 +49,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             camera.Property(c => c.StreamProtocol).HasConversion<SnakeCaseEnumConverter<StreamProtocol>>();
             camera.Property(c => c.VendorFamily).HasConversion<NullableSnakeCaseEnumConverter<VendorFamily>>();
             camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
-            camera.Property(c => c.PrivacyModeStrategy).HasConversion<SnakeCaseEnumConverter<PrivacyModeStrategy>>();
+            camera.Property(c => c.PrivacyStrategy).HasConversion<SnakeCaseEnumConverter<PrivacyStrategy>>();
         });
 
         modelBuilder.Entity<CameraCapabilityBinding>(binding =>
@@ -64,7 +64,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                    .HasDatabaseName("ux_capability_bindings_camera_capability");
 
             binding.Property(b => b.Capability).HasConversion<SnakeCaseEnumConverter<CameraCapability>>();
-            binding.Property(b => b.Protocol).HasConversion<SnakeCaseEnumConverter<CapabilityProtocol>>();
+            binding.Property(b => b.Protocol).HasConversion<SnakeCaseEnumConverter<SupportedProtocol>>();
         });
 
         modelBuilder.Entity<ProfilePhoto>(photo =>

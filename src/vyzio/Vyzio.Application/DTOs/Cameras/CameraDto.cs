@@ -26,7 +26,8 @@ public sealed record CameraDto(
     string? PrivacyModeSource,
     bool PrivacyVendorCut,
     bool PtzSupported,
-    string PrivacyModeStrategy,
+    string PrivacyStrategy,
+    IReadOnlyList<string> SupportedProtocols,
     IReadOnlyList<string> VerifiedCapabilities)
 {
     public static CameraDto From(Camera camera, IEnumerable<CameraCapabilityBinding>? verifiedBindings = null) => new(
@@ -52,7 +53,8 @@ public sealed record CameraDto(
         camera.PrivacyModeSource is { } privacyModeSource ? SnakeCaseEnum.ToSnakeCase(privacyModeSource) : null,
         camera.PrivacyVendorCut,
         camera.PtzSupported,
-        SnakeCaseEnum.ToSnakeCase(camera.PrivacyModeStrategy),
+        SnakeCaseEnum.ToSnakeCase(camera.PrivacyStrategy),
+        camera.GetSupportedProtocols().Select(p => SnakeCaseEnum.ToSnakeCase(p)).ToList(),
         verifiedBindings?
             .Where(b => b.CameraId == camera.Id)
             .Select(b => SnakeCaseEnum.ToSnakeCase(b.Capability))

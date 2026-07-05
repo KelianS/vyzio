@@ -55,7 +55,7 @@ public class GetCamerasUseCaseTests
         ]);
         _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Ptz, Protocol = CapabilityProtocol.Onvif, Verified = true }
+            new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif, Verified = true }
         ]);
 
         var result = await _sut.ExecuteAsync();

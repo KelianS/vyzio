@@ -24,7 +24,7 @@ public sealed record CameraCapabilityBindingDto(
         IsPreset: isPreset,
         IsConfigured: true);
 
-    public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, CapabilityProtocol protocol) => new(
+    public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, SupportedProtocol protocol) => new(
         SnakeCaseEnum.ToSnakeCase(capability),
         SnakeCaseEnum.ToSnakeCase(protocol),
         ConfigJson: null,
@@ -57,7 +57,7 @@ public sealed class ProbeCameraCapabilityUseCase(
             verified = capability switch
             {
                 CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
-                CameraCapability.PrivacyMode => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
+                CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
                 _ => false,
             };
         }
@@ -99,7 +99,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
 
         if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(request.Capability, out var capability))
             throw new ArgumentException($"Invalid capability '{request.Capability}'.");
-        if (!SnakeCaseEnum.TryFromSnakeCase<CapabilityProtocol>(request.Protocol, out var protocol))
+        if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(request.Protocol, out var protocol))
             throw new ArgumentException($"Invalid protocol '{request.Protocol}'.");
 
         var binding = await bindings.GetAsync(cameraId, capability, ct) ?? new CameraCapabilityBinding

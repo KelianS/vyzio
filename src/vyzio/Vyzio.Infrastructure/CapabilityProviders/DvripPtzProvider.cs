@@ -19,7 +19,7 @@ public sealed class DvripPtzProvider(ILogger<DvripPtzProvider> logger) : IPtzCap
     private const int LoginCmd = 1000;
     private const int PtzCmd = 1400;
 
-    public CapabilityProtocol Protocol => CapabilityProtocol.Dvrip;
+    public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {

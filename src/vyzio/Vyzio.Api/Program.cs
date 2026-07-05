@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
-using Vyzio.Application.Options;
 using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.Options;
 using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Interfaces;
@@ -61,8 +61,6 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
     dbContext.Database.Migrate();
 
-    var backfill = scope.ServiceProvider.GetRequiredService<BackfillCameraCapabilityBindingsUseCase>();
-    await backfill.ExecuteAsync();
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
