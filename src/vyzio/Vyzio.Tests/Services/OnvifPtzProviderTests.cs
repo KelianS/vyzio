@@ -25,7 +25,7 @@ public class OnvifPtzProviderTests
     {
         CameraId = "cam1",
         Capability = CameraCapability.Ptz,
-        Protocol = CapabilityProtocol.Onvif,
+        Protocol = SupportedProtocol.Onvif,
         Verified = true,
     };
 
@@ -40,15 +40,15 @@ public class OnvifPtzProviderTests
             : new CaptureHandler(captured, status, responseBody);
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(new HttpClient(httpHandler));
-        var ptzClient = new OnvifPtzClient(factory, NullLogger<OnvifPtzClient>.Instance);
-        return (new OnvifPtzProvider(ptzClient, NullLogger<OnvifPtzProvider>.Instance), captured);
+        var onvifClient = new OnvifClient(factory, NullLogger<OnvifClient>.Instance);
+        return (new OnvifPtzProvider(onvifClient, NullLogger<OnvifPtzProvider>.Instance), captured);
     }
 
     [Fact]
     public void Protocol_is_Onvif()
     {
         var (provider, _) = MakeProvider();
-        Assert.Equal(CapabilityProtocol.Onvif, provider.Protocol);
+        Assert.Equal(SupportedProtocol.Onvif, provider.Protocol);
     }
 
     [Fact]

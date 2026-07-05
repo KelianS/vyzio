@@ -31,6 +31,7 @@
   - [ADR-18 — Enregistrement continu : activation par caméra dans la config Frigate générée](#adr-18--enregistrement-continu--activation-par-caméra-dans-la-config-frigate-générée)
   - [ADR-21 — PTZ Parking et adaptateur ONVIF générique : stratégie multi-couche pour le mode vie privée](#adr-21--ptz-parking-et-adaptateur-onvif-générique--stratégie-multi-couche-pour-le-mode-vie-privée)
   - [ADR-22 — Catalogue de capacités caméra : découplage marque/protocole, presets vendor et onboarding manuel](#adr-22--catalogue-de-capacités-caméra--découplage-marqueprotocole-presets-vendor-et-onboarding-manuel)
+  - [ADR-24 — Séparation couche protocole / couche fonctionnelle : OnvifClient, SupportedProtocol, PrivacyStrategy](#adr-24--séparation-couche-protocole--couche-fonctionnelle--onvifclient-supportedprotocol-privacystrategy)
   - [ADR-23 — Surveillance de joignabilité des caméras : polling TCP périodique indépendant de Frigate](#adr-23--surveillance-de-joignabilité-des-caméras--polling-tcp-périodique-indépendant-de-frigate)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
@@ -1840,6 +1841,8 @@ PATCH /api/cameras/{id}/privacy-strategy → { strategy: "software"|"ptz_parking
 - ⚠️ Les presets ONVIF ne sont pas universellement implémentés (V380 : "not implemented" lors des tests) — le fallback `ContinuousMove` inverse est le chemin nominal sur ces firmwares ; à valider marque par marque
 - ⚠️ La durée du mouvement PTZ (~8s) est empirique — à rendre configurable si les tests montrent une hétérogénéité selon les modèles
 
+> **Mise à jour 2026-07-05 (ADR-24) :** `PtzParkingPrivacyProvider` supprimé — la logique est inlinée dans `ToggleCameraPrivacyModeUseCase`. `PrivacyModeStrategy { Software, PtzParking, Hardware }` renommé en `PrivacyStrategy { None, SoftwareBlur, PtzParking, Hardware }` ; la valeur BDD `privacy_mode_strategy = 'software'` migrée en `'software_blur'`. Voir ADR-24.
+
 ---
 
 ### ADR-22 — Catalogue de capacités caméra : découplage marque/protocole, presets vendor et onboarding manuel
@@ -2055,6 +2058,93 @@ Marque non reconnue ("Configuration avancée — caméra non répertoriée") :
 - ⚠️ Le protocole `TapoKlap` reste à ce jour mono-marque (Tapo) ; sa généralisation en `CapabilityProtocol` est surtout structurelle/symétrique pour la partie transport, mais lui permet déjà de servir deux capacités (Privacy + Ptz) au lieu d'une seule — gain de réutilisation réel, pas seulement symétrique
 - ⚠️ L'onboarding manuel introduit une surface d'erreur utilisateur plus large (saisie de paramètres protocole) — le probe obligatoire avant activation est la garde-fou non négociable
 
+> **Mise à jour 2026-07-05 (ADR-24) :** `CapabilityProtocol` supprimé et remplacé par `SupportedProtocol { Onvif, V380, Dvrip, TapoKlap, Rtsp }` (valeurs strictement protocole réseau). `CameraCapability.PrivacyMode` renommé `CameraCapability.HardwarePrivacy`. `OnvifPtzClient` → `OnvifClient` (pure transport). `PtzParkingPrivacyProvider` et `SoftwareOnlyPrivacyProvider` supprimés. `BackfillCameraCapabilityBindingsUseCase` supprimé. `Camera.SupportedProtocols` (JSON) ajouté. Voir ADR-24.
+
+---
+
+### ADR-24 — Séparation couche protocole / couche fonctionnelle : `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy`
+
+#### Contexte
+
+ADR-22 a introduit `CapabilityProtocol` avec des valeurs mixant protocoles réseau (`Onvif`, `Dvrip`, `TapoKlap`) et stratégies fonctionnelles (`PtzParking`, `SoftwareOnly`, `None`). Ce mélange a rendu l'enum inapte à décrire les protocoles réellement détectés sur la caméra, et a couplé la stratégie de vie privée à la résolution des providers.
+
+Trois problèmes structurels identifiés :
+1. `CapabilityProtocol.PtzParking` n'est pas un protocole réseau — c'est une stratégie applicative. Stocker ce "protocole" dans `camera_capability_bindings.protocol` crée une colonne dont la valeur n'est pas interrogeable pour répondre à "quels protocoles réseau parle cette caméra ?".
+2. `OnvifPtzClient` avait fusionné transport SOAP (Wire) et orchestration (caches de profile, locks de step, logique PTZ) — rendant le client non réutilisable pour d'autres usages ONVIF (ex: bootstrap device ID V380).
+3. Bootstrap de l'ID V380 via série ONVIF nécessitait que `V380Client` accède à `OnvifPtzClient` ou duplique la logique HTTP ONVIF.
+
+#### Décision
+
+**1. `OnvifClient` — client ONVIF pur transport (Singleton).**
+
+`OnvifPtzClient` éclaté en deux : `OnvifClient` (transport SOAP, Singleton) + `OnvifPtzProvider` (orchestration PTZ, caches, locks). `OnvifClient` expose uniquement des appels SOAP/HTTP sans état applicatif — réutilisable par n'importe quel provider.
+
+```csharp
+internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<OnvifClient> logger)
+{
+    // Wire methods uniquement
+    Task<OnvifDeviceInfo> GetDeviceInformationAsync(Camera, CancellationToken);
+    Task<(string ProfileToken, string PtzConfigToken)> GetFirstProfileAsync(Camera, CancellationToken);
+    Task<PtzCapabilities> GetPtzConfigurationOptionsAsync(Camera, string configToken, CancellationToken);
+    Task<PtzStatus> GetStatusAsync(Camera, string profileToken, CancellationToken);
+    Task ContinuousMoveAsync(Camera, string profileToken, double pan, double tilt, CancellationToken);
+    Task RelativeMoveAsync(Camera, string profileToken, double pan, double tilt, CancellationToken);
+    Task StopAsync(Camera, string profileToken, CancellationToken);
+    Task SetPresetAsync(Camera, string profileToken, int presetId, CancellationToken);
+    Task GotoPresetAsync(Camera, string profileToken, int presetId, CancellationToken);
+}
+```
+
+**2. `SupportedProtocol` — enum strictement protocoles réseau.**
+
+`CapabilityProtocol` supprimé et remplacé :
+
+| Avant (`CapabilityProtocol`) | Après (`SupportedProtocol`) |
+|---|---|
+| `Onvif` | `Onvif` |
+| `Dvrip` | `Dvrip` |
+| `TapoKlap` | `TapoKlap` |
+| `V380` | `V380` |
+| `PtzParking` | *(supprimé — stratégie, pas protocole)* |
+| `SoftwareOnly` | *(supprimé — stratégie, pas protocole)* |
+| `None` | *(supprimé)* |
+| — | `Rtsp` *(ajouté pour futur binding Stream)* |
+
+`Camera.SupportedProtocols` : nouvelle colonne JSON (`supported_protocols_json`) alimentée par le pipeline de probe, qui liste les protocoles réseau effectivement détectés sur la caméra.
+
+**3. `PrivacyStrategy` — enum des stratégies vie privée par caméra.**
+
+`PrivacyModeStrategy { Software, PtzParking, Hardware }` renommé en `PrivacyStrategy { None, SoftwareBlur, PtzParking, Hardware }`. Valeur BDD conservée dans la colonne `privacy_mode_strategy` (pas de rename schéma), avec migration de données `'software'` → `'software_blur'`.
+
+**4. `PtzParkingPrivacyProvider` et `SoftwareOnlyPrivacyProvider` supprimés.**
+
+La logique `PtzParking` est inlinée dans `ToggleCameraPrivacyModeUseCase` via le registry PTZ existant : `PtzGoToPresetAsync(presetId: 1)`. `SoftwareOnly` est la branche `default` du switch — aucun provider nécessaire.
+
+**5. Bootstrap ID V380 via ONVIF (Singleton partagé).**
+
+`V380PtzProvider` reçoit `OnvifClient` par injection. `ProbeAsync` tente dans l'ordre : ConfigJson persisté → `OnvifClient.GetDeviceInformationAsync` (serial bytes[2..5] BE = device_id) → UDP broadcast. L'ONVIF fonctionne en TCP depuis Docker bridge, contrairement au UDP.
+
+```
+Série ONVIF "9609019b8ae5" → bytes[2..5] = 0x019B8AE5 = 26970853 (device_id V380)
+```
+
+**6. `CameraCapability.PrivacyMode` → `CameraCapability.HardwarePrivacy`.**
+
+Renommage sémantique : la capacité "privacy" enregistrée dans `camera_capability_bindings` désigne uniquement la coupure **matérielle** (Tapo KLAP). Le mode vie privée logiciel (Frigate disabled) ne nécessite pas de binding — il est universel.
+
+**7. `BackfillCameraCapabilityBindingsUseCase` supprimé.**
+
+Le backfill au démarrage via Linq était un one-shot de migration devenu stale. La migration EF Core `20260705120000_ArchProtocolRefacto` remplace toutes ses transformations de données.
+
+#### Conséquences
+
+- ✅ `OnvifClient` réutilisable par tout provider qui parle ONVIF (V380 bootstrap, futur discovery)
+- ✅ `SupportedProtocol` décrit des protocoles réseau réels — interrogeable pour "quels protocoles parle cette caméra ?"
+- ✅ `Camera.SupportedProtocols` ouvre la porte à des affichages informatifs en UI (badges protocoles)
+- ✅ `PtzParking` en tant que stratégie vie privée n'est plus couplé à un provider par protocole — fonctionne avec tout provider PTZ existant ou futur
+- ✅ `PrivacyStrategy.None` est maintenant une valeur explicite — les caméras sans stratégie configurée ne tombent plus silencieusement sur `SoftwareBlur`
+- ⚠️ Migration de données requise : `'software'` → `'software_blur'` dans `privacy_mode_strategy`, `'privacy_mode'` → `'hardware_privacy'` dans `capability`, suppression des bindings `ptz_parking`/`software_only`
+
 ---
 
 ### ADR-23 — Surveillance de joignabilité des caméras : polling TCP périodique indépendant de Frigate
@@ -2232,20 +2322,22 @@ CREATE TABLE cameras (
     privacy_mode_active       INTEGER NOT NULL DEFAULT 0,
     privacy_mode_source       TEXT,   -- "manual" | "schedule" | null
     privacy_vendor_cut        INTEGER NOT NULL DEFAULT 0,
-    -- PTZ + stratégie privacy (ADR-21)
+    -- PTZ + stratégie privacy (ADR-21, mis à jour ADR-24)
     ptz_supported             INTEGER NOT NULL DEFAULT 0,
-    privacy_mode_strategy     TEXT NOT NULL DEFAULT 'software',  -- "software" | "ptz_parking" | "hardware"
+    privacy_mode_strategy     TEXT NOT NULL DEFAULT 'none',  -- "none" | "software_blur" | "ptz_parking" | "hardware"
+    -- Protocoles réseau détectés sur la caméra (ADR-24)
+    supported_protocols_json  TEXT,                          -- JSON array : ["onvif", "v380", ...]
     created_at                TEXT NOT NULL,
     updated_at                TEXT NOT NULL
     -- Note: remplace detection_preset (retiré, ADR-14)
 );
 
--- Capacités optionnelles (PTZ, mode vie privée matériel) découplées de la marque (ADR-22)
+-- Capacités optionnelles (PTZ, vie privée matérielle) découplées de la marque (ADR-22, mis à jour ADR-24)
 CREATE TABLE camera_capability_bindings (
     id            TEXT PRIMARY KEY,
     camera_id     TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
-    capability    TEXT NOT NULL,             -- "ptz" | "privacy_mode"
-    protocol      TEXT NOT NULL,             -- "onvif" | "dvrip" | "tapo_klap" | "ptz_parking" | "software_only"
+    capability    TEXT NOT NULL,             -- "ptz" | "hardware_privacy"
+    protocol      TEXT NOT NULL,             -- "onvif" | "dvrip" | "tapo_klap" | "v380" | "rtsp"
     config_json   TEXT,                      -- params protocole : port, adresse ONVIF, credentials...
     verified      INTEGER NOT NULL DEFAULT 0, -- résultat du dernier test réel, jamais déclaratif
     verified_at   TEXT,

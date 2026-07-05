@@ -9,7 +9,7 @@ import type { VendorAssistance } from '../entities/VendorAssistance'
 import type {
   CameraCapabilityBinding,
   Capability,
-  CapabilityProtocol,
+  SupportedProtocol,
 } from '../entities/CameraCapabilityBinding'
 
 export interface CreatePrivacyScheduleInput {
@@ -72,7 +72,7 @@ export interface CameraRepository {
   configureCapability(
     cameraId: string,
     capability: Capability,
-    protocol: CapabilityProtocol,
+    protocol: SupportedProtocol,
     configJson?: string,
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>

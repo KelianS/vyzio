@@ -107,13 +107,13 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, SetPrivacyStrategyRequest request, CancellationToken ct = default)
     {
-        if (!SnakeCaseEnum.TryFromSnakeCase<PrivacyModeStrategy>(request.Strategy, out var strategy))
-            throw new ArgumentException($"Invalid privacy strategy '{request.Strategy}'. Valid values: software, ptz_parking, hardware.");
+        if (!SnakeCaseEnum.TryFromSnakeCase<PrivacyStrategy>(request.Strategy, out var strategy))
+            throw new ArgumentException($"Invalid privacy strategy '{request.Strategy}'. Valid values: none, software_blur, ptz_parking, hardware.");
 
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        camera.PrivacyModeStrategy = strategy;
+        camera.PrivacyStrategy = strategy;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
 

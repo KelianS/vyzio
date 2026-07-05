@@ -2,12 +2,12 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Replaces the PTZ half of IVendorCameraAdapter (ADR-22). Resolved by CapabilityProtocol,
+// Replaces the PTZ half of IVendorCameraAdapter (ADR-22). Resolved by SupportedProtocol,
 // never by VendorFamily — a single implementation can serve every brand that speaks the
 // same protocol (e.g. OnvifPtzProvider covers V380, Hikvision, Dahua, Reolink, Axis...).
 public interface IPtzCapabilityProvider
 {
-    CapabilityProtocol Protocol { get; }
+    SupportedProtocol Protocol { get; }
 
     // Executes a real connectivity/capability check against the camera. Verified must only
     // ever be set to true as a result of this call — never declaratively.

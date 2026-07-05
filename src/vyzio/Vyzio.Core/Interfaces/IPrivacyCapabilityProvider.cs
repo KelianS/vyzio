@@ -2,11 +2,12 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Replaces the privacy half of IVendorCameraAdapter (ADR-22). Resolved by CapabilityProtocol,
-// never by VendorFamily.
+// Hardware-level privacy provider (ADR-22). Resolved by SupportedProtocol.
+// Only hardware privacy implementations register here (e.g. TapoKlap lens mask).
+// PTZ parking and software-only strategies are handled directly in ToggleCameraPrivacyModeUseCase.
 public interface IPrivacyCapabilityProvider
 {
-    CapabilityProtocol Protocol { get; }
+    SupportedProtocol Protocol { get; }
 
     // Executes a real connectivity/capability check against the camera. Verified must only
     // ever be set to true as a result of this call — never declaratively.

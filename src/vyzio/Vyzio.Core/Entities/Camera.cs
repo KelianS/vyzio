@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
+using Vyzio.Core.Common;
 
 namespace Vyzio.Core.Entities;
 
@@ -41,6 +42,9 @@ public class Camera
     [MaxLength(500)]
     public string? DetectionLabelsJson { get; set; }
 
+    // JSON array of detected network protocols e.g. ["onvif","v380"]. Populated by probe pipeline.
+    public string? SupportedProtocolsJson { get; set; }
+
     public bool ContinuousRecordingEnabled { get; set; }
 
     [Required, MaxLength(50)]
@@ -68,7 +72,9 @@ public class Camera
     // PTZ + privacy strategy (ADR-21)
     public bool PtzSupported { get; set; }
 
-    public PrivacyModeStrategy PrivacyModeStrategy { get; set; } = PrivacyModeStrategy.Software;
+    // App-level privacy configuration. Column kept as privacy_mode_strategy for schema compat.
+    [Column("privacy_mode_strategy")]
+    public PrivacyStrategy PrivacyStrategy { get; set; } = PrivacyStrategy.SoftwareBlur;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
@@ -86,6 +92,36 @@ public class Camera
         catch (JsonException)
         {
             return DefaultLabels;
+        }
+    }
+
+    public IReadOnlyList<SupportedProtocol> GetSupportedProtocols()
+    {
+        if (SupportedProtocolsJson is null)
+            return [];
+
+        try
+        {
+            var strings = JsonSerializer.Deserialize<List<string>>(SupportedProtocolsJson) ?? [];
+            return strings
+                .Select(s => SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(s, out var p) ? (SupportedProtocol?)p : null)
+                .Where(p => p.HasValue)
+                .Select(p => p!.Value)
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    public void AddSupportedProtocol(SupportedProtocol protocol)
+    {
+        var current = GetSupportedProtocols().ToList();
+        if (!current.Contains(protocol))
+        {
+            current.Add(protocol);
+            SupportedProtocolsJson = JsonSerializer.Serialize(current.Select(p => SnakeCaseEnum.ToSnakeCase(p)));
         }
     }
 
