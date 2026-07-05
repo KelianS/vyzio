@@ -16,7 +16,7 @@ import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacyS
 import type {
   CameraCapabilityBinding,
   Capability,
-  CapabilityProtocol,
+  SupportedProtocol,
 } from '../../domain/entities/CameraCapabilityBinding'
 import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetchJson'
 
@@ -43,7 +43,8 @@ interface CameraDto {
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
   ptzSupported: boolean
-  privacyModeStrategy: string
+  privacyStrategy: string
+  supportedProtocols: string[]
   verifiedCapabilities: string[]
 }
 
@@ -279,7 +280,7 @@ export class HttpCameraRepository implements CameraRepository {
   async configureCapability(
     cameraId: string,
     capability: Capability,
-    protocol: CapabilityProtocol,
+    protocol: SupportedProtocol,
     configJson?: string,
   ): Promise<CameraCapabilityBinding> {
     return putJson<CameraCapabilityBinding>(
@@ -322,8 +323,9 @@ function mapCamera(camera: CameraDto): Camera {
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
     ptzSupported: camera.ptzSupported ?? false,
-    privacyModeStrategy: (camera.privacyModeStrategy ||
-      'software') as Camera['privacyModeStrategy'],
+    privacyStrategy: (camera.privacyStrategy ||
+      'none') as Camera['privacyStrategy'],
+    supportedProtocols: camera.supportedProtocols ?? [],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     connected: camera.status === 'online',
   }

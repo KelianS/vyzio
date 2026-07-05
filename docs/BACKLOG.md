@@ -22,6 +22,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 > Zone de capture libre. Un ajout = une ligne. Pas de tri, pas de priorite, pas de contexte obligatoire.
 
+- Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Position de parking vie privée PTZ configurable (preset 2, symétrique à la position de surveillance).
 - Presets multiples pour toutes les caméras PTZ (minimum 4, dont 2 personnalisables), configurables depuis l'UI.
 - Configuration avancée caméra (luminosité, contraste, IR...) centralisée dans Vyzio plutôt que dans les apps constructeur.
@@ -52,9 +53,9 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 4. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
 
-5. **Priorité protocole pour la détection de capacités** — aucun ordre de préférence n'est défini quand plusieurs protocoles sont candidats pour la même capacité (ex. une caméra inconnue qui répond à ONVIF et V380). Définir une priorité globale par `(CameraCapability, CapabilityProtocol)` — ex. pour `Ptz` : V380 > Onvif > Dvrip > TapoKlap. La détection auto sonde les protocoles dans cet ordre et retient le premier qui passe. La caméra certifiée (`VendorFamily` connu) conserve le preset comme protocole de référence mais passe quand même par la priorité si plusieurs protocoles sont disponibles.
+5. **Priorité protocole pour la détection de capacités** — dépend du refacto `arch-protocol` (unification des enums). À traiter après. Ordre envisagé pour `Ptz` : V380 > TapoKlap > Onvif > Dvrip.
 
-6. **Suppression du code legacy de capacités** — `BackfillCameraCapabilityBindingsUseCase` et toutes les correspondances hardcodées (`V380Pro → Onvif`, `Icsee → Dvrip`, etc.) sont du legacy de migration — à supprimer. Le système de bindings est maintenant la source de vérité ; les caméras qui n'ont pas encore de binding passent par le probe, pas par un backfill. Vérifier qu'aucune autre référence à l'ancien modèle ne subsiste (champ `PtzSupported` sur `Camera`, logique conditionnelle sur `VendorFamily` dans les use cases).
+6. **Suppression du code legacy de capacités** — `BackfillCameraCapabilityBindingsUseCase` et correspondances hardcodées — à supprimer dans le cadre du refacto `arch-protocol` (item 2).
 
 7. **UI : capacités éditables après configuration** — le `PUT /api/cameras/{id}/capabilities/{capability}` existe mais n'est pas accessible depuis l'interface une fois la capacité configurée. L'UI doit permettre de changer le protocole d'un binding existant (ex. passer de ONVIF à V380 manuellement) et de désactiver une capacité (supprimer le binding). Le panneau capacités d'une caméra doit afficher un état "reconfigurable" pour chaque capability vérifiée.
 
@@ -62,9 +63,56 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 ---
 
+### `arch-protocol` — Refacto architecture protocoles / capacités
+
+Direction décidée, alignée avec la session de design du 2026-07-05.
+
+#### Cible architecturale
+
+```
+SupportedProtocol  { Onvif, V380, Dvrip, TapoKlap, Rtsp }
+  → unique enum réseau, utilisée partout (camera.SupportedProtocols ET capability bindings)
+
+Capability         { Stream, Ptz, HardwarePrivacy }
+  → features caméra uniquement
+
+CameraCapabilityBinding { capability: Capability, protocol: SupportedProtocol }
+  ex. { stream → Rtsp }, { ptz → V380 }, { hardware_privacy → TapoKlap }
+
+Camera {
+  SupportedProtocols : SupportedProtocol[]   ← détectés à la probe, persistés en DB
+  CapabilityBindings : CameraCapabilityBinding[]
+  PrivacyStrategy    : None | SoftwareBlur | PtzParking | Hardware  ← config app
+}
+```
+
+`CapabilityProtocol` disparaît. `PtzParking` / `SoftwareOnly` / `None` sortent des bindings → deviennent `PrivacyStrategy` sur la caméra.
+
+#### Items d'implémentation
+
+1. **Refacto `OnvifPtzClient` → `OnvifClient`** — protocole pur. `OnvifClient` expose `PostSoapAsync`, `GetDeviceInformationAsync`, `GetProfilesAsync`, `GetCapabilitiesAsync`, `AbsoluteMoveAsync`, `RelativeMoveAsync`, `ContinuousMoveAsync`, `StopAsync`. `OnvifPtzProvider` devient un orchestrateur fin (logique feature uniquement). Injection mise à jour partout.
+
+2. **Unification des enums** — `CapabilityProtocol` supprimé. `SupportedProtocol { Onvif, V380, Dvrip, TapoKlap, Rtsp }` devient la seule référence protocole. `Capability` étendu avec `Stream` et `HardwarePrivacy` (renommage de `privacy_mode`). Migration DB + DTO API + type TS frontend.
+
+3. **`PrivacyStrategy` sur `Camera`** — nouveau champ `privacy_strategy : None | SoftwareBlur | PtzParking | Hardware`. Retire `PtzParking` / `SoftwareOnly` / `None` des bindings. Migration DB.
+
+4. **`SupportedProtocols` sur `Camera`** — colonne JSON `supported_protocols` sur la table `cameras`. La pipeline de découverte (`AssistedCameraDiscoveryProbePipeline`) peuple ce champ à la probe (les infos sont déjà collectées, elles partaient dans le vide). Migration DB.
+
+5. **Bootstrap device ID V380 via ONVIF** — `V380PtzProvider.ProbeAsync` : si pas d'ID en ConfigJson, check `camera.SupportedProtocols.Contains(Onvif)` → `OnvifClient.GetDeviceInformationAsync` → bytes[2..5] BE du serial = device ID. Fallback UDP. Dépend de 1 + 4.
+
+6. **UI — protocoles supportés** — section "Protocoles détectés" dans la fiche caméra : badges `ONVIF · V380 · RTSP · DVRIP`. Vide si non encore sondé (message "Sonder la caméra pour détecter les protocoles"). Données issues de `camera.supportedProtocols`.
+
+7. **UI — binding Stream** — la capacité `stream` apparaît dans la section capacités comme les autres : protocole utilisé (RTSP ou DVRIP), bouton Tester. Pas de form manuelle (toujours auto-détecté).
+
+8. **UI — saisie manuelle ID V380** — quand le binding PTZ V380 a `lastError` contenant "Identifiant V380 introuvable", afficher un champ numérique dédié "Identifiant V380" avec hint "Visible dans l'app V380 Pro → Mon équipement". Soumission → stocké dans ConfigJson `{"device_id": …}` → re-probe automatique.
+
+9. **UI — `PrivacyStrategy`** — remplace les protocoles `PtzParking` / `SoftwareOnly` actuellement dans les bindings. Sélecteur dans la fiche caméra (section "Vie privée") : Aucun / Masquage logiciel / Position de parking PTZ / Matériel. L'option Hardware est grisée si pas de binding `hardware_privacy` vérifié. L'option PtzParking est grisée si pas de binding `ptz` vérifié.
+
+---
+
 ### `ptz` — PTZ précis
 
-1. **Protocole propriétaire V380 port 8800** — port ouvert, répond en 205ms (`9c ff ff ff` = -100 LE = rejet de notre format). Magic bytes différents du DVRIP classique (`ff000000`). Objectif : login + ContinuousMove + Stop pour un contrôle PTZ sans la limitation 3s ONVIF. Scripts dans `tools/camera-probe/probe_8800.py`. **Estimation : 2-3j.** Peut démarrer indépendamment.
+1. **Protocole propriétaire V380 port 8800** — ✅ implémenté (`V380Client` + `V380PtzProvider`). UDP discovery bloqué depuis Docker bridge — résolu via bootstrap ONVIF serial (item `arch-protocol` 5).
 
 ---
 

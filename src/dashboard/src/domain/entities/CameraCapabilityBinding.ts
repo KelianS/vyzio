@@ -1,16 +1,9 @@
-export type Capability = 'ptz' | 'privacy_mode'
-export type CapabilityProtocol =
-  | 'onvif'
-  | 'dvrip'
-  | 'tapo_klap'
-  | 'v380'
-  | 'ptz_parking'
-  | 'software_only'
-  | 'none'
+export type Capability = 'ptz' | 'hardware_privacy'
+export type SupportedProtocol = 'onvif' | 'dvrip' | 'tapo_klap' | 'v380' | 'rtsp'
 
 export interface CameraCapabilityBinding {
   capability: Capability
-  protocol: CapabilityProtocol
+  protocol: SupportedProtocol
   configJson: string | null
   verified: boolean
   verifiedAt: string | null

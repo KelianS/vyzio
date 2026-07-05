@@ -156,13 +156,11 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         return ticket == 0 ? null : ticket;
     }
 
-    // Sends NVDEVSEARCH^100 via UDP and parses the deviceId from the camera's NVDEVRESULT response.
-    // Tries unicast to the camera IP first, then subnet broadcast (/24 assumed) as a fallback —
-    // Docker bridge mode may not pass broadcast responses from the LAN, so unicast is preferred.
+    // UDP NVDEVSEARCH discovery. V380PtzProvider tries ONVIF first (via OnvifClient),
+    // then falls back here. This keeps V380Client free of ONVIF protocol knowledge.
     private static async Task<uint?> DiscoverDeviceIdAsync(string host, CancellationToken ct)
     {
         var msg = "NVDEVSEARCH^100"u8.ToArray();
-
         var id = await TrySendDiscoveryAsync(msg, host, ct);
         if (id.HasValue) return id;
 

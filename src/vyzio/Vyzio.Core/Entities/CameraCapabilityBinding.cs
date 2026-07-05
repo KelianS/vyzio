@@ -20,7 +20,7 @@ public class CameraCapabilityBinding
 
     public CameraCapability Capability { get; set; }
 
-    public CapabilityProtocol Protocol { get; set; }
+    public SupportedProtocol Protocol { get; set; }
 
     // Protocol-specific connection parameters (ONVIF port/address, DVRIP credentials, etc.)
     public string? ConfigJson { get; set; }

@@ -1,11 +1,11 @@
 namespace Vyzio.Core.Entities;
 
-// Optional camera capability, independent of brand (ADR-22). Stream transport (RTSP/DVRIP,
-// ADR-19) is foundational and stays out of this model — only optional/advanced capabilities
-// are represented here.
+// Optional camera capability, independent of brand (ADR-22).
+// Stream is the base video transport (RTSP or DVRIP) — included so it can be displayed
+// alongside advanced capabilities in the UI and bound to a SupportedProtocol.
 public enum CameraCapability
 {
+    Stream,
     Ptz,
-    PrivacyMode,
-    // SystemInfo (futur)
+    HardwarePrivacy,
 }

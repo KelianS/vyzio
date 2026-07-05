@@ -7,14 +7,14 @@ namespace Vyzio.Tests.Services;
 
 public class CapabilityProviderRegistryTests
 {
-    private static IPtzCapabilityProvider MakePtz(CapabilityProtocol protocol)
+    private static IPtzCapabilityProvider MakePtz(SupportedProtocol protocol)
     {
         var p = Substitute.For<IPtzCapabilityProvider>();
         p.Protocol.Returns(protocol);
         return p;
     }
 
-    private static IPrivacyCapabilityProvider MakePrivacy(CapabilityProtocol protocol)
+    private static IPrivacyCapabilityProvider MakePrivacy(SupportedProtocol protocol)
     {
         var p = Substitute.For<IPrivacyCapabilityProvider>();
         p.Protocol.Returns(protocol);
@@ -24,19 +24,19 @@ public class CapabilityProviderRegistryTests
     [Fact]
     public void ResolvePtz_returns_registered_provider()
     {
-        var onvif = MakePtz(CapabilityProtocol.Onvif);
+        var onvif = MakePtz(SupportedProtocol.Onvif);
         var sut = new CapabilityProviderRegistry([onvif], []);
 
-        Assert.Same(onvif, sut.ResolvePtz(CapabilityProtocol.Onvif));
+        Assert.Same(onvif, sut.ResolvePtz(SupportedProtocol.Onvif));
     }
 
     [Fact]
     public void ResolvePrivacy_returns_registered_provider()
     {
-        var tapo = MakePrivacy(CapabilityProtocol.TapoKlap);
+        var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
         var sut = new CapabilityProviderRegistry([], [tapo]);
 
-        Assert.Same(tapo, sut.ResolvePrivacy(CapabilityProtocol.TapoKlap));
+        Assert.Same(tapo, sut.ResolvePrivacy(SupportedProtocol.TapoKlap));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class CapabilityProviderRegistryTests
     {
         var sut = new CapabilityProviderRegistry([], []);
 
-        Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(CapabilityProtocol.Dvrip));
+        Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(SupportedProtocol.Dvrip));
     }
 
     [Fact]
@@ -52,36 +52,36 @@ public class CapabilityProviderRegistryTests
     {
         var sut = new CapabilityProviderRegistry([], []);
 
-        Assert.Throws<InvalidOperationException>(() => sut.ResolvePrivacy(CapabilityProtocol.TapoKlap));
+        Assert.Throws<InvalidOperationException>(() => sut.ResolvePrivacy(SupportedProtocol.TapoKlap));
     }
 
     [Fact]
     public void ResolvePtz_distinguishes_multiple_registered_protocols()
     {
-        var onvif = MakePtz(CapabilityProtocol.Onvif);
-        var dvrip = MakePtz(CapabilityProtocol.Dvrip);
+        var onvif = MakePtz(SupportedProtocol.Onvif);
+        var dvrip = MakePtz(SupportedProtocol.Dvrip);
         var sut = new CapabilityProviderRegistry([onvif, dvrip], []);
 
-        Assert.Same(onvif, sut.ResolvePtz(CapabilityProtocol.Onvif));
-        Assert.Same(dvrip, sut.ResolvePtz(CapabilityProtocol.Dvrip));
+        Assert.Same(onvif, sut.ResolvePtz(SupportedProtocol.Onvif));
+        Assert.Same(dvrip, sut.ResolvePtz(SupportedProtocol.Dvrip));
     }
 
     [Fact]
     public void ResolvePrivacy_distinguishes_multiple_registered_protocols()
     {
-        var tapo = MakePrivacy(CapabilityProtocol.TapoKlap);
-        var sw = MakePrivacy(CapabilityProtocol.SoftwareOnly);
-        var sut = new CapabilityProviderRegistry([], [tapo, sw]);
+        var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
+        var dvrip = MakePrivacy(SupportedProtocol.Dvrip);
+        var sut = new CapabilityProviderRegistry([], [tapo, dvrip]);
 
-        Assert.Same(tapo, sut.ResolvePrivacy(CapabilityProtocol.TapoKlap));
-        Assert.Same(sw, sut.ResolvePrivacy(CapabilityProtocol.SoftwareOnly));
+        Assert.Same(tapo, sut.ResolvePrivacy(SupportedProtocol.TapoKlap));
+        Assert.Same(dvrip, sut.ResolvePrivacy(SupportedProtocol.Dvrip));
     }
 
     [Fact]
     public void ResolvePtz_throws_for_unknown_protocol_even_with_other_providers_registered()
     {
-        var sut = new CapabilityProviderRegistry([MakePtz(CapabilityProtocol.Onvif)], []);
+        var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], []);
 
-        Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(CapabilityProtocol.Dvrip));
+        Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(SupportedProtocol.Dvrip));
     }
 }

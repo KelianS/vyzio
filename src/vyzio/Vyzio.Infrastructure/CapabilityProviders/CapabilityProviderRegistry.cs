@@ -7,8 +7,8 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // dimension — never by VendorFamily string (ADR-22). Replaces IVendorCameraAdapterFactory.
 public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
 {
-    private readonly IReadOnlyDictionary<CapabilityProtocol, IPtzCapabilityProvider> _ptzProviders;
-    private readonly IReadOnlyDictionary<CapabilityProtocol, IPrivacyCapabilityProvider> _privacyProviders;
+    private readonly IReadOnlyDictionary<SupportedProtocol, IPtzCapabilityProvider> _ptzProviders;
+    private readonly IReadOnlyDictionary<SupportedProtocol, IPrivacyCapabilityProvider> _privacyProviders;
 
     public CapabilityProviderRegistry(
         IEnumerable<IPtzCapabilityProvider> ptzProviders,
@@ -18,12 +18,12 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         _privacyProviders = privacyProviders.ToDictionary(p => p.Protocol);
     }
 
-    public IPtzCapabilityProvider ResolvePtz(CapabilityProtocol protocol)
+    public IPtzCapabilityProvider ResolvePtz(SupportedProtocol protocol)
         => _ptzProviders.TryGetValue(protocol, out var provider)
             ? provider
             : throw new InvalidOperationException($"No IPtzCapabilityProvider registered for protocol '{protocol}'.");
 
-    public IPrivacyCapabilityProvider ResolvePrivacy(CapabilityProtocol protocol)
+    public IPrivacyCapabilityProvider ResolvePrivacy(SupportedProtocol protocol)
         => _privacyProviders.TryGetValue(protocol, out var provider)
             ? provider
             : throw new InvalidOperationException($"No IPrivacyCapabilityProvider registered for protocol '{protocol}'.");

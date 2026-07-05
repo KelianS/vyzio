@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
@@ -11,11 +12,12 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // Continuous move is not supported — the protocol requires a persistent stream loop for
 // sustained movement, which is not implemented here (step-based PTZ is sufficient, ADR-22).
 //
-// The V380 deviceId (required for auth) is obtained by UDP discovery at probe time and then
-// persisted in binding.ConfigJson as {"device_id": <uint>}. Subsequent PTZ commands read from
-// ConfigJson, so UDP discovery is not needed again — this makes Docker bridge mode work.
-// To bypass discovery entirely, set ConfigJson manually via PUT /cameras/{id}/capabilities/ptz.
-internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
+// Device ID bootstrap order (ProbeAsync):
+//   1. Persisted ConfigJson {"device_id": ...} — fastest, no network.
+//   2. ONVIF GetDeviceInformation serial bytes[2..5] BE — works from Docker bridge (TCP only).
+//   3. V380 UDP NVDEVSEARCH — fallback for environments without ONVIF on port 8899.
+// After a successful probe, the device ID is persisted back to ConfigJson by the use case layer.
+internal sealed class V380PtzProvider(V380Client client, OnvifClient onvif, ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
     // 16-byte PTZ binary packets (opcode 0xAA). Pan/tilt are uint16 LE: neutral=1000.
     // Direction mapping confirmed by physical testing — inverted from prsyahmi/v380 source labels:
@@ -31,17 +33,27 @@ internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider
     private static ReadOnlySpan<byte> DownRight => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xEA,0x03,0xEC,0x03, 0x00,0x00,0x01,0x00];
     private static ReadOnlySpan<byte> DownLeft  => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xE9,0x03,0xEC,0x03, 0x00,0x00,0x01,0x00];
 
-    public CapabilityProtocol Protocol => CapabilityProtocol.V380;
+    public SupportedProtocol Protocol => SupportedProtocol.V380;
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        // Pre-load from ConfigJson — allows re-probe without UDP discovery.
+        // Pre-load from ConfigJson — allows re-probe without discovery.
         if (TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
 
+        // Bootstrap via ONVIF serial if device ID not yet known.
+        // ONVIF serial bytes[2..5] BE = V380 device ID.
+        // Confirmed: serial "9609019b8ae5" → 0x019B8AE5 = 26970853.
+        if (client.GetCachedDeviceId(camera.Host) is null)
+        {
+            var onvifId = await TryGetDeviceIdViaOnvifSerialAsync(camera, ct);
+            if (onvifId.HasValue)
+                client.PreloadDeviceId(camera.Host, onvifId.Value);
+        }
+
         var success = await client.ProbeAsync(camera, ct);
 
-        // Persist the discovered deviceId so future PTZ commands work without UDP discovery.
+        // Persist the discovered deviceId so future PTZ commands work without discovery.
         // (The use case layer calls binding.SaveAsync after ProbeAsync returns.)
         if (success)
         {
@@ -57,7 +69,6 @@ internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider
     // Overrides the default Move+Stop fallback — V380 has no persistent session concept here.
     public async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
-        // Pre-load deviceId from persisted ConfigJson — avoids UDP discovery on every command.
         if (TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
 
@@ -84,6 +95,22 @@ internal sealed class V380PtzProvider(V380Client client, ILogger<V380PtzProvider
 
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
+
+    private async Task<uint?> TryGetDeviceIdViaOnvifSerialAsync(Camera camera, CancellationToken ct)
+    {
+        try
+        {
+            var info = await onvif.GetDeviceInformationAsync(camera, ct);
+            if (info?.SerialNumber is null) return null;
+
+            var bytes = Convert.FromHexString(info.SerialNumber.Trim());
+            if (bytes.Length < 6) return null;
+
+            var deviceId = BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(2, 4));
+            return deviceId == 0 ? null : deviceId;
+        }
+        catch { return null; }
+    }
 
     private static bool TryReadDeviceId(string? configJson, out uint deviceId)
     {

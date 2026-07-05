@@ -375,7 +375,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     setDetectionLabels(['person'])
     setDetectionAvailableLabels([])
     setDetectionContinuousRecording(false)
-    setPendingStrategy(selectedCamera.privacyModeStrategy ?? 'software')
+    setPendingStrategy(selectedCamera.privacyStrategy ?? 'none')
     setStrategyFeedback(null)
     setDetectionConfigLoading(true)
     props.getCameraDetectionConfig
@@ -1384,9 +1384,16 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                     <div className="privacy-strategy-selector">
                       {[
                         {
-                          value: 'software' as const,
-                          label: 'Logiciel uniquement',
-                          desc: 'Enregistrement désactivé — la caméra reste accessible en dehors de Vyzio.',
+                          value: 'none' as const,
+                          label: 'Aucun',
+                          desc: "Pas de mode vie privée — Frigate continue d'enregistrer.",
+                          requiresPtz: false,
+                          requiresHw: false,
+                        },
+                        {
+                          value: 'software_blur' as const,
+                          label: 'Logiciel (flou Frigate)',
+                          desc: 'Enregistrement désactivé dans Vyzio — la caméra reste accessible en dehors.',
                           requiresPtz: false,
                           requiresHw: false,
                         },
@@ -1449,7 +1456,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         className="privacy-strategy-save-btn"
                         disabled={
                           saveStrategyAction.loading ||
-                          pendingStrategy === selectedCamera.privacyModeStrategy
+                          pendingStrategy === selectedCamera.privacyStrategy
                         }
                         onClick={async () => {
                           if (!pendingStrategy) return

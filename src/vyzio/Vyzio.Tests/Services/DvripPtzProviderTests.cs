@@ -12,7 +12,7 @@ public class DvripPtzProviderTests
     [Fact]
     public void Protocol_is_Dvrip()
     {
-        Assert.Equal(CapabilityProtocol.Dvrip, MakeProvider().Protocol);
+        Assert.Equal(SupportedProtocol.Dvrip, MakeProvider().Protocol);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class DvripPtzProviderTests
         {
             CameraId = "cam",
             Capability = CameraCapability.Ptz,
-            Protocol = CapabilityProtocol.Dvrip,
+            Protocol = SupportedProtocol.Dvrip,
         };
 
         // Port 1 is reserved and always connection-refused — guaranteed no DVRIP listener.

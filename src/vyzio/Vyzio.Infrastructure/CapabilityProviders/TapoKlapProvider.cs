@@ -18,8 +18,8 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogger<TapoKlapProvider> logger)
     : IPrivacyCapabilityProvider, IPtzCapabilityProvider
 {
-    CapabilityProtocol IPrivacyCapabilityProvider.Protocol => CapabilityProtocol.TapoKlap;
-    CapabilityProtocol IPtzCapabilityProvider.Protocol => CapabilityProtocol.TapoKlap;
+    SupportedProtocol IPrivacyCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
+    SupportedProtocol IPtzCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => await AuthenticateAsync(camera, ct) is not null;

@@ -1,7 +1,7 @@
 import type {
   CameraCapabilityBinding,
   Capability,
-  CapabilityProtocol,
+  SupportedProtocol,
 } from '../../domain/entities/CameraCapabilityBinding'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
 
@@ -11,7 +11,7 @@ export class ConfigureCameraCapability {
   async execute(
     cameraId: string,
     capability: Capability,
-    protocol: CapabilityProtocol,
+    protocol: SupportedProtocol,
     configJson?: string,
   ): Promise<CameraCapabilityBinding> {
     return this.repository.configureCapability(cameraId, capability, protocol, configJson)

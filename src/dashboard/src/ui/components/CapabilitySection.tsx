@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type {
   CameraCapabilityBinding,
   Capability,
-  CapabilityProtocol,
+  SupportedProtocol,
 } from '../../domain/entities/CameraCapabilityBinding'
 import type { Camera } from '../../domain/entities/Camera'
 import { useAsync } from '../hooks/useAsync'
@@ -22,27 +22,33 @@ interface CapabilitySectionProps {
 
 const CAPABILITY_LABELS: Record<Capability, string> = {
   ptz: 'PTZ',
-  privacy_mode: 'Vie privée matérielle',
+  hardware_privacy: 'Vie privée matérielle',
 }
 
-const PROTOCOL_LABELS: Record<CapabilityProtocol, string> = {
+const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
   onvif: 'ONVIF',
   dvrip: 'DVRIP (ICSee / XMEye)',
   tapo_klap: 'Tapo KLAP',
   v380: 'V380 natif',
-  ptz_parking: 'Parking PTZ',
-  software_only: 'Logiciel uniquement',
-  none: '—',
+  rtsp: 'RTSP',
 }
 
-const PTZ_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
+const SUPPORTED_PROTOCOL_LABELS: Record<string, string> = {
+  onvif: 'ONVIF',
+  dvrip: 'DVRIP',
+  tapo_klap: 'Tapo KLAP',
+  v380: 'V380',
+  rtsp: 'RTSP',
+}
+
+const PTZ_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
   { value: 'v380', label: 'V380 Pro (port 8800, natif)' },
   { value: 'onvif', label: 'ONVIF (Hikvision, Dahua, Reolink, V380…)' },
   { value: 'dvrip', label: 'DVRIP (ICSee / XMEye)' },
   { value: 'tapo_klap', label: 'Tapo KLAP (caméra motorisée Tapo)' },
 ]
 
-const PRIVACY_PROTOCOLS: { value: CapabilityProtocol; label: string }[] = [
+const PRIVACY_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
   { value: 'tapo_klap', label: 'Tapo KLAP — cache objectif + LED' },
 ]
 
@@ -58,7 +64,6 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     onReload?.()
   }
 
-  const visibleBindings = (bindings ?? []).filter((b) => b.protocol !== 'ptz_parking')
   const isUnlisted = !bindings?.some((b) => b.isPreset)
 
   if (loading) {
@@ -74,6 +79,17 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     <section className="camera-detail-section capability-section-compact">
       <h4>Capacités</h4>
 
+      {/* Item 6 — Badges protocoles détectés */}
+      {camera.supportedProtocols.length > 0 && (
+        <div className="capability-protocol-badges">
+          {camera.supportedProtocols.map((p) => (
+            <span key={p} className="capability-protocol-badge">
+              {SUPPORTED_PROTOCOL_LABELS[p] ?? p.toUpperCase()}
+            </span>
+          ))}
+        </div>
+      )}
+
       {offline && (
         <p className="camera-inline-state" style={{ marginBottom: 8 }}>
           Caméra hors ligne — les tests seront disponibles dès que la caméra sera joignable.
@@ -81,7 +97,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
       )}
 
       <div className="capability-list">
-        {visibleBindings.map((b) => (
+        {(bindings ?? []).map((b) => (
           <CapabilityRow
             key={b.capability}
             cameraId={camera.id}
@@ -112,9 +128,16 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
   const { toast } = useToast()
   const [lastResult, setLastResult] = useState<'ok' | 'fail' | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [editProtocol, setEditProtocol] = useState<CapabilityProtocol>(binding.protocol)
+  const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
+  // Item 8 — V380 manual device ID when probe fails with "Identifiant V380 introuvable"
+  const [v380DeviceId, setV380DeviceId] = useState('')
 
   const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
+
+  const showV380IdInput =
+    binding.protocol === 'v380' &&
+    !isVerified &&
+    (binding.lastError?.includes('not found') ?? false)
 
   const probeAction = useAsyncAction(
     () => probeCameraCapability.execute(cameraId, binding.capability),
@@ -143,6 +166,7 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
         cameraId,
         binding.capability,
         binding.isConfigured ? editProtocol : binding.protocol,
+        v380DeviceId ? JSON.stringify({ device_id: parseInt(v380DeviceId, 10) }) : undefined,
       ),
     {
       onSuccess: (result) => {
@@ -186,7 +210,7 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
               <span>Protocole</span>
               <select
                 value={editProtocol}
-                onChange={(e) => setEditProtocol(e.target.value as CapabilityProtocol)}
+                onChange={(e) => setEditProtocol(e.target.value as SupportedProtocol)}
               >
                 {protocolOptions.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -237,6 +261,29 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
         {isVerified && verifiedAtLabel && lastResult === null && (
           <div className="capability-verified-at">Vérifié le {verifiedAtLabel}</div>
         )}
+
+        {/* Item 8 — Saisie manuelle ID V380 si probe échoue */}
+        {showV380IdInput && (
+          <div className="capability-v380-id-form">
+            <label>
+              <span>Identifiant V380 (décimal)</span>
+              <input
+                type="text"
+                placeholder="ex : 26970853"
+                value={v380DeviceId}
+                onChange={(e) => setV380DeviceId(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="secondary-cta capability-btn"
+              disabled={!v380DeviceId || configureAction.loading}
+              onClick={() => configureAction.run()}
+            >
+              {configureAction.loading ? '…' : 'Appliquer'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="capability-actions">
@@ -281,7 +328,7 @@ interface ManualCapabilityFormProps {
 
 function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
   const [selectedCapability, setSelectedCapability] = useState<Capability>('ptz')
-  const [selectedProtocol, setSelectedProtocol] = useState<CapabilityProtocol>('v380')
+  const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>('v380')
 
   const protocolOptions = selectedCapability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
 
@@ -305,7 +352,7 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
             }}
           >
             <option value="ptz">PTZ</option>
-            <option value="privacy_mode">Vie privée matérielle</option>
+            <option value="hardware_privacy">Vie privée matérielle</option>
           </select>
         </label>
 
@@ -313,7 +360,7 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
           <span>Protocole</span>
           <select
             value={selectedProtocol}
-            onChange={(e) => setSelectedProtocol(e.target.value as CapabilityProtocol)}
+            onChange={(e) => setSelectedProtocol(e.target.value as SupportedProtocol)}
           >
             {protocolOptions.map(({ value, label }) => (
               <option key={value} value={value}>

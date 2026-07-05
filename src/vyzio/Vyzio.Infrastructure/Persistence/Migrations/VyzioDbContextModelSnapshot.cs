@@ -82,10 +82,14 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("privacy_mode_source");
 
-                    b.Property<string>("PrivacyModeStrategy")
+                    b.Property<string>("PrivacyStrategy")
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("privacy_mode_strategy");
+
+                    b.Property<string>("SupportedProtocolsJson")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("supported_protocols_json");
 
                     b.Property<bool>("PrivacyVendorCut")
                         .HasColumnType("INTEGER")

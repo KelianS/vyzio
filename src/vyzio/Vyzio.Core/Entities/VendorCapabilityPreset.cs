@@ -5,4 +5,4 @@ namespace Vyzio.Core.Entities;
 // itself never drives runtime behavior, only this preset does (via the protocol it points to).
 public sealed record VendorCapabilityPreset(
     VendorFamily VendorFamily,
-    IReadOnlyList<(CameraCapability Capability, CapabilityProtocol Protocol)> DefaultBindings);
+    IReadOnlyList<(CameraCapability Capability, SupportedProtocol Protocol)> DefaultBindings);

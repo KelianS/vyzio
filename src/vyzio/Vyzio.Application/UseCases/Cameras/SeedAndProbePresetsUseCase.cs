@@ -66,7 +66,7 @@ public sealed class SeedAndProbePresetsUseCase(
         {
             CameraId = cameraId,
             Capability = CameraCapability.Ptz,
-            Protocol = CapabilityProtocol.Onvif,
+            Protocol = SupportedProtocol.Onvif,
             Verified = false,
         }, ct);
 
