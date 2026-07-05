@@ -134,11 +134,6 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
 
   const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
 
-  const showV380IdInput =
-    binding.protocol === 'v380' &&
-    !isVerified &&
-    (binding.lastError?.includes('not found') ?? false)
-
   const probeAction = useAsyncAction(
     () => probeCameraCapability.execute(cameraId, binding.capability),
     {
@@ -190,6 +185,11 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
 
   const isVerified = lastResult === 'ok' || (lastResult === null && binding.verified)
   const isConfigured = binding.isConfigured
+
+  const showV380IdInput =
+    binding.protocol === 'v380' &&
+    !isVerified &&
+    (binding.lastError?.includes('not found') ?? false)
 
   const verifiedAtLabel = binding.verifiedAt
     ? new Date(binding.verifiedAt).toLocaleString('fr-FR', {

@@ -22,9 +22,9 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 > Zone de capture libre. Un ajout = une ligne. Pas de tri, pas de priorite, pas de contexte obligatoire.
 
+- Frigate : trouver un moyen de modifier la config sans reboot le conteneur, surtout pour appliquer le mode vie privée, trop lent.
+- Status de Frigate dans l'UI, pour savoir si le service est actif et affiché un message propre pendant le redémarrage (application de config, mode vie privée etc).
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
-- Position de parking vie privée PTZ configurable (preset 2, symétrique à la position de surveillance).
-- Presets multiples pour toutes les caméras PTZ (minimum 4, dont 2 personnalisables), configurables depuis l'UI.
 - Configuration avancée caméra (luminosité, contraste, IR...) centralisée dans Vyzio plutôt que dans les apps constructeur.
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
 - Canal Discord pour les notifications (webhook).
@@ -113,6 +113,18 @@ Camera {
 ### `ptz` — PTZ précis
 
 1. **Protocole propriétaire V380 port 8800** — ✅ implémenté (`V380Client` + `V380PtzProvider`). UDP discovery bloqué depuis Docker bridge — résolu via bootstrap ONVIF serial (item `arch-protocol` 5).
+
+2. **Gestion des positions PTZ (presets + parking)** — deux presets réservés : preset 1 = position de surveillance (home), preset 2 = position de parking vie privée. Minimum 4 slots au total dont 2 personnalisables par l'utilisateur. Deux branches d'implémentation selon la capacité de la caméra :
+
+   - **Branch A — presets natifs** : si la caméra retourne ≥1 preset à la probe (`GetPresets` ONVIF ou équivalent DVRIP), utiliser `SetPreset` / `GotoPreset` natifs. Déjà partiellement câblé dans `OnvifPtzProvider` et `DvripPtzProvider`.
+   - **Branch B — positions Vyzio-managed** : fallback générique pour toute caméra dont la probe ne confirme pas le support natif des presets — indépendant du protocole (V380, ONVIF cheap, DVRIP sans preset, etc.). À la première utilisation d'un preset, effectuer un **homing** : envoyer N steps en direction UpLeft jusqu'à la butée mécanique (timeout-based, N exposé comme constante configurable par provider). L'origine (0, 0) est alors connue. Les presets sont persistés en DB comme `(steps_x, steps_y)` depuis zéro. `GoToPreset` : homing → replay des steps vers les coordonnées cibles.
+
+   **Détails d'implémentation :**
+   - Le routage Branch A / B est déterminé à la probe : chaque provider tente `GetPresets` (ou équivalent) et expose `SupportsNativePresets` dans le résultat — le flag est persisté dans `CameraCapabilityBinding.ConfigJson`.
+   - Nouveau champ `PtzPreset` en DB : `{ "native": false, "presets": [{"id": 1, "label": "Surveillance", "x": 42, "y": 17}, ...] }`.
+   - `IPtzCapabilityProvider` : ajouter `PtzHomingStepsAsync` (homing + retour à (0,0)) pour les providers Branch B ; no-op par défaut.
+   - Homing déclenché une seule fois par session (état en mémoire par `cameraId`), non bloquant pour les steps manuels en cours.
+   - UI : section "Positions PTZ" dans la fiche caméra — liste des presets, bouton "Définir ici" (save position courante), bouton "Aller" (goto), presets 1 et 2 avec labels fixes (Surveillance / Parking), presets 3-4 personnalisables.
 
 ---
 
