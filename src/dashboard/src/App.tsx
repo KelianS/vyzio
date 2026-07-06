@@ -43,7 +43,6 @@ import {
   setPrivacyStrategy,
   ptzStep,
   ptzGoToPreset,
-  configurePtzParking,
   getPtzPresets,
   ptzSaveCurrentAsPreset,
   ptzCalibrate,
