@@ -47,6 +47,7 @@ import {
   getPtzPresets,
   ptzSaveCurrentAsPreset,
   ptzCalibrate,
+  capturePtzPresetThumbnail,
 } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import { useCameras } from './ui/hooks/useCameras'
@@ -128,6 +129,7 @@ function App() {
             getPtzPresets={getPtzPresets}
             ptzSaveCurrentAsPreset={ptzSaveCurrentAsPreset}
             ptzCalibrate={ptzCalibrate}
+            capturePtzPresetThumbnail={capturePtzPresetThumbnail}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
             onOpenLive={(camera, options) =>
@@ -241,6 +243,7 @@ function App() {
                   ptzStep={ptzStep}
                   ptzGoToPreset={ptzGoToPreset}
                   getPtzPresets={getPtzPresets}
+                  capturePtzPresetThumbnail={capturePtzPresetThumbnail}
                 />
               ) : modalMedia.type === 'image' ? (
                 <img src={modalMedia.url} alt="Aperçu détection" className="media-modal-media" />

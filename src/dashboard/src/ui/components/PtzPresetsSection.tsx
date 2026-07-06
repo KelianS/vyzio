@@ -5,26 +5,32 @@ import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
 import type { PtzSaveCurrentAsPreset } from '../../application/use-cases/PtzSaveCurrentAsPreset'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { PtzCalibrate } from '../../application/use-cases/PtzCalibrate'
+import type { CapturePtzPresetThumbnail } from '../../application/use-cases/CapturePtzPresetThumbnail'
 import { toAppError } from '../../domain/errors/toAppError'
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { useToast } from './Toast'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]
+const CAPTURE_DELAY_MS = 1500
 
 interface PtzPresetsSectionProps {
   cameraId: string
+  apiBaseUrl: string
   getPtzPresets: GetPtzPresets
   ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
   ptzGoToPreset: PtzGoToPreset
   ptzCalibrate: PtzCalibrate
+  capturePtzPresetThumbnail: CapturePtzPresetThumbnail
 }
 
 export function PtzPresetsSection({
   cameraId,
+  apiBaseUrl,
   getPtzPresets,
   ptzSaveCurrentAsPreset,
   ptzGoToPreset,
   ptzCalibrate,
+  capturePtzPresetThumbnail,
 }: PtzPresetsSectionProps) {
   const { toast } = useToast()
   const [presets, setPresets] = useState<PtzPreset[]>([])
@@ -34,6 +40,19 @@ export function PtzPresetsSection({
   const [error, setError] = useState<string | null>(null)
   const [calibrating, setCalibrating] = useState(false)
   const [actionStates, setActionStates] = useState<Record<number, 'idle' | 'saving' | 'going'>>({})
+  const [thumbVersions, setThumbVersions] = useState<Record<number, number>>({})
+
+  const triggerCapture = useCallback(
+    (presetId: number) => {
+      setTimeout(() => {
+        capturePtzPresetThumbnail
+          .execute(cameraId, presetId)
+          .then(() => setThumbVersions((v) => ({ ...v, [presetId]: Date.now() })))
+          .catch(() => {})
+      }, CAPTURE_DELAY_MS)
+    },
+    [cameraId, capturePtzPresetThumbnail],
+  )
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -78,6 +97,7 @@ export function PtzPresetsSection({
         await ptzSaveCurrentAsPreset.execute(cameraId, presetId)
         toast('Position enregistrée.', 'success')
         await reload()
+        triggerCapture(presetId)
       } catch (e) {
         const msg = appErrorMessage(toAppError(e))
         if (msg.includes('not_calibrated') || msg.includes('Conflict')) {
@@ -90,7 +110,7 @@ export function PtzPresetsSection({
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
     },
-    [cameraId, ptzSaveCurrentAsPreset, reload, toast],
+    [cameraId, ptzSaveCurrentAsPreset, reload, toast, triggerCapture],
   )
 
   const handleGoto = useCallback(
@@ -99,13 +119,14 @@ export function PtzPresetsSection({
       try {
         await ptzGoToPreset.execute(cameraId, presetId)
         await reload()
+        triggerCapture(presetId)
       } catch (e) {
         toast(appErrorMessage(toAppError(e)), 'error')
       } finally {
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
     },
-    [cameraId, ptzGoToPreset, reload, toast],
+    [cameraId, ptzGoToPreset, reload, toast, triggerCapture],
   )
 
   const getPreset = (presetId: number): PtzPreset | undefined =>
@@ -159,8 +180,26 @@ export function PtzPresetsSection({
                 preset?.label ??
                 (presetId === 1 ? 'Surveillance' : presetId === 2 ? 'Parking' : `Position ${presetId}`)
 
+              const thumbSrc = `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/thumbnail?t=${thumbVersions[presetId] ?? 1}`
+
               return (
                 <li key={presetId} className="ptz-preset-row">
+                  <div className="ptz-preset-thumb">
+                    {preset && (
+                      <img
+                        key={thumbSrc}
+                        src={thumbSrc}
+                        alt=""
+                        className="ptz-preset-thumb-img"
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).style.visibility = 'hidden'
+                        }}
+                        onLoad={(e) => {
+                          ;(e.target as HTMLImageElement).style.visibility = 'visible'
+                        }}
+                      />
+                    )}
+                  </div>
                   <div className="ptz-preset-info">
                     <span className="ptz-preset-label">
                       {label}

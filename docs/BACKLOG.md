@@ -65,7 +65,9 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 ### `ptz` — PTZ précis
 
-1. **Gestion des positions PTZ (presets + parking)** — deux presets réservés : preset 1 = position de surveillance (home), preset 2 = position de parking vie privée. Minimum 4 slots au total dont 2 personnalisables par l'utilisateur. Deux branches d'implémentation selon la capacité de la caméra :
+1. **Miniatures de positions PTZ** — capture automatique d'un snapshot Frigate après chaque GoTo ; persisté en fichier (`{data_dir}/ptz-thumbnails/{cameraId}-{presetId}.jpg`) ; affiché dans `PtzPresetsSection` (fiche caméra) ; déclenché aussi depuis `PtzControlPanel` (modale live). Voir SPECS §9.4, SAD ADR-26.
+
+2. **Gestion des positions PTZ (presets + parking)** — deux presets réservés : preset 1 = position de surveillance (home), preset 2 = position de parking vie privée. Minimum 4 slots au total dont 2 personnalisables par l'utilisateur. Deux branches d'implémentation selon la capacité de la caméra :
 
    - **Branch A — presets natifs** : si la caméra retourne ≥1 preset à la probe (`GetPresets` ONVIF ou équivalent DVRIP), utiliser `SetPreset` / `GotoPreset` natifs. Déjà partiellement câblé dans `OnvifPtzProvider` et `DvripPtzProvider`.
    - **Branch B — positions Vyzio-managed** : fallback générique pour toute caméra dont la probe ne confirme pas le support natif des presets — indépendant du protocole (V380, ONVIF cheap, DVRIP sans preset, etc.). À la première utilisation d'un preset, effectuer un **homing** : envoyer N steps en direction UpLeft jusqu'à la butée mécanique (timeout-based, N exposé comme constante configurable par provider). L'origine (0, 0) est alors connue. Les presets sont persistés en DB comme `(steps_x, steps_y)` depuis zéro. `GoToPreset` : homing → replay des steps vers les coordonnées cibles.

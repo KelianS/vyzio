@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
+import type { CapturePtzPresetThumbnail } from '../../application/use-cases/CapturePtzPresetThumbnail'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
 import { PtzControlPanel } from './PtzControlPanel'
 
@@ -13,6 +14,7 @@ interface LiveFeedModalProps {
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   getPtzPresets?: GetPtzPresets
+  capturePtzPresetThumbnail?: CapturePtzPresetThumbnail
 }
 
 export function LiveFeedModal({
@@ -23,6 +25,7 @@ export function LiveFeedModal({
   ptzStep,
   ptzGoToPreset,
   getPtzPresets,
+  capturePtzPresetThumbnail,
 }: LiveFeedModalProps) {
   const [src, setSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
@@ -55,6 +58,7 @@ export function LiveFeedModal({
             ptzGoToPreset={ptzGoToPreset}
             presets={presets}
             compact
+            capturePtzPresetThumbnail={capturePtzPresetThumbnail}
           />
         </div>
       )}

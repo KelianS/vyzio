@@ -2,6 +2,9 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
+import type { CapturePtzPresetThumbnail } from '../../application/use-cases/CapturePtzPresetThumbnail'
+
+const CAPTURE_DELAY_MS = 1500
 
 interface PtzControlPanelProps {
   cameraId: string
@@ -10,6 +13,7 @@ interface PtzControlPanelProps {
   presets?: PtzPreset[]
   speed?: number
   compact?: boolean
+  capturePtzPresetThumbnail?: CapturePtzPresetThumbnail
 }
 
 type Direction = 'Up' | 'Down' | 'Left' | 'Right' | 'UpLeft' | 'UpRight' | 'DownLeft' | 'DownRight'
@@ -27,6 +31,7 @@ export function PtzControlPanel({
   presets = [],
   speed = 50,
   compact = false,
+  capturePtzPresetThumbnail,
 }: PtzControlPanelProps) {
   const [homeStatus, setHomeStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [gotoLoading, setGotoLoading] = useState<number | null>(null)
@@ -88,27 +93,39 @@ export function PtzControlPanel({
     }
   }, [])
 
+  const scheduleCapture = useCallback(
+    (presetId: number) => {
+      if (!capturePtzPresetThumbnail) return
+      setTimeout(() => {
+        capturePtzPresetThumbnail.execute(cameraId, presetId).catch(() => {})
+      }, CAPTURE_DELAY_MS)
+    },
+    [cameraId, capturePtzPresetThumbnail],
+  )
+
   const handleReturnToSurveillance = useCallback(async () => {
     setHomeStatus('loading')
     try {
       await ptzGoToPreset.execute(cameraId, SURVEILLANCE_PRESET)
       setHomeStatus('idle')
+      scheduleCapture(SURVEILLANCE_PRESET)
     } catch {
       setHomeStatus('error')
       setTimeout(() => setHomeStatus('idle'), 3000)
     }
-  }, [cameraId, ptzGoToPreset])
+  }, [cameraId, ptzGoToPreset, scheduleCapture])
 
   const handleGotoPreset = useCallback(
     async (presetId: number) => {
       setGotoLoading(presetId)
       try {
         await ptzGoToPreset.execute(cameraId, presetId)
+        scheduleCapture(presetId)
       } finally {
         setGotoLoading(null)
       }
     },
-    [cameraId, ptzGoToPreset],
+    [cameraId, ptzGoToPreset, scheduleCapture],
   )
 
   const dir = (d: Direction) => ({

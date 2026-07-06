@@ -71,6 +71,7 @@ export interface CameraRepository {
   getPtzPresets(cameraId: string): Promise<{ presets: PtzPreset[]; calibrated: boolean; currentPosition: { x: number; y: number } | null }>
   ptzSaveCurrentAsPreset(cameraId: string, presetId: number): Promise<void>
   ptzCalibrate(cameraId: string): Promise<void>
+  capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void>
   // Capability bindings (ADR-22)
   getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
   configureCapability(

@@ -3313,10 +3313,34 @@
   border-bottom: none;
 }
 
+.ptz-preset-thumb {
+  flex-shrink: 0;
+  width: 80px;
+  height: 45px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface-2, #f0f0f0);
+}
+
+@media (prefers-color-scheme: dark) {
+  .ptz-preset-thumb {
+    background: var(--surface-2, #2a2a2a);
+  }
+}
+
+.ptz-preset-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  visibility: hidden;
+}
+
 .ptz-preset-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
   min-width: 0;
 }
 

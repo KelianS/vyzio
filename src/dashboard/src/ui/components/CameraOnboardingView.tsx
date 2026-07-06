@@ -27,6 +27,7 @@ import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
 import type { PtzSaveCurrentAsPreset } from '../../application/use-cases/PtzSaveCurrentAsPreset'
 import type { PtzCalibrate } from '../../application/use-cases/PtzCalibrate'
+import type { CapturePtzPresetThumbnail } from '../../application/use-cases/CapturePtzPresetThumbnail'
 import { ConfirmModal } from './ConfirmModal'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
@@ -69,6 +70,7 @@ interface CameraOnboardingViewProps {
   getPtzPresets: GetPtzPresets
   ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
   ptzCalibrate: PtzCalibrate
+  capturePtzPresetThumbnail: CapturePtzPresetThumbnail
   allCameras: Camera[]
   apiBaseUrl: string
   onOpenLive: (camera: Camera, options?: { onClose?: () => Promise<void> }) => void
@@ -1237,10 +1239,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   {selectedCamera.ptzSupported && (
                     <PtzPresetsSection
                       cameraId={selectedCamera.id}
+                      apiBaseUrl={props.apiBaseUrl}
                       getPtzPresets={props.getPtzPresets}
                       ptzSaveCurrentAsPreset={props.ptzSaveCurrentAsPreset}
                       ptzGoToPreset={props.ptzGoToPreset}
                       ptzCalibrate={props.ptzCalibrate}
+                      capturePtzPresetThumbnail={props.capturePtzPresetThumbnail}
                     />
                   )}
 

@@ -298,6 +298,19 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - la gestion des positions PTZ expose au minimum 4 slots : **preset 1** (Surveillance — ramener la caméra vers la zone surveillée nominale), **preset 2** (Parking vie privée — position de stationnement lors de l'activation du mode vie privée), **presets 3 et 4** personnalisables par l'utilisateur ; les presets 1 et 2 ont des labels fixes, les presets 3 et 4 ont un label libre ;
 - la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + comptage de pas pour les caméras qui ne supportent pas les presets natifs (voir SAD ADR-25).
 
+### 9.4 Miniatures de positions PTZ
+
+> **En tant qu'utilisateur**, je veux voir une miniature de la vue caméra associée à chaque position PTZ enregistrée, afin d'identifier visuellement la zone couverte sans devoir y naviguer.
+
+**Règles fonctionnelles :**
+
+- chaque preset PTZ configuré doit afficher une miniature de la vue caméra à la position enregistrée ;
+- la miniature est capturée automatiquement après chaque déplacement GoTo vers un preset, une fois la caméra arrivée à destination ;
+- la miniature est persistée côté serveur et survit à un rechargement de l'interface ;
+- la première miniature n'est disponible qu'après le premier GoTo — aucun placeholder générique n'est affiché avant ;
+- la capture est déclenchée après le retour de la commande GoTo (attendre un délai court pour laisser la caméra atteindre physiquement sa position) ;
+- la miniature est mise à jour à chaque nouveau GoTo, quelle que soit la vue depuis laquelle l'utilisateur navigue (fiche caméra ou modale live).
+
 ---
 
 ## 10. Perimetre MVP

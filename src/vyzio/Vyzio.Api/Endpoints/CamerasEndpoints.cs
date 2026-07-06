@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Api.Integration.Frigate;
+using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
 using Vyzio.Application.UseCases.Cameras;
@@ -291,6 +292,37 @@ public static class CamerasEndpoints
 
             var result = await useCase.ExecuteAsync(id, cap, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
+        // PTZ preset thumbnail — capture current Frigate frame and persist per preset
+        group.MapPost("/{id}/ptz/presets/{presetId}/snapshot", async (
+            string id, int presetId,
+            GetCamerasUseCase getCameras,
+            IFrigateRestClient frigateClient,
+            IPtzThumbnailStore thumbnailStore,
+            CancellationToken ct) =>
+        {
+            var cameras = await getCameras.ExecuteAsync(ct);
+            var camera = cameras.FirstOrDefault(c => c.Id == id);
+            if (camera is null) return Results.NotFound();
+
+            var slug = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var response = await frigateClient.GetLatestFrameAsync(slug, ct);
+            if (!response.IsSuccessStatusCode)
+                return Results.Problem("Could not retrieve frame from Frigate");
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            await thumbnailStore.SaveAsync(id, presetId, bytes, ct);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/{id}/ptz/presets/{presetId}/thumbnail", async (
+            string id, int presetId,
+            IPtzThumbnailStore thumbnailStore,
+            CancellationToken ct) =>
+        {
+            var stream = await thumbnailStore.TryGetAsync(id, presetId, ct);
+            return stream is null ? Results.NotFound() : Results.Stream(stream, "image/jpeg");
         });
 
         // Profile links

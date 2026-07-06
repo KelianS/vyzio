@@ -290,6 +290,12 @@ export class HttpCameraRepository implements CameraRepository {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/calibrate`)
   }
 
+  async capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/snapshot`,
+    )
+  }
+
   async getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]> {
     return fetchJson<CameraCapabilityBinding[]>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities`,

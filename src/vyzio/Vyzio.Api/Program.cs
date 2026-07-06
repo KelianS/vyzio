@@ -24,6 +24,9 @@ var dbFilePath = dataSource["Data Source=".Length..].Trim();
 var dataDirectory = Path.GetDirectoryName(Path.GetFullPath(dbFilePath)) ?? Path.GetFullPath("./data");
 
 builder.Services.AddSingleton(new FaceStorageOptions(dataDirectory));
+builder.Services.AddSingleton<IPtzThumbnailStore>(
+    new Vyzio.Infrastructure.Services.FilePtzThumbnailStore(
+        Path.Combine(dataDirectory, "ptz-thumbnails")));
 builder.Services.AddVyzioInfrastructure(runtimeSettings);
 var appTimeZone = string.IsNullOrWhiteSpace(runtimeSettings.TimeZone)
     ? TimeZoneInfo.Local
