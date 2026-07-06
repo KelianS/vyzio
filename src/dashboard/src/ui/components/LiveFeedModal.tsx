@@ -54,6 +54,7 @@ export function LiveFeedModal({
         <div className="live-feed-ptz-overlay">
           <PtzControlPanel
             cameraId={cameraId}
+            apiBaseUrl={apiBaseUrl}
             ptzStep={ptzStep}
             ptzGoToPreset={ptzGoToPreset}
             presets={presets}

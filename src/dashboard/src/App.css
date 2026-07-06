@@ -3133,7 +3133,7 @@
   display: flex;
   flex-direction: row;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .ptz-panel-inner {
@@ -3222,9 +3222,10 @@
 
 .ptz-preset-shortcuts {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-self: stretch;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: flex-start;
 }
 
 .ptz-return-btn,
@@ -3238,10 +3239,27 @@
   background: var(--bg-elevated);
   color: var(--ink-strong);
   transition: background 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  width: 90px;
 }
 
 .ptz-return-btn:hover {
   background: rgba(47, 107, 89, 0.1);
+}
+
+.ptz-shortcut-thumb {
+  display: block;
+  width: 100%;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.live-feed-ptz-overlay .ptz-shortcut-thumb {
+  height: 36px;
 }
 
 .ptz-save-btn {
