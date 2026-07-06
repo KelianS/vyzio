@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -34,7 +35,11 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityB
     }
 }
 
-public sealed class PtzSavePresetUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
+public sealed class PtzSavePresetUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
+    IPtzPresetRepository presets)
 {
     public async Task<bool> ExecuteAsync(string cameraId, int presetId, CancellationToken ct = default)
     {
@@ -44,12 +49,38 @@ public sealed class PtzSavePresetUseCase(ICameraRepository cameras, ICameraCapab
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
         var provider = registry.ResolvePtz(binding.Protocol);
-        await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
+
+        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        {
+            await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
+        }
+        else
+        {
+            // Branch B (ADR-25): if not yet homed this session, home first to establish (0,0).
+            if (provider.GetVirtualPosition(cameraId) is null)
+                await provider.PtzHomingStepsAsync(camera, binding, ct);
+
+            var (stepsX, stepsY) = provider.GetVirtualPosition(cameraId) ?? (0, 0);
+            await presets.UpsertAsync(new PtzPreset
+            {
+                CameraId = cameraId,
+                PresetId = presetId,
+                Label = PtzPreset.DefaultLabel(presetId),
+                Native = false,
+                StepsX = stepsX,
+                StepsY = stepsY,
+            }, ct);
+        }
+
         return true;
     }
 }
 
-public sealed class PtzGoToPresetUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
+public sealed class PtzGoToPresetUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
+    IPtzPresetRepository presets)
 {
     public async Task<bool> ExecuteAsync(string cameraId, int presetId, CancellationToken ct = default)
     {
@@ -59,7 +90,25 @@ public sealed class PtzGoToPresetUseCase(ICameraRepository cameras, ICameraCapab
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
         var provider = registry.ResolvePtz(binding.Protocol);
-        await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
+
+        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        {
+            await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
+        }
+        else
+        {
+            // Branch B (ADR-25): home to (0,0), then replay steps to the target position.
+            var preset = await presets.GetAsync(cameraId, presetId, ct);
+            if (preset is null) return false;
+
+            await provider.PtzHomingStepsAsync(camera, binding, ct);
+
+            for (var i = 0; i < preset.StepsX; i++)
+                await provider.PtzStepAsync(camera, binding, PtzDirection.Right, 50, ct);
+            for (var i = 0; i < preset.StepsY; i++)
+                await provider.PtzStepAsync(camera, binding, PtzDirection.Down, 50, ct);
+        }
+
         return true;
     }
 }
@@ -69,7 +118,8 @@ public sealed class PtzGoToPresetUseCase(ICameraRepository cameras, ICameraCapab
 public sealed class ConfigurePtzParkingPositionUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    IPtzPresetRepository presets)
 {
     public async Task<bool> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -79,8 +129,29 @@ public sealed class ConfigurePtzParkingPositionUseCase(
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
         var provider = registry.ResolvePtz(binding.Protocol);
-        // Preset 1 = surveillance/home position by convention.
-        await provider.PtzSavePresetAsync(camera, binding, presetId: 1, ct);
+
+        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        {
+            // Preset 1 = surveillance/home position by convention.
+            await provider.PtzSavePresetAsync(camera, binding, presetId: 1, ct);
+        }
+        else
+        {
+            if (provider.GetVirtualPosition(cameraId) is null)
+                await provider.PtzHomingStepsAsync(camera, binding, ct);
+
+            var (stepsX, stepsY) = provider.GetVirtualPosition(cameraId) ?? (0, 0);
+            await presets.UpsertAsync(new PtzPreset
+            {
+                CameraId = cameraId,
+                PresetId = 1,
+                Label = PtzPreset.DefaultLabel(1),
+                Native = false,
+                StepsX = stepsX,
+                StepsY = stepsY,
+            }, ct);
+        }
+
         return true;
     }
 }
@@ -101,6 +172,13 @@ public sealed class GetPtzPositionUseCase(ICameraRepository cameras, ICameraCapa
     }
 }
 
+// Returns all configured PTZ presets for a camera (ADR-25).
+public sealed class GetPtzPresetsUseCase(IPtzPresetRepository presets)
+{
+    public Task<IReadOnlyList<PtzPreset>> ExecuteAsync(string cameraId, CancellationToken ct = default)
+        => presets.GetAllAsync(cameraId, ct);
+}
+
 public sealed record SetPrivacyStrategyRequest(string Strategy);
 
 public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)
@@ -118,5 +196,20 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)
         await cameras.UpdateAsync(camera, ct);
 
         return CameraDto.From(camera);
+    }
+}
+
+// Shared helper: reads SupportsNativePresets from binding ConfigJson (ADR-25).
+file static class PtzPresetHelper
+{
+    internal static bool SupportsNativePresets(string? configJson)
+    {
+        if (string.IsNullOrEmpty(configJson)) return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(configJson);
+            return doc.RootElement.TryGetProperty("supports_native_presets", out var prop) && prop.GetBoolean();
+        }
+        catch { return false; }
     }
 }

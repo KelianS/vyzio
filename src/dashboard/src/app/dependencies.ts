@@ -42,6 +42,8 @@ import { PtzStep } from '../application/use-cases/PtzStep'
 import { PtzSavePreset } from '../application/use-cases/PtzSavePreset'
 import { PtzGoToPreset } from '../application/use-cases/PtzGoToPreset'
 import { ConfigurePtzParking } from '../application/use-cases/ConfigurePtzParking'
+import { GetPtzPresets } from '../application/use-cases/GetPtzPresets'
+import { PtzSaveCurrentAsPreset } from '../application/use-cases/PtzSaveCurrentAsPreset'
 import { GetCameraCapabilities } from '../application/use-cases/GetCameraCapabilities'
 import { ConfigureCameraCapability } from '../application/use-cases/ConfigureCameraCapability'
 import { ProbeCameraCapability } from '../application/use-cases/ProbeCameraCapability'
@@ -123,6 +125,8 @@ export const ptzStep = new PtzStep(cameraRepository)
 export const ptzSavePreset = new PtzSavePreset(cameraRepository)
 export const ptzGoToPreset = new PtzGoToPreset(cameraRepository)
 export const configurePtzParking = new ConfigurePtzParking(cameraRepository)
+export const getPtzPresets = new GetPtzPresets(cameraRepository)
+export const ptzSaveCurrentAsPreset = new PtzSaveCurrentAsPreset(cameraRepository)
 
 // Capability use cases (ADR-22)
 export const getCameraCapabilities = new GetCameraCapabilities(cameraRepository)

@@ -3204,6 +3204,131 @@
   color: var(--alert-high);
 }
 
+/* ── PTZ Presets Section ──────────────────────────────────────────────────── */
+
+.ptz-presets-section {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+}
+
+.ptz-presets-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-strong);
+  margin: 0 0 4px;
+}
+
+.ptz-presets-hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin: 0 0 12px;
+}
+
+.ptz-presets-loading,
+.ptz-presets-error {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  margin: 8px 0;
+}
+
+.ptz-presets-error {
+  color: var(--alert-high);
+}
+
+.ptz-presets-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ptz-preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.ptz-preset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ptz-preset-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-strong);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ptz-preset-badge {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 99px;
+  background: rgba(47, 107, 89, 0.1);
+  color: var(--brand-moss);
+  font-weight: 500;
+}
+
+.ptz-preset-status {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.ptz-preset-status--configured {
+  color: var(--alert-ok);
+}
+
+.ptz-preset-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ptz-preset-btn {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  background: var(--bg-elevated);
+  color: var(--ink-strong);
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+
+.ptz-preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ptz-preset-btn--goto {
+  background: rgba(47, 107, 89, 0.08);
+  border-color: rgba(47, 107, 89, 0.3);
+  color: var(--brand-moss);
+}
+
+.ptz-preset-btn--goto:hover:not(:disabled) {
+  background: rgba(47, 107, 89, 0.15);
+}
+
+.ptz-preset-btn--save:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
 .live-feed-modal {
   position: relative;
   display: inline-block;

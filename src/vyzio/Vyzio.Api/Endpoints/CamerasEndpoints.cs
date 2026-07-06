@@ -192,6 +192,21 @@ public static class CamerasEndpoints
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
+        // Returns all configured PTZ presets for a camera (ADR-25).
+        group.MapGet("/{id}/ptz/presets", async (string id, GetPtzPresetsUseCase useCase, CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(id, ct);
+            return Results.Ok(result.Select(p => new
+            {
+                presetId = p.PresetId,
+                label = p.Label,
+                native = p.Native,
+                stepsX = p.StepsX,
+                stepsY = p.StepsY,
+                configured = true,
+            }));
+        });
+
         // Diagnostic: check if camera supports position reporting (needed for AbsoluteMove home).
         group.MapGet("/{id}/ptz/position", async (string id, GetPtzPositionUseCase useCase, CancellationToken ct) =>
         {

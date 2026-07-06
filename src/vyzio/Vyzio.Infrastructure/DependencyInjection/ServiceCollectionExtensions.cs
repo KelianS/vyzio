@@ -40,11 +40,13 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("onvif");
         services.AddSingleton<OnvifClient>();
         services.AddSingleton<V380Client>();
+        services.AddSingleton<V380PtzPositionTracker>();
 
         // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
         // Scoped: TapoKlapProvider authenticates per-request and the registry follows the same
         // lifetime to avoid captive dependencies.
         services.AddScoped<ICameraCapabilityBindingRepository, CameraCapabilityBindingRepository>();
+        services.AddScoped<IPtzPresetRepository, PtzPresetRepository>();
         services.AddScoped<IPtzCapabilityProvider, OnvifPtzProvider>();
         services.AddScoped<IPtzCapabilityProvider, DvripPtzProvider>();
         services.AddScoped<IPtzCapabilityProvider, V380PtzProvider>();

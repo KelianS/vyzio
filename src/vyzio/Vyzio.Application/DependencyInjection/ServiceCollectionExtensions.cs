@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PtzGoToPresetUseCase>();
         services.AddScoped<ConfigurePtzParkingPositionUseCase>();
         services.AddScoped<GetPtzPositionUseCase>();
+        services.AddScoped<GetPtzPresetsUseCase>();
         services.AddScoped<SetCameraPrivacyStrategyUseCase>();
         services.AddScoped<ProbeCameraCapabilityUseCase>();
         services.AddScoped<ConfigureCameraCapabilityUseCase>();

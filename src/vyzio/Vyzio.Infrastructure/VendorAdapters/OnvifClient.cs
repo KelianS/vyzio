@@ -180,6 +180,25 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
+    // Returns the count of presets reported by the camera. Used at probe time to set SupportsNativePresets (ADR-25).
+    // Returns 0 on error or empty list — both indicate no native preset support.
+    public async Task<int> GetPresetsCountAsync(Camera camera, string profileToken, CancellationToken ct)
+    {
+        var body = $"""
+            <GetPresets xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+              <ProfileToken>{profileToken}</ProfileToken>
+            </GetPresets>
+            """;
+        var xml = await PostSoapAsync(camera, "ptz_service", body, ct);
+        if (xml is null) return 0;
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            return doc.Descendants().Count(e => e.Name.LocalName == "Preset");
+        }
+        catch { return 0; }
+    }
+
     // Fire-and-forget ONVIF command: sends the request and returns as soon as headers arrive
     // (or after 500ms timeout). Budget cameras (V380) take 2-3s to respond but execute the
     // command on TCP receipt — we don't need to wait for their HTTP response.

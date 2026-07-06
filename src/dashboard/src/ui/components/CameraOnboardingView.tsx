@@ -24,7 +24,8 @@ import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
-
+import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
+import type { PtzSaveCurrentAsPreset } from '../../application/use-cases/PtzSaveCurrentAsPreset'
 import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
 import { ConfirmModal } from './ConfirmModal'
 import { useCameraStatus } from '../hooks/useCameraStatus'
@@ -43,6 +44,7 @@ import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import { DetectionConfigSection } from './DetectionConfigSection'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { CapabilitySection } from './CapabilitySection'
+import { PtzPresetsSection } from './PtzPresetsSection'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -65,6 +67,8 @@ interface CameraOnboardingViewProps {
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   configurePtzParking: ConfigurePtzParking
+  getPtzPresets: GetPtzPresets
+  ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
   allCameras: Camera[]
   apiBaseUrl: string
   onOpenLive: (camera: Camera, options?: { onClose?: () => Promise<void> }) => void
@@ -1250,6 +1254,15 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </button>
                     )}
                   </div>
+
+                  {selectedCamera.ptzSupported && (
+                    <PtzPresetsSection
+                      cameraId={selectedCamera.id}
+                      getPtzPresets={props.getPtzPresets}
+                      ptzSaveCurrentAsPreset={props.ptzSaveCurrentAsPreset}
+                      ptzGoToPreset={props.ptzGoToPreset}
+                    />
+                  )}
 
                   <details className="camera-detail-section camera-connection-details">
                     <summary>Paramètres de connexion</summary>

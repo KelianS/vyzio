@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
@@ -35,6 +36,14 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
             var token = await GetProfileTokenAsync(camera, ct);
             if (string.IsNullOrWhiteSpace(token)) return false;
             await GetPtzCapabilitiesAsync(camera, ct);
+
+            // Detect native preset support (ADR-25 Branch A/B routing).
+            var presetsCount = await onvif.GetPresetsCountAsync(camera, token, ct);
+            var supportsNativePresets = presetsCount > 0;
+            PersistNativePresetsFlag(binding, supportsNativePresets);
+            logger.LogDebug("ONVIF PTZ probe for {Camera}: {Count} presets found, SupportsNativePresets={Supported}.",
+                camera.DisplayName, presetsCount, supportsNativePresets);
+
             return true;
         }
         catch (Exception ex)
@@ -42,6 +51,31 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
             logger.LogDebug(ex, "ONVIF PTZ probe failed for {Camera}.", camera.DisplayName);
             return false;
         }
+    }
+
+    private static void PersistNativePresetsFlag(CameraCapabilityBinding binding, bool supportsNativePresets)
+    {
+        Dictionary<string, JsonElement> config;
+        try
+        {
+            config = string.IsNullOrEmpty(binding.ConfigJson)
+                ? []
+                : JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(binding.ConfigJson) ?? [];
+        }
+        catch { config = []; }
+
+        using var ms = new System.IO.MemoryStream();
+        using var writer = new Utf8JsonWriter(ms);
+        writer.WriteStartObject();
+        foreach (var (key, value) in config.Where(k => k.Key != "supports_native_presets"))
+        {
+            writer.WritePropertyName(key);
+            value.WriteTo(writer);
+        }
+        writer.WriteBoolean("supports_native_presets", supportsNativePresets);
+        writer.WriteEndObject();
+        writer.Flush();
+        binding.ConfigJson = System.Text.Encoding.UTF8.GetString(ms.ToArray());
     }
 
     public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)

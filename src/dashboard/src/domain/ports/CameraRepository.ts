@@ -11,6 +11,7 @@ import type {
   Capability,
   SupportedProtocol,
 } from '../entities/CameraCapabilityBinding'
+import type { PtzPreset } from '../entities/PtzPreset'
 
 export interface CreatePrivacyScheduleInput {
   daysOfWeek: number[]
@@ -67,6 +68,8 @@ export interface CameraRepository {
   ptzSavePreset(cameraId: string, presetId: number): Promise<void>
   ptzGoToPreset(cameraId: string, presetId: number): Promise<void>
   ptzConfigureParking(cameraId: string): Promise<void>
+  getPtzPresets(cameraId: string): Promise<PtzPreset[]>
+  ptzSaveCurrentAsPreset(cameraId: string, presetId: number): Promise<void>
   // Capability bindings (ADR-22)
   getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
   configureCapability(

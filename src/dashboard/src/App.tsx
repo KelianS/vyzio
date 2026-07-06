@@ -44,6 +44,8 @@ import {
   ptzStep,
   ptzGoToPreset,
   configurePtzParking,
+  getPtzPresets,
+  ptzSaveCurrentAsPreset,
 } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import { useCameras } from './ui/hooks/useCameras'
@@ -123,6 +125,8 @@ function App() {
             ptzStep={ptzStep}
             ptzGoToPreset={ptzGoToPreset}
             configurePtzParking={configurePtzParking}
+            getPtzPresets={getPtzPresets}
+            ptzSaveCurrentAsPreset={ptzSaveCurrentAsPreset}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
             onOpenLive={(camera, options) =>
