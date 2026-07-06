@@ -26,7 +26,7 @@ import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
 import type { PtzSaveCurrentAsPreset } from '../../application/use-cases/PtzSaveCurrentAsPreset'
-import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
+import type { PtzCalibrate } from '../../application/use-cases/PtzCalibrate'
 import { ConfirmModal } from './ConfirmModal'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
@@ -66,9 +66,9 @@ interface CameraOnboardingViewProps {
   setPrivacyStrategy: SetPrivacyStrategy
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
-  configurePtzParking: ConfigurePtzParking
   getPtzPresets: GetPtzPresets
   ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
+  ptzCalibrate: PtzCalibrate
   allCameras: Camera[]
   apiBaseUrl: string
   onOpenLive: (camera: Camera, options?: { onClose?: () => Promise<void> }) => void
@@ -123,8 +123,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmScan, setConfirmScan] = useState(false)
   const [confirmApply, setConfirmApply] = useState(false)
-  const [confirmSurveillancePosition, setConfirmSurveillancePosition] = useState(false)
-
   const { toast } = useToast()
 
   useEffect(() => {
@@ -1232,27 +1230,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       className="secondary-cta"
                       onClick={() => props.onOpenLive(selectedCamera)}
                     >
-                      Voir le live
+                      {selectedCamera.ptzSupported ? 'Piloter la caméra' : 'Voir le live'}
                     </button>
-                    {selectedCamera.ptzSupported && !cameraOffline && (
-                      <button
-                        type="button"
-                        className="secondary-cta"
-                        onClick={() => setConfirmSurveillancePosition(true)}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                          aria-hidden
-                          style={{ flexShrink: 0, marginRight: 6 }}
-                        >
-                          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                        </svg>
-                        Définir la position par défaut
-                      </button>
-                    )}
                   </div>
 
                   {selectedCamera.ptzSupported && (
@@ -1261,6 +1240,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       getPtzPresets={props.getPtzPresets}
                       ptzSaveCurrentAsPreset={props.ptzSaveCurrentAsPreset}
                       ptzGoToPreset={props.ptzGoToPreset}
+                      ptzCalibrate={props.ptzCalibrate}
                     />
                   )}
 
@@ -1507,24 +1487,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           )}
         </article>
       </section>
-
-      {confirmSurveillancePosition && selectedCamera && (
-        <ConfirmModal
-          title="Définir la position par défaut"
-          body="La vue live va s'ouvrir avec les contrôles PTZ. Orientez la caméra vers sa position de surveillance habituelle, puis fermez la vue — la position sera sauvegardée automatiquement."
-          confirmLabel="Ouvrir le live"
-          onConfirm={() => {
-            setConfirmSurveillancePosition(false)
-            props.onOpenLive(selectedCamera, {
-              onClose: async () => {
-                await props.configurePtzParking.execute(selectedCamera.id)
-                toast('Position de surveillance sauvegardée.', 'success')
-              },
-            })
-          }}
-          onCancel={() => setConfirmSurveillancePosition(false)}
-        />
-      )}
 
       {confirmScan && (
         <ConfirmModal

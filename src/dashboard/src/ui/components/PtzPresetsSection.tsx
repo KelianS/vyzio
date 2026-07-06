@@ -4,6 +4,7 @@ import { isReservedPreset } from '../../domain/entities/PtzPreset'
 import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
 import type { PtzSaveCurrentAsPreset } from '../../application/use-cases/PtzSaveCurrentAsPreset'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
+import type { PtzCalibrate } from '../../application/use-cases/PtzCalibrate'
 import { toAppError } from '../../domain/errors/toAppError'
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { useToast } from './Toast'
@@ -15,6 +16,7 @@ interface PtzPresetsSectionProps {
   getPtzPresets: GetPtzPresets
   ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
   ptzGoToPreset: PtzGoToPreset
+  ptzCalibrate: PtzCalibrate
 }
 
 export function PtzPresetsSection({
@@ -22,11 +24,15 @@ export function PtzPresetsSection({
   getPtzPresets,
   ptzSaveCurrentAsPreset,
   ptzGoToPreset,
+  ptzCalibrate,
 }: PtzPresetsSectionProps) {
   const { toast } = useToast()
   const [presets, setPresets] = useState<PtzPreset[]>([])
+  const [calibrated, setCalibrated] = useState(true)
+  const [currentPosition, setCurrentPosition] = useState<{ x: number; y: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [calibrating, setCalibrating] = useState(false)
   const [actionStates, setActionStates] = useState<Record<number, 'idle' | 'saving' | 'going'>>({})
 
   const reload = useCallback(async () => {
@@ -34,7 +40,9 @@ export function PtzPresetsSection({
     setError(null)
     try {
       const data = await getPtzPresets.execute(cameraId)
-      setPresets(data)
+      setPresets(data.presets ?? [])
+      setCalibrated(data.calibrated ?? true)
+      setCurrentPosition(data.currentPosition ?? null)
     } catch (e) {
       setError(appErrorMessage(toAppError(e)))
     } finally {
@@ -46,6 +54,23 @@ export function PtzPresetsSection({
     reload()
   }, [reload])
 
+  const handleCalibrate = useCallback(async () => {
+    setCalibrating(true)
+    try {
+      await ptzCalibrate.execute(cameraId)
+      setCalibrated(true)
+      setCurrentPosition({ x: 0, y: 0 })
+      toast(
+        'Calibration terminée — la caméra est à la position 0. Naviguez vers la position souhaitée puis cliquez « Définir ici ».',
+        'success',
+      )
+    } catch (e) {
+      toast(appErrorMessage(toAppError(e)), 'error')
+    } finally {
+      setCalibrating(false)
+    }
+  }, [cameraId, ptzCalibrate, toast])
+
   const handleSave = useCallback(
     async (presetId: number) => {
       setActionStates((s) => ({ ...s, [presetId]: 'saving' }))
@@ -54,7 +79,13 @@ export function PtzPresetsSection({
         toast('Position enregistrée.', 'success')
         await reload()
       } catch (e) {
-        toast(appErrorMessage(toAppError(e)), 'error')
+        const msg = appErrorMessage(toAppError(e))
+        if (msg.includes('not_calibrated') || msg.includes('Conflict')) {
+          toast("Calibrez d'abord la caméra avant de définir une position.", 'error')
+          setCalibrated(false)
+        } else {
+          toast(msg, 'error')
+        }
       } finally {
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
@@ -67,74 +98,111 @@ export function PtzPresetsSection({
       setActionStates((s) => ({ ...s, [presetId]: 'going' }))
       try {
         await ptzGoToPreset.execute(cameraId, presetId)
+        await reload()
       } catch (e) {
         toast(appErrorMessage(toAppError(e)), 'error')
       } finally {
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
     },
-    [cameraId, ptzGoToPreset, toast],
+    [cameraId, ptzGoToPreset, reload, toast],
   )
 
   const getPreset = (presetId: number): PtzPreset | undefined =>
     presets.find((p) => p.presetId === presetId)
 
-  if (loading) return <p className="ptz-presets-loading">Chargement des positions…</p>
-  if (error) return <p className="ptz-presets-error">{error}</p>
-
   return (
-    <div className="ptz-presets-section">
-      <h4 className="ptz-presets-title">Positions PTZ</h4>
-      <p className="ptz-presets-hint">
-        Orientez la caméra avec le joystick, puis cliquez «&nbsp;Définir ici&nbsp;» pour sauvegarder
-        la position.
-      </p>
-      <ul className="ptz-presets-list">
-        {ALL_PRESET_IDS.map((presetId) => {
-          const preset = getPreset(presetId)
-          const state = actionStates[presetId] ?? 'idle'
-          const reserved = isReservedPreset(presetId)
-          const label = preset?.label ?? (presetId <= 2 ? (presetId === 1 ? 'Surveillance' : 'Parking') : `Position ${presetId}`)
+    <div className="camera-detail-section ptz-presets-section">
+      <div className="ptz-presets-header">
+        <h3 className="ptz-presets-title">Positions</h3>
+        {calibrated && currentPosition && (
+          <span className="ptz-position-indicator">
+            Position actuelle&nbsp;: {currentPosition.x},{currentPosition.y}
+          </span>
+        )}
+      </div>
 
-          return (
-            <li key={presetId} className="ptz-preset-row">
-              <div className="ptz-preset-info">
-                <span className="ptz-preset-label">
-                  {label}
-                  {reserved && <span className="ptz-preset-badge">réservé</span>}
-                </span>
-                {preset ? (
-                  <span className="ptz-preset-status ptz-preset-status--configured">
-                    {preset.native ? 'Preset natif' : `(${preset.stepsX ?? 0}, ${preset.stepsY ?? 0}) pas`}
-                  </span>
-                ) : (
-                  <span className="ptz-preset-status ptz-preset-status--empty">Non défini</span>
-                )}
-              </div>
-              <div className="ptz-preset-actions">
-                {preset && (
-                  <button
-                    type="button"
-                    className="ptz-preset-btn ptz-preset-btn--goto"
-                    disabled={state !== 'idle'}
-                    onClick={() => handleGoto(presetId)}
-                  >
-                    {state === 'going' ? '…' : 'Aller'}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="ptz-preset-btn ptz-preset-btn--save"
-                  disabled={state !== 'idle'}
-                  onClick={() => handleSave(presetId)}
-                >
-                  {state === 'saving' ? '…' : 'Définir ici'}
-                </button>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+      {loading && <p className="camera-section-copy" style={{ margin: 0 }}>Chargement…</p>}
+      {error && <p className="ptz-presets-error">{error}</p>}
+
+      {!loading && !error && (
+        <>
+          {!calibrated && (
+            <div className="ptz-calibration-banner">
+              <p className="ptz-calibration-text">
+                Calibrez la caméra pour établir la position de référence (butée mécanique), puis
+                naviguez vers la position souhaitée avant de définir un preset.
+              </p>
+              <button
+                type="button"
+                className="secondary-cta ptz-calibration-btn"
+                disabled={calibrating}
+                onClick={handleCalibrate}
+              >
+                {calibrating ? 'Calibration en cours…' : 'Calibrer (position 0)'}
+              </button>
+            </div>
+          )}
+
+          {calibrated && (
+            <p className="camera-section-copy" style={{ margin: 0, fontSize: '0.82rem' }}>
+              Orientez la caméra, puis «&nbsp;Définir ici&nbsp;» pour sauvegarder la position.
+            </p>
+          )}
+
+          <ul className="ptz-presets-list">
+            {ALL_PRESET_IDS.map((presetId) => {
+              const preset = getPreset(presetId)
+              const state = actionStates[presetId] ?? 'idle'
+              const reserved = isReservedPreset(presetId)
+              const label =
+                preset?.label ??
+                (presetId === 1 ? 'Surveillance' : presetId === 2 ? 'Parking' : `Position ${presetId}`)
+
+              return (
+                <li key={presetId} className="ptz-preset-row">
+                  <div className="ptz-preset-info">
+                    <span className="ptz-preset-label">
+                      {label}
+                      {reserved && <span className="ptz-preset-badge">réservé</span>}
+                    </span>
+                    {preset ? (
+                      <span className="ptz-preset-status ptz-preset-status--configured">
+                        {preset.native ? 'Natif' : `${preset.stepsX ?? 0}, ${preset.stepsY ?? 0} pas`}
+                      </span>
+                    ) : (
+                      <span className="ptz-preset-status">Non défini</span>
+                    )}
+                  </div>
+                  <div className="ptz-preset-actions">
+                    {preset && (
+                      <button
+                        type="button"
+                        className="secondary-cta"
+                        style={{ fontSize: '0.78rem', padding: '4px 12px' }}
+                        disabled={state !== 'idle'}
+                        onClick={() => handleGoto(presetId)}
+                      >
+                        {state === 'going' ? '…' : 'Aller'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="secondary-cta"
+                      style={{ fontSize: '0.78rem', padding: '4px 12px' }}
+                      disabled={state !== 'idle' || !calibrated}
+                      title={!calibrated ? "Calibrez la caméra d'abord" : undefined}
+                      onClick={() => handleSave(presetId)}
+                    >
+                      {state === 'saving' ? '…' : 'Définir ici'}
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      )}
     </div>
   )
 }

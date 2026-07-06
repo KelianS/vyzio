@@ -176,8 +176,15 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/ptz/preset/save", async (string id, PtzPresetApiRequest request, PtzSavePresetUseCase useCase, CancellationToken ct) =>
         {
-            var ok = await useCase.ExecuteAsync(id, request.PresetId, ct);
-            return ok ? Results.NoContent() : Results.NotFound();
+            try
+            {
+                var ok = await useCase.ExecuteAsync(id, request.PresetId, ct);
+                return ok ? Results.NoContent() : Results.NotFound();
+            }
+            catch (PtzNotCalibratedException)
+            {
+                return Results.Conflict(new { error = "not_calibrated" });
+            }
         });
 
         group.MapPost("/{id}/ptz/preset/goto", async (string id, PtzPresetApiRequest request, PtzGoToPresetUseCase useCase, CancellationToken ct) =>
@@ -188,23 +195,42 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/ptz/configure-parking", async (string id, ConfigurePtzParkingPositionUseCase useCase, CancellationToken ct) =>
         {
+            try
+            {
+                var ok = await useCase.ExecuteAsync(id, ct);
+                return ok ? Results.NoContent() : Results.NotFound();
+            }
+            catch (PtzNotCalibratedException)
+            {
+                return Results.Conflict(new { error = "not_calibrated" });
+            }
+        });
+
+        // Branch B calibration: homes the camera to establish virtual position (0,0).
+        group.MapPost("/{id}/ptz/calibrate", async (string id, PtzCalibrateUseCase useCase, CancellationToken ct) =>
+        {
             var ok = await useCase.ExecuteAsync(id, ct);
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
-        // Returns all configured PTZ presets for a camera (ADR-25).
+        // Returns all configured PTZ presets for a camera, plus calibration state and current position (ADR-25).
         group.MapGet("/{id}/ptz/presets", async (string id, GetPtzPresetsUseCase useCase, CancellationToken ct) =>
         {
-            var result = await useCase.ExecuteAsync(id, ct);
-            return Results.Ok(result.Select(p => new
+            var (list, calibrated, pos) = await useCase.ExecuteAsync(id, ct);
+            return Results.Ok(new
             {
-                presetId = p.PresetId,
-                label = p.Label,
-                native = p.Native,
-                stepsX = p.StepsX,
-                stepsY = p.StepsY,
-                configured = true,
-            }));
+                calibrated,
+                currentPosition = pos is { } p ? new { x = p.X, y = p.Y } : null,
+                presets = list.Select(p => new
+                {
+                    presetId = p.PresetId,
+                    label = p.Label,
+                    native = p.Native,
+                    stepsX = p.StepsX,
+                    stepsY = p.StepsY,
+                    configured = true,
+                }),
+            });
         });
 
         // Diagnostic: check if camera supports position reporting (needed for AbsoluteMove home).

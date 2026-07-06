@@ -23,8 +23,10 @@ internal sealed class V380PtzProvider(
     V380PtzPositionTracker positionTracker,
     ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
-    // Number of UpLeft steps to reach the mechanical limit from any position (ADR-25 Branch B).
+    // Safe fallback homing steps when virtual position is unknown (ADR-25 Branch B).
     private const int HomingSteps = 200;
+    // Extra steps after estimated clearance to guarantee both axes hit the mechanical limit.
+    private const int HomingMargin = 15;
     // 16-byte PTZ binary packets (opcode 0xAA). Pan/tilt are uint16 LE: neutral=1000.
     // Direction mapping confirmed by physical testing — inverted from prsyahmi/v380 source labels:
     //   pan:  1002 (0x03EA) = RIGHT on screen, 1001 (0x03E9) = LEFT
@@ -99,20 +101,29 @@ internal sealed class V380PtzProvider(
     public (int StepsX, int StepsY)? GetVirtualPosition(string cameraId)
         => positionTracker.Get(cameraId) is { } pos ? (pos.X, pos.Y) : null;
 
-    // Branch B (ADR-25): sends HomingSteps UpLeft packets to reach mechanical limit, then resets virtual position.
+    // Branch B (ADR-25): sends UpLeft packets to reach the mechanical limit, then resets virtual position.
+    // When the current virtual position is known, only sends max(X,Y) + HomingMargin steps —
+    // UpLeft decrements both axes simultaneously so max(X,Y) suffices to clear both.
+    // Falls back to HomingSteps (200) when position is unknown (first calibration after restart).
     public async Task PtzHomingStepsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         if (TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
 
-        logger.LogInformation("V380 homing started for {Camera} ({Steps} steps UpLeft).", camera.DisplayName, HomingSteps);
+        var current = positionTracker.Get(camera.Id);
+        var steps = current is { } pos
+            ? Math.Max(pos.X, pos.Y) + HomingMargin
+            : HomingSteps;
+
+        logger.LogInformation("V380 homing started for {Camera} ({Steps} steps UpLeft, position was {Pos}).",
+            camera.DisplayName, steps, current?.ToString() ?? "unknown");
         var packet = UpLeft.ToArray();
-        for (var i = 0; i < HomingSteps; i++)
+        for (var i = 0; i < steps; i++)
         {
             try { await client.SendStreamCommandAsync(camera, packet, ct); }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "V380 homing step {Step}/{Total} failed for {Camera}.", i + 1, HomingSteps, camera.DisplayName);
+                logger.LogWarning(ex, "V380 homing step {Step}/{Total} failed for {Camera}.", i + 1, steps, camera.DisplayName);
             }
         }
         positionTracker.Set(camera.Id, 0, 0);
