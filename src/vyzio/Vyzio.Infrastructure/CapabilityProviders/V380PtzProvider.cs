@@ -24,9 +24,11 @@ internal sealed class V380PtzProvider(
     ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
     // Safe fallback homing steps when virtual position is unknown (ADR-25 Branch B).
-    private const int HomingSteps = 200;
-    // Extra steps after estimated clearance to guarantee both axes hit the mechanical limit.
-    private const int HomingMargin = 15;
+    // Real cost per step: auth ~100ms + connect ~30ms + 5 warmup frames ~330ms + 200ms drain ≈ 650ms.
+    // 25 steps ≈ 16 s, which covers the full V380 pan/tilt range from any starting position.
+    private const int HomingSteps = 25;
+    // Extra steps beyond estimated clearance — safety net for occasional dropped packets only.
+    private const int HomingMargin = 2;
     // 16-byte PTZ binary packets (opcode 0xAA). Pan/tilt are uint16 LE: neutral=1000.
     // Direction mapping confirmed by physical testing — inverted from prsyahmi/v380 source labels:
     //   pan:  1002 (0x03EA) = RIGHT on screen, 1001 (0x03E9) = LEFT
@@ -73,7 +75,7 @@ internal sealed class V380PtzProvider(
         return success;
     }
 
-    // Sends a single PTZ step packet (~100ms movement per packet, ~200ms gap for smooth motion).
+    // Sends a single PTZ step packet. Real cost ≈ 650 ms/step (auth + connect + warmup frames + 200 ms drain).
     // Overrides the default Move+Stop fallback — V380 has no persistent session concept here.
     // Also updates the virtual position tracker for Branch B preset management (ADR-25).
     public async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)

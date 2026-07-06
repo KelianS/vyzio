@@ -178,8 +178,7 @@ export function PtzPresetsSection({
                     {preset && (
                       <button
                         type="button"
-                        className="secondary-cta"
-                        style={{ fontSize: '0.78rem', padding: '4px 12px' }}
+                        className="secondary-cta capability-btn"
                         disabled={state !== 'idle'}
                         onClick={() => handleGoto(presetId)}
                       >
@@ -188,8 +187,7 @@ export function PtzPresetsSection({
                     )}
                     <button
                       type="button"
-                      className="secondary-cta"
-                      style={{ fontSize: '0.78rem', padding: '4px 12px' }}
+                      className="capability-btn-ghost"
                       disabled={state !== 'idle' || !calibrated}
                       title={!calibrated ? "Calibrez la caméra d'abord" : undefined}
                       onClick={() => handleSave(presetId)}

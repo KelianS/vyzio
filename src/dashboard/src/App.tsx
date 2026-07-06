@@ -240,6 +240,7 @@ function App() {
                   ptzSupported={modalMedia.ptzSupported}
                   ptzStep={ptzStep}
                   ptzGoToPreset={ptzGoToPreset}
+                  getPtzPresets={getPtzPresets}
                 />
               ) : modalMedia.type === 'image' ? (
                 <img src={modalMedia.url} alt="Aperçu détection" className="media-modal-media" />
