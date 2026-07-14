@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Btn } from './Btn'
 import type { Camera } from '../../domain/entities/Camera'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
 import type { GetCameraPrivacySchedules } from '../../application/use-cases/GetCameraPrivacySchedules'
@@ -172,24 +173,24 @@ export function PrivacyScheduleSection({
         </div>
         {error && <p className="privacy-schedule-error">{error}</p>}
         <div className="privacy-schedule-actions">
-          <button
-            type="button"
-            className="secondary-cta privacy-schedule-btn"
+          <Btn
+            variant="secondary"
+            size="sm"
             onClick={handleAdd}
-            disabled={adding}
+            loading={adding}
           >
             Ajouter à cette caméra
-          </button>
+          </Btn>
           {allCameras.length > 1 && (
-            <button
-              type="button"
-              className="secondary-cta privacy-schedule-btn"
+            <Btn
+              variant="secondary"
+              size="sm"
               onClick={handleApplyToAll}
-              disabled={adding}
+              loading={adding}
               title={`Appliquer ce schedule aux ${allCameras.length} caméras`}
             >
               Appliquer à toutes ({allCameras.length})
-            </button>
+            </Btn>
           )}
         </div>
       </div>

@@ -8,6 +8,7 @@ import type { Camera } from '../../domain/entities/Camera'
 import { useAsync } from '../hooks/useAsync'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { useToast } from './Toast'
+import { Btn } from './Btn'
 import {
   getCameraCapabilities,
   configureCameraCapability,
@@ -89,18 +90,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 
   return (
     <section className="camera-detail-section capability-section-compact">
-      <div className="capability-section-header">
-        <h4>Capacités</h4>
-        <button
-          type="button"
-          className="capability-btn-ghost"
-          disabled={detectAction.loading || offline}
-          title="Sonde automatiquement toutes les capacités de la caméra"
-          onClick={() => detectAction.run()}
-        >
-          {detectAction.loading ? '…' : 'Détecter'}
-        </button>
-      </div>
+      <h4>Capacités</h4>
 
       {camera.supportedProtocols.length > 0 && (
         <div className="capability-protocol-badges">
@@ -134,6 +124,18 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
           <ManualCapabilityForm cameraId={camera.id} onDone={handleReload} />
         )}
       </div>
+
+      <div className="capability-detect-row">
+        <span className="capability-detect-hint">PTZ, vie privée matérielle…</span>
+        <Btn
+          variant="ghost"
+          disabled={detectAction.loading || offline}
+          loading={detectAction.loading}
+          onClick={() => detectAction.run()}
+        >
+          Détecter les capacités
+        </Btn>
+      </div>
     </section>
   )
 }
@@ -150,6 +152,7 @@ interface CapabilityRowProps {
 
 function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [confirmDisable, setConfirmDisable] = useState(false)
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
   const [v380DeviceId, setV380DeviceId] = useState('')
 
@@ -243,24 +246,22 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           </div>
         </div>
         <div className="capability-actions">
-          <button
-            type="button"
-            className="secondary-cta capability-btn"
-            disabled={configureAction.loading}
+          <Btn
+            variant="secondary"
+            loading={configureAction.loading}
             onClick={() => configureAction.run()}
           >
-            {configureAction.loading ? '…' : 'Enregistrer'}
-          </button>
-          <button
-            type="button"
-            className="capability-btn-ghost"
+            Enregistrer
+          </Btn>
+          <Btn
+            variant="ghost"
             onClick={() => {
               setEditProtocol(binding.protocol)
               setIsEditing(false)
             }}
           >
             Annuler
-          </button>
+          </Btn>
         </div>
       </div>
     )
@@ -294,50 +295,98 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
                 onChange={(e) => setV380DeviceId(e.target.value)}
               />
             </label>
-            <button
-              type="button"
-              className="secondary-cta capability-btn"
-              disabled={!v380DeviceId || configureAction.loading}
+            <Btn
+              variant="secondary"
+              disabled={!v380DeviceId}
+              loading={configureAction.loading}
               onClick={() => configureAction.run()}
             >
-              {configureAction.loading ? '…' : 'Appliquer'}
-            </button>
+              Appliquer
+            </Btn>
           </div>
         )}
       </div>
 
       <div className="capability-actions">
         {binding.capability === 'ptz' && isConfigured && (
-          <button
-            type="button"
-            className={`capability-toggle ${ptzEnabled ? 'capability-toggle--on' : 'capability-toggle--off'}`}
-            disabled={toggleAction.loading || offline}
-            onClick={() => toggleAction.run()}
-            title={ptzEnabled ? 'Désactiver le panneau PTZ' : 'Activer le panneau PTZ'}
-          >
-            {toggleAction.loading ? '…' : ptzEnabled ? 'Actif' : 'Inactif'}
-          </button>
+          <>
+            <span className={`capability-status-badge ${ptzEnabled ? 'capability-status-badge--on' : 'capability-status-badge--off'}`}>
+              {ptzEnabled ? 'Actif' : 'Inactif'}
+            </span>
+            {ptzEnabled ? (
+              <Btn
+                variant="danger-outline"
+                disabled={offline}
+                onClick={() => setConfirmDisable(true)}
+              >
+                Désactiver
+              </Btn>
+            ) : (
+              <Btn
+                variant="ghost"
+                loading={toggleAction.loading}
+                disabled={offline}
+                onClick={() => toggleAction.run()}
+              >
+                Activer
+              </Btn>
+            )}
+          </>
         )}
         {!isConfigured && (
-          <button
-            type="button"
-            className="secondary-cta capability-btn"
-            disabled={configureAction.loading || offline}
+          <Btn
+            variant="secondary"
+            loading={configureAction.loading}
+            disabled={offline}
             onClick={() => configureAction.run()}
           >
-            {configureAction.loading ? '…' : 'Configurer'}
-          </button>
+            Configurer
+          </Btn>
         )}
         {isConfigured && (
-          <button
-            type="button"
-            className="capability-btn-ghost"
-            disabled={offline}
-            onClick={() => setIsEditing(true)}
-          >
+          <Btn variant="ghost" disabled={offline} onClick={() => setIsEditing(true)}>
             Modifier
-          </button>
+          </Btn>
         )}
+      </div>
+
+      {confirmDisable && (
+        <ConfirmModal
+          title="Désactiver le PTZ ?"
+          description="Le panneau de contrôle PTZ sera masqué dans l'interface. La configuration reste sauvegardée et peut être réactivée à tout moment."
+          confirmLabel="Désactiver"
+          loading={toggleAction.loading}
+          onConfirm={() => { setConfirmDisable(false); toggleAction.run() }}
+          onCancel={() => setConfirmDisable(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// --- ConfirmModal ---
+
+interface ConfirmModalProps {
+  title: string
+  description: string
+  confirmLabel: string
+  loading?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function ConfirmModal({ title, description, confirmLabel, loading, onConfirm, onCancel }: ConfirmModalProps) {
+  return (
+    <div className="confirm-modal-backdrop" onClick={onCancel}>
+      <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="confirm-modal-title">{title}</p>
+        <p className="confirm-modal-desc">{description}</p>
+        <div className="confirm-modal-actions">
+          <Btn variant="ghost" size="md" onClick={onCancel}>Annuler</Btn>
+          <Btn variant="danger" size="md" loading={loading} onClick={onConfirm}>
+            {confirmLabel}
+          </Btn>
+        </div>
       </div>
     </div>
   )
@@ -394,14 +443,13 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
           </select>
         </label>
 
-        <button
-          type="button"
-          className="secondary-cta capability-btn"
-          disabled={configureAction.loading}
+        <Btn
+          variant="secondary"
+          loading={configureAction.loading}
           onClick={() => configureAction.run()}
         >
-          {configureAction.loading ? '…' : 'Configurer'}
-        </button>
+          Configurer
+        </Btn>
       </div>
       <p className="capability-manual-form-hint">
         La capacité est testée immédiatement et activée en cas de succès.

@@ -9,6 +9,7 @@ import type { CapturePtzPresetThumbnail } from '../../application/use-cases/Capt
 import { toAppError } from '../../domain/errors/toAppError'
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { useToast } from './Toast'
+import { Btn } from './Btn'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]
 const CAPTURE_DELAY_MS = 1500
@@ -154,14 +155,13 @@ export function PtzPresetsSection({
                 Calibrez la caméra pour établir la position de référence (butée mécanique), puis
                 naviguez vers la position souhaitée avant de définir un preset.
               </p>
-              <button
-                type="button"
-                className="secondary-cta ptz-calibration-btn"
-                disabled={calibrating}
+              <Btn
+                variant="secondary"
+                loading={calibrating}
                 onClick={handleCalibrate}
               >
                 {calibrating ? 'Calibration en cours…' : 'Calibrer (position 0)'}
-              </button>
+              </Btn>
             </div>
           )}
 
@@ -215,24 +215,24 @@ export function PtzPresetsSection({
                   </div>
                   <div className="ptz-preset-actions">
                     {preset && (
-                      <button
-                        type="button"
-                        className="secondary-cta capability-btn"
+                      <Btn
+                        variant="secondary"
+                        loading={state === 'going'}
                         disabled={state !== 'idle'}
                         onClick={() => handleGoto(presetId)}
                       >
-                        {state === 'going' ? '…' : 'Aller'}
-                      </button>
+                        Aller
+                      </Btn>
                     )}
-                    <button
-                      type="button"
-                      className="capability-btn-ghost"
+                    <Btn
+                      variant="ghost"
+                      loading={state === 'saving'}
                       disabled={state !== 'idle' || !calibrated}
                       title={!calibrated ? "Calibrez la caméra d'abord" : undefined}
                       onClick={() => handleSave(presetId)}
                     >
-                      {state === 'saving' ? '…' : 'Définir ici'}
-                    </button>
+                      Définir ici
+                    </Btn>
                   </div>
                 </li>
               )

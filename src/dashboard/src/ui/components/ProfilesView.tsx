@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ConfirmModal } from './ConfirmModal'
 import { useToast } from './Toast'
+import { Btn } from './Btn'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import type { AddProfilePhoto } from '../../application/use-cases/AddProfilePhoto'
 import type { CreateProfile } from '../../application/use-cases/CreateProfile'
@@ -383,12 +384,12 @@ function ProfileForm({
         )}
 
         <div className="camera-form-actions">
-          <button type="submit" className="primary-cta" disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-          <button type="button" className="secondary-cta" onClick={onCancel}>
+          <Btn type="submit" variant="primary" size="md" loading={saving}>
+            Enregistrer
+          </Btn>
+          <Btn variant="ghost" size="md" onClick={onCancel}>
             Annuler
-          </button>
+          </Btn>
         </div>
       </form>
     </section>
@@ -455,22 +456,12 @@ function ProfileInfoTab({
       </section>
 
       <div className="camera-form-actions" style={{ padding: '0 0 16px' }}>
-        <button
-          type="button"
-          className="primary-cta"
-          onClick={() => setEditing(true)}
-          disabled={saving}
-        >
+        <Btn variant="primary" size="md" loading={saving} onClick={() => setEditing(true)}>
           Modifier
-        </button>
-        <button
-          type="button"
-          className="secondary-cta"
-          onClick={onDelete}
-          style={{ color: 'var(--status-degraded, #e05252)', marginLeft: 'auto' }}
-        >
+        </Btn>
+        <Btn variant="danger-outline" size="md" onClick={onDelete} style={{ marginLeft: 'auto' }}>
           Supprimer le profil
-        </button>
+        </Btn>
       </div>
     </>
   )
@@ -558,22 +549,12 @@ function ProfilePhotosTab({
       <div className="profile-photos-header">
         <h3>Photos de reconnaissance</h3>
         <div className="profile-photos-actions">
-          <button
-            type="button"
-            className="secondary-cta profile-action-btn"
-            onClick={onResync}
-            disabled={resyncing}
-          >
-            {resyncing ? 'Synchronisation…' : 'Resynchroniser'}
-          </button>
-          <button
-            type="button"
-            className="primary-cta profile-action-btn"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? 'Envoi…' : '+ Photo'}
-          </button>
+          <Btn variant="secondary" size="sm" loading={resyncing} onClick={onResync}>
+            Resynchroniser
+          </Btn>
+          <Btn variant="primary" size="sm" loading={uploading} onClick={() => inputRef.current?.click()}>
+            + Photo
+          </Btn>
           <input
             ref={inputRef}
             type="file"
@@ -736,9 +717,9 @@ function ProfileCamerasTab({
 
       {!loading && (
         <div className="camera-form-actions">
-          <button type="button" className="primary-cta" onClick={handleSave} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <Btn variant="primary" size="md" loading={saving} onClick={handleSave}>
+            Enregistrer
+          </Btn>
         </div>
       )}
     </section>

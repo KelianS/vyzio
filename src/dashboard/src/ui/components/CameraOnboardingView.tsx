@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import { useToast } from './Toast'
 import { useAsyncAction } from '../hooks/useAsyncAction'
+import { Btn } from './Btn'
 import ReactMarkdown from 'react-markdown'
 import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
@@ -1070,14 +1071,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
               {selectedCandidate ? (
                 <div className="panel-cta-row">
-                  <button
-                    className="secondary-cta"
-                    type="button"
+                  <Btn
+                    variant="secondary"
+                    size="sm"
+                    loading={actionLoading}
                     onClick={handleRefreshCandidate}
-                    disabled={actionLoading}
                   >
-                    {actionLoading ? 'Traitement...' : 'Rafraichir ce candidat'}
-                  </button>
+                    Rafraichir ce candidat
+                  </Btn>
                 </div>
               ) : null}
 
@@ -1156,22 +1157,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    <button
-                      className="secondary-cta"
-                      type="button"
-                      onClick={handleVerifyDraft}
+                    <Btn
+                      variant="secondary"
+                      size="md"
+                      loading={actionLoading}
                       disabled={actionLoading || !canVerifyDraft}
+                      onClick={handleVerifyDraft}
                     >
-                      {actionLoading ? 'Traitement...' : 'Verifier la connexion'}
-                    </button>
-                    <button
-                      className="primary-cta"
-                      type="button"
-                      onClick={handleCreate}
+                      Verifier la connexion
+                    </Btn>
+                    <Btn
+                      variant="primary"
+                      size="md"
+                      loading={actionLoading}
                       disabled={actionLoading || !canAddConfiguredCamera}
+                      onClick={handleCreate}
                     >
-                      {actionLoading ? 'Traitement...' : 'Ajouter'}
-                    </button>
+                      Ajouter
+                    </Btn>
                   </div>
                 </>
               ) : null}
@@ -1227,13 +1230,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   />
 
                   <div className="camera-detail-section camera-live-actions">
-                    <button
-                      type="button"
-                      className="secondary-cta"
-                      onClick={() => props.onOpenLive(selectedCamera)}
-                    >
+                    <Btn variant="secondary" size="md" onClick={() => props.onOpenLive(selectedCamera)}>
                       {selectedCamera.ptzSupported ? 'Piloter la caméra' : 'Voir le live'}
-                    </button>
+                    </Btn>
                   </div>
 
                   {selectedCamera.ptzSupported && (
@@ -1309,36 +1308,34 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </label>
                     </div>
                     <div className="panel-cta-row">
-                      <button
-                        className="primary-cta"
-                        type="button"
-                        onClick={handleUpdate}
+                      <Btn
+                        variant="primary"
+                        size="md"
+                        loading={updateAction.loading}
                         disabled={actionLoading || !canUpdateConfiguredCamera}
+                        onClick={handleUpdate}
                       >
-                        {updateAction.loading ? 'Enregistrement...' : 'Enregistrer'}
-                      </button>
-                      <button
-                        className="secondary-cta"
-                        type="button"
+                        Enregistrer
+                      </Btn>
+                      <Btn
+                        variant="secondary"
+                        size="md"
+                        loading={verifyAction.loading}
+                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
                         onClick={handleVerify}
-                        disabled={
-                          actionLoading || selectedCamera.validationState === 'pending_removal'
-                        }
                       >
-                        {verifyAction.loading ? 'Vérification...' : 'Vérifier la connexion'}
-                      </button>
-                      <button
-                        className="danger-cta"
-                        type="button"
+                        Vérifier la connexion
+                      </Btn>
+                      <Btn
+                        variant="danger"
+                        size="md"
+                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
                         onClick={() => setConfirmDelete(true)}
-                        disabled={
-                          actionLoading || selectedCamera.validationState === 'pending_removal'
-                        }
                       >
                         {selectedCamera.validationState === 'pending_removal'
                           ? 'Suppression en attente'
                           : 'Supprimer'}
-                      </button>
+                      </Btn>
                     </div>
                     {detailMessage && (
                       <p className="camera-inline-state success action-feedback">{detailMessage}</p>
@@ -1448,9 +1445,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         </div>
                       )}
 
-                      <button
-                        type="button"
-                        className="privacy-strategy-save-btn"
+                      <Btn
+                        variant="primary"
+                        size="sm"
+                        style={{ alignSelf: 'flex-start', marginTop: 4 }}
+                        loading={saveStrategyAction.loading}
                         disabled={
                           saveStrategyAction.loading ||
                           pendingStrategy === selectedCamera.privacyStrategy
@@ -1461,10 +1460,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           await saveStrategyAction.run()
                         }}
                       >
-                        {saveStrategyAction.loading
-                          ? 'Enregistrement...'
-                          : 'Enregistrer la stratégie'}
-                      </button>
+                        Enregistrer la stratégie
+                      </Btn>
 
                       {strategyFeedback && <p className="ptz-feedback">{strategyFeedback}</p>}
                     </div>
