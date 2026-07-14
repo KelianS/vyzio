@@ -1,7 +1,7 @@
 # Vyzio — Backlog
 > References : [SPECS.md](./SPECS.md) · [SAD.md](./SAD.md) · [README.md](../README.md)
 
-Le workflow obligatoire est defini dans les regles du repo, fichier `.instructions.md`.
+Le workflow obligatoire est defini dans [`WORKFLOW.md`](./WORKFLOW.md).
 
 ---
 
@@ -57,25 +57,13 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 6. **Suppression du code legacy de capacités** — `BackfillCameraCapabilityBindingsUseCase` et correspondances hardcodées — à supprimer dans le cadre du refacto `arch-protocol` (item 2).
 
-7. **UI : capacités éditables après configuration** — le `PUT /api/cameras/{id}/capabilities/{capability}` existe mais n'est pas accessible depuis l'interface une fois la capacité configurée. L'UI doit permettre de changer le protocole d'un binding existant (ex. passer de ONVIF à V380 manuellement) et de désactiver une capacité (supprimer le binding). Le panneau capacités d'une caméra doit afficher un état "reconfigurable" pour chaque capability vérifiée.
-
-8. **Support des caméras multi-flux RTSP** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Certaines caméras (ex. V380 avec 3 objectifs) exposent plusieurs flux RTSP simultanés ; le modèle actuel suppose un flux unique par caméra.
+7. **Support des caméras multi-flux RTSP** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Certaines caméras (ex. V380 avec 3 objectifs) exposent plusieurs flux RTSP simultanés ; le modèle actuel suppose un flux unique par caméra.
 
 ---
 
 ### `ptz` — PTZ précis
 
-1. **Gestion des positions PTZ (presets + parking)** — deux presets réservés : preset 1 = position de surveillance (home), preset 2 = position de parking vie privée. Minimum 4 slots au total dont 2 personnalisables par l'utilisateur. Deux branches d'implémentation selon la capacité de la caméra :
-
-   - **Branch A — presets natifs** : si la caméra retourne ≥1 preset à la probe (`GetPresets` ONVIF ou équivalent DVRIP), utiliser `SetPreset` / `GotoPreset` natifs. Déjà partiellement câblé dans `OnvifPtzProvider` et `DvripPtzProvider`.
-   - **Branch B — positions Vyzio-managed** : fallback générique pour toute caméra dont la probe ne confirme pas le support natif des presets — indépendant du protocole (V380, ONVIF cheap, DVRIP sans preset, etc.). À la première utilisation d'un preset, effectuer un **homing** : envoyer N steps en direction UpLeft jusqu'à la butée mécanique (timeout-based, N exposé comme constante configurable par provider). L'origine (0, 0) est alors connue. Les presets sont persistés en DB comme `(steps_x, steps_y)` depuis zéro. `GoToPreset` : homing → replay des steps vers les coordonnées cibles.
-
-   **Détails d'implémentation :**
-   - Le routage Branch A / B est déterminé à la probe : chaque provider tente `GetPresets` (ou équivalent) et expose `SupportsNativePresets` dans le résultat — le flag est persisté dans `CameraCapabilityBinding.ConfigJson`.
-   - Nouveau champ `PtzPreset` en DB : `{ "native": false, "presets": [{"id": 1, "label": "Surveillance", "x": 42, "y": 17}, ...] }`.
-   - `IPtzCapabilityProvider` : ajouter `PtzHomingStepsAsync` (homing + retour à (0,0)) pour les providers Branch B ; no-op par défaut.
-   - Homing déclenché une seule fois par session (état en mémoire par `cameraId`), non bloquant pour les steps manuels en cours.
-   - UI : section "Positions PTZ" dans la fiche caméra — liste des presets, bouton "Définir ici" (save position courante), bouton "Aller" (goto), presets 1 et 2 avec labels fixes (Surveillance / Parking), presets 3-4 personnalisables.
+_Vide pour l'instant — presets natifs/managés (homing + steps), parking vie privée et miniatures de positions sont livrés (branche `feature/preset-ptz`). Voir SPECS §9.3-9.4, SAD ADR-26._
 
 ---
 

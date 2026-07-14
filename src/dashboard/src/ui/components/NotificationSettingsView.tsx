@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ConfirmModal } from './ConfirmModal'
+import { Btn } from './Btn'
 import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
 import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
 import type { GetNotificationChannelConfig } from '../../application/use-cases/GetNotificationChannelConfig'
@@ -489,14 +490,9 @@ function NotificationLogSection({
         }}
       >
         <h3 style={{ margin: 0 }}>Historique des envois</h3>
-        <button
-          type="button"
-          className="secondary-cta"
-          style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
-          onClick={onRefresh}
-        >
+        <Btn variant="secondary" size="sm" onClick={onRefresh}>
           Rafraichir
-        </button>
+        </Btn>
       </div>
       {entries.length === 0 ? (
         <p className="camera-toolbar-lede" style={{ fontSize: '0.9rem' }}>
@@ -850,28 +846,29 @@ function TelegramConfigPanel({
           </div>
 
           <div className="camera-form-actions">
-            <button type="submit" className="primary-cta" disabled={saving}>
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-            <button
-              type="button"
-              className="secondary-cta"
+            <Btn type="submit" variant="primary" size="md" loading={saving}>
+              Enregistrer
+            </Btn>
+            <Btn
+              variant="secondary"
+              size="md"
               onClick={onTest}
+              loading={testing}
               disabled={testing || !canTest}
               title={canTest ? undefined : 'Configurez le token et le Chat ID avant de tester'}
             >
-              {testing ? 'Test en cours…' : 'Tester le canal'}
-            </button>
+              Tester le canal
+            </Btn>
             {config?.hasToken && (
-              <button
-                type="button"
-                className="secondary-cta"
+              <Btn
+                variant="danger-outline"
+                size="md"
                 onClick={() => setConfirmRemove(true)}
-                disabled={removing}
-                style={{ color: 'var(--status-degraded, #e05252)', marginLeft: 'auto' }}
+                loading={removing}
+                style={{ marginLeft: 'auto' }}
               >
-                {removing ? 'Suppression…' : 'Supprimer le canal'}
-              </button>
+                Supprimer le canal
+              </Btn>
             )}
           </div>
 

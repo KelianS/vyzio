@@ -34,4 +34,13 @@ public interface IPtzCapabilityProvider
     // Returns current pan/tilt position in normalized ONVIF space [-1, 1], or null if not supported.
     virtual Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<(float Pan, float Tilt)?>(null);
+
+    // Branch B (ADR-25): returns current virtual step position from home (0,0), or null if not yet homed.
+    // Branch A providers (native presets) return null — not applicable.
+    virtual (int StepsX, int StepsY)? GetVirtualPosition(string cameraId) => null;
+
+    // Branch B (ADR-25): homes the camera to its mechanical UpLeft limit and resets virtual position to (0,0).
+    // Default no-op — only step-based providers that support homing implement this.
+    virtual Task PtzHomingStepsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => Task.CompletedTask;
 }

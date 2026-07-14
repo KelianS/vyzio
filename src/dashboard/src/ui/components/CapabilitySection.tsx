@@ -8,10 +8,12 @@ import type { Camera } from '../../domain/entities/Camera'
 import { useAsync } from '../hooks/useAsync'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { useToast } from './Toast'
+import { Btn } from './Btn'
 import {
   getCameraCapabilities,
   configureCameraCapability,
-  probeCameraCapability,
+  detectCameraCapabilities,
+  updateCamera,
 } from '../../app/dependencies'
 
 interface CapabilitySectionProps {
@@ -53,6 +55,7 @@ const PRIVACY_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
 ]
 
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
+  const { toast } = useToast()
   const {
     data: bindings,
     loading,
@@ -63,6 +66,16 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     reload()
     onReload?.()
   }
+
+  const detectAction = useAsyncAction(
+    () => detectCameraCapabilities.execute(camera.id),
+    {
+      onSuccess: () => {
+        toast('Détection terminée.', 'success')
+        handleReload()
+      },
+    },
+  )
 
   const isUnlisted = !bindings?.some((b) => b.isPreset)
 
@@ -79,7 +92,6 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     <section className="camera-detail-section capability-section-compact">
       <h4>Capacités</h4>
 
-      {/* Item 6 — Badges protocoles détectés */}
       {camera.supportedProtocols.length > 0 && (
         <div className="capability-protocol-badges">
           {camera.supportedProtocols.map((p) => (
@@ -92,7 +104,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 
       {offline && (
         <p className="camera-inline-state" style={{ marginBottom: 8 }}>
-          Caméra hors ligne — les tests seront disponibles dès que la caméra sera joignable.
+          Caméra hors ligne — la détection sera disponible dès que la caméra sera joignable.
         </p>
       )}
 
@@ -100,16 +112,29 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
         {(bindings ?? []).map((b) => (
           <CapabilityRow
             key={b.capability}
-            cameraId={camera.id}
+            camera={camera}
             binding={b}
             offline={offline}
             onDone={handleReload}
+            onToast={toast}
           />
         ))}
 
         {isUnlisted && !offline && (
           <ManualCapabilityForm cameraId={camera.id} onDone={handleReload} />
         )}
+      </div>
+
+      <div className="capability-detect-row">
+        <span className="capability-detect-hint">PTZ, vie privée matérielle…</span>
+        <Btn
+          variant="ghost"
+          disabled={detectAction.loading || offline}
+          loading={detectAction.loading}
+          onClick={() => detectAction.run()}
+        >
+          Détecter les capacités
+        </Btn>
       </div>
     </section>
   )
@@ -118,47 +143,25 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 // --- CapabilityRow ---
 
 interface CapabilityRowProps {
-  cameraId: string
+  camera: Camera
   binding: CameraCapabilityBinding
   offline?: boolean
   onDone: () => void
+  onToast: (msg: string, type: 'success' | 'error') => void
 }
 
-function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProps) {
-  const { toast } = useToast()
-  const [lastResult, setLastResult] = useState<'ok' | 'fail' | null>(null)
+function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [confirmDisable, setConfirmDisable] = useState(false)
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
-  // Item 8 — V380 manual device ID when probe fails with "Identifiant V380 introuvable"
   const [v380DeviceId, setV380DeviceId] = useState('')
 
   const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
 
-  const probeAction = useAsyncAction(
-    () => probeCameraCapability.execute(cameraId, binding.capability),
-    {
-      onSuccess: (result) => {
-        if (result?.verified) {
-          setLastResult('ok')
-          toast('Connexion vérifiée — la capacité est opérationnelle.', 'success')
-        } else {
-          setLastResult('fail')
-          toast(
-            result?.lastError
-              ? `Connexion échouée : ${result.lastError}`
-              : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
-            'error',
-          )
-        }
-        onDone()
-      },
-    },
-  )
-
   const configureAction = useAsyncAction(
     () =>
       configureCameraCapability.execute(
-        cameraId,
+        camera.id,
         binding.capability,
         binding.isConfigured ? editProtocol : binding.protocol,
         v380DeviceId ? JSON.stringify({ device_id: parseInt(v380DeviceId, 10) }) : undefined,
@@ -166,12 +169,10 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
     {
       onSuccess: (result) => {
         if (result?.verified) {
-          setLastResult('ok')
           setIsEditing(false)
-          toast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
+          onToast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
         } else {
-          setLastResult('fail')
-          toast(
+          onToast(
             result?.lastError
               ? `Connexion échouée : ${result.lastError}`
               : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
@@ -183,7 +184,30 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
     },
   )
 
-  const isVerified = lastResult === 'ok' || (lastResult === null && binding.verified)
+  const ptzEnabled = camera.ptzSupported
+  const toggleAction = useAsyncAction(
+    () =>
+      updateCamera.execute(camera.id, {
+        displayName: camera.displayName,
+        host: camera.host,
+        port: camera.port,
+        username: camera.username ?? null,
+        password: null,
+        streamPath: camera.streamPath ?? null,
+        vendorFamily: camera.vendorFamily,
+        sourceType: camera.sourceType,
+        streamProtocol: camera.streamProtocol,
+        ptzSupported: !ptzEnabled,
+      }),
+    {
+      onSuccess: () => {
+        onToast(ptzEnabled ? 'PTZ désactivé.' : 'PTZ activé.', 'success')
+        onDone()
+      },
+    },
+  )
+
+  const isVerified = binding.verified
   const isConfigured = binding.isConfigured
 
   const showV380IdInput =
@@ -222,24 +246,22 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
           </div>
         </div>
         <div className="capability-actions">
-          <button
-            type="button"
-            className="secondary-cta capability-btn"
-            disabled={configureAction.loading}
+          <Btn
+            variant="secondary"
+            loading={configureAction.loading}
             onClick={() => configureAction.run()}
           >
-            {configureAction.loading ? '…' : 'Enregistrer'}
-          </button>
-          <button
-            type="button"
-            className="capability-btn-ghost"
+            Enregistrer
+          </Btn>
+          <Btn
+            variant="ghost"
             onClick={() => {
               setEditProtocol(binding.protocol)
               setIsEditing(false)
             }}
           >
             Annuler
-          </button>
+          </Btn>
         </div>
       </div>
     )
@@ -255,14 +277,13 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
           )}
         </div>
         <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}</div>
-        {!isVerified && (lastResult === 'fail' || binding.lastError) && (
-          <div className="capability-error">{binding.lastError ?? 'Connexion échouée'}</div>
+        {!isVerified && binding.lastError && (
+          <div className="capability-error">{binding.lastError}</div>
         )}
-        {isVerified && verifiedAtLabel && lastResult === null && (
+        {isVerified && verifiedAtLabel && (
           <div className="capability-verified-at">Vérifié le {verifiedAtLabel}</div>
         )}
 
-        {/* Item 8 — Saisie manuelle ID V380 si probe échoue */}
         {showV380IdInput && (
           <div className="capability-v380-id-form">
             <label>
@@ -274,46 +295,98 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
                 onChange={(e) => setV380DeviceId(e.target.value)}
               />
             </label>
-            <button
-              type="button"
-              className="secondary-cta capability-btn"
-              disabled={!v380DeviceId || configureAction.loading}
+            <Btn
+              variant="secondary"
+              disabled={!v380DeviceId}
+              loading={configureAction.loading}
               onClick={() => configureAction.run()}
             >
-              {configureAction.loading ? '…' : 'Appliquer'}
-            </button>
+              Appliquer
+            </Btn>
           </div>
         )}
       </div>
 
       <div className="capability-actions">
-        <button
-          type="button"
-          title={
-            isConfigured
-              ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
-              : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
-          }
-          className="secondary-cta capability-btn"
-          disabled={probeAction.loading || (!isConfigured && configureAction.loading) || offline}
-          onClick={() => (isConfigured ? probeAction.run() : configureAction.run())}
-        >
-          {(isConfigured ? probeAction.loading : configureAction.loading)
-            ? '…'
-            : isConfigured
-              ? 'Tester'
-              : 'Configurer'}
-        </button>
-        {isConfigured && (
-          <button
-            type="button"
-            className="capability-btn-ghost"
-            disabled={offline}
-            onClick={() => setIsEditing(true)}
-          >
-            Modifier
-          </button>
+        {binding.capability === 'ptz' && isConfigured && (
+          <>
+            <span className={`capability-status-badge ${ptzEnabled ? 'capability-status-badge--on' : 'capability-status-badge--off'}`}>
+              {ptzEnabled ? 'Actif' : 'Inactif'}
+            </span>
+            {ptzEnabled ? (
+              <Btn
+                variant="danger-outline"
+                disabled={offline}
+                onClick={() => setConfirmDisable(true)}
+              >
+                Désactiver
+              </Btn>
+            ) : (
+              <Btn
+                variant="ghost"
+                loading={toggleAction.loading}
+                disabled={offline}
+                onClick={() => toggleAction.run()}
+              >
+                Activer
+              </Btn>
+            )}
+          </>
         )}
+        {!isConfigured && (
+          <Btn
+            variant="secondary"
+            loading={configureAction.loading}
+            disabled={offline}
+            onClick={() => configureAction.run()}
+          >
+            Configurer
+          </Btn>
+        )}
+        {isConfigured && (
+          <Btn variant="ghost" disabled={offline} onClick={() => setIsEditing(true)}>
+            Modifier
+          </Btn>
+        )}
+      </div>
+
+      {confirmDisable && (
+        <ConfirmModal
+          title="Désactiver le PTZ ?"
+          description="Le panneau de contrôle PTZ sera masqué dans l'interface. La configuration reste sauvegardée et peut être réactivée à tout moment."
+          confirmLabel="Désactiver"
+          loading={toggleAction.loading}
+          onConfirm={() => { setConfirmDisable(false); toggleAction.run() }}
+          onCancel={() => setConfirmDisable(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// --- ConfirmModal ---
+
+interface ConfirmModalProps {
+  title: string
+  description: string
+  confirmLabel: string
+  loading?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function ConfirmModal({ title, description, confirmLabel, loading, onConfirm, onCancel }: ConfirmModalProps) {
+  return (
+    <div className="confirm-modal-backdrop" onClick={onCancel}>
+      <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="confirm-modal-title">{title}</p>
+        <p className="confirm-modal-desc">{description}</p>
+        <div className="confirm-modal-actions">
+          <Btn variant="ghost" size="md" onClick={onCancel}>Annuler</Btn>
+          <Btn variant="danger" size="md" loading={loading} onClick={onConfirm}>
+            {confirmLabel}
+          </Btn>
+        </div>
       </div>
     </div>
   )
@@ -370,14 +443,13 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
           </select>
         </label>
 
-        <button
-          type="button"
-          className="secondary-cta capability-btn"
-          disabled={configureAction.loading}
+        <Btn
+          variant="secondary"
+          loading={configureAction.loading}
           onClick={() => configureAction.run()}
         >
-          {configureAction.loading ? '…' : 'Configurer'}
-        </button>
+          Configurer
+        </Btn>
       </div>
       <p className="capability-manual-form-hint">
         La capacité est testée immédiatement et activée en cas de succès.

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useToast } from './Toast'
+import { Btn } from './Btn'
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { toAppError } from '../../domain/errors/toAppError'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
@@ -268,9 +269,9 @@ export function DetectionHistoryView({
             />
           </div>
 
-          <button type="button" className="secondary-cta" onClick={resetFilters}>
+          <Btn variant="secondary" size="sm" onClick={resetFilters}>
             Réinitialiser
-          </button>
+          </Btn>
         </aside>
 
         <div className="history-events">
@@ -339,27 +340,25 @@ export function DetectionHistoryView({
                     justifyContent: 'center',
                   }}
                 >
-                  <button
-                    type="button"
-                    className="secondary-cta"
+                  <Btn
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage <= 1}
-                    style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
                   >
                     ← Precedent
-                  </button>
+                  </Btn>
                   <span style={{ opacity: 0.7, fontSize: '0.88rem' }}>
                     Page {page.page} / {page.totalPages}
                   </span>
-                  <button
-                    type="button"
-                    className="secondary-cta"
+                  <Btn
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setCurrentPage((p) => Math.min(page.totalPages, p + 1))}
                     disabled={currentPage >= page.totalPages}
-                    style={{ minHeight: 30, padding: '0 12px', fontSize: '0.82rem' }}
                   >
                     Suivant →
-                  </button>
+                  </Btn>
                 </div>
               )}
             </>
@@ -435,23 +434,13 @@ function EventRow({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {!showCorrect ? (
               <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  type="button"
-                  className="secondary-cta"
-                  style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-                  onClick={() => setShowCorrect(true)}
-                >
+                <Btn variant="secondary" size="sm" onClick={() => setShowCorrect(true)}>
                   Corriger
-                </button>
+                </Btn>
                 {event.hasClip && (
-                  <button
-                    type="button"
-                    className="secondary-cta"
-                    style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-                    onClick={() => setShowClip((v) => !v)}
-                  >
+                  <Btn variant="ghost" size="sm" onClick={() => setShowClip((v) => !v)}>
                     {showClip ? '✕ Clip' : '▶ Clip'}
-                  </button>
+                  </Btn>
                 )}
               </div>
             ) : (
@@ -468,23 +457,12 @@ function EventRow({
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  className="primary-cta"
-                  style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-                  onClick={handleApply}
-                  disabled={correcting}
-                >
-                  {correcting ? '…' : 'OK'}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-cta"
-                  style={{ minHeight: 26, padding: '0 8px', fontSize: '0.78rem' }}
-                  onClick={() => setShowCorrect(false)}
-                >
+                <Btn variant="primary" size="sm" loading={correcting} onClick={handleApply}>
+                  OK
+                </Btn>
+                <Btn variant="ghost" size="sm" onClick={() => setShowCorrect(false)}>
                   ×
-                </button>
+                </Btn>
               </div>
             )}
           </div>

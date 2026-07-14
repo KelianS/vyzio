@@ -19,6 +19,7 @@ import type {
   SupportedProtocol,
 } from '../../domain/entities/CameraCapabilityBinding'
 import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetchJson'
+import type { PtzPreset } from '../../domain/entities/PtzPreset'
 
 interface CameraDto {
   id: string
@@ -271,6 +272,30 @@ export class HttpCameraRepository implements CameraRepository {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
   }
 
+  async getPtzPresets(
+    cameraId: string,
+  ): Promise<{ presets: PtzPreset[]; calibrated: boolean; currentPosition: { x: number; y: number } | null }> {
+    return fetchJson<{
+      presets: PtzPreset[]
+      calibrated: boolean
+      currentPosition: { x: number; y: number } | null
+    }>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/presets`)
+  }
+
+  async ptzSaveCurrentAsPreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`, { presetId })
+  }
+
+  async ptzCalibrate(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/calibrate`)
+  }
+
+  async capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/snapshot`,
+    )
+  }
+
   async getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]> {
     return fetchJson<CameraCapabilityBinding[]>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities`,
@@ -296,6 +321,10 @@ export class HttpCameraRepository implements CameraRepository {
     return postJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/probe`,
     )
+  }
+
+  async detectCapabilities(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
   }
 }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Api.Integration.Frigate;
+using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
 using Vyzio.Application.UseCases.Cameras;
@@ -176,8 +177,15 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/ptz/preset/save", async (string id, PtzPresetApiRequest request, PtzSavePresetUseCase useCase, CancellationToken ct) =>
         {
-            var ok = await useCase.ExecuteAsync(id, request.PresetId, ct);
-            return ok ? Results.NoContent() : Results.NotFound();
+            try
+            {
+                var ok = await useCase.ExecuteAsync(id, request.PresetId, ct);
+                return ok ? Results.NoContent() : Results.NotFound();
+            }
+            catch (PtzNotCalibratedException)
+            {
+                return Results.Conflict(new { error = "not_calibrated" });
+            }
         });
 
         group.MapPost("/{id}/ptz/preset/goto", async (string id, PtzPresetApiRequest request, PtzGoToPresetUseCase useCase, CancellationToken ct) =>
@@ -188,8 +196,42 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/ptz/configure-parking", async (string id, ConfigurePtzParkingPositionUseCase useCase, CancellationToken ct) =>
         {
+            try
+            {
+                var ok = await useCase.ExecuteAsync(id, ct);
+                return ok ? Results.NoContent() : Results.NotFound();
+            }
+            catch (PtzNotCalibratedException)
+            {
+                return Results.Conflict(new { error = "not_calibrated" });
+            }
+        });
+
+        // Branch B calibration: homes the camera to establish virtual position (0,0).
+        group.MapPost("/{id}/ptz/calibrate", async (string id, PtzCalibrateUseCase useCase, CancellationToken ct) =>
+        {
             var ok = await useCase.ExecuteAsync(id, ct);
             return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        // Returns all configured PTZ presets for a camera, plus calibration state and current position (ADR-25).
+        group.MapGet("/{id}/ptz/presets", async (string id, GetPtzPresetsUseCase useCase, CancellationToken ct) =>
+        {
+            var (list, calibrated, pos) = await useCase.ExecuteAsync(id, ct);
+            return Results.Ok(new
+            {
+                calibrated,
+                currentPosition = pos is { } p ? new { x = p.X, y = p.Y } : null,
+                presets = list.Select(p => new
+                {
+                    presetId = p.PresetId,
+                    label = p.Label,
+                    native = p.Native,
+                    stepsX = p.StepsX,
+                    stepsY = p.StepsY,
+                    configured = true,
+                }),
+            });
         });
 
         // Diagnostic: check if camera supports position reporting (needed for AbsoluteMove home).
@@ -250,6 +292,49 @@ public static class CamerasEndpoints
 
             var result = await useCase.ExecuteAsync(id, cap, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
+        group.MapPost("/{id}/capabilities/detect", async (
+            string id,
+            SeedAndProbePresetsUseCase useCase,
+            ICameraRepository cameras,
+            CancellationToken ct) =>
+        {
+            var camera = await cameras.GetByIdAsync(id, ct);
+            if (camera is null) return Results.NotFound();
+            await useCase.ExecuteAsync(id, ct);
+            return Results.NoContent();
+        });
+
+        // PTZ preset thumbnail — capture current Frigate frame and persist per preset
+        group.MapPost("/{id}/ptz/presets/{presetId}/snapshot", async (
+            string id, int presetId,
+            GetCamerasUseCase getCameras,
+            IFrigateRestClient frigateClient,
+            IPtzThumbnailStore thumbnailStore,
+            CancellationToken ct) =>
+        {
+            var cameras = await getCameras.ExecuteAsync(ct);
+            var camera = cameras.FirstOrDefault(c => c.Id == id);
+            if (camera is null) return Results.NotFound();
+
+            var slug = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var response = await frigateClient.GetLatestFrameAsync(slug, ct);
+            if (!response.IsSuccessStatusCode)
+                return Results.Problem("Could not retrieve frame from Frigate");
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            await thumbnailStore.SaveAsync(id, presetId, bytes, ct);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/{id}/ptz/presets/{presetId}/thumbnail", async (
+            string id, int presetId,
+            IPtzThumbnailStore thumbnailStore,
+            CancellationToken ct) =>
+        {
+            var stream = await thumbnailStore.TryGetAsync(id, presetId, ct);
+            return stream is null ? Results.NotFound() : Results.Stream(stream, "image/jpeg");
         });
 
         // Profile links

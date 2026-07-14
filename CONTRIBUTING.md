@@ -118,9 +118,9 @@ docker push ghcr.io/kelians/vyzio-dashboard:latest
 
 ## Workflow
 
-The mandatory workflow is defined in the repository rules file: `.instructions.md`.
+The mandatory workflow is defined in [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
-Use this file as the single source of truth for sequencing documentation, implementation, tests, and user-facing docs.
+Use it as the single source of truth for sequencing documentation, implementation, tests, and user-facing docs.
 
 ## Frigate responsibilities in dev
 
