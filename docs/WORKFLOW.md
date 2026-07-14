@@ -24,9 +24,9 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 Vision → [`../README.md`](../README.md) · Besoin → `SPECS.md` · Solution technique → `SAD.md` ·
 Plan d'exécution → `BACKLOG.md` · Mode d'emploi → `user/`.
 
-Chaque document décrit son propre rôle dans son en-tête. Si une information existe déjà dans le bon
-document, les autres la **référencent** — jamais de copie détaillée. En cas de doute, remonter au bon
-niveau : vision → besoin → architecture → exécution → usage.
+Chaque document décrit son propre rôle dans son en-tête. En cas de doute, remonter au bon niveau :
+vision → besoin → architecture → exécution → usage. Ne jamais recopier une info d'un document à
+l'autre — voir la règle suprême zéro-duplication dans [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Git
 

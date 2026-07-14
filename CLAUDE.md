@@ -3,6 +3,15 @@
 Vyzio : vidéosurveillance domestique **privacy-first**, IA locale, plug-and-play, souveraineté FR.
 Ce fichier est chargé à chaque session. Il route vers la bonne source ; chaque règle a un foyer unique.
 
+## ⛔ Règle suprême — zéro duplication
+
+Une information a **un seul foyer** : le fichier qui en est la source. Partout ailleurs, on la
+**référence**, jamais on ne la recopie. Avant d'écrire quoi que ce soit (doc, règle, principe),
+vérifier que ça n'existe pas déjà ; si oui, pointer vers la source au lieu de dupliquer.
+
+Seule tolérance : un **résumé bref citant sa source** — comme les « Principes produit » plus bas,
+qui condensent README / SPECS sans les remplacer.
+
 ## Avant tout changement significatif
 
 Respecter le workflow : **les documents de cadrage sont alignés avant le code.**
@@ -39,3 +48,4 @@ Digest — sources : [`README.md`](README.md), [`docs/SPECS.md`](docs/SPECS.md) 
 3. **Local-first & résilient** : fonctionne hors ligne ; les données restent chez l'utilisateur.
 4. **Explicabilité** : pas de score ou d'état opaque sans justification lisible.
 5. **Plug & play** : réduire au maximum la friction d'installation et de configuration.
+6. **Contrôle unifié des caméras** : piloter chaque caméra directement (PTZ, vie privée matérielle, réglages, à terme Wi-Fi), protocole propriétaire si besoin — pour affranchir l'utilisateur des apps constructeur.

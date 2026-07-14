@@ -21,6 +21,7 @@ Vyzio est une solution de surveillance domestique **prête à brancher, sans tec
 - **Identification locale des personnes** — Frigate reconnait localement les visages et Vyzio transforme ces signaux en alertes compréhensibles.
 - **Notifications intelligentes** — Vyzio priorise les alertes et les rend lisibles pour un usage non-tech. Pas de spam, seulement ce qui compte.
 - **Compatible caméras IP existantes** — Protocoles RTSP / ONVIF. Vos caméras actuelles fonctionnent, pas besoin de tout racheter.
+- **Contrôle unifié de toutes vos caméras** — PTZ, mode vie privée matériel, réglages image (luminosité, contraste) et, à terme, l'appairage Wi-Fi. Vyzio pilote directement vos caméras, via leur protocole propriétaire si nécessaire — fini les applis constructeur pleines de pub et de trackers, tout se gère au même endroit.
 - **Stockage local des enregistrements** — Vos vidéos sont archivées sur votre propre machine, pas sur le cloud d'un tiers.
 - **Offline-first & résilient** — Le système fonctionne sans connexion internet. Les notifications sont envoyées dès que le réseau est disponible.
 - **Dashboard de gestion** — Interface web pour gérer les caméras, les profils produit, les règles métier et les alertes.
