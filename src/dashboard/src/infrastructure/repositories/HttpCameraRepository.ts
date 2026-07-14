@@ -322,6 +322,10 @@ export class HttpCameraRepository implements CameraRepository {
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/probe`,
     )
   }
+
+  async detectCapabilities(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
+  }
 }
 
 function mapCamera(camera: CameraDto): Camera {

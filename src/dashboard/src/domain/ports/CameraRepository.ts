@@ -81,4 +81,5 @@ export interface CameraRepository {
     configJson?: string,
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
+  detectCapabilities(cameraId: string): Promise<void>
 }

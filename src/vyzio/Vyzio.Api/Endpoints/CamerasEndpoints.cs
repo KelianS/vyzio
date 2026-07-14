@@ -294,6 +294,18 @@ public static class CamerasEndpoints
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
+        group.MapPost("/{id}/capabilities/detect", async (
+            string id,
+            SeedAndProbePresetsUseCase useCase,
+            ICameraRepository cameras,
+            CancellationToken ct) =>
+        {
+            var camera = await cameras.GetByIdAsync(id, ct);
+            if (camera is null) return Results.NotFound();
+            await useCase.ExecuteAsync(id, ct);
+            return Results.NoContent();
+        });
+
         // PTZ preset thumbnail — capture current Frigate frame and persist per preset
         group.MapPost("/{id}/ptz/presets/{presetId}/snapshot", async (
             string id, int presetId,

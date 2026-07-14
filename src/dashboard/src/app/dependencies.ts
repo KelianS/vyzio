@@ -49,6 +49,7 @@ import { CapturePtzPresetThumbnail } from '../application/use-cases/CapturePtzPr
 import { GetCameraCapabilities } from '../application/use-cases/GetCameraCapabilities'
 import { ConfigureCameraCapability } from '../application/use-cases/ConfigureCameraCapability'
 import { ProbeCameraCapability } from '../application/use-cases/ProbeCameraCapability'
+import { DetectCameraCapabilities } from '../application/use-cases/DetectCameraCapabilities'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
 import {
@@ -136,3 +137,4 @@ export const capturePtzPresetThumbnail = new CapturePtzPresetThumbnail(cameraRep
 export const getCameraCapabilities = new GetCameraCapabilities(cameraRepository)
 export const configureCameraCapability = new ConfigureCameraCapability(cameraRepository)
 export const probeCameraCapability = new ProbeCameraCapability(cameraRepository)
+export const detectCameraCapabilities = new DetectCameraCapabilities(cameraRepository)

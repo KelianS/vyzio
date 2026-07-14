@@ -11,7 +11,8 @@ import { useToast } from './Toast'
 import {
   getCameraCapabilities,
   configureCameraCapability,
-  probeCameraCapability,
+  detectCameraCapabilities,
+  updateCamera,
 } from '../../app/dependencies'
 
 interface CapabilitySectionProps {
@@ -53,6 +54,7 @@ const PRIVACY_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
 ]
 
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
+  const { toast } = useToast()
   const {
     data: bindings,
     loading,
@@ -63,6 +65,16 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     reload()
     onReload?.()
   }
+
+  const detectAction = useAsyncAction(
+    () => detectCameraCapabilities.execute(camera.id),
+    {
+      onSuccess: () => {
+        toast('Détection terminée.', 'success')
+        handleReload()
+      },
+    },
+  )
 
   const isUnlisted = !bindings?.some((b) => b.isPreset)
 
@@ -77,9 +89,19 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 
   return (
     <section className="camera-detail-section capability-section-compact">
-      <h4>Capacités</h4>
+      <div className="capability-section-header">
+        <h4>Capacités</h4>
+        <button
+          type="button"
+          className="capability-btn-ghost"
+          disabled={detectAction.loading || offline}
+          title="Sonde automatiquement toutes les capacités de la caméra"
+          onClick={() => detectAction.run()}
+        >
+          {detectAction.loading ? '…' : 'Détecter'}
+        </button>
+      </div>
 
-      {/* Item 6 — Badges protocoles détectés */}
       {camera.supportedProtocols.length > 0 && (
         <div className="capability-protocol-badges">
           {camera.supportedProtocols.map((p) => (
@@ -92,7 +114,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 
       {offline && (
         <p className="camera-inline-state" style={{ marginBottom: 8 }}>
-          Caméra hors ligne — les tests seront disponibles dès que la caméra sera joignable.
+          Caméra hors ligne — la détection sera disponible dès que la caméra sera joignable.
         </p>
       )}
 
@@ -100,10 +122,11 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
         {(bindings ?? []).map((b) => (
           <CapabilityRow
             key={b.capability}
-            cameraId={camera.id}
+            camera={camera}
             binding={b}
             offline={offline}
             onDone={handleReload}
+            onToast={toast}
           />
         ))}
 
@@ -118,47 +141,24 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 // --- CapabilityRow ---
 
 interface CapabilityRowProps {
-  cameraId: string
+  camera: Camera
   binding: CameraCapabilityBinding
   offline?: boolean
   onDone: () => void
+  onToast: (msg: string, type: 'success' | 'error') => void
 }
 
-function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProps) {
-  const { toast } = useToast()
-  const [lastResult, setLastResult] = useState<'ok' | 'fail' | null>(null)
+function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
-  // Item 8 — V380 manual device ID when probe fails with "Identifiant V380 introuvable"
   const [v380DeviceId, setV380DeviceId] = useState('')
 
   const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
 
-  const probeAction = useAsyncAction(
-    () => probeCameraCapability.execute(cameraId, binding.capability),
-    {
-      onSuccess: (result) => {
-        if (result?.verified) {
-          setLastResult('ok')
-          toast('Connexion vérifiée — la capacité est opérationnelle.', 'success')
-        } else {
-          setLastResult('fail')
-          toast(
-            result?.lastError
-              ? `Connexion échouée : ${result.lastError}`
-              : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
-            'error',
-          )
-        }
-        onDone()
-      },
-    },
-  )
-
   const configureAction = useAsyncAction(
     () =>
       configureCameraCapability.execute(
-        cameraId,
+        camera.id,
         binding.capability,
         binding.isConfigured ? editProtocol : binding.protocol,
         v380DeviceId ? JSON.stringify({ device_id: parseInt(v380DeviceId, 10) }) : undefined,
@@ -166,12 +166,10 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
     {
       onSuccess: (result) => {
         if (result?.verified) {
-          setLastResult('ok')
           setIsEditing(false)
-          toast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
+          onToast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
         } else {
-          setLastResult('fail')
-          toast(
+          onToast(
             result?.lastError
               ? `Connexion échouée : ${result.lastError}`
               : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
@@ -183,7 +181,30 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
     },
   )
 
-  const isVerified = lastResult === 'ok' || (lastResult === null && binding.verified)
+  const ptzEnabled = camera.ptzSupported
+  const toggleAction = useAsyncAction(
+    () =>
+      updateCamera.execute(camera.id, {
+        displayName: camera.displayName,
+        host: camera.host,
+        port: camera.port,
+        username: camera.username ?? null,
+        password: null,
+        streamPath: camera.streamPath ?? null,
+        vendorFamily: camera.vendorFamily,
+        sourceType: camera.sourceType,
+        streamProtocol: camera.streamProtocol,
+        ptzSupported: !ptzEnabled,
+      }),
+    {
+      onSuccess: () => {
+        onToast(ptzEnabled ? 'PTZ désactivé.' : 'PTZ activé.', 'success')
+        onDone()
+      },
+    },
+  )
+
+  const isVerified = binding.verified
   const isConfigured = binding.isConfigured
 
   const showV380IdInput =
@@ -255,14 +276,13 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
           )}
         </div>
         <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}</div>
-        {!isVerified && (lastResult === 'fail' || binding.lastError) && (
-          <div className="capability-error">{binding.lastError ?? 'Connexion échouée'}</div>
+        {!isVerified && binding.lastError && (
+          <div className="capability-error">{binding.lastError}</div>
         )}
-        {isVerified && verifiedAtLabel && lastResult === null && (
+        {isVerified && verifiedAtLabel && (
           <div className="capability-verified-at">Vérifié le {verifiedAtLabel}</div>
         )}
 
-        {/* Item 8 — Saisie manuelle ID V380 si probe échoue */}
         {showV380IdInput && (
           <div className="capability-v380-id-form">
             <label>
@@ -287,23 +307,27 @@ function CapabilityRow({ cameraId, binding, offline, onDone }: CapabilityRowProp
       </div>
 
       <div className="capability-actions">
-        <button
-          type="button"
-          title={
-            isConfigured
-              ? 'Envoie une requête à la caméra pour vérifier que Vyzio peut y accéder via ce protocole'
-              : 'Enregistre le protocole et teste immédiatement la connexion à la caméra'
-          }
-          className="secondary-cta capability-btn"
-          disabled={probeAction.loading || (!isConfigured && configureAction.loading) || offline}
-          onClick={() => (isConfigured ? probeAction.run() : configureAction.run())}
-        >
-          {(isConfigured ? probeAction.loading : configureAction.loading)
-            ? '…'
-            : isConfigured
-              ? 'Tester'
-              : 'Configurer'}
-        </button>
+        {binding.capability === 'ptz' && isConfigured && (
+          <button
+            type="button"
+            className={`capability-toggle ${ptzEnabled ? 'capability-toggle--on' : 'capability-toggle--off'}`}
+            disabled={toggleAction.loading || offline}
+            onClick={() => toggleAction.run()}
+            title={ptzEnabled ? 'Désactiver le panneau PTZ' : 'Activer le panneau PTZ'}
+          >
+            {toggleAction.loading ? '…' : ptzEnabled ? 'Actif' : 'Inactif'}
+          </button>
+        )}
+        {!isConfigured && (
+          <button
+            type="button"
+            className="secondary-cta capability-btn"
+            disabled={configureAction.loading || offline}
+            onClick={() => configureAction.run()}
+          >
+            {configureAction.loading ? '…' : 'Configurer'}
+          </button>
+        )}
         {isConfigured && (
           <button
             type="button"
