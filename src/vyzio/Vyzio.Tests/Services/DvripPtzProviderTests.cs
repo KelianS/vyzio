@@ -1,13 +1,14 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
+using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Tests.Services;
 
 public class DvripPtzProviderTests
 {
     private static DvripPtzProvider MakeProvider() =>
-        new(NullLogger<DvripPtzProvider>.Instance);
+        new(new DvripClient(NullLogger<DvripClient>.Instance), NullLogger<DvripPtzProvider>.Instance);
 
     [Fact]
     public void Protocol_is_Dvrip()

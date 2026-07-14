@@ -50,6 +50,8 @@ import { GetCameraCapabilities } from '../application/use-cases/GetCameraCapabil
 import { ConfigureCameraCapability } from '../application/use-cases/ConfigureCameraCapability'
 import { ProbeCameraCapability } from '../application/use-cases/ProbeCameraCapability'
 import { DetectCameraCapabilities } from '../application/use-cases/DetectCameraCapabilities'
+import { GetCameraImageSettings } from '../application/use-cases/GetCameraImageSettings'
+import { SetCameraImageSettings } from '../application/use-cases/SetCameraImageSettings'
 import { getDashboardRuntime } from '../infrastructure/config/runtime'
 import { HttpCameraRepository } from '../infrastructure/repositories/HttpCameraRepository'
 import {
@@ -138,3 +140,5 @@ export const getCameraCapabilities = new GetCameraCapabilities(cameraRepository)
 export const configureCameraCapability = new ConfigureCameraCapability(cameraRepository)
 export const probeCameraCapability = new ProbeCameraCapability(cameraRepository)
 export const detectCameraCapabilities = new DetectCameraCapabilities(cameraRepository)
+export const getCameraImageSettings = new GetCameraImageSettings(cameraRepository)
+export const setCameraImageSettings = new SetCameraImageSettings(cameraRepository)

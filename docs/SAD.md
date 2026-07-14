@@ -36,6 +36,8 @@
   - [ADR-25 — Gestion des positions PTZ : presets natifs (Branch A) vs positions Vyzio-managed (Branch B)](#adr-25--gestion-des-positions-ptz--presets-natifs-branch-a-vs-positions-vyzio-managed-branch-b)
   - [ADR-26 — Miniatures de positions PTZ : capture client-triggered, stockage fichier, serving direct](#adr-26--miniatures-de-positions-ptz--capture-client-triggered-stockage-fichier-serving-direct)
   - [ADR-27 — Réglages image avancés : capacité `ImageSettings`, ONVIF Imaging Service, valeurs non persistées](#adr-27--réglages-image-avancés--capacité-imagesettings-onvif-imaging-service-valeurs-non-persistées)
+  - [ADR-28 — Détection de capacité en cascade multi-protocole + flag `ManuallyConfigured`](#adr-28--détection-de-capacité-en-cascade-multi-protocole--flag-manuallyconfigured)
+  - [ADR-29 — Réglages image DVRIP : `DvripClient` partagé, `AVEnc.VideoColor.[0]`, périmètre Brightness/Contrast/Saturation](#adr-29--réglages-image-dvrip--dvripclient-partagé-avencvideocolor0-périmètre-brightnesscontrastsaturation)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -2430,6 +2432,95 @@ PUT /api/cameras/{id}/image-settings  → écrit en direct, renvoie le nouveau s
 - ⚠️ DVRIP et Tapo KLAP restent hors périmètre — un utilisateur ICSee/Tapo ne voit pas cette capacité tant qu'une investigation terrain n'a pas produit un provider dédié
 - ⚠️ Les plages ONVIF (`Brightness`/`Contrast`/`ColorSaturation`/`Sharpness`) sont nominalement 0-100 par le schéma `ver10/schema` mais certains firmwares appliquent leurs propres bornes ; pas de `GetOptions`/min-max dans cette itération — à ajouter si un firmware terrain contredit l'hypothèse 0-100
 
+> **Correctif terrain (2026-07-14) :** deux caméras réelles (V380, ICSee) ont révélé que `OnvifClient` avalait toute erreur HTTP/SOAP en silence (`PostSoapAsync` loguait puis renvoyait `null`), remontant systématiquement une `LastError` vide côté binding — l'UI affichait alors un message générique au lieu de la vraie cause. Corrigé : `PostSoapAsync` accepte un paramètre `throwOnFailure` qui, pour les appels Imaging (`GetVideoSourceTokenAsync`, `GetImagingSettingsAsync`, `SetImagingSettingsAsync`), lève `OnvifCallException` avec le statut HTTP réel et le texte du SOAP fault si présent ; l'exception remonte jusqu'à `ProbeCameraCapabilityUseCase`, qui la capture déjà dans `LastError` (aucun changement nécessaire côté use case). Log terrain confirmé : un des deux boîtiers renvoie `400 Bad Request` sur `imaging_service` — cause probable : absence du paramètre SOAP 1.2 `action` dans le `Content-Type`, désormais ajouté (`soapAction` sur `PostSoapAsync`/`SendCommandAsync`) pour les appels Imaging. PTZ/Media/Device restent inchangés (comportement résilient à dessein, cf. tests `OnvifPtzProviderTests`) — seule la capacité `ImageSettings`, dont le probe doit être franc, adopte ce nouveau contrat.
+
+---
+
+### ADR-28 — Détection de capacité en cascade multi-protocole + flag `ManuallyConfigured`
+
+#### Contexte
+
+Deux défauts découverts en test terrain sur `SeedAndProbePresetsUseCase` (ADR-22), tous deux dans `SeedAndProbePresetAsync` :
+
+1. **Écrasement silencieux d'une config manuelle.** Le code réinitialisait inconditionnellement le protocole d'un binding existant vers celui du preset dès qu'ils différaient (`existing.Protocol != protocol`). Ce comportement visait à migrer les vieux bindings quand le **preset lui-même change dans le code** (ex. V380Pro : `Onvif` → `V380`, migration historique) — mais il ne distingue pas ce cas de « l'utilisateur a choisi un autre protocole qui fonctionne ». Conséquence terrain : un utilisateur ICSee changeait manuellement le protocole PTZ vers `Onvif` (fonctionnel sur son unité), et le clic suivant sur « Détecter les capacités » l'écrasait silencieusement vers le `Dvrip` du preset.
+2. **Un seul protocole essayé par capacité, jamais de repli.** Le preset ICSee ne déclarait que `Dvrip` pour PTZ — alors que certaines unités ICSee exposent aussi ONVIF (cf. `vendors/icsee.md` § A savoir). Sans second essai automatique, ces unités restent bloquées sur DVRIP même quand ONVIF marcherait mieux. C'était l'item backlog `onboarding` #5 (« Priorité protocole pour la détection de capacités »), resté en attente depuis le refacto `arch-protocol`.
+
+#### Décision
+
+**a) `VendorCapabilityPreset.DefaultBindings` déclare une liste ordonnée de protocoles candidats par capacité**, pas un protocole unique :
+
+```csharp
+// Vyzio.Core/Entities/VendorCapabilityPreset.cs
+public sealed record VendorCapabilityPreset(
+    VendorFamily VendorFamily,
+    IReadOnlyList<(CameraCapability Capability, IReadOnlyList<SupportedProtocol> Protocols)> DefaultBindings);
+
+// Vyzio.Core/Entities/VendorCapabilityPresets.cs
+new VendorCapabilityPreset(VendorFamily.Icsee,
+[
+    (CameraCapability.Ptz, new[] { SupportedProtocol.Onvif, SupportedProtocol.Dvrip }),
+]),
+```
+
+`SeedAndProbePresetAsync` essaie chaque candidat **dans l'ordre**, s'arrête au premier qui vérifie (`Verified = true`), et conserve le dernier essayé (avec son `LastError`) si aucun ne fonctionne — jamais de fallback silencieux vers un état non testé.
+
+**b) Nouveau champ `CameraCapabilityBinding.ManuallyConfigured`** (colonne `manually_configured`, migration additive `AddManuallyConfiguredToCapabilityBindings`) :
+- mis à `true` uniquement par `ConfigureCameraCapabilityUseCase` (le chemin manuel — formulaire de configuration, y compris sur une marque reconnue) ;
+- laissé à `false` pour tout binding seedé depuis un preset ;
+- `SeedAndProbePresetAsync` ne touche **jamais** un binding `ManuallyConfigured = true`, qu'il soit vérifié ou non — seul un nouveau choix manuel de l'utilisateur peut le changer. Il se contente de re-probe pour rafraîchir `Verified`/`LastError`.
+- un binding déjà `Verified = true` avec un protocole toujours présent dans la liste de candidats du preset n'est pas non plus retesté depuis zéro — seulement re-probe, jamais reset.
+
+**c) Le formulaire de configuration manuelle n'est plus réservé aux caméras non répertoriées.** Une capacité non encore liée (preset ou manuelle) reste toujours ajoutable à la main, même sur une marque reconnue — un preset déclare ce que Vyzio *attend*, pas un plafond exhaustif (ex. ajouter `ImageSettings/Onvif` sur une ICSee dont l'unité s'avère aussi parler ONVIF).
+
+#### Conséquences
+
+- ✅ Un choix manuel de protocole n'est plus jamais silencieusement écrasé par un nouveau clic sur « Détecter les capacités »
+- ✅ Les marques dont certaines unités parlent plusieurs protocoles (ICSee/ONVIF) bénéficient d'un vrai essai en cascade, sans configuration manuelle nécessaire dans le cas nominal
+- ✅ Migration additive uniquement (`manually_configured INTEGER NOT NULL DEFAULT 0`) — aucune caméra existante affectée (tous les bindings existants restent `ManuallyConfigured = false`, donc toujours éligibles à la cascade/reset comme avant)
+- ⚠️ Un binding manuel qui ne fonctionne plus (firmware changé, caméra remplacée) reste bloqué sur son protocole choisi jusqu'à une nouvelle action manuelle de l'utilisateur — c'est le compromis assumé : ne jamais surprendre l'utilisateur plutôt que « deviner » qu'il faut re-essayer un autre protocole à sa place
+
+---
+
+### ADR-29 — Réglages image DVRIP : `DvripClient` partagé, `AVEnc.VideoColor.[0]`, périmètre Brightness/Contrast/Saturation
+
+#### Contexte
+
+Test terrain (2026-07-14, caméra ICSee 192.168.1.193) : cette unité n'expose aucun service ONVIF (port 8899 refusé), donc `ImageSettings/Onvif` (ADR-27) ne peut jamais fonctionner sur ICSee. `docs/investigations/icsee_dvrip_privacy.md` (juin 2026) avait déjà confirmé, sur ce même boîtier, que `AVEnc.VideoColor.[0].Brightness` est modifiable via DVRIP `ConfigSet` (Ret=100) — cette commande exacte avait mis la luminosité à `1` pendant l'investigation, sans moyen depuis de la restaurer via Vyzio.
+
+#### Décision
+
+**a) `DvripClient` — client protocole partagé**, extrait de `DvripPtzProvider` (qui dupliquait jusqu'ici tout le framing binaire). Même rôle que `OnvifClient` pour ONVIF : transport bas niveau uniquement (connexion TCP port 34567, login, framing 22 octets, JSON), aucune logique fonctionnelle. `DvripPtzProvider` et `DvripImageSettingsProvider` en dépendent tous les deux.
+
+```csharp
+// Vyzio.Infrastructure/VendorAdapters/DvripClient.cs
+internal sealed class DvripClient(ILogger<DvripClient> logger)
+{
+    public Task<string?> ExecuteAsync(Camera, int cmdCode, Func<string, string> buildPayload, CancellationToken);
+    public Task<bool> TryLoginAsync(Camera, CancellationToken); // probe de connectivité, jamais de throw
+    public Task<JsonNode?> ConfigGetAsync(Camera, string configName, CancellationToken);  // cmd 1042, throw DvripCallException
+    public Task ConfigSetAsync(Camera, string configName, JsonNode config, CancellationToken); // cmd 1044, throw DvripCallException
+}
+
+public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
+```
+
+`DvripCallException` reprend le principe d'`OnvifCallException` (ADR-28 follow-up) : `ConfigGetAsync`/`ConfigSetAsync` lèvent avec le code `Ret` réel de la caméra plutôt que d'avaler l'échec — `DvripImageSettingsProvider` laisse l'exception se propager jusqu'à `ProbeCameraCapabilityUseCase`, qui la capture déjà dans `LastError`. `DvripPtzProvider` garde son comportement existant (`TryLoginAsync` avale et renvoie `false` côté probe) — non concerné par cette itération.
+
+**b) `DvripImageSettingsProvider` — Brightness/Contrast/Saturation uniquement**, via le bloc de config `AVEnc.VideoColor.[0]` (`ConfigGet`/`ConfigSet`, cmd 1042/1044 — confirmés par l'investigation terrain).
+
+- **Schéma JSON non confirmé** (plat ou imbriqué sous un tableau `Level` de plages horaires jour/nuit) : plutôt que de supposer une structure fixe, `FindIntProperty`/`SetIntProperty` parcourent récursivement l'arbre JSON à la recherche du nom de champ, peu importe sa profondeur — même principe de résilience qu'`OnvifClient` pour un firmware inconnu. `SetImageSettingsAsync` relit toujours la config complète avant d'écrire, ne modifie que les champs connus, et renvoie l'arbre entier tel quel (jamais reconstruit à la main) — un champ de planification jour/nuit non compris par Vyzio n'est jamais perdu.
+- **Sharpness et IrCutMode non pris en charge par DVRIP** : absents de `VideoColor` sur le firmware testé, et le mode jour/nuit (probablement `Camera.Param.[0]`) n'a jamais été testé en conditions réelles. Plutôt que de deviner une commande non vérifiée, `GetImageSettingsAsync` renvoie des valeurs neutres fixes (`Sharpness=50`, `IrCutMode=Auto`) et `SetImageSettingsAsync` ignore silencieusement ces deux champs. Le frontend masque les contrôles correspondants quand le protocole résolu est `dvrip` (`ImageSettingsPanel.tsx`).
+
+**c) `VendorCapabilityPresets.Icsee`** gagne `(ImageSettings, [Dvrip])` — pas de cascade nécessaire (ONVIF confirmé absent sur ce matériel, donc un seul candidat).
+
+#### Conséquences
+
+- ✅ Répond au besoin terrain concret (restaurer la luminosité) sans deviner de protocole non testé
+- ✅ Résilient à un schéma JSON inconnu — pas de risque de corrompre un champ de planification non modélisé côté Vyzio
+- ✅ `DvripClient` élimine la duplication du framing binaire entre PTZ et réglages image — même pattern que `OnvifClient`
+- ⚠️ Netteté et vision nocturne restent indisponibles pour ICSee tant qu'une investigation terrain dédiée n'a pas confirmé une commande DVRIP fiable
+- ⚠️ Tapo KLAP reste hors périmètre (aucune investigation), voir Idées backlog
+
 ---
 
 ## 6. Architecture des services
@@ -2571,6 +2662,7 @@ CREATE TABLE camera_capability_bindings (
     protocol      TEXT NOT NULL,             -- "onvif" | "dvrip" | "tapo_klap" | "v380" | "rtsp"
     config_json   TEXT,                      -- params protocole : port, adresse ONVIF, credentials...
     verified      INTEGER NOT NULL DEFAULT 0, -- résultat du dernier test réel, jamais déclaratif
+    manually_configured INTEGER NOT NULL DEFAULT 0, -- true = jamais réécrit par SeedAndProbePresetsUseCase (ADR-28)
     verified_at   TEXT,
     last_error    TEXT,
     created_at    TEXT NOT NULL,

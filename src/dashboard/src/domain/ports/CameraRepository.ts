@@ -12,6 +12,7 @@ import type {
   SupportedProtocol,
 } from '../entities/CameraCapabilityBinding'
 import type { PtzPreset } from '../entities/PtzPreset'
+import type { CameraImageSettings } from '../entities/CameraImageSettings'
 
 export interface CreatePrivacyScheduleInput {
   daysOfWeek: number[]
@@ -82,4 +83,7 @@ export interface CameraRepository {
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
   detectCapabilities(cameraId: string): Promise<void>
+  // Image settings (ADR-27) — read/written live on the camera, nothing persisted by Vyzio.
+  getImageSettings(cameraId: string): Promise<CameraImageSettings>
+  setImageSettings(cameraId: string, settings: CameraImageSettings): Promise<CameraImageSettings>
 }

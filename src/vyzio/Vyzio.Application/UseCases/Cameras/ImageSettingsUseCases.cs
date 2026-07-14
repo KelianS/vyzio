@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -26,7 +27,8 @@ public sealed record CameraImageSettingsDto(int Brightness, int Contrast, int Sa
 public sealed class GetCameraImageSettingsUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    ILogger<GetCameraImageSettingsUseCase> logger)
 {
     public async Task<CameraImageSettingsDto?> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -36,8 +38,19 @@ public sealed class GetCameraImageSettingsUseCase(
         var binding = await bindings.GetAsync(cameraId, CameraCapability.ImageSettings, ct);
         if (binding is null || !binding.Verified) return null;
 
-        var settings = await registry.ResolveImageSettings(binding.Protocol).GetImageSettingsAsync(camera, binding, ct);
-        return settings is null ? null : CameraImageSettingsDto.From(settings);
+        try
+        {
+            var settings = await registry.ResolveImageSettings(binding.Protocol).GetImageSettingsAsync(camera, binding, ct);
+            return settings is null ? null : CameraImageSettingsDto.From(settings);
+        }
+        catch (Exception ex)
+        {
+            // No global exception middleware (API layer) — a transient camera failure here must
+            // degrade to "unavailable" rather than surface as a raw 500. The verified probe result
+            // in the capability row is where the real diagnostic (LastError) lives.
+            logger.LogWarning(ex, "Failed to read live image settings for camera {CameraId}.", cameraId);
+            return null;
+        }
     }
 }
 
@@ -46,7 +59,8 @@ public sealed class GetCameraImageSettingsUseCase(
 public sealed class SetCameraImageSettingsUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    ILogger<SetCameraImageSettingsUseCase> logger)
 {
     public async Task<CameraImageSettingsDto?> ExecuteAsync(string cameraId, CameraImageSettingsDto request, CancellationToken ct = default)
     {
@@ -56,10 +70,18 @@ public sealed class SetCameraImageSettingsUseCase(
         var binding = await bindings.GetAsync(cameraId, CameraCapability.ImageSettings, ct);
         if (binding is null || !binding.Verified) return null;
 
-        var provider = registry.ResolveImageSettings(binding.Protocol);
-        await provider.SetImageSettingsAsync(camera, binding, request.ToEntity(), ct);
+        try
+        {
+            var provider = registry.ResolveImageSettings(binding.Protocol);
+            await provider.SetImageSettingsAsync(camera, binding, request.ToEntity(), ct);
 
-        var updated = await provider.GetImageSettingsAsync(camera, binding, ct);
-        return updated is null ? null : CameraImageSettingsDto.From(updated);
+            var updated = await provider.GetImageSettingsAsync(camera, binding, ct);
+            return updated is null ? null : CameraImageSettingsDto.From(updated);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to write live image settings for camera {CameraId}.", cameraId);
+            return null;
+        }
     }
 }

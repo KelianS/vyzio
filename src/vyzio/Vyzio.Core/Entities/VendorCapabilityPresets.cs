@@ -12,17 +12,21 @@ public static class VendorCapabilityPresets
     [
         new VendorCapabilityPreset(VendorFamily.TplinkTapo,
         [
-            (CameraCapability.HardwarePrivacy, SupportedProtocol.TapoKlap),
-            (CameraCapability.Ptz, SupportedProtocol.TapoKlap),
+            (CameraCapability.HardwarePrivacy, new[] { SupportedProtocol.TapoKlap }),
+            (CameraCapability.Ptz, new[] { SupportedProtocol.TapoKlap }),
         ]),
         new VendorCapabilityPreset(VendorFamily.Icsee,
         [
-            (CameraCapability.Ptz, SupportedProtocol.Dvrip),
+            // Some ICSee units also expose ONVIF alongside their native DVRIP stack — try ONVIF
+            // first (richer, standard protocol), fall back to DVRIP (ADR-28).
+            (CameraCapability.Ptz, new[] { SupportedProtocol.Onvif, SupportedProtocol.Dvrip }),
+            // No ONVIF Imaging equivalent confirmed for ICSee — DVRIP only (ADR-29).
+            (CameraCapability.ImageSettings, new[] { SupportedProtocol.Dvrip }),
         ]),
         new VendorCapabilityPreset(VendorFamily.V380Pro,
         [
-            (CameraCapability.Ptz, SupportedProtocol.V380),
-            (CameraCapability.ImageSettings, SupportedProtocol.Onvif),
+            (CameraCapability.Ptz, new[] { SupportedProtocol.V380 }),
+            (CameraCapability.ImageSettings, new[] { SupportedProtocol.Onvif }),
         ]),
     ];
 

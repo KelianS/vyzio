@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -25,6 +25,7 @@ interface CapabilitySectionProps {
 const CAPABILITY_LABELS: Record<Capability, string> = {
   ptz: 'PTZ',
   hardware_privacy: 'Vie privée matérielle',
+  image_settings: 'Réglages image',
 }
 
 const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
@@ -54,6 +55,19 @@ const PRIVACY_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
   { value: 'tapo_klap', label: 'Tapo KLAP — cache objectif + LED' },
 ]
 
+const IMAGE_SETTINGS_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
+  { value: 'onvif', label: 'ONVIF (Hikvision, Dahua, Reolink, V380…)' },
+  { value: 'dvrip', label: 'DVRIP (ICSee / XMEye) — luminosité, contraste, saturation' },
+]
+
+function protocolOptionsFor(capability: Capability) {
+  if (capability === 'ptz') return PTZ_PROTOCOLS
+  if (capability === 'image_settings') return IMAGE_SETTINGS_PROTOCOLS
+  return PRIVACY_PROTOCOLS
+}
+
+const ALL_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
+
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
   const { toast } = useToast()
   const {
@@ -77,7 +91,12 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     },
   )
 
-  const isUnlisted = !bindings?.some((b) => b.isPreset)
+  // A capacity not already bound (preset or manual) can always be added by hand — even on a
+  // recognized vendor, since a preset only declares what Vyzio *expects*, not an exhaustive
+  // ceiling (e.g. an ICSee unit that also happens to speak ONVIF for image settings).
+  const availableCapabilities = ALL_CAPABILITIES.filter(
+    (c) => !bindings?.some((b) => b.capability === c),
+  )
 
   if (loading) {
     return (
@@ -120,13 +139,17 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
           />
         ))}
 
-        {isUnlisted && !offline && (
-          <ManualCapabilityForm cameraId={camera.id} onDone={handleReload} />
+        {availableCapabilities.length > 0 && !offline && (
+          <ManualCapabilityForm
+            cameraId={camera.id}
+            availableCapabilities={availableCapabilities}
+            onDone={handleReload}
+          />
         )}
       </div>
 
       <div className="capability-detect-row">
-        <span className="capability-detect-hint">PTZ, vie privée matérielle…</span>
+        <span className="capability-detect-hint">PTZ, vie privée matérielle, réglages image…</span>
         <Btn
           variant="ghost"
           disabled={detectAction.loading || offline}
@@ -156,7 +179,7 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
   const [v380DeviceId, setV380DeviceId] = useState('')
 
-  const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
+  const protocolOptions = protocolOptionsFor(binding.capability)
 
   const configureAction = useAsyncAction(
     () =>
@@ -396,14 +419,25 @@ function ConfirmModal({ title, description, confirmLabel, loading, onConfirm, on
 
 interface ManualCapabilityFormProps {
   cameraId: string
+  availableCapabilities: Capability[]
   onDone: () => void
 }
 
-function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
-  const [selectedCapability, setSelectedCapability] = useState<Capability>('ptz')
-  const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>('v380')
+function ManualCapabilityForm({ cameraId, availableCapabilities, onDone }: ManualCapabilityFormProps) {
+  const [selectedCapability, setSelectedCapability] = useState<Capability>(availableCapabilities[0])
+  const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>(
+    protocolOptionsFor(availableCapabilities[0])[0].value,
+  )
 
-  const protocolOptions = selectedCapability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
+  useEffect(() => {
+    if (!availableCapabilities.includes(selectedCapability)) {
+      setSelectedCapability(availableCapabilities[0])
+      setSelectedProtocol(protocolOptionsFor(availableCapabilities[0])[0].value)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableCapabilities])
+
+  const protocolOptions = protocolOptionsFor(selectedCapability)
 
   const configureAction = useAsyncAction(
     () => configureCameraCapability.execute(cameraId, selectedCapability, selectedProtocol),
@@ -421,11 +455,14 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
             onChange={(e) => {
               const cap = e.target.value as Capability
               setSelectedCapability(cap)
-              setSelectedProtocol(cap === 'ptz' ? 'v380' : 'tapo_klap')
+              setSelectedProtocol(protocolOptionsFor(cap)[0].value)
             }}
           >
-            <option value="ptz">PTZ</option>
-            <option value="hardware_privacy">Vie privée matérielle</option>
+            {availableCapabilities.map((cap) => (
+              <option key={cap} value={cap}>
+                {CAPABILITY_LABELS[cap]}
+              </option>
+            ))}
           </select>
         </label>
 

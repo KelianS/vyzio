@@ -86,8 +86,10 @@ public sealed class ProbeCameraCapabilityUseCase(
 
 public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? ConfigJson);
 
-// Manual onboarding for non-listed cameras (SPECS §2.3): creates/updates a binding then
-// immediately probes it — a binding is never offered as activatable on declaration alone.
+// Manual onboarding for non-listed cameras, or manual override on a recognized vendor
+// (SPECS §2.3): creates/updates a binding then immediately probes it — a binding is never
+// offered as activatable on declaration alone. Marks the binding ManuallyConfigured so
+// SeedAndProbePresetsUseCase never silently reverts this choice back to the vendor preset (ADR-28).
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -113,6 +115,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
         binding.ConfigJson = request.ConfigJson;
         binding.Verified = false;
         binding.LastError = null;
+        binding.ManuallyConfigured = true;
 
         await bindings.SaveAsync(binding, ct);
 
@@ -134,13 +137,14 @@ public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICam
 
         if (preset is not null)
         {
-            // Preset capabilities first — existing binding if available, synthetic suggestion otherwise.
-            foreach (var (capability, protocol) in preset.DefaultBindings)
+            // Preset capabilities first — existing binding if available, synthetic suggestion otherwise
+            // (first candidate protocol — the one SeedAndProbePresetsUseCase tries first, ADR-28).
+            foreach (var (capability, protocols) in preset.DefaultBindings)
             {
                 var binding = dbBindings.FirstOrDefault(b => b.Capability == capability);
                 result.Add(binding is not null
                     ? CameraCapabilityBindingDto.From(binding, isPreset: true)
-                    : CameraCapabilityBindingDto.FromPreset(capability, protocol));
+                    : CameraCapabilityBindingDto.FromPreset(capability, protocols[0]));
             }
         }
 

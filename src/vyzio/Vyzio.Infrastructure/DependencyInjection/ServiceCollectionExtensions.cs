@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
         services.AddSingleton<OnvifClient>();
+        services.AddSingleton<DvripClient>();
         services.AddSingleton<V380Client>();
         services.AddSingleton<V380PtzPositionTracker>();
 
@@ -54,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPtzCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IImageSettingsCapabilityProvider, OnvifImageSettingsProvider>();
+        services.AddScoped<IImageSettingsCapabilityProvider, DvripImageSettingsProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
         // Background onboarding probe (A1 + A3): singleton queue so CreateCameraUseCase can enqueue.

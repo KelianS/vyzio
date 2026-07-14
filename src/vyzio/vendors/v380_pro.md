@@ -57,6 +57,10 @@ Remplacez :
 
 **Évolution prévue (v1.0.1-P2) :** Les caméras V380 Pro PTZ supporteront un mode de **parking physique** — la caméra pivotera vers une butée mécanique à l'activation et reviendra à sa position de surveillance à la désactivation.
 
+## Réglages image
+
+**Niveau de garantie : réglage direct sur la caméra (ONVIF Imaging Service).** Luminosité, contraste, saturation, netteté et vision nocturne (IR) sont pilotables depuis Vyzio, sans passer par l'application V380 Pro. Aucune valeur n'est stockée par Vyzio — la caméra reste la seule source de vérité.
+
 ## Liens utiles
 
 - [Telecharger le fichier ceshi.ini](/api/cameras/vendor-assets/ceshi.ini)
