@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import { useToast } from './Toast'
 import { useAsyncAction } from '../hooks/useAsyncAction'
+import { Btn } from './Btn'
 import ReactMarkdown from 'react-markdown'
 import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
@@ -24,8 +25,10 @@ import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
-
-import type { ConfigurePtzParking } from '../../application/use-cases/ConfigurePtzParking'
+import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
+import type { PtzSaveCurrentAsPreset } from '../../application/use-cases/PtzSaveCurrentAsPreset'
+import type { PtzCalibrate } from '../../application/use-cases/PtzCalibrate'
+import type { CapturePtzPresetThumbnail } from '../../application/use-cases/CapturePtzPresetThumbnail'
 import { ConfirmModal } from './ConfirmModal'
 import { useCameraStatus } from '../hooks/useCameraStatus'
 import { useCameras } from '../hooks/useCameras'
@@ -43,6 +46,7 @@ import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import { DetectionConfigSection } from './DetectionConfigSection'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { CapabilitySection } from './CapabilitySection'
+import { PtzPresetsSection } from './PtzPresetsSection'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -64,7 +68,10 @@ interface CameraOnboardingViewProps {
   setPrivacyStrategy: SetPrivacyStrategy
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
-  configurePtzParking: ConfigurePtzParking
+  getPtzPresets: GetPtzPresets
+  ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
+  ptzCalibrate: PtzCalibrate
+  capturePtzPresetThumbnail: CapturePtzPresetThumbnail
   allCameras: Camera[]
   apiBaseUrl: string
   onOpenLive: (camera: Camera, options?: { onClose?: () => Promise<void> }) => void
@@ -119,8 +126,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmScan, setConfirmScan] = useState(false)
   const [confirmApply, setConfirmApply] = useState(false)
-  const [confirmSurveillancePosition, setConfirmSurveillancePosition] = useState(false)
-
   const { toast } = useToast()
 
   useEffect(() => {
@@ -1066,14 +1071,14 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
               {selectedCandidate ? (
                 <div className="panel-cta-row">
-                  <button
-                    className="secondary-cta"
-                    type="button"
+                  <Btn
+                    variant="secondary"
+                    size="sm"
+                    loading={actionLoading}
                     onClick={handleRefreshCandidate}
-                    disabled={actionLoading}
                   >
-                    {actionLoading ? 'Traitement...' : 'Rafraichir ce candidat'}
-                  </button>
+                    Rafraichir ce candidat
+                  </Btn>
                 </div>
               ) : null}
 
@@ -1152,22 +1157,24 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </div>
 
                   <div className="panel-cta-row">
-                    <button
-                      className="secondary-cta"
-                      type="button"
-                      onClick={handleVerifyDraft}
+                    <Btn
+                      variant="secondary"
+                      size="md"
+                      loading={actionLoading}
                       disabled={actionLoading || !canVerifyDraft}
+                      onClick={handleVerifyDraft}
                     >
-                      {actionLoading ? 'Traitement...' : 'Verifier la connexion'}
-                    </button>
-                    <button
-                      className="primary-cta"
-                      type="button"
-                      onClick={handleCreate}
+                      Verifier la connexion
+                    </Btn>
+                    <Btn
+                      variant="primary"
+                      size="md"
+                      loading={actionLoading}
                       disabled={actionLoading || !canAddConfiguredCamera}
+                      onClick={handleCreate}
                     >
-                      {actionLoading ? 'Traitement...' : 'Ajouter'}
-                    </button>
+                      Ajouter
+                    </Btn>
                   </div>
                 </>
               ) : null}
@@ -1223,33 +1230,22 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   />
 
                   <div className="camera-detail-section camera-live-actions">
-                    <button
-                      type="button"
-                      className="secondary-cta"
-                      onClick={() => props.onOpenLive(selectedCamera)}
-                    >
-                      Voir le live
-                    </button>
-                    {selectedCamera.ptzSupported && !cameraOffline && (
-                      <button
-                        type="button"
-                        className="secondary-cta"
-                        onClick={() => setConfirmSurveillancePosition(true)}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                          aria-hidden
-                          style={{ flexShrink: 0, marginRight: 6 }}
-                        >
-                          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                        </svg>
-                        Définir la position par défaut
-                      </button>
-                    )}
+                    <Btn variant="secondary" size="md" onClick={() => props.onOpenLive(selectedCamera)}>
+                      {selectedCamera.ptzSupported ? 'Piloter la caméra' : 'Voir le live'}
+                    </Btn>
                   </div>
+
+                  {selectedCamera.ptzSupported && (
+                    <PtzPresetsSection
+                      cameraId={selectedCamera.id}
+                      apiBaseUrl={props.apiBaseUrl}
+                      getPtzPresets={props.getPtzPresets}
+                      ptzSaveCurrentAsPreset={props.ptzSaveCurrentAsPreset}
+                      ptzGoToPreset={props.ptzGoToPreset}
+                      ptzCalibrate={props.ptzCalibrate}
+                      capturePtzPresetThumbnail={props.capturePtzPresetThumbnail}
+                    />
+                  )}
 
                   <details className="camera-detail-section camera-connection-details">
                     <summary>Paramètres de connexion</summary>
@@ -1312,36 +1308,34 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       </label>
                     </div>
                     <div className="panel-cta-row">
-                      <button
-                        className="primary-cta"
-                        type="button"
-                        onClick={handleUpdate}
+                      <Btn
+                        variant="primary"
+                        size="md"
+                        loading={updateAction.loading}
                         disabled={actionLoading || !canUpdateConfiguredCamera}
+                        onClick={handleUpdate}
                       >
-                        {updateAction.loading ? 'Enregistrement...' : 'Enregistrer'}
-                      </button>
-                      <button
-                        className="secondary-cta"
-                        type="button"
+                        Enregistrer
+                      </Btn>
+                      <Btn
+                        variant="secondary"
+                        size="md"
+                        loading={verifyAction.loading}
+                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
                         onClick={handleVerify}
-                        disabled={
-                          actionLoading || selectedCamera.validationState === 'pending_removal'
-                        }
                       >
-                        {verifyAction.loading ? 'Vérification...' : 'Vérifier la connexion'}
-                      </button>
-                      <button
-                        className="danger-cta"
-                        type="button"
+                        Vérifier la connexion
+                      </Btn>
+                      <Btn
+                        variant="danger"
+                        size="md"
+                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
                         onClick={() => setConfirmDelete(true)}
-                        disabled={
-                          actionLoading || selectedCamera.validationState === 'pending_removal'
-                        }
                       >
                         {selectedCamera.validationState === 'pending_removal'
                           ? 'Suppression en attente'
                           : 'Supprimer'}
-                      </button>
+                      </Btn>
                     </div>
                     {detailMessage && (
                       <p className="camera-inline-state success action-feedback">{detailMessage}</p>
@@ -1451,9 +1445,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         </div>
                       )}
 
-                      <button
-                        type="button"
-                        className="privacy-strategy-save-btn"
+                      <Btn
+                        variant="primary"
+                        size="sm"
+                        style={{ alignSelf: 'flex-start', marginTop: 4 }}
+                        loading={saveStrategyAction.loading}
                         disabled={
                           saveStrategyAction.loading ||
                           pendingStrategy === selectedCamera.privacyStrategy
@@ -1464,10 +1460,8 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                           await saveStrategyAction.run()
                         }}
                       >
-                        {saveStrategyAction.loading
-                          ? 'Enregistrement...'
-                          : 'Enregistrer la stratégie'}
-                      </button>
+                        Enregistrer la stratégie
+                      </Btn>
 
                       {strategyFeedback && <p className="ptz-feedback">{strategyFeedback}</p>}
                     </div>
@@ -1494,24 +1488,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           )}
         </article>
       </section>
-
-      {confirmSurveillancePosition && selectedCamera && (
-        <ConfirmModal
-          title="Définir la position par défaut"
-          body="La vue live va s'ouvrir avec les contrôles PTZ. Orientez la caméra vers sa position de surveillance habituelle, puis fermez la vue — la position sera sauvegardée automatiquement."
-          confirmLabel="Ouvrir le live"
-          onConfirm={() => {
-            setConfirmSurveillancePosition(false)
-            props.onOpenLive(selectedCamera, {
-              onClose: async () => {
-                await props.configurePtzParking.execute(selectedCamera.id)
-                toast('Position de surveillance sauvegardée.', 'success')
-              },
-            })
-          }}
-          onCancel={() => setConfirmSurveillancePosition(false)}
-        />
-      )}
 
       {confirmScan && (
         <ConfirmModal

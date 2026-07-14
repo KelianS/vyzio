@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Btn } from './Btn'
 
 interface ConfirmModalProps {
   title: string
@@ -73,12 +74,8 @@ export function ConfirmModal({
     }
   }
 
-  const toneClass =
-    tone === 'warn'
-      ? ' privacy-modal-confirm--warn'
-      : tone === 'danger'
-        ? ' privacy-modal-confirm--danger'
-        : ''
+  const confirmVariant =
+    tone === 'danger' ? 'danger' : tone === 'warn' ? 'danger-outline' : 'secondary'
 
   return (
     <div className="privacy-modal-backdrop" onClick={() => !isLoading && onCancel()}>
@@ -95,22 +92,12 @@ export function ConfirmModal({
         </h2>
         <p className="privacy-modal-body">{body}</p>
         <div className="privacy-modal-actions">
-          <button
-            type="button"
-            className={`privacy-modal-confirm${toneClass}`}
-            onClick={handleConfirm}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Traitement…' : confirmLabel}
-          </button>
-          <button
-            type="button"
-            className="privacy-modal-cancel"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
+          <Btn variant={confirmVariant} size="md" loading={isLoading} onClick={handleConfirm}>
+            {confirmLabel}
+          </Btn>
+          <Btn variant="ghost" size="md" disabled={isLoading} onClick={onCancel}>
             {cancelLabel}
-          </button>
+          </Btn>
         </div>
       </div>
     </div>
