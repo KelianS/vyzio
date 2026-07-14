@@ -37,7 +37,7 @@
   - [ADR-26 — Miniatures de positions PTZ : capture client-triggered, stockage fichier, serving direct](#adr-26--miniatures-de-positions-ptz--capture-client-triggered-stockage-fichier-serving-direct)
   - [ADR-27 — Réglages image avancés : capacité `ImageSettings`, ONVIF Imaging Service, valeurs non persistées](#adr-27--réglages-image-avancés--capacité-imagesettings-onvif-imaging-service-valeurs-non-persistées)
   - [ADR-28 — Détection de capacité en cascade multi-protocole + flag `ManuallyConfigured`](#adr-28--détection-de-capacité-en-cascade-multi-protocole--flag-manuallyconfigured)
-  - [ADR-29 — Réglages image DVRIP : `DvripClient` partagé, `AVEnc.VideoColor.[0]`, périmètre Brightness/Contrast/Saturation](#adr-29--réglages-image-dvrip--dvripclient-partagé-avencvideocolor0-périmètre-brightnesscontrastsaturation)
+  - [ADR-29 — DVRIP : `DvripClient` partagé, réglages image (`AVEnc.VideoColor.[0]`), PTZ Move/Stop](#adr-29--dvrip--dvripclient-partagé-réglages-image-avencvideocolor0-ptz-movestop)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -2481,49 +2481,61 @@ new VendorCapabilityPreset(VendorFamily.Icsee,
 
 ---
 
-### ADR-29 — Réglages image DVRIP : `DvripClient` partagé, `AVEnc.VideoColor.[0]`, périmètre Brightness/Contrast/Saturation
+### ADR-29 — DVRIP : `DvripClient` partagé, réglages image (`AVEnc.VideoColor.[0]`), PTZ Move/Stop
 
 #### Contexte
 
-Test terrain (2026-07-14, caméra ICSee 192.168.1.193) : cette unité n'expose aucun service ONVIF (port 8899 refusé), donc `ImageSettings/Onvif` (ADR-27) ne peut jamais fonctionner sur ICSee. `docs/investigations/icsee_dvrip_privacy.md` (juin 2026) avait déjà confirmé, sur ce même boîtier, que `AVEnc.VideoColor.[0].Brightness` est modifiable via DVRIP `ConfigSet` (Ret=100) — cette commande exacte avait mis la luminosité à `1` pendant l'investigation, sans moyen depuis de la restaurer via Vyzio.
+ICSee n'expose aucun service ONVIF (port 8899 refusé) — `ImageSettings/Onvif` (ADR-27) ne peut jamais fonctionner sur cette marque. `docs/investigations/icsee_dvrip_privacy.md` avait identifié la piste DVRIP pour les réglages image (`AVEnc.VideoColor.[0]`, notamment `Brightness`) mais avec plusieurs erreurs de transcription du protocole (header binaire, codes de commande, algorithme de hash — voir l'erratum en tête de ce document), jamais corrigées avant un test terrain complet. `DvripPtzProvider` (PTZ, ADR-22/25) partageait ces mêmes erreurs et n'a donc jamais fonctionné correctement en conditions réelles malgré des tests apparemment concluants lors de l'investigation initiale (obtenus via un outil différent du code Vyzio).
 
 #### Décision
 
-**a) `DvripClient` — client protocole partagé**, extrait de `DvripPtzProvider` (qui dupliquait jusqu'ici tout le framing binaire). Même rôle que `OnvifClient` pour ONVIF : transport bas niveau uniquement (connexion TCP port 34567, login, framing 22 octets, JSON), aucune logique fonctionnelle. `DvripPtzProvider` et `DvripImageSettingsProvider` en dépendent tous les deux.
+**a) `DvripClient` — client protocole partagé** (`Vyzio.Infrastructure/VendorAdapters/DvripClient.cs`), extrait de `DvripPtzProvider`. Même rôle que `OnvifClient` pour ONVIF : transport bas niveau uniquement (TCP port 34567, login, framing binaire, JSON), aucune logique fonctionnelle. `DvripPtzProvider` et `DvripImageSettingsProvider` en dépendent tous les deux.
+
+**Protocole confirmé contre une caméra ICSee réelle** (comparaison directe avec la bibliothèque de référence `python-dvr`, puis test en direct) :
+- Header binaire **20 octets** : `head(1)=0xFF version(1)=0x00 pad(2) session(4LE) seq(4LE) pad(2) cmd(2LE) dataLen(4LE)`.
+- Login : champ JSON `"UserName"` (pas `"Name"`).
+- `SofiaHash` : paires d'**octets bruts** du digest MD5 (8 caractères en sortie) — `sofia_hash("a4m3h5") == "S8jyn9CB"`.
+- Codes de commande : Login=1000, ConfigGet=1042, ConfigSet=**1040**, OPPTZControl=1400.
 
 ```csharp
-// Vyzio.Infrastructure/VendorAdapters/DvripClient.cs
 internal sealed class DvripClient(ILogger<DvripClient> logger)
 {
     public Task<string?> ExecuteAsync(Camera, int cmdCode, Func<string, string> buildPayload, CancellationToken);
     public Task<bool> TryLoginAsync(Camera, CancellationToken); // probe de connectivité, jamais de throw
-    public Task<JsonNode?> ConfigGetAsync(Camera, string configName, CancellationToken);  // cmd 1042, throw DvripCallException
-    public Task ConfigSetAsync(Camera, string configName, JsonNode config, CancellationToken); // cmd 1044, throw DvripCallException
+    public Task<JsonNode?> ConfigGetAsync(Camera, string configName, CancellationToken);  // throw DvripCallException
+    public Task ConfigSetAsync(Camera, string configName, JsonNode config, CancellationToken); // throw DvripCallException
 }
 
 public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
 ```
 
-`DvripCallException` reprend le principe d'`OnvifCallException` (ADR-28 follow-up) : `ConfigGetAsync`/`ConfigSetAsync` lèvent avec le code `Ret` réel de la caméra plutôt que d'avaler l'échec — `DvripImageSettingsProvider` laisse l'exception se propager jusqu'à `ProbeCameraCapabilityUseCase`, qui la capture déjà dans `LastError`. `DvripPtzProvider` garde son comportement existant (`TryLoginAsync` avale et renvoie `false` côté probe) — non concerné par cette itération.
+`DvripCallException` reprend le principe d'`OnvifCallException` (ADR-28) : `ConfigGetAsync`/`ConfigSetAsync` lèvent avec la vraie cause (statut HTTP-like `Ret`, timeout distingué d'un rejet explicite) plutôt que d'avaler l'échec — `ProbeCameraCapabilityUseCase` la capture déjà dans `LastError`. Bornées à 5s au total (connexion + login + requête + réponse). `DvripPtzProvider.TryLoginAsync` garde son comportement probe existant (avale, renvoie `false`).
 
-**b) `DvripImageSettingsProvider` — Brightness/Contrast/Saturation uniquement**, via le bloc de config `AVEnc.VideoColor.[0]` (`ConfigGet`/`ConfigSet`, cmd 1042/1044 — confirmés par l'investigation terrain).
+**b) `DvripImageSettingsProvider` — Brightness/Contrast/Saturation uniquement**, via `AVEnc.VideoColor.[0]` (`ConfigGet`/`ConfigSet`).
 
-- **Schéma JSON non confirmé** (plat ou imbriqué sous un tableau `Level` de plages horaires jour/nuit) : plutôt que de supposer une structure fixe, `FindIntProperty`/`SetIntProperty` parcourent récursivement l'arbre JSON à la recherche du nom de champ, peu importe sa profondeur — même principe de résilience qu'`OnvifClient` pour un firmware inconnu. `SetImageSettingsAsync` relit toujours la config complète avant d'écrire, ne modifie que les champs connus, et renvoie l'arbre entier tel quel (jamais reconstruit à la main) — un champ de planification jour/nuit non compris par Vyzio n'est jamais perdu.
-- **Sharpness et IrCutMode non pris en charge par DVRIP** : absents de `VideoColor` sur le firmware testé, et le mode jour/nuit (probablement `Camera.Param.[0]`) n'a jamais été testé en conditions réelles. Plutôt que de deviner une commande non vérifiée, `GetImageSettingsAsync` renvoie des valeurs neutres fixes (`Sharpness=50`, `IrCutMode=Auto`) et `SetImageSettingsAsync` ignore silencieusement ces deux champs. Le frontend masque les contrôles correspondants quand le protocole résolu est `dvrip` (`ImageSettingsPanel.tsx`).
+- Schéma JSON non garanti stable entre firmwares (plat ou imbriqué sous un tableau de plages horaires) : `FindIntProperty`/`SetIntProperty` parcourent récursivement l'arbre JSON par nom de champ plutôt que de supposer une structure fixe — même principe de résilience qu'`OnvifClient`. `SetImageSettingsAsync` relit toujours la config complète, ne modifie que les champs connus, renvoie l'arbre entier tel quel (aucun champ non modélisé n'est perdu).
+- **Sharpness et IrCutMode non pris en charge** : absents de `VideoColor`, mode jour/nuit jamais investigué. `GetImageSettingsAsync` renvoie des valeurs neutres fixes (`Sharpness=50`, `IrCutMode=Auto`), `SetImageSettingsAsync` ignore silencieusement ces deux champs. Le frontend masque les contrôles correspondants quand le protocole résolu est `dvrip`.
 
-**c) `VendorCapabilityPresets.Icsee`** gagne `(ImageSettings, [Dvrip])` — pas de cascade nécessaire (ONVIF confirmé absent sur ce matériel, donc un seul candidat).
+**c) `VendorCapabilityPresets.Icsee`** déclare `(ImageSettings, [Dvrip])` — un seul candidat (ONVIF confirmé absent sur ce matériel).
+
+**d) `VendorCapabilityPresets.V380Pro`** ne déclare **plus** `(ImageSettings, [Onvif])` — un test réel a renvoyé un SOAP fault ONVIF explicite (« GetImagingSettings not implemented »), signal définitif de non-implémentation. Reste configurable manuellement (formulaire de `CapabilitySection`) pour un utilisateur dont l'unité se comporterait différemment — jamais activée sans test réel réussi (ADR-22).
+
+**e) `DvripPtzProvider` — Move/Stop.** Payload `OPPTZControl` conforme à `python-dvr`/`dbuezas` (`icsee-ptz`, intégration Home Assistant en production pour cette même famille de caméras) : pas de champ `"Action"`, pas de `"POINT"`, `"Pattern"` toujours `"Start"`.
+
+```csharp
+// Mouvement : Command = direction, Preset = 0, Step = 1-8 selon la vitesse
+// Arrêt     : Command = "DirectionUp" (fixe, indépendant de la direction en cours), Preset = -1, Step = 5
+```
+
+`Preset=-1` est le sentinel d'arrêt réel du firmware — pas une simple valeur "sans preset". `PtzStepAsync` retombe sur l'implémentation par défaut de l'interface (`Move` puis `Stop`), désormais correcte puisque les deux commandes sont protocolairement valides. Gauche/droite sont inversés dans `DirectionToCommand` par rapport au nom de commande DVRIP intuitif — montage moteur propre à ce modèle, haut/bas ne nécessitait pas d'inversion.
 
 #### Conséquences
 
-- ✅ Répond au besoin terrain concret (restaurer la luminosité) sans deviner de protocole non testé
-- ✅ Résilient à un schéma JSON inconnu — pas de risque de corrompre un champ de planification non modélisé côté Vyzio
+- ✅ Réglages image DVRIP et PTZ DVRIP fonctionnels et validés en direct sur matériel réel (lecture, écriture, mouvement, arrêt)
 - ✅ `DvripClient` élimine la duplication du framing binaire entre PTZ et réglages image — même pattern que `OnvifClient`
+- ✅ Résilient à un schéma JSON de config inconnu — pas de risque de corrompre un champ non modélisé côté Vyzio
 - ⚠️ Netteté et vision nocturne restent indisponibles pour ICSee tant qu'une investigation terrain dédiée n'a pas confirmé une commande DVRIP fiable
 - ⚠️ Tapo KLAP reste hors périmètre (aucune investigation), voir Idées backlog
-
-> **Correctif terrain (2026-07-14) :** `ConfigGetAsync`/`ConfigSetAsync` n'avaient aucune borne de temps (contrairement à `TryLoginAsync`, qui a un timeout de connexion de 3s) — un boîtier ICSee lent ou en silence radio faisait attendre indéfiniment la requête, sur le jeton d'annulation de l'appelant. Corrigé : les deux méthodes sont désormais bornées à 5s au total (connexion + login + requête + réponse). `LoginAsync` distingue aussi explicitement « aucune réponse » (timeout/connexion fermée) d'un rejet exprès (`Ret != 100`) — le message affiché ne dit plus « identifiants invalides » quand la vraie cause est un délai dépassé.
->
-> **Retrait du preset `ImageSettings/Onvif` pour `V380Pro` (même date) :** un test réel a renvoyé un SOAP fault ONVIF explicite (« GetImagingSettings not implemented ») — signal définitif de non-implémentation, pas un problème réseau. Cette capacité n'est plus suggérée automatiquement pour cette marque (ADR-22 : un preset ne doit déclarer que ce qui est confirmé fiable). Elle reste configurable manuellement (§ formulaire manuel de `CapabilitySection`) pour un utilisateur dont l'unité se comporterait différemment — jamais activée sans un test réel réussi.
 
 ---
 

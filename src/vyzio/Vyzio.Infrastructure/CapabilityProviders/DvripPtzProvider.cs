@@ -19,33 +19,41 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => await dvrip.TryLoginAsync(camera, ct);
 
+    // Confirmed against dbuezas/icsee-ptz (a real, community-used Home Assistant integration
+    // for this exact camera family, found via web search 2026-07-15) — its async_move():
+    //   if cmd == "Stop": dvrip.ptz("DirectionUp", preset=-1)
+    //   else:             dvrip.ptz(cmd, step=step, preset=preset)   # preset defaults to 0
+    // Preset=-1 is the real stop sentinel — not a "0"/"65535" placeholder as previously assumed,
+    // and not tied to the direction that was moving (Command is always "DirectionUp" for stop).
+    // No "Action" field exists at all (matches python-dvr's ptz() exactly) — the field Vyzio
+    // used to send was invented from an investigation note and never part of the real protocol.
     public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
         var command = DirectionToCommand(direction);
         var step = Math.Clamp(speed / 12, 1, 8); // map 0-100 → 1-8
-        await ExecutePtzAsync(camera, "Start", command, 65535, step, ct);
+        await ExecutePtzAsync(camera, command, preset: 0, step, ct);
     }
 
     public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => await ExecutePtzAsync(camera, "Stop", "DirectionUp", 65535, 0, ct);
+        => await ExecutePtzAsync(camera, "DirectionUp", preset: -1, step: 5, ct);
 
     public async Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
-        => await ExecutePtzAsync(camera, "Start", "GotoPreset", presetId, 0, ct);
+        => await ExecutePtzAsync(camera, "GotoPreset", presetId, step: 0, ct);
 
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
-        => await ExecutePtzAsync(camera, "Start", "SetPreset", presetId, 0, ct);
+        => await ExecutePtzAsync(camera, "SetPreset", presetId, step: 0, ct);
 
-    private async Task ExecutePtzAsync(Camera camera, string action, string command, int preset, int step, CancellationToken ct)
+    private async Task ExecutePtzAsync(Camera camera, string command, int preset, int step, CancellationToken ct)
     {
         try
         {
             var response = await dvrip.ExecuteAsync(camera, PtzCmd,
-                sessionId => BuildPtzPayload(sessionId, action, command, preset, step), ct);
+                sessionId => BuildPtzPayload(sessionId, command, preset, step), ct);
 
             if (response is null)
                 logger.LogWarning("DVRIP login failed for {Camera} — PTZ skipped.", camera.DisplayName);
             else if (!DvripClient.IsRetOk(response))
-                logger.LogWarning("DVRIP PTZ {Action}/{Command} returned non-OK for {Camera}: {Resp}.", action, command, camera.DisplayName, response);
+                logger.LogWarning("DVRIP PTZ {Command} returned non-OK for {Camera}: {Resp}.", command, camera.DisplayName, response);
         }
         catch (Exception ex)
         {
@@ -53,7 +61,12 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
         }
     }
 
-    private static string BuildPtzPayload(string sessionId, string action, string command, int preset, int step)
+    // Matches python-dvr's DVRIPCam.ptz() payload exactly (confirmed both by reading its source
+    // and by dbuezas/icsee-ptz's identical vendored copy, actively used in production) — no
+    // "Action" field, no "POINT", "Pattern" is always "Start". Internal (not private): the
+    // Preset=0 (move) vs Preset=-1 (stop) distinction is the single most important, easiest to
+    // silently regress detail in this file — worth a direct unit test.
+    internal static string BuildPtzPayload(string sessionId, string command, int preset, int step)
     {
         return JsonSerializer.Serialize(new
         {
@@ -61,18 +74,16 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
             SessionID = sessionId,
             OPPTZControl = new
             {
-                Action = action,
                 Command = command,
                 Parameter = new
                 {
                     AUX = new { Number = 0, Status = "On" },
                     Channel = 0,
                     MenuOpts = "Enter",
-                    POINT = new { bottom = 0, left = 0, right = 0, top = 0 },
-                    Pattern = "SetBegin",
+                    Pattern = "Start",
                     Preset = preset,
                     Step = step,
-                    Tour = 0
+                    Tour = command.Contains("Tour") ? 1 : 0
                 }
             }
         });
@@ -82,16 +93,21 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     // callers/tests that reference DvripPtzProvider.SofiaHash.
     internal static string SofiaHash(string password) => DvripClient.SofiaHash(password);
 
+    // Horizontal axis reported mirrored on real hardware (2026-07-15): pressing Left visibly
+    // panned right and vice versa. Vertical axis was correct (pressing Down did move down).
+    // Fix: swap the Left/Right DVRIP command names (and their diagonal combinations) rather
+    // than the PtzDirection the UI sends — the mismatch is between Vyzio's direction and this
+    // camera's motor wiring/mount, not the DVRIP command names themselves.
     internal static string DirectionToCommand(PtzDirection direction) => direction switch
     {
         PtzDirection.Up        => "DirectionUp",
         PtzDirection.Down      => "DirectionDown",
-        PtzDirection.Left      => "DirectionLeft",
-        PtzDirection.Right     => "DirectionRight",
-        PtzDirection.UpLeft    => "DirectionLeftUp",
-        PtzDirection.UpRight   => "DirectionRightUp",
-        PtzDirection.DownLeft  => "DirectionLeftDown",
-        PtzDirection.DownRight => "DirectionRightDown",
+        PtzDirection.Left      => "DirectionRight",
+        PtzDirection.Right     => "DirectionLeft",
+        PtzDirection.UpLeft    => "DirectionRightUp",
+        PtzDirection.UpRight   => "DirectionLeftUp",
+        PtzDirection.DownLeft  => "DirectionRightDown",
+        PtzDirection.DownRight => "DirectionLeftDown",
         _                      => "DirectionUp"
     };
 }
