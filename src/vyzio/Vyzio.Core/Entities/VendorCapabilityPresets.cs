@@ -22,6 +22,7 @@ public static class VendorCapabilityPresets
         new VendorCapabilityPreset(VendorFamily.V380Pro,
         [
             (CameraCapability.Ptz, SupportedProtocol.V380),
+            (CameraCapability.ImageSettings, SupportedProtocol.Onvif),
         ]),
     ];
 

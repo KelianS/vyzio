@@ -22,7 +22,6 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 > Zone de capture libre. Un ajout = une ligne. Pas de tri, pas de priorite, pas de contexte obligatoire.
 
-- Frigate : trouver un moyen de modifier la config sans reboot le conteneur, surtout pour appliquer le mode vie privée, trop lent.
 - Status de Frigate dans l'UI, pour savoir si le service est actif et affiché un message propre pendant le redémarrage (application de config, mode vie privée etc).
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Configuration avancée caméra (luminosité, contraste, IR...) centralisée dans Vyzio plutôt que dans les apps constructeur.
@@ -58,12 +57,6 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 6. **Suppression du code legacy de capacités** — `BackfillCameraCapabilityBindingsUseCase` et correspondances hardcodées — à supprimer dans le cadre du refacto `arch-protocol` (item 2).
 
 7. **Support des caméras multi-flux RTSP** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Certaines caméras (ex. V380 avec 3 objectifs) exposent plusieurs flux RTSP simultanés ; le modèle actuel suppose un flux unique par caméra.
-
----
-
-### `ptz` — PTZ précis
-
-_Vide pour l'instant — presets natifs/managés (homing + steps), parking vie privée et miniatures de positions sont livrés (branche `feature/preset-ptz`). Voir SPECS §9.3-9.4, SAD ADR-26._
 
 ---
 

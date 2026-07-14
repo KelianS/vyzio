@@ -58,6 +58,7 @@ public sealed class ProbeCameraCapabilityUseCase(
             {
                 CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
                 CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
+                CameraCapability.ImageSettings => await registry.ResolveImageSettings(binding.Protocol).ProbeAsync(camera, binding, ct),
                 _ => false,
             };
         }

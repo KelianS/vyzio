@@ -180,6 +180,86 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
+    // Returns the VideoSourceConfiguration token of the first media profile — required by the
+    // Imaging service (ADR-27) to scope GetImagingSettings/SetImagingSettings to a video source.
+    public async Task<string?> GetVideoSourceTokenAsync(Camera camera, CancellationToken ct)
+    {
+        const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
+        var xml = await PostSoapAsync(camera, "media_service", body, ct);
+        if (xml is null) return null;
+
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            return doc.Descendants()
+                .FirstOrDefault(e => e.Name.LocalName == "VideoSourceConfiguration")
+                ?.Attribute("SourceToken")?.Value;
+        }
+        catch { return null; }
+    }
+
+    // Returns current image settings via ONVIF Imaging service, or null if unsupported/unreachable.
+    public async Task<CameraImageSettings?> GetImagingSettingsAsync(Camera camera, string videoSourceToken, CancellationToken ct)
+    {
+        var body = $"""
+            <GetImagingSettings xmlns="http://www.onvif.org/ver20/imaging/wsdl">
+              <VideoSourceToken>{videoSourceToken}</VideoSourceToken>
+            </GetImagingSettings>
+            """;
+        var xml = await PostSoapAsync(camera, "imaging_service", body, ct);
+        if (xml is null) return null;
+
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            int Read(string localName) =>
+                int.TryParse(doc.Descendants().FirstOrDefault(e => e.Name.LocalName == localName)?.Value,
+                    NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? Math.Clamp(v, 0, 100) : 0;
+
+            var irCutRaw = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "IrCutFilter")?.Value;
+            var irCut = irCutRaw switch
+            {
+                "ON" => IrCutMode.On,
+                "OFF" => IrCutMode.Off,
+                _ => IrCutMode.Auto,
+            };
+
+            return new CameraImageSettings(
+                Read("Brightness"),
+                Read("Contrast"),
+                Read("ColorSaturation"),
+                Read("Sharpness"),
+                irCut);
+        }
+        catch { return null; }
+    }
+
+    // Fire-and-forget write (same rationale as PTZ commands: budget cameras are slow to
+    // respond over HTTP but apply the setting on receipt).
+    public Task SetImagingSettingsAsync(Camera camera, string videoSourceToken, CameraImageSettings settings, CancellationToken ct)
+    {
+        var irCut = settings.IrCutMode switch
+        {
+            IrCutMode.On => "ON",
+            IrCutMode.Off => "OFF",
+            _ => "AUTO",
+        };
+        var body = $"""
+            <SetImagingSettings xmlns="http://www.onvif.org/ver20/imaging/wsdl">
+              <VideoSourceToken>{videoSourceToken}</VideoSourceToken>
+              <ImagingSettings>
+                <Brightness xmlns="http://www.onvif.org/ver10/schema">{settings.Brightness}</Brightness>
+                <Contrast xmlns="http://www.onvif.org/ver10/schema">{settings.Contrast}</Contrast>
+                <ColorSaturation xmlns="http://www.onvif.org/ver10/schema">{settings.Saturation}</ColorSaturation>
+                <Sharpness xmlns="http://www.onvif.org/ver10/schema">{settings.Sharpness}</Sharpness>
+                <IrCutFilter xmlns="http://www.onvif.org/ver10/schema">{irCut}</IrCutFilter>
+              </ImagingSettings>
+              <ForcePersistence>true</ForcePersistence>
+            </SetImagingSettings>
+            """;
+        return SendCommandAsync(camera, "imaging_service", body, ct);
+    }
+
     // Returns the count of presets reported by the camera. Used at probe time to set SupportsNativePresets (ADR-25).
     // Returns 0 on error or empty list — both indicate no native preset support.
     public async Task<int> GetPresetsCountAsync(Camera camera, string profileToken, CancellationToken ct)

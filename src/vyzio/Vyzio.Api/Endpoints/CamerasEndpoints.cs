@@ -306,6 +306,23 @@ public static class CamerasEndpoints
             return Results.NoContent();
         });
 
+        // Image settings (ADR-27) — read/write live on the camera, nothing persisted on Vyzio's side.
+        group.MapGet("/{id}/image-settings", async (string id, GetCameraImageSettingsUseCase useCase, CancellationToken ct) =>
+        {
+            var settings = await useCase.ExecuteAsync(id, ct);
+            return settings is null ? Results.NotFound() : Results.Ok(settings);
+        });
+
+        group.MapPut("/{id}/image-settings", async (
+            string id,
+            CameraImageSettingsDto request,
+            SetCameraImageSettingsUseCase useCase,
+            CancellationToken ct) =>
+        {
+            var settings = await useCase.ExecuteAsync(id, request, ct);
+            return settings is null ? Results.NotFound() : Results.Ok(settings);
+        });
+
         // PTZ preset thumbnail — capture current Frigate frame and persist per preset
         group.MapPost("/{id}/ptz/presets/{presetId}/snapshot", async (
             string id, int presetId,

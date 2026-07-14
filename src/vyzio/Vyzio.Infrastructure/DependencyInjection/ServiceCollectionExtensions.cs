@@ -53,6 +53,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TapoKlapProvider>();
         services.AddScoped<IPtzCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
+        services.AddScoped<IImageSettingsCapabilityProvider, OnvifImageSettingsProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
         // Background onboarding probe (A1 + A3): singleton queue so CreateCameraUseCase can enqueue.

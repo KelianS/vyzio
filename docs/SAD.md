@@ -35,6 +35,7 @@
   - [ADR-23 — Surveillance de joignabilité des caméras : polling TCP périodique indépendant de Frigate](#adr-23--surveillance-de-joignabilité-des-caméras--polling-tcp-périodique-indépendant-de-frigate)
   - [ADR-25 — Gestion des positions PTZ : presets natifs (Branch A) vs positions Vyzio-managed (Branch B)](#adr-25--gestion-des-positions-ptz--presets-natifs-branch-a-vs-positions-vyzio-managed-branch-b)
   - [ADR-26 — Miniatures de positions PTZ : capture client-triggered, stockage fichier, serving direct](#adr-26--miniatures-de-positions-ptz--capture-client-triggered-stockage-fichier-serving-direct)
+  - [ADR-27 — Réglages image avancés : capacité `ImageSettings`, ONVIF Imaging Service, valeurs non persistées](#adr-27--réglages-image-avancés--capacité-imagesettings-onvif-imaging-service-valeurs-non-persistées)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -2371,6 +2372,66 @@ GET  /api/cameras/{id}/ptz/presets/{presetId}/thumbnail → sert le JPEG (404 si
 
 ---
 
+### ADR-27 — Réglages image avancés : capacité `ImageSettings`, ONVIF Imaging Service, valeurs non persistées
+
+#### Contexte
+
+SPECS §10 : l'utilisateur doit pouvoir régler luminosité, contraste, saturation, netteté et vision nocturne (IR) depuis Vyzio plutôt que dans l'app constructeur — c'est le premier jalon du principe produit « contrôle unifié de toutes les caméras » (README, `../CLAUDE.md`). Comme PTZ et vie privée matérielle (ADR-22), ces réglages ne dépendent pas de la marque mais de ce que la caméra sait réellement faire.
+
+Différence structurelle avec PTZ/privacy : il n'y a rien à persister côté Vyzio. La caméra reste la seule source de vérité pour ses réglages image — Vyzio lit et écrit en direct, comme un simple proxy protocolaire.
+
+#### Décision
+
+**Nouvelle valeur d'enum `CameraCapability.ImageSettings`**, résolue par protocole exactement comme `Ptz`/`HardwarePrivacy` — aucune extension du modèle `CameraCapabilityBinding` nécessaire (le binding existant sert uniquement à tracer quel protocole gère la capacité et le résultat du dernier probe).
+
+```csharp
+// Vyzio.Core/Entities/CameraCapability.cs
+public enum CameraCapability { Stream, Ptz, HardwarePrivacy, ImageSettings }
+
+// Vyzio.Core/Entities/CameraImageSettings.cs — snapshot live, jamais persisté en base
+public sealed record CameraImageSettings(
+    int Brightness,      // 0-100
+    int Contrast,        // 0-100
+    int Saturation,      // 0-100
+    int Sharpness,       // 0-100
+    IrCutMode IrCutMode); // Auto | On | Off
+
+// Vyzio.Core/Interfaces/IImageSettingsCapabilityProvider.cs
+public interface IImageSettingsCapabilityProvider
+{
+    SupportedProtocol Protocol { get; }
+    Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
+    Task<CameraImageSettings?> GetImageSettingsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
+    Task SetImageSettingsAsync(Camera camera, CameraCapabilityBinding binding, CameraImageSettings settings, CancellationToken ct = default);
+}
+```
+
+`ICapabilityProviderRegistry` gagne `ResolveImageSettings(SupportedProtocol)`, même contrat que `ResolvePtz`/`ResolvePrivacy` (throw si non enregistré).
+
+**Protocole couvert dans cette itération : ONVIF uniquement**, via le service ONVIF Imaging (`GetImagingSettings`/`SetImagingSettings`, ver20/imaging/wsdl) — `OnvifClient` gagne les méthodes correspondantes, transport SOAP identique au PTZ (WS-UsernameToken, port 8899). `OnvifImageSettingsProvider` couvre donc la même liste de marques que `OnvifPtzProvider` (V380 Pro, Hikvision, Dahua, Reolink, Axis, tout ONVIF générique).
+
+**DVRIP (ICSee/XMEye) et Tapo KLAP ne sont pas couverts par cette ADR** — leurs commandes de réglage image ne sont pas documentées publiquement et n'ont pas encore été investiguées sur le terrain (contrairement au PTZ DVRIP, cf. ADR-21). Reste en Idées backlog jusqu'à investigation terrain, suivant le même principe que ADR-23/26 (« jamais deviner un protocole binaire propriétaire sans capture réseau »).
+
+**Pas de migration EF** : `Capability`/`Protocol` sont déjà des colonnes `TEXT` sur `camera_capability_bindings` (ADR-22) — ajouter une valeur d'enum ne change pas le schéma. Les valeurs de réglage elles-mêmes ne sont stockées nulle part côté Vyzio.
+
+**Endpoints (lecture/écriture directe, pas de use case de persistance) :**
+```
+GET /api/cameras/{id}/image-settings  → lit en direct via le provider résolu, 404 si capacité non configurée/vérifiée
+PUT /api/cameras/{id}/image-settings  → écrit en direct, renvoie le nouveau snapshot lu après écriture
+```
+
+`VendorCapabilityPresets` : ajout de `(CameraCapability.ImageSettings, SupportedProtocol.Onvif)` au preset `V380Pro` — c'est la seule marque officiellement supportée qui parle déjà ONVIF.
+
+#### Conséquences
+
+- ✅ Aucune migration de base de données, aucun risque de désynchronisation Vyzio/caméra (pas de copie locale à invalider)
+- ✅ Réutilise entièrement le pattern ADR-22 (registry, probe, `VendorCapabilityPresets`) — zéro nouvelle abstraction
+- ✅ `OnvifClient` déjà couvert par WS-UsernameToken/port 8899 — pas de nouveau transport
+- ⚠️ DVRIP et Tapo KLAP restent hors périmètre — un utilisateur ICSee/Tapo ne voit pas cette capacité tant qu'une investigation terrain n'a pas produit un provider dédié
+- ⚠️ Les plages ONVIF (`Brightness`/`Contrast`/`ColorSaturation`/`Sharpness`) sont nominalement 0-100 par le schéma `ver10/schema` mais certains firmwares appliquent leurs propres bornes ; pas de `GetOptions`/min-max dans cette itération — à ajouter si un firmware terrain contredit l'hypothèse 0-100
+
+---
+
 ## 6. Architecture des services
 
 ### 6.1 Responsabilités
@@ -2506,7 +2567,7 @@ CREATE TABLE cameras (
 CREATE TABLE camera_capability_bindings (
     id            TEXT PRIMARY KEY,
     camera_id     TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
-    capability    TEXT NOT NULL,             -- "ptz" | "hardware_privacy"
+    capability    TEXT NOT NULL,             -- "ptz" | "hardware_privacy" | "image_settings" (ADR-27)
     protocol      TEXT NOT NULL,             -- "onvif" | "dvrip" | "tapo_klap" | "v380" | "rtsp"
     config_json   TEXT,                      -- params protocole : port, adresse ONVIF, credentials...
     verified      INTEGER NOT NULL DEFAULT 0, -- résultat du dernier test réel, jamais déclaratif

@@ -87,7 +87,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 **Regles fonctionnelles :**
 
-- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, info systeme a venir) sont des **capacites independantes de la marque** ; une marque "officiellement supportee" est une marque pour laquelle Vyzio sait deja quelles capacites sont disponibles et comment les activer (preconfiguration), pas une marque qui beneficie de fonctionnalites reservees ;
+- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, info systeme a venir) sont des **capacites independantes de la marque** ; une marque "officiellement supportee" est une marque pour laquelle Vyzio sait deja quelles capacites sont disponibles et comment les activer (preconfiguration), pas une marque qui beneficie de fonctionnalites reservees ;
 - une camera non repertoriee doit pouvoir acceder aux memes capacites qu'une camera supportee, a condition que son materiel le permette reellement ; le parcours est plus long (declaration et verification manuelle des capacites) mais jamais bloquant par principe ;
 - pour une camera non repertoriee, l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface — jamais sur simple declaration non verifiee ;
 - si une capacite ne peut pas etre verifiee ou echoue au test, l'interface doit l'indiquer clairement et ne pas la presenter comme disponible ;
@@ -313,9 +313,25 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 ---
 
-## 10. Perimetre MVP
+## 10. Reglages image avances
 
-### 9.1 Inclus dans le MVP
+> **En tant qu'utilisateur**, je veux ajuster la luminosite, le contraste et la vision nocturne (IR) de mes cameras directement depuis Vyzio, afin de ne pas devoir ouvrir l'application du constructeur pour un simple reglage image.
+
+> **En tant qu'utilisateur**, je veux que ce reglage soit une capacite testee comme les autres (PTZ, vie privee materielle), afin de ne pas me proposer un controle qui ne fonctionnera pas sur ma camera.
+
+**Regles fonctionnelles :**
+
+- les reglages image (luminosite, contraste, saturation, nettete, mode vision nocturne infrarouge) sont une **capacite** au sens de la §2.3 : independante de la marque, testee reellement avant d'etre proposee, jamais activee sur simple declaration ;
+- les valeurs affichees et modifiables sont lues et ecrites en direct sur la camera — Vyzio ne stocke pas de copie locale des reglages, la camera reste la source de verite ;
+- si la camera est hors ligne, le panneau de reglages image doit etre suspendu avec un message explicite (meme regle que PTZ, cf. §2.2) ;
+- une camera dont la capacite reglages image n'est pas verifiee ne doit pas afficher le panneau de controle, quelle que soit sa marque ;
+- le mode vision nocturne expose au minimum trois etats comprehensibles pour un non-technicien : automatique, force actif, force inactif.
+
+---
+
+## 11. Perimetre MVP
+
+### 11.1 Inclus dans le MVP
 
 - ajout et gestion de cameras existantes ;
 - surveillance locale avec alertes sur evenements prioritaires ;
@@ -323,7 +339,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - historique consultable et retention configurable ;
 - interface web unifiee pour les parcours principaux.
 
-### 9.2 Hors MVP initial
+### 11.2 Hors MVP initial
 
 - couverture exhaustive de tous les usages experts d'un NVR ;
 - exposition de chaque capacite avancee dans une UI Vyzio 100 % custom ;
@@ -332,7 +348,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 ---
 
-## 10. Criteres de succes produit
+## 12. Criteres de succes produit
 
 - un utilisateur non-tech doit pouvoir comprendre la promesse, installer le systeme et recevoir ses premieres alertes sans lire de documentation technique ;
 - le systeme doit rester utile meme sans connexion Internet ;

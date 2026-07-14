@@ -21,11 +21,18 @@ public class CapabilityProviderRegistryTests
         return p;
     }
 
+    private static IImageSettingsCapabilityProvider MakeImageSettings(SupportedProtocol protocol)
+    {
+        var p = Substitute.For<IImageSettingsCapabilityProvider>();
+        p.Protocol.Returns(protocol);
+        return p;
+    }
+
     [Fact]
     public void ResolvePtz_returns_registered_provider()
     {
         var onvif = MakePtz(SupportedProtocol.Onvif);
-        var sut = new CapabilityProviderRegistry([onvif], []);
+        var sut = new CapabilityProviderRegistry([onvif], [], []);
 
         Assert.Same(onvif, sut.ResolvePtz(SupportedProtocol.Onvif));
     }
@@ -34,15 +41,24 @@ public class CapabilityProviderRegistryTests
     public void ResolvePrivacy_returns_registered_provider()
     {
         var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
-        var sut = new CapabilityProviderRegistry([], [tapo]);
+        var sut = new CapabilityProviderRegistry([], [tapo], []);
 
         Assert.Same(tapo, sut.ResolvePrivacy(SupportedProtocol.TapoKlap));
     }
 
     [Fact]
+    public void ResolveImageSettings_returns_registered_provider()
+    {
+        var onvif = MakeImageSettings(SupportedProtocol.Onvif);
+        var sut = new CapabilityProviderRegistry([], [], [onvif]);
+
+        Assert.Same(onvif, sut.ResolveImageSettings(SupportedProtocol.Onvif));
+    }
+
+    [Fact]
     public void ResolvePtz_throws_for_unregistered_protocol()
     {
-        var sut = new CapabilityProviderRegistry([], []);
+        var sut = new CapabilityProviderRegistry([], [], []);
 
         Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(SupportedProtocol.Dvrip));
     }
@@ -50,9 +66,17 @@ public class CapabilityProviderRegistryTests
     [Fact]
     public void ResolvePrivacy_throws_for_unregistered_protocol()
     {
-        var sut = new CapabilityProviderRegistry([], []);
+        var sut = new CapabilityProviderRegistry([], [], []);
 
         Assert.Throws<InvalidOperationException>(() => sut.ResolvePrivacy(SupportedProtocol.TapoKlap));
+    }
+
+    [Fact]
+    public void ResolveImageSettings_throws_for_unregistered_protocol()
+    {
+        var sut = new CapabilityProviderRegistry([], [], []);
+
+        Assert.Throws<InvalidOperationException>(() => sut.ResolveImageSettings(SupportedProtocol.Dvrip));
     }
 
     [Fact]
@@ -60,7 +84,7 @@ public class CapabilityProviderRegistryTests
     {
         var onvif = MakePtz(SupportedProtocol.Onvif);
         var dvrip = MakePtz(SupportedProtocol.Dvrip);
-        var sut = new CapabilityProviderRegistry([onvif, dvrip], []);
+        var sut = new CapabilityProviderRegistry([onvif, dvrip], [], []);
 
         Assert.Same(onvif, sut.ResolvePtz(SupportedProtocol.Onvif));
         Assert.Same(dvrip, sut.ResolvePtz(SupportedProtocol.Dvrip));
@@ -71,7 +95,7 @@ public class CapabilityProviderRegistryTests
     {
         var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
         var dvrip = MakePrivacy(SupportedProtocol.Dvrip);
-        var sut = new CapabilityProviderRegistry([], [tapo, dvrip]);
+        var sut = new CapabilityProviderRegistry([], [tapo, dvrip], []);
 
         Assert.Same(tapo, sut.ResolvePrivacy(SupportedProtocol.TapoKlap));
         Assert.Same(dvrip, sut.ResolvePrivacy(SupportedProtocol.Dvrip));
@@ -80,7 +104,7 @@ public class CapabilityProviderRegistryTests
     [Fact]
     public void ResolvePtz_throws_for_unknown_protocol_even_with_other_providers_registered()
     {
-        var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], []);
+        var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], [], []);
 
         Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(SupportedProtocol.Dvrip));
     }
