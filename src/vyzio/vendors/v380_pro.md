@@ -59,7 +59,9 @@ Remplacez :
 
 ## Réglages image
 
-**Niveau de garantie : réglage direct sur la caméra (ONVIF Imaging Service).** Luminosité, contraste, saturation, netteté et vision nocturne (IR) sont pilotables depuis Vyzio, sans passer par l'application V380 Pro. Aucune valeur n'est stockée par Vyzio — la caméra reste la seule source de vérité.
+**Non garanti selon le modèle — pas proposé automatiquement.** Vyzio sait piloter les réglages image via le service ONVIF Imaging (luminosité, contraste, saturation, netteté, vision nocturne), mais un test réel (2026-07-14) a confirmé qu'un boîtier V380 Pro renvoie une erreur ONVIF explicite (« GetImagingSettings not implemented ») — ce firmware n'implémente pas ce service, ce n'est pas un problème réseau. Cette capacité n'est donc plus suggérée automatiquement à l'ajout.
+
+Si vous pensez que votre unité est différente, vous pouvez tenter de la configurer manuellement depuis la fiche caméra (bouton **+** dans la section Capacités, protocole ONVIF) — elle ne sera activée que si le test réel réussit.
 
 ## Liens utiles
 

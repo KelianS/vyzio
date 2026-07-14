@@ -42,23 +42,25 @@ public class DvripPtzProviderTests
         Assert.False(result);
     }
 
-    // SofiaHash — same algorithm as ICSeeXMEyeCameraAdapter, verified against a real camera.
+    // SofiaHash — pairs of raw MD5 bytes (not hex nibbles), matching python-dvr's reference
+    // implementation. Verified against a real ICSee camera (2026-07-15, Ret=100 on login);
+    // the previous hex-nibble-pairing variant was rejected (Ret=203, "Password is incorrect").
     [Fact]
     public void SofiaHash_produces_verified_value()
     {
-        Assert.Equal("6DDKEOQCGQGGILIK", DvripPtzProvider.SofiaHash("a4m3h5"));
+        Assert.Equal("S8jyn9CB", DvripPtzProvider.SofiaHash("a4m3h5"));
     }
 
     [Fact]
-    public void SofiaHash_returns_16_chars()
+    public void SofiaHash_returns_8_chars()
     {
-        Assert.Equal(16, DvripPtzProvider.SofiaHash("any_password").Length);
+        Assert.Equal(8, DvripPtzProvider.SofiaHash("any_password").Length);
     }
 
     [Fact]
-    public void SofiaHash_empty_password_returns_16_chars()
+    public void SofiaHash_empty_password_returns_8_chars()
     {
-        Assert.Equal(16, DvripPtzProvider.SofiaHash(string.Empty).Length);
+        Assert.Equal(8, DvripPtzProvider.SofiaHash(string.Empty).Length);
     }
 
     [Fact]

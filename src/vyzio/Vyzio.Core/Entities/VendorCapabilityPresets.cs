@@ -26,7 +26,10 @@ public static class VendorCapabilityPresets
         new VendorCapabilityPreset(VendorFamily.V380Pro,
         [
             (CameraCapability.Ptz, new[] { SupportedProtocol.V380 }),
-            (CameraCapability.ImageSettings, new[] { SupportedProtocol.Onvif }),
+            // Not preset: real hardware test (2026-07-14) returned a definitive ONVIF SOAP fault
+            // ("GetImagingSettings not implemented") — this isn't a transient network issue, the
+            // firmware genuinely lacks the Imaging service. Never suggest a capability confirmed
+            // broken; still addable by hand for a unit that might behave differently (ADR-27/29).
         ]),
     ];
 

@@ -13,7 +13,7 @@ Ce dossier est la **source unique** pour tout ce qui concerne le support d'une m
 |---|---|---|---|---|---|
 | `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **Coupure matérielle** (cache objectif + LED éteinte) via KLAP | Oui (C200/C210/C225…) via KLAP — probe requis | Non (KLAP non investigué) |
 | `Icsee` | `icsee` | ICSee / XMEye | PTZ parking via DVRIP | Oui — ONVIF essayé en premier, repli DVRIP (ADR-28) | Luminosité/contraste/saturation via DVRIP (ADR-29) — netteté/IR non disponibles |
-| `V380Pro` | `v380_pro` | V380 PRO | PTZ parking via ONVIF | Oui via ONVIF | Oui via ONVIF Imaging Service |
+| `V380Pro` | `v380_pro` | V380 PRO | PTZ parking via ONVIF | Oui via ONVIF | Non confirmé (ONVIF Imaging non implémenté sur le matériel testé) — configurable manuellement |
 
 > **"Coupure matérielle"** : Vyzio commande l'API locale du constructeur. Le capteur ou le cache physique est désactivé — signal non falsifiable.
 >
@@ -31,7 +31,9 @@ Chaque marque est définie comme un **preset de capacités**, pas comme un adapt
 VendorCapabilityPreset:
   TplinkTapo → [ PrivacyMode/TapoKlap, Ptz/TapoKlap ]
   Icsee      → [ Ptz/[Onvif, Dvrip] (cascade, ADR-28), PrivacyMode/PtzParking, ImageSettings/Dvrip (ADR-29) ]
-  V380Pro    → [ Ptz/Onvif, PrivacyMode/PtzParking, ImageSettings/Onvif ]
+  V380Pro    → [ Ptz/Onvif, PrivacyMode/PtzParking ]
+  # ImageSettings/Onvif volontairement retiré du preset V380Pro (2026-07-14) : test réel a
+  # confirmé "GetImagingSettings not implemented" — reste configurable manuellement.
 ```
 
 Le preset déclare quelles capacités sont *attendues* pour cette marque. Elles sont ensuite **vérifiées par probe** sur le matériel réel avant d'être activables. Un probe échoué ne bloque pas les autres capacités.

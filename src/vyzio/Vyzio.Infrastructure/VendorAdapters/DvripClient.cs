@@ -21,7 +21,9 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
     private const int DvripPort = 34567;
     private const int LoginCmd = 1000;
     private const int ConfigGetCmd = 1042;
-    private const int ConfigSetCmd = 1044;
+    // 1040, not 1044 — confirmed against the python-dvr reference client's set_info()
+    // (2026-07-15); 1044 was a transcription error in an earlier investigation note.
+    private const int ConfigSetCmd = 1040;
 
     // Opens a fresh connection, logs in, sends one command, and returns the raw response —
     // used by PTZ (cmd 1400) and any other one-shot command. Never throws on failure; callers
@@ -33,7 +35,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
         await tcp.ConnectAsync(camera.Host, DvripPort, ct);
         using var stream = tcp.GetStream();
 
-        var sessionId = await LoginAsync(stream, camera, ct);
+        var (sessionId, _) = await LoginAsync(stream, camera, ct);
         if (sessionId is null) return null;
 
         var payload = buildPayload(sessionId);
@@ -51,7 +53,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
             timeout.CancelAfter(TimeSpan.FromSeconds(3));
             await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
             using var stream = tcp.GetStream();
-            var sessionId = await LoginAsync(stream, camera, timeout.Token);
+            var (sessionId, _) = await LoginAsync(stream, camera, timeout.Token);
             return sessionId is not null;
         }
         catch (Exception ex)
@@ -63,28 +65,34 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
     // ConfigManager.getConfig (cmd 1042) — returns the raw config node for configName
     // (e.g. "AVEnc.VideoColor.[0]"), or throws DvripCallException with the real reason.
+    // Bounded to 5s total (connect + login + request + response) — unlike TryLoginAsync's own
+    // 3s connect timeout, this covers the whole exchange so a stalled/unresponsive camera fails
+    // fast instead of hanging on the caller's (potentially unbounded) cancellation token.
     public async Task<JsonNode?> ConfigGetAsync(Camera camera, string configName, CancellationToken ct)
     {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+
         using var tcp = new TcpClient();
         try
         {
-            await tcp.ConnectAsync(camera.Host, DvripPort, ct);
+            await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
         }
         catch (Exception ex)
         {
-            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{DvripPort} ({ex.Message}).", ex);
+            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{DvripPort} ({DescribeTimeout(ex, timeout, ct)}).", ex);
         }
         using var stream = tcp.GetStream();
 
-        var sessionId = await LoginAsync(stream, camera, ct);
+        var (sessionId, loginFailure) = await LoginAsync(stream, camera, timeout.Token);
         if (sessionId is null)
-            throw new DvripCallException($"Connexion DVRIP refusée par {camera.Host} (identifiants invalides).");
+            throw new DvripCallException($"Connexion DVRIP refusée par {camera.Host} : {loginFailure}");
 
         var payload = JsonSerializer.Serialize(new { Name = configName, SessionID = sessionId });
-        await SendPacketAsync(stream, ConfigGetCmd, payload, 2, sessionId, ct);
-        var response = await ReceivePacketAsync(stream, ct);
+        await SendPacketAsync(stream, ConfigGetCmd, payload, 2, sessionId, timeout.Token);
+        var response = await ReceivePacketAsync(stream, timeout.Token);
         if (response is null)
-            throw new DvripCallException($"Pas de réponse DVRIP ConfigGet '{configName}' de {camera.Host}.");
+            throw new DvripCallException($"Pas de réponse DVRIP ConfigGet '{configName}' de {camera.Host} (connexion fermée par la caméra).");
 
         JsonNode? doc;
         try { doc = JsonNode.Parse(response); }
@@ -100,23 +108,26 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
     // ConfigManager.setConfig (cmd 1044) — writes back the full config node for configName.
     // Callers must round-trip: read via ConfigGetAsync, mutate only the known fields, write the
     // whole node back — never construct a config from scratch (unknown/undocumented schema per
-    // firmware, ADR-29).
+    // firmware, ADR-29). Bounded to 5s total, same rationale as ConfigGetAsync.
     public async Task ConfigSetAsync(Camera camera, string configName, JsonNode config, CancellationToken ct)
     {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+
         using var tcp = new TcpClient();
         try
         {
-            await tcp.ConnectAsync(camera.Host, DvripPort, ct);
+            await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
         }
         catch (Exception ex)
         {
-            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{DvripPort} ({ex.Message}).", ex);
+            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{DvripPort} ({DescribeTimeout(ex, timeout, ct)}).", ex);
         }
         using var stream = tcp.GetStream();
 
-        var sessionId = await LoginAsync(stream, camera, ct);
+        var (sessionId, loginFailure) = await LoginAsync(stream, camera, timeout.Token);
         if (sessionId is null)
-            throw new DvripCallException($"Connexion DVRIP refusée par {camera.Host} (identifiants invalides).");
+            throw new DvripCallException($"Connexion DVRIP refusée par {camera.Host} : {loginFailure}");
 
         var payload = new JsonObject
         {
@@ -124,57 +135,74 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
             ["SessionID"] = sessionId,
             [configName] = config.DeepClone(),
         };
-        await SendPacketAsync(stream, ConfigSetCmd, payload.ToJsonString(), 2, sessionId, ct);
-        var response = await ReceivePacketAsync(stream, ct);
+        await SendPacketAsync(stream, ConfigSetCmd, payload.ToJsonString(), 2, sessionId, timeout.Token);
+        var response = await ReceivePacketAsync(stream, timeout.Token);
 
         var ret = response is null ? (int?)null : JsonNode.Parse(response)?["Ret"]?.GetValue<int>();
         if (ret != 100)
             throw new DvripCallException($"La caméra a refusé ConfigSet '{configName}' (Ret={(ret?.ToString() ?? "aucune réponse")}).");
     }
 
-    internal static async Task<string?> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
+    private static string DescribeTimeout(Exception ex, CancellationTokenSource timeout, CancellationToken callerToken)
+        => ex is OperationCanceledException && timeout.IsCancellationRequested && !callerToken.IsCancellationRequested
+            ? "délai de 5s dépassé"
+            : ex.Message;
+
+    // Returns (SessionId, null) on success, or (null, reason) on failure — the reason
+    // distinguishes "no response at all" (connection dropped/timeout) from an explicit
+    // rejection (Ret != 100), so callers that surface it (ConfigGetAsync/ConfigSetAsync)
+    // don't report "identifiants invalides" for what's actually a network/timeout issue.
+    internal static async Task<(string? SessionId, string? FailureReason)> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
     {
         var hash = SofiaHash(camera.Password ?? string.Empty);
         var loginPayload = JsonSerializer.Serialize(new
         {
             LoginType = "DVRIP-Web",
-            Name = camera.Username ?? "admin",
+            UserName = camera.Username ?? "admin",
             PassWord = hash,
             EncryptType = "MD5"
         });
 
         await SendPacketAsync(stream, LoginCmd, loginPayload, 0, "0x00000000", ct);
         var response = await ReceivePacketAsync(stream, ct);
-        if (response is null) return null;
+        if (response is null) return (null, "aucune réponse de la caméra (connexion fermée ou délai dépassé).");
 
         try
         {
             var doc = JsonNode.Parse(response);
             var ret = doc?["Ret"]?.GetValue<int>();
-            if (ret != 100) return null;
-            return doc?["SessionID"]?.GetValue<string>();
+            if (ret != 100) return (null, $"identifiants refusés par la caméra (Ret={ret?.ToString() ?? "?"}).");
+            return (doc?["SessionID"]?.GetValue<string>(), null);
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            return (null, $"réponse de connexion illisible ({ex.Message}).");
         }
     }
 
-    // Sofia hash: pairs of nibble values (0-15) from MD5 hex, summed mod 62, mapped to [0-9A-Za-z].
+    // Sofia hash: pairs of RAW MD5 BYTES (not hex nibbles) — md5[0]+md5[1], md5[2]+md5[3], ...
+    // summed mod 62, mapped to [0-9A-Za-z]. 16-byte digest → 8 output chars.
+    // Confirmed against real hardware (2026-07-15) — matches the python-dvr reference client's
+    // sofia_hash(); the previous hex-nibble-pairing variant (16 chars) was rejected by the
+    // camera (Ret=203, "Password is incorrect").
     internal static string SofiaHash(string password)
     {
         var md5 = System.Security.Cryptography.MD5.HashData(Encoding.UTF8.GetBytes(password));
-        var hex = Convert.ToHexString(md5).ToLowerInvariant();
-        var sb = new StringBuilder(16);
-        for (var i = 0; i < 32; i += 2)
+        var sb = new StringBuilder(8);
+        for (var i = 0; i < 16; i += 2)
         {
-            var b = (HexNibble(hex[i]) + HexNibble(hex[i + 1])) % 62;
+            var b = (md5[i] + md5[i + 1]) % 62;
             sb.Append(b < 10 ? (char)('0' + b) : b < 36 ? (char)('A' + b - 10) : (char)('a' + b - 36));
         }
         return sb.ToString();
     }
 
-    private static int HexNibble(char c) => c >= 'a' ? c - 'a' + 10 : c - '0';
+    // Wire header is 20 bytes — struct "BB2xII2xHI" in the reference python-dvr client:
+    // head(1) version(1) pad(2) session(4LE) seq(4LE) pad(2) cmd(2LE) dataLen(4LE).
+    // Confirmed against real hardware (2026-07-15): a 22-byte header (previous, incorrect
+    // assumption transcribed from an earlier investigation note) makes the camera never
+    // respond at all — not a timeout of a working exchange, a completely wrong frame shape.
+    private const int HeaderSize = 20;
 
     internal static async Task SendPacketAsync(NetworkStream stream, int cmdCode, string json, int seqNo, string sessionId, CancellationToken ct)
     {
@@ -183,15 +211,15 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
             : 0;
 
         var body = Encoding.UTF8.GetBytes(json + "\n\0");
-        var header = new byte[22];
+        var header = new byte[HeaderSize];
         header[0] = 0xFF;
-        header[1] = 0x01;
+        header[1] = 0x00;
         header[2] = 0x00;
         header[3] = 0x00;
         WriteInt32Le(header, 4, sessionInt);
         WriteInt32Le(header, 8, seqNo);
-        WriteInt16Le(header, 16, (short)cmdCode);
-        WriteInt32Le(header, 18, body.Length);
+        WriteInt16Le(header, 14, (short)cmdCode);
+        WriteInt32Le(header, 16, body.Length);
 
         await stream.WriteAsync(header, ct);
         await stream.WriteAsync(body, ct);
@@ -199,16 +227,16 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
     internal static async Task<string?> ReceivePacketAsync(NetworkStream stream, CancellationToken ct)
     {
-        var header = new byte[22];
+        var header = new byte[HeaderSize];
         var read = 0;
-        while (read < 22)
+        while (read < HeaderSize)
         {
-            var n = await stream.ReadAsync(header.AsMemory(read, 22 - read), ct);
+            var n = await stream.ReadAsync(header.AsMemory(read, HeaderSize - read), ct);
             if (n == 0) return null;
             read += n;
         }
 
-        var dataLen = ReadInt32Le(header, 18);
+        var dataLen = ReadInt32Le(header, 16);
         if (dataLen <= 0 || dataLen > 65536) return null;
 
         var body = new byte[dataLen];

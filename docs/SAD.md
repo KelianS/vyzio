@@ -2521,6 +2521,10 @@ public sealed class DvripCallException(string message, Exception? inner = null) 
 - ⚠️ Netteté et vision nocturne restent indisponibles pour ICSee tant qu'une investigation terrain dédiée n'a pas confirmé une commande DVRIP fiable
 - ⚠️ Tapo KLAP reste hors périmètre (aucune investigation), voir Idées backlog
 
+> **Correctif terrain (2026-07-14) :** `ConfigGetAsync`/`ConfigSetAsync` n'avaient aucune borne de temps (contrairement à `TryLoginAsync`, qui a un timeout de connexion de 3s) — un boîtier ICSee lent ou en silence radio faisait attendre indéfiniment la requête, sur le jeton d'annulation de l'appelant. Corrigé : les deux méthodes sont désormais bornées à 5s au total (connexion + login + requête + réponse). `LoginAsync` distingue aussi explicitement « aucune réponse » (timeout/connexion fermée) d'un rejet exprès (`Ret != 100`) — le message affiché ne dit plus « identifiants invalides » quand la vraie cause est un délai dépassé.
+>
+> **Retrait du preset `ImageSettings/Onvif` pour `V380Pro` (même date) :** un test réel a renvoyé un SOAP fault ONVIF explicite (« GetImagingSettings not implemented ») — signal définitif de non-implémentation, pas un problème réseau. Cette capacité n'est plus suggérée automatiquement pour cette marque (ADR-22 : un preset ne doit déclarer que ce qui est confirmé fiable). Elle reste configurable manuellement (§ formulaire manuel de `CapabilitySection`) pour un utilisateur dont l'unité se comporterait différemment — jamais activée sans un test réel réussi.
+
 ---
 
 ## 6. Architecture des services

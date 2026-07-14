@@ -70,6 +70,7 @@ const ALL_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settin
 
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
   const { toast } = useToast()
+  const [showManualForm, setShowManualForm] = useState(false)
   const {
     data: bindings,
     loading,
@@ -140,11 +141,27 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
         ))}
 
         {availableCapabilities.length > 0 && !offline && (
-          <ManualCapabilityForm
-            cameraId={camera.id}
-            availableCapabilities={availableCapabilities}
-            onDone={handleReload}
-          />
+          showManualForm ? (
+            <ManualCapabilityForm
+              cameraId={camera.id}
+              availableCapabilities={availableCapabilities}
+              onDone={() => {
+                setShowManualForm(false)
+                handleReload()
+              }}
+              onCancel={() => setShowManualForm(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              className="capability-manual-form-trigger"
+              title="Configurer une capacité manuellement"
+              aria-label="Configurer une capacité manuellement"
+              onClick={() => setShowManualForm(true)}
+            >
+              +
+            </button>
+          )
         )}
       </div>
 
@@ -421,9 +438,10 @@ interface ManualCapabilityFormProps {
   cameraId: string
   availableCapabilities: Capability[]
   onDone: () => void
+  onCancel: () => void
 }
 
-function ManualCapabilityForm({ cameraId, availableCapabilities, onDone }: ManualCapabilityFormProps) {
+function ManualCapabilityForm({ cameraId, availableCapabilities, onDone, onCancel }: ManualCapabilityFormProps) {
   const [selectedCapability, setSelectedCapability] = useState<Capability>(availableCapabilities[0])
   const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>(
     protocolOptionsFor(availableCapabilities[0])[0].value,
@@ -486,6 +504,9 @@ function ManualCapabilityForm({ cameraId, availableCapabilities, onDone }: Manua
           onClick={() => configureAction.run()}
         >
           Configurer
+        </Btn>
+        <Btn variant="ghost" disabled={configureAction.loading} onClick={onCancel}>
+          Annuler
         </Btn>
       </div>
       <p className="capability-manual-form-hint">
