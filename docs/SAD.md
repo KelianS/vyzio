@@ -126,7 +126,7 @@ Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien s
 | C5 | Support RTSP, ONVIF, HTTP MJPEG | Délégué à Frigate |
 | C6 | Reconnaissance faciale < 2s après détection de mouvement | Contrainte d'architecture dérivée des objectifs produit |
 | C7 | Pas de dépendance cloud pour les fonctions critiques | Specs §8.2 |
-| C8 | Stack cible : .NET 10 + TypeScript (runtime principal) | `.instructions.md` |
+| C8 | Stack cible : .NET 10 + TypeScript (runtime principal) | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) |
 
 ### 3.2 Principes directeurs
 

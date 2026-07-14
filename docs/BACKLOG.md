@@ -1,7 +1,7 @@
 # Vyzio — Backlog
 > References : [SPECS.md](./SPECS.md) · [SAD.md](./SAD.md) · [README.md](../README.md)
 
-Le workflow obligatoire est defini dans les regles du repo, fichier `.instructions.md`.
+Le workflow obligatoire est defini dans [`WORKFLOW.md`](./WORKFLOW.md).
 
 ---
 
