@@ -324,6 +324,10 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
+  async removeCapability(cameraId: string, capability: Capability): Promise<void> {
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`)
+  }
+
   async detectCapabilities(cameraId: string): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
   }

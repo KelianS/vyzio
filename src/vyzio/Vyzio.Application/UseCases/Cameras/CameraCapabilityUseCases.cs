@@ -123,6 +123,25 @@ public sealed class ConfigureCameraCapabilityUseCase(
     }
 }
 
+// Removes a capability binding entirely (SPECS §2.3) — used when a binding no longer applies
+// (e.g. a manually-added or now-unsupported capability that keeps surfacing a stale error) and
+// there is no simple on/off flag for it (unlike PTZ's Camera.PtzSupported). The capability then
+// reverts to "available" and can be reconfigured via the manual "+" form.
+public sealed class RemoveCameraCapabilityUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings)
+{
+    public async Task<bool> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return false;
+
+        var binding = await bindings.GetAsync(cameraId, capability, ct);
+        if (binding is null) return false;
+
+        await bindings.DeleteAsync(cameraId, capability, ct);
+        return true;
+    }
+}
+
 public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings)
 {
     public async Task<IReadOnlyList<CameraCapabilityBindingDto>?> ExecuteAsync(string cameraId, CancellationToken ct = default)

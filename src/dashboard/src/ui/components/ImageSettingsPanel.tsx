@@ -44,9 +44,17 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
   const supportsSharpnessAndIrCut = protocol !== 'dvrip'
 
   const [draft, setDraft] = useState<CameraImageSettings | null>(null)
+  // Baseline the "dirty" check compares against — must track the last value actually applied,
+  // not the settings fetched once on mount. Without a separate baseline, saving a change then
+  // picking a value equal to the page-load settings made "Appliquer" go disabled again even
+  // though it would be a real change from the camera's current (just-applied) state.
+  const [baseline, setBaseline] = useState<CameraImageSettings | null>(null)
 
   useEffect(() => {
-    if (settings) setDraft(settings)
+    if (settings) {
+      setDraft(settings)
+      setBaseline(settings)
+    }
   }, [settings])
 
   const saveAction = useAsyncAction(
@@ -54,6 +62,7 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
     {
       onSuccess: (applied) => {
         setDraft(applied)
+        setBaseline(applied)
         toast('Réglages image appliqués.', 'success')
       },
     },
@@ -88,12 +97,12 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
     )
   }
 
-  const isDirty = settings !== null && (
-    draft.brightness !== settings.brightness ||
-    draft.contrast !== settings.contrast ||
-    draft.saturation !== settings.saturation ||
-    draft.sharpness !== settings.sharpness ||
-    draft.irCutMode !== settings.irCutMode
+  const isDirty = baseline !== null && (
+    draft.brightness !== baseline.brightness ||
+    draft.contrast !== baseline.contrast ||
+    draft.saturation !== baseline.saturation ||
+    draft.sharpness !== baseline.sharpness ||
+    draft.irCutMode !== baseline.irCutMode
   )
 
   return (

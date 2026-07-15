@@ -13,6 +13,7 @@ import {
   getCameraCapabilities,
   configureCameraCapability,
   detectCameraCapabilities,
+  removeCameraCapability,
   updateCamera,
 } from '../../app/dependencies'
 
@@ -193,6 +194,7 @@ interface CapabilityRowProps {
 function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
   const [v380DeviceId, setV380DeviceId] = useState('')
 
@@ -242,6 +244,16 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
     {
       onSuccess: () => {
         onToast(ptzEnabled ? 'PTZ désactivé.' : 'PTZ activé.', 'success')
+        onDone()
+      },
+    },
+  )
+
+  const removeAction = useAsyncAction(
+    () => removeCameraCapability.execute(camera.id, binding.capability),
+    {
+      onSuccess: () => {
+        onToast(`${CAPABILITY_LABELS[binding.capability]} retiré.`, 'success')
         onDone()
       },
     },
@@ -388,6 +400,11 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             Modifier
           </Btn>
         )}
+        {isConfigured && binding.capability !== 'ptz' && (
+          <Btn variant="danger-outline" onClick={() => setConfirmRemove(true)}>
+            Retirer
+          </Btn>
+        )}
       </div>
 
       {confirmDisable && (
@@ -398,6 +415,17 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           loading={toggleAction.loading}
           onConfirm={() => { setConfirmDisable(false); toggleAction.run() }}
           onCancel={() => setConfirmDisable(false)}
+        />
+      )}
+
+      {confirmRemove && (
+        <ConfirmModal
+          title={`Retirer « ${CAPABILITY_LABELS[binding.capability]} » ?`}
+          description="La configuration de cette capacité sera supprimée. Vous pourrez la reconfigurer à tout moment via le bouton + ."
+          confirmLabel="Retirer"
+          loading={removeAction.loading}
+          onConfirm={() => { setConfirmRemove(false); removeAction.run() }}
+          onCancel={() => setConfirmRemove(false)}
         />
       )}
     </div>

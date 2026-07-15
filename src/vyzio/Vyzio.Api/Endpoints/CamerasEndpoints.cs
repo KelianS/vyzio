@@ -281,6 +281,19 @@ public static class CamerasEndpoints
             }
         });
 
+        group.MapDelete("/{id}/capabilities/{capability}", async (
+            string id,
+            string capability,
+            RemoveCameraCapabilityUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
+                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+
+            var removed = await useCase.ExecuteAsync(id, cap, ct);
+            return removed ? Results.NoContent() : Results.NotFound();
+        });
+
         group.MapPost("/{id}/capabilities/{capability}/probe", async (
             string id,
             string capability,

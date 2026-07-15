@@ -49,6 +49,7 @@ import { CapturePtzPresetThumbnail } from '../application/use-cases/CapturePtzPr
 import { GetCameraCapabilities } from '../application/use-cases/GetCameraCapabilities'
 import { ConfigureCameraCapability } from '../application/use-cases/ConfigureCameraCapability'
 import { ProbeCameraCapability } from '../application/use-cases/ProbeCameraCapability'
+import { RemoveCameraCapability } from '../application/use-cases/RemoveCameraCapability'
 import { DetectCameraCapabilities } from '../application/use-cases/DetectCameraCapabilities'
 import { GetCameraImageSettings } from '../application/use-cases/GetCameraImageSettings'
 import { SetCameraImageSettings } from '../application/use-cases/SetCameraImageSettings'
@@ -139,6 +140,7 @@ export const capturePtzPresetThumbnail = new CapturePtzPresetThumbnail(cameraRep
 export const getCameraCapabilities = new GetCameraCapabilities(cameraRepository)
 export const configureCameraCapability = new ConfigureCameraCapability(cameraRepository)
 export const probeCameraCapability = new ProbeCameraCapability(cameraRepository)
+export const removeCameraCapability = new RemoveCameraCapability(cameraRepository)
 export const detectCameraCapabilities = new DetectCameraCapabilities(cameraRepository)
 export const getCameraImageSettings = new GetCameraImageSettings(cameraRepository)
 export const setCameraImageSettings = new SetCameraImageSettings(cameraRepository)

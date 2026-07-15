@@ -575,3 +575,59 @@ public class GetCameraCapabilitiesUseCaseTests
         Assert.False(ptzDto.IsConfigured);
     }
 }
+
+public class RemoveCameraCapabilityUseCaseTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly RemoveCameraCapabilityUseCase _sut;
+
+    public RemoveCameraCapabilityUseCaseTests()
+    {
+        _sut = new RemoveCameraCapabilityUseCase(_cameras, _bindings);
+    }
+
+    private static Camera MakeCamera(string id = "cam1") => new()
+    {
+        Id = id,
+        Slug = id,
+        DisplayName = id,
+        Host = "192.168.1.10",
+    };
+
+    [Fact]
+    public async Task ExecuteAsync_returns_false_when_camera_not_found()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns((Camera?)null);
+
+        var result = await _sut.ExecuteAsync("cam1", CameraCapability.ImageSettings);
+
+        Assert.False(result);
+        await _bindings.DidNotReceive().DeleteAsync(Arg.Any<string>(), Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_returns_false_when_binding_not_found()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
+
+        var result = await _sut.ExecuteAsync("cam1", CameraCapability.ImageSettings);
+
+        Assert.False(result);
+        await _bindings.DidNotReceive().DeleteAsync(Arg.Any<string>(), Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_deletes_binding_and_returns_true_when_found()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>())
+            .Returns(new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.ImageSettings, Protocol = SupportedProtocol.Onvif });
+
+        var result = await _sut.ExecuteAsync("cam1", CameraCapability.ImageSettings);
+
+        Assert.True(result);
+        await _bindings.Received(1).DeleteAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>());
+    }
+}

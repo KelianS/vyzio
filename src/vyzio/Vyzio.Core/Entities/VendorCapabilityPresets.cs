@@ -26,10 +26,13 @@ public static class VendorCapabilityPresets
         new VendorCapabilityPreset(VendorFamily.V380Pro,
         [
             (CameraCapability.Ptz, new[] { SupportedProtocol.V380 }),
-            // Not preset: real hardware test (2026-07-14) returned a definitive ONVIF SOAP fault
-            // ("GetImagingSettings not implemented") — this isn't a transient network issue, the
-            // firmware genuinely lacks the Imaging service. Never suggest a capability confirmed
-            // broken; still addable by hand for a unit that might behave differently (ADR-27/29).
+            // Not preset: ONVIF Imaging returned a definitive SOAP fault on real hardware test
+            // (2026-07-14, "GetImagingSettings not implemented" — firmware genuinely lacks the
+            // service). A native V380 IR-light command was also attempted (ADR-30) and reverted:
+            // its only source (github.com/prsyahmi/v380) never confirmed it worked, and the
+            // camera's own official app has no such setting at all — no path exists to verify it,
+            // so it's not offered rather than shipping a control confirmed to do nothing (ADR-22).
+            // Still addable by hand for a unit that might behave differently.
         ]),
     ];
 
