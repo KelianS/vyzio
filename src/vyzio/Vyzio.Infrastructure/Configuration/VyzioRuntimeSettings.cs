@@ -50,6 +50,10 @@ public class VyzioRuntimeSettings
         ];
         public IReadOnlyList<int> HttpPorts { get; init; } = [80, 443, 8080];
         public IReadOnlyList<int> OnvifPorts { get; init; } = [80, 2020];
+        // TCP ports swept by the "nmap" enrichment stage (ADR-32). null → DiscoveryPortCatalog.Ports
+        // (production default). Set to [] to disable the sweep (used by hermetic unit tests, since
+        // the catalog ports would otherwise connect to whatever real services run on the host).
+        public IReadOnlyList<int>? PortScanPorts { get; init; }
         public int ProbeTimeoutMs { get; init; } = 250;
         public int MaxConcurrentProbes { get; init; } = 32;
     }

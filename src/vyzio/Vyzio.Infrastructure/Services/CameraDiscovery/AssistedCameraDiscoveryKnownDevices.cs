@@ -4,9 +4,28 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
 internal static class AssistedCameraDiscoveryKnownDevices
 {
-    public static string? DetectVendorFamily(string? displayName, string? note, string? hostName, string? macAddress)
+    // ADR-32 (interpretation stage): vendor family is derived only from structured evidence —
+    // a confirmed protocol handshake (discoverySource), the MAC OUI, or the hostname — never
+    // from human-readable note text. Note text is free-form explanation for the user and must
+    // not double as a fingerprinting input (a DVRIP note mentioning "ICSee, Annke, Sannce" as
+    // examples of DVRIP-using OEMs previously caused every DVRIP responder to be mislabeled
+    // "icsee" by accident, even Annke/Sannce hardware — DVRIP is a shared chipset protocol,
+    // not vendor-specific, unlike V380/KLAP below).
+    public static string? DetectVendorFamily(string? displayName, string? hostName, string? macAddress, string? discoverySource)
     {
-        var fingerprint = $"{displayName} {note} {hostName}".ToLowerInvariant();
+        // A confirmed V380/KLAP handshake is definitional, not a guess: only that vendor's
+        // firmware speaks that protocol on that port.
+        if (discoverySource is "v380_probe")
+        {
+            return "v380_pro";
+        }
+
+        if (discoverySource is "tapo_klap_probe")
+        {
+            return "tplink_tapo";
+        }
+
+        var fingerprint = $"{displayName} {hostName}".ToLowerInvariant();
         var oui = NormalizeOui(macAddress);
 
         if (fingerprint.Contains("v380 pro") || fingerprint.Contains("v380pro") || fingerprint.Contains("v380") || hostName?.StartsWith("MV", StringComparison.Ordinal) == true)
@@ -52,7 +71,7 @@ internal static class AssistedCameraDiscoveryKnownDevices
     };
 
     public static bool IsKnownMacVendor(string? macAddress)
-        => !string.IsNullOrWhiteSpace(DetectVendorFamily(null, null, null, macAddress));
+        => !string.IsNullOrWhiteSpace(DetectVendorFamily(null, null, macAddress, null));
 
     public static bool LooksLikeCameraHostName(string hostName)
     {

@@ -50,10 +50,6 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 3. **Support des caméras multi-flux RTSP** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Certaines caméras (ex. V380 avec 3 objectifs) exposent plusieurs flux RTSP simultanés ; le modèle actuel suppose un flux unique par caméra.
 
-4. **Scan réseau** : afficher tout ce qui est trouvé sur le réseau même si ça ne match aucun pattern (affiché avec une plus faible priorité, pour aider à identifier les caméras non supportées). 
-De plus, se servir des protocoles connus et des ports ouverts pour identifier les caméras (ex. DVRIP, RTSP, ONVIF, V380, Tapo KLAP ...).
-L'identification du constructeur automatiquement étant assez fragile, prévoir une identification manuelle / override de la marque durant l'onboarding pour pré-remplir les capacités et le protocole de communication.
-
 ---
 
 ### `battery-wake` — Réveil caméras DVRIP sur batterie

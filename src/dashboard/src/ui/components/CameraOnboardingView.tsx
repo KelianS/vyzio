@@ -2,6 +2,7 @@ import { useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import { useToast } from './Toast'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { Btn } from './Btn'
+import { Select } from './Select'
 import ReactMarkdown from 'react-markdown'
 import type { ApplyCameraConfiguration } from '../../application/use-cases/ApplyCameraConfiguration'
 import type { CreateCamera } from '../../application/use-cases/CreateCamera'
@@ -291,8 +292,12 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     (candidate) => !camerasState.data.some((c) => c.host === candidate.host),
   )
 
+  // form.vendorFamily is the candidate's auto-detected value until the user overrides it in
+  // Interpretation (renderInterpretationSection) — reading it here (rather than
+  // selectedCandidate.vendorFamily directly) makes the vendor assistance notice below follow a
+  // manual correction immediately, not only after the camera is actually created.
   const activeVendorFamily =
-    selectedCandidate?.vendorFamily ??
+    (selection.kind === 'candidate' ? form.vendorFamily : null) ??
     selectedCamera?.vendorFamily ??
     matchedDiscoveryCandidate?.vendorFamily ??
     null
@@ -605,113 +610,139 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     return Boolean(candidate.streamPath)
   }
 
-  function formatMutedValue(value: string | null | undefined) {
-    return value && value.trim() ? value : '—'
-  }
-
-  function formatMutedList(values: Array<string | number> | null | undefined) {
-    return values && values.length > 0 ? values.join(', ') : '—'
-  }
-
-  function formatOptionalVendor(vendorFamily: string | null) {
-    return vendorFamily ? formatVendorFamily(vendorFamily) : '—'
-  }
-
-  function formatDiscoverySource(discoverySource: string) {
-    switch (discoverySource) {
-      case 'onvif':
-        return 'ONVIF multicast'
-      case 'onvif_unicast':
-        return 'ONVIF unicast'
-      case 'mac_vendor_probe':
-        return 'MAC constructeur'
-      case 'hostname_probe':
-        return 'Nom reseau'
-      case 'rtsp_probe':
-        return 'Flux local'
-      case 'network_scan':
-        return 'Scan reseau'
-      case 'http_probe':
-        return 'HTTP camera'
-      case 'http_service':
-        return 'HTTP generique'
-      case 'dvrip_probe':
-        return 'Connexion alternative detectee'
-      default:
-        return discoverySource
-    }
-  }
-
-  function formatQualificationReason(reason: string) {
-    switch (reason) {
-      case 'onvif_detected':
-        return 'Annonce ONVIF detectee'
-      case 'http_service_detected':
-        return 'Service web generique detecte'
-      case 'vendor_oui_match':
-        return 'Constructeur probable via MAC/OUI'
-      case 'hostname_camera_hint':
-        return 'Nom reseau evocateur d une camera'
-      case 'rtsp_responding':
-        return 'Port de flux joignable'
-      case 'http_camera_signature':
-        return 'Interface web camera reconnue'
-      case 'rtsp_path_known':
-        return 'Chemin de flux deja connu'
-      case 'vendor_hint_detected':
-        return 'Constructeur probable detecte'
-      case 'mac_address_observed':
-        return 'Adresse MAC observee'
-      case 'dvrip_port_detected':
-        return 'Connexion alternative possible'
-      default:
-        return reason
-    }
-  }
-
   const shouldShowVendorAssistance =
     vendorAssistanceState.loading ||
     Boolean(vendorAssistanceState.error) ||
     Boolean(vendorAssistanceState.data?.markdown)
 
-  function renderSummarySection(options: {
-    address: string
-    vendorFamily: string | null
-    supportedCandidate?: DiscoveryCandidate | null
-    rtspActive: boolean
-  }) {
-    const { address, vendorFamily, supportedCandidate = null, rtspActive } = options
+  // The 3 sections below mirror the backend discovery pipeline's own stages (ADR-32) instead of
+  // an ad-hoc "Resume / Assistance / Informations / Pourquoi" layout grown incrementally: what we
+  // found (identification), what we gathered about it (enrichissement), what it means
+  // (interpretation). Keeping this 1:1 with AssistedCameraDiscoveryProbePipeline /
+  // AssistedCameraDiscoveryIdentifier makes the UI explain itself the same way the backend does.
 
+  function renderIdentificationSection(candidate: DiscoveryCandidate) {
     return (
       <section className="camera-detail-section">
-        <h3>Resume</h3>
+        <h3>1. Identification</h3>
         <dl className="camera-summary-list">
           <div>
             <dt>Adresse</dt>
-            <dd>{address}</dd>
+            <dd>{formatCandidateAddress(candidate)}</dd>
           </div>
+        </dl>
+      </section>
+    )
+  }
+
+  // Pure display: every label/protocol name comes from candidate.technicalDetails.detectedPorts,
+  // which the backend already fully resolved (DiscoveryProtocolCatalog, ADR-32). This component
+  // never hardcodes a protocol name — adding a new probe to the backend catalog is the only change
+  // needed for it to show up here automatically, in the port table and in the stream verdict below.
+  function renderEnrichmentSection(candidate: DiscoveryCandidate) {
+    const technicalDetails = candidate.technicalDetails
+    const detectedPorts = technicalDetails?.detectedPorts ?? []
+    const hasFacts = Boolean(
+      technicalDetails?.resolvedHostName || candidate.macAddress || detectedPorts.length || technicalDetails?.rtspPathsDetected?.length,
+    )
+
+    if (!hasFacts) {
+      return null
+    }
+
+    return (
+      <details className="camera-debug-details">
+        <summary>2. Enrichissement</summary>
+        <div className="camera-debug-content">
+          <dl className="camera-summary-list debug">
+            {technicalDetails?.resolvedHostName ? (
+              <div>
+                <dt>Hostname</dt>
+                <dd>{technicalDetails.resolvedHostName}</dd>
+              </div>
+            ) : null}
+            {candidate.macAddress ? (
+              <div>
+                <dt>MAC</dt>
+                <dd>{candidate.macAddress}</dd>
+              </div>
+            ) : null}
+            {technicalDetails?.rtspPathsDetected?.length ? (
+              <div>
+                <dt>Chemins de flux detectes</dt>
+                <dd>{technicalDetails.rtspPathsDetected.join(', ')}</dd>
+              </div>
+            ) : null}
+          </dl>
+          {detectedPorts.length > 0 ? (
+            <table className="camera-detected-ports">
+              <thead>
+                <tr>
+                  <th>Port</th>
+                  <th>Protocole</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detectedPorts.map((entry) => (
+                  <tr key={`${entry.protocol}-${entry.port}`}>
+                    <td>{entry.port}</td>
+                    <td>{entry.label}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+        </div>
+      </details>
+    )
+  }
+
+  // Kept deliberately minimal: a correctable conclusion (constructeur, always editable — the fix
+  // for "auto-detection got it wrong and I can't change it") plus the capability→protocol map.
+  // Support badge, raw qualification string and "detection retenue" were dropped — they either
+  // duplicated the sidebar badge or exposed internal technical labels with no actionable value.
+  // The "supposition" chips (vendor_hint_detected, hostname_camera_hint, etc.) were removed
+  // entirely: they read as confident findings but are themselves guesses about a guess.
+  //
+  // Pure display: the capability→protocols mapping is decided entirely backend-side by crossing
+  // detected protocols with the capability registry (ADR-32). Naturally many-to-many — a capability
+  // may list several protocols, and a protocol may appear under several capabilities. The frontend
+  // hardcodes no protocol or capability name; it renders exactly what the backend resolved.
+  function renderInterpretationSection(candidate: DiscoveryCandidate) {
+    const capabilities = candidate.technicalDetails?.capabilities ?? []
+
+    return (
+      <section className="camera-detail-section">
+        <h3>3. Interpretation</h3>
+        <dl className="camera-summary-list">
           <div>
             <dt>Constructeur</dt>
-            <dd>{formatVendorFamily(vendorFamily)}</dd>
-          </div>
-          <div>
-            <dt>Connexion active</dt>
             <dd>
-              <span className={`camera-rtsp-badge ${rtspActive ? 'ready' : 'missing'}`}>
-                {rtspActive ? 'Oui' : 'Non'}
-              </span>
-            </dd>
-          </div>
-          <div>
-            <dt>Support</dt>
-            <dd>
-              <span
-                className={`camera-support-badge ${supportBadgeTone(vendorFamily, supportedCandidate)}`}
+              <Select
+                size="sm"
+                value={form.vendorFamily ?? ''}
+                onChange={(event) => updateForm({ vendorFamily: event.target.value || null })}
               >
-                {formatSupportLabel(vendorFamily, supportedCandidate)}
-              </span>
+                <option value="">Non reconnu (choisir si connu)</option>
+                <option value="v380_pro">V380 PRO</option>
+                <option value="tplink_tapo">TP-Link Tapo</option>
+                <option value="icsee">ICSee / XMEye</option>
+              </Select>
             </dd>
           </div>
+          {capabilities.length > 0 ? (
+            capabilities.map((cap) => (
+              <div key={cap.capability}>
+                <dt>{cap.label}</dt>
+                <dd>{cap.protocolLabels.join(', ')}</dd>
+              </div>
+            ))
+          ) : (
+            <div>
+              <dt>Capacites detectees</dt>
+              <dd>Aucune capacite confirmee</dd>
+            </div>
+          )}
         </dl>
       </section>
     )
@@ -757,91 +788,6 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           </div>
         ) : null}
       </section>
-    )
-  }
-
-  function renderTechnicalDetails(
-    candidate: DiscoveryCandidate | null,
-    fallbackHost: string | null = null,
-  ) {
-    const technicalDetails = candidate?.technicalDetails
-    const host = candidate?.host ?? fallbackHost
-
-    return (
-      <details className="camera-debug-details">
-        <summary>Informations</summary>
-        <div className="camera-debug-content">
-          <dl className="camera-summary-list debug">
-            <div>
-              <dt>IP</dt>
-              <dd>{formatMutedValue(host)}</dd>
-            </div>
-            <div>
-              <dt>Hostname</dt>
-              <dd>{formatMutedValue(technicalDetails?.resolvedHostName)}</dd>
-            </div>
-            <div>
-              <dt>MAC</dt>
-              <dd>{formatMutedValue(candidate?.macAddress)}</dd>
-            </div>
-            <div>
-              <dt>Constructeur</dt>
-              <dd>{formatOptionalVendor(candidate?.vendorFamily ?? null)}</dd>
-            </div>
-            <div>
-              <dt>Ports HTTP detectes</dt>
-              <dd>{formatMutedList(technicalDetails?.httpPortsDetected)}</dd>
-            </div>
-            <div>
-              <dt>Ports ONVIF detectes</dt>
-              <dd>{formatMutedList(technicalDetails?.onvifPortsDetected)}</dd>
-            </div>
-            <div>
-              <dt>Ports flux detectes</dt>
-              <dd>{formatMutedList(technicalDetails?.rtspPortsDetected)}</dd>
-            </div>
-            <div>
-              <dt>Chemins de flux detectes</dt>
-              <dd>{formatMutedList(technicalDetails?.rtspPathsDetected)}</dd>
-            </div>
-          </dl>
-        </div>
-      </details>
-    )
-  }
-
-  function renderConfidenceDetails(candidate: DiscoveryCandidate | null) {
-    if (!candidate) {
-      return null
-    }
-
-    return (
-      <details className="camera-debug-details camera-confidence-details">
-        <summary>Pourquoi cette camera est proposee</summary>
-        <div className="camera-debug-content">
-          <dl className="camera-summary-list debug">
-            <div>
-              <dt>Detection retenue</dt>
-              <dd>{formatMutedValue(formatDiscoverySource(candidate.discoverySource))}</dd>
-            </div>
-            <div>
-              <dt>Niveau de confiance</dt>
-              <dd>{formatMutedValue(candidate.qualification)}</dd>
-            </div>
-          </dl>
-          <div className="camera-confidence-signals">
-            {candidate.qualificationReasons.length > 0 ? (
-              candidate.qualificationReasons.map((reason) => (
-                <span key={reason} className="camera-confidence-chip">
-                  {formatQualificationReason(reason)}
-                </span>
-              ))
-            ) : (
-              <span className="camera-confidence-empty">Aucun indice detaille</span>
-            )}
-          </div>
-        </div>
-      </details>
     )
   }
 
@@ -998,15 +944,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
 
               <div className="camera-detail-sections">
                 {selectedCandidate ? (
-                  renderSummarySection({
-                    address: formatCandidateAddress(selectedCandidate),
-                    vendorFamily: selectedCandidate.vendorFamily,
-                    supportedCandidate: selectedCandidate,
-                    rtspActive: Boolean(selectedCandidate.streamPath),
-                  })
+                  renderIdentificationSection(selectedCandidate)
                 ) : (
                   <section className="camera-detail-section">
-                    <h3>Resume</h3>
+                    <h3>1. Identification</h3>
                     <p className="camera-section-copy">
                       Renseignez les informations minimales de la camera. La detection automatique
                       reste optionnelle.
@@ -1064,10 +1005,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   </section>
                 ) : null}
 
+                {selectedCandidate ? renderEnrichmentSection(selectedCandidate) : null}
+                {selectedCandidate ? renderInterpretationSection(selectedCandidate) : null}
                 {renderVendorAssistanceSection()}
-
-                {selectedCandidate ? renderConfidenceDetails(selectedCandidate) : null}
-                {selectedCandidate ? renderTechnicalDetails(selectedCandidate) : null}
               </div>
 
               {selectedCandidate ? (
@@ -1155,6 +1095,20 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         onChange={(event) => updateForm({ password: event.target.value || null })}
                       />
                     </label>
+                    {selection.kind === 'manual' ? (
+                      <label>
+                        <span>Marque (si non reconnue automatiquement)</span>
+                        <Select
+                          value={form.vendorFamily ?? ''}
+                          onChange={(event) => updateForm({ vendorFamily: event.target.value || null })}
+                        >
+                          <option value="">Detection automatique</option>
+                          <option value="v380_pro">V380 PRO</option>
+                          <option value="tplink_tapo">TP-Link Tapo</option>
+                          <option value="icsee">ICSee / XMEye</option>
+                        </Select>
+                      </label>
+                    ) : null}
                   </div>
 
                   <div className="panel-cta-row">
@@ -1499,6 +1453,7 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
           title="Scanner le réseau"
           body="Vyzio va sonder l'ensemble de votre réseau local à la recherche de caméras IP. Cette opération peut prendre entre 15 et 30 secondes et génère du trafic réseau."
           confirmLabel="Lancer le scan"
+          tone="confirm"
           onConfirm={async () => {
             setConfirmScan(false)
             await handleDiscovery()

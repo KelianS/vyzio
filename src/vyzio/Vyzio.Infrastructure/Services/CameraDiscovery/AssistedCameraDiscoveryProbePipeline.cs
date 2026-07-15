@@ -10,12 +10,17 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
+// ADR-32 — implements Stage 1 (identification, see IdentifyHostsAsync/PingSweepAsync) and
+// Stage 2 (enrichment, see the Discover*SignalsAsync methods) of the discovery pipeline.
+// Stage 3 (interpretation — vendor family, qualification, support level) is deliberately not
+// done here: it lives in AssistedCameraDiscoveryIdentifier/AssistedCameraDiscoveryFormatter, so
+// this class only ever produces raw, structured facts (RawCameraDiscoverySignal), never a guess.
 internal sealed class AssistedCameraDiscoveryProbePipeline
 {
     private static readonly IPAddress DiscoveryAddress = IPAddress.Parse("239.255.255.250");
     private static readonly IPEndPoint DiscoveryEndpoint = new(DiscoveryAddress, 3702);
     private const int MaxConfiguredProbeHosts = 1024;
-    private const int DvripPort = 34567;
+    private const int TapoKlapPort = 80;
 
     private readonly ILogger? _logger;
     private readonly VyzioRuntimeSettings _settings;
@@ -43,26 +48,72 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             string.Join(',', _settings.Discovery.OnvifPorts));
 
         var configuredHosts = BuildConfiguredHostList();
-        _logger?.LogInformation("Built configured discovery host list with {HostCount} host(s).", configuredHosts.Count);
+        _logger?.LogInformation(
+            "Built configured discovery host list: {ExplicitCount} explicit, {SweptCount} swept (CIDR).",
+            configuredHosts.Explicit.Count,
+            configuredHosts.Swept.Count);
 
+        // Stage 1 — Identification: which hosts are worth enriching at all (see IdentifyHostsAsync).
+        var identifiedHosts = await IdentifyHostsAsync(configuredHosts, ct);
+        _logger?.LogInformation(
+            "Stage 1 (identification) resolved {IdentifiedCount} host(s) to enrich: {IdentifiedHosts}",
+            identifiedHosts.Count,
+            string.Join(',', identifiedHosts));
+
+        // ADR-32 correction: identification is a filter on what to enrich, never a filter on what
+        // gets shown. Without this, a host that answers the ping but matches none of Stage 2's
+        // protocols/MAC-OUI/hostname patterns produced zero signals and vanished entirely — the
+        // exact "device found but not recognized" case the backlog asked to keep visible. This
+        // baseline signal guarantees every identified host surfaces at least as device_unknown;
+        // Stage 2 signals for the same host (if any) simply outrank it during the Formatter merge.
+        var identificationSignals = identifiedHosts
+            .Select(host => BuildRawSignal(
+                ToDisplayName(host),
+                host,
+                0,
+                "vendor_probe",
+                null,
+                "network_host",
+                $"Hote {host} present sur le reseau (repond au ping) mais aucun protocole camera connu ni indice constructeur identifie.",
+                null,
+                null,
+                []))
+            .ToList();
+
+        // Stage 2 — Enrichment: gather raw facts (MAC, hostname, protocol handshakes) for each
+        // identified host. ONVIF multicast is self-identifying (the device announces itself) and
+        // runs independently of the identification stage above.
+        // ADR-32: the TCP port sweep is the single source for the detected-ports table and for
+        // most protocol detection (V380 8800, DVRIP 34567, RTSP 554, ONVIF 2020 all have unique
+        // ports). Handshake probes below are kept only where they add more than "port is open":
+        // RTSP DESCRIBE (real stream path), ONVIF/HTTP (vendor hint), Tapo KLAP (port 80 shared
+        // with generic HTTP, so an open port alone can't identify it).
+        var portScanTask = DiscoverPortScanSignalsAsync(identifiedHosts, ct);
         var onvifTask = DiscoverOnvifSignalsAsync(ct);
-        var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(configuredHosts, _settings.Discovery.RtspPorts, ct);
-        var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(configuredHosts, _settings.Discovery.OnvifPorts, ct);
-        var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(configuredHosts, _settings.Discovery.HttpPorts, ct);
-        var hostnameTask = DiscoverHostnameSignalsAsync(configuredHosts, ct);
-        var macTask = DiscoverMacVendorSignalsAsync(configuredHosts, ct);
-        var dvripTask = DiscoverDvripSignalsAsync(configuredHosts, ct);
+        var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(identifiedHosts, _settings.Discovery.RtspPorts, ct);
+        var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(identifiedHosts, _settings.Discovery.OnvifPorts, ct);
+        var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(identifiedHosts, _settings.Discovery.HttpPorts, ct);
+        var hostnameTask = DiscoverHostnameSignalsAsync(identifiedHosts, ct);
+        var macTask = DiscoverMacVendorSignalsAsync(identifiedHosts, ct);
+        var tapoKlapTask = DiscoverTapoKlapSignalsAsync(identifiedHosts, ct);
 
         await Task.WhenAll(
+            portScanTask,
             onvifTask,
             configuredRtspTask,
             configuredOnvifTask,
             configuredHttpTask,
             hostnameTask,
             macTask,
-            dvripTask);
+            tapoKlapTask);
 
         var signals = new List<RawCameraDiscoverySignal>();
+        signals.AddRange(identificationSignals);
+        _logger?.LogInformation("Stage 1 baseline signals added for {CandidateCount} identified host(s).", identificationSignals.Count);
+
+        var portScanSignals = await portScanTask;
+        _logger?.LogInformation("Port scan returned {CandidateCount} open-port signal(s).", portScanSignals.Count);
+        signals.AddRange(portScanSignals);
 
         var onvifSignals = await onvifTask;
         _logger?.LogInformation("ONVIF multicast discovery returned {CandidateCount} candidate(s).", onvifSignals.Count);
@@ -88,13 +139,16 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         _logger?.LogInformation("MAC/OUI discovery returned {CandidateCount} candidate(s).", macSignals.Count);
         signals.AddRange(macSignals);
 
-        var dvripSignals = await dvripTask;
-        _logger?.LogInformation("DVRIP discovery returned {CandidateCount} candidate(s).", dvripSignals.Count);
-        signals.AddRange(dvripSignals);
+        var tapoKlapSignals = await tapoKlapTask;
+        _logger?.LogInformation("Tapo KLAP discovery returned {CandidateCount} candidate(s).", tapoKlapSignals.Count);
+        signals.AddRange(tapoKlapSignals);
 
         return signals;
     }
 
+    // A single named target (e.g. "verify this host" from the manual-add form) is always
+    // enriched directly — Stage 1 (identification) only exists to filter down a blind CIDR
+    // sweep, and never applies to a host the user pointed at explicitly.
     private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverTargetAsync(CameraDiscoveryTarget target, CancellationToken ct)
     {
         var hosts = new[] { target.Host.Trim() };
@@ -108,22 +162,95 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             ? _settings.Discovery.OnvifPorts.Append(target.Port.Value).Distinct().Order().ToArray()
             : _settings.Discovery.OnvifPorts;
 
+        var portScanTask = DiscoverPortScanSignalsAsync(hosts, ct);
         var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(hosts, rtspPorts, ct);
         var configuredOnvifTask = DiscoverConfiguredOnvifSignalsAsync(hosts, onvifPorts, ct);
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(hosts, httpPorts, ct);
         var hostnameTask = DiscoverHostnameSignalsAsync(hosts, ct);
         var macTask = DiscoverMacVendorSignalsAsync(hosts, ct);
-        var dvripTask = DiscoverDvripSignalsAsync(hosts, ct);
+        var tapoKlapTask = DiscoverTapoKlapSignalsAsync(hosts, ct);
 
-        await Task.WhenAll(configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask, dvripTask);
+        await Task.WhenAll(
+            portScanTask, configuredRtspTask, configuredOnvifTask, configuredHttpTask, hostnameTask, macTask, tapoKlapTask);
 
-        return (await configuredRtspTask)
+        return (await portScanTask)
+            .Concat(await configuredRtspTask)
             .Concat(await configuredOnvifTask)
             .Concat(await configuredHttpTask)
             .Concat(await hostnameTask)
             .Concat(await macTask)
-            .Concat(await dvripTask)
+            .Concat(await tapoKlapTask)
             .ToList();
+    }
+
+    // ADR-32 — the "nmap" stage: TCP-connect every port in DiscoveryPortCatalog on each host. An
+    // open port is a fact; what it means comes from the catalog. Camera-signal ports (unique to a
+    // camera protocol) also emit a qualification reason so the host is confirmed as a camera, plus
+    // a protocol-specific reason kept for any downstream consumer (e.g. the DVRIP fallback UI).
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverPortScanSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    {
+        // null → sweep the full catalog (production); [] → disabled (hermetic tests). Only ports
+        // known to the catalog carry a protocol/label, so unknown configured ports are ignored.
+        var scanPorts = (_settings.Discovery.PortScanPorts ?? DiscoveryPortCatalog.Ports)
+            .Select(DiscoveryPortCatalog.Lookup)
+            .Where(def => def is not null)
+            .Select(def => def!)
+            .ToList();
+
+        if (hosts.Count == 0 || scanPorts.Count == 0)
+        {
+            return [];
+        }
+
+        using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
+
+        var tasks =
+            from host in hosts
+            from portDef in scanPorts
+            select ScanPortAsync(host, portDef, gate, ct);
+
+        var probed = await Task.WhenAll(tasks);
+        return probed.Where(signal => signal is not null).Select(signal => signal!).ToList();
+    }
+
+    private async Task<RawCameraDiscoverySignal?> ScanPortAsync(
+        string host, DiscoveryPortCatalog.PortDefinition portDef, SemaphoreSlim gate, CancellationToken ct)
+    {
+        await gate.WaitAsync(ct);
+        try
+        {
+            if (!await CanConnectAsync(host, portDef.Port, _settings.Discovery.ProbeTimeoutMs, ct))
+            {
+                return null;
+            }
+
+            var reasons = new List<string>();
+            if (portDef.CameraSignal)
+            {
+                reasons.Add("camera_port_open");
+                if (portDef.Protocol is { } protocol)
+                {
+                    reasons.Add($"{protocol.ToString().ToLowerInvariant()}_port_detected");
+                }
+            }
+
+            var macAddress = await ResolveMacAddressAsync(host, ct);
+            return BuildRawSignal(
+                ToDisplayName(host),
+                host,
+                portDef.Port,
+                "rtsp_manual",
+                null,
+                "port_scan",
+                $"Port {portDef.Port} ({portDef.Label}) ouvert sur {host}.",
+                macAddress,
+                null,
+                reasons);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     private static async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverOnvifSignalsAsync(CancellationToken ct)
@@ -307,11 +434,16 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             ct.ThrowIfCancellationRequested();
 
             var macAddress = await ResolveMacAddressAsync(host, ct);
-            if (string.IsNullOrWhiteSpace(macAddress) || !AssistedCameraDiscoveryKnownDevices.IsKnownMacVendor(macAddress))
+            if (string.IsNullOrWhiteSpace(macAddress))
             {
                 continue;
             }
 
+            // ADR-31c: a host present in the ARP table but matching no known protocol/OUI/hostname
+            // pattern must still surface (low priority, device_unknown) rather than disappear —
+            // otherwise an unrecognized camera with no locally-exposed protocol (e.g. cloud-only
+            // firmware) is invisible even though it is genuinely reachable on the LAN.
+            var isKnownVendor = AssistedCameraDiscoveryKnownDevices.IsKnownMacVendor(macAddress);
             results.Add(BuildRawSignal(
                 ToDisplayName(host),
                 host,
@@ -319,12 +451,15 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "vendor_probe",
                 null,
                 "mac_vendor_probe",
-                $"Equipement detecte via l'adresse MAC {macAddress}. Les services video ne repondent pas encore ou sont desactives.",
+                isKnownVendor
+                    ? $"Equipement detecte via l'adresse MAC {macAddress}. Les services video ne repondent pas encore ou sont desactives."
+                    : $"Equipement present sur le reseau ({macAddress}) mais aucun protocole camera connu n'a repondu (RTSP/ONVIF/HTTP/DVRIP/V380/Tapo KLAP). Verifiez que l'acces local est active sur l'appareil, ou declarez-le manuellement.",
                 macAddress,
                 null,
-                ["vendor_oui_match"]));
+                isKnownVendor ? ["vendor_oui_match"] : []));
 
-            _logger?.LogDebug("MAC/OUI candidate detected for host {Host}.", host);
+            _logger?.LogDebug(
+                "MAC-visible host {Host} ({VendorState}).", host, isKnownVendor ? "known vendor" : "unrecognized");
         }
 
         return results;
@@ -458,7 +593,9 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverDvripSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    // ADR-31: KLAP handshake1 requires no credentials (only handshake2 does), so a positive
+    // reply is a genuine protocol-level signal, not a guess based on response text.
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverTapoKlapSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
     {
         if (hosts.Count == 0)
         {
@@ -468,7 +605,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var results = new List<RawCameraDiscoverySignal>();
         using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
 
-        var tasks = hosts.Select(host => ProbeDvripHostAsync(host, gate, ct)).ToArray();
+        var tasks = hosts.Select(host => ProbeTapoKlapHostAsync(host, gate, ct)).ToArray();
         var probed = await Task.WhenAll(tasks);
 
         foreach (var candidate in probed)
@@ -482,12 +619,12 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return results;
     }
 
-    private async Task<RawCameraDiscoverySignal?> ProbeDvripHostAsync(string host, SemaphoreSlim gate, CancellationToken ct)
+    private async Task<RawCameraDiscoverySignal?> ProbeTapoKlapHostAsync(string host, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
         try
         {
-            return await ProbeDvripEndpointAsync(host, DvripPort, _settings.Discovery.ProbeTimeoutMs, ct);
+            return await ProbeTapoKlapEndpointAsync(host, TapoKlapPort, _settings.Discovery.ProbeTimeoutMs, ct);
         }
         finally
         {
@@ -495,7 +632,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<RawCameraDiscoverySignal?> ProbeDvripEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private static async Task<RawCameraDiscoverySignal?> ProbeTapoKlapEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
@@ -505,15 +642,28 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
             await client.ConnectAsync(host, port, timeout.Token);
 
+            var seed = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+            var body = $"POST /app/handshake1 HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/octet-stream\r\nContent-Length: {seed.Length}\r\nConnection: close\r\n\r\n";
+            var header = Encoding.ASCII.GetBytes(body);
+
             using var stream = client.GetStream();
-            await stream.WriteAsync(BuildDvripProbePacket(), timeout.Token);
+            await stream.WriteAsync(header, timeout.Token);
+            await stream.WriteAsync(seed, timeout.Token);
             await stream.FlushAsync(timeout.Token);
 
             var buffer = new byte[512];
             var read = await stream.ReadAsync(buffer, timeout.Token);
+            var response = Encoding.UTF8.GetString(buffer, 0, read);
 
-            // All XMEye/DVRIP responses start with 0xFF magic byte
-            if (read < 1 || buffer[0] != 0xFF)
+            if (!response.StartsWith("HTTP/", StringComparison.OrdinalIgnoreCase) || !response.Contains(" 200"))
+            {
+                return null;
+            }
+
+            // Body must carry the 16-byte server seed + 32-byte server hash (KLAP handshake1 reply).
+            var bodyStart = response.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+            var bodyLength = bodyStart >= 0 ? read - (bodyStart + 4) : 0;
+            if (bodyLength < 48)
             {
                 return null;
             }
@@ -522,14 +672,14 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             return BuildRawSignal(
                 ToDisplayName(host),
                 host,
-                554,
+                port,
                 "rtsp_manual",
                 null,
-                "dvrip_probe",
-                $"Protocole DVRIP/XMEye detecte sur {host}:{port}. Ce protocole est utilise par les cameras ICSee, Annke, Sannce et autres OEM Xiongmai. Le flux RTSP peut ne pas etre disponible ; une integration via go2rtc est possible.",
+                "tapo_klap_probe",
+                $"Protocole Tapo KLAP detecte sur {host}:{port}. Utilise par les cameras TP-Link Tapo (pilotage local).",
                 macAddress,
                 null,
-                ["dvrip_port_detected"]);
+                ["tapo_klap_detected"]);
         }
         catch
         {
@@ -537,60 +687,105 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static byte[] BuildDvripProbePacket()
-    {
-        // DVRIP/XMEye binary protocol — login request (msgId 0x03E8 = 1000)
-        // Header: [FF][01][00 00][sessionId 4B LE][seqNo 4B LE][00][00][msgId 2B LE][dataLen 4B LE]
-        var json = Encoding.UTF8.GetBytes("{\"EncryptType\":\"MD5\",\"LoginType\":\"DVRIP\",\"PassWord\":\"tlJwpbo6\",\"UserName\":\"admin\"}");
-        var packet = new byte[20 + json.Length];
-        packet[0] = 0xFF; // magic
-        packet[1] = 0x01; // version
-        packet[14] = 0xE8; packet[15] = 0x03; // msgId 1000 LE
-        packet[16] = (byte)(json.Length & 0xFF);
-        packet[17] = (byte)(json.Length >> 8);
-        Buffer.BlockCopy(json, 0, packet, 20, json.Length);
-        return packet;
-    }
+    // ADR-32 — Stage 1 (identification) input: hosts named explicitly by configuration are never
+    // gated behind a liveness check (the admin/user pointed at them directly), while CIDR-swept
+    // hosts (auto-enumerated ranges) are numerous and unqualified — those go through the ping
+    // sweep before anything else is attempted against them.
+    private sealed record ConfiguredHosts(IReadOnlyList<string> Explicit, IReadOnlyList<string> Swept);
 
-    private IReadOnlyList<string> BuildConfiguredHostList()
+    private ConfiguredHosts BuildConfiguredHostList()
     {
-        var hosts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
+        var explicitHosts = new List<string>();
+        var explicitSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var host in _settings.Discovery.ProbeHosts)
         {
-            hosts.Add(host);
-        }
-
-        foreach (var cidr in _settings.Discovery.ProbeCidrs)
-        {
-            foreach (var host in EnumerateHosts(cidr))
+            if (explicitSeen.Add(host))
             {
-                if (hosts.Count >= MaxConfiguredProbeHosts)
-                {
-                    return hosts.ToList();
-                }
-
-                hosts.Add(host);
+                explicitHosts.Add(host);
             }
         }
 
-        if (_settings.Discovery.AutoDetectLocalCidrs)
+        var sweptHosts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddSweptHosts(IEnumerable<string> cidrs)
         {
-            foreach (var cidr in DetectLocalCidrs())
+            foreach (var cidr in cidrs)
             {
                 foreach (var host in EnumerateHosts(cidr))
                 {
-                    if (hosts.Count >= MaxConfiguredProbeHosts)
+                    if (explicitSeen.Count + sweptHosts.Count >= MaxConfiguredProbeHosts)
                     {
-                        return hosts.ToList();
+                        return;
                     }
 
-                    hosts.Add(host);
+                    if (!explicitSeen.Contains(host))
+                    {
+                        sweptHosts.Add(host);
+                    }
                 }
             }
         }
 
-        return hosts.ToList();
+        AddSweptHosts(_settings.Discovery.ProbeCidrs);
+
+        if (_settings.Discovery.AutoDetectLocalCidrs)
+        {
+            AddSweptHosts(DetectLocalCidrs());
+        }
+
+        return new ConfiguredHosts(explicitHosts, sweptHosts.ToList());
+    }
+
+    // ADR-32 — Stage 1 (identification): decide which hosts are worth enriching at all, before
+    // any protocol-specific probe runs. Explicit hosts always pass through. Swept (CIDR) hosts
+    // are filtered by an ICMP ping first — trying every protocol probe against every address in
+    // a /24 is wasteful, and a ping reply is enough evidence a host exists to justify enriching it.
+    private async Task<IReadOnlyList<string>> IdentifyHostsAsync(ConfiguredHosts configured, CancellationToken ct)
+    {
+        var liveSwept = await PingSweepAsync(configured.Swept, ct);
+
+        // Safety net: if every swept host failed to answer, ICMP is more likely blocked/
+        // unavailable in this deployment (e.g. a container without CAP_NET_RAW) than "no device
+        // exists" on the whole range — fall back to the unfiltered list so a broken ping sweep
+        // never regresses below the previous, unfiltered coverage.
+        var effectiveSwept = liveSwept.Count == 0 && configured.Swept.Count > 0 ? configured.Swept : liveSwept;
+
+        return configured.Explicit
+            .Concat(effectiveSwept)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task<IReadOnlyList<string>> PingSweepAsync(IReadOnlyList<string> hosts, CancellationToken ct)
+    {
+        if (hosts.Count == 0)
+        {
+            return [];
+        }
+
+        using var gate = new SemaphoreSlim(_settings.Discovery.MaxConcurrentProbes);
+        var tasks = hosts.Select(host => PingHostAsync(host, gate, ct)).ToArray();
+        var results = await Task.WhenAll(tasks);
+        return results.Where(host => host is not null).Select(host => host!).ToList();
+    }
+
+    private async Task<string?> PingHostAsync(string host, SemaphoreSlim gate, CancellationToken ct)
+    {
+        await gate.WaitAsync(ct);
+        try
+        {
+            using var ping = new Ping();
+            var reply = await ping.SendPingAsync(host, _settings.Discovery.ProbeTimeoutMs);
+            return reply.Status == IPStatus.Success ? host : null;
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     private static IReadOnlyList<string> DetectLocalCidrs()

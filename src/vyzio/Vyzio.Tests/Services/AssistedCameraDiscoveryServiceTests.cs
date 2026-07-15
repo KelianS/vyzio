@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
 
@@ -35,8 +36,11 @@ public class AssistedCameraDiscoveryServiceTests
                 ProbeHosts = ["127.0.0.1"],
                 RtspPorts = [port],
                 RtspPaths = ["/stream1"],
+                HttpPorts = [],
+                OnvifPorts = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -53,8 +57,9 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("/stream1", candidate.StreamPath);
         Assert.Null(candidate.MacAddress);
         Assert.NotNull(candidate.TechnicalDetails);
-        Assert.Equal([port], candidate.TechnicalDetails!.RtspPortsDetected);
-        Assert.Equal(["/stream1"], candidate.TechnicalDetails.RtspPathsDetected);
+        // The detected-ports table is sourced from the catalog port sweep (fixed ports), not from
+        // the RTSP DESCRIBE probe's random test port — so it's the stream path that's asserted here.
+        Assert.Equal(["/stream1"], candidate.TechnicalDetails!.RtspPathsDetected);
     }
 
     [Fact]
@@ -76,6 +81,7 @@ public class AssistedCameraDiscoveryServiceTests
                 RtspPaths = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -132,6 +138,7 @@ public class AssistedCameraDiscoveryServiceTests
                 HttpPorts = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -192,6 +199,7 @@ public class AssistedCameraDiscoveryServiceTests
                 HttpPorts = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -236,6 +244,7 @@ public class AssistedCameraDiscoveryServiceTests
                 HttpPorts = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -281,6 +290,7 @@ public class AssistedCameraDiscoveryServiceTests
                 OnvifPorts = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -295,6 +305,10 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
     }
 
+    // ADR-32: an identified host that matches no protocol/vendor signal no longer disappears —
+    // it now surfaces as a device_unknown "network_host" baseline candidate (backlog: "show
+    // everything found, even unmatched, at lower priority"). This replaces the old expectation
+    // that a rejected SOAP gateway produced literally zero output.
     [Fact]
     public async Task DiscoverAsync_does_not_treat_generic_soap_gateway_as_onvif_camera()
     {
@@ -325,6 +339,7 @@ public class AssistedCameraDiscoveryServiceTests
                 OnvifPorts = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -333,7 +348,10 @@ public class AssistedCameraDiscoveryServiceTests
         var result = await sut.DiscoverAsync();
         await serverTask;
 
-        Assert.Empty(result);
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
+        Assert.Equal("network_host", candidate.DiscoverySource);
+        Assert.Equal("device_unknown", candidate.Qualification);
+        Assert.DoesNotContain("onvif_detected", candidate.QualificationReasons);
     }
 
     [Fact]
@@ -350,6 +368,7 @@ public class AssistedCameraDiscoveryServiceTests
                 OnvifPorts = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -383,6 +402,7 @@ public class AssistedCameraDiscoveryServiceTests
                 OnvifPorts = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -425,6 +445,7 @@ public class AssistedCameraDiscoveryServiceTests
                 OnvifPorts = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -497,6 +518,7 @@ public class AssistedCameraDiscoveryServiceTests
                 HttpPorts = [httpPort],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -548,6 +570,7 @@ public class AssistedCameraDiscoveryServiceTests
                 HttpPorts = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
+                PortScanPorts = [],
             }
         };
 
@@ -562,5 +585,129 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("camera_confirmed", result[0].Qualification);
         Assert.Equal("c200-camera-tapo.lan", result[1].Host);
         Assert.Equal("camera_likely", result[1].Qualification);
+    }
+
+    // ADR-32: identification (Stage 1) is only a filter on what to enrich, never a filter on
+    // what gets shown — a host with zero matching protocol/MAC/hostname signal must still surface
+    // as device_unknown rather than vanish (this was the actual bug behind "plenty of devices are
+    // still missing, not even shown as unidentified").
+    [Fact]
+    public async Task DiscoverAsync_returns_network_host_baseline_for_identified_host_with_no_matching_signal()
+    {
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [],
+                RtspPaths = [],
+                HttpPorts = [],
+                OnvifPorts = [],
+                ProbeTimeoutMs = 200,
+                MaxConcurrentProbes = 1,
+                PortScanPorts = [],
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
+        Assert.Equal("network_host", candidate.DiscoverySource);
+        Assert.Equal("device_unknown", candidate.Qualification);
+        Assert.Empty(candidate.QualificationReasons);
+    }
+
+    // A baseline network_host signal must never win a merge against a real detection for the
+    // same host, however weak that detection is (regression guard for the priority ordering bug
+    // found while implementing the fix above).
+    [Fact]
+    public async Task DiscoverAsync_network_host_baseline_never_overrides_a_real_signal_for_same_host()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (!stopServer.IsCancellationRequested)
+                {
+                    using var client = await listener.AcceptTcpClientAsync(stopServer.Token);
+                    using var stream = client.GetStream();
+                    var buffer = new byte[1024];
+                    _ = await stream.ReadAsync(buffer, stopServer.Token);
+
+                    var payload = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
+                    var bytes = Encoding.UTF8.GetBytes(payload);
+                    await stream.WriteAsync(bytes, stopServer.Token);
+                    await stream.FlushAsync(stopServer.Token);
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [],
+                HttpPorts = [port],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+                PortScanPorts = [],
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
+        Assert.Equal("http_service", candidate.DiscoverySource);
+    }
+
+    // ADR-32: the "nmap" port sweep. An open catalog port (here 34567 = DVRIP) must surface the
+    // host as a confirmed camera with a Port|Protocol enrichment row — no protocol handshake
+    // needed. This is exactly what fixed V380 (8800 TCP) where the UDP discovery was unreliable.
+    [Fact]
+    public async Task DiscoverAsync_port_sweep_detects_camera_from_open_catalog_port()
+    {
+        const int dvripPort = 34567;
+        using var listener = new TcpListener(IPAddress.Loopback, dvripPort);
+        listener.Start();
+        using var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var acceptTask = listener.AcceptTcpClientAsync(acceptCts.Token).AsTask();
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [],
+                HttpPorts = [],
+                OnvifPorts = [],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+                PortScanPorts = [dvripPort],
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        var port = Assert.Single(candidate.TechnicalDetails!.DetectedPorts);
+        Assert.Equal(dvripPort, port.Port);
+        Assert.Equal("DVRIP", port.Label);
+        Assert.Equal("Dvrip", port.Protocol);
     }
 }

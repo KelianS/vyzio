@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useToast } from './Toast'
 import { Btn } from './Btn'
+import { Select } from './Select'
 import { appErrorMessage } from '../../domain/errors/AppError'
 import { toAppError } from '../../domain/errors/toAppError'
 import type { CorrectDetectionIdentity } from '../../application/use-cases/CorrectDetectionIdentity'
@@ -211,7 +212,7 @@ export function DetectionHistoryView({
 
           <div className="camera-form-field">
             <label>Type</label>
-            <select
+            <Select
               value={filterLabel}
               onChange={(e) => {
                 setFilterLabel(e.target.value)
@@ -224,12 +225,12 @@ export function DetectionHistoryView({
                   {emoji} {displayName}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="camera-form-field">
             <label>Profil</label>
-            <select
+            <Select
               value={filterProfileId}
               onChange={(e) => {
                 setFilterProfileId(e.target.value)
@@ -242,7 +243,7 @@ export function DetectionHistoryView({
                   {p.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="camera-form-field">
@@ -445,10 +446,10 @@ function EventRow({
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                <select
+                <Select
+                  size="sm"
                   value={selectedProfileId}
                   onChange={(e) => setSelectedProfileId(e.target.value)}
-                  style={{ fontSize: '0.82rem', padding: '2px 4px' }}
                 >
                   <option value="">Inconnu</option>
                   {profiles.map((p) => (
@@ -456,7 +457,7 @@ function EventRow({
                       {p.name}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <Btn variant="primary" size="sm" loading={correcting} onClick={handleApply}>
                   OK
                 </Btn>

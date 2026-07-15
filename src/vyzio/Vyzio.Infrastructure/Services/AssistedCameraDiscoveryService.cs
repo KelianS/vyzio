@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Text.RegularExpressions;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -15,11 +14,19 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
     private readonly ILogger<AssistedCameraDiscoveryService>? _logger;
     private readonly AssistedCameraDiscoveryProbePipeline _probePipeline;
     private readonly VyzioRuntimeSettings _settings;
+    private readonly ICapabilityProviderRegistry? _capabilityRegistry;
 
-    public AssistedCameraDiscoveryService(VyzioRuntimeSettings settings, ILogger<AssistedCameraDiscoveryService>? logger = null)
+    // capabilityRegistry is optional so the discovery tests can construct the service without the
+    // full DI graph; in production DI always injects it, and it's the single source for which
+    // protocol serves which capability (ADR-32). Null → the Capabilities interpretation is empty.
+    public AssistedCameraDiscoveryService(
+        VyzioRuntimeSettings settings,
+        ICapabilityProviderRegistry? capabilityRegistry = null,
+        ILogger<AssistedCameraDiscoveryService>? logger = null)
     {
         _settings = settings;
         _logger = logger;
+        _capabilityRegistry = capabilityRegistry;
         _probePipeline = new AssistedCameraDiscoveryProbePipeline(settings, logger);
         _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
@@ -49,14 +56,17 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         var resolvedHostNames = await ResolveDisplayedHostNamesAsync(candidates, signalsByHost, ct);
 
         return candidates
-            .Select(candidate => candidate with
+            .Select(candidate =>
             {
-                TechnicalDetails = new DiscoveryTechnicalDetails(
-                    resolvedHostNames.GetValueOrDefault(candidate.Host),
-                    GetDetectedPorts(signalsByHost, candidate.Host, IsHttpSignal),
-                    GetDetectedPorts(signalsByHost, candidate.Host, IsRtspSignal),
-                    GetDetectedOnvifPorts(signalsByHost, candidate.Host),
-                    GetDetectedRtspPaths(signalsByHost, candidate.Host))
+                var detectedPorts = GetDetectedPorts(signalsByHost, candidate.Host);
+                return candidate with
+                {
+                    TechnicalDetails = new DiscoveryTechnicalDetails(
+                        resolvedHostNames.GetValueOrDefault(candidate.Host),
+                        detectedPorts,
+                        GetDetectedRtspPaths(signalsByHost, candidate.Host),
+                        GetDetectedCapabilities(signalsByHost, candidate.Host, detectedPorts))
+                };
             })
             .ToList();
     }
@@ -111,21 +121,9 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         }
     }
 
-    private static IReadOnlyList<int> GetDetectedPorts(
-        IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
-        string host,
-        Func<RawCameraDiscoverySignal, bool> predicate)
-        => !signalsByHost.TryGetValue(host, out var signals)
-            ? []
-            : signals
-                .Where(predicate)
-                .Select(signal => signal.Port)
-                .Where(port => port > 0)
-                .Distinct()
-                .Order()
-                .ToArray();
-
-    private static IReadOnlyList<int> GetDetectedOnvifPorts(
+    // The detected-ports table is sourced only from the port sweep ("port_scan" signals), mapped
+    // to protocol/label via DiscoveryPortCatalog (ADR-32) — the single place port knowledge lives.
+    private static IReadOnlyList<DetectedPortSignal> GetDetectedPorts(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
         string host)
     {
@@ -135,13 +133,88 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         }
 
         return signals
-            .Where(IsOnvifSignal)
-            .Select(GetOnvifPort)
-            .Where(port => port > 0)
+            .Where(signal => signal.DiscoverySource == "port_scan" && signal.Port > 0)
+            .Select(signal => (Def: DiscoveryPortCatalog.Lookup(signal.Port), signal.Port))
+            .Where(entry => entry.Def is not null)
+            .Select(entry => new DetectedPortSignal(
+                entry.Def!.Protocol?.ToString() ?? entry.Def.Label.ToLowerInvariant(), entry.Def.Label, entry.Port))
             .Distinct()
-            .Order()
-            .ToArray();
+            .OrderBy(entry => entry.Port)
+            .ToList();
     }
+
+    // ADR-32: which capabilities the host supports, crossing the protocols actually detected on it
+    // with ICapabilityProviderRegistry.GetRegisteredProtocols(capability). Naturally many-to-many
+    // — Stream is a first-class capability here (RTSP/DVRIP providers), so it needs no special case.
+    private IReadOnlyList<DetectedCapability> GetDetectedCapabilities(
+        IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
+        string host,
+        IReadOnlyList<DetectedPortSignal> detectedPorts)
+    {
+        if (_capabilityRegistry is null || !signalsByHost.TryGetValue(host, out var signals))
+        {
+            return [];
+        }
+
+        // Protocols proven on this host: from open ports (via the port catalog) and from handshake
+        // sources that identify a protocol on a shared port (ONVIF/KLAP, via the protocol catalog).
+        var detectedProtocols = new HashSet<SupportedProtocol>();
+        foreach (var port in detectedPorts)
+        {
+            if (DiscoveryPortCatalog.Lookup(port.Port)?.Protocol is { } p)
+            {
+                detectedProtocols.Add(p);
+            }
+        }
+        foreach (var signal in signals)
+        {
+            if (DiscoveryProtocolCatalog.Lookup(signal.DiscoverySource)?.CapabilityProtocol is { } p)
+            {
+                detectedProtocols.Add(p);
+            }
+        }
+
+        if (detectedProtocols.Count == 0)
+        {
+            return [];
+        }
+
+        var result = new List<DetectedCapability>();
+        foreach (var capability in Enum.GetValues<CameraCapability>())
+        {
+            var available = _capabilityRegistry.GetRegisteredProtocols(capability)
+                .Where(detectedProtocols.Contains)
+                .ToList();
+            if (available.Count > 0)
+            {
+                result.Add(new DetectedCapability(
+                    capability.ToString(),
+                    FormatCapabilityLabel(capability),
+                    available.Select(FormatProtocolLabel).ToList()));
+            }
+        }
+
+        return result;
+    }
+
+    private static string FormatCapabilityLabel(CameraCapability capability) => capability switch
+    {
+        CameraCapability.Stream => "Flux vidéo",
+        CameraCapability.Ptz => "PTZ",
+        CameraCapability.HardwarePrivacy => "Confidentialité matérielle",
+        CameraCapability.ImageSettings => "Réglages image",
+        _ => capability.ToString(),
+    };
+
+    private static string FormatProtocolLabel(SupportedProtocol protocol) => protocol switch
+    {
+        SupportedProtocol.Rtsp => "RTSP",
+        SupportedProtocol.Onvif => "ONVIF",
+        SupportedProtocol.Dvrip => "DVRIP",
+        SupportedProtocol.V380 => "V380",
+        SupportedProtocol.TapoKlap => "Tapo KLAP",
+        _ => protocol.ToString(),
+    };
 
     private static IReadOnlyList<string> GetDetectedRtspPaths(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
@@ -154,31 +227,4 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToArray()!;
-
-    private static bool IsHttpSignal(RawCameraDiscoverySignal signal)
-        => signal.DiscoverySource is "http_probe" or "http_service";
-
-    private static bool IsRtspSignal(RawCameraDiscoverySignal signal)
-        => signal.DiscoverySource is "rtsp_describe" or "network_scan";
-
-    private static bool IsOnvifSignal(RawCameraDiscoverySignal signal)
-        => signal.DiscoverySource is "onvif" or "onvif_unicast";
-
-    private static int GetOnvifPort(RawCameraDiscoverySignal signal)
-    {
-        if (signal.DiscoverySource == "onvif_unicast")
-        {
-            return signal.Port;
-        }
-
-        if (string.IsNullOrWhiteSpace(signal.Note))
-        {
-            return 0;
-        }
-
-        var match = Regex.Match(signal.Note, $@"{Regex.Escape(signal.Host)}:(\d+)", RegexOptions.IgnoreCase);
-        return match.Success && int.TryParse(match.Groups[1].Value, out var port)
-            ? port
-            : 0;
-    }
 }
