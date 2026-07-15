@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -47,30 +45,14 @@ internal sealed class V380PtzProvider(
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        // Pre-load from ConfigJson — allows re-probe without discovery.
-        if (TryReadDeviceId(binding.ConfigJson, out var storedId))
-            client.PreloadDeviceId(camera.Host, storedId);
-
-        // Bootstrap via ONVIF serial if device ID not yet known.
-        // ONVIF serial bytes[2..5] BE = V380 device ID.
-        // Confirmed: serial "9609019b8ae5" → 0x019B8AE5 = 26970853.
-        if (client.GetCachedDeviceId(camera.Host) is null)
-        {
-            var onvifId = await TryGetDeviceIdViaOnvifSerialAsync(camera, ct);
-            if (onvifId.HasValue)
-                client.PreloadDeviceId(camera.Host, onvifId.Value);
-        }
+        await V380DeviceIdBootstrap.PreloadAsync(camera, binding, client, onvif, ct);
 
         var success = await client.ProbeAsync(camera, ct);
 
         // Persist the discovered deviceId so future PTZ commands work without discovery.
         // (The use case layer calls binding.SaveAsync after ProbeAsync returns.)
         if (success)
-        {
-            var discoveredId = client.GetCachedDeviceId(camera.Host);
-            if (discoveredId.HasValue)
-                binding.ConfigJson = JsonSerializer.Serialize(new { device_id = discoveredId.Value });
-        }
+            V380DeviceIdBootstrap.PersistIfDiscovered(binding, client, camera.Host);
 
         return success;
     }
@@ -80,7 +62,7 @@ internal sealed class V380PtzProvider(
     // Also updates the virtual position tracker for Branch B preset management (ADR-25).
     public async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
-        if (TryReadDeviceId(binding.ConfigJson, out var storedId))
+        if (V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
 
         try
@@ -109,7 +91,7 @@ internal sealed class V380PtzProvider(
     // Falls back to HomingSteps (200) when position is unknown (first calibration after restart).
     public async Task PtzHomingStepsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        if (TryReadDeviceId(binding.ConfigJson, out var storedId))
+        if (V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
 
         var current = positionTracker.Get(camera.Id);
@@ -145,35 +127,6 @@ internal sealed class V380PtzProvider(
 
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
-
-    private async Task<uint?> TryGetDeviceIdViaOnvifSerialAsync(Camera camera, CancellationToken ct)
-    {
-        try
-        {
-            var info = await onvif.GetDeviceInformationAsync(camera, ct);
-            if (info?.SerialNumber is null) return null;
-
-            var bytes = Convert.FromHexString(info.SerialNumber.Trim());
-            if (bytes.Length < 6) return null;
-
-            var deviceId = BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(2, 4));
-            return deviceId == 0 ? null : deviceId;
-        }
-        catch { return null; }
-    }
-
-    private static bool TryReadDeviceId(string? configJson, out uint deviceId)
-    {
-        deviceId = 0;
-        if (string.IsNullOrEmpty(configJson)) return false;
-        try
-        {
-            var doc = JsonDocument.Parse(configJson);
-            return doc.RootElement.TryGetProperty("device_id", out var prop)
-                && prop.TryGetUInt32(out deviceId);
-        }
-        catch { return false; }
-    }
 
     private static (int dx, int dy) DirectionToDelta(PtzDirection direction) => direction switch
     {

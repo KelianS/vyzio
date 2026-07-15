@@ -57,6 +57,12 @@ Remplacez :
 
 **Évolution prévue (v1.0.1-P2) :** Les caméras V380 Pro PTZ supporteront un mode de **parking physique** — la caméra pivotera vers une butée mécanique à l'activation et reviendra à sa position de surveillance à la désactivation.
 
+## Réglages image
+
+**Non garanti selon le modèle — pas proposé automatiquement.** Vyzio sait piloter les réglages image via le service ONVIF Imaging (luminosité, contraste, saturation, netteté, vision nocturne), mais un test réel (2026-07-14) a confirmé qu'un boîtier V380 Pro renvoie une erreur ONVIF explicite (« GetImagingSettings not implemented ») — ce firmware n'implémente pas ce service, ce n'est pas un problème réseau. Cette capacité n'est donc plus suggérée automatiquement à l'ajout.
+
+Si vous pensez que votre unité est différente, vous pouvez tenter de la configurer manuellement depuis la fiche caméra (bouton **+** dans la section Capacités, protocole ONVIF) — elle ne sera activée que si le test réel réussit.
+
 ## Liens utiles
 
 - [Telecharger le fichier ceshi.ini](/api/cameras/vendor-assets/ceshi.ini)

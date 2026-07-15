@@ -1,4 +1,4 @@
-export type Capability = 'ptz' | 'hardware_privacy'
+export type Capability = 'ptz' | 'hardware_privacy' | 'image_settings'
 export type SupportedProtocol = 'onvif' | 'dvrip' | 'tapo_klap' | 'v380' | 'rtsp'
 
 export interface CameraCapabilityBinding {

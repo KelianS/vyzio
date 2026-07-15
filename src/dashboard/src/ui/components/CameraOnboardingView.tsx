@@ -47,6 +47,7 @@ import { DetectionConfigSection } from './DetectionConfigSection'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { CapabilitySection } from './CapabilitySection'
 import { PtzPresetsSection } from './PtzPresetsSection'
+import { ImageSettingsPanel } from './ImageSettingsPanel'
 
 interface CameraOnboardingViewProps {
   getCameras: GetCameras
@@ -1245,6 +1246,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       ptzCalibrate={props.ptzCalibrate}
                       capturePtzPresetThumbnail={props.capturePtzPresetThumbnail}
                     />
+                  )}
+
+                  {selectedCamera.verifiedCapabilities.includes('image_settings') && (
+                    <ImageSettingsPanel camera={selectedCamera} offline={cameraOffline} />
                   )}
 
                   <details className="camera-detail-section camera-connection-details">

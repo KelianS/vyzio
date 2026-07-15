@@ -9,13 +9,16 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
 {
     private readonly IReadOnlyDictionary<SupportedProtocol, IPtzCapabilityProvider> _ptzProviders;
     private readonly IReadOnlyDictionary<SupportedProtocol, IPrivacyCapabilityProvider> _privacyProviders;
+    private readonly IReadOnlyDictionary<SupportedProtocol, IImageSettingsCapabilityProvider> _imageSettingsProviders;
 
     public CapabilityProviderRegistry(
         IEnumerable<IPtzCapabilityProvider> ptzProviders,
-        IEnumerable<IPrivacyCapabilityProvider> privacyProviders)
+        IEnumerable<IPrivacyCapabilityProvider> privacyProviders,
+        IEnumerable<IImageSettingsCapabilityProvider> imageSettingsProviders)
     {
         _ptzProviders = ptzProviders.ToDictionary(p => p.Protocol);
         _privacyProviders = privacyProviders.ToDictionary(p => p.Protocol);
+        _imageSettingsProviders = imageSettingsProviders.ToDictionary(p => p.Protocol);
     }
 
     public IPtzCapabilityProvider ResolvePtz(SupportedProtocol protocol)
@@ -27,4 +30,9 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         => _privacyProviders.TryGetValue(protocol, out var provider)
             ? provider
             : throw new InvalidOperationException($"No IPrivacyCapabilityProvider registered for protocol '{protocol}'.");
+
+    public IImageSettingsCapabilityProvider ResolveImageSettings(SupportedProtocol protocol)
+        => _imageSettingsProviders.TryGetValue(protocol, out var provider)
+            ? provider
+            : throw new InvalidOperationException($"No IImageSettingsCapabilityProvider registered for protocol '{protocol}'.");
 }

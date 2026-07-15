@@ -28,6 +28,11 @@ public class CameraCapabilityBinding
     // Result of the last real probe — never set declaratively.
     public bool Verified { get; set; }
 
+    // True when the protocol was picked explicitly by the user (manual configure/edit path,
+    // ADR-28) rather than seeded from a vendor preset. SeedAndProbePresetsUseCase must never
+    // overwrite a manually-chosen protocol when re-running detection.
+    public bool ManuallyConfigured { get; set; }
+
     public DateTimeOffset? VerifiedAt { get; set; }
 
     public string? LastError { get; set; }

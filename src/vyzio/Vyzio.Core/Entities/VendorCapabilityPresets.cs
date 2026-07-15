@@ -12,16 +12,27 @@ public static class VendorCapabilityPresets
     [
         new VendorCapabilityPreset(VendorFamily.TplinkTapo,
         [
-            (CameraCapability.HardwarePrivacy, SupportedProtocol.TapoKlap),
-            (CameraCapability.Ptz, SupportedProtocol.TapoKlap),
+            (CameraCapability.HardwarePrivacy, new[] { SupportedProtocol.TapoKlap }),
+            (CameraCapability.Ptz, new[] { SupportedProtocol.TapoKlap }),
         ]),
         new VendorCapabilityPreset(VendorFamily.Icsee,
         [
-            (CameraCapability.Ptz, SupportedProtocol.Dvrip),
+            // Some ICSee units also expose ONVIF alongside their native DVRIP stack — try ONVIF
+            // first (richer, standard protocol), fall back to DVRIP (ADR-28).
+            (CameraCapability.Ptz, new[] { SupportedProtocol.Onvif, SupportedProtocol.Dvrip }),
+            // No ONVIF Imaging equivalent confirmed for ICSee — DVRIP only (ADR-29).
+            (CameraCapability.ImageSettings, new[] { SupportedProtocol.Dvrip }),
         ]),
         new VendorCapabilityPreset(VendorFamily.V380Pro,
         [
-            (CameraCapability.Ptz, SupportedProtocol.V380),
+            (CameraCapability.Ptz, new[] { SupportedProtocol.V380 }),
+            // Not preset: ONVIF Imaging returned a definitive SOAP fault on real hardware test
+            // (2026-07-14, "GetImagingSettings not implemented" — firmware genuinely lacks the
+            // service). A native V380 IR-light command was also attempted (ADR-30) and reverted:
+            // its only source (github.com/prsyahmi/v380) never confirmed it worked, and the
+            // camera's own official app has no such setting at all — no path exists to verify it,
+            // so it's not offered rather than shipping a control confirmed to do nothing (ADR-22).
+            // Still addable by hand for a unit that might behave differently.
         ]),
     ];
 

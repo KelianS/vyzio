@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -13,6 +13,7 @@ import {
   getCameraCapabilities,
   configureCameraCapability,
   detectCameraCapabilities,
+  removeCameraCapability,
   updateCamera,
 } from '../../app/dependencies'
 
@@ -25,6 +26,7 @@ interface CapabilitySectionProps {
 const CAPABILITY_LABELS: Record<Capability, string> = {
   ptz: 'PTZ',
   hardware_privacy: 'Vie privée matérielle',
+  image_settings: 'Réglages image',
 }
 
 const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
@@ -54,8 +56,22 @@ const PRIVACY_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
   { value: 'tapo_klap', label: 'Tapo KLAP — cache objectif + LED' },
 ]
 
+const IMAGE_SETTINGS_PROTOCOLS: { value: SupportedProtocol; label: string }[] = [
+  { value: 'onvif', label: 'ONVIF (Hikvision, Dahua, Reolink, V380…)' },
+  { value: 'dvrip', label: 'DVRIP (ICSee / XMEye) — luminosité, contraste, saturation' },
+]
+
+function protocolOptionsFor(capability: Capability) {
+  if (capability === 'ptz') return PTZ_PROTOCOLS
+  if (capability === 'image_settings') return IMAGE_SETTINGS_PROTOCOLS
+  return PRIVACY_PROTOCOLS
+}
+
+const ALL_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
+
 export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
   const { toast } = useToast()
+  const [showManualForm, setShowManualForm] = useState(false)
   const {
     data: bindings,
     loading,
@@ -77,7 +93,12 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     },
   )
 
-  const isUnlisted = !bindings?.some((b) => b.isPreset)
+  // A capacity not already bound (preset or manual) can always be added by hand — even on a
+  // recognized vendor, since a preset only declares what Vyzio *expects*, not an exhaustive
+  // ceiling (e.g. an ICSee unit that also happens to speak ONVIF for image settings).
+  const availableCapabilities = ALL_CAPABILITIES.filter(
+    (c) => !bindings?.some((b) => b.capability === c),
+  )
 
   if (loading) {
     return (
@@ -120,13 +141,33 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
           />
         ))}
 
-        {isUnlisted && !offline && (
-          <ManualCapabilityForm cameraId={camera.id} onDone={handleReload} />
+        {availableCapabilities.length > 0 && !offline && (
+          showManualForm ? (
+            <ManualCapabilityForm
+              cameraId={camera.id}
+              availableCapabilities={availableCapabilities}
+              onDone={() => {
+                setShowManualForm(false)
+                handleReload()
+              }}
+              onCancel={() => setShowManualForm(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              className="capability-manual-form-trigger"
+              title="Configurer une capacité manuellement"
+              aria-label="Configurer une capacité manuellement"
+              onClick={() => setShowManualForm(true)}
+            >
+              +
+            </button>
+          )
         )}
       </div>
 
       <div className="capability-detect-row">
-        <span className="capability-detect-hint">PTZ, vie privée matérielle…</span>
+        <span className="capability-detect-hint">PTZ, vie privée matérielle, réglages image…</span>
         <Btn
           variant="ghost"
           disabled={detectAction.loading || offline}
@@ -153,10 +194,11 @@ interface CapabilityRowProps {
 function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
   const [v380DeviceId, setV380DeviceId] = useState('')
 
-  const protocolOptions = binding.capability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
+  const protocolOptions = protocolOptionsFor(binding.capability)
 
   const configureAction = useAsyncAction(
     () =>
@@ -202,6 +244,16 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
     {
       onSuccess: () => {
         onToast(ptzEnabled ? 'PTZ désactivé.' : 'PTZ activé.', 'success')
+        onDone()
+      },
+    },
+  )
+
+  const removeAction = useAsyncAction(
+    () => removeCameraCapability.execute(camera.id, binding.capability),
+    {
+      onSuccess: () => {
+        onToast(`${CAPABILITY_LABELS[binding.capability]} retiré.`, 'success')
         onDone()
       },
     },
@@ -348,6 +400,11 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             Modifier
           </Btn>
         )}
+        {isConfigured && binding.capability !== 'ptz' && (
+          <Btn variant="danger-outline" onClick={() => setConfirmRemove(true)}>
+            Retirer
+          </Btn>
+        )}
       </div>
 
       {confirmDisable && (
@@ -358,6 +415,17 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           loading={toggleAction.loading}
           onConfirm={() => { setConfirmDisable(false); toggleAction.run() }}
           onCancel={() => setConfirmDisable(false)}
+        />
+      )}
+
+      {confirmRemove && (
+        <ConfirmModal
+          title={`Retirer « ${CAPABILITY_LABELS[binding.capability]} » ?`}
+          description="La configuration de cette capacité sera supprimée. Vous pourrez la reconfigurer à tout moment via le bouton + ."
+          confirmLabel="Retirer"
+          loading={removeAction.loading}
+          onConfirm={() => { setConfirmRemove(false); removeAction.run() }}
+          onCancel={() => setConfirmRemove(false)}
         />
       )}
     </div>
@@ -396,14 +464,26 @@ function ConfirmModal({ title, description, confirmLabel, loading, onConfirm, on
 
 interface ManualCapabilityFormProps {
   cameraId: string
+  availableCapabilities: Capability[]
   onDone: () => void
+  onCancel: () => void
 }
 
-function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
-  const [selectedCapability, setSelectedCapability] = useState<Capability>('ptz')
-  const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>('v380')
+function ManualCapabilityForm({ cameraId, availableCapabilities, onDone, onCancel }: ManualCapabilityFormProps) {
+  const [selectedCapability, setSelectedCapability] = useState<Capability>(availableCapabilities[0])
+  const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>(
+    protocolOptionsFor(availableCapabilities[0])[0].value,
+  )
 
-  const protocolOptions = selectedCapability === 'ptz' ? PTZ_PROTOCOLS : PRIVACY_PROTOCOLS
+  useEffect(() => {
+    if (!availableCapabilities.includes(selectedCapability)) {
+      setSelectedCapability(availableCapabilities[0])
+      setSelectedProtocol(protocolOptionsFor(availableCapabilities[0])[0].value)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableCapabilities])
+
+  const protocolOptions = protocolOptionsFor(selectedCapability)
 
   const configureAction = useAsyncAction(
     () => configureCameraCapability.execute(cameraId, selectedCapability, selectedProtocol),
@@ -421,11 +501,14 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
             onChange={(e) => {
               const cap = e.target.value as Capability
               setSelectedCapability(cap)
-              setSelectedProtocol(cap === 'ptz' ? 'v380' : 'tapo_klap')
+              setSelectedProtocol(protocolOptionsFor(cap)[0].value)
             }}
           >
-            <option value="ptz">PTZ</option>
-            <option value="hardware_privacy">Vie privée matérielle</option>
+            {availableCapabilities.map((cap) => (
+              <option key={cap} value={cap}>
+                {CAPABILITY_LABELS[cap]}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -449,6 +532,9 @@ function ManualCapabilityForm({ cameraId, onDone }: ManualCapabilityFormProps) {
           onClick={() => configureAction.run()}
         >
           Configurer
+        </Btn>
+        <Btn variant="ghost" disabled={configureAction.loading} onClick={onCancel}>
+          Annuler
         </Btn>
       </div>
       <p className="capability-manual-form-hint">

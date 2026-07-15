@@ -7,6 +7,10 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
+// Thrown by PostSoapAsync(throwOnFailure: true) — carries the real HTTP status / SOAP fault
+// reason so it can surface as CameraCapabilityBinding.LastError instead of a generic message.
+public sealed class OnvifCallException(string message, Exception? inner = null) : Exception(message, inner);
+
 public sealed record OnvifDeviceInfo(
     string? Manufacturer,
     string? Model,
@@ -180,6 +184,98 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
         return SendCommandAsync(camera, "ptz_service", body, ct);
     }
 
+    // Returns the VideoSourceConfiguration token of the first media profile — required by the
+    // Imaging service (ADR-27) to scope GetImagingSettings/SetImagingSettings to a video source.
+    public async Task<string> GetVideoSourceTokenAsync(Camera camera, CancellationToken ct)
+    {
+        const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
+        var xml = await PostSoapAsync(camera, "media_service", body, ct,
+            soapAction: "http://www.onvif.org/ver10/media/wsdl/GetProfiles", throwOnFailure: true);
+
+        XDocument doc;
+        try { doc = XDocument.Parse(xml!); }
+        catch (Exception ex) { throw new OnvifCallException($"Réponse ONVIF media_service illisible pour {camera.Host} : {ex.Message}", ex); }
+
+        // SourceToken is a child element of VideoSourceConfiguration (tt:SourceToken), not an
+        // attribute — the "token" attribute on VideoSourceConfiguration is its own config token.
+        var token = doc.Descendants()
+            .FirstOrDefault(e => e.Name.LocalName == "VideoSourceConfiguration")
+            ?.Elements().FirstOrDefault(e => e.Name.LocalName == "SourceToken")?.Value;
+
+        if (string.IsNullOrWhiteSpace(token))
+            throw new OnvifCallException($"La caméra {camera.Host} n'expose pas de VideoSourceConfiguration ONVIF exploitable (profil vide ou non conforme).");
+
+        return token;
+    }
+
+    // Returns current image settings via ONVIF Imaging service. Throws OnvifCallException with a
+    // real diagnostic on failure — this capability's probe must surface why, unlike PTZ/media
+    // calls elsewhere in this client which tolerate silent failure with built-in fallbacks.
+    public async Task<CameraImageSettings?> GetImagingSettingsAsync(Camera camera, string videoSourceToken, CancellationToken ct)
+    {
+        var body = $"""
+            <GetImagingSettings xmlns="http://www.onvif.org/ver20/imaging/wsdl">
+              <VideoSourceToken>{videoSourceToken}</VideoSourceToken>
+            </GetImagingSettings>
+            """;
+        var xml = await PostSoapAsync(camera, "imaging_service", body, ct,
+            soapAction: "http://www.onvif.org/ver20/imaging/wsdl/GetImagingSettings", throwOnFailure: true);
+
+        try
+        {
+            var doc = XDocument.Parse(xml!);
+            int Read(string localName) =>
+                int.TryParse(doc.Descendants().FirstOrDefault(e => e.Name.LocalName == localName)?.Value,
+                    NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? Math.Clamp(v, 0, 100) : 0;
+
+            var irCutRaw = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "IrCutFilter")?.Value;
+            var irCut = irCutRaw switch
+            {
+                "ON" => IrCutMode.On,
+                "OFF" => IrCutMode.Off,
+                _ => IrCutMode.Auto,
+            };
+
+            return new CameraImageSettings(
+                Read("Brightness"),
+                Read("Contrast"),
+                Read("ColorSaturation"),
+                Read("Sharpness"),
+                irCut);
+        }
+        catch (Exception ex) when (ex is not OnvifCallException)
+        {
+            throw new OnvifCallException($"Réponse ONVIF Imaging illisible pour {camera.Host} : {ex.Message}", ex);
+        }
+    }
+
+    // Fire-and-forget write (same rationale as PTZ commands: budget cameras are slow to
+    // respond over HTTP but apply the setting on receipt).
+    public Task SetImagingSettingsAsync(Camera camera, string videoSourceToken, CameraImageSettings settings, CancellationToken ct)
+    {
+        var irCut = settings.IrCutMode switch
+        {
+            IrCutMode.On => "ON",
+            IrCutMode.Off => "OFF",
+            _ => "AUTO",
+        };
+        var body = $"""
+            <SetImagingSettings xmlns="http://www.onvif.org/ver20/imaging/wsdl">
+              <VideoSourceToken>{videoSourceToken}</VideoSourceToken>
+              <ImagingSettings>
+                <Brightness xmlns="http://www.onvif.org/ver10/schema">{settings.Brightness}</Brightness>
+                <Contrast xmlns="http://www.onvif.org/ver10/schema">{settings.Contrast}</Contrast>
+                <ColorSaturation xmlns="http://www.onvif.org/ver10/schema">{settings.Saturation}</ColorSaturation>
+                <Sharpness xmlns="http://www.onvif.org/ver10/schema">{settings.Sharpness}</Sharpness>
+                <IrCutFilter xmlns="http://www.onvif.org/ver10/schema">{irCut}</IrCutFilter>
+              </ImagingSettings>
+              <ForcePersistence>true</ForcePersistence>
+            </SetImagingSettings>
+            """;
+        return SendCommandAsync(camera, "imaging_service", body, ct,
+            soapAction: "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings");
+    }
+
     // Returns the count of presets reported by the camera. Used at probe time to set SupportsNativePresets (ADR-25).
     // Returns 0 on error or empty list — both indicate no native preset support.
     public async Task<int> GetPresetsCountAsync(Camera camera, string profileToken, CancellationToken ct)
@@ -202,7 +298,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
     // Fire-and-forget ONVIF command: sends the request and returns as soon as headers arrive
     // (or after 500ms timeout). Budget cameras (V380) take 2-3s to respond but execute the
     // command on TCP receipt — we don't need to wait for their HTTP response.
-    private async Task SendCommandAsync(Camera camera, string service, string soapBody, CancellationToken ct)
+    private async Task SendCommandAsync(Camera camera, string service, string soapBody, CancellationToken ct, string? soapAction = null)
     {
         var url = $"http://{camera.Host}:{DefaultOnvifPort}/onvif/{service}";
         var envelope = BuildEnvelope(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
@@ -212,10 +308,10 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml")
-            };
+            var content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml");
+            if (soapAction is not null)
+                content.Headers.ContentType?.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("action", $"\"{soapAction}\""));
+            var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
             using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token);
         }
         catch (Exception ex)
@@ -227,17 +323,22 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
     // readBody=false: ResponseHeadersRead — returns as soon as status is known, without reading body.
     // Use for commands (Move, RelativeMove, Preset) where we only need the camera to receive the request.
     // Use readBody=true (default) for queries (GetProfiles, GetDeviceInformation) that need the response XML.
+    // soapAction: SOAP 1.2 action URI (e.g. ".../imaging/wsdl/GetImagingSettings") — some ONVIF stacks
+    // reject requests with a generic BadRequest when it's missing from the Content-Type "action" param.
+    // throwOnFailure: throws OnvifCallException with the real reason (HTTP status + SOAP fault text if
+    // present) instead of silently returning null — used where the caller needs to surface a real
+    // diagnostic (ADR-27/28 probe paths), not the many callers that treat "no answer" as "unsupported".
     internal async Task<string?> PostSoapAsync(Camera camera, string service, string soapBody, CancellationToken ct,
-        bool readBody = true)
+        bool readBody = true, string? soapAction = null, bool throwOnFailure = false)
     {
         var url = $"http://{camera.Host}:{DefaultOnvifPort}/onvif/{service}";
         var envelope = BuildEnvelope(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
 
         var http = httpClientFactory.CreateClient("onvif");
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml")
-        };
+        var content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml");
+        if (soapAction is not null)
+            content.Headers.ContentType?.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("action", $"\"{soapAction}\""));
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
         var completion = readBody ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
 
         try
@@ -246,15 +347,38 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("ONVIF {Service} call failed ({Status}) for {Host}.", service, response.StatusCode, camera.Host);
+                if (throwOnFailure)
+                {
+                    var faultText = await TryReadSoapFaultReasonAsync(response, ct);
+                    throw new OnvifCallException(faultText is not null
+                        ? $"La caméra a refusé la requête ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}) : {faultText}"
+                        : $"La caméra a refusé la requête ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}).");
+                }
                 return null;
             }
             return readBody ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
         }
+        catch (OnvifCallException) { throw; }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "ONVIF {Service} call error for {Host}.", service, camera.Host);
+            if (throwOnFailure)
+                throw new OnvifCallException($"Impossible de joindre le service ONVIF {service} sur {camera.Host}:{DefaultOnvifPort} ({ex.Message}).", ex);
             return null;
         }
+    }
+
+    private static async Task<string?> TryReadSoapFaultReasonAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            if (string.IsNullOrWhiteSpace(body)) return null;
+            var doc = XDocument.Parse(body);
+            var text = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Text")?.Value;
+            return string.IsNullOrWhiteSpace(text) ? null : text;
+        }
+        catch { return null; }
     }
 
     private static string BuildEnvelope(string username, string password, string body)
