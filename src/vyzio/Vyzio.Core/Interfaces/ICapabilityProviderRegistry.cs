@@ -13,4 +13,9 @@ public interface ICapabilityProviderRegistry
     IPrivacyCapabilityProvider ResolvePrivacy(SupportedProtocol protocol);
 
     IImageSettingsCapabilityProvider ResolveImageSettings(SupportedProtocol protocol);
+
+    // Protocols with a registered provider for this capability, in DI registration order
+    // (used to blind-probe a capability when no vendor preset narrows the candidates, ADR-28).
+    // Empty for a capability with no providers at all (e.g. Stream).
+    IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability);
 }
