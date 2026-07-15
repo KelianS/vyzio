@@ -2473,10 +2473,13 @@ new VendorCapabilityPreset(VendorFamily.Icsee,
 
 **c) Le formulaire de configuration manuelle n'est plus réservé aux caméras non répertoriées.** Une capacité non encore liée (preset ou manuelle) reste toujours ajoutable à la main, même sur une marque reconnue — un preset déclare ce que Vyzio *attend*, pas un plafond exhaustif (ex. ajouter `ImageSettings/Onvif` sur une ICSee dont l'unité s'avère aussi parler ONVIF).
 
+**d) Détection à l'ajout généralisée aux caméras sans marque reconnue.** `ICapabilityProviderRegistry.GetRegisteredProtocols(capability)` expose, pour PTZ/vie privée matérielle/réglages image, la liste des protocoles ayant un provider enregistré (ordre d'enregistrement DI, ONVIF en premier). Une caméra sans `VendorFamily` passe désormais par la même cascade que les marques reconnues, juste construite depuis cette liste au lieu d'un preset — au lieu de ne tenter que PTZ/ONVIF comme avant. Seule différence avec le chemin preset : si aucun protocole ne vérifie, le binding est supprimé plutôt que laissé en échec — un preset a le droit de proposer « à configurer », une caméra non reconnue n'a pas de raison de garder un essai à l'aveugle qui a échoué.
+
 #### Conséquences
 
 - ✅ Un choix manuel de protocole n'est plus jamais silencieusement écrasé par un nouveau clic sur « Détecter les capacités »
 - ✅ Les marques dont certaines unités parlent plusieurs protocoles (ICSee/ONVIF) bénéficient d'un vrai essai en cascade, sans configuration manuelle nécessaire dans le cas nominal
+- ✅ Une caméra non reconnue bénéficie de la même détection automatique (PTZ + réglages image + vie privée matérielle) qu'une marque connue, plus seulement PTZ/ONVIF
 - ✅ Migration additive uniquement (`manually_configured INTEGER NOT NULL DEFAULT 0`) — aucune caméra existante affectée (tous les bindings existants restent `ManuallyConfigured = false`, donc toujours éligibles à la cascade/reset comme avant)
 - ⚠️ Un binding manuel qui ne fonctionne plus (firmware changé, caméra remplacée) reste bloqué sur son protocole choisi jusqu'à une nouvelle action manuelle de l'utilisateur — c'est le compromis assumé : ne jamais surprendre l'utilisateur plutôt que « deviner » qu'il faut re-essayer un autre protocole à sa place
 

@@ -108,4 +108,41 @@ public class CapabilityProviderRegistryTests
 
         Assert.Throws<InvalidOperationException>(() => sut.ResolvePtz(SupportedProtocol.Dvrip));
     }
+
+    [Fact]
+    public void GetRegisteredProtocols_returns_ptz_providers_in_registration_order()
+    {
+        var onvif = MakePtz(SupportedProtocol.Onvif);
+        var dvrip = MakePtz(SupportedProtocol.Dvrip);
+        var sut = new CapabilityProviderRegistry([onvif, dvrip], [], []);
+
+        Assert.Equal([SupportedProtocol.Onvif, SupportedProtocol.Dvrip], sut.GetRegisteredProtocols(CameraCapability.Ptz));
+    }
+
+    [Fact]
+    public void GetRegisteredProtocols_returns_privacy_providers_for_hardware_privacy()
+    {
+        var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
+        var sut = new CapabilityProviderRegistry([], [tapo], []);
+
+        Assert.Equal([SupportedProtocol.TapoKlap], sut.GetRegisteredProtocols(CameraCapability.HardwarePrivacy));
+    }
+
+    [Fact]
+    public void GetRegisteredProtocols_returns_image_settings_providers()
+    {
+        var onvif = MakeImageSettings(SupportedProtocol.Onvif);
+        var dvrip = MakeImageSettings(SupportedProtocol.Dvrip);
+        var sut = new CapabilityProviderRegistry([], [], [onvif, dvrip]);
+
+        Assert.Equal([SupportedProtocol.Onvif, SupportedProtocol.Dvrip], sut.GetRegisteredProtocols(CameraCapability.ImageSettings));
+    }
+
+    [Fact]
+    public void GetRegisteredProtocols_returns_empty_for_stream_capability()
+    {
+        var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], [], []);
+
+        Assert.Empty(sut.GetRegisteredProtocols(CameraCapability.Stream));
+    }
 }
