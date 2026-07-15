@@ -25,7 +25,6 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Status de Frigate dans l'UI, pour savoir si le service est actif et affiché un message propre pendant le redémarrage (application de config, mode vie privée etc).
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir SAD ADR-27/ADR-29.
-- Netteté et vision nocturne (IR) via DVRIP pour ICSee — investigation terrain nécessaire (commande non confirmée). Luminosité/contraste/saturation déjà livrés, voir SAD ADR-29.
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
 - Canal Discord pour les notifications (webhook).
 - Canal WhatsApp pour notifications et commandes rapides (API Cloud Meta ou Baileys/WWebJS).
@@ -45,17 +44,15 @@ Chaque theme a un tag stable (pas d'ordre impose entre thematiques). Un theme te
 
 Itérations courtes, buildables indépendamment. Priorité décroissante.
 
-1. **Tapo PTZ — activation automatique après probe réussi** — après un probe PTZ positif, mettre à jour `Camera.PtzSupported = true` pour que le panneau PTZ apparaisse dans le live feed sans action supplémentaire. Limitation documentée dans `docs/user/PRIVACY_MODE.md` et `vendors/tplink_tapo.md`.
+1. **Étape "Position de surveillance" à l'onboarding PTZ** — si PTZ détecté à l'ajout (détection généralisée à tous protocoles, ADR-28), proposer une étape dédiée pour orienter la caméra avant de terminer l'onboarding.
 
-2. **Auto-détection ONVIF PTZ à l'ajout** — pour les caméras sans `VendorFamily` connue, sonder le port 8899 + `GetCapabilities` ONVIF au moment de l'ajout ; si PTZ détecté, créer le binding `Ptz/Onvif` directement. Actuellement : checkbox manuelle dans la fiche caméra.
+2. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
 
-3. **Étape "Position de surveillance" à l'onboarding PTZ** — si PTZ détecté à l'ajout (item 2), proposer une étape dédiée pour orienter la caméra avant de terminer l'onboarding. Dépend de l'item 2.
+3. **Support des caméras multi-flux RTSP** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Certaines caméras (ex. V380 avec 3 objectifs) exposent plusieurs flux RTSP simultanés ; le modèle actuel suppose un flux unique par caméra.
 
-4. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
-
-5. **Suppression du code legacy de capacités** — `BackfillCameraCapabilityBindingsUseCase` et correspondances hardcodées — à supprimer dans le cadre du refacto `arch-protocol` (item 2).
-
-6. **Support des caméras multi-flux RTSP** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Certaines caméras (ex. V380 avec 3 objectifs) exposent plusieurs flux RTSP simultanés ; le modèle actuel suppose un flux unique par caméra.
+4. **Scan réseau** : afficher tout ce qui est trouvé sur le réseau même si ça ne match aucun pattern (affiché avec une plus faible priorité, pour aider à identifier les caméras non supportées). 
+De plus, se servir des protocoles connus et des ports ouverts pour identifier les caméras (ex. DVRIP, RTSP, ONVIF, V380, Tapo KLAP ...).
+L'identification du constructeur automatiquement étant assez fragile, prévoir une identification manuelle / override de la marque durant l'onboarding pour pré-remplir les capacités et le protocole de communication.
 
 ---
 

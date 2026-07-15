@@ -10,15 +10,28 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
     private readonly IReadOnlyDictionary<SupportedProtocol, IPtzCapabilityProvider> _ptzProviders;
     private readonly IReadOnlyDictionary<SupportedProtocol, IPrivacyCapabilityProvider> _privacyProviders;
     private readonly IReadOnlyDictionary<SupportedProtocol, IImageSettingsCapabilityProvider> _imageSettingsProviders;
+    private readonly IReadOnlyList<SupportedProtocol> _ptzProtocolOrder;
+    private readonly IReadOnlyList<SupportedProtocol> _privacyProtocolOrder;
+    private readonly IReadOnlyList<SupportedProtocol> _imageSettingsProtocolOrder;
 
     public CapabilityProviderRegistry(
         IEnumerable<IPtzCapabilityProvider> ptzProviders,
         IEnumerable<IPrivacyCapabilityProvider> privacyProviders,
         IEnumerable<IImageSettingsCapabilityProvider> imageSettingsProviders)
     {
-        _ptzProviders = ptzProviders.ToDictionary(p => p.Protocol);
-        _privacyProviders = privacyProviders.ToDictionary(p => p.Protocol);
-        _imageSettingsProviders = imageSettingsProviders.ToDictionary(p => p.Protocol);
+        var ptz = ptzProviders.ToList();
+        var privacy = privacyProviders.ToList();
+        var imageSettings = imageSettingsProviders.ToList();
+
+        _ptzProviders = ptz.ToDictionary(p => p.Protocol);
+        _privacyProviders = privacy.ToDictionary(p => p.Protocol);
+        _imageSettingsProviders = imageSettings.ToDictionary(p => p.Protocol);
+
+        // Preserves DI registration order (ServiceCollectionExtensions), not dictionary enumeration
+        // order — blind detection (ADR-28) tries the richest/standard protocol first (ONVIF).
+        _ptzProtocolOrder = ptz.Select(p => p.Protocol).ToList();
+        _privacyProtocolOrder = privacy.Select(p => p.Protocol).ToList();
+        _imageSettingsProtocolOrder = imageSettings.Select(p => p.Protocol).ToList();
     }
 
     public IPtzCapabilityProvider ResolvePtz(SupportedProtocol protocol)
@@ -35,4 +48,12 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         => _imageSettingsProviders.TryGetValue(protocol, out var provider)
             ? provider
             : throw new InvalidOperationException($"No IImageSettingsCapabilityProvider registered for protocol '{protocol}'.");
+
+    public IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability) => capability switch
+    {
+        CameraCapability.Ptz => _ptzProtocolOrder,
+        CameraCapability.HardwarePrivacy => _privacyProtocolOrder,
+        CameraCapability.ImageSettings => _imageSettingsProtocolOrder,
+        _ => [],
+    };
 }

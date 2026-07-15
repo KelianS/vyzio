@@ -330,8 +330,11 @@ public class SeedAndProbePresetsUseCaseTests
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
         _registry.ResolveImageSettings(Arg.Any<SupportedProtocol>()).Returns(_imageSettingsProvider);
+        // Blind-probe path (unlisted camera, ADR-28): no candidates by default — tests that
+        // exercise it stub the specific capability's candidate list explicitly.
+        _registry.GetRegisteredProtocols(Arg.Any<CameraCapability>()).Returns([]);
         var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
-        _sut = new SeedAndProbePresetsUseCase(_cameras, _bindings, probe);
+        _sut = new SeedAndProbePresetsUseCase(_cameras, _bindings, probe, _registry);
     }
 
     [Fact]
@@ -367,10 +370,11 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_tries_onvif_ptz_and_removes_binding_when_probe_fails_for_unlisted_camera()
+    public async Task ExecuteAsync_blind_probes_ptz_and_removes_binding_when_no_candidate_verifies_for_unlisted_camera()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif]);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
             .Returns((CameraCapabilityBinding?)null,
                      new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif });
@@ -384,10 +388,11 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_keeps_onvif_ptz_binding_when_probe_succeeds_for_unlisted_camera()
+    public async Task ExecuteAsync_keeps_ptz_binding_when_a_blind_candidate_verifies_for_unlisted_camera()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null, PtzSupported = false };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif]);
         var tentativeBinding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
             .Returns((CameraCapabilityBinding?)null, tentativeBinding);
@@ -400,16 +405,66 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_skips_onvif_probe_when_ptz_binding_already_exists_for_unlisted_camera()
+    public async Task ExecuteAsync_tries_every_registered_protocol_in_order_for_unlisted_camera()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
-        var existing = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Dvrip };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(existing);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif, SupportedProtocol.Dvrip, SupportedProtocol.TapoKlap]);
+
+        CameraCapabilityBinding? stored = null;
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(_ => stored);
+        _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Ptz), Arg.Any<CancellationToken>()))
+            .Do(call => stored = call.Arg<CameraCapabilityBinding>());
+
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Is<CameraCapabilityBinding>(b => b.Protocol == SupportedProtocol.Onvif), Arg.Any<CancellationToken>())
+            .Returns(false);
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Is<CameraCapabilityBinding>(b => b.Protocol == SupportedProtocol.Dvrip), Arg.Any<CancellationToken>())
+            .Returns(false);
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Is<CameraCapabilityBinding>(b => b.Protocol == SupportedProtocol.TapoKlap), Arg.Any<CancellationToken>())
+            .Returns(true);
 
         await _sut.ExecuteAsync("cam1");
 
-        await _ptzProvider.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+        Assert.NotNull(stored);
+        Assert.Equal(SupportedProtocol.TapoKlap, stored!.Protocol);
+        Assert.True(stored.Verified);
+        await _bindings.DidNotReceive().DeleteAsync(Arg.Any<string>(), Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_blind_probes_image_settings_and_hardware_privacy_too_for_unlisted_camera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.ImageSettings).Returns([SupportedProtocol.Onvif]);
+        _registry.GetRegisteredProtocols(CameraCapability.HardwarePrivacy).Returns([SupportedProtocol.TapoKlap]);
+        // Sequence: first GetAsync call is the cascade loop's own lookup (nothing yet), second
+        // is ProbeCameraCapabilityUseCase re-fetching the binding it must probe.
+        _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null,
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.ImageSettings, Protocol = SupportedProtocol.Onvif });
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null,
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.HardwarePrivacy, Protocol = SupportedProtocol.TapoKlap });
+        _imageSettingsProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+        _privacyProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        await _sut.ExecuteAsync("cam1");
+
+        await _imageSettingsProvider.Received(1).ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+        await _privacyProvider.Received(1).ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_skips_capability_with_no_registered_protocol_for_unlisted_camera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        // Default stub already returns [] for every capability — nothing should be probed at all.
+
+        await _sut.ExecuteAsync("cam1");
+
+        await _bindings.DidNotReceive().SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     // ADR-28: Icsee declares Ptz candidates [Onvif, Dvrip] in priority order — cascade must
