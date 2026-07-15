@@ -579,6 +579,29 @@
   color: var(--ink-muted, #888);
 }
 
+.capability-manual-form-trigger {
+  align-self: flex-start;
+  width: 22px;
+  height: 22px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px dashed var(--border, #d1d5db);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted, #888);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.capability-manual-form-trigger:hover {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
 .capability-status-badge {
   display: inline-flex;
   align-items: center;
@@ -776,6 +799,57 @@
   font-size: 0.74rem;
   color: var(--ink-soft);
   margin-top: 6px;
+}
+
+.image-settings-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.image-settings-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.image-settings-slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.image-settings-slider-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.image-settings-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--brand-moss-strong, #2f6f4f);
+}
+
+.image-settings-ircut {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.image-settings-ircut select {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border, #d1d5db);
+  background: var(--surface, #fff);
+  font-size: 0.82rem;
+}
+
+.image-settings-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .capability-actions {

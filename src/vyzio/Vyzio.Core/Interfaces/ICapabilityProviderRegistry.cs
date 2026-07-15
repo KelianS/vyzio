@@ -11,4 +11,6 @@ public interface ICapabilityProviderRegistry
     IPtzCapabilityProvider ResolvePtz(SupportedProtocol protocol);
 
     IPrivacyCapabilityProvider ResolvePrivacy(SupportedProtocol protocol);
+
+    IImageSettingsCapabilityProvider ResolveImageSettings(SupportedProtocol protocol);
 }

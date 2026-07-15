@@ -2,6 +2,23 @@
 
 > Résultats des tests live menés sur une caméra ICSee 192.168.1.193, firmware Xiongmai/Sofia.
 
+> ⚠️ **Erratum (2026-07-15)** — la réimplémentation .NET de ce protocole (`DvripClient`, SAD ADR-29) a
+> révélé que plusieurs valeurs transcrites ci-dessous étaient fausses par rapport à la vraie
+> bibliothèque de référence `python-dvr` (vérifié en lisant son code source puis en testant en
+> direct contre cette même caméra) :
+> - Le header binaire fait **20 octets**, pas 22 (`cmd`/`dataLen` à des offsets différents).
+> - `ConfigSet` est le code **1040**, pas 1044 (1044 est une variante de `ConfigGet` — « config par défaut usine »).
+> - Le login attend le champ JSON `"UserName"`, pas `"Name"`.
+> - `sofia_hash` apparie des **paires d'octets bruts** du digest MD5 (8 caractères en sortie), pas des paires de nibbles hexadécimaux (16 caractères) — `sofia_hash("a4m3h5") == "S8jyn9CB"`, pas `"6DDKEOQCGQGGILIK"`.
+> - Le payload `OPPTZControl` de la section PTZ ci-dessous inclut un champ `"Action"` et un objet `"POINT"` qui **n'existent pas** dans `DVRIPCam.ptz()` (la vraie méthode n'a ni l'un ni l'autre, et `"Pattern"` vaut `"Start"`, pas `"SetBegin"`).
+> - **Le vrai mécanisme d'arrêt PTZ** (trouvé via l'intégration Home Assistant [`dbuezas/icsee-ptz`](https://github.com/dbuezas/icsee-ptz), pas dans ce document ni dans `python-dvr` seul) : `ptz("DirectionUp", preset=-1)` — `Preset=-1` est le sentinel d'arrêt, `Command` reste toujours `"DirectionUp"` peu importe la direction en cours. Un mouvement normal utilise `Preset=0`. Voir SAD ADR-29 pour le détail complet.
+>
+> Les **résultats de test** ci-dessous (Ret 100/606 etc.) restent probablement fiables — ils ont
+> vraisemblablement été obtenus via la vraie bibliothèque `python-dvr`, qui utilise en interne les
+> bonnes valeurs. Seule leur **transcription** dans ce document (header 22 octets, code 1044) était
+> erronée, et a été recopiée telle quelle dans le premier portage .NET — qui n'a donc jamais
+> fonctionné en conditions réelles jusqu'à ce correctif.
+
 ## Architecture streaming
 
 La caméra se connecte en sortant vers les serveurs **XMEye P2P cloud**. L'application ICSee route la vidéo via ce relais. Les modifications de configuration DVRIP locales n'affectent **pas** le flux cloud — c'est le blocage fondamental.

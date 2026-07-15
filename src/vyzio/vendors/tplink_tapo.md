@@ -66,6 +66,12 @@ Pour les caméras Tapo configurées avant la mise à jour (migration 1.0.3), le 
 
 ---
 
+## Réglages image
+
+Non supporté pour l'instant depuis Vyzio — le protocole KLAP n'a pas encore été investigué pour ce réglage (contrairement au PTZ et à la vie privée, cf. ADR-27). Utilisez l'application Tapo en attendant.
+
+---
+
 ## Liens utiles
 
 - [Guide TP-Link Tapo](https://www.tapo.com/en/faq/34/)

@@ -31,29 +31,38 @@ public sealed class SeedAndProbePresetsUseCase(
 
     private async Task SeedAndProbePresetAsync(string cameraId, VendorCapabilityPreset preset, CancellationToken ct)
     {
-        foreach (var (capability, protocol) in preset.DefaultBindings)
+        foreach (var (capability, protocols) in preset.DefaultBindings)
         {
             var existing = await bindings.GetAsync(cameraId, capability, ct);
-            if (existing is null)
+
+            // A manual override (ADR-28) is never touched by re-running detection, whether it
+            // currently works or not — the user's choice stands until they change it themselves.
+            if (existing is { ManuallyConfigured: true })
             {
-                await bindings.SaveAsync(new CameraCapabilityBinding
-                {
-                    CameraId = cameraId,
-                    Capability = capability,
-                    Protocol = protocol,
-                    Verified = false,
-                }, ct);
-            }
-            else if (existing.Protocol != protocol)
-            {
-                // Preset protocol changed (e.g. V380Pro: Onvif → V380) — reset to current preset.
-                existing.Protocol = protocol;
-                existing.Verified = false;
-                existing.LastError = null;
-                await bindings.SaveAsync(existing, ct);
+                await probe.ExecuteAsync(cameraId, capability, ct);
+                continue;
             }
 
-            await probe.ExecuteAsync(cameraId, capability, ct);
+            // Already verified with a protocol still declared by the preset — nothing to retry.
+            if (existing is { Verified: true } && protocols.Contains(existing.Protocol))
+            {
+                await probe.ExecuteAsync(cameraId, capability, ct);
+                continue;
+            }
+
+            // Try each candidate protocol in priority order (ADR-28), keep the first that verifies.
+            foreach (var protocol in protocols)
+            {
+                var binding = existing ?? new CameraCapabilityBinding { CameraId = cameraId, Capability = capability };
+                binding.Protocol = protocol;
+                binding.Verified = false;
+                binding.LastError = null;
+                await bindings.SaveAsync(binding, ct);
+                existing = binding;
+
+                var result = await probe.ExecuteAsync(cameraId, capability, ct);
+                if (result?.Verified == true) break;
+            }
         }
     }
 

@@ -281,6 +281,19 @@ public static class CamerasEndpoints
             }
         });
 
+        group.MapDelete("/{id}/capabilities/{capability}", async (
+            string id,
+            string capability,
+            RemoveCameraCapabilityUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
+                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+
+            var removed = await useCase.ExecuteAsync(id, cap, ct);
+            return removed ? Results.NoContent() : Results.NotFound();
+        });
+
         group.MapPost("/{id}/capabilities/{capability}/probe", async (
             string id,
             string capability,
@@ -304,6 +317,23 @@ public static class CamerasEndpoints
             if (camera is null) return Results.NotFound();
             await useCase.ExecuteAsync(id, ct);
             return Results.NoContent();
+        });
+
+        // Image settings (ADR-27) — read/write live on the camera, nothing persisted on Vyzio's side.
+        group.MapGet("/{id}/image-settings", async (string id, GetCameraImageSettingsUseCase useCase, CancellationToken ct) =>
+        {
+            var settings = await useCase.ExecuteAsync(id, ct);
+            return settings is null ? Results.NotFound() : Results.Ok(settings);
+        });
+
+        group.MapPut("/{id}/image-settings", async (
+            string id,
+            CameraImageSettingsDto request,
+            SetCameraImageSettingsUseCase useCase,
+            CancellationToken ct) =>
+        {
+            var settings = await useCase.ExecuteAsync(id, request, ct);
+            return settings is null ? Results.NotFound() : Results.Ok(settings);
         });
 
         // PTZ preset thumbnail — capture current Frigate frame and persist per preset

@@ -71,8 +71,16 @@ Le protocole DVRIP natif (port 34567) reste techniquement ouvert sur votre rése
 
 **Évolution prévue (v1.0.1-P2) :** Les caméras ICSee PTZ supportent un mode de **parking physique** — la caméra pivote automatiquement vers une butée mécanique (face au mur ou au plafond) à l'activation du mode vie privée, et revient à sa position de surveillance à la désactivation. Cette fonctionnalité sera disponible dans une prochaine version avec une interface de configuration dédiée.
 
+## Réglages image
+
+**Niveau de garantie : réglage direct sur la caméra (DVRIP, `AVEnc.VideoColor.[0]`).** Luminosité, contraste et saturation sont pilotables depuis Vyzio (confirmé par test terrain, ADR-29). Aucune valeur n'est stockée par Vyzio — la caméra reste la seule source de vérité.
+
+**Non disponibles pour l'instant :** netteté et vision nocturne (IR) — la commande DVRIP correspondante n'a pas été investiguée sur ce firmware. Les contrôles correspondants n'apparaissent pas dans l'interface pour une caméra ICSee.
+
+> Ces caméras n'exposent en général aucun service ONVIF (port 8899 fermé) — seul le chemin DVRIP fonctionne pour les réglages image, contrairement au V380 Pro qui utilise ONVIF.
+
 ## A savoir
 
 - Le firmware ICSee/XMEye est utilise par de nombreux fabricants OEM (WONSDAR, ieGeek, etc.) ; les menus varient selon le modele.
-- Certaines cameras ICSee supportent aussi ONVIF (a activer dans les memes parametres avances).
+- Certaines cameras ICSee supportent aussi ONVIF (a activer dans les memes parametres avances). Vyzio essaie automatiquement ONVIF en premier pour le PTZ lors de la detection des capacites, avec repli sur DVRIP si ONVIF echoue — aucune action manuelle requise dans le cas nominal.
 - Les cameras sur secteur ont generalement plus d'options que les modeles sur batterie.

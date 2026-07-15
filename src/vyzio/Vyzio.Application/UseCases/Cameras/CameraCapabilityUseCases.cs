@@ -58,6 +58,7 @@ public sealed class ProbeCameraCapabilityUseCase(
             {
                 CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
                 CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
+                CameraCapability.ImageSettings => await registry.ResolveImageSettings(binding.Protocol).ProbeAsync(camera, binding, ct),
                 _ => false,
             };
         }
@@ -85,8 +86,10 @@ public sealed class ProbeCameraCapabilityUseCase(
 
 public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? ConfigJson);
 
-// Manual onboarding for non-listed cameras (SPECS §2.3): creates/updates a binding then
-// immediately probes it — a binding is never offered as activatable on declaration alone.
+// Manual onboarding for non-listed cameras, or manual override on a recognized vendor
+// (SPECS §2.3): creates/updates a binding then immediately probes it — a binding is never
+// offered as activatable on declaration alone. Marks the binding ManuallyConfigured so
+// SeedAndProbePresetsUseCase never silently reverts this choice back to the vendor preset (ADR-28).
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -112,10 +115,30 @@ public sealed class ConfigureCameraCapabilityUseCase(
         binding.ConfigJson = request.ConfigJson;
         binding.Verified = false;
         binding.LastError = null;
+        binding.ManuallyConfigured = true;
 
         await bindings.SaveAsync(binding, ct);
 
         return await probe.ExecuteAsync(cameraId, capability, ct);
+    }
+}
+
+// Removes a capability binding entirely (SPECS §2.3) — used when a binding no longer applies
+// (e.g. a manually-added or now-unsupported capability that keeps surfacing a stale error) and
+// there is no simple on/off flag for it (unlike PTZ's Camera.PtzSupported). The capability then
+// reverts to "available" and can be reconfigured via the manual "+" form.
+public sealed class RemoveCameraCapabilityUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings)
+{
+    public async Task<bool> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return false;
+
+        var binding = await bindings.GetAsync(cameraId, capability, ct);
+        if (binding is null) return false;
+
+        await bindings.DeleteAsync(cameraId, capability, ct);
+        return true;
     }
 }
 
@@ -133,13 +156,14 @@ public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICam
 
         if (preset is not null)
         {
-            // Preset capabilities first — existing binding if available, synthetic suggestion otherwise.
-            foreach (var (capability, protocol) in preset.DefaultBindings)
+            // Preset capabilities first — existing binding if available, synthetic suggestion otherwise
+            // (first candidate protocol — the one SeedAndProbePresetsUseCase tries first, ADR-28).
+            foreach (var (capability, protocols) in preset.DefaultBindings)
             {
                 var binding = dbBindings.FirstOrDefault(b => b.Capability == capability);
                 result.Add(binding is not null
                     ? CameraCapabilityBindingDto.From(binding, isPreset: true)
-                    : CameraCapabilityBindingDto.FromPreset(capability, protocol));
+                    : CameraCapabilityBindingDto.FromPreset(capability, protocols[0]));
             }
         }
 

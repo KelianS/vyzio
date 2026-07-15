@@ -20,6 +20,7 @@ import type {
 } from '../../domain/entities/CameraCapabilityBinding'
 import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetchJson'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
+import type { CameraImageSettings } from '../../domain/entities/CameraImageSettings'
 
 interface CameraDto {
   id: string
@@ -323,8 +324,26 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
+  async removeCapability(cameraId: string, capability: Capability): Promise<void> {
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`)
+  }
+
   async detectCapabilities(cameraId: string): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
+  }
+
+  async getImageSettings(cameraId: string): Promise<CameraImageSettings> {
+    return fetchJson<CameraImageSettings>(`${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`)
+  }
+
+  async setImageSettings(
+    cameraId: string,
+    settings: CameraImageSettings,
+  ): Promise<CameraImageSettings> {
+    return putJson<CameraImageSettings>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`,
+      settings,
+    )
   }
 }
 
