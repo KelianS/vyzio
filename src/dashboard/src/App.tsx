@@ -50,6 +50,7 @@ import {
 } from './app/dependencies'
 import { useHubOverview } from './ui/hooks/useHubOverview'
 import { useCameras } from './ui/hooks/useCameras'
+import { useSystemStats } from './ui/hooks/useSystemStats'
 import { AppHeader } from './ui/components/AppHeader'
 import { ToastProvider } from './ui/components/Toast'
 import { CameraOnboardingView } from './ui/components/CameraOnboardingView'
@@ -66,6 +67,8 @@ function App() {
   const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash))
   const { data, loading: hubLoading, error: hubError } = useHubOverview(getHubOverview)
   const { data: cameras, loading: camerasLoading, reload: reloadCameras } = useCameras(getCameras)
+  const systemStats = useSystemStats(getSystemStats)
+  const frigateStatus = systemStats?.status ?? 'active'
   const [modalMedia, setModalMedia] = useState<
     | { type: 'image' | 'video'; url: string }
     | {
@@ -131,6 +134,7 @@ function App() {
             capturePtzPresetThumbnail={capturePtzPresetThumbnail}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
+            frigateStatus={frigateStatus}
             onOpenLive={(camera, options) =>
               setModalMedia({
                 type: 'live',
@@ -194,7 +198,7 @@ function App() {
             data={data}
             cameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
-            getSystemStats={getSystemStats}
+            systemStats={systemStats}
             onOpenMedia={(type, url) => setModalMedia({ type, url })}
             onOpenLive={(camera) =>
               setModalMedia({
@@ -239,6 +243,7 @@ function App() {
                   apiBaseUrl={modalMedia.apiBaseUrl}
                   label={modalMedia.label}
                   ptzSupported={modalMedia.ptzSupported}
+                  frigateStatus={frigateStatus}
                   ptzStep={ptzStep}
                   ptzGoToPreset={ptzGoToPreset}
                   getPtzPresets={getPtzPresets}

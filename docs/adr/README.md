@@ -39,3 +39,4 @@ référence ces ADR sans les recopier.
 | [ADR-30](0030-reglages-image-v380-natif-ecarte-imagesettings-via.md) | Réglages image V380 natif : écarté, `ImageSettings` via ONVIF uniquement | Accepté |
 | [ADR-31](0031-override-manuel-du-constructeur-a-l-onboarding.md) | Override manuel du constructeur à l'onboarding | Accepté |
 | [ADR-32](0032-pipeline-de-decouverte-reseau-en-3-etapes.md) | Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation | Accepté |
+| [ADR-33](0033-statut-du-moteur-de-detection-expose-au-hub.md) | Statut du moteur de détection exposé au Hub : tracker de redémarrage + enrichissement de `/api/system/stats` | Accepté |

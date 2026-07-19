@@ -9,7 +9,10 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services;
 
-public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<FrigateConfigApplier> logger) : IFrigateConfigApplier
+public sealed class FrigateConfigApplier(
+    VyzioRuntimeSettings settings,
+    ILogger<FrigateConfigApplier> logger,
+    IFrigateRestartTracker restartTracker) : IFrigateConfigApplier
 {
     public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
@@ -51,6 +54,8 @@ public sealed class FrigateConfigApplier(VyzioRuntimeSettings settings, ILogger<
         var (fileName, arguments) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? ("cmd.exe", $"/c {settings.Frigate.ApplyCommand}")
             : ("/bin/sh", $"-lc \"{settings.Frigate.ApplyCommand.Replace("\"", "\\\"")}\"");
+
+        restartTracker.MarkRestarting();
 
         using var process = new Process
         {

@@ -1,5 +1,7 @@
+export type FrigateStatus = 'active' | 'restarting' | 'unavailable'
+
 export interface SystemStats {
-  available: boolean
+  status: FrigateStatus
   storage: StorageStats | null
   cameras: CameraFps[]
 }

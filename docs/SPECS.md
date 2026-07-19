@@ -222,7 +222,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - l'accueil doit rendre visible l'etat global du systeme et les alertes recentes ;
 - les parcours camera, profils, historique et reglages doivent etre accessibles sans configuration manuelle de fichiers ;
 - l'interface doit employer un vocabulaire comprehensible pour un utilisateur non-specialiste ;
-- les actions principales doivent rester faisables sur mobile et desktop.
+- les actions principales doivent rester faisables sur mobile et desktop ;
+- l'etat du moteur de detection interne doit etre visible sur trois paliers — actif, redemarrage en cours, indisponible — sans jamais nommer le composant technique sous-jacent ; le palier "redemarrage en cours" s'affiche pendant l'application d'une nouvelle configuration (ex. changement de reglages, activation du mode vie privee) et se resout automatiquement des que le moteur redevient joignable, sans action de l'utilisateur.
 
 ---
 
