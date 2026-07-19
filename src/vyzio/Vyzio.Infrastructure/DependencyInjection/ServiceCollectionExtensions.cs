@@ -56,6 +56,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IImageSettingsCapabilityProvider, OnvifImageSettingsProvider>();
         services.AddScoped<IImageSettingsCapabilityProvider, DvripImageSettingsProvider>();
+        // Stream is a first-class capability (ADR-32): RTSP first (standard), then DVRIP fallback.
+        services.AddScoped<IStreamCapabilityProvider, RtspStreamProvider>();
+        services.AddScoped<IStreamCapabilityProvider, DvripStreamProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
         // Background onboarding probe (A1 + A3): singleton queue so CreateCameraUseCase can enqueue.

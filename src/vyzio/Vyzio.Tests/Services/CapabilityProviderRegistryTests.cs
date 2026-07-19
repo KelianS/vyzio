@@ -28,6 +28,23 @@ public class CapabilityProviderRegistryTests
         return p;
     }
 
+    private static IStreamCapabilityProvider MakeStream(SupportedProtocol protocol)
+    {
+        var p = Substitute.For<IStreamCapabilityProvider>();
+        p.Protocol.Returns(protocol);
+        return p;
+    }
+
+    [Fact]
+    public void GetRegisteredProtocols_returns_stream_providers_in_registration_order()
+    {
+        var rtsp = MakeStream(SupportedProtocol.Rtsp);
+        var dvrip = MakeStream(SupportedProtocol.Dvrip);
+        var sut = new CapabilityProviderRegistry([], [], [], [rtsp, dvrip]);
+
+        Assert.Equal([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip], sut.GetRegisteredProtocols(CameraCapability.Stream));
+    }
+
     [Fact]
     public void ResolvePtz_returns_registered_provider()
     {
@@ -139,7 +156,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_returns_empty_for_stream_capability()
+    public void GetRegisteredProtocols_returns_empty_when_no_provider_registered_for_capability()
     {
         var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], [], []);
 

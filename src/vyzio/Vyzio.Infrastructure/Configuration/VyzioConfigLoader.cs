@@ -18,16 +18,6 @@ public static class VyzioConfigLoader
                 ? raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 : @default ?? [];
 
-        static int[] EnvIntList(string name, int[]? @default = null)
-        {
-            var raw = Env(name);
-            if (string.IsNullOrEmpty(raw)) return @default ?? [];
-            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                      .Select(s => int.TryParse(s, out var i) ? i : -1)
-                      .Where(i => i > 0)
-                      .ToArray();
-        }
-
         var probeTimeoutMs = EnvInt("VYZIO_DISCOVERY_PROBE_TIMEOUT_MS", 250);
         var maxConcurrentProbes = EnvInt("VYZIO_DISCOVERY_MAX_CONCURRENT_PROBES", 32);
 
@@ -58,10 +48,6 @@ public static class VyzioConfigLoader
                 AutoDetectLocalCidrs = EnvBool("VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS"),
                 ProbeHosts = EnvList("VYZIO_DISCOVERY_PROBE_HOSTS"),
                 ProbeCidrs = EnvList("VYZIO_DISCOVERY_PROBE_CIDRS"),
-                RtspPorts = EnvIntList("VYZIO_DISCOVERY_RTSP_PORTS", [554]),
-                RtspPaths = EnvList("VYZIO_DISCOVERY_RTSP_PATHS", ["/stream1", "/stream2", "/Streaming/Channels/101", "/live/ch00_1", "/h264Preview_01_main"]),
-                HttpPorts = EnvIntList("VYZIO_DISCOVERY_HTTP_PORTS", [80, 443, 8080]),
-                OnvifPorts = EnvIntList("VYZIO_DISCOVERY_ONVIF_PORTS", [80, 2020]),
                 ProbeTimeoutMs = probeTimeoutMs is < 50 or > 5000 ? 250 : probeTimeoutMs,
                 MaxConcurrentProbes = maxConcurrentProbes is < 1 or > 256 ? 32 : maxConcurrentProbes,
             },

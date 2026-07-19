@@ -13,15 +13,18 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
     private readonly IReadOnlyList<SupportedProtocol> _ptzProtocolOrder;
     private readonly IReadOnlyList<SupportedProtocol> _privacyProtocolOrder;
     private readonly IReadOnlyList<SupportedProtocol> _imageSettingsProtocolOrder;
+    private readonly IReadOnlyList<SupportedProtocol> _streamProtocolOrder;
 
     public CapabilityProviderRegistry(
         IEnumerable<IPtzCapabilityProvider> ptzProviders,
         IEnumerable<IPrivacyCapabilityProvider> privacyProviders,
-        IEnumerable<IImageSettingsCapabilityProvider> imageSettingsProviders)
+        IEnumerable<IImageSettingsCapabilityProvider> imageSettingsProviders,
+        IEnumerable<IStreamCapabilityProvider>? streamProviders = null)
     {
         var ptz = ptzProviders.ToList();
         var privacy = privacyProviders.ToList();
         var imageSettings = imageSettingsProviders.ToList();
+        var stream = (streamProviders ?? []).ToList();
 
         _ptzProviders = ptz.ToDictionary(p => p.Protocol);
         _privacyProviders = privacy.ToDictionary(p => p.Protocol);
@@ -32,6 +35,7 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         _ptzProtocolOrder = ptz.Select(p => p.Protocol).ToList();
         _privacyProtocolOrder = privacy.Select(p => p.Protocol).ToList();
         _imageSettingsProtocolOrder = imageSettings.Select(p => p.Protocol).ToList();
+        _streamProtocolOrder = stream.Select(p => p.Protocol).ToList();
     }
 
     public IPtzCapabilityProvider ResolvePtz(SupportedProtocol protocol)
@@ -51,6 +55,7 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
 
     public IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability) => capability switch
     {
+        CameraCapability.Stream => _streamProtocolOrder,
         CameraCapability.Ptz => _ptzProtocolOrder,
         CameraCapability.HardwarePrivacy => _privacyProtocolOrder,
         CameraCapability.ImageSettings => _imageSettingsProtocolOrder,

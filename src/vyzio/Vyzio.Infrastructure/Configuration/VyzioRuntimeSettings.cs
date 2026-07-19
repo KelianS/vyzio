@@ -31,27 +31,24 @@ public class VyzioRuntimeSettings
         public string ClientId { get; init; } = "vyzio-api";
     }
 
+    // Discovery is configured by network scope only — which subnets/hosts to scan and how hard.
+    // The ports to probe and their protocols are internal constants (DiscoveryPortCatalog, ADR-32),
+    // not user configuration: the user shouldn't have to know a camera speaks V380 on 8800.
     public sealed class DiscoverySettings
     {
         public bool AutoDetectLocalCidrs { get; init; }
         public IReadOnlyList<string> ProbeHosts { get; init; } = Array.Empty<string>();
         public IReadOnlyList<string> ProbeCidrs { get; init; } = Array.Empty<string>();
-        public IReadOnlyList<int> RtspPorts { get; init; } = [554];
-        public IReadOnlyList<string> RtspPaths { get; init; } =
-        [
-            "/stream1", "/stream2",
-            "/Streaming/Channels/101",
-            "/live/ch00_1",
-            "/h264Preview_01_main",
-            // ICSee / XMEye
-            "/user=admin&password=&channel=1&stream=0.sdp",
-            "/user=admin&password=&channel=1&stream=1.sdp",
-            "/cam/realmonitor?channel=1&subtype=0",
-        ];
-        public IReadOnlyList<int> HttpPorts { get; init; } = [80, 443, 8080];
-        public IReadOnlyList<int> OnvifPorts { get; init; } = [80, 2020];
         public int ProbeTimeoutMs { get; init; } = 250;
         public int MaxConcurrentProbes { get; init; } = 32;
+
+        // Test-only seams — never populated from configuration/env (see VyzioConfigLoader), so the
+        // user-facing config surface is subnet/hosts only. Each null → the internal port catalog
+        // (production). Unit tests pin exactly which ports a probe touches (and set ScanPortsOverride
+        // = [] to disable the sweep) so they never hit the real services running on the test host.
+        public IReadOnlyList<int>? ScanPortsOverride { get; init; }
+        public IReadOnlyList<int>? RtspPortsOverride { get; init; }
+        public IReadOnlyList<int>? HttpPortsOverride { get; init; }
     }
 
     public sealed class DocumentationSettings

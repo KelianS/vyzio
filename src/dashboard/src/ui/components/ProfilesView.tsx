@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ConfirmModal } from './ConfirmModal'
 import { useToast } from './Toast'
 import { Btn } from './Btn'
+import { Select } from './Select'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import type { AddProfilePhoto } from '../../application/use-cases/AddProfilePhoto'
 import type { CreateProfile } from '../../application/use-cases/CreateProfile'
@@ -351,7 +352,7 @@ function ProfileForm({
 
         <div className="camera-form-field">
           <label htmlFor="profile-category">Categorie</label>
-          <select
+          <Select
             id="profile-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -361,12 +362,12 @@ function ProfileForm({
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="camera-form-field">
           <label htmlFor="profile-alert">Mode d'alerte</label>
-          <select
+          <Select
             id="profile-alert"
             value={alertMode}
             onChange={(e) => setAlertMode(e.target.value)}
@@ -376,7 +377,7 @@ function ProfileForm({
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {err && (

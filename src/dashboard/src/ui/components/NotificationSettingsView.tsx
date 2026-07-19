@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ConfirmModal } from './ConfirmModal'
+import { Select } from './Select'
 import { Btn } from './Btn'
 import type { DeleteNotificationChannel } from '../../application/use-cases/DeleteNotificationChannel'
 import type { GetDetectionLabels } from '../../application/use-cases/GetDetectionLabels'
@@ -427,7 +428,8 @@ function SchedulePicker({
             <label htmlFor="from-hour" style={{ fontSize: '0.88rem', display: 'block' }}>
               De
             </label>
-            <select
+            <Select
+              size="sm"
               id="from-hour"
               value={fromHour ?? 8}
               onChange={(e) => onFromChange(Number(e.target.value))}
@@ -437,13 +439,14 @@ function SchedulePicker({
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <label htmlFor="to-hour" style={{ fontSize: '0.88rem', display: 'block' }}>
               A
             </label>
-            <select
+            <Select
+              size="sm"
               id="to-hour"
               value={toHour ?? 22}
               onChange={(e) => onToChange(Number(e.target.value))}
@@ -453,7 +456,7 @@ function SchedulePicker({
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           {fromHour !== null && toHour !== null && fromHour > toHour && (
             <p style={{ fontSize: '0.84rem', color: 'var(--ink-soft)', marginTop: 4 }}>

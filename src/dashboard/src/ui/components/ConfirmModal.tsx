@@ -6,7 +6,7 @@ interface ConfirmModalProps {
   body: string
   confirmLabel: string
   cancelLabel?: string
-  tone?: 'warn' | 'danger' | 'default'
+  tone?: 'warn' | 'danger' | 'default' | 'confirm'
   onConfirm: () => void | Promise<void>
   onCancel: () => void
   loading?: boolean
@@ -75,7 +75,13 @@ export function ConfirmModal({
   }
 
   const confirmVariant =
-    tone === 'danger' ? 'danger' : tone === 'warn' ? 'danger-outline' : 'secondary'
+    tone === 'danger'
+      ? 'danger'
+      : tone === 'warn'
+        ? 'danger-outline'
+        : tone === 'confirm'
+          ? 'primary'
+          : 'secondary'
 
   return (
     <div className="privacy-modal-backdrop" onClick={() => !isLoading && onCancel()}>
