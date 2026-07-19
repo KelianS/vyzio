@@ -673,17 +673,34 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("http_service", candidate.DiscoverySource);
     }
 
-    // ADR-32: the "nmap" port sweep. An open catalog port (here 34567 = DVRIP) must surface the
-    // host as a confirmed camera with a Port|Protocol enrichment row — no protocol handshake
-    // needed. This is exactly what fixed V380 (8800 TCP) where the UDP discovery was unreliable.
+    // ADR-32: the "nmap" port sweep + fingerprint. An open catalog port (34567 = DVRIP) that
+    // passes the DVRIP fingerprint (0xFF magic reply) surfaces the host as a confirmed camera with
+    // a Port|Protocol enrichment row. Same mechanism that lets V380 be detected on 8800 TCP.
     [Fact]
-    public async Task DiscoverAsync_port_sweep_detects_camera_from_open_catalog_port()
+    public async Task DiscoverAsync_port_sweep_confirms_camera_from_fingerprinted_port()
     {
         const int dvripPort = 34567;
         using var listener = new TcpListener(IPAddress.Loopback, dvripPort);
         listener.Start();
-        using var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var acceptTask = listener.AcceptTcpClientAsync(acceptCts.Token).AsTask();
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (!stopServer.IsCancellationRequested)
+                {
+                    using var client = await listener.AcceptTcpClientAsync(stopServer.Token);
+                    using var stream = client.GetStream();
+                    var buffer = new byte[128];
+                    _ = await stream.ReadAsync(buffer, stopServer.Token);
+                    // DVRIP fingerprint only checks the first byte is the 0xFF magic.
+                    await stream.WriteAsync(new byte[] { 0xFF, 0x01, 0x00, 0x00 }, stopServer.Token);
+                    await stream.FlushAsync(stopServer.Token);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (System.Net.Sockets.SocketException) { }
+        });
 
         var settings = new VyzioRuntimeSettings
         {
@@ -702,6 +719,8 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = new AssistedCameraDiscoveryService(settings);
 
         var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
+        await serverTask;
 
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
         Assert.Equal("camera_confirmed", candidate.Qualification);
@@ -709,5 +728,58 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal(dvripPort, port.Port);
         Assert.Equal("DVRIP", port.Label);
         Assert.Equal("Dvrip", port.Protocol);
+    }
+
+    // ADR-32: an open port whose fingerprint fails (or has none) is NOT mislabelled — it surfaces
+    // as an "unidentified open port" (this is the Tapo:8800-isn't-V380 fix). Here a dumb listener
+    // on 8800 never completes the V380 handshake, so it must show up unidentified, not as V380.
+    [Fact]
+    public async Task DiscoverAsync_port_sweep_shows_unidentified_open_port_when_fingerprint_fails()
+    {
+        const int v380Port = 8800;
+        using var listener = new TcpListener(IPAddress.Loopback, v380Port);
+        listener.Start();
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (!stopServer.IsCancellationRequested)
+                {
+                    // Accept and immediately close — never speaks V380.
+                    using var client = await listener.AcceptTcpClientAsync(stopServer.Token);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (System.Net.Sockets.SocketException) { }
+        });
+
+        var settings = new VyzioRuntimeSettings
+        {
+            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            {
+                ProbeHosts = ["127.0.0.1"],
+                RtspPorts = [],
+                HttpPorts = [],
+                OnvifPorts = [],
+                ProbeTimeoutMs = 500,
+                MaxConcurrentProbes = 1,
+                PortScanPorts = [v380Port],
+            }
+        };
+
+        var sut = new AssistedCameraDiscoveryService(settings);
+
+        var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
+        var port = Assert.Single(candidate.TechnicalDetails!.DetectedPorts);
+        Assert.Equal(v380Port, port.Port);
+        Assert.Equal("unknown", port.Protocol);
+        Assert.Equal("non identifié", port.Label);
+        // No protocol confirmed → not a camera.
+        Assert.Equal("device_unknown", candidate.Qualification);
     }
 }

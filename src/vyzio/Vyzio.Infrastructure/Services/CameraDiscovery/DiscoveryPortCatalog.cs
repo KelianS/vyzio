@@ -2,33 +2,58 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// ADR-32 — THE single source of truth for the port sweep ("nmap" stage): which TCP ports to try,
-// and what an open port means. Adding a protocol that has its own dedicated port is one line here
-// — the sweep tries it, the enrichment table shows it, the capability interpretation cross-refs it
-// (via CapabilityProtocol), and qualification treats it as a camera signal. No frontend change and
-// no other backend change are needed.
-//
-// Protocols that share port 80 (ONVIF-on-80, Tapo KLAP) can't be told apart by an open port alone
-// — an open 80 just means "a web server". Those keep a dedicated handshake probe; here 80/443/8080
-// only ever mean generic HTTP (CameraSignal = false: an open web port is not, by itself, a camera).
+// ADR-32 — THE single list of ports the "nmap" stage sweeps, plus which protocol fingerprint(s)
+// to attempt on each. Two independent facets, both extensible in one place:
+//   • ScannedPorts: every port we TCP-connect, with the conventional service name shown when no
+//     protocol fingerprint confirms — so an open port always surfaces, even unidentified.
+//   • Fingerprints: protocol → the ports where it may live + its display label. A port maps to an
+//     open-port fact; only a passing fingerprint turns it into a confirmed protocol (this is what
+//     stops "8800 open" from being blindly labelled V380 on a camera that isn't one).
+// Adding a protocol with a dedicated port = one ScannedPorts entry + one Fingerprints entry; the
+// table, capability cross-reference and qualification all follow automatically.
 internal static class DiscoveryPortCatalog
 {
-    // Protocol is the SupportedProtocol enum when the open port maps to a real capability protocol
-    // (used to cross-reference the capability registry), null for generic web ports.
-    internal sealed record PortDefinition(int Port, SupportedProtocol? Protocol, string Label, bool CameraSignal);
+    // Conventional service label shown for an open port with no confirmed protocol. Empty string
+    // for camera-protocol ports that aren't IANA-standard (8800/8899/2020/34567): there, an open
+    // port with a failing fingerprint stays "unidentified" rather than gaining a misleading name.
+    public static readonly IReadOnlyDictionary<int, string> ScannedPorts = new Dictionary<int, string>
+    {
+        [22] = "SSH",
+        [23] = "Telnet",
+        [80] = "HTTP",
+        [443] = "HTTPS",
+        [554] = "RTSP",
+        [2020] = "",
+        [8000] = "HTTP",
+        [8080] = "HTTP",
+        [8081] = "HTTP",
+        [8443] = "HTTPS",
+        [8554] = "RTSP",
+        [8800] = "",
+        [8899] = "",
+        [34567] = "",
+        [37777] = "Dahua",
+    };
 
-    public static readonly IReadOnlyList<PortDefinition> All =
+    internal sealed record Fingerprint(SupportedProtocol Protocol, string Label, IReadOnlyList<int> Ports);
+
+    public static readonly IReadOnlyList<Fingerprint> Fingerprints =
     [
-        new(554,   SupportedProtocol.Rtsp,  "RTSP",  CameraSignal: true),
-        new(2020,  SupportedProtocol.Onvif, "ONVIF", CameraSignal: true),
-        new(8800,  SupportedProtocol.V380,  "V380",  CameraSignal: true),
-        new(34567, SupportedProtocol.Dvrip, "DVRIP", CameraSignal: true),
-        new(80,    null,                    "HTTP",  CameraSignal: false),
-        new(443,   null,                    "HTTPS", CameraSignal: false),
-        new(8080,  null,                    "HTTP",  CameraSignal: false),
+        new(SupportedProtocol.Rtsp, "RTSP", [554, 8554]),
+        // ONVIF has no single standard port — commonly 80, 2020, 8000, 8080, or 8899 (V380/XM).
+        new(SupportedProtocol.Onvif, "ONVIF", [80, 2020, 8000, 8080, 8899]),
+        new(SupportedProtocol.V380, "V380", [8800]),
+        new(SupportedProtocol.Dvrip, "DVRIP", [34567]),
+        new(SupportedProtocol.TapoKlap, "Tapo KLAP", [80, 443]),
     ];
 
-    public static IReadOnlyList<int> Ports { get; } = All.Select(p => p.Port).Distinct().Order().ToArray();
+    public static IReadOnlyList<int> Ports { get; } = ScannedPorts.Keys.Order().ToArray();
 
-    public static PortDefinition? Lookup(int port) => All.FirstOrDefault(p => p.Port == port);
+    public static IReadOnlyList<Fingerprint> FingerprintsForPort(int port)
+        => Fingerprints.Where(f => f.Ports.Contains(port)).ToArray();
+
+    public static string ServiceLabel(int port) => ScannedPorts.GetValueOrDefault(port, string.Empty);
+
+    public static string FormatProtocolLabel(SupportedProtocol protocol)
+        => Fingerprints.FirstOrDefault(f => f.Protocol == protocol)?.Label ?? protocol.ToString();
 }

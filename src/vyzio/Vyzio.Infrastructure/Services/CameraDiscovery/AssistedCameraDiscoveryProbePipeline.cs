@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -189,13 +190,8 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     // a protocol-specific reason kept for any downstream consumer (e.g. the DVRIP fallback UI).
     private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverPortScanSignalsAsync(IReadOnlyList<string> hosts, CancellationToken ct)
     {
-        // null → sweep the full catalog (production); [] → disabled (hermetic tests). Only ports
-        // known to the catalog carry a protocol/label, so unknown configured ports are ignored.
-        var scanPorts = (_settings.Discovery.PortScanPorts ?? DiscoveryPortCatalog.Ports)
-            .Select(DiscoveryPortCatalog.Lookup)
-            .Where(def => def is not null)
-            .Select(def => def!)
-            .ToList();
+        // null → sweep the full catalog (production); [] → disabled (hermetic tests).
+        var scanPorts = _settings.Discovery.PortScanPorts ?? DiscoveryPortCatalog.Ports;
 
         if (hosts.Count == 0 || scanPorts.Count == 0)
         {
@@ -206,50 +202,192 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
         var tasks =
             from host in hosts
-            from portDef in scanPorts
-            select ScanPortAsync(host, portDef, gate, ct);
+            from port in scanPorts
+            select ScanPortAsync(host, port, gate, ct);
 
         var probed = await Task.WhenAll(tasks);
-        return probed.Where(signal => signal is not null).Select(signal => signal!).ToList();
+        return probed.SelectMany(signals => signals).ToList();
     }
 
-    private async Task<RawCameraDiscoverySignal?> ScanPortAsync(
-        string host, DiscoveryPortCatalog.PortDefinition portDef, SemaphoreSlim gate, CancellationToken ct)
+    // For one open port: attempt every protocol fingerprint that may live there. A confirmed
+    // fingerprint yields an authoritative protocol signal (camera-confirming); an open port that
+    // confirms nothing still surfaces as an "unidentified open port" signal (with its conventional
+    // service name if any) so it's shown to the user — never silently dropped.
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> ScanPortAsync(
+        string host, int port, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
         try
         {
-            if (!await CanConnectAsync(host, portDef.Port, _settings.Discovery.ProbeTimeoutMs, ct))
+            if (!await CanConnectAsync(host, port, _settings.Discovery.ProbeTimeoutMs, ct))
             {
-                return null;
-            }
-
-            var reasons = new List<string>();
-            if (portDef.CameraSignal)
-            {
-                reasons.Add("camera_port_open");
-                if (portDef.Protocol is { } protocol)
-                {
-                    reasons.Add($"{protocol.ToString().ToLowerInvariant()}_port_detected");
-                }
+                return [];
             }
 
             var macAddress = await ResolveMacAddressAsync(host, ct);
-            return BuildRawSignal(
-                ToDisplayName(host),
-                host,
-                portDef.Port,
-                "rtsp_manual",
-                null,
-                "port_scan",
-                $"Port {portDef.Port} ({portDef.Label}) ouvert sur {host}.",
-                macAddress,
-                null,
-                reasons);
+            var confirmed = new List<DiscoveryPortCatalog.Fingerprint>();
+            foreach (var fingerprint in DiscoveryPortCatalog.FingerprintsForPort(port))
+            {
+                if (await ConfirmProtocolAsync(fingerprint.Protocol, host, port, ct))
+                {
+                    confirmed.Add(fingerprint);
+                }
+            }
+
+            if (confirmed.Count > 0)
+            {
+                return confirmed
+                    .Select(fingerprint => BuildPortSignal(host, port, macAddress, fingerprint.Protocol, fingerprint.Label))
+                    .ToList();
+            }
+
+            // Open but no protocol confirmed — still shown, labelled by convention or "unidentified".
+            return [BuildPortSignal(host, port, macAddress, protocol: null, DiscoveryPortCatalog.ServiceLabel(port))];
         }
         finally
         {
             gate.Release();
+        }
+    }
+
+    private RawCameraDiscoverySignal BuildPortSignal(
+        string host, int port, string? macAddress, SupportedProtocol? protocol, string serviceLabel)
+    {
+        var reasons = protocol is { } p
+            ? new List<string> { "camera_port_open", $"{p.ToString().ToLowerInvariant()}_port_detected" }
+            : [];
+
+        var displayLabel = protocol is { } proto ? DiscoveryPortCatalog.FormatProtocolLabel(proto)
+            : string.IsNullOrEmpty(serviceLabel) ? "non identifié" : serviceLabel;
+
+        return new RawCameraDiscoverySignal(
+            ToDisplayName(host),
+            host,
+            port,
+            "rtsp_manual",
+            null,
+            "port_scan",
+            $"Port {port} ({displayLabel}) ouvert sur {host}.",
+            macAddress,
+            null,
+            reasons,
+            ConfirmedProtocol: protocol,
+            PortServiceLabel: protocol is null ? serviceLabel : null);
+    }
+
+    // Dispatches to the protocol-specific fingerprint (ADR-32 correction h). Each is a lightweight,
+    // credential-free handshake that confirms the protocol actually speaks on the open port.
+    private async Task<bool> ConfirmProtocolAsync(SupportedProtocol protocol, string host, int port, CancellationToken ct)
+    {
+        var timeout = _settings.Discovery.ProbeTimeoutMs;
+        return protocol switch
+        {
+            SupportedProtocol.Rtsp => await FingerprintRtspAsync(host, port, timeout, ct),
+            SupportedProtocol.Onvif => await ProbeOnvifUnicastEndpointAsync(host, port, timeout, ct) is not null,
+            SupportedProtocol.Dvrip => await FingerprintDvripAsync(host, port, timeout, ct),
+            SupportedProtocol.V380 => await FingerprintV380Async(host, port, timeout, ct),
+            SupportedProtocol.TapoKlap => await ProbeTapoKlapEndpointAsync(host, port, timeout, ct) is not null,
+            _ => false,
+        };
+    }
+
+    // RTSP OPTIONS is path-agnostic: any RTSP server answers "RTSP/1.0 200"/"401" to it.
+    private static async Task<bool> FingerprintRtspAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            using var stream = client.GetStream();
+            var request = $"OPTIONS rtsp://{host}:{port} RTSP/1.0\r\nCSeq: 1\r\nUser-Agent: Vyzio\r\n\r\n";
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(request), timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var buffer = new byte[512];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+            return read > 0 && Encoding.ASCII.GetString(buffer, 0, read).StartsWith("RTSP/", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // DVRIP/XMEye: every response starts with the 0xFF magic byte (ADR-29).
+    private static async Task<bool> FingerprintDvripAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            using var stream = client.GetStream();
+            await stream.WriteAsync(BuildDvripProbePacket(), timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var buffer = new byte[64];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+            return read >= 1 && buffer[0] == 0xFF;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static byte[] BuildDvripProbePacket()
+    {
+        var json = Encoding.UTF8.GetBytes("{\"EncryptType\":\"MD5\",\"LoginType\":\"DVRIP\",\"PassWord\":\"tlJwpbo6\",\"UserName\":\"admin\"}");
+        var packet = new byte[20 + json.Length];
+        packet[0] = 0xFF; // magic
+        packet[1] = 0x01; // version
+        packet[14] = 0xE8; packet[15] = 0x03; // msgId 1000 LE
+        packet[16] = (byte)(json.Length & 0xFF);
+        packet[17] = (byte)(json.Length >> 8);
+        Buffer.BlockCopy(json, 0, packet, 20, json.Length);
+        return packet;
+    }
+
+    // V380 native (port 8800): send the cmd-1167 auth packet (256-byte frame, deviceId 0) and
+    // require a full 256-byte V380-shaped reply. A non-V380 service on 8800 (e.g. a Tapo) won't
+    // return that framed response, so it is not mislabelled V380. Best-effort but credential-free.
+    private static async Task<bool> FingerprintV380Async(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            await client.ConnectAsync(host, port, timeout.Token);
+
+            var packet = new byte[256];
+            BinaryPrimitives.WriteInt32LittleEndian(packet, 1167);
+
+            using var stream = client.GetStream();
+            await stream.WriteAsync(packet, timeout.Token);
+            await stream.FlushAsync(timeout.Token);
+
+            var total = 0;
+            var buffer = new byte[256];
+            while (total < 256)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(total), timeout.Token);
+                if (read == 0)
+                {
+                    break;
+                }
+                total += read;
+            }
+            return total >= 256;
+        }
+        catch
+        {
+            return false;
         }
     }
 

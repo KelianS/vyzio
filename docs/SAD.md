@@ -2698,6 +2698,24 @@ Le DTO transporte `DetectedCapability(Capability, Label, ProtocolLabels)` (libel
 - ✅ Interprétation many-to-many correcte (plusieurs protocoles par capacité et inversement)
 - ⚠️ Tapo KLAP et ONVIF-sur-80 gardent un handshake dédié : partageant le port 80 avec un serveur web générique, un port ouvert seul ne les distingue pas — c'est une limite intrinsèque du scan de ports, pas une entorse au principe
 
+#### Correction (h) — confirmation de service (fingerprint) + affichage de tous les ports ouverts
+
+Deux faux résultats constatés en usage réel révélaient la même faille : `port ouvert ≠ protocole confirmé`. (1) Une caméra V380 avec ONVIF actif n'affichait pas ONVIF (exposé sur 8899, hors des ports scannés, et WS-Discovery multicast bloqué en bridge). (2) Une caméra Tapo avec le port 8800 ouvert était étiquetée « V380 » alors qu'elle ne parle pas V380 — le catalogue plaquait le protocole par **numéro de port**, sans vérification. C'est exactement ce que `nmap -sV` évite : après avoir trouvé un port ouvert, il interroge le service pour confirmer.
+
+**Correctif** — le balayage devient scan + confirmation, en deux temps :
+1. **Liste de ports élargie et affichée intégralement.** `DiscoveryPortCatalog.ScannedPorts` passe d'une poignée de ports à un jeu curé (SSH 22, Telnet 23, HTTP 80/8000/8080/8081, HTTPS 443/8443, RTSP 554/8554, ONVIF 2020/8899, V380 8800, DVRIP 34567, Dahua 37777…), chacun avec un libellé conventionnel. **Tout port ouvert est désormais affiché**, même sans protocole reconnu (répond à la demande : « afficher les ports détectés même si on ne sait pas ce que c'est ») — libellé conventionnel si connu (HTTP, SSH…), sinon « non identifié ».
+2. **Fingerprint de confirmation par protocole.** Sur chaque port ouvert, on tente les handshakes légers et sans credentials des protocoles susceptibles d'y vivre (`DiscoveryPortCatalog.Fingerprints`, un protocole → ses ports candidats) : RTSP `OPTIONS`, ONVIF SOAP `GetSystemDateAndTime`, DVRIP octet magique `0xFF`, V380 trame d'auth 256 octets, Tapo KLAP `handshake1`. Le protocole n'est étiqueté **que** si son fingerprint passe (`RawCameraDiscoverySignal.ConfirmedProtocol`) ; sinon le port reste « ouvert non identifié ». ONVIF est ainsi détecté quel que soit son port (2020, 8899, 80…), et le 8800 d'un Tapo, ne répondant pas au handshake V380, n'est plus étiqueté V380.
+
+`ScanPortAsync` émet un signal par protocole confirmé (many-to-many : un port peut confirmer plusieurs protocoles) ou un signal « non identifié » si aucun. Le fingerprint V380 est *best-effort* (trame d'auth credential-free, exige une réponse V380 de 256 octets) : en cas d'échec, le port s'affiche « non identifié » plutôt que faussement « V380 » — choix assumé côté justesse.
+
+Ajouter un protocole à port dédié = une entrée `ScannedPorts` + une entrée `Fingerprints` (+ un cas dans `ConfirmProtocolAsync`, qui réutilise les sondes existantes). ONVIF/KLAP restent gérés par fingerprint sur port partagé, sans sonde autonome séparée.
+
+- ✅ Faux positif Tapo:8800=V380 supprimé (fingerprint requis avant étiquetage)
+- ✅ ONVIF détecté sur son vrai port (8899 ajouté + confirmation SOAP port-agnostique)
+- ✅ Tous les ports ouverts affichés, identifiés ou non — aide à repérer les équipements non supportés (objectif initial du backlog « Scan réseau »)
+- ⚠️ Scan d'un jeu de ports curé, pas de 1-65535 (coût du TCP-connect × hôtes) ; liste extensible en un point et surchargeable via `DiscoverySettings.PortScanPorts`
+- ⚠️ Fingerprint V380 best-effort faute de signature de réponse documentée : privilégie « non identifié » à un faux « V380 »
+
 ---
 
 ## 6. Architecture des services
