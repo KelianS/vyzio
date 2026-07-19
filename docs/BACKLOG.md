@@ -22,7 +22,8 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 > Zone de capture libre. Un ajout = une ligne. Pas de tri, pas de priorite, pas de contexte obligatoire.
 
-- Status de Frigate dans l'UI, pour savoir si le service est actif et affiché un message propre pendant le redémarrage (application de config, mode vie privée etc).
+- Optimisation dynamique de Frigate selon les ressources dispo (CPU/RAM/GPU) et la charge (nb caméras, résolution, FPS). Configurer automatiquement frigate en fonction du matériel disponible (accélération GPU, Nvidia, Intel, AMD, CPU seul ...). 
+Voir s'il est possible d'optimiser la configuration de Frigate pour réduire l'utilisation des ressources, par exemple en ajustant les paramètres de détection d'objets, la résolution des flux vidéo, ou en utilisant des modèles plus légers.
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir [ADR-27](adr/0027-reglages-image-avances-capacite-imagesettings-onvif.md)/[ADR-29](adr/0029-dvrip-dvripclient-partage-reglages-image-avenc.md).
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
@@ -31,7 +32,6 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Commandes chatbot (Discord ou autre) pour actions rapides : activer/désactiver le mode vie privée, statut des caméras, snapshot — bidirectionnel avec le canal de notifications.
 - Accès à Vyzio depuis l'extérieur — pistes à comparer : tunnel réseau (Netbird), commandes via chatbot, relais SaaS façon app constructeur.
 - Intégration Home Assistant (capteurs d'ouverture, détection de mouvement, présence, scénarios d'automatisation).
-- Optimisation dynamique de Frigate selon les ressources dispo (CPU/RAM/GPU) et la charge (nb caméras, résolution, FPS).
 - Tests end-to-end Playwright pour chaque user story des SPECS.
 
 ---

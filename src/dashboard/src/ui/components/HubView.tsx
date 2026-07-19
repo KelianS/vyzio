@@ -191,10 +191,22 @@ function HubOperationalState({
   const [batchPending, setBatchPending] = useState<boolean | null>(null)
 
   useEffect(() => {
-    getSystemStats
-      .execute()
-      .then(setSystemStats)
-      .catch(() => {})
+    let cancelled = false
+    const poll = () => {
+      getSystemStats
+        .execute()
+        .then((stats) => {
+          if (!cancelled) setSystemStats(stats)
+        })
+        .catch(() => {})
+    }
+
+    poll()
+    const intervalId = setInterval(poll, 8000)
+    return () => {
+      cancelled = true
+      clearInterval(intervalId)
+    }
   }, [getSystemStats])
 
   const recentEvents = data?.recentEvents ?? []

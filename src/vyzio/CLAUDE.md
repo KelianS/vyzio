@@ -28,6 +28,13 @@ ProfilesEndpoints         (Api/Endpoints)                 → reçoit CreateProf
 CreateProfileUseCaseTests (Tests/UseCases)                → mock IProfileRepository (NSubstitute)
 ```
 
+## Comparaisons type-safe (règle d'or)
+
+Ne jamais comparer une valeur métier à une chaîne littérale (`if (x == "active")`). Utiliser un
+`enum` (`Vyzio.Core.Entities`) et comparer/switcher dessus. À la frontière API (DTO JSON), convertir
+via `SnakeCaseEnum.ToSnakeCase` / `TryFromSnakeCase` (`Vyzio.Core.Common`) — jamais une string en dur
+des deux côtés.
+
 ## Tests
 
 - Unitaires : use cases mockés via **NSubstitute**, zéro DB.
