@@ -4,6 +4,7 @@ import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../application/use-cases/GetPtzPresets'
 import type { CapturePtzPresetThumbnail } from '../../application/use-cases/CapturePtzPresetThumbnail'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
+import type { FrigateStatus } from '../../domain/entities/SystemStats'
 import { PtzControlPanel } from './PtzControlPanel'
 
 interface LiveFeedModalProps {
@@ -11,6 +12,7 @@ interface LiveFeedModalProps {
   apiBaseUrl: string
   label: string
   ptzSupported: boolean
+  frigateStatus?: FrigateStatus
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   getPtzPresets?: GetPtzPresets
@@ -22,6 +24,7 @@ export function LiveFeedModal({
   apiBaseUrl,
   label,
   ptzSupported,
+  frigateStatus = 'active',
   ptzStep,
   ptzGoToPreset,
   getPtzPresets,
@@ -31,6 +34,7 @@ export function LiveFeedModal({
     () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
   )
   const [presets, setPresets] = useState<PtzPreset[]>([])
+  const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -49,7 +53,21 @@ export function LiveFeedModal({
 
   return (
     <div className="live-feed-modal">
-      <img src={src} alt={label} className="live-feed-modal-img" />
+      <img
+        src={src}
+        alt={label}
+        className="live-feed-modal-img"
+        onError={() => setImageError(true)}
+        onLoad={() => setImageError(false)}
+      />
+      {(frigateStatus === 'restarting' || imageError) && (
+        <div className="media-loading-overlay" aria-hidden="true">
+          <span className="media-loading-spinner" />
+          {frigateStatus === 'restarting' && (
+            <span className="media-loading-label">Redémarrage en cours…</span>
+          )}
+        </div>
+      )}
       {ptzSupported && (
         <div className="live-feed-ptz-overlay">
           <PtzControlPanel

@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Camera } from '../../domain/entities/Camera'
 import type { HubOverview } from '../../domain/entities/HubOverview'
 import type { AppError } from '../../domain/errors/AppError'
 import { appErrorMessage } from '../../domain/errors/AppError'
-import type { GetSystemStats } from '../../application/use-cases/GetSystemStats'
 import type { SystemStats } from '../../domain/entities/SystemStats'
 import { useHubOverview } from '../hooks/useHubOverview'
 import { useCameras } from '../hooks/useCameras'
@@ -27,7 +26,7 @@ interface HubViewProps {
   data: HubOverviewData
   cameras: CamerasData
   apiBaseUrl: string
-  getSystemStats: GetSystemStats
+  systemStats: SystemStats | null
   onOpenMedia: (type: 'image' | 'video', url: string) => void
   onOpenLive: (camera: Camera) => void
   onTogglePrivacy: (camera: Camera, active: boolean) => Promise<void>
@@ -41,7 +40,7 @@ export function HubView({
   data,
   cameras,
   apiBaseUrl,
-  getSystemStats,
+  systemStats,
   onOpenMedia,
   onOpenLive,
   onTogglePrivacy,
@@ -69,7 +68,7 @@ export function HubView({
       cameras={activeCameras}
       allCameras={cameras}
       apiBaseUrl={apiBaseUrl}
-      getSystemStats={getSystemStats}
+      systemStats={systemStats}
       onOpenMedia={onOpenMedia}
       onOpenLive={onOpenLive}
       onTogglePrivacy={onTogglePrivacy}
@@ -169,7 +168,7 @@ interface HubOperationalStateProps {
   cameras: Camera[]
   allCameras: Camera[]
   apiBaseUrl: string
-  getSystemStats: GetSystemStats
+  systemStats: SystemStats | null
   onOpenMedia: (type: 'image' | 'video', url: string) => void
   onOpenLive: (camera: Camera) => void
   onTogglePrivacy: (camera: Camera, active: boolean) => Promise<void>
@@ -181,33 +180,14 @@ function HubOperationalState({
   cameras,
   allCameras,
   apiBaseUrl,
-  getSystemStats,
+  systemStats,
   onOpenMedia,
   onOpenLive,
   onTogglePrivacy,
   onBatchTogglePrivacy,
 }: HubOperationalStateProps) {
-  const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
   const [batchPending, setBatchPending] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const poll = () => {
-      getSystemStats
-        .execute()
-        .then((stats) => {
-          if (!cancelled) setSystemStats(stats)
-        })
-        .catch(() => {})
-    }
-
-    poll()
-    const intervalId = setInterval(poll, 8000)
-    return () => {
-      cancelled = true
-      clearInterval(intervalId)
-    }
-  }, [getSystemStats])
+  const frigateStatus = systemStats?.status ?? 'active'
 
   const recentEvents = data?.recentEvents ?? []
   const notifications = data?.notifications
@@ -281,6 +261,7 @@ function HubOperationalState({
                 key={camera.id}
                 camera={camera}
                 apiBaseUrl={apiBaseUrl}
+                frigateStatus={frigateStatus}
                 onExpand={camera.privacyModeActive ? undefined : () => onOpenLive(camera)}
                 onTogglePrivacy={onTogglePrivacy}
               />
@@ -322,6 +303,11 @@ function HubOperationalState({
                         alt={formatEventTitle(event)}
                         loading="lazy"
                       />
+                      {frigateStatus === 'restarting' && (
+                        <span className="media-loading-overlay" aria-hidden="true">
+                          <span className="media-loading-spinner" />
+                        </span>
+                      )}
                     </button>
                   )}
                   <div className="event-card-body">

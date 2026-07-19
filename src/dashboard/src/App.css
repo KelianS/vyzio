@@ -1200,6 +1200,24 @@
   gap: 12px;
 }
 
+/* Base .status-pill colors are calibrated for the dark --bg-strong header context — this panel
+   sits on the light --bg-elevated surface, so text needs the darker, light-surface variant
+   (same values as .camera-detail-status.status-pill). */
+.hub-monitor-heading-row .status-pill.online {
+  background: rgba(45, 122, 82, 0.16);
+  color: #1d5c3d;
+}
+
+.hub-monitor-heading-row .status-pill.loading {
+  background: rgba(217, 179, 122, 0.24);
+  color: #855500;
+}
+
+.hub-monitor-heading-row .status-pill.degraded {
+  background: rgba(198, 92, 61, 0.16);
+  color: #93361f;
+}
+
 .camera-panel-meta {
   display: flex;
   align-items: center;
@@ -1412,6 +1430,7 @@
 .event-card-thumb {
   flex-shrink: 0;
   width: 96px;
+  position: relative;
   background: rgba(24, 32, 29, 0.1);
   border: none;
   padding: 0;
@@ -2305,6 +2324,42 @@
   font-size: 0.84rem;
   color: rgba(247, 244, 237, 0.5);
   font-weight: 600;
+}
+
+/* ── Media loading overlay (Frigate restarting / transient frame error) ── */
+
+.media-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(24, 32, 29, 0.55);
+  color: #f7f4ed;
+}
+
+.media-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(247, 244, 237, 0.35);
+  border-top-color: #f7f4ed;
+  animation: media-loading-spin 0.8s linear infinite;
+}
+
+.media-loading-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 8px;
+}
+
+@keyframes media-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .live-thumb-footer {

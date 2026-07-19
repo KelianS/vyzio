@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Camera } from '../../domain/entities/Camera'
+import type { FrigateStatus } from '../../domain/entities/SystemStats'
 
 interface CameraLiveThumbnailProps {
   camera: Camera
   apiBaseUrl: string
+  frigateStatus?: FrigateStatus
   onExpand?: () => void
   onTogglePrivacy?: (camera: Camera, active: boolean) => void
 }
@@ -11,18 +13,19 @@ interface CameraLiveThumbnailProps {
 export function CameraLiveThumbnail({
   camera,
   apiBaseUrl,
+  frigateStatus = 'active',
   onExpand,
   onTogglePrivacy,
 }: CameraLiveThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
   )
-  const [offline, setOffline] = useState(() => !camera.connected)
+  const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const deviceOffline = !camera.connected
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOffline(!camera.connected)
+    setImageError(false)
 
     if (!camera.privacyModeActive && camera.connected) {
       intervalRef.current = setInterval(() => {
@@ -42,7 +45,7 @@ export function CameraLiveThumbnail({
 
   return (
     <article
-      className={`live-thumb${offline ? ' live-thumb--offline' : ''}${camera.privacyModeActive ? (camera.privacyVendorCut ? ' live-thumb--privacy-hw' : ' live-thumb--privacy') : ''}${onExpand && !camera.privacyModeActive ? ' live-thumb--expandable' : ''}`}
+      className={`live-thumb${deviceOffline ? ' live-thumb--offline' : ''}${camera.privacyModeActive ? (camera.privacyVendorCut ? ' live-thumb--privacy-hw' : ' live-thumb--privacy') : ''}${onExpand && !camera.privacyModeActive ? ' live-thumb--expandable' : ''}`}
       onClick={camera.privacyModeActive ? undefined : onExpand}
       role={onExpand && !camera.privacyModeActive ? 'button' : undefined}
       tabIndex={onExpand && !camera.privacyModeActive ? 0 : undefined}
@@ -68,15 +71,26 @@ export function CameraLiveThumbnail({
                 : 'Caméra en pause — enregistrement désactivé'}
             </span>
           </div>
-        ) : offline ? (
+        ) : deviceOffline ? (
           <div className="live-thumb-offline">Hors ligne</div>
         ) : (
-          <img
-            src={imgSrc}
-            alt={camera.displayName}
-            className="live-thumb-img"
-            onError={() => setOffline(true)}
-          />
+          <>
+            <img
+              src={imgSrc}
+              alt={camera.displayName}
+              className="live-thumb-img"
+              onError={() => setImageError(true)}
+              onLoad={() => setImageError(false)}
+            />
+            {(frigateStatus === 'restarting' || imageError) && (
+              <div className="media-loading-overlay" aria-hidden="true">
+                <span className="media-loading-spinner" />
+                {frigateStatus === 'restarting' && (
+                  <span className="media-loading-label">Redémarrage en cours…</span>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="live-thumb-footer">
@@ -86,7 +100,7 @@ export function CameraLiveThumbnail({
             aria-hidden="true"
           />
         ) : (
-          <span className={`live-dot${offline ? '' : ' live-dot--on'}`} aria-hidden="true" />
+          <span className={`live-dot${deviceOffline ? '' : ' live-dot--on'}`} aria-hidden="true" />
         )}
         <span className="live-thumb-name">{camera.displayName}</span>
         {camera.privacyModeSource === 'schedule' && (
