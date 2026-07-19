@@ -19,6 +19,30 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 - Le backlog ne sert jamais à découvrir la stratégie après coup ; il traduit une stratégie déjà décidée dans les SPECS et/ou le SAD.
 - Aucune PR n'est propre si le code est à jour mais la documentation de cadrage en retard.
 
+## Architecture documentaire (types de documents)
+
+| Type | Rôle | Foyer | Stabilité |
+|---|---|---|---|
+| **SPECS** | Besoin, parcours, périmètre produit | [`SPECS.md`](SPECS.md) | moyenne |
+| **SAD** | Frontières, grands choix, vue d'ensemble ; **référence** le code, ne le paraphrase pas | [`SAD.md`](SAD.md) | haute |
+| **ADR** | Une décision d'architecture = un fichier (Contexte → Options → Décision → Conséquences) | [`adr/`](adr/) — un `NNNN-slug.md` par décision, index [`adr/README.md`](adr/README.md) | figée une fois `accepté` |
+| **TAD** | *Comment* un sous-système fonctionne (détail trop spécifique pour le SAD) | [`design/`](design/) — un `.md` par composant, catalogue [`design/README.md`](design/README.md) | moyenne |
+| **Investigation** | Exploration, essais, reverse engineering, captures | [`investigations/`](investigations/) | jetable |
+| **Doc utilisateur** | Mode d'emploi d'une feature livrée | [`user/`](user/) | suit la feature |
+
+Chaîne : le SAD pose les **frontières** → un ADR **tranche** une décision (et cite ses options
+écartées) → un TAD documente le **comment** d'un composant → le code **fait**. Chacun son foyer,
+aucune recopie.
+
+**Règles d'échelle :**
+- Le corps du SAD ne bouge pas quand une décision s'ajoute : un nouvel ADR = un fichier dans `adr/`
+  + une ligne d'index. Le SAD §5 **pointe** vers l'index, il ne le recopie pas.
+- Un ADR remplacé n'est jamais supprimé : statut `remplacé par ADR-NNNN` ; la décision qui le
+  remplace résume l'option abandonnée dans sa rubrique « Options écartées ».
+- Le détail bas niveau (trames d'octets, catalogues de ports, schéma SQL, payloads, listes de
+  routes) vit dans un **TAD** ou dans le **code**, jamais dupliqué dans un ADR ni le SAD, qui le
+  référencent.
+
 ## Discipline de rédaction (nature de chaque document)
 
 Chaque document a une **nature** ; la respecter évite qu'il gonfle et se périme.

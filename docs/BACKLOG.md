@@ -24,7 +24,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 - Status de Frigate dans l'UI, pour savoir si le service est actif et affiché un message propre pendant le redémarrage (application de config, mode vie privée etc).
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
-- Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir SAD ADR-27/ADR-29.
+- Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir [ADR-27](adr/README.md)/ADR-29.
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
 - Canal Discord pour les notifications (webhook).
 - Canal WhatsApp pour notifications et commandes rapides (API Cloud Meta ou Baileys/WWebJS).
