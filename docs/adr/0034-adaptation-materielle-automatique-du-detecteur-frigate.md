@@ -87,3 +87,10 @@ et le calcul du FPS.
   `frigate` en lecture-écriture (le device est réellement utilisé pour l'inférence). `vyzio-api` monte
   déjà le socket Docker (accès quasi-root implicite), le delta de surface d'attaque du passage en
   `privileged` reste marginal.
+- `IFrigateDetectorPlanner` (Infrastructure) centralise la décision (kind + FPS cible) : à la fois
+  `FrigateConfigApplier` (écrit `config.yml`) et `GetSystemStatsUseCase` (`/api/system/stats`, champ
+  `Detection`) le consomment, pour ne jamais recalculer/dupliquer la logique. Motivation directe : sans
+  ça, l'utilisateur n'a aucun moyen de savoir quel matériel est réellement utilisé — Frigate lui-même
+  ne l'affiche pas. Le Hub affiche le palier (Coral / GPU Intel / CPU) et le FPS cible dans le panneau
+  système existant (`SystemMonitorPanel`), à titre informatif — ce n'est pas un état actionnable, donc
+  pas une pastille de statut (cf. Design System : pastille = état, rien à cliquer ici).

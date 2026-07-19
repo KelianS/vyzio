@@ -13,7 +13,7 @@ public sealed class FrigateConfigApplier(
     VyzioRuntimeSettings settings,
     ILogger<FrigateConfigApplier> logger,
     IFrigateRestartTracker restartTracker,
-    IHardwareAccelerationDetector hardwareDetector) : IFrigateConfigApplier
+    IFrigateDetectorPlanner detectorPlanner) : IFrigateConfigApplier
 {
     public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
@@ -86,8 +86,9 @@ public sealed class FrigateConfigApplier(
             .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        var detectorKind = hardwareDetector.Detect();
-        var detectFps = ComputeDetectFps(detectorKind, validatedCameras.Count);
+        var plan = detectorPlanner.Plan(validatedCameras.Count);
+        var detectorKind = plan.Kind;
+        var detectFps = plan.Fps;
 
         var activeCameras = validatedCameras
             .ToDictionary(
@@ -196,22 +197,6 @@ public sealed class FrigateConfigApplier(
             Record = new FrigateRecordConfig { Enabled = true },
             Cameras = activeCameras,
         };
-    }
-
-    // Only CPU is throttled via detect.fps — Coral/Intel GPU absorb the load, no motive to reduce
-    // it dynamically for them (ADR-34). One camera gets FpsMax, each additional camera drops the
-    // FPS by one down to the FpsMin floor; the clamp guarantees the result never escapes the
-    // configured bounds regardless of camera count.
-    private int ComputeDetectFps(FrigateDetectorKind detectorKind, int activeCameraCount)
-    {
-        if (detectorKind != FrigateDetectorKind.Cpu)
-            return 5;
-
-        var fpsMin = settings.Frigate.CpuDetectFpsMin;
-        var fpsMax = settings.Frigate.CpuDetectFpsMax;
-        var cameraCount = Math.Max(1, activeCameraCount);
-        var totalFpsBudget = hardwareDetector.CpuCoreCount * settings.Frigate.CpuDetectFpsPerCore;
-        return Math.Clamp((int)Math.Floor(totalFpsBudget / cameraCount), fpsMin, fpsMax);
     }
 
     private static Dictionary<string, FrigateDetectorConfig> BuildDetectors(FrigateDetectorKind detectorKind) =>

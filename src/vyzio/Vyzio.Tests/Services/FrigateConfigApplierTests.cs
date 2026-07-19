@@ -48,11 +48,13 @@ public class FrigateConfigApplierTests : IDisposable
 
     private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu, int cpuCoreCount = 4)
     {
+        var settings = Settings;
+        var planner = new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount));
         var applier = new FrigateConfigApplier(
-            Settings,
+            settings,
             NullLogger<FrigateConfigApplier>.Instance,
             new FrigateRestartTracker(),
-            new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount));
+            planner);
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }
