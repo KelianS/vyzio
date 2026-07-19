@@ -19,6 +19,22 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 - Le backlog ne sert jamais à découvrir la stratégie après coup ; il traduit une stratégie déjà décidée dans les SPECS et/ou le SAD.
 - Aucune PR n'est propre si le code est à jour mais la documentation de cadrage en retard.
 
+## Discipline de rédaction (nature de chaque document)
+
+Chaque document a une **nature** ; la respecter évite qu'il gonfle et se périme.
+
+- **SAD = cible, pas histoire.** Le SAD décrit l'architecture **visée**, au présent — jamais ce qui
+  était fait avant, ni le chemin parcouru. Le seul endroit où « ce qui était fait avant » peut
+  apparaître est la rubrique **« Options écartées »** d'un ADR (valeur : expliquer *pourquoi pas*).
+  Interdit : empiler des « Correction (a)(b)(c)… » chronologiques dans un ADR — fusionner dans la
+  décision cible. Titre d'ADR orienté cible (« X écarté, Y retenu »), pas historique (« X tenté
+  puis abandonné »).
+- **Ne pas paraphraser le code.** Schéma SQL, signatures, trames d'octets, listes de routes ont leur
+  foyer dans le code (entités EF, endpoints, catalogues). Les documents les **référencent**, ne les
+  recopient pas — c'est la règle suprême zéro-duplication appliquée au couple doc/code.
+- **Historique d'exploration** (essais, captures réseau, reverse engineering) → [`investigations/`](investigations/),
+  jamais le SAD.
+
 ## Précédence (une info = un seul foyer)
 
 Vision → [`../README.md`](../README.md) · Besoin → `SPECS.md` · Solution technique → `SAD.md` ·

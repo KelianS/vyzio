@@ -1,6 +1,6 @@
 # Vyzio — Software Architecture Document (SAD)
 
-> Mai 2026 — v2.2 — Document vivant
+> Juillet 2026 — v2.3 — Document vivant
 
 ---
 
@@ -38,7 +38,9 @@
   - [ADR-27 — Réglages image avancés : capacité `ImageSettings`, ONVIF Imaging Service, valeurs non persistées](#adr-27--réglages-image-avancés--capacité-imagesettings-onvif-imaging-service-valeurs-non-persistées)
   - [ADR-28 — Détection de capacité en cascade multi-protocole + flag `ManuallyConfigured`](#adr-28--détection-de-capacité-en-cascade-multi-protocole--flag-manuallyconfigured)
   - [ADR-29 — DVRIP : `DvripClient` partagé, réglages image (`AVEnc.VideoColor.[0]`), PTZ Move/Stop](#adr-29--dvrip--dvripclient-partagé-réglages-image-avencvideocolor0-ptz-movestop)
-  - [ADR-30 — V380 natif pour `ImageSettings` : tenté puis abandonné (vision nocturne, opcode `0xC4`)](#adr-30--v380-natif-pour-imagesettings--tenté-puis-abandonné-vision-nocturne-opcode-0xc4)
+  - [ADR-30 — Réglages image V380 natif : écarté, `ImageSettings` via ONVIF uniquement](#adr-30--réglages-image-v380-natif--écarté-imagesettings-via-onvif-uniquement)
+  - [ADR-31 — Override manuel du constructeur à l'onboarding](#adr-31--override-manuel-du-constructeur-à-lonboarding)
+  - [ADR-32 — Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation](#adr-32--pipeline-de-découverte-réseau-en-3-étapes--identification--enrichissement--interprétation)
 6. [Architecture des services](#6-architecture-des-services)
 7. [Modèle de données](#7-modèle-de-données)
 8. [Architecture de déploiement](#8-architecture-de-déploiement)
@@ -2543,7 +2545,7 @@ public sealed class DvripCallException(string message, Exception? inner = null) 
 
 ---
 
-### ADR-30 — V380 natif pour `ImageSettings` : tenté puis abandonné (vision nocturne, opcode `0xC4`)
+### ADR-30 — Réglages image V380 natif : écarté, `ImageSettings` via ONVIF uniquement
 
 #### Contexte
 
@@ -2573,161 +2575,73 @@ Seule extraction conservée : **`V380DeviceIdBootstrap`** (`Vyzio.Infrastructure
 
 ---
 
-### ADR-31 — Découverte réseau : signaux protocolaires V380/Tapo KLAP + override manuel du constructeur à l'onboarding
+### ADR-31 — Override manuel du constructeur à l'onboarding
 
 #### Contexte
 
-Backlog `onboarding` (item « Scan réseau ») : la reconnaissance de constructeur à la découverte repose aujourd'hui sur du texte (nom/note/hostname) et l'OUI MAC (`AssistedCameraDiscoveryKnownDevices.DetectVendorFamily`), en plus des vrais signaux protocolaires ONVIF/RTSP/DVRIP déjà en place (§ Stratégie de découverte). Cette reconnaissance textuelle est fragile par nature (déjà noté dans les règles produit, § 2.2/2.3 SPECS) ; deux axes d'amélioration sont retenus :
-
-1. Ajouter des signaux protocolaires réels pour V380 et Tapo KLAP, au même niveau de fiabilité que le signal DVRIP déjà retenu comme `camera_confirmed`.
-2. Donner à l'utilisateur un moyen direct de corriger/court-circuiter une reconnaissance automatique ratée, sans repasser par la déclaration capacité-par-capacité de l'ADR-22 (qui reste le recours pour une marque réellement inconnue de Vyzio).
-
-L'affichage des équipements non reconnus (« afficher tout ce qui est trouvé même si ça ne matche aucun pattern, priorité plus faible ») repose sur `AssistedCameraDiscoveryFormatter.ShouldExposeToFront` (expose déjà tout candidat sans filtrage) et `device_unknown` (qualification et priorité de tri les plus basses, § Modèle de qualification retenu) — mais ces deux mécanismes ne s'appliquent qu'aux candidats qui **atteignent** l'identifieur sous forme de signal brut. Or `DiscoverMacVendorSignalsAsync` ne produisait jusqu'ici un signal que si l'OUI MAC correspondait à une des 3 marques connues, et `DiscoverHostnameSignalsAsync` uniquement si le hostname matchait un motif connu : un équipement qui ne répond à **aucun** protocole sondé et dont l'OUI/hostname ne matche rien (typique d'une caméra cloud-only sans API locale documentée, ex. constatée en usage réel avec une YI YRS3521) ne produisait alors **aucun signal du tout** et restait invisible, contrairement à l'intention du backlog. Correction en (c).
+La reconnaissance automatique du constructeur à la découverte (protocoles confirmés, OUI MAC, hostname — ADR-32) reste faillible par nature (§ 2.2/2.3 SPECS). L'utilisateur doit pouvoir corriger ou court-circuiter une détection ratée sans repasser par la déclaration capacité-par-capacité de l'ADR-22, réservée à une marque réellement inconnue de Vyzio.
 
 #### Décision
 
-**a) Deux nouveaux probes protocolaires dans `AssistedCameraDiscoveryProbePipeline`**, au même niveau que le probe DVRIP existant (`ProbeDvripEndpointAsync`) : sondes autonomes, sans credentials, sans dépendance à un `Camera` persisté — le pipeline de découverte est instancié manuellement (`new AssistedCameraDiscoveryProbePipeline(...)`), pas par DI, donc il ne réutilise pas `V380Client`/`TapoKlapProvider` (qui exigent une entité `Camera` et des credentials) ; comme pour DVRIP, dupliquer les quelques octets de handshake minimal est le choix retenu plutôt que de faire dépendre la découverte d'une entité métier.
+Le formulaire d'ajout/édition (`CameraOnboardingView.tsx`) expose un sélecteur de marque optionnel (`v380_pro` / `tplink_tapo` / `icsee` / aucune) qui alimente le champ `vendorFamily` du contrat `CreateCameraRequest`/`UpdateCameraRequest`. `SeedAndProbePresetsUseCase` (ADR-28) utilise ce champ pour emprunter le chemin preset plutôt que la détection à l'aveugle. Le champ étant déjà câblé de bout en bout, seule la surface UI est ajoutée — aucun endpoint ni logique métier supplémentaire.
 
-- **V380** : requête UDP `NVDEVSEARCH^100` (port 10008, même format que `V380Client.DiscoverDeviceIdAsync`) ; une réponse parseable prouve qu'un service V380 répond, sans authentification.
-- **Tapo KLAP** : `POST /app/handshake1` (port 80) avec un seed aléatoire ; une réponse ≥ 48 octets (seed serveur 16B + hash serveur 32B) prouve le protocole KLAP — `handshake1` ne dépend pas des credentials (seul `handshake2` en a besoin), donc ce signal est utilisable sans mot de passe connu.
-
-Chaque probe positif ajoute une raison de qualification dédiée (`v380_port_detected`, `tapo_klap_detected`) traitée comme `camera_confirmed` par `AssistedCameraDiscoveryIdentifier.DetermineQualification`, au même titre que `dvrip_port_detected`.
-
-**b) Override manuel du constructeur à l'onboarding.** Le contrat `CreateCameraRequest`/`UpdateCameraRequest` accepte déjà un `VendorFamily` optionnel, et `SeedAndProbePresetsUseCase` (ADR-28) l'utilise déjà pour choisir le chemin preset plutôt que la détection à l'aveugle — seule la surface UI manquait. Le formulaire d'ajout/édition (`CameraOnboardingView.tsx`) expose un sélecteur de marque optionnel (`v380_pro` / `tplink_tapo` / `icsee` / aucune) qui alimente le champ `vendorFamily` déjà câblé de bout en bout ; aucun nouveau endpoint ni nouvelle logique métier côté backend.
-
-**c) Signal de secours « hôte présent, protocole inconnu ».** `DiscoverMacVendorSignalsAsync` émet désormais un signal dès qu'une adresse MAC est résolue dans la table ARP, que l'OUI soit reconnu ou non — seule l'absence totale de résolution MAC (hôte injoignable/hors LAN) est encore un motif d'exclusion. Un hôte dont l'OUI ne matche rien remonte avec la raison `mac_address_observed` (déjà gérée par `AssistedCameraDiscoveryIdentifier`, qui la classe en `device_unknown` faute d'autre signal), une note explicite invitant à vérifier l'accès local ou à déclarer l'équipement manuellement, et `vendorFamily = null`. Limite connue et non traitée ici : `ResolveMacAddress` ne lit `/proc/net/arp` que sous Linux (`OperatingSystem.IsLinux()`) et suppose que le conteneur backend voit la table ARP du réseau physique (mode réseau `host`, pas `bridge`) — un déploiement qui isole le conteneur sur un réseau Docker dédié ne verra pas les hôtes du LAN par ce mécanisme.
+Le sélecteur est **toujours éditable**, y compris quand aucune détection n'a abouti (caméra pas encore prête, flux non détecté) : c'est le recours direct pour corriger une reconnaissance automatique erronée.
 
 #### Conséquences
 
-- ✅ Deux signaux d'identification supplémentaires basés sur une vraie réponse protocolaire plutôt qu'une correspondance de texte, sans risque (lecture seule, pas de credentials, mêmes garanties d'isolation que les probes existants)
-- ✅ L'utilisateur peut corriger une reconnaissance automatique ratée en un clic, sans repasser par la déclaration capacité-par-capacité — cette dernière reste le recours pour une marque non répertoriée
-- ✅ Un équipement qui ne répond à aucun protocole connu et n'a pas d'OUI reconnu reste désormais visible (priorité basse) au lieu de disparaître silencieusement, conformément à l'intention initiale du backlog
-- ✅ Aucun changement de contrat API ni de modèle de données (le champ existait déjà, seule l'UI manquait)
-- ⚠️ Les autres protocoles cités dans l'idée de backlog (ex. identification via ports ouverts génériques pour des marques non enregistrées) restent hors périmètre : seuls V380 et Tapo KLAP ont un protocole local connu et déjà implémenté ailleurs dans le code (`V380Client`, `TapoKlapProvider`) à réutiliser comme référence de handshake
-- ⚠️ Le signal de secours (c) dépend d'un backend Linux avec accès à la table ARP du réseau physique (réseau `host`) ; sans cela, un équipement sans protocole reconnu reste invisible — à vérifier/documenter selon le mode de déploiement réel
+- ✅ L'utilisateur corrige une reconnaissance ratée en un clic ; la déclaration capacité-par-capacité (ADR-22) reste le recours pour une marque non répertoriée
+- ✅ Aucun changement de contrat API ni de modèle de données — le champ existait déjà, seule l'UI manquait
 
 ---
 
-### ADR-32 — Pipeline de découverte réseau en 3 étapes explicites : identification / enrichissement / interprétation
+### ADR-32 — Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation
 
 #### Contexte
 
-Un usage réel a révélé deux limites concrètes du pipeline de découverte, au-delà du point (c) de l'ADR-31 :
-
-1. **Aucune étape d'identification.** Le pipeline sonde directement chaque protocole (RTSP/ONVIF/HTTP/DVRIP/V380/KLAP) contre **toutes** les adresses d'une plage CIDR balayée, sans vérifier au préalable qu'un hôte y répond ne serait-ce qu'au niveau réseau. Concrètement : une caméra YI YRS3521 sans protocole local exposé restait invisible même après le correctif ARP de l'ADR-31c (la résolution MAC ne s'appuie que sur la table ARP déjà peuplée, ce qui n'apporte rien si l'hôte n'a jamais été contacté). Une identification explicite en amont (ping) était manquante.
-2. **L'interprétation fuit dans l'enrichissement.** `AssistedCameraDiscoveryKnownDevices.DetectVendorFamily` construisait son empreinte de texte à partir du champ `Note` des signaux — un champ pensé comme explication lisible pour l'utilisateur, pas comme donnée structurée. Conséquence concrète : le probe DVRIP mentionnait "ICSee, Annke, Sannce" à titre d'exemples d'OEM partageant ce chipset, et cette même phrase faisait matcher `icsee` pour **toute** caméra DVRIP, y compris une Annke ou une Sannce réelle — un faux positif de marque.
-
-Décision : formaliser trois étapes explicites et strictement ordonnées, chacune avec une responsabilité unique, plutôt que des sondes qui mélangent détection réseau, collecte de faits et suggestion de marque.
+La découverte réseau doit lister les équipements présents, collecter des faits vérifiables sur chacun, puis en déduire marque et protocoles supportés — sans jamais masquer un équipement non reconnu (objectif backlog « Scan réseau ») et sans qu'une étape empiète sur la suivante. Un pipeline qui mélange détection réseau, collecte de faits et suggestion de marque produit des faux positifs (une marque déduite d'un protocole partagé entre OEM) et des angles morts (un équipement sans protocole local reconnu qui disparaît de l'affichage).
 
 #### Décision
 
-**1) Identification** (`AssistedCameraDiscoveryProbePipeline.IdentifyHostsAsync`/`PingSweepAsync`) — détermine quels hôtes méritent d'être enrichis, avant toute sonde protocolaire :
-- les hôtes **explicites** (`ProbeHosts`, ou la cible unique d'une vérification manuelle via `CameraDiscoveryTarget`) ne sont **jamais** filtrés — l'utilisateur les a désignés directement, un ping manqué (ICMP désactivé sur l'appareil) ne doit jamais les faire disparaître ;
-- les hôtes **balayés** (plage CIDR, ex. `192.168.1.0/24`) sont d'abord filtrés par un ping ICMP (`System.Net.NetworkInformation.Ping`) — tenter DVRIP/V380/RTSP/ONVIF/KLAP contre les 254 adresses d'un `/24` est inutilement coûteux ; une réponse au ping suffit à justifier l'enrichissement ;
-- **filet de sécurité** : si absolument aucun hôte balayé ne répond au ping, le balayage retombe sur la liste non filtrée plutôt que de scanner silencieusement zéro hôte — un ping totalement bloqué (conteneur sans `CAP_NET_RAW`) est plus probable qu'un réseau réellement vide, donc ce cas ne doit jamais régresser en dessous de la couverture précédente ;
-- l'annonce ONVIF multicast reste indépendante de cette étape : l'appareil s'auto-identifie en répondant le premier, il ne nécessite pas de ping préalable.
+Trois étapes strictement ordonnées, chacune avec une responsabilité unique. Chaque classe porte un commentaire d'en-tête identifiant son étage, pour que la séparation reste visible dans le code et pas seulement ici.
 
-**2) Enrichissement** (les méthodes `Discover*SignalsAsync` existantes, désormais appliquées uniquement aux hôtes identifiés) — collecte des faits bruts par hôte : MAC (ARP), hostname (rDNS), et résultat de chaque handshake protocolaire. Aucune suggestion de marque n'est produite ici ; le texte des notes reste factuel (ex. la note DVRIP précise désormais explicitement que le protocole est **partagé par plusieurs OEM** et ne permet pas d'identifier la marque à lui seul, au lieu d'énumérer des marques comme si DVRIP les impliquait).
+**1) Identification — quels hôtes existent** (`AssistedCameraDiscoveryProbePipeline.IdentifyHostsAsync`/`PingSweepAsync`)
+- Hôtes **explicites** (`ProbeHosts`, ou la cible unique d'une vérification manuelle via `CameraDiscoveryTarget`) : **jamais** filtrés — l'utilisateur les a désignés, un ping manqué (ICMP désactivé sur l'appareil) ne doit pas les faire disparaître.
+- Hôtes **balayés** (plage CIDR, ex. `192.168.1.0/24`) : filtrés par un ping ICMP (`System.Net.NetworkInformation.Ping`) — sonder chaque protocole contre les 254 adresses d'un `/24` est inutilement coûteux ; une réponse au ping suffit à justifier l'enrichissement.
+- **Filet de sécurité** : si aucun hôte balayé ne répond au ping, le balayage retombe sur la liste non filtrée plutôt que de scanner zéro hôte — un ICMP totalement bloqué (conteneur sans `CAP_NET_RAW`) est plus probable qu'un réseau vide.
+- Chaque hôte identifié reçoit un **signal de base** `network_host` (priorité `-10`, strictement sous toute autre source) : il garantit qu'un hôte identifié reste visible en `device_unknown` même sans aucun autre signal ; tout vrai signal (protocole, MAC, hostname) l'emporte à la fusion (`AssistedCameraDiscoveryFormatter.MergeCandidates`).
 
-**3) Interprétation** (`AssistedCameraDiscoveryIdentifier`/`AssistedCameraDiscoveryFormatter`, déjà responsables de la qualification et du merge par hôte) — corrigée pour dériver la marque **uniquement** de preuves structurées : `DetectVendorFamily` prend désormais `discoverySource` au lieu de `Note` en entrée. Une réponse protocolaire V380/KLAP confirmée implique directement la marque (définitionnel, pas une supposition) ; DVRIP, partagé entre OEM, n'implique plus aucune marque à lui seul — seuls l'OUI MAC ou le hostname peuvent encore la déduire.
+**2) Enrichissement — quels faits vérifiables** (méthodes `Discover*SignalsAsync`, appliquées aux seuls hôtes identifiés). Collecte de faits bruts par hôte, **sans aucune suggestion de marque** :
+- **Balayage de ports + fingerprint** (`DiscoverPortScanSignalsAsync`) : `DiscoveryPortCatalog` est l'unique source de vérité (ports scannés + libellés conventionnels + fingerprints + chemins RTSP). Chaque port ouvert est un fait, **affiché même sans protocole reconnu** (libellé conventionnel si connu, sinon « non identifié »). Principe `port ouvert ≠ protocole confirmé` : un port n'est étiqueté d'un protocole que si son fingerprint sans credentials passe (`ConfirmProtocolAsync`) — RTSP `OPTIONS`, ONVIF SOAP `GetSystemDateAndTime`, DVRIP octet magique `0xFF`, V380 trame d'auth 256 octets, Tapo KLAP `handshake1`. ONVIF est ainsi détecté quel que soit son port ; un port 8800 qui ne répond pas au handshake V380 n'est pas étiqueté V380. Un port peut confirmer plusieurs protocoles (many-to-many).
+- **RTSP DESCRIBE** : révèle le vrai chemin de flux (valeur propre au-delà du port ouvert).
+- **ONVIF multicast** : l'appareil s'auto-identifie (hostname), indépendant de l'étape 1.
+- **Hostname (rDNS) et MAC (ARP/OUI)** : indices constructeur factuels ; le texte des notes reste factuel (la note DVRIP précise que le protocole est partagé par plusieurs OEM, sans énumérer de marques).
 
-Chaque classe porte désormais un commentaire d'en-tête identifiant explicitement son étage (1, 2 ou 3) pour que la séparation reste visible dans le code, pas seulement dans ce document.
+**3) Interprétation — marque et capacités** (`AssistedCameraDiscoveryIdentifier`/`Formatter`, `AssistedCameraDiscoveryService`). Dérive **uniquement de preuves structurées** (`discoverySource`, jamais le texte des notes) :
+- **Marque** : un protocole propriétaire confirmé (V380/KLAP) implique la marque (définitionnel) ; un protocole partagé entre OEM (DVRIP) n'implique aucune marque à lui seul — seuls OUI MAC ou hostname peuvent la déduire.
+- **Capacités** : `GetDetectedCapabilities` croise les protocoles réellement détectés sur l'hôte avec `ICapabilityProviderRegistry.GetRegisteredProtocols(capability)` — le **même** registre qui pilote la détection de capacités à l'ajout (ADR-22/28). Relation many-to-many native : une capacité liste tous ses protocoles détectés (PTZ → ONVIF **et** V380), et un protocole apparaît sous plusieurs capacités (ONVIF sous PTZ **et** Réglages image). `Stream` est une capacité de première classe (`IStreamCapabilityProvider` + `RtspStreamProvider`/`DvripStreamProvider` déclaratifs, le transport étant délégué à go2rtc/Frigate — ADR-19), pas un cas particulier : `GetRegisteredProtocols(Stream)` renvoie `[Rtsp, Dvrip]` comme toute autre capacité.
+
+**Configuration = périmètre réseau seul.** Seuls `ProbeHosts`, `ProbeCidrs`, `AutoDetectLocalCidrs`, `ProbeTimeoutMs`, `MaxConcurrentProbes` sont configurables. Ports, chemins RTSP et protocoles associés sont des constantes internes de `DiscoveryPortCatalog` — l'utilisateur n'a pas à savoir qu'une caméra parle V380 sur 8800.
+
+**Frontend en pur affichage.** Le backend transporte des DTO déjà localisés — `DetectedPortSignal(Protocol, Label, Port)`, `DetectedCapability(Capability, Label, ProtocolLabels)`. L'UI affiche la table `Port | Protocole` et la liste `Capacité → protocoles` telles quelles, **sans aucun nom de protocole ou de capacité en dur**. Ajouter un protocole à port dédié = une entrée `DiscoveryPortCatalog` (scan, libellé, fingerprint, confirmation caméra, croisement capacités, frontend inclus).
+
+#### Options écartées
+
+- **Étiquetage par numéro de port sans confirmation** : plaquait le protocole sur le seul numéro de port → faux positifs (Tapo:8800 étiqueté V380, ONVIF invisible hors de ses ports « attendus »). Remplacé par le fingerprint de service (pattern `nmap -sV`).
+- **Découverte V380 par sonde UDP `NVDEVSEARCH`** : fragile, invisible en Docker bridge. Remplacée par le balayage TCP du port 8800 + fingerprint.
+- **Sondes autonomes ONVIF-unicast et Tapo-KLAP, repli RTSP « network_scan »** : redondantes avec le balayage + fingerprint. Retirées ; ONVIF/KLAP sur port partagé (80) restent couverts par fingerprint.
+- **Ports / chemins RTSP configurables par l'utilisateur** : surface de configuration inutile (l'utilisateur ne connaît pas les protocoles caméra). Ramenés en constantes internes.
 
 #### Conséquences
 
-- ✅ Corrige l'invisibilité totale d'un appareil sans protocole reconnu et sans entrée ARP préalable (cas YI YRS3521) — un simple ping suffit désormais à le faire apparaître en priorité basse
-- ✅ Réduit le travail réseau réel : un balayage `/24` sonde ~5-20 hôtes réellement vivants au lieu de tenter 6 protocoles contre 254 adresses
-- ✅ Corrige un faux positif de marque réel (DVRIP → `icsee` pour tout appareil, y compris Annke/Sannce)
-- ✅ Séparation des responsabilités testable indépendamment : un hôte explicite ignore totalement l'étape 1, ce qui limite le risque de régression (seul un test du jeu existant balaie une plage CIDR)
-- ⚠️ Le ping ICMP a les mêmes contraintes de privilège que la lecture ARP (ADR-31c) — sous Linux, nécessite `CAP_NET_RAW` ou un utilisateur autorisé ; le filet de sécurité (repli sur la liste non filtrée) absorbe ce cas sans le résoudre à la source
-- ⚠️ L'étape d'identification ajoute une latence séquentielle (ping puis sondes protocolaires) là où tout tournait auparavant en un seul lot parallèle ; compromis assumé pour la réduction de charge réseau
-
-#### Correction (d) — l'identification ne doit jamais filtrer ce qui s'affiche
-
-Constat en usage réel (déploiement Docker bridge, ARP indisponible comme prévu en ADR-31c) : le ping identifiait correctement des hôtes vivants (ex. 16 sur 508), mais un hôte identifié qui ne matchait ensuite aucun protocole/MAC/hostname produisait **zéro signal brut** et disparaissait quand même — l'étape d'identification, censée être un filtre sur *quoi enrichir*, se comportait de fait comme un filtre sur *quoi afficher*. C'est la régression exacte que ce ADR visait à corriger, réintroduite silencieusement.
-
-**Correctif** : `AssistedCameraDiscoveryProbePipeline` génère désormais un signal de base (`network_host`, aucune raison de qualification) pour **chaque hôte identifié**, avant même de lancer les sondes d'enrichissement. Ce signal garantit que tout hôte identifié apparaît au moins en `device_unknown`, priorité la plus basse ; s'il existe par ailleurs un vrai signal (protocole, MAC, hostname), celui-ci l'emporte toujours à la fusion (`AssistedCameraDiscoveryFormatter.MergeCandidates`).
-
-Piège rencontré et corrigé : la priorité initiale du signal `network_host` (1) dépassait par erreur celle d'un signal non répertorié dans la table de priorités (`http_service`, valeur par défaut 0), ce qui pouvait faire gagner le signal de base à la fusion et écraser le port/la source réels d'une vraie détection. Priorité finale : `-10`, strictement sous toute source répertoriée ou non.
-
-- ✅ Un hôte identifié sans aucun signal d'enrichissement reste désormais visible (`device_unknown`), conformément à l'intention initiale
-- ✅ Régression couverte par un test dédié + un test de non-régression sur la priorité de fusion
-
-#### Correction (e) — un port détecté par protocole, pas seulement RTSP/HTTP/ONVIF
-
-Constat : `DiscoveryTechnicalDetails` n'exposait un port détecté que pour RTSP/HTTP/ONVIF (`HttpPortsDetected`/`RtspPortsDetected`/`OnvifPortsDetected`) ; DVRIP, V380 et Tapo KLAP — trois protocoles pourtant sondés en Stage 2 — ne remontaient jamais leur port dans l'UI, alors même que leur détection avait réussi. Chaque nouveau protocole ajouté à la Stage 2 aurait à nouveau nécessité un champ + prédicat dédiés (`IsHttpSignal`, `IsRtspSignal`, `IsOnvifSignal`) au lieu d'être couvert automatiquement.
-
-**Correctif** : remplacement des trois champs par une liste unique `DetectedPortSignal(Protocol, Port)`, alimentée par une table `discoverySource → protocole` (`AssistedCameraDiscoveryService.ProtocolLabelsBySource`) couvrant tous les protocoles enregistrés. Ajouter un futur protocole à la Stage 2 suffit à lui faire remonter son port dans l'enrichissement, sans toucher au DTO ni à l'UI.
-
-Côté UI, l'ADR est aussi allé plus loin sur la séparation enrichissement/interprétation :
-- le hostname résolu vit désormais dans l'enrichissement (fait brut), pas dans l'identification ;
-- l'interprétation ne répète plus un fait déjà affiché en enrichissement (« Flux détecté » dupliquait « Chemins de flux détectés ») — elle synthétise désormais un verdict (« 1 flux RTSP actif (port X) » / « Aucun flux confirmé ») à partir des faits ;
-- le constructeur en interprétation est désormais un contrôle toujours éditable (pas seulement un libellé conditionné à une détection réussie) — c'est le correctif demandé pour pouvoir corriger une détection automatique erronée, y compris pour une caméra pas encore prête (flux non détecté), cas où le formulaire complet restait auparavant caché.
-
-#### Correction (f) — catalogue protocole unique, frontend en pur affichage, bug V380 réel corrigé
-
-Constat : malgré (e), le port V380 ne remontait toujours pas en usage réel. Cause racine, sans rapport avec l'architecture : `ProbeV380EndpointAsync` n'envoyait qu'une requête `NVDEVSEARCH` unicast directe, alors que `V380Client.DiscoverDeviceIdAsync` (déjà en production pour le PTZ) sait que certaines caméras ne répondent qu'à un broadcast de sous-réseau — repli manquant dans la sonde de découverte. **Corrigé** : même repli à deux temps (unicast puis broadcast `.255`) qu'utilise `V380Client`, dupliqué ici pour la même raison qu'en ADR-31 (le pipeline n'a pas d'injection de dépendances pour réutiliser `V380Client` directement). Un bug de sûreté a été introduit puis corrigé au passage : le `try/catch` protégeant la résolution DNS a été perdu en split de méthode, provoquant un crash (`SocketException`) au lieu d'un retour `null` silencieux.
-
-Par ailleurs, retour utilisateur explicite : le frontend ne doit porter **aucune règle** de détection/énumération de protocole — uniquement de l'affichage. Or `ProtocolLabelsBySource` (label par protocole) était dupliqué à l'identique côté backend (`AssistedCameraDiscoveryService`) et frontend (`formatProtocolLabel`), et la logique "DVRIP/V380 sont aussi des sources de flux" était récrite en dur côté frontend dans `formatStreamSummary`.
-
-**Correctif** : nouveau `DiscoveryProtocolCatalog` (`Vyzio.Infrastructure.Services.CameraDiscovery`), unique table `discoverySource → (Protocol, Label, Priority, StreamCapable)` consommée par :
-- `AssistedCameraDiscoveryFormatter.GetCandidatePriority` (priorité de fusion) ;
-- `AssistedCameraDiscoveryService.GetDetectedPorts` (label + port + `StreamCapable` sur `DetectedPortSignal`).
-
-`DetectedPortSignal` porte désormais `Label` et `StreamCapable` en plus de `Protocol`/`Port` — ces champs traversent le DTO jusqu'au frontend tels quels. Côté UI, l'Enrichissement affiche une table `Port | Protocole` directement depuis `detectedPorts` (aucun switch/mapping de protocole côté frontend), et `formatStreamSummary` (Interprétation) filtre simplement sur `entry.streamCapable` pour choisir le premier flux exploitable, sans jamais nommer un protocole en dur.
-
-Ajouter un nouveau protocole à la Stage 2 ne nécessite désormais qu'une entrée dans `DiscoveryProtocolCatalog` : priorité de fusion, libellé d'affichage et capacité de flux sont dérivés automatiquement partout, frontend inclus.
-
-- ✅ Bug réel V380 (repli broadcast manquant) et bug de sûreté (crash DNS) corrigés
-- ✅ Un seul endroit à modifier pour ajouter un protocole (contre le backend dupliqué en 2 endroits + le frontend qui redéfinissait sa propre liste)
-- ✅ Le frontend ne connaît plus aucun nom de protocole en dur
-
-#### Correction (g) — enrichissement par balayage de ports (« nmap ») + capacités dérivées du registre
-
-Deux limites subsistaient après (f) : la découverte V380 reposait toujours sur une sonde UDP fragile (invisible en Docker bridge), et l'interprétation portait des drapeaux par capacité en dur (`StreamCapable`, à répéter pour `PtzCapable`…) au lieu de réutiliser le registre de capacités existant. Sur demande utilisateur, refonte de l'enrichissement en deux temps :
-
-**1) Balayage TCP générique (« nmap »).** `DiscoveryPortCatalog` devient l'unique source de vérité port→protocole (RTSP 554, ONVIF 2020, V380 8800, DVRIP 34567 en ports uniques « signal caméra » ; HTTP 80/443/8080 génériques). `AssistedCameraDiscoveryProbePipeline.DiscoverPortScanSignalsAsync` teste chaque port du catalogue en TCP-connect : un port ouvert est un fait. Un port « signal caméra » ouvert émet la raison générique `camera_port_open` → `DetermineQualification` confirme la caméra **sans code par protocole**. Les sondes UDP V380 et handshake DVRIP (dont le seul rôle était la détection de port) sont **supprimées** — V380 est maintenant détecté par 8800 TCP, robuste en bridge. Restent, pour leur valeur ajoutée uniquement : RTSP DESCRIBE (vrai chemin de flux), ONVIF multicast/unicast + fingerprint HTTP (indice constructeur), handshake Tapo KLAP (partage le port 80, indissociable d'un simple HTTP par un scan). La liste des ports balayés est configurable (`DiscoverySettings.PortScanPorts`, défaut = catalogue) pour permettre des tests hermétiques.
-
-**2) Capacités dérivées du registre, `Stream` promue capacité de première classe.** `DetectedPortSignal` redevient un fait pur `(Protocol, Label, Port)` — plus aucun drapeau par capacité. `AssistedCameraDiscoveryService.GetDetectedCapabilities` croise les protocoles réellement détectés sur l'hôte (via le catalogue de ports + les sources de handshake ONVIF/KLAP) avec `ICapabilityProviderRegistry.GetRegisteredProtocols(capability)` — le **même** registre qui pilote la détection de capacités à l'ajout (ADR-22/28). Résultat many-to-many natif : une capacité liste tous ses protocoles détectés (PTZ → ONVIF **et** V380), et un protocole apparaît sous plusieurs capacités (ONVIF sous PTZ **et** Réglages image). Pour que `Stream` passe par le même mécanisme au lieu d'un cas explicite, ajout de `IStreamCapabilityProvider` + `RtspStreamProvider`/`DvripStreamProvider` (déclaratifs — le transport est passé à go2rtc/Frigate, ADR-19) : `GetRegisteredProtocols(Stream)` renvoie désormais `[Rtsp, Dvrip]` comme n'importe quelle autre capacité.
-
-Le DTO transporte `DetectedCapability(Capability, Label, ProtocolLabels)` (libellés localisés côté backend). Le frontend affiche la table `Port | Protocole` et la liste `Capacité → protocoles` telles quelles — zéro nom de protocole ou de capacité en dur.
-
-- ✅ V380 détecté par balayage TCP (8800), robuste là où l'UDP échouait
-- ✅ Ajouter un protocole avec port dédié = **une ligne** dans `DiscoveryPortCatalog` (détection, table, confirmation caméra, croisement capacités) ; ajouter une capacité/un protocole de capacité = un provider DI, comme le reste
-- ✅ `Stream` est une capacité comme les autres (provider + registre), plus de cas particulier
-- ✅ Interprétation many-to-many correcte (plusieurs protocoles par capacité et inversement)
-- ⚠️ Tapo KLAP et ONVIF-sur-80 gardent un handshake dédié : partageant le port 80 avec un serveur web générique, un port ouvert seul ne les distingue pas — c'est une limite intrinsèque du scan de ports, pas une entorse au principe
-
-#### Correction (h) — confirmation de service (fingerprint) + affichage de tous les ports ouverts
-
-Deux faux résultats constatés en usage réel révélaient la même faille : `port ouvert ≠ protocole confirmé`. (1) Une caméra V380 avec ONVIF actif n'affichait pas ONVIF (exposé sur 8899, hors des ports scannés, et WS-Discovery multicast bloqué en bridge). (2) Une caméra Tapo avec le port 8800 ouvert était étiquetée « V380 » alors qu'elle ne parle pas V380 — le catalogue plaquait le protocole par **numéro de port**, sans vérification. C'est exactement ce que `nmap -sV` évite : après avoir trouvé un port ouvert, il interroge le service pour confirmer.
-
-**Correctif** — le balayage devient scan + confirmation, en deux temps :
-1. **Liste de ports élargie et affichée intégralement.** `DiscoveryPortCatalog.ScannedPorts` passe d'une poignée de ports à un jeu curé (SSH 22, Telnet 23, HTTP 80/8000/8080/8081, HTTPS 443/8443, RTSP 554/8554, ONVIF 2020/8899, V380 8800, DVRIP 34567, Dahua 37777…), chacun avec un libellé conventionnel. **Tout port ouvert est désormais affiché**, même sans protocole reconnu (répond à la demande : « afficher les ports détectés même si on ne sait pas ce que c'est ») — libellé conventionnel si connu (HTTP, SSH…), sinon « non identifié ».
-2. **Fingerprint de confirmation par protocole.** Sur chaque port ouvert, on tente les handshakes légers et sans credentials des protocoles susceptibles d'y vivre (`DiscoveryPortCatalog.Fingerprints`, un protocole → ses ports candidats) : RTSP `OPTIONS`, ONVIF SOAP `GetSystemDateAndTime`, DVRIP octet magique `0xFF`, V380 trame d'auth 256 octets, Tapo KLAP `handshake1`. Le protocole n'est étiqueté **que** si son fingerprint passe (`RawCameraDiscoverySignal.ConfirmedProtocol`) ; sinon le port reste « ouvert non identifié ». ONVIF est ainsi détecté quel que soit son port (2020, 8899, 80…), et le 8800 d'un Tapo, ne répondant pas au handshake V380, n'est plus étiqueté V380.
-
-`ScanPortAsync` émet un signal par protocole confirmé (many-to-many : un port peut confirmer plusieurs protocoles) ou un signal « non identifié » si aucun. Le fingerprint V380 est *best-effort* (trame d'auth credential-free, exige une réponse V380 de 256 octets) : en cas d'échec, le port s'affiche « non identifié » plutôt que faussement « V380 » — choix assumé côté justesse.
-
-Ajouter un protocole à port dédié = une entrée `ScannedPorts` + une entrée `Fingerprints` (+ un cas dans `ConfirmProtocolAsync`, qui réutilise les sondes existantes). ONVIF/KLAP restent gérés par fingerprint sur port partagé, sans sonde autonome séparée.
-
-- ✅ Faux positif Tapo:8800=V380 supprimé (fingerprint requis avant étiquetage)
-- ✅ ONVIF détecté sur son vrai port (8899 ajouté + confirmation SOAP port-agnostique)
-- ✅ Tous les ports ouverts affichés, identifiés ou non — aide à repérer les équipements non supportés (objectif initial du backlog « Scan réseau »)
-- ⚠️ Scan d'un jeu de ports curé, pas de 1-65535 (coût du TCP-connect × hôtes) ; liste extensible en un point
-- ⚠️ Fingerprint V380 best-effort faute de signature de réponse documentée : privilégie « non identifié » à un faux « V380 »
-
-#### Correction (i) — la découverte se configure par périmètre réseau seul ; les ports sont des constantes internes
-
-Constat : `DiscoverySettings` cumulait `RtspPorts`, `RtspPaths`, `HttpPorts`, `OnvifPorts`, `PortScanPorts` — dont la moitié devenue redondante après le fingerprint (h). L'utilisateur n'a pas à savoir qu'une caméra parle V380 sur 8800 : la seule configuration réseau pertinente est le **périmètre** (sous-réseau/hôtes).
-
-**Nettoyage :**
-- **Config utilisateur réduite au réseau** : `DiscoverySettings` ne garde que `ProbeHosts`, `ProbeCidrs`, `AutoDetectLocalCidrs`, `ProbeTimeoutMs`, `MaxConcurrentProbes`. `VyzioConfigLoader` ne lit plus aucune variable d'environnement de ports. Les ports, chemins RTSP et leurs protocoles vivent désormais **uniquement** dans `DiscoveryPortCatalog` (constantes internes).
-- **Sondes redondantes supprimées** : les sondes autonomes ONVIF unicast et Tapo KLAP (leur détection est faite par le fingerprint du balayage) et le repli RTSP « network_scan » (le port ouvert est déjà couvert par le balayage) sont retirés. Restent, pour leur valeur ajoutée seule : RTSP DESCRIBE (chemin de flux), fingerprint HTTP (indice constructeur), annonce ONVIF multicast (hostname), résolution hostname/MAC.
-- **Seams de test isolés du réel** : les rares surcharges de ports nécessaires aux tests (`ScanPortsOverride`, `RtspPortsOverride`, `HttpPortsOverride`) sont des champs **explicitement de test**, jamais alimentés par la config/env — ils permettent aux tests unitaires d'épingler exactement les ports touchés et de désactiver le balayage (`ScanPortsOverride = []`), rendant hermétiques les tests de découverte (effet de bord bénéfique : les tests auparavant pollués par le vrai réseau LAN du poste passent désormais de façon déterministe).
-
-- ✅ Surface de configuration = périmètre réseau uniquement ; plus aucun réglage de port côté utilisateur
-- ✅ Suppression de ~3 sondes/chemins de code redondants introduits avant le fingerprint
-- ✅ Tests de découverte devenus hermétiques (isolation par surcharge + écoute en boucle)
+- ✅ Un équipement sans protocole reconnu reste visible en priorité basse au lieu de disparaître — objectif du backlog respecté ; tous les ports ouverts sont affichés, identifiés ou non
+- ✅ Pas de faux positif de marque : la marque ne vient que de preuves structurées, jamais d'un protocole partagé ni du texte des notes
+- ✅ Charge réseau réduite : un balayage `/24` sonde les ~5-20 hôtes vivants au lieu de tous les protocoles contre 254 adresses
+- ✅ Un seul endroit pour ajouter un protocole (`DiscoveryPortCatalog`) ; capacités et `Stream` dérivées du registre existant, sans code par capacité
+- ✅ Surface de configuration = périmètre réseau uniquement ; tests de découverte hermétiques (seams de test isolés de la config/env, écoute en boucle)
+- ⚠️ Ping ICMP et lecture ARP exigent le privilège réseau (Linux : `CAP_NET_RAW`, réseau `host`) ; le filet de sécurité absorbe l'ICMP bloqué sans le résoudre à la source
+- ⚠️ Fingerprint V380 best-effort (pas de signature de réponse documentée) : privilégie « non identifié » à un faux « V380 »
+- ⚠️ Jeu de ports curé, pas 1-65535 (coût du TCP-connect × hôtes) ; extensible en un point
+- ⚠️ Identification séquentielle (ping puis sondes) : légère latence ajoutée, compromis assumé pour la réduction de charge réseau
 
 ---
 
