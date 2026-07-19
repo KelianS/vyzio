@@ -256,131 +256,31 @@ Dashboard / Hub (React + TS)      → UI grand public guidée
 
 Vyzio gère uniquement ses propres données (profils, événements enrichis, notifications, sessions). Les clips et événements vidéo bruts restent dans la base Frigate — Vyzio y accède uniquement via l'API REST Frigate.
 
-### 7.2 Schéma SQLite Vyzio (EF Core)
+### 7.2 Entités et relations
 
-```sql
-CREATE TABLE profiles (
-    id              TEXT PRIMARY KEY,
-    name            TEXT NOT NULL,
-    category        TEXT NOT NULL DEFAULT 'other',   -- household|known|delivery|pet|other
-    alert_mode      TEXT NOT NULL DEFAULT 'notify',  -- notify|silent|ignore
-    last_seen_at    TEXT,
-    created_at      TEXT NOT NULL
-);
+> Source de vérité : les entités EF (`src/vyzio/Vyzio.Core/Entities/`) et les migrations
+> (`src/vyzio/Vyzio.Infrastructure/Persistence/Migrations/`). Ce tableau donne le **rôle et les
+> relations** ; colonnes, index et valeurs par défaut vivent dans le code, non recopiés ici.
 
--- Photos de référence pour la reconnaissance Frigate (ADR-13)
-CREATE TABLE profile_photos (
-    id              TEXT PRIMARY KEY,
-    profile_id      TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    filename        TEXT NOT NULL,          -- nom du fichier dans /data/vyzio/faces/{profile_id}/
-    frigate_synced  INTEGER NOT NULL DEFAULT 0,  -- 1 si présente dans la bibliothèque Frigate
-    synced_at       TEXT,
-    created_at      TEXT NOT NULL
-);
-CREATE INDEX idx_photos_profile ON profile_photos(profile_id);
+| Entité | Rôle | Relations clés |
+|---|---|---|
+| `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink`, `DetectionEvent` |
+| `ProfilePhoto` | Photo de référence synchronisée vers Frigate (ADR-13) | → `Profile` |
+| `ProfileCameraLink` | Filtrage reconnaissance profil ↔ caméra (ADR-15) | → `Profile`, `Camera` |
+| `Camera` | Caméra : connexion, statut, privacy mode, protocoles détectés | ← `CameraCapabilityBinding`, `ProfileCameraLink` |
+| `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
+| `DetectionEvent` | Événement enrichi consommé de Frigate (référence `frigate_event_id`) | → `Profile` (optionnel) |
+| `Notification` | Envoi par canal pour un événement | → `DetectionEvent` |
+| `Session` | Refresh token | — |
 
--- Associations profil-caméra pour filtrage de reconnaissance (ADR-15)
-CREATE TABLE profile_camera_links (
-    id          TEXT PRIMARY KEY,
-    profile_id  TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    camera_id   TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
-    enabled     INTEGER NOT NULL DEFAULT 1,
-    created_at  TEXT NOT NULL,
-    UNIQUE (profile_id, camera_id)
-);
-CREATE INDEX idx_pcl_camera  ON profile_camera_links(camera_id, enabled);
-CREATE INDEX idx_pcl_profile ON profile_camera_links(profile_id, enabled);
+Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de
+notification…) : voir le dossier des entités. La table `settings` reste une simple paire clé/valeur JSON.
 
-CREATE TABLE cameras (
-    id                        TEXT PRIMARY KEY,
-    slug                      TEXT NOT NULL UNIQUE,
-    display_name              TEXT NOT NULL,
-    source_type               TEXT NOT NULL DEFAULT 'rtsp_manual',
-    host                      TEXT NOT NULL,
-    port                      INTEGER NOT NULL DEFAULT 554,
-    username                  TEXT,
-    password                  TEXT,
-    stream_path               TEXT,
-    vendor_family             TEXT,
-    detection_labels_json     TEXT,   -- JSON array ex: ["person","dog"] ; null = ["person"] (ADR-14)
-    status                    TEXT NOT NULL DEFAULT 'needs_attention',
-    validation_state          TEXT NOT NULL DEFAULT 'draft',
-    is_enabled                INTEGER NOT NULL DEFAULT 0,
-    last_reachability_check_at TEXT,
-    last_successful_frame_at  TEXT,
-    frigate_camera_name       TEXT,
-    -- Privacy mode (ADR-20)
-    privacy_mode_active       INTEGER NOT NULL DEFAULT 0,
-    privacy_mode_source       TEXT,   -- "manual" | "schedule" | null
-    privacy_vendor_cut        INTEGER NOT NULL DEFAULT 0,
-    -- PTZ + stratégie privacy (ADR-21, mis à jour ADR-24)
-    ptz_supported             INTEGER NOT NULL DEFAULT 0,
-    privacy_mode_strategy     TEXT NOT NULL DEFAULT 'none',  -- "none" | "software_blur" | "ptz_parking" | "hardware"
-    -- Protocoles réseau détectés sur la caméra (ADR-24)
-    supported_protocols_json  TEXT,                          -- JSON array : ["onvif", "v380", ...]
-    created_at                TEXT NOT NULL,
-    updated_at                TEXT NOT NULL
-    -- Note: remplace detection_preset (retiré, ADR-14)
-);
-
--- Capacités optionnelles (PTZ, vie privée matérielle) découplées de la marque (ADR-22, mis à jour ADR-24)
-CREATE TABLE camera_capability_bindings (
-    id            TEXT PRIMARY KEY,
-    camera_id     TEXT NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
-    capability    TEXT NOT NULL,             -- "ptz" | "hardware_privacy" | "image_settings" (ADR-27)
-    protocol      TEXT NOT NULL,             -- "onvif" | "dvrip" | "tapo_klap" | "v380" | "rtsp"
-    config_json   TEXT,                      -- params protocole : port, adresse ONVIF, credentials...
-    verified      INTEGER NOT NULL DEFAULT 0, -- résultat du dernier test réel, jamais déclaratif
-    manually_configured INTEGER NOT NULL DEFAULT 0, -- true = jamais réécrit par SeedAndProbePresetsUseCase (ADR-28)
-    verified_at   TEXT,
-    last_error    TEXT,
-    created_at    TEXT NOT NULL,
-    updated_at    TEXT NOT NULL,
-    UNIQUE (camera_id, capability)
-);
-CREATE INDEX idx_capability_bindings_camera ON camera_capability_bindings(camera_id);
-
-CREATE TABLE observed_events (
-    id                TEXT PRIMARY KEY,
-    frigate_event_id  TEXT NOT NULL UNIQUE,  -- référence Frigate (pour proxy clips/thumbnails)
-    lifecycle         TEXT NOT NULL,         -- new|update|end
-    camera            TEXT NOT NULL,
-    label             TEXT NOT NULL,         -- person|dog|car|...
-    identity          TEXT,                  -- sub_label Frigate si disponible
-    profile_id        TEXT REFERENCES profiles(id),
-    confidence        REAL,
-    occurred_at       TEXT NOT NULL,
-    has_clip          INTEGER NOT NULL DEFAULT 0,
-    has_snapshot      INTEGER NOT NULL DEFAULT 0
-);
-CREATE INDEX idx_events_occurred ON observed_events(occurred_at DESC);
-CREATE INDEX idx_events_profile  ON observed_events(profile_id, occurred_at DESC);
-CREATE INDEX idx_events_camera   ON observed_events(camera, occurred_at DESC);
-CREATE INDEX idx_events_label    ON observed_events(label, occurred_at DESC);
-
-CREATE TABLE notifications (
-    id            TEXT PRIMARY KEY,
-    event_id      TEXT NOT NULL REFERENCES observed_events(id),
-    channel       TEXT NOT NULL,   -- telegram|discord|fcm|webhook|email|ntfy
-    status        TEXT NOT NULL DEFAULT 'pending',
-    sent_at       TEXT,
-    error_message TEXT
-);
-
-CREATE TABLE sessions (
-    id         TEXT PRIMARY KEY,   -- refresh token
-    created_at TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    revoked    INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE TABLE settings (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL            -- JSON
-);
-```
-
-**Index ajoutés dans cette version :** `idx_events_camera` et `idx_events_label` pour supporter les requêtes filtrées de la vue historique détections (US-P3.6).
+**Invariants de données** (contraintes d'architecture, pas de détail de colonne) :
+- Vyzio ne stocke **aucun embedding ni frame** biométrique — uniquement des métadonnées métier et la
+  référence Frigate (`frigate_event_id`) pour proxifier clips et thumbnails.
+- Credentials caméra **chiffrés au repos** (`Microsoft.AspNetCore.DataProtection`, §9.1).
+- Une capacité caméra n'est jamais activée sans un test réel réussi (`verified`, ADR-28).
 
 ---
 
@@ -388,41 +288,15 @@ CREATE TABLE settings (
 
 ### 8.1 Docker Compose (self-hosted)
 
-```yaml
-services:
-  frigate:
-    image: ghcr.io/blakeblackshear/frigate:stable
-    volumes:
-      - ./config/frigate.yml:/config/config.yml
-      - ./data/frigate:/media/frigate
-    devices:
-      - /dev/dri:/dev/dri               # Intel VAAPI (optionnel)
-      - /dev/bus/usb:/dev/bus/usb       # Coral USB (optionnel)
-    ports:
-      - "127.0.0.1:5000:5000"           # API Frigate — local uniquement
-  mqtt:
-    image: eclipse-mosquitto:2
-    volumes:
-      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-    ports:
-      - "127.0.0.1:1883:1883"           # MQTT — local uniquement
+Trois conteneurs sur un réseau Docker interne — fichier réel : [`docker-compose.yml`](../docker-compose.yml) :
 
-  vyzio:
-    image: vyzio/core
-    volumes:
-      - ./data/vyzio:/data
-      - ./config/vyzio.yml:/config/vyzio.yml
-    ports:
-      - "8443:8443"                     # HTTPS — seul port exposé utilisateur
-    environment:
-      FRIGATE_API_URL: http://frigate:5000
-      FRIGATE_MQTT_HOST: mqtt
-    depends_on:
-      frigate: { condition: service_healthy }
-      mqtt: { condition: service_started }
-```
+- **frigate** — pipeline vidéo ; API `:5000` liée à `127.0.0.1` (jamais exposée) ; accès matériel
+  optionnel (`/dev/dri` VAAPI, Coral USB).
+- **mqtt** (Mosquitto) — bus d'événements ; `:1883` lié à `127.0.0.1`.
+- **vyzio** — Core + API ; **seul port exposé à l'utilisateur : `8443` (HTTPS)**.
 
-**Un seul port exposé à l'utilisateur** : `8443`. Frigate n'est jamais accessible directement depuis le réseau.
+Frigate n'est jamais joignable directement depuis le réseau : tout transite par le proxy
+authentifié Vyzio (ADR-07/16/17).
 
 ### 8.2 Onboarding guidé (zéro fichier YAML pour l'utilisateur)
 
@@ -532,41 +406,13 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence 
 
 ---
 
-## Annexe B — Structure du monorepo
+## Annexe B — Organisation du code
 
-```
-vyzio/
-├── services/
-│   ├── vyzio/                     # .NET 10 (C#)
-│   │   ├── Vyzio.Core/            # Entités domaine + interfaces (ports)
-│   │   ├── Vyzio.Application/     # Use cases métier
-│   │   ├── Vyzio.Api/             # ASP.NET Core Minimal APIs + SignalR
-│   │   ├── Vyzio.Infrastructure/  # EF Core, SQLite, Telegram, MQTT, FrigateAdapter
-│   │   └── Vyzio.Tests/           # xUnit + Testcontainers
-│
-├── dashboard/                     # React 19 + TypeScript
-│   ├── src/
-│   │   ├── routes/                # Tanstack Router
-│   │   ├── components/            # Shadcn/ui + composants métier
-│   │   ├── hooks/                 # Tanstack Query
-│   │   └── lib/signalr.ts
-│   └── vite.config.ts
-│
-├── config/
-│   ├── frigate.dev.yml            # Fallback de developpement avant config geree par Vyzio
-│   └── vyzio.yml
-│
-├── docker-compose.yml
-├── docker-compose.appliance.yml
-└── docs/
-    ├── SPECS.md
-    ├── SAD.md
-    ├── BUSINESS_PLAN.md
-    ├── DESIGN SYSTEM.md
-    ├── user/
-    │   ├── CAMERA_ONBOARDING.md
-    │   └── TELEGRAM_NOTIFICATIONS.md
-```
+Monorepo sous `src/`. Backend .NET en couches hexagonales : `Vyzio.Core` (domaine + interfaces) →
+`Vyzio.Application` (use cases) → `Vyzio.Infrastructure` (EF/SQLite, MQTT, clients protocole,
+`FrigateAdapter`) → `Vyzio.Api` (ASP.NET Core + SignalR) ; tests dans `Vyzio.Tests`. Frontend
+`src/dashboard/` (React 19 + TypeScript, miroir domain/application/infrastructure/ui). Setup, tâches
+et détail d'arborescence : [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ---
 
