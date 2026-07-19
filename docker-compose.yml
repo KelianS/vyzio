@@ -65,7 +65,6 @@ services:
       - mqtt
     # privileged + /dev bind mount: exploitation reelle du detecteur choisi (ADR-34).
     privileged: true
-    shm_size: "512mb"
     ports:
       - "127.0.0.1:5000:5000"
     volumes:
@@ -73,6 +72,10 @@ services:
       - frigate-data:/media/frigate
       - /etc/localtime:/etc/localtime:ro
       - /dev:/dev
+    # /dev:/dev overwrites the container's own /dev/shm with the host's — re-mount it explicitly as
+    # tmpfs so Frigate keeps a dedicated, correctly-sized shared memory (replaces shm_size:).
+    tmpfs:
+      - /dev/shm:size=512m
     networks:
       - vyzio-net
 

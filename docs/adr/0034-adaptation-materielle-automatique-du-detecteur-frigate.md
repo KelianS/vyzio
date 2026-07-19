@@ -76,13 +76,16 @@ et le calcul du FPS.
   bascule s'applique malgré tout uniformément, sans détection d'architecture, par choix produit
   (simplicité > optimalité sur cette plateforme minoritaire) ; à réévaluer si des retours terrain ARM
   le justifient.
-- Aucun bloc `model` n'est écrit explicitement pour les paliers OpenVINO : Frigate embarque déjà un
-  modèle par défaut (`ssdlite_mobilenet_v2`) pour ce détecteur, et le dupliquer en dur créerait une
-  dérive silencieuse si Frigate change son défaut dans une version future. Le choix d'un modèle plus
-  précis selon le matériel (Frigate recommande par exemple YOLOv9 pour OpenVINO/Intel, mais ce modèle
-  n'est pas embarqué et demande un téléchargement + stockage séparés) est un axe d'optimisation à part
-  entière, hors scope de cette itération (« détection seule », pas de gestion de catalogue de modèles)
-  — voir backlog Idées.
+- Le bloc `model` (`ssdlite_mobilenet_v2.xml` + labelmap, mêmes valeurs que le modèle par défaut
+  documenté par Frigate) est écrit explicitement pour les deux paliers OpenVINO (GPU et CPU) —
+  tentative initiale de l'omettre (le considérant comme un défaut implicite fonctionnel) corrigée après
+  coup : Frigate 0.17.1 plante au démarrage sans lui (`model.path` vaut `None`,
+  `TypeError: stat: path should be string... not NoneType` dans `OpenVINOModelRunner`). Dupliquer ces
+  valeurs reste un choix assumé malgré le risque de dérive si Frigate change son modèle par défaut :
+  l'alternative (aucun bloc) ne démarre pas du tout. Le choix d'un modèle plus précis selon le matériel
+  (Frigate recommande par exemple YOLOv9 pour OpenVINO/Intel, mais ce modèle n'est pas embarqué et
+  demande un téléchargement + stockage séparés) reste un axe d'optimisation à part entière, hors scope
+  de cette itération — voir backlog Idées.
 - La détection ne sonde que des chemins connus du système de fichiers (aucune dépendance à un outil
   externe type `nvidia-smi` ou `lsusb`) : sur un hôte qui ne les expose pas (dev Windows, CI), la
   détection retombe naturellement sur CPU — comportement déterministe et testable sans matériel réel.
@@ -103,6 +106,11 @@ et le calcul du FPS.
   `frigate` en lecture-écriture (le device est réellement utilisé pour l'inférence). `vyzio-api` monte
   déjà le socket Docker (accès quasi-root implicite), le delta de surface d'attaque du passage en
   `privileged` reste marginal.
+- Piège découvert après coup : `/dev:/dev` sur `frigate` écrase aussi `/dev/shm` (mémoire partagée
+  entre les processus Frigate) avec celui de l'hôte, annulant le dimensionnement dédié via
+  `shm_size:` — Frigate ne démarre plus (crash silencieux, uniquement des 502 côté proxy). Corrigé en
+  remontant explicitement `/dev/shm` en tmpfs (`tmpfs: - /dev/shm:size=512m`) après le bind `/dev:/dev`,
+  qui remplace `shm_size:` désormais sans effet.
 - `IFrigateDetectorPlanner` (Infrastructure) centralise la décision (kind + FPS cible) : à la fois
   `FrigateConfigApplier` (écrit `config.yml`) et `GetSystemStatsUseCase` (`/api/system/stats`, champ
   `Detection`) le consomment, pour ne jamais recalculer/dupliquer la logique. Motivation directe : sans

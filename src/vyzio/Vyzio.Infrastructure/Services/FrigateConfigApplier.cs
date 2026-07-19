@@ -192,6 +192,7 @@ public sealed class FrigateConfigApplier(
                 Path = settings.Frigate.DatabasePath,
             },
             Detectors = BuildDetectors(detectorKind),
+            Model = BuildModel(detectorKind),
             FaceRecognition = faceRecognition,
             Go2rtc = go2rtc,
             Record = new FrigateRecordConfig { Enabled = true },
@@ -219,6 +220,23 @@ public sealed class FrigateConfigApplier(
             },
             _ => throw new ArgumentOutOfRangeException(nameof(detectorKind), detectorKind, null),
         };
+
+    // OpenVINO (GPU or CPU device) crashes at startup with `model.path` unset (Frigate 0.17.1:
+    // `TypeError: stat: path should be string... not NoneType`) — no working implicit default in
+    // practice, despite the docs suggesting one exists (ADR-34). EdgeTpu ships its own default
+    // tflite model and needs no model block.
+    private static FrigateModelConfig? BuildModel(FrigateDetectorKind detectorKind) =>
+        detectorKind == FrigateDetectorKind.EdgeTpu
+            ? null
+            : new FrigateModelConfig
+            {
+                Width = 300,
+                Height = 300,
+                InputTensor = "nhwc",
+                InputPixelFormat = "bgr",
+                Path = "/openvino-model/ssdlite_mobilenet_v2.xml",
+                LabelmapPath = "/openvino-model/coco_91cl_bkgr.txt",
+            };
 
     private static string BuildDvripUrl(Camera camera)
     {
@@ -252,6 +270,7 @@ public sealed class FrigateConfigApplier(
         public required FrigateMqttConfig Mqtt { get; init; }
         public required FrigateDatabaseConfig Database { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
+        public FrigateModelConfig? Model { get; init; }
         public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
         public FrigateGo2rtcConfig? Go2rtc { get; init; }
         public FrigateRecordConfig? Record { get; init; }
@@ -278,6 +297,16 @@ public sealed class FrigateConfigApplier(
     {
         public required string Type { get; init; }
         public string? Device { get; init; }
+    }
+
+    private sealed class FrigateModelConfig
+    {
+        public required int Width { get; init; }
+        public required int Height { get; init; }
+        public required string InputTensor { get; init; }
+        public required string InputPixelFormat { get; init; }
+        public required string Path { get; init; }
+        public required string LabelmapPath { get; init; }
     }
 
     private sealed class FrigateFaceRecognitionConfig

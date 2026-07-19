@@ -143,6 +143,8 @@ public class FrigateConfigApplierTests : IDisposable
 
         Assert.Contains("openvino", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("GPU", yaml);
+        // model.path must never be omitted — Frigate 0.17.1 crashes at startup otherwise (ADR-34).
+        Assert.Contains("ssdlite_mobilenet_v2.xml", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -152,6 +154,7 @@ public class FrigateConfigApplierTests : IDisposable
 
         Assert.Contains("openvino", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("CPU", yaml);
+        Assert.Contains("ssdlite_mobilenet_v2.xml", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("cpu1", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
