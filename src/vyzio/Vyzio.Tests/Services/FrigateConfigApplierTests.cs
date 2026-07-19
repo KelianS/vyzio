@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
 
@@ -39,9 +40,18 @@ public class FrigateConfigApplierTests : IDisposable
         FrigateCameraName = slug.Replace('-', '_'),
     };
 
-    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras)
+    private sealed class StubHardwareAccelerationDetector(FrigateDetectorKind kind) : IHardwareAccelerationDetector
     {
-        var applier = new FrigateConfigApplier(Settings, NullLogger<FrigateConfigApplier>.Instance, new FrigateRestartTracker());
+        public FrigateDetectorKind Detect() => kind;
+    }
+
+    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu)
+    {
+        var applier = new FrigateConfigApplier(
+            Settings,
+            NullLogger<FrigateConfigApplier>.Instance,
+            new FrigateRestartTracker(),
+            new StubHardwareAccelerationDetector(detectorKind));
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }
@@ -112,5 +122,51 @@ public class FrigateConfigApplierTests : IDisposable
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
         Assert.Contains("enabled: false", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task EdgeTpu_detected_emits_edgetpu_detector()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.EdgeTpu);
+
+        Assert.Contains("edgetpu", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pci", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Openvino_detected_emits_openvino_gpu_detector()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Openvino);
+
+        Assert.Contains("openvino", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("GPU", yaml);
+    }
+
+    [Fact]
+    public async Task EdgeTpu_detected_does_not_scale_fps_with_camera_count()
+    {
+        var cameras = Enumerable.Range(0, 6)
+            .Select(i => MakeValidatedCamera($"cam-{i}"))
+            .ToArray();
+
+        var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.EdgeTpu);
+
+        Assert.Contains("fps: 5", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(1, 5)]
+    [InlineData(2, 4)]
+    [InlineData(5, 1)]
+    [InlineData(9, 1)]
+    public async Task Cpu_detector_scales_fps_down_with_camera_count_within_hard_bounds(int cameraCount, int expectedFps)
+    {
+        var cameras = Enumerable.Range(0, cameraCount)
+            .Select(i => MakeValidatedCamera($"cam-{i}"))
+            .ToArray();
+
+        var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.Cpu);
+
+        Assert.Contains($"fps: {expectedFps}", yaml, StringComparison.OrdinalIgnoreCase);
     }
 }

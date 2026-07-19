@@ -12,7 +12,8 @@ namespace Vyzio.Infrastructure.Services;
 public sealed class FrigateConfigApplier(
     VyzioRuntimeSettings settings,
     ILogger<FrigateConfigApplier> logger,
-    IFrigateRestartTracker restartTracker) : IFrigateConfigApplier
+    IFrigateRestartTracker restartTracker,
+    IHardwareAccelerationDetector hardwareDetector) : IFrigateConfigApplier
 {
     public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
@@ -80,9 +81,15 @@ public sealed class FrigateConfigApplier(
 
     private FrigateDocument BuildDocument(IReadOnlyList<Camera> cameras)
     {
-        var activeCameras = cameras
+        var validatedCameras = cameras
             .Where(camera => camera.IsEnabled)
             .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var detectorKind = hardwareDetector.Detect();
+        var detectFps = ComputeDetectFps(detectorKind, validatedCameras.Count);
+
+        var activeCameras = validatedCameras
             .ToDictionary(
                 camera => camera.FrigateCameraName ?? camera.Slug.Replace('-', '_'),
                 camera =>
@@ -111,7 +118,7 @@ public sealed class FrigateConfigApplier(
                         Detect = new FrigateDetectConfig
                         {
                             Enabled = true,
-                            Fps = 5,
+                            Fps = detectFps,
                         },
                         Objects = new FrigateObjectsConfig
                         {
@@ -149,7 +156,7 @@ public sealed class FrigateConfigApplier(
                 Detect = new FrigateDetectConfig
                 {
                     Enabled = true,
-                    Fps = 5,
+                    Fps = detectFps,
                 }
             };
         }
@@ -183,16 +190,46 @@ public sealed class FrigateConfigApplier(
             {
                 Path = settings.Frigate.DatabasePath,
             },
-            Detectors = new Dictionary<string, FrigateDetectorConfig>
-            {
-                ["cpu1"] = new() { Type = "cpu" }
-            },
+            Detectors = BuildDetectors(detectorKind),
             FaceRecognition = faceRecognition,
             Go2rtc = go2rtc,
             Record = new FrigateRecordConfig { Enabled = true },
             Cameras = activeCameras,
         };
     }
+
+    // Only CPU is throttled via detect.fps — Coral/Intel GPU absorb the load, no motive to reduce
+    // it dynamically for them (ADR-34). One camera gets FpsMax, each additional camera drops the
+    // FPS by one down to the FpsMin floor; the clamp guarantees the result never escapes the
+    // configured bounds regardless of camera count.
+    private int ComputeDetectFps(FrigateDetectorKind detectorKind, int activeCameraCount)
+    {
+        if (detectorKind != FrigateDetectorKind.Cpu)
+            return 5;
+
+        var fpsMin = settings.Frigate.CpuDetectFpsMin;
+        var fpsMax = settings.Frigate.CpuDetectFpsMax;
+        var cameraCount = Math.Max(1, activeCameraCount);
+        return Math.Clamp(fpsMax - (cameraCount - 1), fpsMin, fpsMax);
+    }
+
+    private static Dictionary<string, FrigateDetectorConfig> BuildDetectors(FrigateDetectorKind detectorKind) =>
+        detectorKind switch
+        {
+            FrigateDetectorKind.EdgeTpu => new Dictionary<string, FrigateDetectorConfig>
+            {
+                ["coral"] = new() { Type = "edgetpu", Device = "pci" }
+            },
+            FrigateDetectorKind.Openvino => new Dictionary<string, FrigateDetectorConfig>
+            {
+                ["ov"] = new() { Type = "openvino", Device = "GPU" }
+            },
+            FrigateDetectorKind.Cpu => new Dictionary<string, FrigateDetectorConfig>
+            {
+                ["cpu1"] = new() { Type = "cpu" }
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(detectorKind), detectorKind, null),
+        };
 
     private static string BuildDvripUrl(Camera camera)
     {
@@ -251,6 +288,7 @@ public sealed class FrigateConfigApplier(
     private sealed class FrigateDetectorConfig
     {
         public required string Type { get; init; }
+        public string? Device { get; init; }
     }
 
     private sealed class FrigateFaceRecognitionConfig

@@ -22,8 +22,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 > Zone de capture libre. Un ajout = une ligne. Pas de tri, pas de priorite, pas de contexte obligatoire.
 
-- Optimisation dynamique de Frigate selon les ressources dispo (CPU/RAM/GPU) et la charge (nb caméras, résolution, FPS). Configurer automatiquement frigate en fonction du matériel disponible (accélération GPU, Nvidia, Intel, AMD, CPU seul ...). 
-Voir s'il est possible d'optimiser la configuration de Frigate pour réduire l'utilisation des ressources, par exemple en ajustant les paramètres de détection d'objets, la résolution des flux vidéo, ou en utilisant des modèles plus légers.
+- Support Nvidia (tensorrt) et AMD (rocm) pour le détecteur Frigate — nécessite de recréer le conteneur sur le variant d'image adapté (`-tensorrt`/`-rocm`), pas seulement de changer `config.yml` ; écarté de [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) faute de besoin terrain confirmé. Coral USB (en plus du PCIe déjà supporté) également hors scope actuel.
 - Verification des credentials contre les protocoles supportes (ONVIF, DVRIP, RTSP) avant de les stocker dans la DB. Eviter de stocker des credentials invalides ou d'attendre sur Frigate pour detecter un flux invalide. Configurer pendant l'onboarding les capacités de la caméra (PTZ, multi-flux, etc.) et vérifier que les credentials fournis permettent d'accéder à ces fonctionnalités.
 - Améliorer le 'live' avec un vrai flux vidéo, pas uniquement un pulling a 1fps + latence.
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.

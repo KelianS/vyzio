@@ -21,6 +21,11 @@ public class VyzioRuntimeSettings
         public string ApplyCommand { get; init; } = "docker restart vyzio-frigate";
         public string DatabasePath { get; init; } = "/media/frigate/frigate.db";
         public MqttSettings Mqtt { get; init; } = new();
+
+        // Hard bounds for the CPU-only detector's FPS auto-adjustment (ADR-34) — enforced via
+        // Math.Clamp regardless of configured values, so no configuration can push FPS out of range.
+        public int CpuDetectFpsMin { get; init; } = 1;
+        public int CpuDetectFpsMax { get; init; } = 5;
     }
 
     public sealed class MqttSettings
