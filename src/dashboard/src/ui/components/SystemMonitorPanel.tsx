@@ -1,32 +1,76 @@
-import type { SystemStats } from '../../domain/entities/SystemStats'
+import type { FrigateStatus, SystemStats } from '../../domain/entities/SystemStats'
 
 interface SystemMonitorPanelProps {
   stats: SystemStats
 }
 
-export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
-  if (!stats.available) {
-    return (
-      <article className="panel hub-monitor-panel">
-        <div className="panel-heading">
-          <h2>Système</h2>
-        </div>
-        <p style={{ fontSize: '0.85rem', opacity: 0.6, padding: '0 0 8px' }}>
-          Système de détection inaccessible — métriques indisponibles.
-        </p>
+const STATUS_PILL_CLASS: Record<FrigateStatus, string> = {
+  active: 'online',
+  restarting: 'loading',
+  unavailable: 'degraded',
+}
+
+const STATUS_LABEL: Record<FrigateStatus, string> = {
+  active: 'Actif',
+  restarting: 'Redémarrage…',
+  unavailable: 'Indisponible',
+}
+
+function SystemStatusPill({ status }: { status: FrigateStatus }) {
+  return <span className={`status-pill ${STATUS_PILL_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+}
+
+type DegradedStatus = Exclude<FrigateStatus, 'active'>
+
+const DEGRADED_MESSAGE: Record<DegradedStatus, string> = {
+  restarting: 'Redémarrage en cours — les métriques réapparaîtront automatiquement.',
+  unavailable: 'Système de détection inaccessible — métriques indisponibles.',
+}
+
+const DEGRADED_SHOW_DIAGNOSE_LINK: Record<DegradedStatus, boolean> = {
+  restarting: false,
+  unavailable: true,
+}
+
+function DegradedPanel({ status }: { status: DegradedStatus }) {
+  return (
+    <article className="panel hub-monitor-panel">
+      <div className="hub-monitor-heading-row">
+        <h2>Système</h2>
+        <SystemStatusPill status={status} />
+      </div>
+      <p style={{ fontSize: '0.85rem', opacity: 0.6, padding: '0 0 8px' }}>
+        {DEGRADED_MESSAGE[status]}
+      </p>
+      {DEGRADED_SHOW_DIAGNOSE_LINK[status] && (
         <div className="panel-cta-row">
           <a href="#expert" className="secondary-cta">
             Diagnostiquer →
           </a>
         </div>
-      </article>
-    )
+      )}
+    </article>
+  )
+}
+
+export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
+  switch (stats.status) {
+    case 'restarting':
+    case 'unavailable':
+      return <DegradedPanel status={stats.status} />
+    case 'active':
+      break
+    default: {
+      const unreachable: never = stats.status
+      return unreachable
+    }
   }
 
   return (
     <article className="panel hub-monitor-panel">
-      <div className="panel-heading">
+      <div className="hub-monitor-heading-row">
         <h2>Système</h2>
+        <SystemStatusPill status={stats.status} />
       </div>
 
       {stats.storage && (

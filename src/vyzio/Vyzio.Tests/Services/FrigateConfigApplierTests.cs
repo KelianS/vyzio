@@ -41,7 +41,7 @@ public class FrigateConfigApplierTests : IDisposable
 
     private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras)
     {
-        var applier = new FrigateConfigApplier(Settings, NullLogger<FrigateConfigApplier>.Instance);
+        var applier = new FrigateConfigApplier(Settings, NullLogger<FrigateConfigApplier>.Instance, new FrigateRestartTracker());
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }

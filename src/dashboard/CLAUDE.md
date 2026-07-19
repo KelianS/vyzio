@@ -38,6 +38,14 @@ fetch → HttpError (infrastructure) → toAppError (domaine) → AppError → u
 Interdits : `throw new Error(\`HTTP ${status}\`)`, `.catch(() => {})` dans un composant, helpers HTTP
 locaux dans les repositories (tout passe par `infrastructure/http/fetchJson.ts`).
 
+## Comparaisons type-safe (règle d'or)
+
+Ne jamais comparer une valeur métier à une chaîne littérale éparpillée dans le JSX/logique
+(`if (x !== 'active')`). Le type union littéral (`type Status = 'active' | 'restarting' | ...`) est
+déjà le pattern idiomatique côté TS ; dessus, utiliser un `switch` exhaustif (avec branche
+`default: { const _x: never = ...; }`) ou une table `Record<Union, T>` — jamais une chaîne de
+comparaisons `===`/`!==` répétées.
+
 ## UI
 
 Boutons, pastilles d'état, modales de validation, styles, tokens de rayon → suivre le guide

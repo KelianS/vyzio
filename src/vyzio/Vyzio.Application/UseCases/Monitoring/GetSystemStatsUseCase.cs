@@ -1,15 +1,22 @@
+using Vyzio.Core.Common;
+using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Monitoring;
 
-public sealed class GetSystemStatsUseCase(IFrigateStatsProvider statsProvider)
+public sealed class GetSystemStatsUseCase(IFrigateStatsProvider statsProvider, IFrigateRestartTracker restartTracker)
 {
     public async Task<SystemStatsDto> ExecuteAsync(CancellationToken ct = default)
     {
         var stats = await statsProvider.TryGetStatsAsync(ct);
 
         if (stats is null)
-            return new SystemStatsDto(Available: false, Storage: null, Cameras: []);
+        {
+            var status = restartTracker.IsRestarting ? FrigateStatus.Restarting : FrigateStatus.Unavailable;
+            return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(status), Storage: null, Cameras: []);
+        }
+
+        restartTracker.MarkRestartComplete();
 
         StorageStatsDto? storage = null;
         if (stats.Storage is { } s)
@@ -19,12 +26,12 @@ public sealed class GetSystemStatsUseCase(IFrigateStatsProvider statsProvider)
             .Select(c => new CameraFpsDto(c.Camera, c.Fps))
             .ToList();
 
-        return new SystemStatsDto(Available: true, Storage: storage, Cameras: cameras);
+        return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(FrigateStatus.Active), storage, cameras);
     }
 }
 
 public sealed record SystemStatsDto(
-    bool Available,
+    string Status,
     StorageStatsDto? Storage,
     IReadOnlyList<CameraFpsDto> Cameras
 );
