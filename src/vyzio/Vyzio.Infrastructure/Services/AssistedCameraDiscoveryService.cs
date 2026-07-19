@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Text.RegularExpressions;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -15,11 +14,19 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
     private readonly ILogger<AssistedCameraDiscoveryService>? _logger;
     private readonly AssistedCameraDiscoveryProbePipeline _probePipeline;
     private readonly VyzioRuntimeSettings _settings;
+    private readonly ICapabilityProviderRegistry? _capabilityRegistry;
 
-    public AssistedCameraDiscoveryService(VyzioRuntimeSettings settings, ILogger<AssistedCameraDiscoveryService>? logger = null)
+    // capabilityRegistry is optional so the discovery tests can construct the service without the
+    // full DI graph; in production DI always injects it, and it's the single source for which
+    // protocol serves which capability (ADR-32). Null → the Capabilities interpretation is empty.
+    public AssistedCameraDiscoveryService(
+        VyzioRuntimeSettings settings,
+        ICapabilityProviderRegistry? capabilityRegistry = null,
+        ILogger<AssistedCameraDiscoveryService>? logger = null)
     {
         _settings = settings;
         _logger = logger;
+        _capabilityRegistry = capabilityRegistry;
         _probePipeline = new AssistedCameraDiscoveryProbePipeline(settings, logger);
         _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
@@ -53,10 +60,9 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
             {
                 TechnicalDetails = new DiscoveryTechnicalDetails(
                     resolvedHostNames.GetValueOrDefault(candidate.Host),
-                    GetDetectedPorts(signalsByHost, candidate.Host, IsHttpSignal),
-                    GetDetectedPorts(signalsByHost, candidate.Host, IsRtspSignal),
-                    GetDetectedOnvifPorts(signalsByHost, candidate.Host),
-                    GetDetectedRtspPaths(signalsByHost, candidate.Host))
+                    GetDetectedPorts(signalsByHost, candidate.Host),
+                    GetDetectedRtspPaths(signalsByHost, candidate.Host),
+                    GetDetectedCapabilities(signalsByHost, candidate.Host))
             })
             .ToList();
     }
@@ -111,21 +117,10 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         }
     }
 
-    private static IReadOnlyList<int> GetDetectedPorts(
-        IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
-        string host,
-        Func<RawCameraDiscoverySignal, bool> predicate)
-        => !signalsByHost.TryGetValue(host, out var signals)
-            ? []
-            : signals
-                .Where(predicate)
-                .Select(signal => signal.Port)
-                .Where(port => port > 0)
-                .Distinct()
-                .Order()
-                .ToArray();
-
-    private static IReadOnlyList<int> GetDetectedOnvifPorts(
+    // The detected-ports table is sourced only from the port sweep ("port_scan" signals). Each
+    // carries either a fingerprint-confirmed protocol or, for an open-but-unidentified port, a
+    // conventional service label (ADR-32) — the frontend just renders Label.
+    private static IReadOnlyList<DetectedPortSignal> GetDetectedPorts(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
         string host)
     {
@@ -135,13 +130,76 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         }
 
         return signals
-            .Where(IsOnvifSignal)
-            .Select(GetOnvifPort)
-            .Where(port => port > 0)
+            .Where(signal => signal.DiscoverySource == "port_scan" && signal.Port > 0)
+            .Select(signal => new DetectedPortSignal(
+                signal.ConfirmedProtocol?.ToString() ?? "unknown",
+                signal.ConfirmedProtocol is { } p
+                    ? DiscoveryPortCatalog.FormatProtocolLabel(p)
+                    : string.IsNullOrEmpty(signal.PortServiceLabel) ? "non identifié" : signal.PortServiceLabel,
+                signal.Port))
             .Distinct()
-            .Order()
-            .ToArray();
+            .OrderBy(entry => entry.Port)
+            .ToList();
     }
+
+    // ADR-32: which capabilities the host supports, crossing the protocols actually detected on it
+    // with ICapabilityProviderRegistry.GetRegisteredProtocols(capability). Naturally many-to-many
+    // — Stream is a first-class capability here (RTSP/DVRIP providers), so it needs no special case.
+    private IReadOnlyList<DetectedCapability> GetDetectedCapabilities(
+        IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
+        string host)
+    {
+        if (_capabilityRegistry is null || !signalsByHost.TryGetValue(host, out var signals))
+        {
+            return [];
+        }
+
+        // Protocols proven on this host: fingerprint-confirmed on an open port (ConfirmedProtocol),
+        // or identified by a handshake source (ONVIF multicast, via the protocol catalog).
+        var detectedProtocols = new HashSet<SupportedProtocol>();
+        foreach (var signal in signals)
+        {
+            if (signal.ConfirmedProtocol is { } confirmed)
+            {
+                detectedProtocols.Add(confirmed);
+            }
+            if (DiscoveryProtocolCatalog.Lookup(signal.DiscoverySource)?.CapabilityProtocol is { } p)
+            {
+                detectedProtocols.Add(p);
+            }
+        }
+
+        if (detectedProtocols.Count == 0)
+        {
+            return [];
+        }
+
+        var result = new List<DetectedCapability>();
+        foreach (var capability in Enum.GetValues<CameraCapability>())
+        {
+            var available = _capabilityRegistry.GetRegisteredProtocols(capability)
+                .Where(detectedProtocols.Contains)
+                .ToList();
+            if (available.Count > 0)
+            {
+                result.Add(new DetectedCapability(
+                    capability.ToString(),
+                    FormatCapabilityLabel(capability),
+                    available.Select(DiscoveryPortCatalog.FormatProtocolLabel).ToList()));
+            }
+        }
+
+        return result;
+    }
+
+    private static string FormatCapabilityLabel(CameraCapability capability) => capability switch
+    {
+        CameraCapability.Stream => "Flux vidéo",
+        CameraCapability.Ptz => "PTZ",
+        CameraCapability.HardwarePrivacy => "Confidentialité matérielle",
+        CameraCapability.ImageSettings => "Réglages image",
+        _ => capability.ToString(),
+    };
 
     private static IReadOnlyList<string> GetDetectedRtspPaths(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
@@ -154,31 +212,4 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToArray()!;
-
-    private static bool IsHttpSignal(RawCameraDiscoverySignal signal)
-        => signal.DiscoverySource is "http_probe" or "http_service";
-
-    private static bool IsRtspSignal(RawCameraDiscoverySignal signal)
-        => signal.DiscoverySource is "rtsp_describe" or "network_scan";
-
-    private static bool IsOnvifSignal(RawCameraDiscoverySignal signal)
-        => signal.DiscoverySource is "onvif" or "onvif_unicast";
-
-    private static int GetOnvifPort(RawCameraDiscoverySignal signal)
-    {
-        if (signal.DiscoverySource == "onvif_unicast")
-        {
-            return signal.Port;
-        }
-
-        if (string.IsNullOrWhiteSpace(signal.Note))
-        {
-            return 0;
-        }
-
-        var match = Regex.Match(signal.Note, $@"{Regex.Escape(signal.Host)}:(\d+)", RegexOptions.IgnoreCase);
-        return match.Success && int.TryParse(match.Groups[1].Value, out var port)
-            ? port
-            : 0;
-    }
 }

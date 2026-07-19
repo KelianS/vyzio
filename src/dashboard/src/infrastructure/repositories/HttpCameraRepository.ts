@@ -82,12 +82,23 @@ interface DiscoveredCameraDto {
   technicalDetails?: DiscoveryTechnicalDetailsDto | null
 }
 
+interface DetectedPortSignalDto {
+  protocol: string
+  label: string
+  port: number
+}
+
+interface DetectedCapabilityDto {
+  capability: string
+  label: string
+  protocolLabels: string[]
+}
+
 interface DiscoveryTechnicalDetailsDto {
   resolvedHostName: string | null
-  httpPortsDetected: number[]
-  rtspPortsDetected: number[]
-  onvifPortsDetected: number[]
+  detectedPorts: DetectedPortSignalDto[]
   rtspPathsDetected: string[]
+  capabilities: DetectedCapabilityDto[]
 }
 
 interface VendorDocumentationDto {
@@ -419,10 +430,9 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     technicalDetails: camera.technicalDetails
       ? {
           resolvedHostName: camera.technicalDetails.resolvedHostName,
-          httpPortsDetected: camera.technicalDetails.httpPortsDetected,
-          rtspPortsDetected: camera.technicalDetails.rtspPortsDetected,
-          onvifPortsDetected: camera.technicalDetails.onvifPortsDetected,
+          detectedPorts: camera.technicalDetails.detectedPorts,
           rtspPathsDetected: camera.technicalDetails.rtspPathsDetected,
+          capabilities: camera.technicalDetails.capabilities,
         }
       : null,
   }

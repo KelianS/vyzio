@@ -497,37 +497,6 @@
   border-color: rgba(45, 122, 82, 0.12);
 }
 
-.camera-confidence-copy {
-  color: var(--ink-soft);
-  line-height: 1.45;
-}
-
-.camera-confidence-signals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.camera-confidence-chip,
-.camera-confidence-empty {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-}
-
-.camera-confidence-chip {
-  background: rgba(45, 122, 82, 0.1);
-  color: var(--brand-moss);
-}
-
-.camera-confidence-empty {
-  background: rgba(24, 32, 29, 0.06);
-  color: var(--ink-soft);
-}
-
 .camera-summary-list.debug dt,
 .camera-debug-content h4 {
   color: var(--ink-soft);
@@ -536,6 +505,31 @@
 .camera-debug-content h4 {
   margin: 0;
   font-size: 0.9rem;
+}
+
+.camera-detected-ports {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.camera-detected-ports th,
+.camera-detected-ports td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(24, 32, 29, 0.08);
+}
+
+.camera-detected-ports th {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .camera-detected-ports th,
+  .camera-detected-ports td {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .camera-readiness-callout {
@@ -787,14 +781,6 @@
   font-size: 0.78rem;
 }
 
-.capability-manual-form-fields select {
-  padding: 3px 6px;
-  border-radius: var(--radius-sm, 4px);
-  border: 1px solid var(--border, #d1d5db);
-  background: var(--surface, #fff);
-  font-size: 0.78rem;
-}
-
 .capability-manual-form-hint {
   font-size: 0.74rem;
   color: var(--ink-soft);
@@ -836,14 +822,6 @@
   gap: 4px;
   font-size: 0.82rem;
   color: var(--ink-soft);
-}
-
-.image-settings-ircut select {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border, #d1d5db);
-  background: var(--surface, #fff);
-  font-size: 0.82rem;
 }
 
 .image-settings-actions {
@@ -946,6 +924,48 @@
   }
   .btn--ghost:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* Reusable Select component (src/ui/components/Select.tsx) — single source of truth for every
+   dropdown in the app; do not add per-context `select` overrides, style .select--sm/md instead. */
+.select {
+  appearance: none;
+  box-sizing: border-box;
+  border: 1px solid var(--line-soft, var(--border, #d1d5db));
+  border-radius: var(--radius-md, 8px);
+  background-color: rgba(255, 255, 255, 0.84);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2353605b' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  color: var(--ink-strong);
+  cursor: pointer;
+}
+.select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.select--md {
+  min-height: 46px;
+  padding: 0 32px 0 14px;
+  font-size: 0.9rem;
+}
+
+.select--sm {
+  min-height: 30px;
+  padding: 3px 26px 3px 8px;
+  font-size: 0.8rem;
+  background-position: right 8px center;
+  background-size: 10px 7px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .select {
+    border-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--ink-strong);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e5e5e5' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
 }
 
@@ -1838,6 +1858,10 @@
   color: var(--ink-strong);
 }
 
+.camera-form-grid .select--md {
+  width: 100%;
+}
+
 .camera-field-hint {
   font-size: 0.82rem;
   line-height: 1.4;
@@ -1863,8 +1887,7 @@
 
 .camera-form-field input[type='text'],
 .camera-form-field input[type='password'],
-.camera-form-field input[type='datetime-local'],
-.camera-form-field select {
+.camera-form-field input[type='datetime-local'] {
   width: 100%;
   box-sizing: border-box;
   min-height: 46px;
@@ -1875,13 +1898,8 @@
   color: var(--ink-strong);
 }
 
-.camera-form-field select {
-  appearance: none;
-  padding-right: 36px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2353605b' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  cursor: pointer;
+.camera-form-field .select--md {
+  width: 100%;
 }
 
 .camera-form-field input[type='datetime-local'] {

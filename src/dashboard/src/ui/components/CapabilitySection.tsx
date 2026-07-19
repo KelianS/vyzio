@@ -9,6 +9,7 @@ import { useAsync } from '../hooks/useAsync'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { useToast } from './Toast'
 import { Btn } from './Btn'
+import { Select } from './Select'
 import {
   getCameraCapabilities,
   configureCameraCapability,
@@ -284,7 +285,8 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           <div className="capability-manual-form-fields" style={{ marginTop: 6 }}>
             <label>
               <span>Protocole</span>
-              <select
+              <Select
+                size="sm"
                 value={editProtocol}
                 onChange={(e) => setEditProtocol(e.target.value as SupportedProtocol)}
               >
@@ -293,7 +295,7 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
                     {label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
         </div>
@@ -496,7 +498,8 @@ function ManualCapabilityForm({ cameraId, availableCapabilities, onDone, onCance
       <div className="capability-manual-form-fields">
         <label>
           <span>Capacité</span>
-          <select
+          <Select
+            size="sm"
             value={selectedCapability}
             onChange={(e) => {
               const cap = e.target.value as Capability
@@ -509,12 +512,13 @@ function ManualCapabilityForm({ cameraId, availableCapabilities, onDone, onCance
                 {CAPABILITY_LABELS[cap]}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label>
           <span>Protocole</span>
-          <select
+          <Select
+            size="sm"
             value={selectedProtocol}
             onChange={(e) => setSelectedProtocol(e.target.value as SupportedProtocol)}
           >
@@ -523,7 +527,7 @@ function ManualCapabilityForm({ cameraId, availableCapabilities, onDone, onCance
                 {label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <Btn

@@ -1,3 +1,4 @@
+using System.Linq;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
@@ -72,22 +73,32 @@ public sealed record DiscoveredCameraDto(
         DiscoveryTechnicalDetailsDto.From(candidate.TechnicalDetails));
 }
 
+public sealed record DetectedPortSignalDto(string Protocol, string Label, int Port)
+{
+    public static DetectedPortSignalDto From(DetectedPortSignal signal)
+        => new(signal.Protocol, signal.Label, signal.Port);
+}
+
+public sealed record DetectedCapabilityDto(string Capability, string Label, IReadOnlyList<string> ProtocolLabels)
+{
+    public static DetectedCapabilityDto From(DetectedCapability capability)
+        => new(capability.Capability, capability.Label, capability.ProtocolLabels);
+}
+
 public sealed record DiscoveryTechnicalDetailsDto(
     string? ResolvedHostName,
-    IReadOnlyList<int> HttpPortsDetected,
-    IReadOnlyList<int> RtspPortsDetected,
-    IReadOnlyList<int> OnvifPortsDetected,
-    IReadOnlyList<string> RtspPathsDetected)
+    IReadOnlyList<DetectedPortSignalDto> DetectedPorts,
+    IReadOnlyList<string> RtspPathsDetected,
+    IReadOnlyList<DetectedCapabilityDto> Capabilities)
 {
     public static DiscoveryTechnicalDetailsDto? From(DiscoveryTechnicalDetails? details)
         => details is null
             ? null
             : new DiscoveryTechnicalDetailsDto(
                 details.ResolvedHostName,
-                details.HttpPortsDetected,
-                details.RtspPortsDetected,
-                details.OnvifPortsDetected,
-                details.RtspPathsDetected);
+                details.DetectedPorts.Select(DetectedPortSignalDto.From).ToList(),
+                details.RtspPathsDetected,
+                details.Capabilities.Select(DetectedCapabilityDto.From).ToList());
 }
 
 public sealed record VendorDocumentationDto(

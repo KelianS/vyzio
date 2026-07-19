@@ -22,7 +22,9 @@ Ordre, exceptions et gouvernance : [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 | Tu travailles sur… | Source |
 | --- | --- |
 | Besoin / comportement / parcours produit | [`docs/SPECS.md`](docs/SPECS.md) |
-| Architecture, frontières, ADR, choix techniques | [`docs/SAD.md`](docs/SAD.md) |
+| Architecture d'ensemble, frontières, choix transverses | [`docs/SAD.md`](docs/SAD.md) |
+| Une décision d'architecture précise (le *pourquoi* d'un choix) | [`docs/adr/`](docs/adr/) (index [`README`](docs/adr/README.md)) |
+| Fonctionnement détaillé d'un composant (le *comment*) | [`docs/design/`](docs/design/) (catalogue [`README`](docs/design/README.md)) |
 | Ordre d'exécution, découpage, priorités | [`docs/BACKLOG.md`](docs/BACKLOG.md) |
 | UI du dashboard : boutons, pastilles, modales, tokens | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
 | Mode d'emploi d'une feature livrée | [`docs/user/`](docs/user/) |

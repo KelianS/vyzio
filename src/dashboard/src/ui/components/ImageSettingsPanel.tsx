@@ -5,6 +5,7 @@ import { useAsync } from '../hooks/useAsync'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { useToast } from './Toast'
 import { Btn } from './Btn'
+import { Select } from './Select'
 import {
   getCameraCapabilities,
   getCameraImageSettings,
@@ -130,7 +131,8 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
         {supportsSharpnessAndIrCut && (
           <label className="image-settings-ircut">
             <span>Vision nocturne</span>
-            <select
+            <Select
+              size="sm"
               value={draft.irCutMode}
               disabled={saveAction.loading}
               onChange={(e) => setDraft({ ...draft, irCutMode: e.target.value as IrCutMode })}
@@ -140,7 +142,7 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         )}
 

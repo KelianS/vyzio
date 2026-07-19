@@ -3,12 +3,23 @@ export interface VendorDocumentation {
   markdown: string
 }
 
+export interface DetectedPortSignal {
+  protocol: string
+  label: string
+  port: number
+}
+
+export interface DetectedCapability {
+  capability: string
+  label: string
+  protocolLabels: string[]
+}
+
 export interface DiscoveryTechnicalDetails {
   resolvedHostName: string | null
-  httpPortsDetected: number[]
-  rtspPortsDetected: number[]
-  onvifPortsDetected: number[]
+  detectedPorts: DetectedPortSignal[]
   rtspPathsDetected: string[]
+  capabilities: DetectedCapability[]
 }
 
 export interface DiscoveredCamera {
