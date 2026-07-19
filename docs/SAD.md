@@ -2713,8 +2713,21 @@ Ajouter un protocole à port dédié = une entrée `ScannedPorts` + une entrée 
 - ✅ Faux positif Tapo:8800=V380 supprimé (fingerprint requis avant étiquetage)
 - ✅ ONVIF détecté sur son vrai port (8899 ajouté + confirmation SOAP port-agnostique)
 - ✅ Tous les ports ouverts affichés, identifiés ou non — aide à repérer les équipements non supportés (objectif initial du backlog « Scan réseau »)
-- ⚠️ Scan d'un jeu de ports curé, pas de 1-65535 (coût du TCP-connect × hôtes) ; liste extensible en un point et surchargeable via `DiscoverySettings.PortScanPorts`
+- ⚠️ Scan d'un jeu de ports curé, pas de 1-65535 (coût du TCP-connect × hôtes) ; liste extensible en un point
 - ⚠️ Fingerprint V380 best-effort faute de signature de réponse documentée : privilégie « non identifié » à un faux « V380 »
+
+#### Correction (i) — la découverte se configure par périmètre réseau seul ; les ports sont des constantes internes
+
+Constat : `DiscoverySettings` cumulait `RtspPorts`, `RtspPaths`, `HttpPorts`, `OnvifPorts`, `PortScanPorts` — dont la moitié devenue redondante après le fingerprint (h). L'utilisateur n'a pas à savoir qu'une caméra parle V380 sur 8800 : la seule configuration réseau pertinente est le **périmètre** (sous-réseau/hôtes).
+
+**Nettoyage :**
+- **Config utilisateur réduite au réseau** : `DiscoverySettings` ne garde que `ProbeHosts`, `ProbeCidrs`, `AutoDetectLocalCidrs`, `ProbeTimeoutMs`, `MaxConcurrentProbes`. `VyzioConfigLoader` ne lit plus aucune variable d'environnement de ports. Les ports, chemins RTSP et leurs protocoles vivent désormais **uniquement** dans `DiscoveryPortCatalog` (constantes internes).
+- **Sondes redondantes supprimées** : les sondes autonomes ONVIF unicast et Tapo KLAP (leur détection est faite par le fingerprint du balayage) et le repli RTSP « network_scan » (le port ouvert est déjà couvert par le balayage) sont retirés. Restent, pour leur valeur ajoutée seule : RTSP DESCRIBE (chemin de flux), fingerprint HTTP (indice constructeur), annonce ONVIF multicast (hostname), résolution hostname/MAC.
+- **Seams de test isolés du réel** : les rares surcharges de ports nécessaires aux tests (`ScanPortsOverride`, `RtspPortsOverride`, `HttpPortsOverride`) sont des champs **explicitement de test**, jamais alimentés par la config/env — ils permettent aux tests unitaires d'épingler exactement les ports touchés et de désactiver le balayage (`ScanPortsOverride = []`), rendant hermétiques les tests de découverte (effet de bord bénéfique : les tests auparavant pollués par le vrai réseau LAN du poste passent désormais de façon déterministe).
+
+- ✅ Surface de configuration = périmètre réseau uniquement ; plus aucun réglage de port côté utilisateur
+- ✅ Suppression de ~3 sondes/chemins de code redondants introduits avant le fingerprint
+- ✅ Tests de découverte devenus hermétiques (isolation par surcharge + écoute en boucle)
 
 ---
 

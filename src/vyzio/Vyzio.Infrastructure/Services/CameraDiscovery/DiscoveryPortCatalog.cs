@@ -49,6 +49,26 @@ internal static class DiscoveryPortCatalog
 
     public static IReadOnlyList<int> Ports { get; } = ScannedPorts.Keys.Order().ToArray();
 
+    // Ports where a deeper follow-up probe adds value beyond "port open": RTSP DESCRIBE (to get the
+    // real stream path) and the HTTP vendor fingerprint (title/Server header → brand hint).
+    public static IReadOnlyList<int> RtspProbePorts { get; } =
+        Fingerprints.First(f => f.Protocol == SupportedProtocol.Rtsp).Ports;
+
+    public static IReadOnlyList<int> HttpProbePorts { get; } =
+        ScannedPorts.Where(p => p.Value is "HTTP" or "HTTPS").Select(p => p.Key).Order().ToArray();
+
+    // Common RTSP stream paths tried by RTSP DESCRIBE, in priority order (ICSee/XMEye variants last).
+    public static IReadOnlyList<string> RtspPaths { get; } =
+    [
+        "/stream1", "/stream2",
+        "/Streaming/Channels/101",
+        "/live/ch00_1",
+        "/h264Preview_01_main",
+        "/user=admin&password=&channel=1&stream=0.sdp",
+        "/user=admin&password=&channel=1&stream=1.sdp",
+        "/cam/realmonitor?channel=1&subtype=0",
+    ];
+
     public static IReadOnlyList<Fingerprint> FingerprintsForPort(int port)
         => Fingerprints.Where(f => f.Ports.Contains(port)).ToArray();
 

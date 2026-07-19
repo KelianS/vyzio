@@ -16,31 +16,19 @@ public class AssistedCameraDiscoveryServiceTests
         listener.Start();
 
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        var serverTask = Task.Run(async () =>
-        {
-            using var client = await listener.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[1024];
-            _ = await stream.ReadAsync(buffer);
-
-            var payload = "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"Tapo\"\r\n\r\n";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await stream.WriteAsync(bytes);
-            await stream.FlushAsync();
-        });
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [port],
-                RtspPaths = ["/stream1"],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [port],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -48,6 +36,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var result = await sut.DiscoverAsync();
 
+        stopServer.Cancel();
         await serverTask;
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
         Assert.Equal("rtsp_describe", candidate.DiscoverySource);
@@ -62,40 +51,80 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal(["/stream1"], candidate.TechnicalDetails!.RtspPathsDetected);
     }
 
+    // CIDR enumeration reaches a live host, which is then enriched (here RTSP DESCRIBE finds a
+    // usable path). 127.0.0.1/32 → 127.0.0.1, identified via ping (loopback).
     [Fact]
     public async Task DiscoverAsync_returns_candidate_from_configured_cidr()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
-
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        using var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var acceptTask = listener.AcceptTcpClientAsync(acceptCts.Token).AsTask();
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeCidrs = ["127.0.0.1/32"],
-                RtspPorts = [port],
-                RtspPaths = [],
+                RtspPortsOverride = [port],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
         var sut = new AssistedCameraDiscoveryService(settings);
 
         var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
+        await serverTask;
 
-        using var client = await acceptTask;
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
-        Assert.Equal("network_scan", candidate.DiscoverySource);
-        Assert.Equal("camera_likely", candidate.Qualification);
+        Assert.Equal("rtsp_describe", candidate.DiscoverySource);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
-        Assert.Null(candidate.MacAddress);
     }
+
+    // Loop-accept helper: answers every request with an RTSP 200 (enough for DESCRIBE/OPTIONS).
+    private static Task RespondRtspOkAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var buffer = new byte[1024];
+                _ = await stream.ReadAsync(buffer, ct);
+                var payload = "RTSP/1.0 200 OK\r\nCSeq: 1\r\nContent-Length: 0\r\n\r\n";
+                await stream.WriteAsync(Encoding.ASCII.GetBytes(payload), ct);
+                await stream.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.Sockets.SocketException) { }
+    });
+
+    // Loop-accept helper: answers every request with the given raw HTTP response.
+    private static Task RespondHttpAsync(TcpListener listener, string response, CancellationToken ct) => Task.Run(async () =>
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var buffer = new byte[1024];
+                _ = await stream.ReadAsync(buffer, ct);
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(response), ct);
+                await stream.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.Sockets.SocketException) { }
+    });
 
     [Fact]
     public async Task DiscoverAsync_returns_http_candidate_with_tapo_hint()
@@ -104,47 +133,29 @@ public class AssistedCameraDiscoveryServiceTests
         listener.Start();
 
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        var serverTask = Task.Run(async () =>
-        {
-            using (var client = await listener.AcceptTcpClientAsync())
-            using (var stream = client.GetStream())
-            {
-                var buffer = new byte[1024];
-                _ = await stream.ReadAsync(buffer);
-
-                var firstPayload = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
-                var firstBytes = Encoding.UTF8.GetBytes(firstPayload);
-                await stream.WriteAsync(firstBytes);
-                await stream.FlushAsync();
-            }
-
-            using var secondClient = await listener.AcceptTcpClientAsync();
-            using var secondStream = secondClient.GetStream();
-            var secondBuffer = new byte[1024];
-            _ = await secondStream.ReadAsync(secondBuffer);
-
-            var payload = "HTTP/1.1 200 OK\r\nServer: TP-Link Tapo\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Tapo Camera</title></head><body>Tapo</body></html>";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await secondStream.WriteAsync(bytes);
-            await secondStream.FlushAsync();
-        });
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondHttpAsync(
+            listener,
+            "HTTP/1.1 200 OK\r\nServer: TP-Link Tapo\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Tapo Camera</title></head><body>Tapo</body></html>",
+            stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [port],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
         var sut = new AssistedCameraDiscoveryService(settings);
 
         var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
         await serverTask;
 
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
@@ -165,47 +176,29 @@ public class AssistedCameraDiscoveryServiceTests
         listener.Start();
 
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        var serverTask = Task.Run(async () =>
-        {
-            using (var client = await listener.AcceptTcpClientAsync())
-            using (var stream = client.GetStream())
-            {
-                var buffer = new byte[1024];
-                _ = await stream.ReadAsync(buffer);
-
-                var firstPayload = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
-                var firstBytes = Encoding.UTF8.GetBytes(firstPayload);
-                await stream.WriteAsync(firstBytes);
-                await stream.FlushAsync();
-            }
-
-            using var secondClient = await listener.AcceptTcpClientAsync();
-            using var secondStream = secondClient.GetStream();
-            var secondBuffer = new byte[1024];
-            _ = await secondStream.ReadAsync(secondBuffer);
-
-            var payload = "HTTP/1.1 200 OK\r\nServer: nginx\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Admin Portal</title></head><body>hello</body></html>";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await secondStream.WriteAsync(bytes);
-            await secondStream.FlushAsync();
-        });
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondHttpAsync(
+            listener,
+            "HTTP/1.1 200 OK\r\nServer: nginx\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Admin Portal</title></head><body>hello</body></html>",
+            stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [port],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
         var sut = new AssistedCameraDiscoveryService(settings);
 
         var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
         await serverTask;
 
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
@@ -215,118 +208,98 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.DoesNotContain("http_camera_signature", candidate.QualificationReasons);
     }
 
+    // ADR-32: ONVIF is detected by the port-sweep SOAP fingerprint on a catalog ONVIF port (here
+    // 8899, common on V380/XM), regardless of any web UI. Confirms the protocol → ONVIF capability.
     [Fact]
-    public async Task DiscoverAsync_returns_onvif_unicast_candidate_without_web_ui()
+    public async Task DiscoverAsync_confirms_onvif_via_fingerprint_on_catalog_port()
     {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        const int onvifPort = 8899;
+        using var listener = new TcpListener(IPAddress.Loopback, onvifPort);
         listener.Start();
-
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        var serverTask = Task.Run(async () =>
-        {
-            using var client = await listener.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[2048];
-            _ = await stream.ReadAsync(buffer);
-
-            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">NotAuthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await stream.WriteAsync(bytes);
-            await stream.FlushAsync();
-        });
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondOnvifAsync(listener, stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [port],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [onvifPort],
             }
         };
 
         var sut = new AssistedCameraDiscoveryService(settings);
 
         var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
         await serverTask;
 
-        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
-        Assert.Equal("onvif_unicast", candidate.DiscoverySource);
-        Assert.Equal("onvif", candidate.SourceType);
+        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
         Assert.Equal("camera_confirmed", candidate.Qualification);
-        Assert.Contains("onvif_detected", candidate.QualificationReasons);
+        var port = Assert.Single(candidate.TechnicalDetails!.DetectedPorts);
+        Assert.Equal(onvifPort, port.Port);
+        Assert.Equal("Onvif", port.Protocol);
     }
 
-    [Fact]
-    public async Task DiscoverAsync_returns_candidate_from_configured_onvif_port()
+    // Loop-accept helper answering only genuine ONVIF SOAP requests with a valid ONVIF reply.
+    private static Task RespondOnvifAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
     {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        var serverTask = Task.Run(async () =>
+        const string payload = "HTTP/1.1 200 OK\r\nContent-Type: application/soap+xml\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Body><tds:GetCapabilitiesResponse/></s:Body></s:Envelope>";
+        try
         {
-            using var client = await listener.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[2048];
-            _ = await stream.ReadAsync(buffer);
-
-            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"ONVIF\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">NotAuthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await stream.WriteAsync(bytes);
-            await stream.FlushAsync();
-        });
-
-        var settings = new VyzioRuntimeSettings
-        {
-            Discovery = new VyzioRuntimeSettings.DiscoverySettings
+            while (!ct.IsCancellationRequested)
             {
-                ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [],
-                OnvifPorts = [port],
-                ProbeTimeoutMs = 500,
-                MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var buffer = new byte[2048];
+                var read = await stream.ReadAsync(buffer, ct);
+                var request = Encoding.UTF8.GetString(buffer, 0, read);
+                // Only answer the ONVIF probe (POST /onvif/device_service); ignore anything else.
+                if (request.Contains("device_service", StringComparison.OrdinalIgnoreCase))
+                {
+                    await stream.WriteAsync(Encoding.UTF8.GetBytes(payload), ct);
+                    await stream.FlushAsync(ct);
+                }
             }
-        };
-
-        var sut = new AssistedCameraDiscoveryService(settings);
-
-        var result = await sut.DiscoverAsync();
-        await serverTask;
-
-        var candidate = Assert.Single(result, item => item.Host == "127.0.0.1" && item.Port == port);
-        Assert.Equal("onvif_unicast", candidate.DiscoverySource);
-        Assert.Equal("camera_confirmed", candidate.Qualification);
-        Assert.Contains("onvif_detected", candidate.QualificationReasons);
-    }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.Sockets.SocketException) { }
+    });
 
     // ADR-32: an identified host that matches no protocol/vendor signal no longer disappears —
     // it now surfaces as a device_unknown "network_host" baseline candidate (backlog: "show
     // everything found, even unmatched, at lower priority"). This replaces the old expectation
     // that a rejected SOAP gateway produced literally zero output.
+    // A SOAP gateway with no ONVIF markers must NOT be confirmed as ONVIF: the fingerprint fails,
+    // so the open catalog ONVIF port (8000) surfaces as an unidentified open port, device_unknown.
     [Fact]
     public async Task DiscoverAsync_does_not_treat_generic_soap_gateway_as_onvif_camera()
     {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        const int port = 8000;
+        using var listener = new TcpListener(IPAddress.Loopback, port);
         listener.Start();
-
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using var stopServer = new CancellationTokenSource();
         var serverTask = Task.Run(async () =>
         {
-            using var client = await listener.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[2048];
-            _ = await stream.ReadAsync(buffer);
-
-            var payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nWWW-Authenticate: Digest realm=\"BBOX\"\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">Unauthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await stream.WriteAsync(bytes);
-            await stream.FlushAsync();
+            const string payload = "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/soap+xml\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body><s:Fault><s:Reason><s:Text xml:lang=\"en\">Unauthorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>";
+            try
+            {
+                while (!stopServer.IsCancellationRequested)
+                {
+                    using var client = await listener.AcceptTcpClientAsync(stopServer.Token);
+                    using var stream = client.GetStream();
+                    var buffer = new byte[2048];
+                    _ = await stream.ReadAsync(buffer, stopServer.Token);
+                    await stream.WriteAsync(Encoding.UTF8.GetBytes(payload), stopServer.Token);
+                    await stream.FlushAsync(stopServer.Token);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (System.Net.Sockets.SocketException) { }
         });
 
         var settings = new VyzioRuntimeSettings
@@ -334,23 +307,24 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [],
-                OnvifPorts = [port],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [port],
             }
         };
 
         var sut = new AssistedCameraDiscoveryService(settings);
 
         var result = await sut.DiscoverAsync();
+        stopServer.Cancel();
         await serverTask;
 
         var candidate = Assert.Single(result, item => item.Host == "127.0.0.1");
-        Assert.Equal("network_host", candidate.DiscoverySource);
         Assert.Equal("device_unknown", candidate.Qualification);
+        var detectedPort = Assert.Single(candidate.TechnicalDetails!.DetectedPorts);
+        Assert.Equal("unknown", detectedPort.Protocol);
         Assert.DoesNotContain("onvif_detected", candidate.QualificationReasons);
     }
 
@@ -362,13 +336,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["c200-camera-tapo.lan"],
-                RtspPorts = [],
-                RtspPaths = [],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -396,13 +368,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["v380pro-camera.lan"],
-                RtspPorts = [],
-                RtspPaths = [],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -439,13 +409,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["MV26970853"],
-                RtspPorts = [],
-                RtspPaths = [],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -469,56 +437,24 @@ public class AssistedCameraDiscoveryServiceTests
 
         var rtspPort = ((IPEndPoint)rtspListener.LocalEndpoint).Port;
         var httpPort = ((IPEndPoint)httpListener.LocalEndpoint).Port;
+        using var stopServer = new CancellationTokenSource();
 
-        var rtspServerTask = Task.Run(async () =>
-        {
-            using var client = await rtspListener.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[1024];
-            _ = await stream.ReadAsync(buffer);
-
-            var payload = "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"Tapo\"\r\n\r\n";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await stream.WriteAsync(bytes);
-            await stream.FlushAsync();
-        });
-
-        var httpServerTask = Task.Run(async () =>
-        {
-            using (var client = await httpListener.AcceptTcpClientAsync())
-            using (var stream = client.GetStream())
-            {
-                var buffer = new byte[1024];
-                _ = await stream.ReadAsync(buffer);
-
-                var firstPayload = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
-                var firstBytes = Encoding.UTF8.GetBytes(firstPayload);
-                await stream.WriteAsync(firstBytes);
-                await stream.FlushAsync();
-            }
-
-            using var secondClient = await httpListener.AcceptTcpClientAsync();
-            using var secondStream = secondClient.GetStream();
-            var secondBuffer = new byte[1024];
-            _ = await secondStream.ReadAsync(secondBuffer);
-
-            var payload = "HTTP/1.1 200 OK\r\nServer: TP-Link Tapo\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Tapo Camera</title></head><body>Tapo</body></html>";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await secondStream.WriteAsync(bytes);
-            await secondStream.FlushAsync();
-        });
+        var rtspServerTask = RespondRtspOkAsync(rtspListener, stopServer.Token);
+        var httpServerTask = RespondHttpAsync(
+            httpListener,
+            "HTTP/1.1 200 OK\r\nServer: TP-Link Tapo\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Tapo Camera</title></head><body>Tapo</body></html>",
+            stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [rtspPort],
-                RtspPaths = ["/stream1"],
-                HttpPorts = [httpPort],
+                RtspPortsOverride = [rtspPort],
+                HttpPortsOverride = [httpPort],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -526,6 +462,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var result = await sut.DiscoverAsync();
 
+        stopServer.Cancel();
         await Task.WhenAll(rtspServerTask, httpServerTask);
 
         var candidate = Assert.Single(result);
@@ -546,31 +483,19 @@ public class AssistedCameraDiscoveryServiceTests
         rtspListener.Start();
 
         var rtspPort = ((IPEndPoint)rtspListener.LocalEndpoint).Port;
-
-        var rtspServerTask = Task.Run(async () =>
-        {
-            using var client = await rtspListener.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[1024];
-            _ = await stream.ReadAsync(buffer);
-
-            var payload = "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"Camera\"\r\n\r\n";
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            await stream.WriteAsync(bytes);
-            await stream.FlushAsync();
-        });
+        using var stopServer = new CancellationTokenSource();
+        var rtspServerTask = RespondRtspOkAsync(rtspListener, stopServer.Token);
 
         var settings = new VyzioRuntimeSettings
         {
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1", "c200-camera-tapo.lan"],
-                RtspPorts = [rtspPort],
-                RtspPaths = ["/stream1"],
-                HttpPorts = [],
+                RtspPortsOverride = [rtspPort],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -578,6 +503,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var result = await sut.DiscoverAsync();
 
+        stopServer.Cancel();
         await rtspServerTask;
 
         Assert.Equal(2, result.Count);
@@ -599,13 +525,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                RtspPaths = [],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 200,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -655,11 +579,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [port],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [port],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [],
+                ScanPortsOverride = [],
             }
         };
 
@@ -707,12 +631,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [dvripPort],
+                ScanPortsOverride = [dvripPort],
             }
         };
 
@@ -759,12 +682,11 @@ public class AssistedCameraDiscoveryServiceTests
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
                 ProbeHosts = ["127.0.0.1"],
-                RtspPorts = [],
-                HttpPorts = [],
-                OnvifPorts = [],
+                RtspPortsOverride = [],
+                HttpPortsOverride = [],
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
-                PortScanPorts = [v380Port],
+                ScanPortsOverride = [v380Port],
             }
         };
 

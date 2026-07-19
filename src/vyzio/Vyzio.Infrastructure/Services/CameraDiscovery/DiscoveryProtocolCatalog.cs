@@ -16,13 +16,10 @@ internal static class DiscoveryProtocolCatalog
 
     private static readonly IReadOnlyDictionary<string, Entry> BySource = new Dictionary<string, Entry>
     {
-        ["onvif_unicast"] = new(60, SupportedProtocol.Onvif),
-        ["onvif"] = new(55, SupportedProtocol.Onvif),
-        ["rtsp_describe"] = new(50, SupportedProtocol.Rtsp),
-        ["tapo_klap_probe"] = new(45, SupportedProtocol.TapoKlap),
-        ["http_probe"] = new(40, null),
-        ["port_scan"] = new(38, null),
-        ["network_scan"] = new(30, SupportedProtocol.Rtsp),
+        ["onvif"] = new(55, SupportedProtocol.Onvif),        // ONVIF multicast announcement
+        ["rtsp_describe"] = new(50, SupportedProtocol.Rtsp), // RTSP DESCRIBE (found a stream path)
+        ["http_probe"] = new(40, null),                      // HTTP vendor hint
+        ["port_scan"] = new(38, null),                       // open port (protocol via ConfirmedProtocol)
         ["hostname_probe"] = new(20, null),
         ["mac_vendor_probe"] = new(10, null),
         ["http_service"] = new(0, null),
