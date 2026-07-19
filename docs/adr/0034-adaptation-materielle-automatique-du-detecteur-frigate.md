@@ -74,3 +74,16 @@ et le calcul du FPS.
   l'est) ; Nvidia et AMD retombent sur CPU malgré la présence d'un GPU, faute de pouvoir changer le
   variant d'image Frigate déployé (cf. Option 2 écartée) — à réévaluer si un besoin terrain se
   confirme.
+- Ni `vyzio-api` (où tourne la détection) ni `frigate` (qui exploite le détecteur au runtime) n'ont
+  par défaut de visibilité sur `/dev/dri` ou `/dev/apex_0`. Deux mécanismes sont nécessaires ensemble,
+  pas un seul : `privileged: true` lève la restriction du device cgroup (sans lui, l'ouverture d'un
+  device hors de la liste par défaut est refusée même si le node existe) ; un bind mount complet
+  `/dev:/dev` rend les nodes de l'hôte visibles dans le conteneur (le `/dev` d'un conteneur Docker est
+  un devtmpfs qui recouvre l'original — `privileged` seul ne garantit pas que `/dev/dri` y apparaisse).
+  `/dev:/dev` plutôt qu'un `devices:` par device précis, car Compose refuse de démarrer un conteneur
+  dont un device déclaré n'existe pas sur l'hôte (casserait le plug & play sur une machine sans iGPU ni
+  Coral) — `/dev` en tant que répertoire existe toujours, donc le bind mount ne peut pas échouer au
+  démarrage. `vyzio-api` monte le sien en lecture seule (la détection ne fait que lire/stat) ;
+  `frigate` en lecture-écriture (le device est réellement utilisé pour l'inférence). `vyzio-api` monte
+  déjà le socket Docker (accès quasi-root implicite), le delta de surface d'attaque du passage en
+  `privileged` reste marginal.
