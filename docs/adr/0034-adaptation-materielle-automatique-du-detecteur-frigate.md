@@ -67,6 +67,22 @@ et le calcul du FPS.
   benchmarkée sur du matériel réel — à ajuster si le terrain montre un décalage.
 - Pour les paliers Coral/Intel GPU, le FPS reste fixe (valeur actuelle : 5) — l'accélération dédiée
   absorbe la charge, il n'y a pas de motif de le réduire dynamiquement.
+- Le palier CPU n'émet jamais le détecteur natif `type: cpu` : la documentation Frigate le déconseille
+  explicitement (« not recommended for general use ») et recommande à la place `openvino` en
+  `device: CPU`, y compris sans GPU/TPU dédié. `BuildDetectors` émet donc `type: openvino,
+  device: CPU` pour ce palier. Compromis assumé, tranché explicitement plutôt qu'ignoré : sur ARM
+  (Raspberry Pi notamment), des retours terrain Frigate rapportent qu'OpenVINO-CPU peut être *plus
+  lent* que le détecteur natif `cpu` (un cas rapporté : ~1500 ms d'inférence contre ~400 ms) — la
+  bascule s'applique malgré tout uniformément, sans détection d'architecture, par choix produit
+  (simplicité > optimalité sur cette plateforme minoritaire) ; à réévaluer si des retours terrain ARM
+  le justifient.
+- Aucun bloc `model` n'est écrit explicitement pour les paliers OpenVINO : Frigate embarque déjà un
+  modèle par défaut (`ssdlite_mobilenet_v2`) pour ce détecteur, et le dupliquer en dur créerait une
+  dérive silencieuse si Frigate change son défaut dans une version future. Le choix d'un modèle plus
+  précis selon le matériel (Frigate recommande par exemple YOLOv9 pour OpenVINO/Intel, mais ce modèle
+  n'est pas embarqué et demande un téléchargement + stockage séparés) est un axe d'optimisation à part
+  entière, hors scope de cette itération (« détection seule », pas de gestion de catalogue de modèles)
+  — voir backlog Idées.
 - La détection ne sonde que des chemins connus du système de fichiers (aucune dépendance à un outil
   externe type `nvidia-smi` ou `lsusb`) : sur un hôte qui ne les expose pas (dev Windows, CI), la
   détection retombe naturellement sur CPU — comportement déterministe et testable sans matériel réel.

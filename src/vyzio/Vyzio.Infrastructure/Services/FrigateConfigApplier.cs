@@ -210,9 +210,12 @@ public sealed class FrigateConfigApplier(
             {
                 ["ov"] = new() { Type = "openvino", Device = "GPU" }
             },
+            // Frigate discourages its native `cpu` detector ("not recommended for general use") in
+            // favor of the OpenVINO detector running in CPU mode, even without GPU/TPU hardware
+            // (ADR-34) — same detector type as the GPU tier, only the device differs.
             FrigateDetectorKind.Cpu => new Dictionary<string, FrigateDetectorConfig>
             {
-                ["cpu1"] = new() { Type = "cpu" }
+                ["ov"] = new() { Type = "openvino", Device = "CPU" }
             },
             _ => throw new ArgumentOutOfRangeException(nameof(detectorKind), detectorKind, null),
         };

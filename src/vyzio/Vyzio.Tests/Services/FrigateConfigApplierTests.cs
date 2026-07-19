@@ -146,6 +146,16 @@ public class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
+    public async Task Cpu_tier_uses_openvino_cpu_device_rather_than_native_cpu_detector()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Cpu);
+
+        Assert.Contains("openvino", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("CPU", yaml);
+        Assert.DoesNotContain("cpu1", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task EdgeTpu_detected_does_not_scale_fps_with_camera_count()
     {
         var cameras = Enumerable.Range(0, 6)
