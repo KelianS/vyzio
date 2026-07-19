@@ -134,6 +134,7 @@ function App() {
             capturePtzPresetThumbnail={capturePtzPresetThumbnail}
             allCameras={cameras}
             apiBaseUrl={dashboardRuntime.apiBaseUrl}
+            frigateStatus={frigateStatus}
             onOpenLive={(camera, options) =>
               setModalMedia({
                 type: 'live',

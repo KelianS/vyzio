@@ -23,6 +23,7 @@ import type { VerifyDraftCamera } from '../../application/use-cases/VerifyDraftC
 import type { VerifyCamera } from '../../application/use-cases/VerifyCamera'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+import type { FrigateStatus } from '../../domain/entities/SystemStats'
 import type { SetPrivacyStrategy } from '../../application/use-cases/SetPrivacyStrategy'
 import type { PtzStep } from '../../application/use-cases/PtzStep'
 import type { PtzGoToPreset } from '../../application/use-cases/PtzGoToPreset'
@@ -76,6 +77,7 @@ interface CameraOnboardingViewProps {
   capturePtzPresetThumbnail: CapturePtzPresetThumbnail
   allCameras: Camera[]
   apiBaseUrl: string
+  frigateStatus?: FrigateStatus
   onOpenLive: (camera: Camera, options?: { onClose?: () => Promise<void> }) => void
 }
 
@@ -836,6 +838,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
             >
               {applyLoading ? 'Application...' : 'Appliquer'}
             </button>
+            {props.frigateStatus === 'restarting' && (
+              <p className="camera-sidebar-restart-hint">Redémarrage en cours…</p>
+            )}
 
             {camerasState.data.length > 0 ? (
               camerasState.data.map((camera) => (

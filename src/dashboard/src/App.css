@@ -133,6 +133,13 @@
   font-size: 0.84rem !important;
 }
 
+.camera-sidebar-restart-hint {
+  margin: 6px 0 0;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
 .camera-sidebar-header h2 {
   flex: 1;
   min-width: 0;
