@@ -58,7 +58,7 @@ C'est ce contraste qui permet a l'utilisateur de distinguer d'un coup d'oeil une
 
 ## Composants UI
 
-Trois primitives partagees couvrent la quasi-totalite des besoins. **Toujours les reutiliser** plutot que recreer un `<button>` avec des classes ad hoc.
+Quatre primitives partagees couvrent la quasi-totalite des besoins. **Toujours les reutiliser** plutot que recreer un `<button>` ou un `<select>` avec des classes ad hoc.
 
 ### 1. Bouton — `<Btn>` (`src/ui/components/Btn.tsx`)
 
@@ -135,13 +135,14 @@ A utiliser pour **toute action destructrice ou difficilement reversible** (suppr
 )}
 ```
 
-Props : `title`, `body`, `confirmLabel`, `cancelLabel` (defaut `Annuler`), `tone` (`default | warn | danger`), `onConfirm`, `onCancel`, `loading`.
+Props : `title`, `body`, `confirmLabel`, `cancelLabel` (defaut `Annuler`), `tone` (`default | confirm | warn | danger`), `onConfirm`, `onCancel`, `loading`.
 
 Le `tone` mappe automatiquement le variant du bouton de confirmation :
 
 | `tone` | Bouton de confirmation | Quand |
 | --- | --- | --- |
 | `default` | `secondary` | Confirmation neutre (peu de risque). |
+| `confirm` | `primary` (vert plein) | Validation positive, pas destructrice (ex. lancer une action). |
 | `warn` | `danger-outline` | Action sensible mais reversible. |
 | `danger` | `danger` (rouge plein) | Suppression / action irreversible. |
 
@@ -150,6 +151,23 @@ Regles :
 - **Quand ouvrir une modale** : action irreversible, action en masse (plusieurs cameras/profils), ou perte de donnees. Pour une action simple et reversible, un `<Btn>` direct suffit — ne pas sur-solliciter la confirmation.
 - Le bouton d'annulation est toujours `ghost` ; il ne doit jamais attirer l'oeil autant que la confirmation.
 - Le `onConfirm` peut etre `async` : la modale gere seule l'etat « Traitement… ».
+
+### 4. Selection — `<Select>` (`src/ui/components/Select.tsx`)
+
+Wrapper fin sur `<select>` natif : etend `SelectHTMLAttributes` (donc `value`, `onChange`, `disabled`… passent directement), applique juste le style commun.
+
+```tsx
+import { Select } from './Select'
+
+<Select size="md" value={vendor} onChange={(e) => setVendor(e.target.value)}>
+  <option value="">Detection automatique</option>
+  <option value="v380_pro">V380 Pro</option>
+</Select>
+```
+
+Props : `size` (defaut `md`) : `sm | md` — mêmes hauteurs que `<Btn>`, pour aligner select et bouton sur une même ligne.
+
+Regle : ne jamais styler un `<select>` brut avec des classes ad hoc — passer par `<Select>`, même pour un usage ponctuel.
 
 ## Vocabulaire UX MVP
 

@@ -35,8 +35,12 @@ marque que de `discoverySource` structuré, jamais du texte des notes.
 - **`DiscoveryProtocolCatalog`** — mappe chaque `discoverySource` → priorité de fusion (+ le
   `SupportedProtocol` pour les sources qui prouvent un protocole). Utilisé par le `Formatter` pour
   choisir le signal gagnant quand plusieurs décrivent le même hôte.
-- **`AssistedCameraDiscoveryIdentifier`** — qualifie chaque hôte (`camera_confirmed` /
-  `device_unknown`) selon ses signaux.
+- **`AssistedCameraDiscoveryIdentifier`** — qualifie chaque hôte sur trois paliers
+  (`DetermineQualification`) : **`camera_confirmed`** (port/protocole caméra confirmé — ONVIF, KLAP,
+  ou RTSP avec chemin connu), **`camera_likely`** (indice fort mais non confirmé — RTSP qui répond
+  sans chemin connu, signature HTTP camera, OUI MAC ou hostname évocateur), **`device_unknown`**
+  (aucun signal qualifiant ; inclut le signal de base `network_host`). Correspond au besoin produit
+  SPECS §2.2 (« distinguer une caméra confirmée, une caméra probable et un équipement non qualifié »).
 - **`AssistedCameraDiscoveryFormatter`** — fusionne les signaux par hôte (priorité) et décide de
   l'exposition au front.
 

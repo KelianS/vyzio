@@ -297,7 +297,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et de la position de surveillance avant de terminer ;
 - lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers une zone neutre ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix ;
 - la gestion des positions PTZ expose au minimum 4 slots : **preset 1** (Surveillance — ramener la caméra vers la zone surveillée nominale), **preset 2** (Parking vie privée — position de stationnement lors de l'activation du mode vie privée), **presets 3 et 4** personnalisables par l'utilisateur ; les presets 1 et 2 ont des labels fixes, les presets 3 et 4 ont un label libre ;
-- la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + comptage de pas pour les caméras qui ne supportent pas les presets natifs (voir [ADR-25](adr/README.md)).
+- la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + comptage de pas pour les caméras qui ne supportent pas les presets natifs (voir [ADR-25](adr/0025-gestion-des-positions-ptz-presets-natifs-branch-a-vs.md)).
 
 ### 9.4 Miniatures de positions PTZ
 
