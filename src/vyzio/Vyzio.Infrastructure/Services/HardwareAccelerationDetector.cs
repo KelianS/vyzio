@@ -25,6 +25,8 @@ public sealed class HardwareAccelerationDetector : IHardwareAccelerationDetector
         return FrigateDetectorKind.Cpu;
     }
 
+    public int CpuCoreCount => Environment.ProcessorCount;
+
     private static bool IsIntelGpuVendor()
     {
         try

@@ -26,6 +26,10 @@ public class VyzioRuntimeSettings
         // Math.Clamp regardless of configured values, so no configuration can push FPS out of range.
         public int CpuDetectFpsMin { get; init; } = 1;
         public int CpuDetectFpsMax { get; init; } = 5;
+
+        // Rough, unbenchmarked estimate of sustainable detect FPS per CPU core — the total budget
+        // (CpuCoreCount * CpuDetectFpsPerCore) is split across active cameras, then clamped.
+        public double CpuDetectFpsPerCore { get; init; } = 1.0;
     }
 
     public sealed class MqttSettings

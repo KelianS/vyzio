@@ -57,11 +57,14 @@ et le calcul du FPS.
 - `FrigateDetectorKind` (Core/Entities) est un enum — cohérent avec la règle de comparaisons
   type-safe (`src/vyzio/CLAUDE.md`) : aucune chaîne littérale Frigate (`"edgetpu"`, `"openvino"`,
   `"cpu"`) n'est comparée en dur, elle n'apparaît qu'au moment de sérialiser le YAML.
-- Le FPS CPU est calculé ainsi : `clamp(FpsMax - (nb_cameras_actives - 1), FpsMin, FpsMax)` — une
-  seule caméra active obtient `FpsMax`, chaque caméra supplémentaire réduit d'une unité jusqu'au
-  plancher `FpsMin`. `FpsMin`/`FpsMax` sont des paramètres de `VyzioRuntimeSettings.Frigate`
-  (défauts 1 et 5) mais le clamp s'applique quelle que soit leur valeur — aucune configuration ne peut
-  produire un FPS hors bornes.
+- Le FPS CPU est calculé ainsi : `clamp(floor(nb_coeurs * FpsParCoeur / nb_cameras_actives), FpsMin,
+  FpsMax)` — le budget FPS total est proportionnel au nombre de cœurs disponibles
+  (`Environment.ProcessorCount`, exposé par `IHardwareAccelerationDetector.CpuCoreCount` pour rester
+  testable sans dépendre de la machine d'exécution), réparti entre les caméras actives. `FpsMin`,
+  `FpsMax` et `FpsParCoeur` sont des paramètres de `VyzioRuntimeSettings.Frigate` (défauts 1, 5 et 1.0)
+  mais le clamp s'applique quelle que soit leur valeur — aucune configuration ni combinaison
+  cœurs/caméras ne peut produire un FPS hors bornes. `FpsParCoeur` est une estimation grossière, non
+  benchmarkée sur du matériel réel — à ajuster si le terrain montre un décalage.
 - Pour les paliers Coral/Intel GPU, le FPS reste fixe (valeur actuelle : 5) — l'accélération dédiée
   absorbe la charge, il n'y a pas de motif de le réduire dynamiquement.
 - La détection ne sonde que des chemins connus du système de fichiers (aucune dépendance à un outil

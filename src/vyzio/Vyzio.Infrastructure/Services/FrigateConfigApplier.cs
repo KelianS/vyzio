@@ -210,7 +210,8 @@ public sealed class FrigateConfigApplier(
         var fpsMin = settings.Frigate.CpuDetectFpsMin;
         var fpsMax = settings.Frigate.CpuDetectFpsMax;
         var cameraCount = Math.Max(1, activeCameraCount);
-        return Math.Clamp(fpsMax - (cameraCount - 1), fpsMin, fpsMax);
+        var totalFpsBudget = hardwareDetector.CpuCoreCount * settings.Frigate.CpuDetectFpsPerCore;
+        return Math.Clamp((int)Math.Floor(totalFpsBudget / cameraCount), fpsMin, fpsMax);
     }
 
     private static Dictionary<string, FrigateDetectorConfig> BuildDetectors(FrigateDetectorKind detectorKind) =>

@@ -40,18 +40,19 @@ public class FrigateConfigApplierTests : IDisposable
         FrigateCameraName = slug.Replace('-', '_'),
     };
 
-    private sealed class StubHardwareAccelerationDetector(FrigateDetectorKind kind) : IHardwareAccelerationDetector
+    private sealed class StubHardwareAccelerationDetector(FrigateDetectorKind kind, int cpuCoreCount = 4) : IHardwareAccelerationDetector
     {
         public FrigateDetectorKind Detect() => kind;
+        public int CpuCoreCount => cpuCoreCount;
     }
 
-    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu)
+    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu, int cpuCoreCount = 4)
     {
         var applier = new FrigateConfigApplier(
             Settings,
             NullLogger<FrigateConfigApplier>.Instance,
             new FrigateRestartTracker(),
-            new StubHardwareAccelerationDetector(detectorKind));
+            new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount));
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }
@@ -155,17 +156,18 @@ public class FrigateConfigApplierTests : IDisposable
     }
 
     [Theory]
-    [InlineData(1, 5)]
-    [InlineData(2, 4)]
-    [InlineData(5, 1)]
-    [InlineData(9, 1)]
-    public async Task Cpu_detector_scales_fps_down_with_camera_count_within_hard_bounds(int cameraCount, int expectedFps)
+    [InlineData(4, 1, 4)]
+    [InlineData(4, 2, 2)]
+    [InlineData(4, 5, 1)]
+    [InlineData(16, 1, 5)]
+    [InlineData(1, 1, 1)]
+    public async Task Cpu_detector_scales_fps_by_core_count_and_camera_count_within_hard_bounds(int cpuCoreCount, int cameraCount, int expectedFps)
     {
         var cameras = Enumerable.Range(0, cameraCount)
             .Select(i => MakeValidatedCamera($"cam-{i}"))
             .ToArray();
 
-        var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.Cpu);
+        var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.Cpu, cpuCoreCount);
 
         Assert.Contains($"fps: {expectedFps}", yaml, StringComparison.OrdinalIgnoreCase);
     }
