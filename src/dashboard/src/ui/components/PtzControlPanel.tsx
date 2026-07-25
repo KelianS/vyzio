@@ -190,9 +190,10 @@ export function PtzControlPanel({
           {presets.map((p) => {
             const version = thumbVersions[p.presetId] ?? 1
             const thumbKey = `${p.presetId}:${version}`
-            const thumbSrc = apiBaseUrl !== undefined
-              ? `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${p.presetId}/thumbnail?t=${version}`
-              : null
+            const thumbSrc =
+              apiBaseUrl !== undefined
+                ? `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${p.presetId}/thumbnail?t=${version}`
+                : null
             const thumbLoaded = !!loadedThumbs[thumbKey]
 
             return (

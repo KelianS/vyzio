@@ -12,7 +12,9 @@ namespace Vyzio.Infrastructure.Services;
 public sealed class FrigateConfigApplier(
     VyzioRuntimeSettings settings,
     ILogger<FrigateConfigApplier> logger,
-    IFrigateRestartTracker restartTracker) : IFrigateConfigApplier
+    IFrigateRestartTracker restartTracker,
+    IFrigateDetectorPlanner detectorPlanner,
+    IFrigateModelAssetInstaller modelAssetInstaller) : IFrigateConfigApplier
 {
     public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
@@ -20,15 +22,20 @@ public sealed class FrigateConfigApplier(
         if (string.IsNullOrWhiteSpace(configPath))
             return;
 
+        var (document, detectorKind) = BuildDocument(cameras);
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+            await modelAssetInstaller.EnsureInstalledAsync(detectorKind, directory, ct);
+        }
+
         var serializer = new SerializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
             .Build();
 
-        var yaml = serializer.Serialize(BuildDocument(cameras));
-        var directory = Path.GetDirectoryName(configPath);
-        if (!string.IsNullOrWhiteSpace(directory))
-            Directory.CreateDirectory(directory);
+        var yaml = serializer.Serialize(document);
 
         var tempPath = $"{configPath}.tmp";
         await File.WriteAllTextAsync(tempPath, yaml, ct);
@@ -78,11 +85,18 @@ public sealed class FrigateConfigApplier(
             : new FrigateConfigApplyResult(false, string.IsNullOrWhiteSpace(standardError) ? "Frigate apply command failed." : standardError.Trim(), configPath);
     }
 
-    private FrigateDocument BuildDocument(IReadOnlyList<Camera> cameras)
+    private (FrigateDocument Document, FrigateDetectorKind DetectorKind) BuildDocument(IReadOnlyList<Camera> cameras)
     {
-        var activeCameras = cameras
+        var validatedCameras = cameras
             .Where(camera => camera.IsEnabled)
             .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var plan = detectorPlanner.Plan(validatedCameras.Count);
+        var detectorKind = plan.Kind;
+        var detectFps = plan.Fps;
+
+        var activeCameras = validatedCameras
             .ToDictionary(
                 camera => camera.FrigateCameraName ?? camera.Slug.Replace('-', '_'),
                 camera =>
@@ -111,7 +125,7 @@ public sealed class FrigateConfigApplier(
                         Detect = new FrigateDetectConfig
                         {
                             Enabled = true,
-                            Fps = 5,
+                            Fps = detectFps,
                         },
                         Objects = new FrigateObjectsConfig
                         {
@@ -149,7 +163,7 @@ public sealed class FrigateConfigApplier(
                 Detect = new FrigateDetectConfig
                 {
                     Enabled = true,
-                    Fps = 5,
+                    Fps = detectFps,
                 }
             };
         }
@@ -172,7 +186,7 @@ public sealed class FrigateConfigApplier(
             ? new FrigateFaceRecognitionConfig { Enabled = true }
             : null;
 
-        return new FrigateDocument
+        var document = new FrigateDocument
         {
             Mqtt = new FrigateMqttConfig
             {
@@ -183,16 +197,58 @@ public sealed class FrigateConfigApplier(
             {
                 Path = settings.Frigate.DatabasePath,
             },
-            Detectors = new Dictionary<string, FrigateDetectorConfig>
-            {
-                ["cpu1"] = new() { Type = "cpu" }
-            },
+            Detectors = BuildDetectors(detectorKind),
+            Model = BuildModel(detectorKind),
             FaceRecognition = faceRecognition,
             Go2rtc = go2rtc,
             Record = new FrigateRecordConfig { Enabled = true },
             Cameras = activeCameras,
         };
+
+        return (document, detectorKind);
     }
+
+    // `onnx` (auto-detects OpenVINO as execution provider on the stock image) + YOLOX only for the
+    // Openvino/Intel-GPU tier, where dedicated hardware absorbs the extra compute a YOLO-family model
+    // costs over a plain SSD. Reverted for the CPU-only tier after field testing showed CPU spikes to
+    // ~800% with 2 cameras and degraded detection (frames dropped under load) — even the smallest
+    // YOLOX variant is heavier per-inference than the native `cpu` detector's own model (MobileDet),
+    // which field testing separately confirmed reliable (ADR-34).
+    private static Dictionary<string, FrigateDetectorConfig> BuildDetectors(FrigateDetectorKind detectorKind) =>
+        detectorKind switch
+        {
+            FrigateDetectorKind.EdgeTpu => new Dictionary<string, FrigateDetectorConfig>
+            {
+                ["coral"] = new() { Type = "edgetpu", Device = "pci" }
+            },
+            FrigateDetectorKind.Openvino => new Dictionary<string, FrigateDetectorConfig>
+            {
+                ["onnx"] = new() { Type = "onnx" }
+            },
+            FrigateDetectorKind.Cpu => new Dictionary<string, FrigateDetectorConfig>
+            {
+                ["cpu1"] = new() { Type = "cpu" }
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(detectorKind), detectorKind, null),
+        };
+
+    // YOLOX (Apache-2.0 — no redistribution concern, unlike YOLOv9's GPL-3.0 or YOLO-NAS's
+    // non-commercial weights, ADR-34) replaces ssdlite_mobilenet_v2 on the Openvino/Intel-GPU tier
+    // only — bundled into the vyzio-api image and installed into the shared config volume by
+    // IFrigateModelAssetInstaller. EdgeTpu and the native Cpu detector ship their own default model.
+    private static FrigateModelConfig? BuildModel(FrigateDetectorKind detectorKind) =>
+        detectorKind == FrigateDetectorKind.Openvino
+            ? new FrigateModelConfig
+            {
+                ModelType = "yolox",
+                Width = 640,
+                Height = 640,
+                InputTensor = "nchw",
+                InputDtype = "float_denorm",
+                Path = "/config/model_cache/yolox_s.onnx",
+                LabelmapPath = "/labelmap/coco-80.txt",
+            }
+            : null;
 
     private static string BuildDvripUrl(Camera camera)
     {
@@ -226,6 +282,7 @@ public sealed class FrigateConfigApplier(
         public required FrigateMqttConfig Mqtt { get; init; }
         public required FrigateDatabaseConfig Database { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
+        public FrigateModelConfig? Model { get; init; }
         public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
         public FrigateGo2rtcConfig? Go2rtc { get; init; }
         public FrigateRecordConfig? Record { get; init; }
@@ -251,6 +308,19 @@ public sealed class FrigateConfigApplier(
     private sealed class FrigateDetectorConfig
     {
         public required string Type { get; init; }
+        public string? Device { get; init; }
+    }
+
+    private sealed class FrigateModelConfig
+    {
+        public string? ModelType { get; init; }
+        public required int Width { get; init; }
+        public required int Height { get; init; }
+        public required string InputTensor { get; init; }
+        public string? InputPixelFormat { get; init; }
+        public string? InputDtype { get; init; }
+        public required string Path { get; init; }
+        public required string LabelmapPath { get; init; }
     }
 
     private sealed class FrigateFaceRecognitionConfig

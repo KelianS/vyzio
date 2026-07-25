@@ -173,12 +173,7 @@ export function PrivacyScheduleSection({
         </div>
         {error && <p className="privacy-schedule-error">{error}</p>}
         <div className="privacy-schedule-actions">
-          <Btn
-            variant="secondary"
-            size="sm"
-            onClick={handleAdd}
-            loading={adding}
-          >
+          <Btn variant="secondary" size="sm" onClick={handleAdd} loading={adding}>
             Ajouter à cette caméra
           </Btn>
           {allCameras.length > 1 && (

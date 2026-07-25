@@ -1,4 +1,8 @@
-import type { FrigateStatus, SystemStats } from '../../domain/entities/SystemStats'
+import type {
+  FrigateDetectorKind,
+  FrigateStatus,
+  SystemStats,
+} from '../../domain/entities/SystemStats'
 
 interface SystemMonitorPanelProps {
   stats: SystemStats
@@ -18,6 +22,12 @@ const STATUS_LABEL: Record<FrigateStatus, string> = {
 
 function SystemStatusPill({ status }: { status: FrigateStatus }) {
   return <span className={`status-pill ${STATUS_PILL_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+}
+
+const DETECTOR_HARDWARE_LABEL: Record<FrigateDetectorKind, string> = {
+  edge_tpu: 'Accélérateur dédié (Coral)',
+  openvino: 'Carte graphique (Intel)',
+  cpu: 'Processeur (CPU)',
 }
 
 type DegradedStatus = Exclude<FrigateStatus, 'active'>
@@ -71,6 +81,14 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
       <div className="hub-monitor-heading-row">
         <h2>Système</h2>
         <SystemStatusPill status={stats.status} />
+      </div>
+
+      <div className="hub-monitor-section">
+        <p className="hub-monitor-label">Détection</p>
+        <p className="hub-monitor-bar-legend">
+          {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · cible {stats.detection.targetFps}{' '}
+          fps
+        </p>
       </div>
 
       {stats.storage && (

@@ -144,7 +144,11 @@ export function PtzPresetsSection({
         )}
       </div>
 
-      {loading && <p className="camera-section-copy" style={{ margin: 0 }}>Chargement…</p>}
+      {loading && (
+        <p className="camera-section-copy" style={{ margin: 0 }}>
+          Chargement…
+        </p>
+      )}
       {error && <p className="ptz-presets-error">{error}</p>}
 
       {!loading && !error && (
@@ -155,11 +159,7 @@ export function PtzPresetsSection({
                 Calibrez la caméra pour établir la position de référence (butée mécanique), puis
                 naviguez vers la position souhaitée avant de définir un preset.
               </p>
-              <Btn
-                variant="secondary"
-                loading={calibrating}
-                onClick={handleCalibrate}
-              >
+              <Btn variant="secondary" loading={calibrating} onClick={handleCalibrate}>
                 {calibrating ? 'Calibration en cours…' : 'Calibrer (position 0)'}
               </Btn>
             </div>
@@ -178,7 +178,11 @@ export function PtzPresetsSection({
               const reserved = isReservedPreset(presetId)
               const label =
                 preset?.label ??
-                (presetId === 1 ? 'Surveillance' : presetId === 2 ? 'Parking' : `Position ${presetId}`)
+                (presetId === 1
+                  ? 'Surveillance'
+                  : presetId === 2
+                    ? 'Parking'
+                    : `Position ${presetId}`)
 
               const thumbSrc = `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/thumbnail?t=${thumbVersions[presetId] ?? 1}`
 
@@ -207,7 +211,9 @@ export function PtzPresetsSection({
                     </span>
                     {preset ? (
                       <span className="ptz-preset-status ptz-preset-status--configured">
-                        {preset.native ? 'Natif' : `${preset.stepsX ?? 0}, ${preset.stepsY ?? 0} pas`}
+                        {preset.native
+                          ? 'Natif'
+                          : `${preset.stepsX ?? 0}, ${preset.stepsY ?? 0} pas`}
                       </span>
                     ) : (
                       <span className="ptz-preset-status">Non défini</span>

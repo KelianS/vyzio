@@ -26,7 +26,12 @@ tasks:
     cmds:
       - wsl {{.COMPOSE_DEV}} down
 
-  logs:
+  logs:frigate:
+    desc: Suit les logs de l'infra dev
+    cmds:
+      - wsl {{.COMPOSE_DEV}} logs frigate -f
+
+  logs:vyzio:
     desc: Suit les logs de l'infra dev
     cmds:
       - wsl {{.COMPOSE_DEV}} logs vyzio-api -f
