@@ -645,7 +645,10 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
     const technicalDetails = candidate.technicalDetails
     const detectedPorts = technicalDetails?.detectedPorts ?? []
     const hasFacts = Boolean(
-      technicalDetails?.resolvedHostName || candidate.macAddress || detectedPorts.length || technicalDetails?.rtspPathsDetected?.length,
+      technicalDetails?.resolvedHostName ||
+      candidate.macAddress ||
+      detectedPorts.length ||
+      technicalDetails?.rtspPathsDetected?.length,
     )
 
     if (!hasFacts) {
@@ -1105,7 +1108,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         <span>Marque (si non reconnue automatiquement)</span>
                         <Select
                           value={form.vendorFamily ?? ''}
-                          onChange={(event) => updateForm({ vendorFamily: event.target.value || null })}
+                          onChange={(event) =>
+                            updateForm({ vendorFamily: event.target.value || null })
+                          }
                         >
                           <option value="">Detection automatique</option>
                           <option value="v380_pro">V380 PRO</option>
@@ -1190,7 +1195,11 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                   />
 
                   <div className="camera-detail-section camera-live-actions">
-                    <Btn variant="secondary" size="md" onClick={() => props.onOpenLive(selectedCamera)}>
+                    <Btn
+                      variant="secondary"
+                      size="md"
+                      onClick={() => props.onOpenLive(selectedCamera)}
+                    >
                       {selectedCamera.ptzSupported ? 'Piloter la caméra' : 'Voir le live'}
                     </Btn>
                   </div>
@@ -1285,7 +1294,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                         variant="secondary"
                         size="md"
                         loading={verifyAction.loading}
-                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
+                        disabled={
+                          actionLoading || selectedCamera.validationState === 'pending_removal'
+                        }
                         onClick={handleVerify}
                       >
                         Vérifier la connexion
@@ -1293,7 +1304,9 @@ export function CameraOnboardingView(props: CameraOnboardingViewProps) {
                       <Btn
                         variant="danger"
                         size="md"
-                        disabled={actionLoading || selectedCamera.validationState === 'pending_removal'}
+                        disabled={
+                          actionLoading || selectedCamera.validationState === 'pending_removal'
+                        }
                         onClick={() => setConfirmDelete(true)}
                       >
                         {selectedCamera.validationState === 'pending_removal'

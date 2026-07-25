@@ -84,15 +84,12 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
     onReload?.()
   }
 
-  const detectAction = useAsyncAction(
-    () => detectCameraCapabilities.execute(camera.id),
-    {
-      onSuccess: () => {
-        toast('Détection terminée.', 'success')
-        handleReload()
-      },
+  const detectAction = useAsyncAction(() => detectCameraCapabilities.execute(camera.id), {
+    onSuccess: () => {
+      toast('Détection terminée.', 'success')
+      handleReload()
     },
-  )
+  })
 
   // A capacity not already bound (preset or manual) can always be added by hand — even on a
   // recognized vendor, since a preset only declares what Vyzio *expects*, not an exhaustive
@@ -142,8 +139,9 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
           />
         ))}
 
-        {availableCapabilities.length > 0 && !offline && (
-          showManualForm ? (
+        {availableCapabilities.length > 0 &&
+          !offline &&
+          (showManualForm ? (
             <ManualCapabilityForm
               cameraId={camera.id}
               availableCapabilities={availableCapabilities}
@@ -163,8 +161,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
             >
               +
             </button>
-          )
-        )}
+          ))}
       </div>
 
       <div className="capability-detect-row">
@@ -330,7 +327,9 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             <span className={`capability-status-dot ${isVerified ? 'ok' : 'fail'}`} />
           )}
         </div>
-        <div className="capability-protocol">{PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}</div>
+        <div className="capability-protocol">
+          {PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}
+        </div>
         {!isVerified && binding.lastError && (
           <div className="capability-error">{binding.lastError}</div>
         )}
@@ -364,7 +363,9 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
       <div className="capability-actions">
         {binding.capability === 'ptz' && isConfigured && (
           <>
-            <span className={`capability-status-badge ${ptzEnabled ? 'capability-status-badge--on' : 'capability-status-badge--off'}`}>
+            <span
+              className={`capability-status-badge ${ptzEnabled ? 'capability-status-badge--on' : 'capability-status-badge--off'}`}
+            >
               {ptzEnabled ? 'Actif' : 'Inactif'}
             </span>
             {ptzEnabled ? (
@@ -415,7 +416,10 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           description="Le panneau de contrôle PTZ sera masqué dans l'interface. La configuration reste sauvegardée et peut être réactivée à tout moment."
           confirmLabel="Désactiver"
           loading={toggleAction.loading}
-          onConfirm={() => { setConfirmDisable(false); toggleAction.run() }}
+          onConfirm={() => {
+            setConfirmDisable(false)
+            toggleAction.run()
+          }}
           onCancel={() => setConfirmDisable(false)}
         />
       )}
@@ -426,7 +430,10 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           description="La configuration de cette capacité sera supprimée. Vous pourrez la reconfigurer à tout moment via le bouton + ."
           confirmLabel="Retirer"
           loading={removeAction.loading}
-          onConfirm={() => { setConfirmRemove(false); removeAction.run() }}
+          onConfirm={() => {
+            setConfirmRemove(false)
+            removeAction.run()
+          }}
           onCancel={() => setConfirmRemove(false)}
         />
       )}
@@ -445,14 +452,23 @@ interface ConfirmModalProps {
   onCancel: () => void
 }
 
-function ConfirmModal({ title, description, confirmLabel, loading, onConfirm, onCancel }: ConfirmModalProps) {
+function ConfirmModal({
+  title,
+  description,
+  confirmLabel,
+  loading,
+  onConfirm,
+  onCancel,
+}: ConfirmModalProps) {
   return (
     <div className="confirm-modal-backdrop" onClick={onCancel}>
       <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
         <p className="confirm-modal-title">{title}</p>
         <p className="confirm-modal-desc">{description}</p>
         <div className="confirm-modal-actions">
-          <Btn variant="ghost" size="md" onClick={onCancel}>Annuler</Btn>
+          <Btn variant="ghost" size="md" onClick={onCancel}>
+            Annuler
+          </Btn>
           <Btn variant="danger" size="md" loading={loading} onClick={onConfirm}>
             {confirmLabel}
           </Btn>
@@ -471,7 +487,12 @@ interface ManualCapabilityFormProps {
   onCancel: () => void
 }
 
-function ManualCapabilityForm({ cameraId, availableCapabilities, onDone, onCancel }: ManualCapabilityFormProps) {
+function ManualCapabilityForm({
+  cameraId,
+  availableCapabilities,
+  onDone,
+  onCancel,
+}: ManualCapabilityFormProps) {
   const [selectedCapability, setSelectedCapability] = useState<Capability>(availableCapabilities[0])
   const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>(
     protocolOptionsFor(availableCapabilities[0])[0].value,

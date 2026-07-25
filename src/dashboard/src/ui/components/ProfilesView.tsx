@@ -553,7 +553,12 @@ function ProfilePhotosTab({
           <Btn variant="secondary" size="sm" loading={resyncing} onClick={onResync}>
             Resynchroniser
           </Btn>
-          <Btn variant="primary" size="sm" loading={uploading} onClick={() => inputRef.current?.click()}>
+          <Btn
+            variant="primary"
+            size="sm"
+            loading={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
             + Photo
           </Btn>
           <input

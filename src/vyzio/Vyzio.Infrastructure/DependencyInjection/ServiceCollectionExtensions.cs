@@ -35,6 +35,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
         services.AddSingleton<IFrigateRestartTracker, FrigateRestartTracker>();
+        services.AddSingleton<IHardwareAccelerationDetector, HardwareAccelerationDetector>();
+        services.AddSingleton<IFrigateDetectorPlanner, FrigateDetectorPlanner>();
+        services.AddSingleton<IFrigateModelAssetInstaller, FrigateModelAssetInstaller>();
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
 
         services.AddHttpClient("tapo");

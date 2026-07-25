@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
 
@@ -39,9 +40,30 @@ public class FrigateConfigApplierTests : IDisposable
         FrigateCameraName = slug.Replace('-', '_'),
     };
 
-    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras)
+    private sealed class StubHardwareAccelerationDetector(FrigateDetectorKind kind, int cpuCoreCount = 4) : IHardwareAccelerationDetector
     {
-        var applier = new FrigateConfigApplier(Settings, NullLogger<FrigateConfigApplier>.Instance, new FrigateRestartTracker());
+        public FrigateDetectorKind Detect() => kind;
+        public int CpuCoreCount => cpuCoreCount;
+    }
+
+    // Real IFrigateModelAssetInstaller copies bundled files from /app/models — not present on the
+    // test runner, and not the concern of these tests (config generation only).
+    private sealed class NoopModelAssetInstaller : IFrigateModelAssetInstaller
+    {
+        public Task EnsureInstalledAsync(FrigateDetectorKind detectorKind, string configDirectory, CancellationToken ct = default) =>
+            Task.CompletedTask;
+    }
+
+    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu, int cpuCoreCount = 4)
+    {
+        var settings = Settings;
+        var planner = new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount));
+        var applier = new FrigateConfigApplier(
+            settings,
+            NullLogger<FrigateConfigApplier>.Instance,
+            new FrigateRestartTracker(),
+            planner,
+            new NoopModelAssetInstaller());
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }
@@ -112,5 +134,66 @@ public class FrigateConfigApplierTests : IDisposable
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
         Assert.Contains("enabled: false", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task EdgeTpu_detected_emits_edgetpu_detector()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.EdgeTpu);
+
+        Assert.Contains("edgetpu", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pci", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Openvino_detected_emits_onnx_detector_with_yolox_s_model()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Openvino);
+
+        Assert.Contains("type: onnx", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("yolox_s.onnx", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("yolox", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("coco-80.txt", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Cpu_detected_emits_native_cpu_detector_not_onnx()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Cpu);
+
+        Assert.Contains("cpu1", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("type: cpu", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("onnx", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("yolox", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ssdlite_mobilenet_v2", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task EdgeTpu_detected_does_not_scale_fps_with_camera_count()
+    {
+        var cameras = Enumerable.Range(0, 6)
+            .Select(i => MakeValidatedCamera($"cam-{i}"))
+            .ToArray();
+
+        var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.EdgeTpu);
+
+        Assert.Contains("fps: 5", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(4, 1, 4)]
+    [InlineData(4, 2, 2)]
+    [InlineData(4, 5, 1)]
+    [InlineData(16, 1, 5)]
+    [InlineData(1, 1, 1)]
+    public async Task Cpu_detector_scales_fps_by_core_count_and_camera_count_within_hard_bounds(int cpuCoreCount, int cameraCount, int expectedFps)
+    {
+        var cameras = Enumerable.Range(0, cameraCount)
+            .Select(i => MakeValidatedCamera($"cam-{i}"))
+            .ToArray();
+
+        var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.Cpu, cpuCoreCount);
+
+        Assert.Contains($"fps: {expectedFps}", yaml, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -284,9 +284,11 @@ export class HttpCameraRepository implements CameraRepository {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
   }
 
-  async getPtzPresets(
-    cameraId: string,
-  ): Promise<{ presets: PtzPreset[]; calibrated: boolean; currentPosition: { x: number; y: number } | null }> {
+  async getPtzPresets(cameraId: string): Promise<{
+    presets: PtzPreset[]
+    calibrated: boolean
+    currentPosition: { x: number; y: number } | null
+  }> {
     return fetchJson<{
       presets: PtzPreset[]
       calibrated: boolean
@@ -344,7 +346,9 @@ export class HttpCameraRepository implements CameraRepository {
   }
 
   async getImageSettings(cameraId: string): Promise<CameraImageSettings> {
-    return fetchJson<CameraImageSettings>(`${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`)
+    return fetchJson<CameraImageSettings>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`,
+    )
   }
 
   async setImageSettings(
@@ -382,8 +386,7 @@ function mapCamera(camera: CameraDto): Camera {
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
     ptzSupported: camera.ptzSupported ?? false,
-    privacyStrategy: (camera.privacyStrategy ||
-      'none') as Camera['privacyStrategy'],
+    privacyStrategy: (camera.privacyStrategy || 'none') as Camera['privacyStrategy'],
     supportedProtocols: camera.supportedProtocols ?? [],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     connected: camera.status === 'online',
