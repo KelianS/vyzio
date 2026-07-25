@@ -1,4 +1,8 @@
-import type { FrigateDetectorKind, FrigateStatus, SystemStats } from '../../domain/entities/SystemStats'
+import type {
+  FrigateDetectorKind,
+  FrigateStatus,
+  SystemStats,
+} from '../../domain/entities/SystemStats'
 
 interface SystemMonitorPanelProps {
   stats: SystemStats
@@ -82,7 +86,8 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
       <div className="hub-monitor-section">
         <p className="hub-monitor-label">Détection</p>
         <p className="hub-monitor-bar-legend">
-          {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · cible {stats.detection.targetFps} fps
+          {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · cible {stats.detection.targetFps}{' '}
+          fps
         </p>
       </div>
 

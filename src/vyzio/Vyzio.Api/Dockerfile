@@ -16,9 +16,18 @@ WORKDIR /app
 # docker-cli: restart Frigate on config apply
 # tzdata: IANA timezone database (Europe/Paris, etc.)
 # icu-libs: .NET globalization — disabled by default in Alpine-based images
-RUN apk add --no-cache docker-cli tzdata icu-libs su-exec
+# curl: fetch bundled detection models at build time (below)
+RUN apk add --no-cache docker-cli tzdata icu-libs su-exec curl
 
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
+# YOLOX (Apache-2.0) pretrained ONNX model, Openvino/Intel-GPU tier only — installed into Frigate's
+# shared config volume on demand by IFrigateModelAssetInstaller (ADR-34). Apache-2.0 permits bundling
+# in this image, unlike YOLOv9 (GPL-3.0) or YOLO-NAS (non-commercial weights). The CPU-only tier uses
+# Frigate's own native `cpu` detector — field testing showed YOLOX overloads it, even the smallest
+# variant.
+RUN mkdir -p /app/models \
+	&& curl -fsSL -o /app/models/yolox_s.onnx https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx
 
 COPY --from=build /app/publish .
 COPY src/vyzio/vendors /app/vendors

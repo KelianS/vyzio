@@ -8,7 +8,10 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'siz
 
 export function Select({ size = 'md', className, children, ...rest }: SelectProps) {
   return (
-    <select className={['select', `select--${size}`, className].filter(Boolean).join(' ')} {...rest}>
+    <select
+      className={['select', `select--${size}`, className].filter(Boolean).join(' ')}
+      {...rest}
+    >
       {children}
     </select>
   )

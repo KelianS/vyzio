@@ -23,7 +23,10 @@ const IR_CUT_OPTIONS: { value: IrCutMode; label: string }[] = [
   { value: 'off', label: 'Vision nocturne désactivée' },
 ]
 
-const SLIDERS: { key: keyof Pick<CameraImageSettings, 'brightness' | 'contrast' | 'saturation' | 'sharpness'>; label: string }[] = [
+const SLIDERS: {
+  key: keyof Pick<CameraImageSettings, 'brightness' | 'contrast' | 'saturation' | 'sharpness'>
+  label: string
+}[] = [
   { key: 'brightness', label: 'Luminosité' },
   { key: 'contrast', label: 'Contraste' },
   { key: 'saturation', label: 'Saturation' },
@@ -37,7 +40,9 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
     loading,
     error,
   } = useAsync(() => getCameraImageSettings.execute(camera.id), [camera.id], { skip: offline })
-  const { data: bindings } = useAsync(() => getCameraCapabilities.execute(camera.id), [camera.id], { skip: offline })
+  const { data: bindings } = useAsync(() => getCameraCapabilities.execute(camera.id), [camera.id], {
+    skip: offline,
+  })
 
   // Sharpness and night-vision mode aren't confirmed writable over DVRIP (ADR-29) — hide those
   // controls rather than let the user tweak something the camera silently ignores.
@@ -74,7 +79,8 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
       <section className="camera-detail-section">
         <h4>Réglages image</h4>
         <p className="camera-inline-state">
-          Caméra hors ligne — les réglages image seront disponibles dès que la caméra sera joignable.
+          Caméra hors ligne — les réglages image seront disponibles dès que la caméra sera
+          joignable.
         </p>
       </section>
     )
@@ -98,35 +104,37 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
     )
   }
 
-  const isDirty = baseline !== null && (
-    draft.brightness !== baseline.brightness ||
-    draft.contrast !== baseline.contrast ||
-    draft.saturation !== baseline.saturation ||
-    draft.sharpness !== baseline.sharpness ||
-    draft.irCutMode !== baseline.irCutMode
-  )
+  const isDirty =
+    baseline !== null &&
+    (draft.brightness !== baseline.brightness ||
+      draft.contrast !== baseline.contrast ||
+      draft.saturation !== baseline.saturation ||
+      draft.sharpness !== baseline.sharpness ||
+      draft.irCutMode !== baseline.irCutMode)
 
   return (
     <section className="camera-detail-section">
       <h4>Réglages image</h4>
 
       <div className="image-settings-sliders">
-        {SLIDERS.filter(({ key }) => supportsSharpnessAndIrCut || key !== 'sharpness').map(({ key, label }) => (
-          <label key={key} className="image-settings-slider">
-            <span className="image-settings-slider-label">
-              {label}
-              <span className="image-settings-slider-value">{draft[key]}</span>
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={draft[key]}
-              disabled={saveAction.loading}
-              onChange={(e) => setDraft({ ...draft, [key]: Number(e.target.value) })}
-            />
-          </label>
-        ))}
+        {SLIDERS.filter(({ key }) => supportsSharpnessAndIrCut || key !== 'sharpness').map(
+          ({ key, label }) => (
+            <label key={key} className="image-settings-slider">
+              <span className="image-settings-slider-label">
+                {label}
+                <span className="image-settings-slider-value">{draft[key]}</span>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={draft[key]}
+                disabled={saveAction.loading}
+                onChange={(e) => setDraft({ ...draft, [key]: Number(e.target.value) })}
+              />
+            </label>
+          ),
+        )}
 
         {supportsSharpnessAndIrCut && (
           <label className="image-settings-ircut">

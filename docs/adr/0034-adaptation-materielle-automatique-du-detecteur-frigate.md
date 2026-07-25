@@ -4,117 +4,116 @@
 
 ## Contexte
 
-`FrigateConfigApplier.BuildDocument` génère aujourd'hui une section `detectors` figée dans
-`frigate.yml` : un seul détecteur `cpu1` de type `cpu`, avec une fréquence d'analyse (`detect.fps`)
-fixée à 5 pour toutes les caméras, quel que soit le matériel réellement présent sur la machine hôte
-et quel que soit le nombre de caméras. Cela contredit le principe produit #5 (plug & play) : un
-utilisateur disposant d'un accélérateur dédié (Coral) ou d'une carte graphique doit en bénéficier sans
-rien configurer manuellement, et un hôte CPU-only avec plusieurs caméras a besoin d'une fréquence
-d'analyse réduite pour ne pas saturer le processeur (SPECS §7.2).
+`FrigateConfigApplier.BuildDocument` génère la section `detectors`/`model` de `frigate.yml`. Avant
+cet ADR, elle était figée : un seul détecteur `cpu1` de type `cpu`, `detect.fps` fixé à 5 pour toutes
+les caméras, quel que soit le matériel présent et le nombre de caméras. Cela contredit le principe
+produit #5 (plug & play) : un utilisateur disposant d'un accélérateur dédié (Coral) ou d'une carte
+graphique doit en bénéficier sans rien configurer, et un hôte CPU-only avec plusieurs caméras a besoin
+d'une fréquence d'analyse réduite pour ne pas saturer le processeur (SPECS §7.2).
 
-Le choix du détecteur GPU n'est pas qu'une question de champ `type` dans `config.yml` : sur la version
-Frigate pinnée (`0.17.1`, [`docker-compose.yml`](../../docker-compose.yml)), Intel (OpenVINO) et Coral
-(edgetpu) fonctionnent avec l'image `ghcr.io/blakeblackshear/frigate:0.17.1` déjà déployée, alors que
-Nvidia (`tensorrt`) et AMD (`rocm`) exigent de faire tourner un **variant d'image Docker différent**
-(`stable-tensorrt` / `stable-rocm`) — donc de recréer le conteneur Frigate, pas seulement de réécrire
-sa config et de le redémarrer (`FrigateConfigApplier.ApplyAsync` fait uniquement ce dernier).
+Deux contraintes façonnent la décision :
+
+- **Image Docker déployée.** Sur la version Frigate pinnée (`0.17.1`,
+  [`docker-compose.yml`](../../docker-compose.yml)), Coral (edgetpu) et Intel (OpenVINO/onnx)
+  fonctionnent avec l'image `ghcr.io/blakeblackshear/frigate:0.17.1` déjà déployée. Nvidia (`tensorrt`)
+  et AMD (`rocm`) exigent un **variant d'image Docker différent** — recréer le conteneur, pas
+  seulement réécrire sa config et le redémarrer (`FrigateConfigApplier.ApplyAsync` fait uniquement ce
+  dernier).
+- **Licence du modèle IA.** Le modèle par défaut d'OpenVINO (`ssdlite_mobilenet_v2`, origine Intel Open
+  Model Zoo) s'est révélé, en test terrain, nettement moins fiable que le modèle du détecteur `cpu`
+  natif (`MobileDet`, origine Google Coral) — un chat détecté `bird`/`person` avec ~96 % de confiance.
+  Frigate recommande YOLOv9 comme alternative, mais son dépôt
+  ([WongKinYiu/yolov9](https://github.com/WongKinYiu/yolov9)) est **GPL-3.0** : l'embarquer dans l'image
+  Vyzio distribuée en ferait Vyzio le distributeur d'un binaire dérivé GPL. Test exploratoire détaillé
+  dans [`investigations/yolov9_frigate_openvino.md`](../investigations/yolov9_frigate_openvino.md).
 
 ## Options comparées
 
-1. **Détection best-effort par sondage de fichiers système (Linux), limitée aux paliers compatibles
-   avec l'image Frigate déjà déployée : Coral → Intel GPU → CPU.**
-   `IHardwareAccelerationDetector` sonde, dans l'ordre : présence d'un Coral PCIe (`/dev/apex_0`) ;
-   sinon présence d'un device DRI (`/dev/dri/renderD128`) dont le vendor PCI
-   (`/sys/class/drm/renderD128/device/vendor`) est Intel (`0x8086` → `openvino`) ; sinon CPU. Un GPU
-   Nvidia ou AMD détecté (vendor `0x10de`/`0x1002`) retombe sur CPU en v1 plutôt que de générer une
-   config qui suppose une image Docker non déployée. `FrigateConfigApplier` traduit le résultat en
-   section `detectors` Frigate valide, et — seulement pour le palier CPU — borne `detect.fps` selon le
-   nombre de caméras actives entre un minimum et un maximum fixes.
-2. Étendre la détection à Nvidia/AMD et recréer le conteneur Frigate sur le variant d'image adapté
-   (`-tensorrt`/`-rocm`) au moment de l'apply. Écarté pour cette itération : nécessite de tirer une
-   image potentiellement absente localement (tension avec le fonctionnement hors ligne), de gérer
-   l'échec de pull/recréation sans casser un système qui fonctionnait, et une bascule d'image bien plus
-   risquée qu'un `docker restart` sur une config invalide. Reste une évolution possible, à traiter comme
-   projet séparé (backlog Idées) si un besoin terrain Nvidia/AMD se confirme.
-3. Configuration manuelle du détecteur par l'utilisateur (champ dans les réglages). Écarté : contredit
-   directement le principe plug & play — l'utilisateur ne doit pas avoir à connaître son propre
-   matériel ni le vocabulaire Frigate (`edgetpu`, `openvino`, `tensorrt`, `rocm`).
-4. Ajustement dynamique et continu du FPS piloté par la charge CPU observée en temps réel (feedback
-   loop). Écarté : complexité disproportionnée par rapport au besoin ; un calcul déterministe basé sur
-   le nombre de caméras actives, borné min/max, couvre le cas d'usage (éviter la saturation) sans
-   introduire d'oscillation ni de dépendance à un monitoring système supplémentaire.
+1. **Coral (`edgetpu`) → Intel GPU (`onnx`, modèle YOLOX bundlé dans l'image Vyzio) → CPU (détecteur
+   natif `cpu`, `MobileDet`).** `IHardwareAccelerationDetector` sonde, dans l'ordre : Coral PCIe
+   (`/dev/apex_0`) ; sinon un device DRI (`/dev/dri/renderD128`) dont le vendor PCI
+   (`/sys/class/drm/renderD128/device/vendor`) est Intel (`0x8086`) ; sinon CPU. `FrigateDetectorPlanner`
+   résout (kind, FPS cible). `FrigateConfigApplier` traduit le résultat en `detectors`/`model` Frigate.
+   Le palier Intel GPU utilise `onnx` (plutôt que `openvino` explicite) : sur l'image stock, `onnx`
+   détecte et utilise automatiquement OpenVINO comme execution provider GPU, avec **YOLOX** (Megvii,
+   [Apache-2.0](https://github.com/Megvii-BaseDetection/YOLOX)) — licence permissive, poids
+   pré-entraînés téléchargeables directement (pas d'étape d'export comme YOLOv9), variante `yolox_s`
+   (640×640) bundlée dans l'image `vyzio-api` (Dockerfile) et installée à la demande dans le volume
+   `vyzio-config` partagé avec Frigate par `IFrigateModelAssetInstaller`. Le palier CPU seul garde le
+   détecteur natif `cpu` (`MobileDet`) — cf. Option 2 pour pourquoi il n'utilise pas YOLOX aussi.
+2. **YOLOX (ou tout modèle de la famille YOLO) également sur le palier CPU seul**, testé en v1. Écarté
+   après test terrain : pics CPU à ~800 % avec 2 caméras et détections dégradées (frames perdues sous
+   charge) — même la plus petite variante (`yolox_nano`) coûte plus cher par inférence que le modèle du
+   détecteur `cpu` natif (`MobileDet`), qui s'est montré fiable en test terrain séparé. Un modèle plus
+   précis n'est un gain net que là où du matériel dédié absorbe le surcoût (Coral, GPU) — pas sur le
+   palier qui est par définition la machine la moins capable.
+3. **YOLOv9** comme modèle de remplacement. Écarté : licence GPL-3.0 du dépôt d'origine — Vyzio
+   deviendrait distributeur d'un binaire dérivé GPL en l'embarquant dans son image. Frigate lui-même ne
+   fournit jamais de poids YOLOv9 pré-exportés, seulement la procédure pour les générer soi-même,
+   vraisemblablement pour la même raison.
+4. **YOLO-NAS** comme modèle de remplacement. Écarté : poids pré-entraînés
+   ([Deci-AI/super-gradients](https://github.com/Deci-AI/super-gradients)) explicitement interdits
+   d'usage commercial par leur licence.
+5. Convertir le modèle `MobileDet` (utilisé par le détecteur `cpu` natif, jugé fiable en test terrain)
+   en IR OpenVINO pour l'utiliser sur le palier GPU Intel. Écarté : conversion tflite→OpenVINO non
+   documentée/supportée par Frigate, même classe de risque que l'export YOLOv9 (mismatch d'opset ou de
+   post-traitement produisant des détections mal calibrées sans erreur explicite).
+6. Étendre la détection à Nvidia/AMD et recréer le conteneur Frigate sur le variant d'image adapté
+   (`-tensorrt`/`-rocm`) au moment de l'apply. Écarté : nécessite de tirer une image potentiellement
+   absente localement (tension avec le fonctionnement hors ligne), de gérer l'échec de
+   pull/recréation sans casser un système qui fonctionnait. Reste une évolution possible en projet
+   séparé (backlog Idées) si un besoin terrain Nvidia/AMD se confirme.
+7. Configuration manuelle du détecteur/modèle par l'utilisateur. Écarté : contredit le principe plug &
+   play — l'utilisateur ne doit pas avoir à connaître son matériel ni le vocabulaire Frigate.
+8. Ajustement dynamique et continu du FPS piloté par la charge CPU observée en temps réel. Écarté :
+   complexité disproportionnée ; un calcul déterministe basé sur cœurs disponibles et caméras actives,
+   borné min/max, couvre le besoin sans introduire d'oscillation.
 
 ## Décision
 
-Option 1, limitée en v1 aux paliers déployables sans changer l'image Frigate : Coral (edgetpu) → Intel
-GPU (openvino) → CPU. `IHardwareAccelerationDetector` (Core/Interfaces, implémentation Infrastructure)
-expose une détection synchrone et sans configuration, résolue une fois par génération de config. Le
-résultat (`FrigateDetectorKind` — `EdgeTpu`, `Openvino`, `Cpu`) pilote à la fois la section `detectors`
-et le calcul du FPS.
+Option 1 : Coral (`edgetpu`, modèle par défaut Frigate) → Intel GPU (`onnx`, modèle **YOLOX**
+Apache-2.0 `yolox_s`, bundlé dans l'image Vyzio) → CPU seul (détecteur natif `cpu`, `MobileDet`).
+`IFrigateDetectorPlanner` (Infrastructure) résout la décision (kind + FPS) une fois par génération de
+config ; `FrigateConfigApplier` et `GetSystemStatsUseCase` la consomment tous les deux, jamais
+recalculée indépendamment.
 
 ## Conséquences
 
-- `FrigateDetectorKind` (Core/Entities) est un enum — cohérent avec la règle de comparaisons
-  type-safe (`src/vyzio/CLAUDE.md`) : aucune chaîne littérale Frigate (`"edgetpu"`, `"openvino"`,
-  `"cpu"`) n'est comparée en dur, elle n'apparaît qu'au moment de sérialiser le YAML.
+- `FrigateDetectorKind` (Core/Entities, `EdgeTpu`/`Openvino`/`Cpu`) reste un enum — cohérent avec la
+  règle de comparaisons type-safe (`src/vyzio/CLAUDE.md`) : aucune chaîne littérale Frigate n'est
+  comparée en dur, elle n'apparaît qu'à la sérialisation YAML. Le nom `Openvino` désigne le palier
+  matériel (Intel GPU/iGPU détecté), pas le détecteur Frigate littéral — celui-ci est `onnx` pour ce
+  palier ; `Cpu` reste sur le détecteur natif `cpu`.
 - Le FPS CPU est calculé ainsi : `clamp(floor(nb_coeurs * FpsParCoeur / nb_cameras_actives), FpsMin,
-  FpsMax)` — le budget FPS total est proportionnel au nombre de cœurs disponibles
-  (`Environment.ProcessorCount`, exposé par `IHardwareAccelerationDetector.CpuCoreCount` pour rester
-  testable sans dépendre de la machine d'exécution), réparti entre les caméras actives. `FpsMin`,
-  `FpsMax` et `FpsParCoeur` sont des paramètres de `VyzioRuntimeSettings.Frigate` (défauts 1, 5 et 1.0)
-  mais le clamp s'applique quelle que soit leur valeur — aucune configuration ni combinaison
-  cœurs/caméras ne peut produire un FPS hors bornes. `FpsParCoeur` est une estimation grossière, non
-  benchmarkée sur du matériel réel — à ajuster si le terrain montre un décalage.
-- Pour les paliers Coral/Intel GPU, le FPS reste fixe (valeur actuelle : 5) — l'accélération dédiée
-  absorbe la charge, il n'y a pas de motif de le réduire dynamiquement.
-- Le palier CPU n'émet jamais le détecteur natif `type: cpu` : la documentation Frigate le déconseille
-  explicitement (« not recommended for general use ») et recommande à la place `openvino` en
-  `device: CPU`, y compris sans GPU/TPU dédié. `BuildDetectors` émet donc `type: openvino,
-  device: CPU` pour ce palier. Compromis assumé, tranché explicitement plutôt qu'ignoré : sur ARM
-  (Raspberry Pi notamment), des retours terrain Frigate rapportent qu'OpenVINO-CPU peut être *plus
-  lent* que le détecteur natif `cpu` (un cas rapporté : ~1500 ms d'inférence contre ~400 ms) — la
-  bascule s'applique malgré tout uniformément, sans détection d'architecture, par choix produit
-  (simplicité > optimalité sur cette plateforme minoritaire) ; à réévaluer si des retours terrain ARM
-  le justifient.
-- Le bloc `model` (`ssdlite_mobilenet_v2.xml` + labelmap, mêmes valeurs que le modèle par défaut
-  documenté par Frigate) est écrit explicitement pour les deux paliers OpenVINO (GPU et CPU) —
-  tentative initiale de l'omettre (le considérant comme un défaut implicite fonctionnel) corrigée après
-  coup : Frigate 0.17.1 plante au démarrage sans lui (`model.path` vaut `None`,
-  `TypeError: stat: path should be string... not NoneType` dans `OpenVINOModelRunner`). Dupliquer ces
-  valeurs reste un choix assumé malgré le risque de dérive si Frigate change son modèle par défaut :
-  l'alternative (aucun bloc) ne démarre pas du tout. Le choix d'un modèle plus précis selon le matériel
-  (Frigate recommande par exemple YOLOv9 pour OpenVINO/Intel, mais ce modèle n'est pas embarqué et
-  demande un téléchargement + stockage séparés) reste un axe d'optimisation à part entière, hors scope
-  de cette itération — voir backlog Idées.
-- La détection ne sonde que des chemins connus du système de fichiers (aucune dépendance à un outil
-  externe type `nvidia-smi` ou `lsusb`) : sur un hôte qui ne les expose pas (dev Windows, CI), la
-  détection retombe naturellement sur CPU — comportement déterministe et testable sans matériel réel.
-- Limitations connues, assumées pour cette itération : le Coral USB n'est pas détecté (seul le PCIe
-  l'est) ; Nvidia et AMD retombent sur CPU malgré la présence d'un GPU, faute de pouvoir changer le
-  variant d'image Frigate déployé (cf. Option 2 écartée) — à réévaluer si un besoin terrain se
-  confirme.
-- Ni `vyzio-api` (où tourne la détection) ni `frigate` (qui exploite le détecteur au runtime) n'ont
-  par défaut de visibilité sur `/dev/dri` ou `/dev/apex_0`. Deux mécanismes sont nécessaires ensemble,
-  pas un seul : `privileged: true` lève la restriction du device cgroup (sans lui, l'ouverture d'un
-  device hors de la liste par défaut est refusée même si le node existe) ; un bind mount complet
-  `/dev:/dev` rend les nodes de l'hôte visibles dans le conteneur (le `/dev` d'un conteneur Docker est
-  un devtmpfs qui recouvre l'original — `privileged` seul ne garantit pas que `/dev/dri` y apparaisse).
-  `/dev:/dev` plutôt qu'un `devices:` par device précis, car Compose refuse de démarrer un conteneur
-  dont un device déclaré n'existe pas sur l'hôte (casserait le plug & play sur une machine sans iGPU ni
-  Coral) — `/dev` en tant que répertoire existe toujours, donc le bind mount ne peut pas échouer au
-  démarrage. `vyzio-api` monte le sien en lecture seule (la détection ne fait que lire/stat) ;
-  `frigate` en lecture-écriture (le device est réellement utilisé pour l'inférence). `vyzio-api` monte
-  déjà le socket Docker (accès quasi-root implicite), le delta de surface d'attaque du passage en
-  `privileged` reste marginal.
-- Piège découvert après coup : `/dev:/dev` sur `frigate` écrase aussi `/dev/shm` (mémoire partagée
-  entre les processus Frigate) avec celui de l'hôte, annulant le dimensionnement dédié via
-  `shm_size:` — Frigate ne démarre plus (crash silencieux, uniquement des 502 côté proxy). Corrigé en
-  remontant explicitement `/dev/shm` en tmpfs (`tmpfs: - /dev/shm:size=512m`) après le bind `/dev:/dev`,
-  qui remplace `shm_size:` désormais sans effet.
-- `IFrigateDetectorPlanner` (Infrastructure) centralise la décision (kind + FPS cible) : à la fois
-  `FrigateConfigApplier` (écrit `config.yml`) et `GetSystemStatsUseCase` (`/api/system/stats`, champ
-  `Detection`) le consomment, pour ne jamais recalculer/dupliquer la logique. Motivation directe : sans
-  ça, l'utilisateur n'a aucun moyen de savoir quel matériel est réellement utilisé — Frigate lui-même
-  ne l'affiche pas. Le Hub affiche le palier (Coral / GPU Intel / CPU) et le FPS cible dans le panneau
-  système existant (`SystemMonitorPanel`), à titre informatif — ce n'est pas un état actionnable, donc
-  pas une pastille de statut (cf. Design System : pastille = état, rien à cliquer ici).
+  FpsMax)` — budget proportionnel aux cœurs disponibles (`IHardwareAccelerationDetector.CpuCoreCount`,
+  testable indépendamment de la machine d'exécution), réparti entre caméras actives. Paramètres dans
+  `VyzioRuntimeSettings.Frigate` (défauts 1, 5, 1.0), clamp toujours appliqué. Pour Coral/Intel GPU, le
+  FPS reste fixe (5) — l'accélération dédiée absorbe la charge.
+- `model.path` ne doit jamais être omis pour un détecteur `onnx`/`openvino` : Frigate 0.17.1 plante au
+  démarrage sinon (`TypeError: stat: path should be string... not NoneType`), aucun défaut implicite
+  fonctionnel malgré ce que la doc laisse entendre.
+- `IFrigateModelAssetInstaller` (Infrastructure) copie `yolox_s.onnx` depuis `/app/models` (bundlé dans
+  l'image `vyzio-api`, téléchargé au build — Dockerfile) vers `vyzio-config/model_cache/` (volume
+  partagé avec `frigate`) — seulement si absent, pas à chaque génération de config, et uniquement pour
+  le palier Intel GPU. `frigate` (privilégié, tourne en root) partage ce volume avec `vyzio-api`
+  (non-root) : le dossier et le fichier installés sont rendus explicitement accessibles en écriture aux
+  deux (`File.SetUnixFileMode`), sans quoi une création antérieure par l'un bloque l'autre.
+- La détection matérielle ne sonde que des chemins connus du système de fichiers (aucune dépendance à
+  `nvidia-smi`/`lsusb`) : un hôte qui ne les expose pas (dev Windows, CI) retombe sur CPU —
+  déterministe et testable sans matériel réel.
+- Limitations connues, assumées : Coral USB non détecté (seul le PCIe l'est) ; Nvidia/AMD retombent sur
+  CPU faute de variant d'image adapté (cf. Option 6 écartée) ; le choix de `yolox_s` pour le palier
+  Intel GPU est une estimation raisonnable, non benchmarkée exhaustivement sur du matériel varié — à
+  ajuster si le terrain le justifie.
+- `vyzio-api` et `frigate` ont besoin d'accès à `/dev/dri`/`/dev/apex_0` pour détecter puis exploiter le
+  matériel : `privileged: true` + bind mount `/dev:/dev` (lecture seule côté `vyzio-api`,
+  lecture-écriture côté `frigate`) plutôt que des `devices:` explicites, qui feraient échouer le
+  démarrage sur un hôte sans iGPU/Coral. `/dev:/dev` sur `frigate` écrase aussi `/dev/shm` (mémoire
+  partagée inter-process) avec celui de l'hôte — remonté explicitement en tmpfs
+  (`tmpfs: - /dev/shm:size=512m`) pour conserver un dimensionnement dédié, sans quoi Frigate ne démarre
+  plus (crash silencieux, seulement des 502 côté proxy).
+- Le Hub affiche le palier détecté et le FPS cible dans le panneau système existant
+  (`SystemMonitorPanel`, champ `Detection` de `/api/system/stats`) à titre informatif — pas une pastille
+  de statut (Design System : pastille = état, rien à cliquer ici). Motivation directe : Frigate
+  lui-même n'expose pas cette info, l'utilisateur n'avait aucun moyen de savoir quel matériel est
+  réellement utilisé.

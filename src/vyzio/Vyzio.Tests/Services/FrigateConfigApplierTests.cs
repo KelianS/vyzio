@@ -46,6 +46,14 @@ public class FrigateConfigApplierTests : IDisposable
         public int CpuCoreCount => cpuCoreCount;
     }
 
+    // Real IFrigateModelAssetInstaller copies bundled files from /app/models — not present on the
+    // test runner, and not the concern of these tests (config generation only).
+    private sealed class NoopModelAssetInstaller : IFrigateModelAssetInstaller
+    {
+        public Task EnsureInstalledAsync(FrigateDetectorKind detectorKind, string configDirectory, CancellationToken ct = default) =>
+            Task.CompletedTask;
+    }
+
     private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu, int cpuCoreCount = 4)
     {
         var settings = Settings;
@@ -54,7 +62,8 @@ public class FrigateConfigApplierTests : IDisposable
             settings,
             NullLogger<FrigateConfigApplier>.Instance,
             new FrigateRestartTracker(),
-            planner);
+            planner,
+            new NoopModelAssetInstaller());
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }
@@ -137,25 +146,26 @@ public class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Openvino_detected_emits_openvino_gpu_detector()
+    public async Task Openvino_detected_emits_onnx_detector_with_yolox_s_model()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Openvino);
 
-        Assert.Contains("openvino", yaml, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("GPU", yaml);
-        // model.path must never be omitted — Frigate 0.17.1 crashes at startup otherwise (ADR-34).
-        Assert.Contains("ssdlite_mobilenet_v2.xml", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("type: onnx", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("yolox_s.onnx", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("yolox", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("coco-80.txt", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task Cpu_tier_uses_openvino_cpu_device_rather_than_native_cpu_detector()
+    public async Task Cpu_detected_emits_native_cpu_detector_not_onnx()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Cpu);
 
-        Assert.Contains("openvino", yaml, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("CPU", yaml);
-        Assert.Contains("ssdlite_mobilenet_v2.xml", yaml, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("cpu1", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cpu1", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("type: cpu", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("onnx", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("yolox", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ssdlite_mobilenet_v2", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

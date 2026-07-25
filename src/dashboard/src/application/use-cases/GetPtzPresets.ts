@@ -6,7 +6,11 @@ export class GetPtzPresets {
 
   async execute(
     cameraId: string,
-  ): Promise<{ presets: PtzPreset[]; calibrated: boolean; currentPosition: { x: number; y: number } | null }> {
+  ): Promise<{
+    presets: PtzPreset[]
+    calibrated: boolean
+    currentPosition: { x: number; y: number } | null
+  }> {
     return this.repository.getPtzPresets(cameraId)
   }
 }
