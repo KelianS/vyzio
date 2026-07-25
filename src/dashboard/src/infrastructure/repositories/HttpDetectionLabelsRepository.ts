@@ -1,5 +1,5 @@
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
-import type { DetectionLabelsRepository } from '../../application/use-cases/GetDetectionLabels'
+import type { DetectionLabelsRepository } from '../../domain/usecases/GetDetectionLabels'
 import { fetchJson } from '../http/fetchJson'
 
 export class HttpCameraLabelsRepository implements DetectionLabelsRepository {
