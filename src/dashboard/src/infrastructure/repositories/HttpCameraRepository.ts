@@ -284,9 +284,7 @@ export class HttpCameraRepository implements CameraRepository {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
   }
 
-  async getPtzPresets(
-    cameraId: string,
-  ): Promise<{
+  async getPtzPresets(cameraId: string): Promise<{
     presets: PtzPreset[]
     calibrated: boolean
     currentPosition: { x: number; y: number } | null

@@ -4,9 +4,7 @@ import type { PtzPreset } from '../../domain/entities/PtzPreset'
 export class GetPtzPresets {
   constructor(private readonly repository: CameraRepository) {}
 
-  async execute(
-    cameraId: string,
-  ): Promise<{
+  async execute(cameraId: string): Promise<{
     presets: PtzPreset[]
     calibrated: boolean
     currentPosition: { x: number; y: number } | null

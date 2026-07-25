@@ -35,8 +35,8 @@ fetch → HttpError (infrastructure) → toAppError (domaine) → AppError → u
 - **Tester le type d'une erreur** → `AppErrorKind` (jamais les string literals).
 - **Cas spéciaux** (404 → null, multipart, logique sur le status) → fetch manuel dans le repository, mais lancer `HttpError`, jamais `new Error()`.
 
-Interdits : `throw new Error(\`HTTP ${status}\`)`, `.catch(() => {})` dans un composant, helpers HTTP
-locaux dans les repositories (tout passe par `infrastructure/http/fetchJson.ts`).
+Interdits : `throw new Error(\`HTTP ${status}\`)`, `.catch(() => {})`dans un composant, helpers HTTP
+locaux dans les repositories (tout passe par`infrastructure/http/fetchJson.ts`).
 
 ## Comparaisons type-safe (règle d'or)
 
