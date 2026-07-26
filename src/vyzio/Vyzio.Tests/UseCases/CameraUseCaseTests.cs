@@ -251,9 +251,15 @@ public class VerifyCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
+    private readonly ICameraStreamEnumerator _streamEnumerator = Substitute.For<ICameraStreamEnumerator>();
     private readonly VerifyCameraUseCase _sut;
 
-    public VerifyCameraUseCaseTests() => _sut = new VerifyCameraUseCase(_repo, _verifier);
+    public VerifyCameraUseCaseTests()
+    {
+        _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator);
+    }
 
     [Fact]
     public async Task Execute_updates_camera_status_from_verifier_result()
@@ -276,6 +282,133 @@ public class VerifyCameraUseCaseTests
         Assert.NotNull(result);
         Assert.Equal("online", result!.Status);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated => updated.Status == "online"), Arg.Any<CancellationToken>());
+    }
+
+    // ── Stream enumeration on verification (ADR-38) ──
+
+    private Camera GivenReachableCamera(string? mainPath = "/stream1")
+    {
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            Port = 554,
+            StreamPath = mainPath,
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+        return camera;
+    }
+
+    private void GivenEnumeratedStreams(params EnumeratedStream[] streams)
+        => _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+            .Returns([new EnumeratedScene("source0", streams)]);
+
+    [Fact]
+    public async Task Verification_records_the_streams_the_camera_reports()
+    {
+        var camera = GivenReachableCamera();
+        GivenEnumeratedStreams(
+            new EnumeratedStream("/stream1", 2304, 1296, 12),
+            new EnumeratedStream("/stream2", 640, 360, 12));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.Equal(2, camera.Streams.Count);
+        var sub = camera.Streams.Single(stream => stream.Ordinal == 1);
+        Assert.Equal("/stream2", sub.Path);
+        Assert.Equal(640, sub.Width);
+    }
+
+    [Fact]
+    public async Task Verification_refreshes_the_main_stream_size_when_both_addresses_agree()
+    {
+        var camera = GivenReachableCamera("/stream1");
+        GivenEnumeratedStreams(new EnumeratedStream("stream1", 640, 480, 12));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        var main = camera.MainStream!;
+        Assert.Equal("/stream1", main.Path);
+        Assert.Equal(640, main.Width);
+        Assert.Equal(480, main.Height);
+    }
+
+    // A vendor alias: the camera answers on /stream1 but advertises a different address at 1080p.
+    // Adopting that size would make Frigate upscale a stream that is not 1080p.
+    [Fact]
+    public async Task An_advertised_size_is_refused_when_it_belongs_to_a_different_address()
+    {
+        var camera = GivenReachableCamera("/stream1");
+        GivenEnumeratedStreams(
+            new EnumeratedStream("/live/ch00_1", 1920, 1080, 20),
+            new EnumeratedStream("/live/ch00_0", 640, 480, 25));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        var main = camera.MainStream!;
+        Assert.Equal("/stream1", main.Path);
+        Assert.Null(main.Width);
+        Assert.Null(main.Height);
+
+        // The sub-stream is a coherent address/size pair, so it keeps both.
+        var sub = camera.Streams.Single(stream => stream.Ordinal == 1);
+        Assert.Equal("/live/ch00_0", sub.Path);
+        Assert.Equal(640, sub.Width);
+    }
+
+    [Fact]
+    public async Task A_sub_stream_that_disappeared_is_dropped_along_with_a_choice_pointing_at_it()
+    {
+        var camera = GivenReachableCamera();
+        var sub = new CameraStream { CameraId = camera.Id, Ordinal = 1, Path = "/stream2" };
+        camera.Streams.Add(sub);
+        camera.DetectStreamId = sub.Id;
+
+        GivenEnumeratedStreams(new EnumeratedStream("/stream1", 1920, 1080, 12));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.DoesNotContain(camera.Streams, stream => stream.Ordinal == 1);
+        Assert.Null(camera.DetectStreamId);
+    }
+
+    [Fact]
+    public async Task A_successful_verification_records_the_transport_as_a_proven_protocol()
+    {
+        var camera = GivenReachableCamera();
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.Contains(SupportedProtocol.Rtsp, camera.GetSupportedProtocols());
+    }
+
+    [Fact]
+    public async Task An_unreachable_camera_proves_nothing()
+    {
+        var camera = GivenReachableCamera();
+        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.Empty(camera.GetSupportedProtocols());
+    }
+
+    [Fact]
+    public async Task An_unreachable_camera_keeps_the_streams_it_already_had()
+    {
+        var camera = GivenReachableCamera();
+        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.Equal("/stream1", camera.StreamPath);
+        await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 }
 

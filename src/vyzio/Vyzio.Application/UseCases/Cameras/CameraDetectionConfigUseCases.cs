@@ -43,6 +43,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         camera.ContinuousRecordingEnabled = request.ContinuousRecordingEnabled;
 
         var sensitivityChanged = ApplySensitivity(camera, request);
+        ApplyDetectStream(camera, request);
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
@@ -85,5 +86,15 @@ public sealed class SaveCameraDetectionConfigUseCase(
 
         camera.MotionSensitivity = level;
         return true;
+    }
+
+    // An id that matches no stream of this camera is discarded rather than stored: the fallback to
+    // the main stream must come from an absent choice, never from a dangling one that would silently
+    // survive a re-enumeration (ADR-38).
+    private static void ApplyDetectStream(Camera camera, SaveCameraDetectionConfigRequest request)
+    {
+        camera.DetectStreamId = camera.Streams.Any(stream => stream.Id == request.DetectStreamId)
+            ? request.DetectStreamId
+            : null;
     }
 }

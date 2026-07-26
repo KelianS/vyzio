@@ -10,6 +10,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<Camera> Cameras => Set<Camera>();
     public DbSet<CameraPrivacySchedule> CameraPrivacySchedules => Set<CameraPrivacySchedule>();
     public DbSet<CameraCapabilityBinding> CameraCapabilityBindings => Set<CameraCapabilityBinding>();
+    public DbSet<CameraStream> CameraStreams => Set<CameraStream>();
     public DbSet<PtzPreset> PtzPresets => Set<PtzPreset>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
@@ -51,6 +52,24 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             camera.Property(c => c.VendorFamily).HasConversion<NullableSnakeCaseEnumConverter<VendorFamily>>();
             camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
             camera.Property(c => c.PrivacyStrategy).HasConversion<SnakeCaseEnumConverter<PrivacyStrategy>>();
+
+            camera.HasIndex(c => c.DeviceId)
+                .HasDatabaseName("idx_cameras_device");
+        });
+
+        modelBuilder.Entity<CameraStream>(stream =>
+        {
+            stream.HasOne(s => s.Camera)
+                  .WithMany(c => c.Streams)
+                  .HasForeignKey(s => s.CameraId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // One row per rank — ranks are dense and start at 0 (ADR-38).
+            stream.HasIndex(s => new { s.CameraId, s.Ordinal })
+                  .IsUnique()
+                  .HasDatabaseName("ux_camera_streams_camera_ordinal");
+
+            stream.Ignore(s => s.HasKnownResolution);
         });
 
         modelBuilder.Entity<CameraCapabilityBinding>(binding =>

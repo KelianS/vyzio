@@ -31,10 +31,20 @@ public class Camera
     [MaxLength(500)]
     public string? Password { get; set; }
 
-    [MaxLength(500)]
-    public string? StreamPath { get; set; }
-
     public StreamProtocol StreamProtocol { get; set; } = StreamProtocol.Rtsp;
+
+    // Video access points of this camera — qualities of ONE scene (ADR-38).
+    public ICollection<CameraStream> Streams { get; set; } = [];
+
+    // User's pick among Streams for the `detect` role. Null keeps the main stream, so face
+    // recognition is never silently degraded by a default (ADR-38).
+    [MaxLength(100)]
+    public string? DetectStreamId { get; set; }
+
+    // Groups the cameras that share one physical device — the lenses of a multi-sensor box are
+    // separate cameras (ADR-38), and this is what lets the UI say so. Null for a single-lens device.
+    [MaxLength(200)]
+    public string? DeviceId { get; set; }
 
     public VendorFamily? VendorFamily { get; set; }
 
@@ -85,6 +95,48 @@ public class Camera
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // Rank 0 — the most detailed stream. Recording always uses it, and it is the fallback for
+    // everything else.
+    [NotMapped]
+    public CameraStream? MainStream
+        => Streams.OrderBy(stream => stream.Ordinal).FirstOrDefault();
+
+    // The stream carrying the `detect` role. Without an explicit choice the lightest stream wins:
+    // Frigate downscales to its own detect size anyway, so analysing a high-definition stream buys
+    // nothing and costs decoding on every camera (ADR-38). Falls back to the main stream when it is
+    // the only one, or when a stored choice no longer resolves.
+    [NotMapped]
+    public CameraStream? DetectStream
+        => (DetectStreamId is null ? null : Streams.FirstOrDefault(stream => stream.Id == DetectStreamId))
+           ?? Streams.OrderByDescending(stream => stream.Ordinal).FirstOrDefault();
+
+    // Projection of the main stream's path — the connection-level view of a camera, on the same
+    // footing as Host and Port. Settable at construction because that is when onboarding knows it;
+    // afterwards a path belongs to a stream and moves through SetMainStreamPath.
+    [NotMapped]
+    public string? StreamPath
+    {
+        get => MainStream?.Path;
+        init => SetMainStreamPath(value);
+    }
+
+    // Creates or updates the main stream in place. The only supported way to set a camera's primary
+    // path: writing StreamPath directly is impossible by construction.
+    public void SetMainStreamPath(string? path)
+    {
+        var main = Streams.FirstOrDefault(stream => stream.Ordinal == 0);
+        if (main is null)
+        {
+            Streams.Add(new CameraStream { CameraId = Id, Ordinal = 0, Path = path });
+            return;
+        }
+
+        if (main.Path == path) return;
+
+        main.Path = path;
+        main.UpdatedAt = DateTimeOffset.UtcNow;
+    }
 
     public IReadOnlyList<string> GetDetectionLabels()
     {

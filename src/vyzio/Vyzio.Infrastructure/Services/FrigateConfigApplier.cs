@@ -16,6 +16,20 @@ public sealed class FrigateConfigApplier(
     IFrigateDetectorPlanner detectorPlanner,
     IFrigateModelAssetInstaller modelAssetInstaller) : IFrigateConfigApplier
 {
+    // Sentinel next to the generated config: the fact "written but not applied" belongs to the
+    // config directory, not to a process. Kept out of the database on purpose — it survives an API
+    // restart exactly as long as the un-applied config file it describes.
+    private string? PendingMarkerPath
+    {
+        get
+        {
+            var configPath = settings.Frigate.ConfigPath;
+            return string.IsNullOrWhiteSpace(configPath) ? null : $"{configPath}.pending";
+        }
+    }
+
+    public bool HasPendingChanges => PendingMarkerPath is { } path && File.Exists(path);
+
     public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
     {
         var configPath = settings.Frigate.ConfigPath;
@@ -40,6 +54,22 @@ public sealed class FrigateConfigApplier(
         var tempPath = $"{configPath}.tmp";
         await File.WriteAllTextAsync(tempPath, yaml, ct);
         File.Move(tempPath, configPath, true);
+
+        MarkPending();
+    }
+
+    private void MarkPending()
+    {
+        if (PendingMarkerPath is not { } path) return;
+        try { File.WriteAllText(path, string.Empty); }
+        catch (IOException) { /* the banner is a convenience, never a reason to fail a save */ }
+    }
+
+    private void ClearPending()
+    {
+        if (PendingMarkerPath is not { } path) return;
+        try { File.Delete(path); }
+        catch (IOException) { }
     }
 
     public async Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
@@ -80,9 +110,13 @@ public sealed class FrigateConfigApplier(
         await process.WaitForExitAsync(ct);
         var standardError = await process.StandardError.ReadToEndAsync(ct);
 
-        return process.ExitCode == 0
-            ? new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", configPath)
-            : new FrigateConfigApplyResult(false, string.IsNullOrWhiteSpace(standardError) ? "Frigate apply command failed." : standardError.Trim(), configPath);
+        if (process.ExitCode != 0)
+        {
+            return new FrigateConfigApplyResult(false, string.IsNullOrWhiteSpace(standardError) ? "Frigate apply command failed." : standardError.Trim(), configPath);
+        }
+
+        ClearPending();
+        return new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", configPath);
     }
 
     private (FrigateDocument Document, FrigateDetectorKind DetectorKind) BuildDocument(IReadOnlyList<Camera> cameras)
@@ -102,30 +136,27 @@ public sealed class FrigateConfigApplier(
                 camera =>
                 {
                     var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
-                    var isDvrip = camera.StreamProtocol == StreamProtocol.Dvrip;
                     var labels = camera.GetDetectionLabels();
                     // face must be tracked whenever person is — Frigate needs it for face recognition.
                     var frigateLabels = labels.Contains("person")
                         ? labels.Union(["face"], StringComparer.OrdinalIgnoreCase).ToList()
                         : labels;
+                    var detectStream = camera.DetectStream;
                     return new FrigateCameraConfig
                     {
                         Enabled = !camera.PrivacyModeActive,
                         Ffmpeg = new FrigateFfmpegConfig
                         {
-                            Inputs =
-                            [
-                                new FrigateInputConfig
-                                {
-                                    Path = isDvrip ? $"rtsp://127.0.0.1:8554/{frigateKey}" : BuildRtspPath(camera),
-                                    Roles = ["detect"],
-                                }
-                            ]
+                            Inputs = BuildInputs(camera, frigateKey),
                         },
                         Detect = new FrigateDetectConfig
                         {
                             Enabled = true,
                             Fps = detectFps,
+                            // Only ever emitted from a real measured size. Left unset otherwise so
+                            // Frigate applies its own default rather than a size we guessed (ADR-38).
+                            Width = detectStream?.HasKnownResolution == true ? detectStream.Width : null,
+                            Height = detectStream?.HasKnownResolution == true ? detectStream.Height : null,
                         },
                         // Persisted level mirrored into the config so it survives a Frigate restart —
                         // the tuning loop applies changes over MQTT at runtime (ADR-35).
@@ -174,14 +205,18 @@ public sealed class FrigateConfigApplier(
             };
         }
 
-        // Build go2rtc section for DVRIP cameras — go2rtc bridges dvrip:// → rtsp://127.0.0.1:8554/{slug}
-        var dvripStreams = cameras
-            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
-            .Where(c => c.StreamProtocol == StreamProtocol.Dvrip)
-            .ToDictionary(
-                c => c.FrigateCameraName ?? c.Slug.Replace('-', '_'),
-                c => new List<string> { BuildDvripUrl(c) },
-                StringComparer.OrdinalIgnoreCase);
+        // Build go2rtc section for DVRIP cameras — go2rtc bridges dvrip:// → rtsp://127.0.0.1:8554/{slug}.
+        // One entry per stream Frigate consumes: separating detect from record means the sub-stream
+        // needs its own bridge, otherwise both roles would land on the same decoded stream.
+        var dvripStreams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var camera in validatedCameras.Where(c => c.StreamProtocol == StreamProtocol.Dvrip))
+        {
+            var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            foreach (var stream in DistinctRoleStreams(camera))
+            {
+                dvripStreams[Go2rtcStreamName(frigateKey, stream)] = [BuildDvripUrl(camera, stream)];
+            }
+        }
 
         FrigateGo2rtcConfig? go2rtc = dvripStreams.Count > 0
             ? new FrigateGo2rtcConfig { Streams = dvripStreams }
@@ -266,7 +301,58 @@ public sealed class FrigateConfigApplier(
             }
             : null;
 
-    private static string BuildDvripUrl(Camera camera)
+    // Splits the roles across streams (ADR-38). When detection and recording land on the same stream
+    // — no sub-stream, or the user kept the main one — a single input carries both roles, which is
+    // also what Frigate does implicitly today. Two streams means two inputs, and recording always
+    // stays on the main one: the detect stream may be the cheap one, never the archived one.
+    private static List<FrigateInputConfig> BuildInputs(Camera camera, string frigateKey)
+    {
+        var main = camera.MainStream;
+        var detect = camera.DetectStream;
+
+        if (main is null || detect is null || ReferenceEquals(main, detect) || main.Id == detect.Id)
+        {
+            return
+            [
+                new FrigateInputConfig
+                {
+                    Path = BuildStreamUrl(camera, main, frigateKey),
+                    Roles = ["detect", "record"],
+                }
+            ];
+        }
+
+        return
+        [
+            new FrigateInputConfig { Path = BuildStreamUrl(camera, detect, frigateKey), Roles = ["detect"] },
+            new FrigateInputConfig { Path = BuildStreamUrl(camera, main, frigateKey), Roles = ["record"] },
+        ];
+    }
+
+    // The streams Frigate will actually consume — one when both roles share a stream, two otherwise.
+    private static IEnumerable<CameraStream?> DistinctRoleStreams(Camera camera)
+    {
+        var main = camera.MainStream;
+        var detect = camera.DetectStream;
+
+        yield return main;
+        if (main is not null && detect is not null && main.Id != detect.Id)
+            yield return detect;
+    }
+
+    // DVRIP streams reach Frigate through go2rtc, so their name has to stay stable and unique per
+    // role-carrying stream; RTSP streams are addressed directly on the camera.
+    private static string BuildStreamUrl(Camera camera, CameraStream? stream, string frigateKey)
+        => camera.StreamProtocol == StreamProtocol.Dvrip
+            ? $"rtsp://127.0.0.1:8554/{Go2rtcStreamName(frigateKey, stream)}"
+            : BuildRtspUrl(camera, stream?.Path);
+
+    // Rank 0 keeps the plain camera name so existing go2rtc entries and recordings are untouched;
+    // lighter ranks get a suffixed bridge of their own.
+    private static string Go2rtcStreamName(string frigateKey, CameraStream? stream)
+        => stream is null or { Ordinal: 0 } ? frigateKey : $"{frigateKey}_{stream.Ordinal}";
+
+    private static string BuildDvripUrl(Camera camera, CameraStream? stream)
     {
         var builder = new UriBuilder("dvrip", camera.Host, camera.Port);
         if (!string.IsNullOrWhiteSpace(camera.Username))
@@ -274,14 +360,24 @@ public sealed class FrigateConfigApplier(
             builder.UserName = camera.Username;
             builder.Password = camera.Password ?? string.Empty;
         }
+
+        // The DVRIP sub-stream is selected by query, not by path (`?channel=0&subtype=1`).
+        var path = stream?.Path;
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            builder.Query = path.TrimStart('/', '?');
+        }
+
         return builder.Uri.ToString();
     }
 
-    private static string BuildRtspPath(Camera camera)
+    private static string BuildRtspUrl(Camera camera, string? streamPath)
     {
+        var separatorIndex = streamPath?.IndexOf('?') ?? -1;
         var builder = new UriBuilder("rtsp", camera.Host, camera.Port)
         {
-            Path = camera.StreamPath?.TrimStart('/') ?? string.Empty,
+            Path = (separatorIndex >= 0 ? streamPath![..separatorIndex] : streamPath)?.TrimStart('/') ?? string.Empty,
+            Query = separatorIndex >= 0 ? streamPath![(separatorIndex + 1)..] : string.Empty,
         };
 
         if (!string.IsNullOrWhiteSpace(camera.Username))
@@ -388,6 +484,8 @@ public sealed class FrigateConfigApplier(
     {
         public required bool Enabled { get; init; }
         public required int Fps { get; init; }
+        public int? Width { get; init; }
+        public int? Height { get; init; }
     }
 
     private sealed class FrigateSnapshotsConfig

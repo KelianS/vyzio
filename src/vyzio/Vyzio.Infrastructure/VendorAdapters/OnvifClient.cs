@@ -17,6 +17,15 @@ public sealed record OnvifDeviceInfo(
     string? FirmwareVersion,
     string? SerialNumber);
 
+// One ONVIF media profile. SourceToken identifies the physical video source behind it: profiles
+// sharing it are quality tiers of one scene, differing ones are separate lenses (ADR-38).
+public sealed record OnvifMediaProfile(
+    string Token,
+    string? SourceToken,
+    int? Width,
+    int? Height,
+    int? Fps);
+
 // Pure ONVIF protocol client — SOAP over HTTP with WS-UsernameToken / PasswordDigest.
 // Covers any ONVIF-compliant device: V380 Pro, Hikvision, Dahua, Reolink, Axis, etc.
 // Feature orchestration (PTZ, privacy, device ID bootstrap) lives in the provider layer.
@@ -74,6 +83,101 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
 
         return (profileToken, ptzConfigToken);
     }
+
+    // Returns every media profile with its video source and encoder settings (ADR-38). Tolerates a
+    // silent camera by returning an empty list — a camera that cannot describe its streams keeps the
+    // single one Vyzio already knows, it is not an error.
+    public async Task<IReadOnlyList<OnvifMediaProfile>> GetMediaProfilesAsync(Camera camera, CancellationToken ct)
+    {
+        const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
+        var xml = await PostSoapAsync(camera, "media_service", body, ct,
+            soapAction: "http://www.onvif.org/ver10/media/wsdl/GetProfiles");
+        if (xml is null) return [];
+
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            return [.. doc.Descendants()
+                .Where(element => element.Name.LocalName == "Profiles")
+                .Select(ReadProfile)
+                .Where(profile => profile is not null)
+                .Select(profile => profile!)];
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "ONVIF GetProfiles response unreadable for {Host}.", camera.Host);
+            return [];
+        }
+    }
+
+    private static OnvifMediaProfile? ReadProfile(XElement profile)
+    {
+        var token = profile.Attribute("token")?.Value;
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        var sourceToken = Child(profile, "VideoSourceConfiguration") is { } source
+            ? Child(source, "SourceToken")?.Value
+            : null;
+
+        int? width = null, height = null, fps = null;
+        if (Child(profile, "VideoEncoderConfiguration") is { } encoder)
+        {
+            if (Child(encoder, "Resolution") is { } resolution)
+            {
+                width = ReadInt(Child(resolution, "Width"));
+                height = ReadInt(Child(resolution, "Height"));
+            }
+            if (Child(encoder, "RateControl") is { } rateControl)
+            {
+                fps = ReadInt(Child(rateControl, "FrameRateLimit"));
+            }
+        }
+
+        return new OnvifMediaProfile(token, sourceToken, width, height, fps);
+    }
+
+    // Returns the RTSP URI the camera serves a given profile on.
+    public async Task<string?> GetStreamUriAsync(Camera camera, string profileToken, CancellationToken ct)
+    {
+        var body = $"""
+            <GetStreamUri xmlns="http://www.onvif.org/ver10/media/wsdl">
+              <StreamSetup>
+                <Stream xmlns="http://www.onvif.org/ver10/schema">RTP-Unicast</Stream>
+                <Transport xmlns="http://www.onvif.org/ver10/schema">
+                  <Protocol>RTSP</Protocol>
+                </Transport>
+              </StreamSetup>
+              <ProfileToken>{profileToken}</ProfileToken>
+            </GetStreamUri>
+            """;
+        var xml = await PostSoapAsync(camera, "media_service", body, ct,
+            soapAction: "http://www.onvif.org/ver10/media/wsdl/GetStreamUri");
+        if (xml is null) return null;
+
+        try
+        {
+            var uri = XDocument.Parse(xml).Descendants()
+                .FirstOrDefault(element => element.Name.LocalName == "Uri")?.Value;
+            return string.IsNullOrWhiteSpace(uri) ? null : uri;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "ONVIF GetStreamUri response unreadable for {Host}.", camera.Host);
+            return null;
+        }
+    }
+
+    private static XElement? Child(XElement parent, string localName)
+        => parent.Descendants().FirstOrDefault(element => element.Name.LocalName == localName);
+
+    // ONVIF 2.0 allows a float where a count is expected (FrameRateLimit is commonly "12.0"),
+    // so parse wide and round rather than rejecting the value.
+    private static int? ReadInt(XElement? element)
+        => element is not null
+           && double.TryParse(element.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+           && value >= 1
+            ? (int)Math.Round(value)
+            : null;
 
     // Returns raw GetConfigurationOptions XML for PTZ capability detection.
     public Task<string?> GetPtzConfigurationOptionsAsync(Camera camera, string configToken, CancellationToken ct)
