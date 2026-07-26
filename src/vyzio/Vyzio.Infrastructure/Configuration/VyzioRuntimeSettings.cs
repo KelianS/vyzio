@@ -1,3 +1,5 @@
+using Vyzio.Core.Entities;
+
 namespace Vyzio.Infrastructure.Configuration;
 
 public class VyzioRuntimeSettings
@@ -30,6 +32,10 @@ public class VyzioRuntimeSettings
         // Rough, unbenchmarked estimate of sustainable detect FPS per CPU core — the total budget
         // (CpuCoreCount * CpuDetectFpsPerCore) is split across active cameras, then clamped.
         public double CpuDetectFpsPerCore { get; init; } = 1.0;
+
+        // Motion sensitivity auto-tuning loop (ADR-35) — defined in Core so the Application layer,
+        // which runs the loop and never references Infrastructure, can consume it directly.
+        public MotionTuningOptions MotionTuning { get; init; } = new();
     }
 
     public sealed class MqttSettings

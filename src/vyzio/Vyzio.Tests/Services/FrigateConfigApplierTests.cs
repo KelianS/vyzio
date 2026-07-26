@@ -168,6 +168,20 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.DoesNotContain("ssdlite_mobilenet_v2", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(MotionSensitivity.High, 10)]
+    [InlineData(MotionSensitivity.Medium, 30)]
+    [InlineData(MotionSensitivity.Low, 50)]
+    public async Task Motion_sensitivity_is_emitted_as_contour_area(MotionSensitivity sensitivity, int expectedContourArea)
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.MotionSensitivity = sensitivity;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.Contains($"contour_area: {expectedContourArea}", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public async Task EdgeTpu_detected_does_not_scale_fps_with_camera_count()
     {

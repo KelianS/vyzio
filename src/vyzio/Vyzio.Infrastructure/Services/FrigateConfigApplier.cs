@@ -127,6 +127,12 @@ public sealed class FrigateConfigApplier(
                             Enabled = true,
                             Fps = detectFps,
                         },
+                        // Persisted level mirrored into the config so it survives a Frigate restart —
+                        // the tuning loop applies changes over MQTT at runtime (ADR-35).
+                        Motion = new FrigateMotionConfig
+                        {
+                            ContourArea = FrigateMotionSettingsPublisher.ToContourArea(camera.MotionSensitivity),
+                        },
                         Objects = new FrigateObjectsConfig
                         {
                             Track = [.. frigateLabels],
@@ -333,9 +339,15 @@ public sealed class FrigateConfigApplier(
         public required bool Enabled { get; init; }
         public required FrigateFfmpegConfig Ffmpeg { get; init; }
         public required FrigateDetectConfig Detect { get; init; }
+        public FrigateMotionConfig? Motion { get; init; }
         public FrigateObjectsConfig? Objects { get; init; }
         public FrigateSnapshotsConfig? Snapshots { get; init; }
         public FrigateCameraRecordConfig? Record { get; init; }
+    }
+
+    private sealed class FrigateMotionConfig
+    {
+        public required int ContourArea { get; init; }
     }
 
     private sealed class FrigateObjectsConfig
