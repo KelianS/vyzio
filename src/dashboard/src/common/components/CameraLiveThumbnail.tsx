@@ -24,9 +24,16 @@ export function CameraLiveThumbnail({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
 
-  useEffect(() => {
+  // Resets the broken-image flag whenever the camera identity/connectivity actually changes,
+  // without the cascading extra render a setState-in-effect would cause (react-hooks/set-state-in-effect).
+  const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
+  const [prevResetKey, setPrevResetKey] = useState(resetKey)
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey)
     setImageError(false)
+  }
 
+  useEffect(() => {
     if (!camera.privacyModeActive && camera.connected) {
       intervalRef.current = setInterval(() => {
         setImgSrc(`${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`)

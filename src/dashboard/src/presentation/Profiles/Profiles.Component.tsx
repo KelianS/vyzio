@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useReducer, useRef, useState, type FormEvent } from 'react'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { useToast } from '../../common/components/Toast'
 import { Btn } from '../../common/components/Btn'
@@ -383,23 +383,26 @@ function ProfilePhotosTab({
 
   const MIN_PHOTOS = 3
 
-  const load = useCallback(() => {
-    setLoading(true)
+  // Loads on mount/profile change without a synchronous setState at the top of the effect: all
+  // setState calls happen inside the promise callbacks, so switching profiles just swaps the photo
+  // grid in place instead of flashing "Chargement…" over the still-valid previous one.
+  useEffect(() => {
+    let cancelled = false
     getProfilePhotos
       .execute(profileId)
       .then((list) => {
-        setPhotos(list)
-        setLoading(false)
+        if (!cancelled) setPhotos(list)
       })
       .catch(() => {
-        toast('Impossible de charger les photos.', 'error')
-        setLoading(false)
+        if (!cancelled) toast('Impossible de charger les photos.', 'error')
       })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [profileId, getProfilePhotos, toast])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -530,24 +533,28 @@ function ProfileCamerasTab({ profileId }: { profileId: string }) {
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  const load = useCallback(() => {
-    setLoading(true)
+  // Loads on mount/profile change without a synchronous setState at the top of the effect: all
+  // setState calls happen inside the promise callbacks, so switching profiles just swaps the
+  // camera-links list in place instead of flashing "Chargement…" over the still-valid previous one.
+  useEffect(() => {
+    let cancelled = false
     getProfileCameraLinks
       .execute(profileId)
       .then((list) => {
+        if (cancelled) return
         setLinks(list)
         setSelected(new Set(list.filter((l) => l.enabled).map((l) => l.cameraId)))
-        setLoading(false)
       })
       .catch(() => {
-        toast('Impossible de charger les caméras liées.', 'error')
-        setLoading(false)
+        if (!cancelled) toast('Impossible de charger les caméras liées.', 'error')
       })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [profileId, getProfileCameraLinks, toast])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   function toggle(cameraId: string) {
     setSelected((prev) => {

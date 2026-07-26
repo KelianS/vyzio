@@ -70,9 +70,28 @@ export function PtzPresetsSection({
     }
   }, [cameraId, getPtzPresets])
 
+  // Loads the presets on mount/camera change without a synchronous setState at the top of the
+  // effect (unlike `reload`, used by the user-triggered actions below): everything runs after the
+  // first `await`, so switching cameras doesn't flash "Chargement…" over the still-valid list.
   useEffect(() => {
-    reload()
-  }, [reload])
+    let cancelled = false
+    void (async () => {
+      try {
+        const data = await getPtzPresets.execute(cameraId)
+        if (cancelled) return
+        setPresets(data.presets ?? [])
+        setCalibrated(data.calibrated ?? true)
+        setCurrentPosition(data.currentPosition ?? null)
+      } catch (e) {
+        if (!cancelled) setError(appErrorMessage(toAppError(e)))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [cameraId, getPtzPresets])
 
   const handleCalibrate = useCallback(async () => {
     setCalibrating(true)

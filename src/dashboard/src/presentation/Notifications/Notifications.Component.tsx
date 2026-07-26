@@ -586,26 +586,27 @@ function TelegramConfigPanel({
   )
   const [confirmRemove, setConfirmRemove] = useState(false)
 
-  useEffect(() => {
-    if (config && config !== syncedConfig) {
-      setChatId(config.chatId ?? '')
-      setIsEnabled(config.isEnabled)
-      setMinimumConfidence(Math.round(config.minimumConfidence * 100))
-      setAllowedLabels(
-        config.allowedLabels.length > 0 ? config.allowedLabels : ['person_unknown', 'person_known'],
-      )
-      setActiveFromHour(config.activeFromHour ?? null)
-      setActiveToHour(config.activeToHour ?? null)
-      setMessageFields(
-        config.messageFields?.length > 0
-          ? config.messageFields
-          : ['camera', 'time', 'label', 'confidence', 'snapshot'],
-      )
-      setMediaMode(config.mediaMode ?? 'clip_or_photo')
-      setCooldownMinutes(config.cooldownMinutes ?? null)
-      setSyncedConfig(config)
-    }
-  }, [config, syncedConfig])
+  // Seeds the form fields once the fetched config arrives/changes — adjusted during render (the
+  // official "sync state to a changed value" pattern) instead of an effect, so it doesn't cause an
+  // extra setState-in-effect render cascade.
+  if (config && config !== syncedConfig) {
+    setChatId(config.chatId ?? '')
+    setIsEnabled(config.isEnabled)
+    setMinimumConfidence(Math.round(config.minimumConfidence * 100))
+    setAllowedLabels(
+      config.allowedLabels.length > 0 ? config.allowedLabels : ['person_unknown', 'person_known'],
+    )
+    setActiveFromHour(config.activeFromHour ?? null)
+    setActiveToHour(config.activeToHour ?? null)
+    setMessageFields(
+      config.messageFields?.length > 0
+        ? config.messageFields
+        : ['camera', 'time', 'label', 'confidence', 'snapshot'],
+    )
+    setMediaMode(config.mediaMode ?? 'clip_or_photo')
+    setCooldownMinutes(config.cooldownMinutes ?? null)
+    setSyncedConfig(config)
+  }
 
   const canTest = Boolean(config?.hasToken && config?.chatId)
 

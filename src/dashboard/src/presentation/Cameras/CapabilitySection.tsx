@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -496,13 +496,17 @@ function ManualCapabilityForm({
     protocolOptionsFor(availableCapabilities[0])[0].value,
   )
 
-  useEffect(() => {
+  // Falls back to the first still-available capability when the current selection disappears
+  // from the list (e.g. it just got configured elsewhere) — adjusted during render instead of an
+  // effect so it doesn't cause an extra setState-in-effect cascade.
+  const [prevAvailableCapabilities, setPrevAvailableCapabilities] = useState(availableCapabilities)
+  if (availableCapabilities !== prevAvailableCapabilities) {
+    setPrevAvailableCapabilities(availableCapabilities)
     if (!availableCapabilities.includes(selectedCapability)) {
       setSelectedCapability(availableCapabilities[0])
       setSelectedProtocol(protocolOptionsFor(availableCapabilities[0])[0].value)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableCapabilities])
+  }
 
   const protocolOptions = protocolOptionsFor(selectedCapability)
 

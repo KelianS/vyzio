@@ -48,10 +48,27 @@ export function PrivacyScheduleSection({
       .finally(() => setLoading(false))
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps,react-hooks/set-state-in-effect
+  // Loads this camera's schedules on mount/camera change. Doesn't force `loading` back to true
+  // synchronously (unlike `reload`, used by the user-triggered actions below) — all setState calls
+  // happen inside the promise callbacks, so switching cameras just swaps the list in place instead
+  // of flashing "Chargement…" over the still-valid previous one.
   useEffect(() => {
-    reload()
-  }, [cameraId])
+    let cancelled = false
+    getSchedules
+      .execute(cameraId)
+      .then((data) => {
+        if (!cancelled) setSchedules(data)
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) toast(appErrorMessage(toAppError(e)), 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [cameraId, getSchedules, toast])
 
   const toggleDay = (d: number) =>
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()))

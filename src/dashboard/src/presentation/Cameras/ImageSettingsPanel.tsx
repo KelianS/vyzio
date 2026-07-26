@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Camera } from '../../domain/entities/Camera'
 import type { CameraImageSettings, IrCutMode } from '../../domain/entities/CameraImageSettings'
 import { useAsync } from '../../common/hooks/useAsync'
@@ -54,12 +54,16 @@ export function ImageSettingsPanel({ camera, offline }: ImageSettingsPanelProps)
   // though it would be a real change from the camera's current (just-applied) state.
   const [baseline, setBaseline] = useState<CameraImageSettings | null>(null)
 
-  useEffect(() => {
+  // Seeds the editable draft (and its dirty-check baseline) once the fetch resolves, adjusted
+  // during render instead of an effect to avoid the extra setState-in-effect render cascade.
+  const [prevSettings, setPrevSettings] = useState(settings)
+  if (settings !== prevSettings) {
+    setPrevSettings(settings)
     if (settings) {
       setDraft(settings)
       setBaseline(settings)
     }
-  }, [settings])
+  }
 
   const saveAction = useAsyncAction(
     (next: CameraImageSettings) => setCameraImageSettings.execute(camera.id, next),
