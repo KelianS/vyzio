@@ -14,7 +14,8 @@ services:
     container_name: vyzio-dashboard
     restart: unless-stopped
     depends_on:
-      - vyzio-api
+      vyzio-api:
+        condition: service_healthy
     environment:
       - VITE_API_PROXY_TARGET=http://vyzio-api:8443
     ports:
@@ -27,7 +28,8 @@ services:
     container_name: vyzio-api
     restart: unless-stopped
     depends_on:
-      - frigate
+      frigate:
+        condition: service_healthy
     # privileged + /dev bind mount: detection materielle (ADR-34), sans casser le demarrage
     # sur un host sans iGPU/Coral.
     privileged: true
@@ -56,13 +58,20 @@ services:
         mosquitto -c /tmp/mosquitto.conf
     networks:
       - vyzio-net
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "healthcheck", "-m", "ping", "-q", "0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   frigate:
     image: ghcr.io/blakeblackshear/frigate:0.17.1
     container_name: vyzio-frigate
     restart: unless-stopped
     depends_on:
-      - mqtt
+      mqtt:
+        condition: service_healthy
     # privileged + /dev bind mount: exploitation reelle du detecteur choisi (ADR-34).
     privileged: true
     ports:
@@ -78,6 +87,12 @@ services:
       - /dev/shm:size=512m
     networks:
       - vyzio-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 networks:
   vyzio-net:
