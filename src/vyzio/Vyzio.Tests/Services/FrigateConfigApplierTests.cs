@@ -40,9 +40,13 @@ public class FrigateConfigApplierTests : IDisposable
         FrigateCameraName = slug.Replace('-', '_'),
     };
 
-    private sealed class StubHardwareAccelerationDetector(FrigateDetectorKind kind, int cpuCoreCount = 4) : IHardwareAccelerationDetector
+    private sealed class StubHardwareAccelerationDetector(
+        FrigateDetectorKind kind,
+        int cpuCoreCount = 4,
+        FrigateHwAccel hwAccel = FrigateHwAccel.None) : IHardwareAccelerationDetector
     {
         public FrigateDetectorKind Detect() => kind;
+        public FrigateHwAccel DetectVideoAcceleration() => hwAccel;
         public int CpuCoreCount => cpuCoreCount;
     }
 
@@ -54,10 +58,16 @@ public class FrigateConfigApplierTests : IDisposable
             Task.CompletedTask;
     }
 
-    private async Task<string> ApplyAndReadYamlAsync(Camera[] cameras, FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu, int cpuCoreCount = 4)
+    private async Task<string> ApplyAndReadYamlAsync(
+        Camera[] cameras,
+        FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu,
+        int cpuCoreCount = 4,
+        FrigateHwAccel hwAccel = FrigateHwAccel.None)
     {
         var settings = Settings;
-        var planner = new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount));
+        var planner = new FrigateDetectorPlanner(
+            settings,
+            new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount, hwAccel));
         var applier = new FrigateConfigApplier(
             settings,
             NullLogger<FrigateConfigApplier>.Instance,
@@ -166,6 +176,48 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.DoesNotContain("onnx", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("yolox", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("ssdlite_mobilenet_v2", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Intel_gpu_present_emits_vaapi_hardware_decoding()
+    {
+        var yaml = await ApplyAndReadYamlAsync(
+            [MakeValidatedCamera("front-door")], hwAccel: FrigateHwAccel.Vaapi);
+
+        Assert.Contains("hwaccel_args: preset-vaapi", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task No_gpu_emits_no_hardware_decoding_section()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
+
+        Assert.DoesNotContain("hwaccel_args", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Coral_host_with_an_intel_igpu_keeps_gpu_decoding()
+    {
+        // The classic Frigate build: inference on the Coral, decoding still on the iGPU.
+        var yaml = await ApplyAndReadYamlAsync(
+            [MakeValidatedCamera("front-door")], FrigateDetectorKind.EdgeTpu, hwAccel: FrigateHwAccel.Vaapi);
+
+        Assert.Contains("edgetpu", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("hwaccel_args: preset-vaapi", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(MotionSensitivity.High, 10)]
+    [InlineData(MotionSensitivity.Medium, 30)]
+    [InlineData(MotionSensitivity.Low, 50)]
+    public async Task Motion_sensitivity_is_emitted_as_contour_area(MotionSensitivity sensitivity, int expectedContourArea)
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.MotionSensitivity = sensitivity;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.Contains($"contour_area: {expectedContourArea}", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

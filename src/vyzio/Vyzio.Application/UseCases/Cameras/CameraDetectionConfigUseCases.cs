@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -16,7 +17,8 @@ public sealed class GetCameraDetectionConfigUseCase(ICameraRepository cameras)
 
 public sealed class SaveCameraDetectionConfigUseCase(
     ICameraRepository cameras,
-    IFrigateConfigApplier frigateConfigApplier)
+    IFrigateConfigApplier frigateConfigApplier,
+    IFrigateMotionSettingsPublisher motionSettingsPublisher)
 {
     public async Task<CameraDetectionConfigDto?> ExecuteAsync(
         string cameraId,
@@ -39,15 +41,49 @@ public sealed class SaveCameraDetectionConfigUseCase(
 
         camera.DetectionLabelsJson = JsonSerializer.Serialize(validatedLabels);
         camera.ContinuousRecordingEnabled = request.ContinuousRecordingEnabled;
+
+        var sensitivityChanged = ApplySensitivity(camera, request);
+
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
 
-        if (camera.IsEnabled && string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+        var isLive = camera.IsEnabled
+            && string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase);
+
+        if (isLive)
         {
             var allCameras = await cameras.GetAllAsync(ct);
             await frigateConfigApplier.WriteConfigAsync(allCameras, ct);
+
+            // Writing the config alone would only take effect on the next Frigate restart; the
+            // runtime command makes a user-chosen level apply straight away (ADR-35).
+            if (sensitivityChanged && !string.IsNullOrWhiteSpace(camera.FrigateCameraName))
+            {
+                await motionSettingsPublisher.TryPublishSensitivityAsync(
+                    camera.FrigateCameraName, camera.MotionSensitivity, ct);
+            }
         }
 
         return CameraDetectionConfigDto.From(camera);
+    }
+
+    // Returns whether the effective level changed. An unrecognised value is ignored rather than
+    // rejected: the level is a hint the loop would overwrite anyway, never a reason to fail a save
+    // that also carries the user's detection labels.
+    private static bool ApplySensitivity(Camera camera, SaveCameraDetectionConfigRequest request)
+    {
+        camera.MotionSensitivityPinned = request.MotionSensitivityPinned;
+
+        if (!request.MotionSensitivityPinned || request.MotionSensitivity is null)
+            return false;
+
+        if (!SnakeCaseEnum.TryFromSnakeCase<MotionSensitivity>(request.MotionSensitivity, out var level))
+            return false;
+
+        if (camera.MotionSensitivity == level)
+            return false;
+
+        camera.MotionSensitivity = level;
+        return true;
     }
 }

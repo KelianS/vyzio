@@ -206,6 +206,7 @@ Notification Service (.NET)       → Règles + envoi FCM/webhook/email
 Storage Service (.NET)            → Persistance événements enrichis (EF Core)
 FaceLibrarySyncService (.NET)     → Synchronisation des photos de profil Vyzio vers la bibliothèque Frigate
 CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, labels détection, face_recognition
+MotionSensitivityTuner (.NET)     → Boucle d'auto-réglage de la sensibilité par caméra (ADR-35), appliquée à chaud via MQTT
 API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
 Dashboard / Hub (React + TS)      → UI grand public guidée
 ```

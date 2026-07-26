@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
+    <PackageReference Include="MQTTnet" Version="5.1.0.1559" />
     <PackageReference Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 

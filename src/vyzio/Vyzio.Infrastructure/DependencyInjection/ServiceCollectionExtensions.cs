@@ -38,6 +38,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IHardwareAccelerationDetector, HardwareAccelerationDetector>();
         services.AddSingleton<IFrigateDetectorPlanner, FrigateDetectorPlanner>();
         services.AddSingleton<IFrigateModelAssetInstaller, FrigateModelAssetInstaller>();
+        services.AddSingleton<IFrigateMotionSettingsPublisher, FrigateMotionSettingsPublisher>();
+        // Bound options rather than a second copy of the defaults (ADR-35).
+        services.AddSingleton(settings.Frigate.MotionTuning);
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
 
         services.AddHttpClient("tapo");

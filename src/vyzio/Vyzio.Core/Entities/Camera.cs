@@ -47,6 +47,12 @@ public class Camera
 
     public bool ContinuousRecordingEnabled { get; set; }
 
+    // Motion sensitivity auto-tuning (ADR-35). The level is owned by the tuning loop unless the
+    // user pins it, in which case the loop skips this camera entirely.
+    public MotionSensitivity MotionSensitivity { get; set; } = MotionSensitivity.High;
+
+    public bool MotionSensitivityPinned { get; set; }
+
     [Required, MaxLength(50)]
     public string Status { get; set; } = "needs_attention";
 

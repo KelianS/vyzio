@@ -3,6 +3,10 @@ import { toAppError } from '../../common/errors/toAppError'
 import type { ToastTone } from '../../common/components/Toast'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { Camera } from '../../domain/entities/Camera'
+import type {
+  DetectionConfigUpdate,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
@@ -18,6 +22,13 @@ export interface CamerasPresenterContext {
 export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPresenterContext) {
   function reloadCameras() {
     void useRootStore.getState().loadCameras(container.getCameras)
+  }
+
+  // Optimistic: the reducer already applied the change, so a failure only needs surfacing.
+  function saveDetectionConfig(cameraId: string, update: DetectionConfigUpdate): void {
+    container.saveCameraDetectionConfig
+      .execute(cameraId, update)
+      .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
   }
 
   async function loadAllDetectionLabels(): Promise<void> {
@@ -101,27 +112,33 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
       }
     },
 
-    onToggleDetectionLabel(
-      cameraId: string,
-      value: string,
-      currentLabels: string[],
-      continuousRecording: boolean,
-    ) {
-      const nextLabels = currentLabels.includes(value)
-        ? currentLabels.filter((l) => l !== value)
-        : [...currentLabels, value]
-      dispatch({ type: 'DETECTION_LABELS_TOGGLED', labels: nextLabels })
-      container.saveCameraDetectionConfig
-        .execute(cameraId, nextLabels, continuousRecording)
-        .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
+    onToggleDetectionLabel(cameraId: string, value: string, current: DetectionConfigUpdate) {
+      const labels = current.labels.includes(value)
+        ? current.labels.filter((l) => l !== value)
+        : [...current.labels, value]
+      dispatch({ type: 'DETECTION_LABELS_TOGGLED', labels })
+      saveDetectionConfig(cameraId, { ...current, labels })
     },
 
-    onToggleDetectionContinuous(cameraId: string, currentLabels: string[], currentValue: boolean) {
-      const nextValue = !currentValue
-      dispatch({ type: 'DETECTION_CONTINUOUS_TOGGLED', value: nextValue })
-      container.saveCameraDetectionConfig
-        .execute(cameraId, currentLabels, nextValue)
-        .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
+    onToggleDetectionContinuous(cameraId: string, current: DetectionConfigUpdate) {
+      const continuousRecordingEnabled = !current.continuousRecordingEnabled
+      dispatch({ type: 'DETECTION_CONTINUOUS_TOGGLED', value: continuousRecordingEnabled })
+      saveDetectionConfig(cameraId, { ...current, continuousRecordingEnabled })
+    },
+
+    onChangeMotionSensitivity(
+      cameraId: string,
+      motionSensitivity: MotionSensitivity,
+      current: DetectionConfigUpdate,
+    ) {
+      dispatch({ type: 'MOTION_SENSITIVITY_CHANGED', value: motionSensitivity })
+      saveDetectionConfig(cameraId, { ...current, motionSensitivity })
+    },
+
+    onToggleMotionSensitivityPin(cameraId: string, current: DetectionConfigUpdate) {
+      const motionSensitivityPinned = !current.motionSensitivityPinned
+      dispatch({ type: 'MOTION_SENSITIVITY_PIN_TOGGLED', pinned: motionSensitivityPinned })
+      saveDetectionConfig(cameraId, { ...current, motionSensitivityPinned })
     },
 
     async onDiscover(): Promise<void> {
