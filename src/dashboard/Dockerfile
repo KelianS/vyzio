@@ -3,7 +3,7 @@ WORKDIR /app
 
 RUN corepack enable pnpm
 
-COPY src/dashboard/package.json src/dashboard/pnpm-lock.yaml ./
+COPY src/dashboard/package.json src/dashboard/pnpm-lock.yaml src/dashboard/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY src/dashboard/ .
