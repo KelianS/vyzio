@@ -3462,6 +3462,29 @@
   padding-left: 22px;
 }
 
+/* ── Detection config motion sensitivity (ADR-35) ── */
+
+.detection-sensitivity-block {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(24, 32, 29, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.detection-sensitivity-current {
+  font-size: 0.9rem;
+  padding-left: 22px;
+}
+
+.detection-sensitivity-explanation {
+  font-size: 0.82rem;
+  opacity: 0.65;
+  padding-left: 22px;
+}
+
 /* ── Detection config person warning ── */
 
 .detection-person-warning {

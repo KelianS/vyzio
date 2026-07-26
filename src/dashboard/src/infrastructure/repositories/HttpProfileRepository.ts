@@ -1,7 +1,7 @@
 import type { Profile } from '../../domain/entities/Profile'
 import type { ProfilePhoto } from '../../domain/entities/ProfilePhoto'
 import type { ProfileCameraLink } from '../../domain/entities/ProfileCameraLink'
-import type { DetectionConfig } from '../../domain/entities/DetectionConfig'
+import type { DetectionConfig, DetectionConfigUpdate } from '../../domain/entities/DetectionConfig'
 import type {
   DetectionHistoryPage,
   DetectionHistoryQuery,
@@ -93,13 +93,12 @@ export class HttpProfileRepository implements ProfileRepository {
 
   async saveCameraDetectionConfig(
     cameraId: string,
-    labels: string[],
-    continuousRecordingEnabled: boolean,
+    update: DetectionConfigUpdate,
   ): Promise<DetectionConfig> {
-    return putJson<DetectionConfig>(`${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`, {
-      labels,
-      continuousRecordingEnabled,
-    })
+    return putJson<DetectionConfig>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`,
+      update,
+    )
   }
 
   async getDetectionHistory(query: DetectionHistoryQuery): Promise<DetectionHistoryPage> {

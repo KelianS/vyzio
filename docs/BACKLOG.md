@@ -63,9 +63,9 @@ et hiérarchie des leviers : [investigation](investigations/frigate-cpu-profilin
 
 Ordre imposé par les dépendances : 1 est autonome et porte l'essentiel du gain ; 3 conditionne 4.
 
-1. **Sensibilité auto-adaptative** ([ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md)) — enum `MotionSensitivity` persisté par caméra, émis dans `motion.contour_area` par `FrigateConfigApplier`, et boucle d'ajustement appliquant le palier à chaud via MQTT (`frigate/<camera>/motion_contour_area/set`). Paramètres de boucle dans `VyzioRuntimeSettings`. **Gate de validation** : ratio inférences/image du jardin ramené sous 2 sans perte de détection sur un passage de personne ; aucun redémarrage Frigate déclenché par un changement de palier.
+1. ~~**Sensibilité auto-adaptative**~~ — livré ([ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md)). **Reste à valider en conditions réelles** : la boucle demande 12 h de couverture avant son premier pas, et n'a pas encore été observée sur un cycle complet. Gate : ratio du jardin ramené sous 2 sans perte de détection sur un passage de personne.
 
-2. **Exposition et pilotage du palier dans le Hub** — niveau courant, raison lisible, et action « figer » par caméra (SPECS §3.2). Dépend de 1.
+2. ~~**Exposition et pilotage du palier dans le Hub**~~ — livré : niveau, explication et bascule « réglage automatique » dans la section Détection de la fiche caméra.
 
 3. **Séparation flux de détection / flux d'enregistrement** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Sous-flux auto-détecté quand le protocole l'expose (DVRIP `?channel=0&subtype=1` vérifié ; ONVIF `GetProfiles`), rôle `detect` dessus, rôle `record` sur le flux principal, et `detect.width/height` alignés sur la résolution réelle de la source — ne jamais agrandir. Le modèle de données suppose aujourd'hui un flux unique par caméra (`Camera.StreamPath`) : migration nécessaire.
 
