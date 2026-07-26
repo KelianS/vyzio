@@ -141,6 +141,15 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
       saveDetectionConfig(cameraId, { ...current, motionSensitivityPinned })
     },
 
+    onChangeDetectStream(
+      cameraId: string,
+      detectStreamId: string | null,
+      current: DetectionConfigUpdate,
+    ) {
+      dispatch({ type: 'DETECT_STREAM_CHANGED', streamId: detectStreamId })
+      saveDetectionConfig(cameraId, { ...current, detectStreamId })
+    },
+
     async onDiscover(): Promise<void> {
       dispatch({ type: 'DISCOVERY_STARTED' })
       try {

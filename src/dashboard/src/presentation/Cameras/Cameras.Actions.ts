@@ -24,6 +24,7 @@ export type CamerasAction =
   | { type: 'DETECTION_CONTINUOUS_TOGGLED'; value: boolean }
   | { type: 'MOTION_SENSITIVITY_CHANGED'; value: MotionSensitivity }
   | { type: 'MOTION_SENSITIVITY_PIN_TOGGLED'; pinned: boolean }
+  | { type: 'DETECT_STREAM_CHANGED'; streamId: string | null }
   | { type: 'DISCOVERY_STARTED' }
   | {
       type: 'DISCOVERY_SUCCEEDED'
