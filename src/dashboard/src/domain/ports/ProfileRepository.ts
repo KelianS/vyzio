@@ -1,7 +1,7 @@
 import type { Profile } from '../entities/Profile'
 import type { ProfilePhoto } from '../entities/ProfilePhoto'
 import type { ProfileCameraLink } from '../entities/ProfileCameraLink'
-import type { DetectionConfig } from '../entities/DetectionConfig'
+import type { DetectionConfig, DetectionConfigUpdate } from '../entities/DetectionConfig'
 import type { DetectionHistoryPage, DetectionHistoryQuery } from '../entities/DetectionHistory'
 
 export interface CreateProfileRequest {
@@ -36,8 +36,7 @@ export interface ProfileRepository {
   getCameraDetectionConfig(cameraId: string): Promise<DetectionConfig | null>
   saveCameraDetectionConfig(
     cameraId: string,
-    labels: string[],
-    continuousRecordingEnabled: boolean,
+    update: DetectionConfigUpdate,
   ): Promise<DetectionConfig>
 
   resyncFaceLibrary(): Promise<number>

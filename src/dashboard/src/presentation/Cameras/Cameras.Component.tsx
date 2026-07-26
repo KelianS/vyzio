@@ -9,6 +9,7 @@ import { useToast } from '../../common/components/Toast'
 import { usePresenter } from '../../common/presenter/usePresenter'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
+import type { DetectionConfigUpdate } from '../../domain/entities/DetectionConfig'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import { CapabilitySection } from './CapabilitySection'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
@@ -44,6 +45,15 @@ export function CamerasView() {
   const { selection } = uido
   const selectedCameraId = selection.kind === 'camera' ? selection.cameraId : null
   const cameraStatusState = useCameraStatus(container.getCameraStatus, selectedCameraId)
+
+  // The detection config is saved whole on every toggle, so each handler needs the other fields
+  // as they currently stand rather than just the one it changes.
+  const currentDetectionConfig: DetectionConfigUpdate = {
+    labels: uido.detectionLabels,
+    continuousRecordingEnabled: uido.detectionContinuousRecording,
+    motionSensitivity: uido.detectionMotionSensitivity,
+    motionSensitivityPinned: uido.detectionMotionSensitivityPinned,
+  }
 
   const [modalMedia, setModalMedia] = useState<{
     cameraId: string
@@ -1002,13 +1012,14 @@ export function CamerasView() {
                     allLabels={uido.allDetectionLabels}
                     loading={uido.detectionConfigLoading}
                     continuousRecordingEnabled={uido.detectionContinuousRecording}
+                    motionSensitivity={uido.detectionMotionSensitivity}
+                    motionSensitivityPinned={uido.detectionMotionSensitivityPinned}
                     onToggle={(value) => {
                       if (selectedCameraId) {
                         presenter.onToggleDetectionLabel(
                           selectedCameraId,
                           value,
-                          uido.detectionLabels,
-                          uido.detectionContinuousRecording,
+                          currentDetectionConfig,
                         )
                       }
                     }}
@@ -1016,8 +1027,24 @@ export function CamerasView() {
                       if (selectedCameraId) {
                         presenter.onToggleDetectionContinuous(
                           selectedCameraId,
-                          uido.detectionLabels,
-                          uido.detectionContinuousRecording,
+                          currentDetectionConfig,
+                        )
+                      }
+                    }}
+                    onChangeMotionSensitivity={(value) => {
+                      if (selectedCameraId) {
+                        presenter.onChangeMotionSensitivity(
+                          selectedCameraId,
+                          value,
+                          currentDetectionConfig,
+                        )
+                      }
+                    }}
+                    onToggleMotionSensitivityPin={() => {
+                      if (selectedCameraId) {
+                        presenter.onToggleMotionSensitivityPin(
+                          selectedCameraId,
+                          currentDetectionConfig,
                         )
                       }
                     }}

@@ -19,13 +19,20 @@ public sealed class HardwareAccelerationDetector : IHardwareAccelerationDetector
         if (File.Exists(CoralPciePath))
             return FrigateDetectorKind.EdgeTpu;
 
-        if (File.Exists(IntelGpuRenderNodePath) && IsIntelGpuVendor())
+        if (HasIntelGpu())
             return FrigateDetectorKind.Openvino;
 
         return FrigateDetectorKind.Cpu;
     }
 
+    // Not derived from Detect(): a Coral takes precedence for inference, but an Intel iGPU on the
+    // same host must still handle decoding.
+    public FrigateHwAccel DetectVideoAcceleration() =>
+        HasIntelGpu() ? FrigateHwAccel.Vaapi : FrigateHwAccel.None;
+
     public int CpuCoreCount => Environment.ProcessorCount;
+
+    private static bool HasIntelGpu() => File.Exists(IntelGpuRenderNodePath) && IsIntelGpuVendor();
 
     private static bool IsIntelGpuVendor()
     {

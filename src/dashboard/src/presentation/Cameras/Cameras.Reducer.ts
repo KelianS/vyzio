@@ -105,6 +105,8 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
               detectionLabels: action.config.labels,
               detectionAvailableLabels: action.config.availableLabels,
               detectionContinuousRecording: action.config.continuousRecordingEnabled,
+              detectionMotionSensitivity: action.config.motionSensitivity,
+              detectionMotionSensitivityPinned: action.config.motionSensitivityPinned,
             }
           : {}),
       }
@@ -114,6 +116,12 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
 
     case 'DETECTION_CONTINUOUS_TOGGLED':
       return { ...state, detectionContinuousRecording: action.value }
+
+    case 'MOTION_SENSITIVITY_CHANGED':
+      return { ...state, detectionMotionSensitivity: action.value }
+
+    case 'MOTION_SENSITIVITY_PIN_TOGGLED':
+      return { ...state, detectionMotionSensitivityPinned: action.pinned }
 
     case 'DISCOVERY_STARTED':
       return { ...state, discoverLoading: true, discoveryError: null, formError: null }

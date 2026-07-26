@@ -11,7 +11,10 @@ public sealed class FrigateDetectorPlanner(VyzioRuntimeSettings settings, IHardw
     public FrigateDetectorPlan Plan(int activeCameraCount)
     {
         var kind = hardwareDetector.Detect();
-        return new FrigateDetectorPlan(kind, ComputeFps(kind, activeCameraCount));
+        return new FrigateDetectorPlan(
+            kind,
+            ComputeFps(kind, activeCameraCount),
+            hardwareDetector.DetectVideoAcceleration());
     }
 
     private int ComputeFps(FrigateDetectorKind kind, int activeCameraCount)

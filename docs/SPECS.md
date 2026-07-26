@@ -88,11 +88,12 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 **Regles fonctionnelles :**
 
-- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, info systeme a venir) sont des **capacites independantes de la marque** ; une marque "officiellement supportee" est une marque pour laquelle Vyzio sait deja quelles capacites sont disponibles et comment les activer (preconfiguration), pas une marque qui beneficie de fonctionnalites reservees ;
+- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme a venir) sont des **capacites independantes de la marque** ; une marque "officiellement supportee" est une marque pour laquelle Vyzio sait deja quelles capacites sont disponibles et comment les activer (preconfiguration), pas une marque qui beneficie de fonctionnalites reservees ;
 - une camera non repertoriee doit pouvoir acceder aux memes capacites qu'une camera supportee, a condition que son materiel le permette reellement ; le parcours est plus long (declaration et verification manuelle des capacites) mais jamais bloquant par principe ;
 - pour une camera non repertoriee, l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface — jamais sur simple declaration non verifiee ;
 - si une capacite ne peut pas etre verifiee ou echoue au test, l'interface doit l'indiquer clairement et ne pas la presenter comme disponible ;
-- le statut "officiellement supporte" reste affiche et utilise pour rassurer l'utilisateur (cf. 2.2) ; le parcours manuel est presente comme une alternative pour les cameras absentes de cette liste, pas comme le parcours par defaut.
+- le statut "officiellement supporte" reste affiche et utilise pour rassurer l'utilisateur (cf. 2.2) ; le parcours manuel est presente comme une alternative pour les cameras absentes de cette liste, pas comme le parcours par defaut ;
+- lorsque Vyzio modifie de sa propre initiative un reglage de la camera pour ameliorer les performances du systeme (et non a la demande de l'utilisateur), il doit memoriser la valeur d'origine et pouvoir la restaurer si la fonction est desactivee ou la camera retiree ; une telle modification ne doit jamais degrader la qualite des enregistrements.
 
 ---
 
@@ -119,6 +120,18 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - un evenement incertain doit pouvoir etre presente comme tel, sans sur-promettre une certitude ;
 - l'utilisateur doit pouvoir corriger une reconnaissance depuis un parcours simple ;
 - le produit doit privilegier la pertinence des alertes plutot que la quantite.
+
+**Sensibilite de detection — auto-reglage :**
+
+> **En tant qu'utilisateur**, je veux que Vyzio se regle tout seul sur une scene agitee (feuillage, route passante), afin de ne pas avoir a comprendre ce qu'est un « reglage de mouvement » pour que le systeme reste fluide.
+
+> **En tant qu'utilisateur**, je veux savoir pourquoi une camera a ete rendue moins sensible et pouvoir figer ce reglage, afin de garder la main si le choix automatique ne me convient pas.
+
+- la sensibilite de detection s'ajuste automatiquement, par camera, en fonction de l'agitation reellement observee sur la scene ; l'utilisateur n'a aucun reglage technique a fournir ;
+- la sensibilite s'exprime en trois niveaux comprehensibles (elevee / moyenne / reduite) — jamais en valeur technique ni en vocabulaire Frigate ;
+- le niveau courant et sa raison doivent etre lisibles par l'utilisateur, qui doit pouvoir **figer** le niveau d'une camera pour desactiver l'ajustement automatique sur celle-ci ;
+- l'ajustement automatique poursuit un objectif de fluidite, jamais de qualite de detection : il ne doit jamais descendre en dessous du niveau le plus bas prevu, et ce compromis doit etre assume explicitement ;
+- l'ajustement ne doit provoquer aucune interruption visible du service (pas de coupure du flux ni des enregistrements).
 
 ---
 

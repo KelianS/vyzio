@@ -18,7 +18,7 @@ public sealed class FrigateStatsProvider(HttpClient httpClient, ILogger<FrigateS
             var storage = ParseStorage(raw.Service?.Storage);
 
             var cameras = raw.Cameras?
-                .Select(kv => new CameraFps(kv.Key, kv.Value.CameraFps))
+                .Select(kv => new CameraFps(kv.Key, kv.Value.CameraFps, kv.Value.DetectionFps))
                 .ToList() ?? [];
 
             return new FrigateStats(storage, cameras);
@@ -76,5 +76,8 @@ public sealed class FrigateStatsProvider(HttpClient httpClient, ILogger<FrigateS
     {
         [JsonPropertyName("camera_fps")]
         public double CameraFps { get; init; }
+
+        [JsonPropertyName("detection_fps")]
+        public double DetectionFps { get; init; }
     }
 }

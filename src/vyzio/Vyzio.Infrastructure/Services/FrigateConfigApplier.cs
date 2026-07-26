@@ -127,6 +127,12 @@ public sealed class FrigateConfigApplier(
                             Enabled = true,
                             Fps = detectFps,
                         },
+                        // Persisted level mirrored into the config so it survives a Frigate restart —
+                        // the tuning loop applies changes over MQTT at runtime (ADR-35).
+                        Motion = new FrigateMotionConfig
+                        {
+                            ContourArea = FrigateMotionSettingsPublisher.ToContourArea(camera.MotionSensitivity),
+                        },
                         Objects = new FrigateObjectsConfig
                         {
                             Track = [.. frigateLabels],
@@ -197,6 +203,7 @@ public sealed class FrigateConfigApplier(
             {
                 Path = settings.Frigate.DatabasePath,
             },
+            Ffmpeg = BuildFfmpeg(plan.HwAccel),
             Detectors = BuildDetectors(detectorKind),
             Model = BuildModel(detectorKind),
             FaceRecognition = faceRecognition,
@@ -207,6 +214,15 @@ public sealed class FrigateConfigApplier(
 
         return (document, detectorKind);
     }
+
+    // Software decoding is one of the most expensive things Frigate does, and it is pure waste when
+    // a GPU is present (ADR-34). `preset-vaapi` is the codec-agnostic option: the QuickSync presets
+    // suit gen13+/Arc better but exist only in per-codec variants (`-h264`/`-h265`), and Vyzio does
+    // not record each camera's codec — so they are not selectable today (backlog).
+    private static FrigateFfmpegGlobalConfig? BuildFfmpeg(FrigateHwAccel hwAccel) =>
+        hwAccel == FrigateHwAccel.Vaapi
+            ? new FrigateFfmpegGlobalConfig { HwaccelArgs = "preset-vaapi" }
+            : null;
 
     // `onnx` (auto-detects OpenVINO as execution provider on the stock image) + YOLOX only for the
     // Openvino/Intel-GPU tier, where dedicated hardware absorbs the extra compute a YOLO-family model
@@ -281,6 +297,7 @@ public sealed class FrigateConfigApplier(
     {
         public required FrigateMqttConfig Mqtt { get; init; }
         public required FrigateDatabaseConfig Database { get; init; }
+        public FrigateFfmpegGlobalConfig? Ffmpeg { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
         public FrigateModelConfig? Model { get; init; }
         public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
@@ -303,6 +320,13 @@ public sealed class FrigateConfigApplier(
     private sealed class FrigateDatabaseConfig
     {
         public required string Path { get; init; }
+    }
+
+    // Global ffmpeg section — only carries hardware decoding today; per-camera inputs stay in
+    // FrigateFfmpegConfig.
+    private sealed class FrigateFfmpegGlobalConfig
+    {
+        public required string HwaccelArgs { get; init; }
     }
 
     private sealed class FrigateDetectorConfig
@@ -333,9 +357,15 @@ public sealed class FrigateConfigApplier(
         public required bool Enabled { get; init; }
         public required FrigateFfmpegConfig Ffmpeg { get; init; }
         public required FrigateDetectConfig Detect { get; init; }
+        public FrigateMotionConfig? Motion { get; init; }
         public FrigateObjectsConfig? Objects { get; init; }
         public FrigateSnapshotsConfig? Snapshots { get; init; }
         public FrigateCameraRecordConfig? Record { get; init; }
+    }
+
+    private sealed class FrigateMotionConfig
+    {
+        public required int ContourArea { get; init; }
     }
 
     private sealed class FrigateObjectsConfig
