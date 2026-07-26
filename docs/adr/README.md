@@ -41,3 +41,5 @@ référence ces ADR sans les recopier.
 | [ADR-32](0032-pipeline-de-decouverte-reseau-en-3-etapes.md) | Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation | Accepté |
 | [ADR-33](0033-statut-du-moteur-de-detection-expose-au-hub.md) | Statut du moteur de détection exposé au Hub : tracker de redémarrage + enrichissement de `/api/system/stats` | Accepté |
 | [ADR-34](0034-adaptation-materielle-automatique-du-detecteur-frigate.md) | Adaptation matérielle automatique du détecteur Frigate : Coral → Intel GPU (`onnx` + YOLOX) → CPU (natif, FPS borné) | Accepté |
+| [ADR-35](0035-sensibilite-de-detection-auto-adaptative-par-camera.md) | Sensibilité de détection auto-adaptative par caméra : boucle fermée à trois paliers, appliquée à chaud par MQTT | Accepté |
+| [ADR-36](0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md) | Alignement du débit d'images sur la caméra : capacité `StreamConfig`, conditionnée à la séparation détection/enregistrement | Accepté |

@@ -55,6 +55,28 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 ---
 
+### `detection-perf` — Performance du moteur de détection
+
+Direction tranchée par [ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md) et
+[ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md). Mesures de référence
+et hiérarchie des leviers : [investigation](investigations/frigate-cpu-profiling.md).
+
+Ordre imposé par les dépendances : 1 est autonome et porte l'essentiel du gain ; 3 conditionne 4.
+
+1. **Sensibilité auto-adaptative** ([ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md)) — enum `MotionSensitivity` persisté par caméra, émis dans `motion.contour_area` par `FrigateConfigApplier`, et boucle d'ajustement appliquant le palier à chaud via MQTT (`frigate/<camera>/motion_contour_area/set`). Paramètres de boucle dans `VyzioRuntimeSettings`. **Gate de validation** : ratio inférences/image du jardin ramené sous 2 sans perte de détection sur un passage de personne ; aucun redémarrage Frigate déclenché par un changement de palier.
+
+2. **Exposition et pilotage du palier dans le Hub** — niveau courant, raison lisible, et action « figer » par caméra (SPECS §3.2). Dépend de 1.
+
+3. **Séparation flux de détection / flux d'enregistrement** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Sous-flux auto-détecté quand le protocole l'expose (DVRIP `?channel=0&subtype=1` vérifié ; ONVIF `GetProfiles`), rôle `detect` dessus, rôle `record` sur le flux principal, et `detect.width/height` alignés sur la résolution réelle de la source — ne jamais agrandir. Le modèle de données suppose aujourd'hui un flux unique par caméra (`Camera.StreamPath`) : migration nécessaire.
+
+4. **Capacité `StreamConfig`** ([ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md)) — détection/vérification de la capacité, écriture du débit d'images sur le flux de détection, mémorisation de la valeur d'origine pour restauration. **Bloqué tant que 3 n'est pas livré** : sans séparation des flux, l'écriture dégraderait les enregistrements.
+
+5. **Accélération matérielle du décodage** — `ffmpeg.hwaccel_args` absent aujourd'hui. Le preset dépend de la génération Intel (`preset-vaapi` jusqu'à gen 12, `preset-intel-qsv-h264/h265` au-delà et sur Arc) : la détection matérielle d'[ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) identifie le vendor mais pas la génération, à étendre.
+
+6. **Rétention d'enregistrement explicite** — bug : `FrigateConfigApplier` n'émet que `record.enabled: true`, or les défauts Frigate 0.17 sont `continuous.days: 0` et `motion.days: 0`. `Camera.ContinuousRecordingEnabled` ([ADR-18](adr/0018-enregistrement-continu-activation-par-camera-dans-la.md)) ne conserve donc rien en continu — vérifié sur disque : 7 heures retenues après 8 jours. Le nombre de jours et le mode (`all` vs `motion`) sont un arbitrage produit et capacité disque à trancher avant implémentation.
+
+---
+
 ### `battery-wake` — Réveil caméras DVRIP sur batterie
 
 Investigation close. Direction retenue : WoL + inspection de paquet.
