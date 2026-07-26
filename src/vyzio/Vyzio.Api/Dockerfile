@@ -41,5 +41,7 @@ RUN addgroup -S vyzio \
 	&& chmod +x /entrypoint.sh
 
 EXPOSE 8443
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=15s \
+	CMD curl -f http://localhost:8443/health || exit 1
 # nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
