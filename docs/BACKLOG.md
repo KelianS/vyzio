@@ -57,23 +57,31 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 ### `detection-perf` — Performance du moteur de détection
 
-Direction tranchée par [ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md) et
-[ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md). Mesures de référence
-et hiérarchie des leviers : [investigation](investigations/frigate-cpu-profiling.md).
+Mesures de référence et hiérarchie des leviers :
+[investigation](investigations/frigate-cpu-profiling.md).
 
-Ordre imposé par les dépendances : 1 est autonome et porte l'essentiel du gain ; 3 conditionne 4.
+L'auto-réglage de sensibilité ([ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md),
+avec son pilotage dans le Hub) et le décodage matériel
+([ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md)) sont livrés. Reste :
 
-1. ~~**Sensibilité auto-adaptative**~~ — livré ([ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md)). **Reste à valider en conditions réelles** : la boucle demande 12 h de couverture avant son premier pas, et n'a pas encore été observée sur un cycle complet. Gate : ratio du jardin ramené sous 2 sans perte de détection sur un passage de personne.
+1. **Valider la boucle d'auto-réglage sur un cycle complet** — le pilotage manuel est confirmé
+   terrain, le pas **automatique** n'a jamais été observé. Deux points à vérifier dans les logs
+   (`outcome`, `aggregate`) : que les seuils par défaut (P75, 1,5 / 3,0) discriminent vraiment sur du
+   matériel réel, et que la fenêtre atteigne sa couverture — elle vit en mémoire, donc un redéploiement
+   de l'API plus d'une fois par jour empêche toute convergence. Gate : ratio du jardin ramené sous 2
+   sans perte de détection sur un passage de personne.
 
-2. ~~**Exposition et pilotage du palier dans le Hub**~~ — livré : niveau, explication et bascule « réglage automatique » dans la section Détection de la fiche caméra.
+2. **Séparation flux de détection / flux d'enregistrement** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Sous-flux auto-détecté quand le protocole l'expose (DVRIP `?channel=0&subtype=1` vérifié ; ONVIF `GetProfiles`), rôle `detect` dessus, rôle `record` sur le flux principal, et `detect.width/height` alignés sur la résolution réelle de la source — ne jamais agrandir. Le modèle de données suppose aujourd'hui un flux unique par caméra (`Camera.StreamPath`) : migration nécessaire.
 
-3. **Séparation flux de détection / flux d'enregistrement** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Sous-flux auto-détecté quand le protocole l'expose (DVRIP `?channel=0&subtype=1` vérifié ; ONVIF `GetProfiles`), rôle `detect` dessus, rôle `record` sur le flux principal, et `detect.width/height` alignés sur la résolution réelle de la source — ne jamais agrandir. Le modèle de données suppose aujourd'hui un flux unique par caméra (`Camera.StreamPath`) : migration nécessaire.
+3. **Capacité `StreamConfig`** ([ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md)) — détection/vérification de la capacité, écriture du débit d'images sur le flux de détection, mémorisation de la valeur d'origine pour restauration. **Bloqué tant que 2 n'est pas livré** : sans séparation des flux, l'écriture dégraderait les enregistrements.
 
-4. **Capacité `StreamConfig`** ([ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md)) — détection/vérification de la capacité, écriture du débit d'images sur le flux de détection, mémorisation de la valeur d'origine pour restauration. **Bloqué tant que 3 n'est pas livré** : sans séparation des flux, l'écriture dégraderait les enregistrements.
+4. **Codec par caméra, puis QuickSync** — enregistrer le codec du flux (relevé au moment de la vérification de la caméra) ouvre deux gains : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur gen13+/Arc ([ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) option 2, écartée faute de ce prérequis), et signaler à l'utilisateur qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
 
-5. **Accélération matérielle du décodage** — `ffmpeg.hwaccel_args` absent aujourd'hui. Le preset dépend de la génération Intel (`preset-vaapi` jusqu'à gen 12, `preset-intel-qsv-h264/h265` au-delà et sur Arc) : la détection matérielle d'[ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) identifie le vendor mais pas la génération, à étendre.
+---
 
-6. **Rétention d'enregistrement explicite** — bug : `FrigateConfigApplier` n'émet que `record.enabled: true`, or les défauts Frigate 0.17 sont `continuous.days: 0` et `motion.days: 0`. `Camera.ContinuousRecordingEnabled` ([ADR-18](adr/0018-enregistrement-continu-activation-par-camera-dans-la.md)) ne conserve donc rien en continu — vérifié sur disque : 7 heures retenues après 8 jours. Le nombre de jours et le mode (`all` vs `motion`) sont un arbitrage produit et capacité disque à trancher avant implémentation.
+### `recording` — Rétention d'enregistrement
+
+- **Bug : l'enregistrement continu ne conserve rien.** `FrigateConfigApplier` n'émet que `record.enabled: true`, or les défauts Frigate 0.17 sont `continuous.days: 0` et `motion.days: 0`. `Camera.ContinuousRecordingEnabled` ([ADR-18](adr/0018-enregistrement-continu-activation-par-camera-dans-la.md)) n'a donc aucun effet de rétention — vérifié sur disque : 7 heures retenues après 8 jours de fonctionnement, 55 Mo. L'UI annonce pourtant « 1 à 3 Go par jour », donc la promesse produit est fausse dans les deux sens. **Trancher avant implémentation** : nombre de jours conservés, et mode `all` (tout) vs `motion` (seulement les portions avec mouvement) — arbitrage produit et capacité disque.
 
 ---
 
