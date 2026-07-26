@@ -22,6 +22,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 > Zone de capture libre. Un ajout = une ligne. Pas de tri, pas de priorite, pas de contexte obligatoire.
 
+- Enregistrer le codec du flux par caméra (relevé à la vérification de la caméra), ce qui ouvrirait deux choses : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur Intel gen13+/Arc — écarté d'[ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) faute de ce prérequis, les presets QuickSync n'existant qu'en variantes codec-spécifiques — et signaler qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
 - Support Nvidia (tensorrt) et AMD (rocm) pour le détecteur Frigate — nécessite de recréer le conteneur sur le variant d'image adapté (`-tensorrt`/`-rocm`), pas seulement de changer `config.yml` ; écarté de [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) faute de besoin terrain confirmé. Coral USB (en plus du PCIe déjà supporté) également hors scope actuel.
 - Benchmarker `yolox_s` (retenu pour le palier Intel GPU dans [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md)) sur du matériel varié et évaluer une variante plus précise (`yolox_m`/`l`) si le terrain le justifie — pas de mesure exhaustive à ce stade. Le palier CPU seul reste sur le détecteur natif `cpu` (YOLOX, même la plus petite variante, a produit des pics CPU ~800% et des détections dégradées en test terrain — pas un gain sur ce palier). YOLOv9 écarté (licence GPL-3.0, test exploratoire erratique : voir [investigation](investigations/yolov9_frigate_openvino.md)) ; YOLO-NAS écarté (poids non-commerciaux).
 - Distinguer détection de présence (« person ») et reconnaissance faciale (identification) — aujourd'hui les deux sont couplées sans option pour les découpler : `FrigateConfigApplier` active `face_recognition` globalement dès qu'une caméra est activée, et toute caméra qui suit le label `person` se voit automatiquement ajouter `face` (voir commentaire « face must be tracked whenever person is »). Une caméra qui ne veut que savoir « quelqu'un est présent » paie donc quand même le coût du pipeline d'identification faciale (embeddings, un process séparé de la détection d'objets). À investiguer : impact réel sur les perfs d'inférence, et si un découplage par caméra (suivre `person` sans `face`) est pertinent.
@@ -60,22 +61,9 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 Mesures de référence et hiérarchie des leviers :
 [investigation](investigations/frigate-cpu-profiling.md).
 
-L'auto-réglage de sensibilité ([ADR-35](adr/0035-sensibilite-de-detection-auto-adaptative-par-camera.md),
-avec son pilotage dans le Hub) et le décodage matériel
-([ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md)) sont livrés. Reste :
+1. **Séparation flux de détection / flux d'enregistrement** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Sous-flux auto-détecté quand le protocole l'expose (DVRIP `?channel=0&subtype=1` vérifié ; ONVIF `GetProfiles`), rôle `detect` dessus, rôle `record` sur le flux principal, et `detect.width/height` alignés sur la résolution réelle de la source — ne jamais agrandir. Le modèle de données suppose aujourd'hui un flux unique par caméra (`Camera.StreamPath`) : migration nécessaire.
 
-1. **Valider la boucle d'auto-réglage sur un cycle complet** — le pilotage manuel est confirmé
-   terrain, le pas **automatique** n'a jamais été observé. Deux points à vérifier dans les logs
-   (`outcome`, `aggregate`) : que les seuils par défaut (P75, 1,5 / 3,0) discriminent vraiment sur du
-   matériel réel, et que la fenêtre atteigne sa couverture — elle vit en mémoire, donc un redéploiement
-   de l'API plus d'une fois par jour empêche toute convergence. Gate : ratio du jardin ramené sous 2
-   sans perte de détection sur un passage de personne.
-
-2. **Séparation flux de détection / flux d'enregistrement** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Sous-flux auto-détecté quand le protocole l'expose (DVRIP `?channel=0&subtype=1` vérifié ; ONVIF `GetProfiles`), rôle `detect` dessus, rôle `record` sur le flux principal, et `detect.width/height` alignés sur la résolution réelle de la source — ne jamais agrandir. Le modèle de données suppose aujourd'hui un flux unique par caméra (`Camera.StreamPath`) : migration nécessaire.
-
-3. **Capacité `StreamConfig`** ([ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md)) — détection/vérification de la capacité, écriture du débit d'images sur le flux de détection, mémorisation de la valeur d'origine pour restauration. **Bloqué tant que 2 n'est pas livré** : sans séparation des flux, l'écriture dégraderait les enregistrements.
-
-4. **Codec par caméra, puis QuickSync** — enregistrer le codec du flux (relevé au moment de la vérification de la caméra) ouvre deux gains : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur gen13+/Arc ([ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) option 2, écartée faute de ce prérequis), et signaler à l'utilisateur qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
+2. **Capacité `StreamConfig`** ([ADR-36](adr/0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md)) — détection/vérification de la capacité, écriture du débit d'images sur le flux de détection, mémorisation de la valeur d'origine pour restauration. **Bloqué tant que 1 n'est pas livré** : sans séparation des flux, l'écriture dégraderait les enregistrements.
 
 ---
 
