@@ -60,6 +60,38 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
+    public async Task A_protocol_that_passes_its_probe_is_recorded_as_supported()
+    {
+        var camera = MakeCamera();
+        var binding = MakeBinding(CameraCapability.ImageSettings, SupportedProtocol.Dvrip);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>()).Returns(binding);
+        _imageSettingsProvider.ProbeAsync(camera, binding, Arg.Any<CancellationToken>()).Returns(true);
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.ImageSettings);
+
+        Assert.Contains(SupportedProtocol.Dvrip, camera.GetSupportedProtocols());
+        await _cameras.Received(1).UpdateAsync(camera, Arg.Any<CancellationToken>());
+    }
+
+    // The cascade tries candidates until one answers; a candidate that failed proves nothing about
+    // the camera and must not end up in the list (ADR-28).
+    [Fact]
+    public async Task A_protocol_that_fails_its_probe_is_not_recorded()
+    {
+        var camera = MakeCamera();
+        var binding = MakeBinding(CameraCapability.ImageSettings, SupportedProtocol.Onvif);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>()).Returns(binding);
+        _imageSettingsProvider.ProbeAsync(camera, binding, Arg.Any<CancellationToken>()).Returns(false);
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.ImageSettings);
+
+        Assert.Empty(camera.GetSupportedProtocols());
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_sets_verified_true_and_saves_when_probe_succeeds()
     {
         var camera = MakeCamera();
@@ -289,6 +321,9 @@ public class ProbeCameraCapabilityUseCasePtzSupportedTests
     public async Task ExecuteAsync_does_not_update_camera_when_ptz_already_supported()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = true };
+        // Already proven too, otherwise the probe would legitimately write it (see
+        // A_protocol_that_passes_its_probe_is_recorded_as_supported).
+        camera.AddSupportedProtocol(SupportedProtocol.Onvif);
         var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
