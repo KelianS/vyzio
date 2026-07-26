@@ -55,5 +55,9 @@ coverage/
 *.coveragexml
 config/frigate.generated.yml
 
+# Tests
+**/test-results/
+**/playwright-report/
+
 # AI
 .claude/**

@@ -60,7 +60,7 @@ C'est ce contraste qui permet a l'utilisateur de distinguer d'un coup d'oeil une
 
 Quatre primitives partagees couvrent la quasi-totalite des besoins. **Toujours les reutiliser** plutot que recreer un `<button>` ou un `<select>` avec des classes ad hoc.
 
-### 1. Bouton — `<Btn>` (`src/ui/components/Btn.tsx`)
+### 1. Bouton — `<Btn>` (`src/common/components/Btn.tsx`)
 
 Composant unique pour toutes les actions inline. Etend `ButtonHTMLAttributes` (donc `onClick`, `disabled`, `title`, `type`, `style`… passent directement).
 
@@ -118,7 +118,7 @@ Regles :
 - Reserver le point + pilule aux **etats** (on/off/sante). Les **libelles descriptifs** (protocole « ONVIF », qualification « Confirme », « Oui/Non ») restent des badges plats sans point (`.camera-support-badge`, `.camera-qualification-badge`, `.camera-rtsp-badge`).
 - Semantique couleur : vert = sain (`online`/`on`), ambre = attention (`warning`/`loading`), rouge = degrade (`degraded`).
 
-### 3. Modale de validation — `<ConfirmModal>` (`src/ui/components/ConfirmModal.tsx`)
+### 3. Modale de validation — `<ConfirmModal>` (`src/common/components/ConfirmModal.tsx`)
 
 A utiliser pour **toute action destructrice ou difficilement reversible** (suppression, desactivation, application en masse). Gere deja le focus trap, `Escape`, `Tab` et l'etat de chargement d'un `onConfirm` asynchrone.
 
@@ -152,7 +152,7 @@ Regles :
 - Le bouton d'annulation est toujours `ghost` ; il ne doit jamais attirer l'oeil autant que la confirmation.
 - Le `onConfirm` peut etre `async` : la modale gere seule l'etat « Traitement… ».
 
-### 4. Selection — `<Select>` (`src/ui/components/Select.tsx`)
+### 4. Selection — `<Select>` (`src/common/components/Select.tsx`)
 
 Wrapper fin sur `<select>` natif : etend `SelectHTMLAttributes` (donc `value`, `onChange`, `disabled`… passent directement), applique juste le style commun.
 

@@ -58,7 +58,13 @@ tasks:
     desc: Lance les tests frontend (vitest)
     dir: '{{.DASHBOARD_DIR}}'
     cmds:
-      - pnpm test
+      - pnpm test {{.CLI_ARGS}}
+
+  front:test:e2e:
+    desc: Lance les tests e2e frontend (Playwright, build de prod)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm test:e2e
 
   front:lint:
     desc: Lint le frontend (eslint)
@@ -84,7 +90,7 @@ tasks:
     desc: Lance les tests backend (dotnet test sur Vyzio.slnx)
     dir: '{{.BACKEND_DIR}}'
     cmds:
-      - dotnet test {{.BACKEND_SLN}}
+      - dotnet test {{.BACKEND_SLN}} {{.CLI_ARGS}}
 
   back:build:
     desc: Build le backend (dotnet build sur Vyzio.slnx)
