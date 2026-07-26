@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router'
 import './App.css'
 import { AppHeader } from './common/components/AppHeader'
 import { ToastProvider } from './common/components/Toast'

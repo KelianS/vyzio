@@ -37,7 +37,7 @@ common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), 
 - Le wiring (instanciation repos + use cases) vit **uniquement** dans `infrastructure/providers/`
   (un `*.container.ts` par écran, assemblés dans `app.container.ts`, exposés via
   `AppContainerContext` / `useAppContainer()`).
-- **Navigation** : `react-router-dom` (`BrowserRouter`/`Routes`, lazy par écran dans `App.tsx`).
+- **Navigation** : `react-router` (`BrowserRouter`/`Routes`, lazy par écran dans `App.tsx`).
 - **État partagé entre écrans** (`cameras`, `systemStats`) : zustand (`infrastructure/store/rootStore.ts`),
   jamais dupliqué en état local par écran.
 
