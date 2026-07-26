@@ -69,9 +69,16 @@ arrêterait silencieusement la reconnaissance faciale, qui est une promesse prod
 **Options 1 et 4.**
 
 `CameraStream` devient le foyer unique des points d'accès vidéo d'une caméra : une ligne par flux, avec
-sa qualité, son chemin et ses caractéristiques relevées (résolution, débit). `Camera.StreamPath`
-disparaît — le chemin du flux principal est une ligne de cette table comme les autres. La frontière API
-continue d'exposer `streamPath` pour le flux principal, afin que l'onboarding reste inchangé.
+son **rang**, son chemin et ses caractéristiques relevées (résolution, débit). `Camera.StreamPath`
+disparaît — le chemin du flux de rang 0 est une ligne de cette table comme les autres. La frontière API
+continue d'exposer `streamPath` pour ce flux, afin que l'onboarding reste inchangé.
+
+**Les flux sont rangés, pas étiquetés.** Le rang 0 est le plus défini ; chaque rang suivant est plus
+léger. Un palier nommé (« principal » / « secondaire ») aurait été une invention de Vyzio par-dessus
+un tri par nombre de pixels, et surtout un modèle à deux valeurs : une caméra exposant trois flux en
+aurait silencieusement perdu un. L'interface n'affiche donc pas de palier mais **la donnée réelle** —
+résolution et débit relevés sur la caméra. Le rang ne remonte en surface que lorsque le protocole
+liste ses flux sans les mesurer (DVRIP), et sert alors de repli assumé.
 
 L'énumération s'appuie sur ONVIF `GetProfiles` + `GetStreamUri`, déjà parlé par
 [`OnvifClient`](../../src/vyzio/Vyzio.Infrastructure/VendorAdapters/OnvifClient.cs). **Le `SourceToken`
@@ -89,9 +96,9 @@ avant proposition (SPECS §2.3).
 Le flux de détection est **choisi par l'utilisateur**, par caméra, parmi les flux énumérés — présentés
 avec leur résolution et une explication de ce que le choix change.
 
-**Le sous-flux est le défaut quand il existe.** Frigate redimensionne de toute façon l'image de
-détection à sa propre taille (1280×720 par défaut) : analyser un flux 3 MP ou 4K paie un décodage
-lourd pour une image aussitôt réduite. Le défaut suit donc l'usage attendu — surveiller — et non le cas
+**Le flux le plus léger est le défaut quand il en existe plusieurs.** Frigate redimensionne de toute
+façon l'image de détection à sa propre taille (1280×720 par défaut) : analyser un flux 3 MP ou 4K paie
+un décodage lourd pour une image aussitôt réduite. Le défaut suit donc l'usage attendu — surveiller — et non le cas
 particulier de la reconnaissance faciale à distance, qui reste accessible en un clic et dont le coût
 est explicité dans l'interface. Le flux principal reste le repli lorsqu'aucun sous-flux n'existe.
 

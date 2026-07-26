@@ -10,12 +10,16 @@ image allégée, bien plus légère à traiter. Vyzio les détecte tout seul qua
 Le bloc **Image analysée** vous laisse choisir laquelle Vyzio analyse. C'est un arbitrage réel, et
 c'est pour ça qu'il vous revient plutôt que d'être décidé dans votre dos.
 
+Chaque image est présentée par sa **résolution réelle** et son débit, tels que la caméra les annonce —
+par exemple `2304 × 1296 · 12 img/s` et `640 × 360 · 12 img/s`. La plus détaillée et la plus légère
+sont signalées comme telles.
+
 | Choix | Ce que vous y gagnez | Ce que vous y perdez |
 | --- | --- | --- |
-| **Image allégée** (par défaut) | Le boîtier Vyzio est beaucoup moins occupé, et supporte davantage de caméras | Les visages éloignés risquent de ne plus être reconnus, et les images d'alerte sont moins nettes |
-| **Image détaillée** | Les visages sont mieux reconnus, les images d'alerte sont nettes | Cette caméra occupe davantage le boîtier |
+| **La plus légère** (par défaut) | Le boîtier Vyzio est beaucoup moins occupé, et supporte davantage de caméras | Les visages éloignés risquent de ne plus être reconnus, et les images d'alerte sont moins nettes |
+| **La plus détaillée** | Les visages sont mieux reconnus, les images d'alerte sont nettes | Cette caméra occupe davantage le boîtier |
 
-L'image allégée est le réglage par défaut parce que Vyzio réduit de toute façon l'image avant de
+L'image la plus légère est le réglage par défaut parce que Vyzio réduit de toute façon l'image avant de
 l'analyser : lui donner une image très détaillée coûte des ressources sans rien apporter à la détection.
 
 ## Ce que le choix ne change jamais
@@ -26,11 +30,12 @@ scène analysée en image allégée reste enregistrée en pleine qualité — vo
 ## Comment choisir
 
 - **Une caméra de surveillance large** (jardin, garage, allée), où vous voulez seulement savoir que
-  quelqu'un est passé : gardez l'image allégée. C'est le réglage par défaut, vous n'avez rien à faire.
-- **Une caméra où vous voulez reconnaître les gens** (entrée, couloir, salon) : passez-la en image
-  détaillée, surtout si les visages y apparaissent à plusieurs mètres.
-- **Vyzio est lent, les caméras saccadent** : vérifiez qu'aucune caméra n'est restée en image
-  détaillée. Voyez aussi la [sensibilité de détection](DETECTION_SENSITIVITY.md), qui pèse encore
+  quelqu'un est passé : gardez l'image la plus légère. C'est le réglage par défaut, vous n'avez rien
+  à faire.
+- **Une caméra où vous voulez reconnaître les gens** (entrée, couloir, salon) : choisissez l'image la
+  plus détaillée, surtout si les visages y apparaissent à plusieurs mètres.
+- **Vyzio est lent, les caméras saccadent** : vérifiez qu'aucune caméra n'est restée sur son image la
+  plus détaillée. Voyez aussi la [sensibilité de détection](DETECTION_SENSITIVITY.md), qui pèse encore
   plus lourd.
 
 **Le changement prend effet au redémarrage du moteur de détection**, pas immédiatement : appliquez la
@@ -47,6 +52,7 @@ causes possibles :
 
 ## Si une résolution n'est pas affichée
 
-Certaines caméras acceptent de lister leurs images sans en donner les dimensions exactes. Vyzio
-préfère alors ne rien afficher plutôt qu'un chiffre approximatif : le choix reste possible, seule
-l'indication de taille manque.
+Certaines caméras listent leurs images sans en donner les dimensions exactes — elles annoncent des
+libellés commerciaux qui ne correspondent pas à ce qu'elles diffusent réellement. Vyzio préfère alors
+afficher « Flux principal » / « Flux secondaire » plutôt qu'un chiffre faux. Le choix reste possible,
+seule l'indication de taille manque.
