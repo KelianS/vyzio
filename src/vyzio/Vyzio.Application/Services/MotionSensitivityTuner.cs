@@ -2,18 +2,21 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.Services;
 
-// Decision half of the motion sensitivity loop (ADR-35), kept free of I/O so the stepping rules —
-// hysteresis, confirmation over consecutive samples, rate limiting — are testable without a
-// Frigate, a broker or a clock.
+// Decision half of the motion sensitivity loop (ADR-35), kept free of I/O so the rules are testable
+// without a Frigate, a broker or a clock.
 //
-// Holds per-camera counters in memory on purpose: losing them on restart only costs a few samples
-// of re-observation, which is not worth a database round-trip on every tick.
+// Decisions are taken on an aggregate over a long window, never on a single reading: the
+// instantaneous ratio swings by an order of magnitude between a quiet night and a busy afternoon on
+// the very same camera, so steering on it directly would re-level every camera daily.
+//
+// Holds the sample window in memory on purpose. Losing it on restart costs a warm-up period, which
+// is cheap next to writing a row every five minutes per camera.
 public sealed class MotionSensitivityTuner(MotionTuningOptions options)
 {
     private readonly Dictionary<string, CameraState> _states = new(StringComparer.Ordinal);
 
-    // Returns the level to move to, or null to stay put. `ratio` is inferences per frame.
-    public MotionSensitivity? Evaluate(string cameraId, MotionSensitivity current, double ratio, DateTimeOffset now)
+    // `ratio` is inferences per frame for this sample.
+    public MotionTuningDecision Evaluate(string cameraId, MotionSensitivity current, double ratio, DateTimeOffset now)
     {
         if (!_states.TryGetValue(cameraId, out var state))
         {
@@ -21,47 +24,52 @@ public sealed class MotionSensitivityTuner(MotionTuningOptions options)
             _states[cameraId] = state;
         }
 
-        var direction = Direction(ratio);
+        state.Samples.Add(new Sample(now, ratio));
+        state.Samples.RemoveAll(s => now - s.At > options.AggregationWindow);
 
-        // Any sample that lands inside the hysteresis band, or that reverses the pending direction,
-        // resets the count — only a sustained trend in one direction may step the level.
-        if (direction == StepDirection.None || direction != state.PendingDirection)
-        {
-            state.PendingDirection = direction;
-            state.ConsecutiveSamples = direction == StepDirection.None ? 0 : 1;
-            return null;
-        }
+        var coverage = state.Samples.Count > 0 ? now - state.Samples[0].At : TimeSpan.Zero;
+        if (coverage < options.MinimumWindowCoverage)
+            return new MotionTuningDecision(MotionTuningOutcome.Warmup, state.Samples.Count, null, null);
 
-        state.ConsecutiveSamples++;
-        if (state.ConsecutiveSamples < options.ConsecutiveSamplesToStep)
-            return null;
+        var aggregate = Percentile(state.Samples, options.AggregationPercentile);
+
+        var direction = Direction(aggregate);
+        if (direction == StepDirection.None)
+            return new MotionTuningDecision(MotionTuningOutcome.Settled, state.Samples.Count, aggregate, null);
 
         var next = Step(current, direction);
         if (next is null)
-        {
-            // Already at the bound in that direction: stop counting rather than accumulate forever.
-            state.ConsecutiveSamples = 0;
-            return null;
-        }
+            return new MotionTuningDecision(MotionTuningOutcome.AtBound, state.Samples.Count, aggregate, null);
 
         if (state.LastStepAt is { } last && now - last < options.MinIntervalBetweenSteps)
-            return null;
+            return new MotionTuningDecision(MotionTuningOutcome.RateLimited, state.Samples.Count, aggregate, null);
 
         state.LastStepAt = now;
-        state.ConsecutiveSamples = 0;
-        state.PendingDirection = StepDirection.None;
-        return next;
+        // The level just changed, so every sample in the window was measured under the old one.
+        // Keeping them would push the camera straight through the next level too.
+        state.Samples.Clear();
+
+        return new MotionTuningDecision(MotionTuningOutcome.Stepped, 0, aggregate, next);
     }
 
-    // Forgets a camera's accumulated state — used when it is pinned, disabled or removed, so a
-    // later re-enable starts from a clean slate rather than an aged count.
+    // Forgets a camera's window — used when it is pinned, disabled or removed, so a later re-enable
+    // characterises the scene afresh rather than from stale history.
     public void Forget(string cameraId) => _states.Remove(cameraId);
 
-    private StepDirection Direction(double ratio)
+    private StepDirection Direction(double aggregate)
     {
-        if (ratio > options.RatioDesensitizeAbove) return StepDirection.Desensitize;
-        if (ratio < options.RatioSensitizeBelow) return StepDirection.Sensitize;
+        if (aggregate > options.RatioDesensitizeAbove) return StepDirection.Desensitize;
+        if (aggregate < options.RatioSensitizeBelow) return StepDirection.Sensitize;
         return StepDirection.None;
+    }
+
+    // Nearest-rank percentile. The sample count is small (a few hundred at most) so sorting a copy
+    // per pass is cheaper than maintaining an incremental structure.
+    private static double Percentile(List<Sample> samples, double percentile)
+    {
+        var sorted = samples.Select(s => s.Ratio).Order().ToList();
+        var rank = (int)Math.Ceiling(percentile * sorted.Count) - 1;
+        return sorted[Math.Clamp(rank, 0, sorted.Count - 1)];
     }
 
     // One level at a time, never past the bounds. Low is a hard floor: the loop chases load, never
@@ -83,10 +91,11 @@ public sealed class MotionSensitivityTuner(MotionTuningOptions options)
         Sensitize,
     }
 
+    private readonly record struct Sample(DateTimeOffset At, double Ratio);
+
     private sealed class CameraState
     {
-        public StepDirection PendingDirection { get; set; } = StepDirection.None;
-        public int ConsecutiveSamples { get; set; }
+        public List<Sample> Samples { get; } = [];
         public DateTimeOffset? LastStepAt { get; set; }
     }
 }

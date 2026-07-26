@@ -5,121 +5,187 @@ namespace Vyzio.Tests.Services;
 
 public class MotionSensitivityTunerTests
 {
-    private static readonly DateTimeOffset T0 = new(2026, 7, 26, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset T0 = new(2026, 7, 26, 0, 0, 0, TimeSpan.Zero);
+    private static readonly TimeSpan SampleInterval = TimeSpan.FromMinutes(5);
 
-    private static MotionTuningOptions Options(int consecutive = 3, double minutesBetweenSteps = 60) => new()
-    {
-        RatioDesensitizeAbove = 3.0,
-        RatioSensitizeBelow = 1.5,
-        ConsecutiveSamplesToStep = consecutive,
-        MinIntervalBetweenSteps = TimeSpan.FromMinutes(minutesBetweenSteps),
-    };
+    private static MotionTuningOptions Options(
+        double percentile = 0.75,
+        double coverageHours = 12,
+        double minStepIntervalHours = 1) => new()
+        {
+            SampleInterval = SampleInterval,
+            AggregationWindow = TimeSpan.FromHours(24),
+            MinimumWindowCoverage = TimeSpan.FromHours(coverageHours),
+            AggregationPercentile = percentile,
+            RatioDesensitizeAbove = 3.0,
+            RatioSensitizeBelow = 1.5,
+            MinIntervalBetweenSteps = TimeSpan.FromHours(minStepIntervalHours),
+        };
 
-    // Feeds `count` samples at the same ratio and returns the last decision.
-    private static MotionSensitivity? Feed(
+    // Feeds samples at SampleInterval apart, returning the last decision and the clock reached.
+    private static (MotionTuningDecision Decision, DateTimeOffset Now) Feed(
         MotionSensitivityTuner tuner,
         MotionSensitivity current,
-        double ratio,
-        int count,
-        DateTimeOffset? at = null)
+        IEnumerable<double> ratios,
+        DateTimeOffset start,
+        string cameraId = "cam-1")
     {
-        MotionSensitivity? last = null;
-        for (var i = 0; i < count; i++)
-            last = tuner.Evaluate("cam-1", current, ratio, at ?? T0);
-        return last;
+        MotionTuningDecision? last = null;
+        var now = start;
+        foreach (var ratio in ratios)
+        {
+            last = tuner.Evaluate(cameraId, current, ratio, now);
+            now += SampleInterval;
+        }
+        return (last!, now - SampleInterval);
     }
 
+    // Alternates busy and quiet readings, which is what a real day/night cycle looks like.
+    private static IEnumerable<double> DayNight(double busy, double quiet, int count) =>
+        Enumerable.Range(0, count).Select(i => i % 2 == 0 ? busy : quiet);
+
+    private static IEnumerable<double> Flat(double ratio, int count) => Enumerable.Repeat(ratio, count);
+
+    // 12 h of coverage at one sample per 5 min.
+    private const int SamplesForCoverage = 145;
+
     [Fact]
-    public void Ratio_inside_hysteresis_band_never_steps()
+    public void No_decision_before_the_window_is_covered()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
-        var decision = Feed(tuner, MotionSensitivity.Medium, ratio: 2.0, count: 20);
+        var (decision, _) = Feed(tuner, MotionSensitivity.High, Flat(9.0, 20), T0);
 
-        Assert.Null(decision);
+        Assert.Equal(MotionTuningOutcome.Warmup, decision.Outcome);
+        Assert.Null(decision.NextLevel);
+        Assert.Null(decision.Aggregate);
     }
 
     [Fact]
-    public void Sustained_high_ratio_steps_down_one_level_only_after_enough_samples()
+    public void Quiet_night_does_not_undo_a_busy_day()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3));
+        // The regression this design exists for: sampled instantaneously, this camera would
+        // desensitize by day and re-sensitize by night, forever.
+        var tuner = new MotionSensitivityTuner(Options(percentile: 0.75));
 
-        Assert.Null(Feed(tuner, MotionSensitivity.High, ratio: 6.0, count: 2));
-        Assert.Equal(MotionSensitivity.Medium, tuner.Evaluate("cam-1", MotionSensitivity.High, 6.0, T0));
+        var (decision, _) = Feed(tuner, MotionSensitivity.High, DayNight(6.0, 0.4, SamplesForCoverage), T0);
+
+        Assert.Equal(MotionTuningOutcome.Stepped, decision.Outcome);
+        Assert.Equal(MotionSensitivity.Medium, decision.NextLevel);
     }
 
     [Fact]
-    public void Sustained_low_ratio_steps_back_up()
+    public void Genuinely_quiet_camera_is_left_at_its_level()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3));
+        var tuner = new MotionSensitivityTuner(Options());
 
-        Assert.Equal(MotionSensitivity.Medium, Feed(tuner, MotionSensitivity.Low, ratio: 1.0, count: 3));
+        var (decision, _) = Feed(tuner, MotionSensitivity.Medium, Flat(2.0, SamplesForCoverage), T0);
+
+        Assert.Equal(MotionTuningOutcome.Settled, decision.Outcome);
+        Assert.Null(decision.NextLevel);
     }
 
     [Fact]
-    public void Direction_reversal_resets_the_sample_count()
+    public void Sustained_low_aggregate_steps_back_up()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3));
+        var tuner = new MotionSensitivityTuner(Options());
 
-        Feed(tuner, MotionSensitivity.Medium, ratio: 6.0, count: 2);
-        // One sample the other way wipes the pending desensitize streak...
-        tuner.Evaluate("cam-1", MotionSensitivity.Medium, 1.0, T0);
-        // ...so the next high sample is only the first of a new streak, not the third.
-        Assert.Null(tuner.Evaluate("cam-1", MotionSensitivity.Medium, 6.0, T0));
+        var (decision, _) = Feed(tuner, MotionSensitivity.Low, Flat(0.8, SamplesForCoverage), T0);
+
+        Assert.Equal(MotionSensitivity.Medium, decision.NextLevel);
     }
 
     [Fact]
     public void Low_is_a_hard_floor()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3));
+        var tuner = new MotionSensitivityTuner(Options());
 
-        Assert.Null(Feed(tuner, MotionSensitivity.Low, ratio: 12.0, count: 20));
+        var (decision, _) = Feed(tuner, MotionSensitivity.Low, Flat(12.0, SamplesForCoverage), T0);
+
+        Assert.Equal(MotionTuningOutcome.AtBound, decision.Outcome);
+        Assert.Null(decision.NextLevel);
     }
 
     [Fact]
     public void High_is_a_hard_ceiling()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3));
+        var tuner = new MotionSensitivityTuner(Options());
 
-        Assert.Null(Feed(tuner, MotionSensitivity.High, ratio: 0.5, count: 20));
+        var (decision, _) = Feed(tuner, MotionSensitivity.High, Flat(0.2, SamplesForCoverage), T0);
+
+        Assert.Equal(MotionTuningOutcome.AtBound, decision.Outcome);
     }
 
     [Fact]
-    public void Second_step_is_refused_before_the_minimum_interval_elapses()
+    public void Stepping_restarts_the_window_so_the_next_level_is_earned_afresh()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3, minutesBetweenSteps: 60));
+        var tuner = new MotionSensitivityTuner(Options());
 
-        Assert.Equal(MotionSensitivity.Medium, Feed(tuner, MotionSensitivity.High, 6.0, 3));
+        var (first, now) = Feed(tuner, MotionSensitivity.High, Flat(9.0, SamplesForCoverage), T0);
+        Assert.Equal(MotionSensitivity.Medium, first.NextLevel);
 
-        // Same trend continues and the streak reconfirms, but not enough time has passed to move.
-        Assert.Null(Feed(tuner, MotionSensitivity.Medium, 6.0, 3, T0.AddMinutes(30)));
-
-        // Once the interval has elapsed the already-confirmed streak steps on the very next
-        // sample — the trend does not have to be re-proven from scratch.
-        Assert.Equal(
-            MotionSensitivity.Low,
-            tuner.Evaluate("cam-1", MotionSensitivity.Medium, 6.0, T0.AddMinutes(90)));
+        // Same conditions, but the window was cleared: no second step until it refills.
+        var (second, _) = Feed(tuner, MotionSensitivity.Medium, Flat(9.0, 20), now + SampleInterval);
+        Assert.Equal(MotionTuningOutcome.Warmup, second.Outcome);
     }
 
     [Fact]
-    public void Forget_clears_the_pending_streak()
+    public void Rate_limit_blocks_a_step_that_the_window_would_otherwise_allow()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 3));
+        // Coverage shorter than the step interval, so the window refills while the rate limit
+        // is still in force — otherwise MinimumWindowCoverage alone would hide it.
+        var tuner = new MotionSensitivityTuner(Options(coverageHours: 1, minStepIntervalHours: 6));
 
-        Feed(tuner, MotionSensitivity.High, ratio: 6.0, count: 2);
-        tuner.Forget("cam-1");
+        var samplesForOneHour = 13;
+        var (first, now) = Feed(tuner, MotionSensitivity.High, Flat(9.0, samplesForOneHour), T0);
+        Assert.Equal(MotionSensitivity.Medium, first.NextLevel);
 
-        Assert.Null(tuner.Evaluate("cam-1", MotionSensitivity.High, 6.0, T0));
+        var (second, _) = Feed(tuner, MotionSensitivity.Medium, Flat(9.0, samplesForOneHour), now + SampleInterval);
+        Assert.Equal(MotionTuningOutcome.RateLimited, second.Outcome);
+    }
+
+    [Fact]
+    public void Samples_older_than_the_window_are_dropped()
+    {
+        var tuner = new MotionSensitivityTuner(Options());
+
+        // Starting at Low with busy samples parks the camera on AtBound, so the window is never
+        // cleared by a step and this really exercises ageing rather than the post-step reset.
+        var (parked, now) = Feed(tuner, MotionSensitivity.Low, Flat(9.0, SamplesForCoverage), T0);
+        Assert.Equal(MotionTuningOutcome.AtBound, parked.Outcome);
+
+        // A full window of quiet must age every busy sample out and let the camera come back up.
+        var decisions = new List<MotionTuningDecision>();
+        var clock = now + SampleInterval;
+        for (var i = 0; i < 289; i++)
+        {
+            decisions.Add(tuner.Evaluate("cam-1", MotionSensitivity.Low, 0.5, clock));
+            clock += SampleInterval;
+        }
+
+        Assert.Contains(decisions, d => d.NextLevel == MotionSensitivity.Medium);
     }
 
     [Fact]
     public void Cameras_are_tracked_independently()
     {
-        var tuner = new MotionSensitivityTuner(Options(consecutive: 2));
+        var tuner = new MotionSensitivityTuner(Options());
 
-        tuner.Evaluate("cam-1", MotionSensitivity.High, 6.0, T0);
-        // cam-2's first sample must not inherit cam-1's streak.
-        Assert.Null(tuner.Evaluate("cam-2", MotionSensitivity.High, 6.0, T0));
-        Assert.Equal(MotionSensitivity.Medium, tuner.Evaluate("cam-1", MotionSensitivity.High, 6.0, T0));
+        Feed(tuner, MotionSensitivity.High, Flat(9.0, SamplesForCoverage), T0, cameraId: "cam-1");
+        var (other, _) = Feed(tuner, MotionSensitivity.High, Flat(9.0, 5), T0, cameraId: "cam-2");
+
+        Assert.Equal(MotionTuningOutcome.Warmup, other.Outcome);
+    }
+
+    [Fact]
+    public void Forget_clears_the_window()
+    {
+        var tuner = new MotionSensitivityTuner(Options());
+
+        var (_, now) = Feed(tuner, MotionSensitivity.High, Flat(9.0, SamplesForCoverage - 1), T0);
+        tuner.Forget("cam-1");
+
+        var decision = tuner.Evaluate("cam-1", MotionSensitivity.High, 9.0, now + SampleInterval);
+        Assert.Equal(MotionTuningOutcome.Warmup, decision.Outcome);
     }
 }

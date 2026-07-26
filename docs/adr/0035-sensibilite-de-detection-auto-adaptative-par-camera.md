@@ -41,12 +41,12 @@ Deux contraintes cadrent la solution :
 
 ## Options comparées
 
-1. **Boucle fermée à trois paliers, pilotée par le ratio inférences/image observé.** Vyzio échantillonne
-   périodiquement `detection_fps` et `camera_fps` par caméra (déjà exposés par `/api/stats`, déjà
-   consommés par `IFrigateStatsProvider` pour ADR-33), en dérive le ratio, et déplace la caméra d'un
-   palier de sensibilité quand le ratio sort durablement d'une plage cible. Trois paliers seulement
-   (`contour_area` 10 / 30 / 50), hystérésis et confirmation sur plusieurs échantillons consécutifs
-   pour éviter l'oscillation. Le palier courant est persisté par caméra.
+1. **Boucle fermée à trois paliers, pilotée par un agrégat du ratio inférences/image sur fenêtre
+   longue.** Vyzio échantillonne périodiquement `detection_fps` et `camera_fps` par caméra (déjà
+   exposés par `/api/stats`, déjà consommés par `IFrigateStatsProvider` pour ADR-33), en dérive le
+   ratio, et déplace la caméra d'un palier quand un **percentile haut du ratio sur 24 h** sort d'une
+   plage cible. Trois paliers seulement (`contour_area` 10 / 30 / 50). Le palier courant est
+   persisté par caméra.
 2. **Une question produit à l'onboarding** — « Cette caméra filme-t-elle l'extérieur ? » — mappée sur
    deux paliers. Écarté comme solution principale : le bon palier ne dépend pas de la question
    intérieur/extérieur mais de la scène réelle (un intérieur avec un ventilateur ou un écran de
@@ -56,20 +56,31 @@ Deux contraintes cadrent la solution :
 3. **Masques de mouvement dessinés par l'utilisateur.** Écarté : cf. contrainte produit ci-dessus.
    Reste la meilleure solution pour un utilisateur avancé — accessible via l'UI Frigate en mode
    expert (ADR-11), non exposée dans le Hub.
-4. **Réglage continu de `contour_area`** (n'importe quelle valeur entière, asservie au ratio). Écarté
+4. **Décider sur les échantillons instantanés du ratio**, avec confirmation sur N mesures
+   consécutives et hystérésis. Écarté après mesure terrain : le ratio ne caractérise pas le bruit de
+   la scène mais **l'activité à l'instant t**. Frigate saute l'inférence sur les images sans
+   mouvement, si bien qu'une même caméra a été relevée à 0,4 inférence/image au repos et 6,0 en
+   activité. Une confirmation sur quelques minutes ne protège que des oscillations rapides : la
+   caméra se serait désensibilisée chaque jour et resensibilisée chaque nuit, indéfiniment. D'où
+   l'agrégation sur 24 h de l'option retenue.
+5. **Moyenne sur la fenêtre** plutôt qu'un percentile haut. Écartée : les heures creuses tirent la
+   moyenne vers le bas jusqu'à ce qu'une caméra réellement bruyante cesse de se distinguer d'une
+   caméra calme. Un percentile haut répond à la question utile — « quand cette scène s'agite,
+   à quel point ».
+6. **Réglage continu de `contour_area`** (n'importe quelle valeur entière, asservie au ratio). Écarté
    pour la même raison qu'ADR-34 Option 8 avait écarté l'asservissement continu du FPS : un espace de
    valeurs continu invite l'oscillation et rend le comportement inexplicable. Trois paliers nommés
    sont explicables à l'utilisateur (principe produit #4) et bornent le pire cas.
-5. **Piloter aussi `motion.threshold` et `improve_contrast`.** Écarté en v1 : trois réglages
+7. **Piloter aussi `motion.threshold` et `improve_contrast`.** Écarté en v1 : trois réglages
    interdépendants dans une même boucle rendent la convergence difficile à raisonner et à tester.
    `contour_area` est celui dont la documentation donne des paliers de référence. Les deux autres
    restent des évolutions possibles une fois la boucle éprouvée.
-6. **Baisser `detect.width/height` pour réduire les régions.** Écarté : sans effet sur le nombre
+8. **Baisser `detect.width/height` pour réduire les régions.** Écarté : sans effet sur le nombre
    d'inférences. `motion.frame_height` vaut 100 par défaut, donc l'analyse de mouvement tourne déjà sur
    une image réduite et le nombre de contours est quasi indépendant de la résolution de détection.
    Baisser `detect` reste utile pour d'autres postes (redimensionnement, `/dev/shm`), hors périmètre
    de cet ADR.
-7. **Ajouter une seconde instance de détecteur** (recommandation communautaire quand `skipped_fps > 0`).
+9. **Ajouter une seconde instance de détecteur** (recommandation communautaire quand `skipped_fps > 0`).
    Écarté : cela ne vaut qu'avec du matériel inexploité. Le détecteur est déjà CPU-bound sur 3 threads ;
    une seconde instance aggraverait la consommation au lieu de la réduire.
 
@@ -94,11 +105,22 @@ générée doit rester le reflet fidèle de l'état voulu.
   l'infrastructure, au même titre que les autres traductions vers le vocabulaire Frigate (règle des
   comparaisons type-safe, `src/vyzio/CLAUDE.md`). Le sens est inversé entre les deux échelles —
   sensibilité haute = `contour_area` bas — ce que l'enum a précisément pour rôle de masquer.
-- La boucle ne se déplace **que d'un palier à la fois**, et jamais au-delà des bornes. Elle exige un
-  nombre d'échantillons consécutifs hors plage avant d'agir, et la plage de retour est distincte de la
-  plage de sortie (hystérésis). Ces paramètres — période d'échantillonnage, plage cible, nombre
-  d'échantillons, intervalle minimal entre deux changements — vivent dans `VyzioRuntimeSettings`, pas
-  en dur, pour être ajustables sans redéploiement et testables.
+- La boucle ne se déplace **que d'un palier à la fois**, et jamais au-delà des bornes. Elle n'agit
+  qu'une fois la fenêtre d'agrégation couverte sur une durée minimale, et la plage de retour est
+  distincte de la plage de sortie (hystérésis). Ces paramètres — période d'échantillonnage, fenêtre,
+  couverture minimale, percentile, plage cible, intervalle minimal entre deux changements — vivent
+  dans `MotionTuningOptions`, pas en dur, pour être ajustables sans redéploiement et testables.
+- **Un pas vide la fenêtre.** Tous les échantillons accumulés l'ont été sous l'ancien palier ; les
+  conserver ferait traverser le palier suivant dans la foulée. Le prix est qu'un second pas demande
+  de re-couvrir la fenêtre — convergence lente, mais monotone.
+- Conséquence assumée de l'agrégation longue : **la boucle est inerte pendant sa période de chauffe**
+  (couverture minimale, 12 h par défaut), y compris après chaque redémarrage de l'API puisque la
+  fenêtre vit en mémoire. Persister les échantillons a été jugé disproportionné face à une écriture
+  toutes les cinq minutes par caméra.
+- Le résultat de chaque évaluation est un `MotionTuningDecision` explicite (`Warmup`, `Settled`,
+  `AtBound`, `RateLimited`, `Stepped`) plutôt qu'un simple palier nullable : la même raison doit
+  pouvoir alimenter les logs d'exploitation et, plus tard, la formulation produit affichée à
+  l'utilisateur — sans qu'aucune des deux ne la ré-invente.
 - **Garde-fou explicite : la boucle ne poursuit qu'un objectif de charge, jamais un objectif de
   qualité de détection.** Désensibiliser réduit le CPU mais peut faire manquer un objet lointain ou
   peu contrasté. Le palier `Low` est donc une borne dure, et la caméra n'est jamais désensibilisée

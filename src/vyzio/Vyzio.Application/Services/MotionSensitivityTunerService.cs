@@ -26,6 +26,12 @@ internal sealed class MotionSensitivityTunerService(
             return;
         }
 
+        logger.LogInformation(
+            "Motion sensitivity auto-tuning started: sampling every {Interval}, deciding on the P{Percentile:P0} "
+                + "of a {Window} window once it covers {Coverage}.",
+            options.SampleInterval, options.AggregationPercentile, options.AggregationWindow,
+            options.MinimumWindowCoverage);
+
         await Task.Delay(StartupDelay, ct);
 
         while (!ct.IsCancellationRequested)
@@ -56,6 +62,7 @@ internal sealed class MotionSensitivityTunerService(
         if (stats is null)
         {
             // Frigate down or restarting — never step a level on absent data.
+            logger.LogDebug("Motion tuning pass skipped: Frigate statistics unavailable.");
             return;
         }
 
@@ -83,23 +90,34 @@ internal sealed class MotionSensitivityTunerService(
             }
 
             if (!byName.TryGetValue(frigateName, out var fps) || fps.Fps <= 0)
+            {
+                // Camera asleep, offline or not yet serving frames — nothing to characterise.
+                logger.LogDebug("Motion tuning skipped for {Camera}: no frames being served.", frigateName);
                 continue;
+            }
 
             var ratio = fps.DetectionFps / fps.Fps;
-            var next = tuner.Evaluate(camera.Id, camera.MotionSensitivity, ratio, now);
-            if (next is null) continue;
+            var decision = tuner.Evaluate(camera.Id, camera.MotionSensitivity, ratio, now);
 
-            if (!await publisher.TryPublishSensitivityAsync(frigateName, next.Value, ct))
+            logger.LogDebug(
+                "Motion tuning {Camera}: sample {Ratio:F2} inferences/frame, level {Level}, "
+                    + "{Samples} samples, aggregate {Aggregate}, outcome {Outcome}.",
+                frigateName, ratio, camera.MotionSensitivity, decision.SampleCount,
+                decision.Aggregate?.ToString("F2") ?? "n/a", decision.Outcome);
+
+            if (decision.NextLevel is not { } next) continue;
+
+            if (!await publisher.TryPublishSensitivityAsync(frigateName, next, ct))
             {
                 // Not applied, so not persisted — the loop will re-observe and try again.
                 continue;
             }
 
             logger.LogInformation(
-                "Camera {CameraId} motion sensitivity {Old} → {New} ({Ratio:F1} inferences/frame).",
-                camera.Id, camera.MotionSensitivity, next.Value, ratio);
+                "Camera {Camera} motion sensitivity {Old} → {New} (aggregate {Aggregate:F2} inferences/frame).",
+                frigateName, camera.MotionSensitivity, next, decision.Aggregate);
 
-            camera.MotionSensitivity = next.Value;
+            camera.MotionSensitivity = next;
             camera.UpdatedAt = now;
             await cameras.UpdateAsync(camera, ct);
         }
