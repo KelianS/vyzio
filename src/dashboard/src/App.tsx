@@ -1,9 +1,10 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
 import './App.css'
 import { AppHeader } from './common/components/AppHeader'
 import { ToastProvider } from './common/components/Toast'
 import { useSystemStatsPolling } from './infrastructure/store/useSystemStatsPolling'
+import { useRootStore } from './infrastructure/store/rootStore'
 import {
   AppContainerProvider,
   useAppContainer,
@@ -22,6 +23,35 @@ const SettingsView = lazy(() =>
 )
 const CamerasView = lazy(() =>
   import('./presentation/Cameras/Cameras.Component').then((m) => ({ default: m.CamerasView })),
+)
+const CameraListPage = lazy(() =>
+  import('./presentation/Cameras/CameraListPage').then((m) => ({ default: m.CameraListPage })),
+)
+const CameraShell = lazy(() =>
+  import('./presentation/Cameras/CameraShell').then((m) => ({ default: m.CameraShell })),
+)
+const CameraDetectionPage = lazy(() =>
+  import('./presentation/Cameras/CameraDetectionPage').then((m) => ({
+    default: m.CameraDetectionPage,
+  })),
+)
+const CameraConservationPage = lazy(() =>
+  import('./presentation/Cameras/CameraConservationPage').then((m) => ({
+    default: m.CameraConservationPage,
+  })),
+)
+const CameraPrivacyPage = lazy(() =>
+  import('./presentation/Cameras/CameraLegacyPages').then((m) => ({
+    default: m.CameraPrivacyPage,
+  })),
+)
+const CameraImagePage = lazy(() =>
+  import('./presentation/Cameras/CameraLegacyPages').then((m) => ({ default: m.CameraImagePage })),
+)
+const CameraConnectionPage = lazy(() =>
+  import('./presentation/Cameras/CameraLegacyPages').then((m) => ({
+    default: m.CameraConnectionPage,
+  })),
 )
 const ProfilesView = lazy(() =>
   import('./presentation/Profiles/Profiles.Component').then((m) => ({ default: m.ProfilesView })),
@@ -42,8 +72,15 @@ const ExpertView = lazy(() =>
 )
 
 function AppShell() {
-  const { hub } = useAppContainer()
+  const { hub, cameras } = useAppContainer()
   useSystemStatsPolling(hub.getSystemStats)
+
+  // Le catalogue de cameras est un etat partage entre ecrans : il se charge donc
+  // ici, et non dans l'ecran qui se trouvait en avoir besoin le premier. Sans
+  // cela, ouvrir directement la liste des cameras la montrerait vide.
+  useEffect(() => {
+    void useRootStore.getState().loadCameras(cameras.getCameras)
+  }, [cameras.getCameras])
 
   return (
     <div className="layout-root">
@@ -82,7 +119,20 @@ const router = createBrowserRouter([
         path: '/settings',
         element: <SettingsView />,
         children: [
-          { path: 'cameras', element: <CamerasView /> },
+          { path: 'cameras', element: <CameraListPage /> },
+          { path: 'cameras/ajout', element: <CamerasView /> },
+          {
+            path: 'cameras/:cameraId',
+            element: <CameraShell />,
+            children: [
+              { index: true, element: <Navigate to="detection" replace /> },
+              { path: 'detection', element: <CameraDetectionPage /> },
+              { path: 'conservation', element: <CameraConservationPage /> },
+              { path: 'vie-privee', element: <CameraPrivacyPage /> },
+              { path: 'image', element: <CameraImagePage /> },
+              { path: 'connexion', element: <CameraConnectionPage /> },
+            ],
+          },
           { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
           { path: 'detection/personnes', element: <ProfilesView /> },
           { path: 'conservation', element: <ConservationPage /> },

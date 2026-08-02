@@ -37,7 +37,9 @@ test.describe('Navigation', () => {
     await mainNav.getByRole('link', { name: 'Réglages', exact: true }).click()
 
     await rubrics.getByRole('link', { name: /Caméras/ }).click()
-    await expect(page.getByRole('heading', { name: 'Decouverte guidee' })).toBeVisible()
+    // La rubrique s'ouvre sur la **liste** ; ajouter une camera est une tache
+    // distincte, avec sa propre page.
+    await expect(page.getByRole('heading', { name: 'Caméras' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Détection/ }).click()
     await expect(page.getByRole('heading', { name: 'Gestion des personnes connues' })).toBeVisible()

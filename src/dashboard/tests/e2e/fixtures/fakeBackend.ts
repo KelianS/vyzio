@@ -102,6 +102,15 @@ export interface FakeBackendState {
     hasClip: boolean
     hasSnapshot: boolean
   }[]
+  detectionConfig: {
+    labels: string[]
+    motionSensitivity: 'high' | 'medium' | 'low'
+    motionSensitivityPinned: boolean
+    detectStreamId: string | null
+    continuousDaysOverride: number | null
+    motionDaysOverride: number | null
+    eventClipDaysOverride: number | null
+  }
   recordingSettings: {
     continuous: { days: number; default: number }
     motion: { days: number; default: number }
@@ -125,6 +134,15 @@ export function createFakeBackendState(
     profiles: [],
     notificationChannels: {},
     detectionHistory: [],
+    detectionConfig: {
+      labels: ['person'],
+      motionSensitivity: 'medium',
+      motionSensitivityPinned: false,
+      detectStreamId: 'sub',
+      continuousDaysOverride: null,
+      motionDaysOverride: null,
+      eventClipDaysOverride: null,
+    },
     // Valeurs livrees par Vyzio (ADR-39).
     recordingSettings: {
       continuous: { days: 0, default: 0 },
@@ -319,8 +337,42 @@ export async function installFakeBackend(
       if (rest === '/privacy/schedules' && method === 'GET') {
         return json(route, [])
       }
-      if (rest === '/detection-config' && method === 'GET') {
-        return json(route, null)
+      if (rest === '/detection-config') {
+        if (method === 'PUT') {
+          const body = route.request().postDataJSON() as Record<string, unknown>
+          state.detectionConfig = { ...state.detectionConfig, ...body }
+        }
+        const config = state.detectionConfig
+        return json(route, {
+          cameraId,
+          labels: config.labels,
+          availableLabels: ['person', 'car'],
+          retention: {
+            continuous: {
+              override: config.continuousDaysOverride,
+              installation: state.recordingSettings.continuous.days,
+              effective: config.continuousDaysOverride ?? state.recordingSettings.continuous.days,
+            },
+            motion: {
+              override: config.motionDaysOverride,
+              installation: state.recordingSettings.motion.days,
+              effective: config.motionDaysOverride ?? state.recordingSettings.motion.days,
+            },
+            eventClip: {
+              override: config.eventClipDaysOverride,
+              installation: state.recordingSettings.eventClip.days,
+              effective: config.eventClipDaysOverride ?? state.recordingSettings.eventClip.days,
+            },
+            maxDays: state.recordingSettings.maxDays,
+          },
+          motionSensitivity: config.motionSensitivity,
+          motionSensitivityPinned: config.motionSensitivityPinned,
+          streams: [
+            { id: 'main', ordinal: 0, width: 1920, height: 1080, fps: 15 },
+            { id: 'sub', ordinal: 1, width: 640, height: 360, fps: 10 },
+          ],
+          detectStreamId: config.detectStreamId,
+        })
       }
       if (rest === '/image-settings' && method === 'GET') {
         return json(route, {
