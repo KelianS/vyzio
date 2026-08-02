@@ -1,7 +1,17 @@
 import { Btn } from '../../common/components/Btn'
 import { Select } from '../../common/components/Select'
-import type { CameraStream, MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  CameraStream,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+import { RetentionField } from '../../common/components/RetentionField'
+import {
+  CONTINUOUS_DISK_WARNING,
+  RETENTION_ORDER,
+  type RetentionWindow,
+} from '../../common/recording/retention'
 
 // Product wording only — the underlying Frigate setting is never named (principe produit #2).
 const SENSITIVITY_LABEL: Record<MotionSensitivity, string> = {
@@ -60,7 +70,7 @@ interface DetectionConfigSectionProps {
   availableLabels: string[]
   allLabels: DetectionLabel[]
   loading: boolean
-  continuousRecordingEnabled: boolean
+  retention: CameraRetention
   motionSensitivity: MotionSensitivity
   motionSensitivityPinned: boolean
   streams: CameraStream[]
@@ -68,7 +78,7 @@ interface DetectionConfigSectionProps {
   pendingChanges: boolean
   applyLoading: boolean
   onToggle: (value: string) => void
-  onToggleContinuousRecording: () => void
+  onChangeRetention: (window: RetentionWindow, days: number | null) => void
   onChangeMotionSensitivity: (value: MotionSensitivity) => void
   onToggleMotionSensitivityPin: () => void
   onChangeDetectStream: (streamId: string | null) => void
@@ -80,7 +90,7 @@ export function DetectionConfigSection({
   availableLabels,
   allLabels,
   loading,
-  continuousRecordingEnabled,
+  retention,
   motionSensitivity,
   motionSensitivityPinned,
   streams,
@@ -88,7 +98,7 @@ export function DetectionConfigSection({
   pendingChanges,
   applyLoading,
   onToggle,
-  onToggleContinuousRecording,
+  onChangeRetention,
   onChangeMotionSensitivity,
   onToggleMotionSensitivityPin,
   onChangeDetectStream,
@@ -204,20 +214,35 @@ export function DetectionConfigSection({
             </div>
 
             <div className="detection-field">
-              <span className="detection-field-label">Enregistrement</span>
-              <label className="detection-check">
-                <input
-                  type="checkbox"
-                  checked={continuousRecordingEnabled}
-                  onChange={onToggleContinuousRecording}
+              <span className="detection-field-label">Ce qui est conservé</span>
+
+              {RETENTION_ORDER.map((window) => (
+                <RetentionField
+                  key={window}
+                  id={`retention-${window}`}
+                  window={window}
+                  days={retention[window].effective}
+                  maxDays={retention.maxDays}
+                  onCommit={(days) => onChangeRetention(window, days)}
+                  fallback={{
+                    // Keyed on the override, not on value equality: a camera that happens to set
+                    // the same number still owns it, and must not follow later general changes.
+                    atFallback: retention[window].override === null,
+                    days: retention[window].installation,
+                    followingLabel: 'Suit les réglages généraux',
+                    revertLabel: 'Revenir aux réglages généraux',
+                    onRevert: () => onChangeRetention(window, null),
+                  }}
                 />
-                Enregistrer en continu
-              </label>
-              {continuousRecordingEnabled && (
-                <p className="detection-field-hint">
-                  L’enregistrement continu consomme environ 1 a 3 Go par jour par camera.
-                </p>
+              ))}
+
+              {retention.continuous.effective > 0 && (
+                <p className="detection-field-hint">{CONTINUOUS_DISK_WARNING}</p>
               )}
+              <p className="detection-field-hint">
+                Mettre 0 signifie que rien n’est conservé de cette nature. Si les trois valent 0,
+                cette caméra n’enregistre plus rien.
+              </p>
             </div>
           </div>
 

@@ -55,7 +55,18 @@ public class Camera
     // JSON array of detected network protocols e.g. ["onvif","v380"]. Populated by probe pipeline.
     public string? SupportedProtocolsJson { get; set; }
 
-    public bool ContinuousRecordingEnabled { get; set; }
+    // Per-camera retention overrides (ADR-39). Null means "follow the installation" — never a
+    // disguised value, which is why these are nullable rather than defaulted. Zero is a real
+    // answer and means "keep nothing of this kind for this camera".
+    //
+    // These replace the former ContinuousRecordingEnabled boolean: a flag next to a duration would
+    // be two sources of truth for one fact. Continuous recording is on exactly when its effective
+    // duration exceeds zero.
+    public int? ContinuousDaysOverride { get; set; }
+
+    public int? MotionDaysOverride { get; set; }
+
+    public int? EventClipDaysOverride { get; set; }
 
     // Motion sensitivity auto-tuning (ADR-35). The level is owned by the tuning loop unless the
     // user pins it, in which case the loop skips this camera entirely.

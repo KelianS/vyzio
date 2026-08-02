@@ -75,6 +75,7 @@ app.MapDetectionEvents();
 app.MapProfiles();
 app.MapNotifications();
 app.MapSystem();
+app.MapSettings();
 
 app.Run();
 

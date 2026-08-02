@@ -16,6 +16,8 @@ import { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraPrivac
 import { GetCameraStatus } from '../../domain/usecases/GetCameraStatus'
 import { GetCameras } from '../../domain/usecases/GetCameras'
 import { GetDetectionLabels } from '../../domain/usecases/GetDetectionLabels'
+import { GetRecordingSettings } from '../../domain/usecases/GetRecordingSettings'
+import { SaveRecordingSettings } from '../../domain/usecases/SaveRecordingSettings'
 import { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
 import { GetVendorAssistance } from '../../domain/usecases/GetVendorAssistance'
 import { ProbeCameraCapability } from '../../domain/usecases/ProbeCameraCapability'
@@ -34,6 +36,7 @@ import { VerifyDraftCamera } from '../../domain/usecases/VerifyDraftCamera'
 import type { CameraRepository } from '../../domain/ports/CameraRepository'
 import type { ProfileRepository } from '../../domain/ports/ProfileRepository'
 import type { DetectionLabelsRepository } from '../../domain/usecases/GetDetectionLabels'
+import type { RecordingSettingsRepository } from '../../domain/ports/RecordingSettingsRepository'
 
 export interface CamerasContainer {
   getCameras: GetCameras
@@ -63,6 +66,8 @@ export interface CamerasContainer {
   getCameraDetectionConfig: GetCameraDetectionConfig
   saveCameraDetectionConfig: SaveCameraDetectionConfig
   getCameraLabels: GetDetectionLabels
+  getRecordingSettings: GetRecordingSettings
+  saveRecordingSettings: SaveRecordingSettings
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   getPtzPresets: GetPtzPresets
@@ -75,6 +80,7 @@ export function makeCamerasContainer(
   cameraRepository: CameraRepository,
   profileRepository: ProfileRepository,
   cameraLabelsRepository: DetectionLabelsRepository,
+  recordingSettingsRepository: RecordingSettingsRepository,
 ): CamerasContainer {
   return {
     getCameras: new GetCameras(cameraRepository),
@@ -104,6 +110,8 @@ export function makeCamerasContainer(
     getCameraDetectionConfig: new GetCameraDetectionConfig(profileRepository),
     saveCameraDetectionConfig: new SaveCameraDetectionConfig(profileRepository),
     getCameraLabels: new GetDetectionLabels(cameraLabelsRepository),
+    getRecordingSettings: new GetRecordingSettings(recordingSettingsRepository),
+    saveRecordingSettings: new SaveRecordingSettings(recordingSettingsRepository),
     ptzStep: new PtzStep(cameraRepository),
     ptzGoToPreset: new PtzGoToPreset(cameraRepository),
     getPtzPresets: new GetPtzPresets(cameraRepository),

@@ -54,7 +54,7 @@ function DegradedPanel({ status }: { status: DegradedStatus }) {
       </p>
       {DEGRADED_SHOW_DIAGNOSE_LINK[status] && (
         <div className="panel-cta-row">
-          <a href="#expert" className="secondary-cta">
+          <a href="expert" className="secondary-cta">
             Diagnostiquer →
           </a>
         </div>
@@ -129,7 +129,7 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
       )}
 
       <div className="panel-cta-row">
-        <a href="#expert" className="secondary-cta">
+        <a href="expert" className="secondary-cta">
           Détails techniques →
         </a>
       </div>

@@ -272,12 +272,13 @@ Vyzio gère uniquement ses propres données (profils, événements enrichis, not
 | `Camera` | Caméra : **une scène**, connexion, statut, privacy mode, protocoles détectés (ADR-38) | ← `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
 | `CameraStream` | Point d'accès vidéo d'une caméra : qualité, chemin, résolution relevée (ADR-38) | → `Camera` |
 | `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
+| `RecordingSettings` | Durées de rétention de l'installation, surchargeables par caméra (ADR-39) | singleton |
 | `DetectionEvent` | Événement enrichi consommé de Frigate (référence `frigate_event_id`) | → `Profile` (optionnel) |
 | `Notification` | Envoi par canal pour un événement | → `DetectionEvent` |
 | `Session` | Refresh token | — |
 
 Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de
-notification…) : voir le dossier des entités. La table `settings` reste une simple paire clé/valeur JSON.
+notification…) : voir le dossier des entités.
 
 **Invariants de données** (contraintes d'architecture, pas de détail de colonne) :
 - Vyzio ne stocke **aucun embedding ni frame** biométrique — uniquement des métadonnées métier et la
@@ -286,6 +287,9 @@ notification…) : voir le dossier des entités. La table `settings` reste une s
 - Une capacité caméra n'est jamais activée sans un test réel réussi (`verified`, ADR-28).
 - Une `Camera` décrit **une seule scène** : ses `CameraStream` en sont des qualités, jamais des angles
   de vue différents. Un boîtier multi-objectifs donne N `Camera` groupées par appareil (ADR-38).
+- Un réglage d'installation se surcharge par caméra via une colonne **nullable** sur `Camera` ; `null`
+  signifie « suivre l'installation » et jamais une valeur déguisée. La résolution `surcharge ?? global`
+  a un point unique dans `Core`, partagé par la génération de configuration et la frontière API (ADR-39).
 
 ---
 

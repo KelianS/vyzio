@@ -58,11 +58,18 @@ public class FrigateConfigApplierTests : IDisposable
             Task.CompletedTask;
     }
 
+    private sealed class StubRecordingSettingsRepository(RecordingSettings settings) : IRecordingSettingsRepository
+    {
+        public Task<RecordingSettings> GetAsync(CancellationToken ct = default) => Task.FromResult(settings);
+        public Task SaveAsync(RecordingSettings toSave, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
     private async Task<string> ApplyAndReadYamlAsync(
         Camera[] cameras,
         FrigateDetectorKind detectorKind = FrigateDetectorKind.Cpu,
         int cpuCoreCount = 4,
-        FrigateHwAccel hwAccel = FrigateHwAccel.None)
+        FrigateHwAccel hwAccel = FrigateHwAccel.None,
+        RecordingSettings? recordingSettings = null)
     {
         var settings = Settings;
         var planner = new FrigateDetectorPlanner(
@@ -73,7 +80,8 @@ public class FrigateConfigApplierTests : IDisposable
             NullLogger<FrigateConfigApplier>.Instance,
             new FrigateRestartTracker(),
             planner,
-            new NoopModelAssetInstaller());
+            new NoopModelAssetInstaller(),
+            new StubRecordingSettingsRepository(recordingSettings ?? RecordingSettings.CreateDefault()));
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
     }
@@ -309,6 +317,82 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.Equal(1, CountOccurrences(yaml, "rtsp://127.0.0.1:8554/garden_1"));
         // The main bridge is still referenced on its own, for the record role.
         Assert.Equal(2, CountOccurrences(yaml, "rtsp://127.0.0.1:8554/garden"));
+    }
+
+    // ── Retention (ADR-39) ──
+
+    // The bug this fixes: only `record.enabled: true` was emitted, so Frigate's own defaults
+    // (continuous.days: 0, motion.days: 0) applied and nothing was ever kept.
+    [Fact]
+    public async Task Installation_retention_is_written_rather_than_left_to_frigate_defaults()
+    {
+        var yaml = await ApplyAndReadYamlAsync(
+            [MakeValidatedCamera("front-door")],
+            recordingSettings: new RecordingSettings { ContinuousDays = 2, MotionDays = 9, EventClipDays = 21 });
+
+        Assert.Contains("continuous:", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("days: 2", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("days: 9", yaml, StringComparison.OrdinalIgnoreCase);
+        // One Vyzio duration drives both of Frigate's event buckets.
+        Assert.Equal(2, CountOccurrences(yaml, "days: 21"));
+        Assert.Contains("alerts:", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("detections:", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_camera_without_overrides_emits_no_record_block_of_its_own()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
+
+        // Only the root section — repeating installation values under the camera would hide where
+        // the value actually comes from.
+        Assert.Equal(1, CountOccurrences(yaml, "continuous:"));
+    }
+
+    [Fact]
+    public async Task A_camera_override_is_emitted_alongside_the_installation_value()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.ContinuousDaysOverride = 3;
+
+        var yaml = await ApplyAndReadYamlAsync(
+            [camera],
+            recordingSettings: new RecordingSettings { ContinuousDays = 0, MotionDays = 7, EventClipDays = 14 });
+
+        Assert.Equal(2, CountOccurrences(yaml, "continuous:"));
+        Assert.Contains("days: 3", yaml, StringComparison.OrdinalIgnoreCase);
+        // Only the overridden window is repeated: the motion window the camera did not override
+        // appears once, at the root, so the camera still follows the installation on it.
+        Assert.Equal(1, CountOccurrences(yaml, "days: 7"));
+    }
+
+    // Previously impossible to express: `record.enabled: true` was global and no camera overrode it,
+    // so a camera the user did not want recorded was recorded anyway.
+    [Fact]
+    public async Task A_camera_keeping_nothing_has_recording_switched_off()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.ContinuousDaysOverride = 0;
+        camera.MotionDaysOverride = 0;
+        camera.EventClipDaysOverride = 0;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // The camera's own record block is the only thing switched off — the camera itself stays
+        // enabled for detection, and the installation still records everyone else.
+        Assert.Equal(1, CountOccurrences(yaml, "enabled: false"));
+    }
+
+    [Fact]
+    public async Task An_installation_keeping_nothing_switches_recording_off_at_the_root()
+    {
+        var yaml = await ApplyAndReadYamlAsync(
+            [MakeValidatedCamera("front-door")],
+            recordingSettings: new RecordingSettings { ContinuousDays = 0, MotionDays = 0, EventClipDays = 0 });
+
+        var recordIndex = yaml.IndexOf("record:", StringComparison.OrdinalIgnoreCase);
+        Assert.True(recordIndex >= 0);
+        Assert.Contains("enabled: false", yaml[recordIndex..], StringComparison.OrdinalIgnoreCase);
     }
 
     private static int CountOccurrences(string haystack, string needle)
