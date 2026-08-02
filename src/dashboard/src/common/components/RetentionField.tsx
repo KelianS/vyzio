@@ -43,6 +43,11 @@ export function RetentionField({
     if (clamped !== days) onCommit(clamped)
   }
 
+  // Provenance is carried by the look of the value itself rather than by a caption: muted means
+  // inherited, plain means this camera owns it, and the revert only exists where there is something
+  // to revert. A caption on every row would repeat itself without teaching anything.
+  const inherited = inheritance !== undefined && !inheritance.overridden
+
   return (
     <div className="retention-row">
       <label className="retention-row-label" htmlFor={id}>
@@ -50,31 +55,34 @@ export function RetentionField({
       </label>
       <input
         id={id}
-        className={`retention-row-input${inheritance?.overridden ? ' retention-row-input--overridden' : ''}`}
+        className={`retention-row-input${inherited ? ' retention-row-input--inherited' : ''}`}
         type="number"
         min={0}
         max={maxDays}
         value={typed ?? String(days)}
+        // Hover and screen readers still get the words; the layout does not have to carry them.
+        title={inherited ? 'Suit les réglages généraux' : undefined}
         onChange={(e) => setTyped(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') e.currentTarget.blur()
         }}
       />
-      <span className="retention-row-unit">jours</span>
+      <span className={`retention-row-unit${inherited ? ' retention-row-unit--inherited' : ''}`}>
+        jours
+      </span>
 
-      {inheritance &&
-        (inheritance.overridden ? (
-          <p className="retention-row-origin retention-row-origin--overridden">
-            <span className="retention-origin-dot" aria-hidden="true" />
-            Propre à cette caméra
-            <button type="button" className="retention-revert" onClick={inheritance.onRevert}>
-              ↺ revenir à {formatDays(inheritance.installationDays)}
-            </button>
-          </p>
-        ) : (
-          <p className="retention-row-origin">Suit les réglages généraux</p>
-        ))}
+      {inheritance?.overridden && (
+        <button
+          type="button"
+          className="retention-revert"
+          onClick={inheritance.onRevert}
+          title={`Revenir aux réglages généraux : ${formatDays(inheritance.installationDays)}`}
+          aria-label={`Revenir aux réglages généraux : ${formatDays(inheritance.installationDays)}`}
+        >
+          ↺
+        </button>
+      )}
 
       <p className="detection-field-hint">{RETENTION_EXPLANATION[window]}</p>
     </div>

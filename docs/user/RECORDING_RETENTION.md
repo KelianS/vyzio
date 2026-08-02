@@ -22,13 +22,14 @@ Dans **Réglages généraux**, vous fixez les trois durées **pour toutes vos ca
 normal : l'espace disque est partagé, autant raisonner sur l'ensemble.
 
 Sur la fiche d'une caméra, les trois mêmes durées apparaissent, **déjà remplies avec ce qui
-s'applique**. Sous chacune, une ligne dit d'où vient la valeur :
+s'applique**. La couleur du nombre dit d'où il vient :
 
-- **« Suit les réglages généraux »** — la caméra n'a rien décidé de particulier. Si vous changez la
-  durée dans les Réglages généraux, elle suivra.
-- **« Propre à cette caméra »**, avec une pastille — cette durée-là ne bouge plus avec les réglages
-  généraux. Un lien **« ↺ revenir à … »** vous dit exactement la valeur que vous retrouverez, et vous
-  y ramène en un clic.
+- **Grisé** — la valeur vient des réglages généraux. Si vous les changez, cette caméra suivra.
+- **Normal, avec un bouton ↺ à côté** — cette durée-là est propre à la caméra et ne bouge plus avec
+  les réglages généraux. Le bouton vous y ramène en un clic, et vous dit au survol la valeur que
+  vous retrouverez.
+
+Écrire dans un champ grisé suffit à en faire une valeur propre à la caméra.
 
 **Chaque durée est indépendante.** Donner 30 jours de mouvement à la caméra du jardin ne détache pas
 ses deux autres durées : elles continuent de suivre les réglages généraux.

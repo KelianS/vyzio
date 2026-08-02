@@ -107,7 +107,7 @@ describe('DetectionConfigSection', () => {
     expect(screen.getByText(/1 à 3 Go par jour/)).toBeInTheDocument()
   })
 
-  // The value that applies is always shown and always editable — never a blank field or a greyed
+  // The value that applies is always shown and always editable — never a blank field or a
   // placeholder, even when it is inherited.
   it('shows every duration as an editable field, inherited or not', () => {
     renderSection()
@@ -115,33 +115,42 @@ describe('DetectionConfigSection', () => {
     expect(screen.getByLabelText('Vidéo complète')).toHaveValue(0)
     expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
     expect(screen.getByLabelText('Clips d’alerte')).toHaveValue(14)
-    expect(screen.getAllByText('Suit les réglages généraux')).toHaveLength(3)
+  })
+
+  // Provenance is carried by the look of the value, not by a caption repeated on every row.
+  it('mutes an inherited value and leaves an overridden one plain', () => {
+    renderSection({ retention: MOTION_OVERRIDDEN })
+
+    expect(screen.getByLabelText('Vidéo complète').className).toContain('--inherited')
+    expect(screen.getByLabelText('Séquences de mouvement').className).not.toContain('--inherited')
   })
 
   // The core of the design: overriding one duration must not detach the other two.
-  it('marks only the overridden duration and leaves the others inherited', () => {
+  it('offers a revert only on the overridden duration', () => {
     renderSection({ retention: MOTION_OVERRIDDEN })
 
-    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(30)
-    expect(screen.getByText('Propre à cette caméra')).toBeInTheDocument()
-    expect(screen.getAllByText('Suit les réglages généraux')).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: /Revenir aux réglages généraux/ })).toHaveLength(1)
   })
 
-  // A revert names the value it returns to rather than saying "reset".
-  it('offers a revert that names the inherited duration', async () => {
+  it('offers no revert at all while every duration is inherited', () => {
+    renderSection()
+
+    expect(
+      screen.queryByRole('button', { name: /Revenir aux réglages généraux/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  // Wordless on screen, but the value it restores is still named for hover and screen readers.
+  it('names the restored duration on the revert control', async () => {
     const onChangeRetention = vi.fn()
     const user = userEvent.setup()
     renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
 
-    await user.click(screen.getByRole('button', { name: '↺ revenir à 7 jours' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Revenir aux réglages généraux : 7 jours' }),
+    )
 
     expect(onChangeRetention).toHaveBeenCalledWith('motion', null)
-  })
-
-  it('does not offer a revert on a duration that is already inherited', () => {
-    renderSection()
-
-    expect(screen.queryByRole('button', { name: /revenir à/ })).not.toBeInTheDocument()
   })
 
   // Committed on blur, not per keystroke: a half-typed number must never reach the server.

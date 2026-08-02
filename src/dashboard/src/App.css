@@ -3537,7 +3537,7 @@
 /* Retention rows (ADR-39): label, number of days, unit on one line, explanation underneath. */
 .retention-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   align-items: center;
   column-gap: 10px;
   margin-top: 12px;
@@ -3567,42 +3567,29 @@
   grid-column: 1 / -1;
 }
 
-/* Provenance of a value: silent when inherited, marked when the camera owns it. */
-.retention-row-origin {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 0.8rem;
-  opacity: 0.6;
-}
-
-.retention-row-origin--overridden {
-  opacity: 1;
-  color: #8a5a00;
-}
-
-.retention-origin-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: #c98a00;
-  flex: none;
-}
-
-.retention-row-input--overridden {
-  border-color: #c98a00;
+/* Provenance without words: a muted value is inherited, a plain one belongs to this camera, and the
+   revert only exists where there is something to revert. */
+.retention-row-input--inherited,
+.retention-row-unit--inherited {
+  color: rgba(24, 32, 29, 0.45);
 }
 
 .retention-revert {
-  border: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(24, 32, 29, 0.18);
+  border-radius: 50%;
   background: none;
   padding: 0;
-  font: inherit;
-  color: inherit;
-  text-decoration: underline;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #8a5a00;
   cursor: pointer;
+}
+
+.retention-revert:hover {
+  background-color: rgba(201, 138, 0, 0.12);
+  border-color: #c98a00;
 }
 
 .detection-pending {

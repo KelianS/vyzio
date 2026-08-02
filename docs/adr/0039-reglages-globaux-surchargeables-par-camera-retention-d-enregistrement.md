@@ -141,9 +141,11 @@ mais il ne s'applique qu'à la fenêtre « tout » — c'est la seule qui enregi
 - **La surcharge se décide réglage par réglage, jamais en bloc.** Une caméra qui fixe une seule durée
   garde les autres attachées aux valeurs d'ensemble. Un interrupteur « cette caméra décide de tout »
   aurait figé les deux autres durées à leur valeur du moment sans le dire, et c'est précisément ce
-  qu'un modèle par surcharge doit éviter. L'interface montre donc, sur chaque durée, si elle est
-  suivie ou propre à la caméra, et le retour arrière **nomme la valeur** qu'il rétablit plutôt que
-  d'annoncer une remise à zéro — la valeur d'ensemble voyage jusqu'à la frontière API pour cela.
+  qu'un modèle par surcharge doit éviter. La provenance est portée par l'**aspect de la valeur** —
+  grisée tant qu'elle est suivie, normale dès qu'elle est propre à la caméra — et non par une
+  légende, qui se répéterait sur chaque ligne sans rien apprendre. Le retour arrière n'existe que
+  là où il y a quelque chose à annuler, et **nomme la valeur** qu'il rétablit plutôt que d'annoncer
+  une remise à zéro : la valeur d'ensemble voyage donc jusqu'à la frontière API pour cela.
 - **La configuration générée ne répète pas ce qu'une caméra n'a pas surchargé.** Seul le réglage
   réellement propre à la caméra apparaît sous elle ; sinon le fichier laisserait croire que la valeur
   vient de la caméra alors qu'elle vient de l'installation.
