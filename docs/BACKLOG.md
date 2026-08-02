@@ -72,11 +72,9 @@ Mesures de référence et hiérarchie des leviers :
 
 ### `recording` — Rétention d'enregistrement
 
-Direction tranchee par [ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) : trois durees de retention (tout / mouvement / clips d'evenement), globales et surchargeables par camera.
+Les trois durees de retention sont livrees ([ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)), globales et surchargeables par camera.
 
-1. **Retention d'enregistrement** — entite `RecordingSettings` (singleton), surcharges nullables sur `Camera`, resolution `surcharge ?? global` unique dans `Core`. Projection sur `record.continuous.days`, `record.motion.days` et `alerts`/`detections.retain.days`. `Camera.ContinuousRecordingEnabled` disparait au profit d'une duree. Corrige au passage le fait que le reglage par camera etait inerte dans les deux sens (`record.enabled: true` global sans surcharge).
-
-2. **Alerte de capacite disque critique** — exigee par SPECS §6.2, rendue plus necessaire par l'item ci-dessus puisque la retention devient reellement consommatrice. Reste a cadrer : seuil, canal d'alerte, et comportement quand le disque sature (arreter d'enregistrer ou raccourcir la retention).
+1. **Alerte de capacite disque critique** — exigee par SPECS §6.2, et rendue necessaire par la livraison ci-dessus : la retention consomme desormais reellement du disque, la ou elle ne conservait presque rien. Reste a cadrer : seuil de declenchement, canal d'alerte, et surtout comportement quand le disque sature — arreter d'enregistrer, ou raccourcir la retention de soi-meme (ce qui supprimerait des enregistrements que l'utilisateur croyait garder).
 
 ---
 
