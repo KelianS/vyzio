@@ -33,25 +33,19 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
     expect(screen.getByRole('switch')).toBeChecked()
   })
 
-  it('choice_When up to four options_Should show them all rather than hide them behind an open', () => {
-    render(
-      <SettingRow
-        setting={declare({ nature: { kind: 'choice', options: options(4) }, value: 'v0' })}
-      />,
-    )
-    expect(screen.getAllByRole('radio')).toHaveLength(4)
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-  })
-
-  it('choice_When five options or more_Should switch to a dropdown', () => {
-    render(
-      <SettingRow
-        setting={declare({ nature: { kind: 'choice', options: options(5) }, value: 'v0' })}
-      />,
-    )
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
-    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
-  })
+  it.each([2, 4, 9])(
+    'choice_When exclusive with %i options_Should always be a dropdown',
+    (count) => {
+      // Un controle segmente a libelles longs deborde et casse la colonne de
+      // controle commune, qui est justement ce qui rend une page balayable.
+      render(
+        <SettingRow
+          setting={declare({ nature: { kind: 'choice', options: options(count) }, value: 'v0' })}
+        />,
+      )
+      expect(screen.getByRole('combobox')).toBeInTheDocument()
+    },
+  )
 
   it('multiChoice_When up to seven options_Should show checkboxes without a filter', () => {
     render(

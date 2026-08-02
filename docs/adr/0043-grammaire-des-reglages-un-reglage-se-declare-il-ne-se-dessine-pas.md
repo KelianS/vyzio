@@ -109,14 +109,20 @@ une.
 | Nature de la valeur | Contrôle | Pourquoi |
 | --- | --- | --- |
 | Booléen | Interrupteur | L'état est lisible sans lire le libellé. |
-| Choix exclusif, 2 à 4 options | Groupe segmenté, toutes visibles | Comparer coûte moins qu'ouvrir. |
-| Choix exclusif, 5 options et plus | Liste déroulante | Au-delà, le segmenté déborde et casse la colonne. |
+| Choix exclusif | Liste déroulante, quel qu'en soit le nombre d'options | Largeur constante, donc colonne préservée. |
 | Choix multiple, jusqu'à 7 options | Cases à cocher visibles | L'utilisateur doit voir ce qu'il ne prend pas. |
 | Choix multiple, au-delà | Sélecteur avec recherche | Une liste longue se cherche, elle ne se parcourt pas. |
 | Nombre avec unité | Champ numérique, unité en suffixe du contrôle | L'unité appartient à la valeur, jamais au libellé. |
 | Nombre borné à sens continu | Curseur **et** valeur chiffrée | Un curseur seul empêche de viser et de relire. |
 | Texte libre | Champ texte | Rare : à justifier, c'est souvent un choix mal identifié. |
 | Secret | Champ masqué avec révélation | Il faut pouvoir relire ce qu'on a saisi. |
+
+**Un choix exclusif est toujours une liste déroulante**, y compris à deux options. Un groupe
+segmenté serait plus rapide à comparer, mais sa largeur suit celle de ses libellés : deux réglages
+voisins n'ont alors plus la même colonne de contrôle, et la page cesse d'être balayable — ce qui
+était l'objet même de l'anatomie fixe. Une exception « seulement quand les libellés sont courts »
+rendrait la règle inapplicable sans juger au cas par cas, c'est-à-dire exactement ce que cette
+décision supprime.
 
 **Un fait, un contrôle.** Jamais deux contrôles pour une même réalité — c'est le défaut corrigé par
 ADR-39, et la table ci-dessus le rend impossible à réintroduire par inadvertance.

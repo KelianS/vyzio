@@ -17,14 +17,14 @@ export interface SettingOption<T extends string = string> {
 
 /**
  * Nature de la valeur. Le controle employe s'en deduit seul, y compris le choix
- * entre deux formes d'un meme genre (segmente ou liste deroulante, cases ou
- * liste cherchable) : c'est le **nombre d'options** qui tranche, jamais l'auteur
- * de l'ecran. Deux reglages de meme nature se presentent donc pareil partout.
+ * entre deux formes d'un meme genre (cases visibles ou liste cherchable) : c'est
+ * le **nombre d'options** qui tranche, jamais l'auteur de l'ecran. Deux reglages
+ * de meme nature se presentent donc pareil partout.
  */
 export type SettingNature =
   /** Booleen → interrupteur. L'etat est lisible sans lire le libelle. */
   | { readonly kind: 'toggle' }
-  /** Choix exclusif → segmente jusqu'a 4 options, liste deroulante au-dela. */
+  /** Choix exclusif → liste deroulante, quel qu'en soit le nombre d'options. */
   | { readonly kind: 'choice'; readonly options: readonly SettingOption[] }
   /** Choix multiple → cases visibles jusqu'a 7 options, liste cherchable au-dela. */
   | { readonly kind: 'multiChoice'; readonly options: readonly SettingOption[] }
@@ -48,8 +48,6 @@ export type SettingNature =
   /** Secret → champ masque, avec revelation : il faut pouvoir se relire. */
   | { readonly kind: 'secret'; readonly placeholder?: string }
 
-/** Au-dela, comparer coute plus qu'ouvrir : le segmente deborde et casse la colonne. */
-export const SEGMENTED_MAX_OPTIONS = 4
 /** Au-dela, une liste se cherche, elle ne se parcourt pas. */
 export const VISIBLE_CHOICES_MAX = 7
 

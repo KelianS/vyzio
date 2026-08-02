@@ -41,15 +41,15 @@ const CameraConservationPage = lazy(() =>
   })),
 )
 const CameraPrivacyPage = lazy(() =>
-  import('./presentation/Cameras/CameraLegacyPages').then((m) => ({
+  import('./presentation/Cameras/CameraPrivacyPage').then((m) => ({
     default: m.CameraPrivacyPage,
   })),
 )
 const CameraImagePage = lazy(() =>
-  import('./presentation/Cameras/CameraLegacyPages').then((m) => ({ default: m.CameraImagePage })),
+  import('./presentation/Cameras/CameraImagePage').then((m) => ({ default: m.CameraImagePage })),
 )
 const CameraConnectionPage = lazy(() =>
-  import('./presentation/Cameras/CameraLegacyPages').then((m) => ({
+  import('./presentation/Cameras/CameraConnectionPage').then((m) => ({
     default: m.CameraConnectionPage,
   })),
 )

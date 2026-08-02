@@ -5,11 +5,9 @@ import { Input } from '../ui/input'
 import { Checkbox } from '../ui/checkbox'
 import { Slider } from '../ui/slider'
 import { Button } from '../ui/button'
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { cn } from '../ui/utils'
 import {
-  SEGMENTED_MAX_OPTIONS,
   VISIBLE_CHOICES_MAX,
   type SettingDeclaration,
   type SettingNature,
@@ -27,11 +25,7 @@ export function SettingControl({ setting }: { setting: SettingDeclaration }) {
     case 'toggle':
       return <ToggleControl setting={setting} />
     case 'choice':
-      return nature.options.length <= SEGMENTED_MAX_OPTIONS ? (
-        <SegmentedControl setting={setting} nature={nature} />
-      ) : (
-        <DropdownControl setting={setting} nature={nature} />
-      )
+      return <DropdownControl setting={setting} nature={nature} />
     case 'multiChoice':
       return <MultiChoiceControl setting={setting} nature={nature} />
     case 'number':
@@ -67,42 +61,6 @@ function ToggleControl({ setting }: { setting: SettingDeclaration }) {
 }
 
 type Narrow<K extends SettingNature['kind']> = Extract<SettingNature, { kind: K }>
-
-function SegmentedControl({
-  setting,
-  nature,
-}: {
-  setting: SettingDeclaration
-  nature: Narrow<'choice'>
-}) {
-  return (
-    <RadioGroup
-      className="flex flex-wrap gap-1 rounded-lg bg-muted p-1"
-      value={String(setting.value)}
-      disabled={setting.disabled}
-      onValueChange={(value) => setting.onChange(value)}
-      aria-labelledby={`${setting.id}-label`}
-    >
-      {nature.options.map((option) => {
-        const active = String(setting.value) === option.value
-        return (
-          <label
-            key={option.value}
-            className={cn(
-              'cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors',
-              'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring',
-              active ? 'bg-card font-medium shadow-xs' : 'hover:bg-card/60',
-              setting.disabled && 'cursor-not-allowed opacity-50',
-            )}
-          >
-            <RadioGroupItem value={option.value} className="sr-only" />
-            {option.label}
-          </label>
-        )
-      })}
-    </RadioGroup>
-  )
-}
 
 function DropdownControl({
   setting,
