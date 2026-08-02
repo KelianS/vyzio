@@ -73,10 +73,26 @@ public sealed class ProbeCameraCapabilityUseCase(
         binding.LastError = verified ? null : error;
         await bindings.SaveAsync(binding, ct);
 
+        var cameraChanged = false;
+
+        // A protocol that just answered a real probe is proven to work on this camera. This is the
+        // only way Camera.SupportedProtocols is ever written — never on declaration (ADR-28), which
+        // is why the cascade's failed candidates are not recorded here.
+        if (verified && !camera.GetSupportedProtocols().Contains(binding.Protocol))
+        {
+            camera.AddSupportedProtocol(binding.Protocol);
+            cameraChanged = true;
+        }
+
         // A2: PTZ probe success → activate the PTZ panel without manual intervention.
         if (capability == CameraCapability.Ptz && verified && !camera.PtzSupported)
         {
             camera.PtzSupported = true;
+            cameraChanged = true;
+        }
+
+        if (cameraChanged)
+        {
             await cameras.UpdateAsync(camera, ct);
         }
 

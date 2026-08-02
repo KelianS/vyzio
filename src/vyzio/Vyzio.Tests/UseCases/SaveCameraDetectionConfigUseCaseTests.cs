@@ -42,7 +42,55 @@ public class SaveCameraDetectionConfigUseCaseTests
 
     private static SaveCameraDetectionConfigRequest Request(
         string? sensitivity = null,
-        bool pinned = false) => new(["person"], false, sensitivity, pinned);
+        bool pinned = false,
+        string? detectStreamId = null) => new(["person"], false, sensitivity, pinned, detectStreamId);
+
+    private static CameraStream AddStream(Camera camera, int ordinal, int? width = null, int? height = null)
+    {
+        var stream = new CameraStream { CameraId = camera.Id, Ordinal = ordinal, Width = width, Height = height };
+        camera.Streams.Add(stream);
+        return stream;
+    }
+
+    [Fact]
+    public async Task Choosing_a_stream_of_this_camera_stores_it_as_the_analysis_source()
+    {
+        var camera = GivenCamera();
+        AddStream(camera, 0, 2304, 1296);
+        var sub = AddStream(camera, 1, 640, 360);
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(detectStreamId: sub.Id));
+
+        Assert.Equal(sub.Id, camera.DetectStreamId);
+        Assert.Equal(sub.Id, dto!.DetectStreamId);
+        Assert.Equal(2, dto.Streams.Count);
+    }
+
+    [Fact]
+    public async Task An_unknown_stream_id_falls_back_to_the_main_stream_rather_than_being_stored()
+    {
+        var camera = GivenCamera();
+        var main = AddStream(camera, 0, 2304, 1296);
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(detectStreamId: "gone"));
+
+        Assert.Null(camera.DetectStreamId);
+        Assert.Equal(main.Id, dto!.DetectStreamId);
+    }
+
+    [Fact]
+    public async Task Clearing_the_choice_returns_analysis_to_the_default_light_stream()
+    {
+        var camera = GivenCamera();
+        var main = AddStream(camera, 0);
+        var sub = AddStream(camera, 1);
+        camera.DetectStreamId = main.Id;
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(detectStreamId: null));
+
+        Assert.Null(camera.DetectStreamId);
+        Assert.Equal(sub.Id, dto!.DetectStreamId);
+    }
 
     [Fact]
     public async Task Pinning_with_a_level_applies_it_immediately_without_a_restart()

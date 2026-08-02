@@ -206,6 +206,123 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.Contains("hwaccel_args: preset-vaapi", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ── Detect / record stream roles (ADR-38) ──
+
+    private static CameraStream AddStream(Camera camera, int ordinal, string? path, int? width = null, int? height = null)
+    {
+        var stream = new CameraStream
+        {
+            CameraId = camera.Id,
+            Ordinal = ordinal,
+            Path = path,
+            Width = width,
+            Height = height,
+        };
+        camera.Streams.Add(stream);
+        return stream;
+    }
+
+    [Fact]
+    public async Task Single_stream_camera_keeps_one_input_carrying_both_roles()
+    {
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
+
+        Assert.Contains("- detect", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("- record", yaml, StringComparison.OrdinalIgnoreCase);
+        // One input means the stream path appears exactly once.
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+    }
+
+    // Frigate downscales the detect image anyway, so the lighter stream is the default (ADR-38).
+    [Fact]
+    public async Task A_sub_stream_carries_detection_by_default_without_any_user_choice()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        AddStream(camera, 1, "/stream2", 640, 360);
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.Contains("stream2", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("width: 640", yaml, StringComparison.OrdinalIgnoreCase);
+        // Recording never leaves the main stream.
+        Assert.Contains("stream1", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Choosing_the_main_stream_puts_both_roles_back_on_it()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        AddStream(camera, 1, "/stream2", 640, 360);
+        camera.DetectStreamId = camera.MainStream!.Id;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.DoesNotContain("stream2", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+    }
+
+    [Fact]
+    public async Task Chosen_sub_stream_carries_detect_while_recording_stays_on_the_main_stream()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        var sub = AddStream(camera, 1, "/stream2", 640, 360);
+        camera.DetectStreamId = sub.Id;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        var detectIndex = yaml.IndexOf("stream2", StringComparison.OrdinalIgnoreCase);
+        var recordIndex = yaml.IndexOf("stream1", StringComparison.OrdinalIgnoreCase);
+        Assert.True(detectIndex >= 0 && recordIndex >= 0);
+        // detect input is emitted first, record second — each with a single role.
+        Assert.True(detectIndex < recordIndex);
+        Assert.Contains("640", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Detect_resolution_is_emitted_only_when_the_stream_reported_one()
+    {
+        var withSize = MakeValidatedCamera("front-door");
+        withSize.MainStream!.Width = 640;
+        withSize.MainStream.Height = 480;
+
+        var yaml = await ApplyAndReadYamlAsync([withSize]);
+        Assert.Contains("width: 640", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("height: 480", yaml, StringComparison.OrdinalIgnoreCase);
+
+        var withoutSize = await ApplyAndReadYamlAsync([MakeValidatedCamera("garage")]);
+        Assert.DoesNotContain("width:", withoutSize, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Dvrip_sub_stream_gets_its_own_go2rtc_bridge()
+    {
+        var camera = MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567);
+        var sub = AddStream(camera, 1, "?channel=0&subtype=1");
+        camera.DetectStreamId = sub.Id;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Two bridges: the sub-stream cannot share the main one's, or both roles would decode the
+        // same stream and the separation would be cosmetic.
+        Assert.Contains("garden_1:", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("subtype=1", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://127.0.0.1:8554/garden_1"));
+        // The main bridge is still referenced on its own, for the record role.
+        Assert.Equal(2, CountOccurrences(yaml, "rtsp://127.0.0.1:8554/garden"));
+    }
+
+    private static int CountOccurrences(string haystack, string needle)
+    {
+        var count = 0;
+        var index = haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase);
+        while (index >= 0)
+        {
+            count++;
+            index = haystack.IndexOf(needle, index + needle.Length, StringComparison.OrdinalIgnoreCase);
+        }
+        return count;
+    }
+
     [Theory]
     [InlineData(MotionSensitivity.High, 10)]
     [InlineData(MotionSensitivity.Medium, 30)]

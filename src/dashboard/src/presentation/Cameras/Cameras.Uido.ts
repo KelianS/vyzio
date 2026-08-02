@@ -1,6 +1,6 @@
 import type { AppError } from '../../common/errors/AppError'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
-import type { MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type { CameraStream, MotionSensitivity } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
@@ -52,6 +52,8 @@ export interface CamerasUido {
   detectionContinuousRecording: boolean
   detectionMotionSensitivity: MotionSensitivity
   detectionMotionSensitivityPinned: boolean
+  detectionStreams: CameraStream[]
+  detectionStreamId: string | null
   detectionConfigLoading: boolean
 
   pendingStrategy: string | null
@@ -97,6 +99,8 @@ export function buildInitialCamerasUido(): CamerasUido {
     detectionContinuousRecording: false,
     detectionMotionSensitivity: 'high',
     detectionMotionSensitivityPinned: false,
+    detectionStreams: [],
+    detectionStreamId: null,
     detectionConfigLoading: false,
 
     pendingStrategy: null,

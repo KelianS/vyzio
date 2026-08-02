@@ -422,6 +422,8 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
         public Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
             => Task.FromResult(new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", "config/frigate.generated.yml"));
+
+        public bool HasPendingChanges => false;
     }
 
     private sealed class StubVendorAssistanceService : IVendorAssistanceService

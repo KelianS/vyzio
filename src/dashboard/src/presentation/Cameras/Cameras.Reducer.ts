@@ -91,6 +91,8 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
         detectionLabels: ['person'],
         detectionAvailableLabels: [],
         detectionContinuousRecording: false,
+        detectionStreams: [],
+        detectionStreamId: null,
         strategyFeedback: null,
         detectionConfigLoading: true,
       }
@@ -107,6 +109,8 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
               detectionContinuousRecording: action.config.continuousRecordingEnabled,
               detectionMotionSensitivity: action.config.motionSensitivity,
               detectionMotionSensitivityPinned: action.config.motionSensitivityPinned,
+              detectionStreams: action.config.streams,
+              detectionStreamId: action.config.detectStreamId,
             }
           : {}),
       }
@@ -122,6 +126,9 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
 
     case 'MOTION_SENSITIVITY_PIN_TOGGLED':
       return { ...state, detectionMotionSensitivityPinned: action.pinned }
+
+    case 'DETECT_STREAM_CHANGED':
+      return { ...state, detectionStreamId: action.streamId }
 
     case 'DISCOVERY_STARTED':
       return { ...state, discoverLoading: true, discoveryError: null, formError: null }
