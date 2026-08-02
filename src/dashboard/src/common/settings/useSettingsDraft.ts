@@ -51,15 +51,24 @@ export function useSettingsDraft<T extends object>({
   // desynchroniserait du serveur des qu'une valeur revient d'ailleurs.
   const values = useMemo(() => ({ ...saved, ...edits }) as T, [saved, edits])
 
-  const changes = useMemo(
-    () =>
-      (Object.keys(edits) as (keyof T)[])
-        // Revenir a la valeur enregistree annule la modification : ce n'est plus
-        // un changement, et le brouillon ne doit pas pretendre le contraire.
-        .filter((key) => !Object.is(edits[key], saved[key]))
-        .map((key) => ({ key: String(key), label: labels[key] })),
-    [edits, saved, labels],
-  )
+  const changes = useMemo(() => {
+    const touched = (Object.keys(edits) as (keyof T)[])
+      // Revenir a la valeur enregistree annule la modification : ce n'est plus
+      // un changement, et le brouillon ne doit pas pretendre le contraire.
+      .filter((key) => !Object.is(edits[key], saved[key]))
+
+    // Un meme reglage peut s'ecrire sur plusieurs cles — un niveau et le fait
+    // qu'il soit fixe, par exemple. L'utilisateur, lui, n'en a change qu'un :
+    // compter deux fois le meme libelle lui ferait douter de ce qu'il a fait.
+    const seen = new Set<string>()
+    return touched.reduce<DraftChange[]>((accumulated, key) => {
+      const label = labels[key]
+      if (seen.has(label)) return accumulated
+      seen.add(label)
+      accumulated.push({ key: String(key), label })
+      return accumulated
+    }, [])
+  }, [edits, saved, labels])
 
   const set = useCallback(<K extends keyof T>(key: K, value: T[K]) => {
     setEdits((previous) => ({ ...previous, [key]: value }))

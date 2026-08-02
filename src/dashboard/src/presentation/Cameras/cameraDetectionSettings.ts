@@ -14,14 +14,31 @@ export type DetectionUpdate = Omit<
   'continuousDaysOverride' | 'motionDaysOverride' | 'eventClipDaysOverride'
 >
 
-const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity>[] = [
+/**
+ * « Automatique » est une **valeur du meme reglage**, pas un interrupteur a
+ * cote : l'ajustement automatique (ADR-35) et un niveau fixe sont deux reponses
+ * exclusives a la meme question. Les separer en deux controles ferait deux
+ * sources de verite pour un seul fait — et, faute d'un chemin de retour, rendait
+ * l'automatique irrecuperable des qu'un niveau avait ete choisi une fois.
+ */
+const AUTO = 'auto'
+
+const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
+  { value: AUTO, label: 'Automatique' },
   { value: 'high', label: 'Élevée' },
   { value: 'medium', label: 'Moyenne' },
   { value: 'low', label: 'Réduite' },
 ]
 
 const SENSITIVITY_HELP =
-  'Élevée : la caméra réagit au moindre mouvement. Moyenne : les petits mouvements sont ignorés pour éviter les alertes inutiles. Réduite : seuls les mouvements francs sont analysés, pour une scène très animée.'
+  'Automatique : Vyzio ajuste le niveau tout seul selon ce que voit la caméra, et c’est le cas courant. Élevée : la caméra réagit au moindre mouvement. Moyenne : les petits mouvements sont ignorés pour éviter les alertes inutiles. Réduite : seuls les mouvements francs sont analysés, pour une scène très animée.'
+
+const SENSITIVITY_CONSEQUENCE: Record<MotionSensitivity | typeof AUTO, string> = {
+  auto: 'Vyzio suit ce que voit la caméra et corrige seul le niveau.',
+  high: 'Le moindre mouvement est signalé, y compris la pluie ou un feuillage.',
+  medium: 'Les petits mouvements sont ignorés.',
+  low: 'Seuls les mouvements francs sont retenus — pour une scène très animée.',
+}
 
 const STREAM_HELP =
   'Vyzio réduit de toute façon l’image avant de l’analyser : une image plus légère ne lui retire quasiment rien et libère des ressources. En contrepartie, les visages éloignés risquent de ne plus être reconnus et les images d’alerte seront moins nettes. Ce choix ne change jamais la qualité de vos enregistrements.'
@@ -102,13 +119,17 @@ export function buildDetectionSettings({
       label: 'Sensibilité au mouvement',
       nature: { kind: 'choice', options: SENSITIVITY_OPTIONS },
       help: SENSITIVITY_HELP,
-      consequence: values.motionSensitivityPinned
-        ? undefined
-        : 'Vyzio ajuste ce réglage tout seul selon ce que voit la caméra. Le fixer arrête cet ajustement.',
-      value: values.motionSensitivity,
+      consequence:
+        SENSITIVITY_CONSEQUENCE[values.motionSensitivityPinned ? values.motionSensitivity : AUTO],
+      // Tant que rien n'est fixe, c'est bien « Automatique » qui s'applique.
+      value: values.motionSensitivityPinned ? values.motionSensitivity : AUTO,
       onChange: (value) => {
-        // Choisir une valeur a la main, c'est arreter l'ajustement automatique :
-        // deux controles pour ce meme fait seraient deux sources de verite (ADR-35).
+        if (value === AUTO) {
+          // Le niveau atteint est conserve : il redevient simplement le point de
+          // depart de l'ajustement, au lieu d'etre efface.
+          set('motionSensitivityPinned', false)
+          return
+        }
         set('motionSensitivity', value as MotionSensitivity)
         set('motionSensitivityPinned', true)
       },

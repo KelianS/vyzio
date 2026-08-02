@@ -82,27 +82,57 @@ describe('Réglages de détection d’une caméra', () => {
     expect(options).toHaveLength(3)
   })
 
-  it('sensitivity_When chosen by hand_Should stop the automatic adjustment', () => {
+  it('sensitivity_When nothing is pinned_Should read as automatic', () => {
+    const { settings } = build(config(), values({ motionSensitivityPinned: false }))
+    const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
+
+    // « Automatique » est une valeur du reglage, pas un interrupteur a cote.
+    expect(sensitivity.value).toBe('auto')
+    expect(optionsOf(sensitivity).map((option) => option.value)).toEqual([
+      'auto',
+      'high',
+      'medium',
+      'low',
+    ])
+  })
+
+  it('sensitivity_When a level is chosen_Should stop the automatic adjustment', () => {
     const set = vi.fn()
     const { settings } = build(config(), values(), set)
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
     sensitivity.onChange('low')
 
-    // Un seul geste porte les deux faits : choisir une valeur *est* la fixer.
-    // Deux controles separes seraient deux sources de verite (ADR-35).
+    // Un seul geste porte les deux faits : choisir un niveau *est* le fixer.
     expect(set).toHaveBeenCalledWith('motionSensitivity', 'low')
     expect(set).toHaveBeenCalledWith('motionSensitivityPinned', true)
   })
 
-  it('sensitivity_When still automatic_Should say so; once pinned, Should stop saying it', () => {
-    const auto = build(config()).settings.find((s) => s.id === 'detection-sensitivity')!
-    expect(auto.consequence).toContain('ajuste ce réglage tout seul')
+  it('sensitivity_When returning to automatic_Should keep the level reached', () => {
+    const set = vi.fn()
+    const { settings } = build(
+      config(),
+      values({ motionSensitivity: 'low', motionSensitivityPinned: true }),
+      set,
+    )
+    const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
-    const pinned = build(config(), values({ motionSensitivityPinned: true })).settings.find(
-      (s) => s.id === 'detection-sensitivity',
-    )!
-    expect(pinned.consequence).toBeUndefined()
+    sensitivity.onChange('auto')
+
+    // Le retour a l'automatique doit exister — c'etait le trou — et il ne
+    // remet pas le niveau a zero : il redevient le point de depart.
+    expect(set).toHaveBeenCalledExactlyOnceWith('motionSensitivityPinned', false)
+  })
+
+  it('sensitivity_Whatever the state_Should say what applies, without a gesture', () => {
+    const auto = build(config()).settings.find((s) => s.id === 'detection-sensitivity')!
+    expect(auto.consequence).toContain('corrige seul')
+
+    const pinned = build(
+      config(),
+      values({ motionSensitivity: 'high', motionSensitivityPinned: true }),
+    ).settings.find((s) => s.id === 'detection-sensitivity')!
+    expect(pinned.consequence).toContain('moindre mouvement')
   })
 
   it('stream_When the camera serves only one_Should not offer a choice', () => {

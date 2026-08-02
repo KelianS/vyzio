@@ -60,6 +60,24 @@ describe('Brouillon de page', () => {
     expect(result.current.changes).toEqual([])
   })
 
+  it('draft_When two keys carry the same setting_Should count it once', () => {
+    const { result } = renderHook(() =>
+      useSettingsDraft<{ level: string; pinned: boolean }>({
+        saved: { level: 'medium', pinned: false },
+        labels: { level: 'Sensibilité', pinned: 'Sensibilité' },
+      }),
+    )
+
+    act(() => {
+      result.current.set('level', 'low')
+      result.current.set('pinned', true)
+    })
+
+    // L'utilisateur n'a change qu'un reglage : lui en annoncer deux lui ferait
+    // douter de ce qu'il vient de faire.
+    expect(result.current.changes).toEqual([{ key: 'level', label: 'Sensibilité' }])
+  })
+
   it('draft_When discarded_Should return the page to its last saved state', () => {
     const { result } = setup()
 
