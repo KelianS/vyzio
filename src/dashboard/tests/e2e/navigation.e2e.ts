@@ -28,7 +28,7 @@ test.describe('Navigation', () => {
       page.locator('.hub-status-bar, .hub-setup-hero, .hub-degraded-panel'),
     ).toBeVisible()
 
-    await nav.getByRole('link', { name: 'Caméras', exact: true }).click()
+    await nav.getByRole('link', { name: 'Paramètres', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Decouverte guidee' })).toBeVisible()
 
     await nav.getByRole('link', { name: 'Profils', exact: true }).click()
