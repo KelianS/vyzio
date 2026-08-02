@@ -12,11 +12,28 @@ export interface CameraStream {
   fps: number | null
 }
 
+// One retention window as this camera sees it (ADR-39). `override` is what the camera decided for
+// itself, null meaning "follow the installation"; `installation` is what it falls back to, which is
+// what lets a revert name the value it returns to; `effective` is what actually applies, resolved
+// server-side so the view never re-derives it.
+export interface RetentionWindowValue {
+  override: number | null
+  installation: number
+  effective: number
+}
+
+export interface CameraRetention {
+  continuous: RetentionWindowValue
+  motion: RetentionWindowValue
+  eventClip: RetentionWindowValue
+  maxDays: number
+}
+
 export interface DetectionConfig {
   cameraId: string
   labels: string[]
   availableLabels: string[]
-  continuousRecordingEnabled: boolean
+  retention: CameraRetention
   motionSensitivity: MotionSensitivity
   motionSensitivityPinned: boolean
   streams: CameraStream[]
@@ -27,8 +44,10 @@ export interface DetectionConfig {
 // carry the rest through unchanged, which is exactly where a long positional list gets mis-ordered.
 export interface DetectionConfigUpdate {
   labels: string[]
-  continuousRecordingEnabled: boolean
   motionSensitivity: MotionSensitivity
   motionSensitivityPinned: boolean
   detectStreamId: string | null
+  continuousDaysOverride: number | null
+  motionDaysOverride: number | null
+  eventClipDaysOverride: number | null
 }

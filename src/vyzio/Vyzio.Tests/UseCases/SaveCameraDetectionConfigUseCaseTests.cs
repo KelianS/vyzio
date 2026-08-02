@@ -11,6 +11,8 @@ public class SaveCameraDetectionConfigUseCaseTests
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly IFrigateConfigApplier _configApplier = Substitute.For<IFrigateConfigApplier>();
     private readonly IFrigateMotionSettingsPublisher _publisher = Substitute.For<IFrigateMotionSettingsPublisher>();
+    private readonly IRecordingSettingsRepository _recordingSettings = Substitute.For<IRecordingSettingsRepository>();
+    private readonly RecordingSettings _installation = new() { ContinuousDays = 0, MotionDays = 7, EventClipDays = 14 };
     private readonly SaveCameraDetectionConfigUseCase _sut;
 
     public SaveCameraDetectionConfigUseCaseTests()
@@ -18,7 +20,8 @@ public class SaveCameraDetectionConfigUseCaseTests
         _publisher
             .TryPublishSensitivityAsync(Arg.Any<string>(), Arg.Any<MotionSensitivity>(), Arg.Any<CancellationToken>())
             .Returns(true);
-        _sut = new SaveCameraDetectionConfigUseCase(_repo, _configApplier, _publisher);
+        _recordingSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(_installation);
+        _sut = new SaveCameraDetectionConfigUseCase(_repo, _recordingSettings, _configApplier, _publisher);
     }
 
     private Camera GivenCamera(MotionSensitivity sensitivity = MotionSensitivity.High, bool pinned = false)
@@ -43,7 +46,11 @@ public class SaveCameraDetectionConfigUseCaseTests
     private static SaveCameraDetectionConfigRequest Request(
         string? sensitivity = null,
         bool pinned = false,
-        string? detectStreamId = null) => new(["person"], false, sensitivity, pinned, detectStreamId);
+        string? detectStreamId = null,
+        int? continuousDays = null,
+        int? motionDays = null,
+        int? eventClipDays = null)
+        => new(["person"], sensitivity, pinned, detectStreamId, continuousDays, motionDays, eventClipDays);
 
     private static CameraStream AddStream(Camera camera, int ordinal, int? width = null, int? height = null)
     {
@@ -150,6 +157,76 @@ public class SaveCameraDetectionConfigUseCaseTests
         Assert.NotNull(dto);
         Assert.Equal(MotionSensitivity.High, camera.MotionSensitivity);
         Assert.Contains("person", dto.Labels);
+    }
+
+    // ── Retention overrides (ADR-39) ──
+
+    [Fact]
+    public async Task A_camera_without_overrides_follows_the_installation()
+    {
+        var camera = GivenCamera();
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request());
+
+        Assert.Null(dto!.Retention.Continuous.Override);
+        Assert.Equal(0, dto.Retention.Continuous.Effective);
+        Assert.Equal(7, dto.Retention.Motion.Effective);
+        Assert.Equal(14, dto.Retention.EventClip.Effective);
+        // The inherited value travels too, so the interface can name what a revert returns to.
+        Assert.Equal(7, dto.Retention.Motion.Installation);
+    }
+
+    [Fact]
+    public async Task An_override_wins_over_the_installation_value()
+    {
+        var camera = GivenCamera();
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(continuousDays: 3, motionDays: 30));
+
+        Assert.Equal(3, camera.ContinuousDaysOverride);
+        Assert.Equal(3, dto!.Retention.Continuous.Effective);
+        Assert.Equal(30, dto.Retention.Motion.Effective);
+        // Untouched, so it still follows the installation rather than freezing today's value.
+        Assert.Null(camera.EventClipDaysOverride);
+        Assert.Equal(14, dto.Retention.EventClip.Effective);
+        // The installation value is unchanged by the override, which is what makes a revert possible.
+        Assert.Equal(0, dto.Retention.Continuous.Installation);
+    }
+
+    // Zero is an answer, not an absent value — it must not collapse back to the installation.
+    [Fact]
+    public async Task Zero_days_is_kept_as_an_override_rather_than_read_as_no_choice()
+    {
+        var camera = GivenCamera();
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(motionDays: 0));
+
+        Assert.Equal(0, camera.MotionDaysOverride);
+        Assert.Equal(0, dto!.Retention.Motion.Effective);
+    }
+
+    [Fact]
+    public async Task Clearing_an_override_puts_the_camera_back_on_the_installation()
+    {
+        var camera = GivenCamera();
+        camera.MotionDaysOverride = 30;
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(motionDays: null));
+
+        Assert.Null(camera.MotionDaysOverride);
+        Assert.Equal(7, dto!.Retention.Motion.Effective);
+    }
+
+    [Fact]
+    public async Task An_out_of_range_duration_is_clamped_rather_than_failing_the_save()
+    {
+        var camera = GivenCamera();
+
+        var dto = await _sut.ExecuteAsync(camera.Id, Request(continuousDays: -5, motionDays: 99_999));
+
+        Assert.Equal(0, camera.ContinuousDaysOverride);
+        Assert.Equal(RetentionPolicy.MaxDays, camera.MotionDaysOverride);
+        Assert.Contains("person", dto!.Labels);
     }
 
     [Fact]

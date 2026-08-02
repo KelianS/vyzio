@@ -1,6 +1,10 @@
 import type { AppError } from '../../common/errors/AppError'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
-import type { CameraStream, MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  CameraStream,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
@@ -8,6 +12,8 @@ export type CameraSelection =
   | { kind: 'manual' }
   | { kind: 'candidate'; index: number }
   | { kind: 'camera'; cameraId: string }
+  // Settings that belong to the installation rather than to any one camera (ADR-39).
+  | { kind: 'general' }
 
 export const emptyCameraDraft: CameraDraftInput = {
   displayName: '',
@@ -19,6 +25,17 @@ export const emptyCameraDraft: CameraDraftInput = {
   vendorFamily: null,
   sourceType: 'rtsp_manual',
   streamProtocol: 'rtsp',
+}
+
+// Placeholder until the camera's real retention arrives: no overrides, and zero days everywhere so
+// nothing claims to be kept before the server has said what is.
+const NOTHING_KEPT = { override: null, installation: 0, effective: 0 }
+
+export const emptyCameraRetention: CameraRetention = {
+  continuous: NOTHING_KEPT,
+  motion: NOTHING_KEPT,
+  eventClip: NOTHING_KEPT,
+  maxDays: 365,
 }
 
 export interface CamerasUido {
@@ -49,7 +66,7 @@ export interface CamerasUido {
   detectionLabels: string[]
   detectionAvailableLabels: string[]
   allDetectionLabels: DetectionLabel[]
-  detectionContinuousRecording: boolean
+  detectionRetention: CameraRetention
   detectionMotionSensitivity: MotionSensitivity
   detectionMotionSensitivityPinned: boolean
   detectionStreams: CameraStream[]
@@ -96,7 +113,7 @@ export function buildInitialCamerasUido(): CamerasUido {
     detectionLabels: ['person'],
     detectionAvailableLabels: [],
     allDetectionLabels: [],
-    detectionContinuousRecording: false,
+    detectionRetention: emptyCameraRetention,
     detectionMotionSensitivity: 'high',
     detectionMotionSensitivityPinned: false,
     detectionStreams: [],

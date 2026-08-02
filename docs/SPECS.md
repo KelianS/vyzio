@@ -221,7 +221,10 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 - l'utilisateur doit pouvoir consulter un historique filtre par camera, personne ou type d'evenement ;
 - les clips associes a un evenement doivent etre consultables quand ils existent ;
-- la retention doit etre configurable ;
+- la retention doit etre configurable, sur trois natures d'enregistrement distinctes : la video complete, les portions ou l'image bouge, et les clips rattaches a une detection ; chacune a sa propre duree, et une duree nulle signifie que rien n'est conserve pour cette nature ;
+- une duree de retention doit valoir pour toute l'installation par defaut, et rester surchargeable camera par camera ; une camera qui ne surcharge rien suit l'installation, et l'interface doit rendre visible lequel des deux s'applique ;
+- l'enregistrement de la video complete doit rester un choix explicite, et l'ordre de grandeur de sa consommation disque doit etre annonce avant activation ;
+- une camera dont aucune nature n'est conservee ne doit rien enregistrer du tout ;
 - le systeme doit supprimer automatiquement les donnees arrivees au terme de retention ;
 - l'utilisateur doit etre informe si la capacite de stockage devient critique.
 

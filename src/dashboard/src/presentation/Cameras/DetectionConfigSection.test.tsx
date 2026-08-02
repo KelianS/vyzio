@@ -1,8 +1,23 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DetectionConfigSection } from './DetectionConfigSection'
+import type { CameraRetention } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+
+// The shipped installation values, with this camera adding nothing of its own.
+const FOLLOWS_INSTALLATION: CameraRetention = {
+  continuous: { override: null, installation: 0, effective: 0 },
+  motion: { override: null, installation: 7, effective: 7 },
+  eventClip: { override: null, installation: 14, effective: 14 },
+  maxDays: 365,
+}
+
+// One window taken over by the camera; the other two still follow the installation.
+const MOTION_OVERRIDDEN: CameraRetention = {
+  ...FOLLOWS_INSTALLATION,
+  motion: { override: 30, installation: 7, effective: 30 },
+}
 
 const ALL_LABELS: DetectionLabel[] = [
   { value: 'person', displayName: 'Personne', emoji: '🧑' },
@@ -20,7 +35,7 @@ function renderSection(overrides: Partial<Props> = {}) {
     availableLabels: [],
     allLabels: ALL_LABELS,
     loading: false,
-    continuousRecordingEnabled: false,
+    retention: FOLLOWS_INSTALLATION,
     motionSensitivity: 'high',
     motionSensitivityPinned: false,
     streams: [],
@@ -28,7 +43,7 @@ function renderSection(overrides: Partial<Props> = {}) {
     pendingChanges: false,
     applyLoading: false,
     onToggle: vi.fn(),
-    onToggleContinuousRecording: vi.fn(),
+    onChangeRetention: vi.fn(),
     onChangeMotionSensitivity: vi.fn(),
     onToggleMotionSensitivityPin: vi.fn(),
     onChangeDetectStream: vi.fn(),
@@ -76,23 +91,101 @@ describe('DetectionConfigSection', () => {
     expect(screen.queryByText(/reconnaissance faciale ne fonctionnera pas/)).not.toBeInTheDocument()
   })
 
-  it('shows the storage warning only when continuous recording is enabled', () => {
-    const { unmount } = renderSection({ continuousRecordingEnabled: false })
-    expect(screen.queryByText(/1 a 3 Go par jour/)).not.toBeInTheDocument()
+  // ── Retention (ADR-39) ──
+
+  it('shows the disk warning only when full video is actually kept', () => {
+    const { unmount } = renderSection()
+    expect(screen.queryByText(/1 à 3 Go par jour/)).not.toBeInTheDocument()
     unmount()
 
-    renderSection({ continuousRecordingEnabled: true })
-    expect(screen.getByText(/1 a 3 Go par jour/)).toBeInTheDocument()
+    renderSection({
+      retention: {
+        ...FOLLOWS_INSTALLATION,
+        continuous: { override: 3, installation: 0, effective: 3 },
+      },
+    })
+    expect(screen.getByText(/1 à 3 Go par jour/)).toBeInTheDocument()
   })
 
-  it('calls onToggleContinuousRecording when the checkbox is toggled', async () => {
-    const onToggleContinuousRecording = vi.fn()
+  // The value that applies is always shown and always editable — never a blank field or a
+  // placeholder, even when it is inherited.
+  it('shows every duration as an editable field, inherited or not', () => {
+    renderSection()
+
+    expect(screen.getByLabelText('Vidéo complète')).toHaveValue(0)
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
+    expect(screen.getByLabelText('Clips d’alerte')).toHaveValue(14)
+  })
+
+  // Provenance is carried by the look of the value, not by a caption repeated on every row.
+  it('mutes an inherited value and leaves an overridden one plain', () => {
+    renderSection({ retention: MOTION_OVERRIDDEN })
+
+    expect(screen.getByLabelText('Vidéo complète').className).toContain('--inherited')
+    expect(screen.getByLabelText('Séquences de mouvement').className).not.toContain('--inherited')
+  })
+
+  // The core of the design: overriding one duration must not detach the other two.
+  it('offers a revert only on the overridden duration', () => {
+    renderSection({ retention: MOTION_OVERRIDDEN })
+
+    expect(screen.getAllByRole('button', { name: /Revenir aux réglages généraux/ })).toHaveLength(1)
+  })
+
+  it('offers no revert at all while every duration is inherited', () => {
+    renderSection()
+
+    expect(
+      screen.queryByRole('button', { name: /Revenir aux réglages généraux/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  // Wordless on screen, but the value it restores is still named for hover and screen readers.
+  it('names the restored duration on the revert control', async () => {
+    const onChangeRetention = vi.fn()
     const user = userEvent.setup()
-    renderSection({ onToggleContinuousRecording })
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
 
-    await user.click(screen.getByText('Enregistrer en continu'))
+    await user.click(
+      screen.getByRole('button', { name: 'Revenir aux réglages généraux : 7 jours' }),
+    )
 
-    expect(onToggleContinuousRecording).toHaveBeenCalledOnce()
+    expect(onChangeRetention).toHaveBeenCalledWith('motion', null)
+  })
+
+  // Committed on blur, not per keystroke: a half-typed number must never reach the server.
+  it('reports an edited duration only once the field is left', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
+
+    const field = screen.getByLabelText('Séquences de mouvement')
+    fireEvent.change(field, { target: { value: '9' } })
+    expect(onChangeRetention).not.toHaveBeenCalled()
+
+    fireEvent.blur(field)
+    expect(onChangeRetention).toHaveBeenCalledWith('motion', 9)
+  })
+
+  it('clamps a duration beyond the allowed maximum', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
+
+    const field = screen.getByLabelText('Séquences de mouvement')
+    fireEvent.change(field, { target: { value: '99999' } })
+    fireEvent.blur(field)
+
+    expect(onChangeRetention).toHaveBeenCalledWith('motion', 365)
+  })
+
+  it('says nothing when the field is left unchanged', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
+
+    const field = screen.getByLabelText('Séquences de mouvement')
+    fireEvent.change(field, { target: { value: '30' } })
+    fireEvent.blur(field)
+
+    expect(onChangeRetention).not.toHaveBeenCalled()
   })
 
   // ── Analysed stream picker (ADR-38) ──

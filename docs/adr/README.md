@@ -24,7 +24,7 @@ référence ces ADR sans les recopier.
 | [ADR-15](0015-association-profil-camera-table-de-jointure-filtrage.md) | Association profil-caméra : table de jointure + filtrage dans ProfileRulesService | Accepté |
 | [ADR-16](0016-acces-au-flux-live-polling-latest-jpg-via-vyzio.md) | Accès au flux live : polling latest.jpg via Vyzio, Frigate non exposé | Accepté |
 | [ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md) | Accès aux clips événementiels : proxy Vyzio authentifié en streaming | Accepté |
-| [ADR-18](0018-enregistrement-continu-activation-par-camera-dans-la.md) | Enregistrement continu : activation par caméra dans la config Frigate générée | Accepté |
+| [ADR-18](0018-enregistrement-continu-activation-par-camera-dans-la.md) | Enregistrement continu : activation par caméra dans la config Frigate générée | Remplacé par ADR-39 (rétention, activation) |
 | [ADR-19](0019-protocole-dvrip-xmeye-go2rtc-comme-passerelle-de.md) | Protocole dvrip/XMEye : go2rtc comme passerelle de fallback, transparent pour Frigate | Accepté |
 | [ADR-20](0020-privacy-mode-api-constructeur-en-premier-fallback.md) | Privacy Mode : API constructeur en premier, fallback Frigate `enabled: false` + `IVendorCameraAdapter` comme brique partagee | Accepté |
 | [ADR-21](0021-ptz-parking-et-adaptateur-onvif-generique-strategie.md) | PTZ Parking et adaptateur ONVIF générique : stratégie multi-couche pour le mode vie privée | Accepté |
@@ -45,3 +45,4 @@ référence ces ADR sans les recopier.
 | [ADR-36](0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md) | Alignement du débit d'images sur la caméra : capacité `StreamConfig`, conditionnée à la séparation détection/enregistrement | Accepté |
 | [ADR-37](0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) | Décodage vidéo matériel : `preset-vaapi` retenu, QuickSync différé (faute de codec connu par caméra) | Accepté |
 | [ADR-38](0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md) | Modèle de flux caméra : un flux = une qualité, un objectif = une caméra, rôles `detect`/`record` séparés | Accepté |
+| [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) | Réglages globaux surchargeables par caméra, appliqué à la rétention d'enregistrement | Accepté |

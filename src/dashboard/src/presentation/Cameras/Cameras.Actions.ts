@@ -1,6 +1,10 @@
 import type { AppError } from '../../common/errors/AppError'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
-import type { DetectionConfig, MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  DetectionConfig,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
@@ -9,6 +13,7 @@ export type CamerasAction =
   | { type: 'EDIT_FORM_UPDATED'; patch: Partial<CameraDraftInput> }
   | { type: 'EDIT_PASSWORD_CHANGED'; value: string }
   | { type: 'MANUAL_ENTRY_SELECTED' }
+  | { type: 'GENERAL_SETTINGS_SELECTED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }
   | { type: 'CAMERA_SELECTED'; cameraId: string }
   | {
@@ -21,7 +26,7 @@ export type CamerasAction =
   | { type: 'DETECTION_CONFIG_LOAD_STARTED'; editForm: CameraDraftInput }
   | { type: 'DETECTION_CONFIG_LOADED'; config: DetectionConfig | null; strategy: string }
   | { type: 'DETECTION_LABELS_TOGGLED'; labels: string[] }
-  | { type: 'DETECTION_CONTINUOUS_TOGGLED'; value: boolean }
+  | { type: 'DETECTION_RETENTION_CHANGED'; retention: CameraRetention }
   | { type: 'MOTION_SENSITIVITY_CHANGED'; value: MotionSensitivity }
   | { type: 'MOTION_SENSITIVITY_PIN_TOGGLED'; pinned: boolean }
   | { type: 'DETECT_STREAM_CHANGED'; streamId: string | null }

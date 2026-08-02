@@ -6,17 +6,24 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-public sealed class GetCameraDetectionConfigUseCase(ICameraRepository cameras)
+public sealed class GetCameraDetectionConfigUseCase(
+    ICameraRepository cameras,
+    IRecordingSettingsRepository recordingSettings)
 {
     public async Task<CameraDetectionConfigDto?> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
-        return camera is null ? null : CameraDetectionConfigDto.From(camera);
+        if (camera is null)
+            return null;
+
+        var installation = await recordingSettings.GetAsync(ct);
+        return CameraDetectionConfigDto.From(installation, camera);
     }
 }
 
 public sealed class SaveCameraDetectionConfigUseCase(
     ICameraRepository cameras,
+    IRecordingSettingsRepository recordingSettings,
     IFrigateConfigApplier frigateConfigApplier,
     IFrigateMotionSettingsPublisher motionSettingsPublisher)
 {
@@ -40,7 +47,12 @@ public sealed class SaveCameraDetectionConfigUseCase(
             validatedLabels = ["person"];
 
         camera.DetectionLabelsJson = JsonSerializer.Serialize(validatedLabels);
-        camera.ContinuousRecordingEnabled = request.ContinuousRecordingEnabled;
+
+        // Clamped rather than rejected: an out-of-range number is a slip, not a reason to lose the
+        // detection labels carried by the same save.
+        camera.ContinuousDaysOverride = RetentionPolicy.ClampDays(request.ContinuousDaysOverride);
+        camera.MotionDaysOverride = RetentionPolicy.ClampDays(request.MotionDaysOverride);
+        camera.EventClipDaysOverride = RetentionPolicy.ClampDays(request.EventClipDaysOverride);
 
         var sensitivityChanged = ApplySensitivity(camera, request);
         ApplyDetectStream(camera, request);
@@ -65,7 +77,8 @@ public sealed class SaveCameraDetectionConfigUseCase(
             }
         }
 
-        return CameraDetectionConfigDto.From(camera);
+        var installation = await recordingSettings.GetAsync(ct);
+        return CameraDetectionConfigDto.From(installation, camera);
     }
 
     // Returns whether the effective level changed. An unrecognised value is ignored rather than

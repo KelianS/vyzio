@@ -1,6 +1,9 @@
 # ADR-18 — Enregistrement continu : activation par caméra dans la config Frigate générée
 
-> Statut : Accepté
+> Statut : remplacé par [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)
+> sur la rétention et sur le booléen d'activation par caméra. Le schéma `record.retain.days` /
+> `record.retain.mode` décrit ici n'existe plus dans Frigate 0.17. Reste valable : l'enregistrement
+> intégral est un choix explicite, et son ordre de grandeur disque doit être annoncé avant activation.
 
 ## Contexte
 
