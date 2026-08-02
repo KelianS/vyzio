@@ -61,7 +61,7 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 2. **Coquille de navigation** — barre principale reduite a la consultation, arborescence de reglages a deux niveaux, routage porteur de la selection. Les ecrans existants sont branches dessous **tels quels**, sans regression fonctionnelle : c'est ce qui rend la transition incrementale au lieu d'un big-bang.
 
-3. **Grammaire des reglages** ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)) — la ligne de reglage et son rendu declaratif : un reglage est decrit (nature, options, unite, portee), le composant en deduit controle, alignement, provenance et retour arriere. C'est le prerequis de l'etape 6 : sans lui, chaque ecran repris redessine ses champs et la derive recommence.
+3. **Grammaire des reglages** ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)) — la ligne de reglage et son rendu declaratif : un reglage est decrit (nature, options, unite, portee), le composant en deduit controle, alignement, provenance et retour arriere. C'est le prerequis des etapes 6 et 9 : sans lui, chaque ecran repris redessine ses champs et la derive recommence.
 
 4. **Primitives d'edition** — brouillon de page, barre d'actions a position fixe, annonce de ce qui a change et du cout (interruption de la surveillance), confirmation a la sortie d'une page modifiee. Le retour arriere par champ d'ADR-39 est repris tel quel par-dessus.
 
@@ -69,11 +69,13 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 6. **Reprise des ecrans de reglages**, en commencant par les reglages d'installation (les plus recents, les moins intriques), puis notifications, puis detection. Chaque ecran repris emporte la suppression de ses regles dans `App.css`.
 
-7. **Reprise des ecrans de consultation** — accueil, historique, profils. Hors declencheur, mais requis pour vider `App.css`.
+7. **Demontage de `Cameras.Component.tsx`** — separer decouverte, onboarding, fiche camera et reglages ; scinder l'union `CameraSelection` qui sert a la fois de selection d'objet et de routage d'ecran. Apres l'etape 6, parce que c'est le plus intrique et que la coquille doit exister avant.
 
-8. **Demontage de `Cameras.Component.tsx`** — separer decouverte, onboarding, fiche camera et reglages ; scinder l'union `CameraSelection` qui sert a la fois de selection d'objet et de routage d'ecran. En dernier, parce que c'est le plus intrique et que la coquille doit exister avant.
+8. **Sort de l'interface technique** — elle quitte la barre principale pour la section avancee des reglages systeme.
 
-9. **Sort de l'interface technique** — elle quitte la barre principale pour la section avancee des reglages systeme.
+9. **Reprise des ecrans de consultation** — accueil, historique, profils. Hors declencheur, mais la coherence visuelle et la nouvelle hierarchie de navigation valent pour toute l'application, pas seulement pour les reglages. **Etape de cloture** : c'est elle qui vide le dernier reste d'`App.css`, et donc elle qui termine le chantier.
+
+**Fin de chantier** — les trois conditions, aucune negociable : `App.css` supprime ; aucun ecran hors socle ; aucun reglage hors grammaire ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)). Un chantier arrete avant est un chantier qui a ajoute un systeme au lieu d'en remplacer un.
 
 ---
 
