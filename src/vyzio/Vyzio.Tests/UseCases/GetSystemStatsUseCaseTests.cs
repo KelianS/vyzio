@@ -11,11 +11,24 @@ public class GetSystemStatsUseCaseTests
     private readonly IFrigateRestartTracker _restartTracker = Substitute.For<IFrigateRestartTracker>();
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly IFrigateDetectorPlanner _detectorPlanner = Substitute.For<IFrigateDetectorPlanner>();
+    private readonly IFrigateConfigApplier _configApplier = Substitute.For<IFrigateConfigApplier>();
     private readonly GetSystemStatsUseCase _sut;
 
     public GetSystemStatsUseCaseTests()
     {
-        _sut = new GetSystemStatsUseCase(_statsProvider, _restartTracker, _cameras, _detectorPlanner);
+        _sut = new GetSystemStatsUseCase(_statsProvider, _restartTracker, _cameras, _detectorPlanner, _configApplier);
+    }
+
+    [Fact]
+    public async Task Stats_report_a_configuration_written_but_not_applied_yet()
+    {
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _detectorPlanner.Plan(Arg.Any<int>()).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 5, FrigateHwAccel.None));
+        _configApplier.HasPendingChanges.Returns(true);
+
+        var result = await _sut.ExecuteAsync();
+
+        Assert.True(result.PendingChanges);
     }
 
     private static Camera MakeCamera(bool isEnabled = true, string validationState = "validated") => new()

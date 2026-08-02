@@ -205,7 +205,8 @@ Profile & Rules Service (.NET)    → Profils produit, mapping sub_label → pro
 Notification Service (.NET)       → Règles + envoi FCM/webhook/email
 Storage Service (.NET)            → Persistance événements enrichis (EF Core)
 FaceLibrarySyncService (.NET)     → Synchronisation des photos de profil Vyzio vers la bibliothèque Frigate
-CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, labels détection, face_recognition
+CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, labels détection, face_recognition, rôles detect/record
+CameraStreamEnumerator (.NET)     → Énumération des flux d'une caméra et de leur résolution (ADR-38), via ONVIF ou convention protocole
 MotionSensitivityTuner (.NET)     → Boucle d'auto-réglage de la sensibilité par caméra (ADR-35), appliquée à chaud via MQTT
 API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
 Dashboard / Hub (React + TS)      → UI grand public guidée
@@ -268,7 +269,8 @@ Vyzio gère uniquement ses propres données (profils, événements enrichis, not
 | `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink`, `DetectionEvent` |
 | `ProfilePhoto` | Photo de référence synchronisée vers Frigate (ADR-13) | → `Profile` |
 | `ProfileCameraLink` | Filtrage reconnaissance profil ↔ caméra (ADR-15) | → `Profile`, `Camera` |
-| `Camera` | Caméra : connexion, statut, privacy mode, protocoles détectés | ← `CameraCapabilityBinding`, `ProfileCameraLink` |
+| `Camera` | Caméra : **une scène**, connexion, statut, privacy mode, protocoles détectés (ADR-38) | ← `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
+| `CameraStream` | Point d'accès vidéo d'une caméra : qualité, chemin, résolution relevée (ADR-38) | → `Camera` |
 | `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
 | `DetectionEvent` | Événement enrichi consommé de Frigate (référence `frigate_event_id`) | → `Profile` (optionnel) |
 | `Notification` | Envoi par canal pour un événement | → `DetectionEvent` |
@@ -282,6 +284,8 @@ notification…) : voir le dossier des entités. La table `settings` reste une s
   référence Frigate (`frigate_event_id`) pour proxifier clips et thumbnails.
 - Credentials caméra **chiffrés au repos** (`Microsoft.AspNetCore.DataProtection`, §9.1).
 - Une capacité caméra n'est jamais activée sans un test réel réussi (`verified`, ADR-28).
+- Une `Camera` décrit **une seule scène** : ses `CameraStream` en sont des qualités, jamais des angles
+  de vue différents. Un boîtier multi-objectifs donne N `Camera` groupées par appareil (ADR-38).
 
 ---
 

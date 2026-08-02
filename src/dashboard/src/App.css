@@ -941,9 +941,12 @@
 .select {
   appearance: none;
   box-sizing: border-box;
-  border: 1px solid var(--line-soft, var(--border, #d1d5db));
+  /* A select must read as an actionable control on a white card: a translucent white fill on a
+     soft line made it disappear entirely. Solid fill + a stronger border is the minimum. */
+  border: 1px solid rgba(24, 32, 29, 0.28);
   border-radius: var(--radius-md, 8px);
-  background-color: rgba(255, 255, 255, 0.84);
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(24, 32, 29, 0.06);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2353605b' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -3483,6 +3486,70 @@
   font-size: 0.82rem;
   opacity: 0.65;
   padding-left: 22px;
+}
+
+/* ── Detection config hierarchy (ADR-38) ── */
+
+.detection-group + .detection-group {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(24, 32, 29, 0.1);
+}
+
+.detection-group-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 10px;
+}
+
+.detection-field + .detection-field {
+  margin-top: 16px;
+}
+
+.detection-field-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.detection-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  margin-bottom: 6px;
+}
+
+.detection-field-value {
+  font-size: 0.88rem;
+}
+
+.detection-field-hint {
+  font-size: 0.82rem;
+  opacity: 0.65;
+  margin-top: 6px;
+}
+
+.detection-pending {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid rgba(180, 120, 0, 0.35);
+  border-radius: var(--radius-md, 8px);
+  background-color: rgba(255, 196, 0, 0.09);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.detection-pending-text {
+  font-size: 0.85rem;
+  flex: 1 1 220px;
 }
 
 /* ── Detection config person warning ── */

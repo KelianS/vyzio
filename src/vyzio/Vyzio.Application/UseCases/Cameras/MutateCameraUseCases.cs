@@ -96,7 +96,10 @@ public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier)
     }
 }
 
-public sealed class VerifyCameraUseCase(ICameraRepository cameras, ICameraVerifier verifier)
+public sealed class VerifyCameraUseCase(
+    ICameraRepository cameras,
+    ICameraVerifier verifier,
+    ICameraStreamEnumerator streamEnumerator)
 {
     public async Task<CameraStatusDto?> ExecuteAsync(string id, CancellationToken ct = default)
     {
@@ -112,8 +115,93 @@ public sealed class VerifyCameraUseCase(ICameraRepository cameras, ICameraVerifi
         camera.LastSuccessfulFrameAt = result.LastSuccessfulFrameAt;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
+        // Verification is the one moment the camera is known reachable, so it is where Vyzio asks
+        // what it actually serves (ADR-38) — no extra user action, no extra round of connections.
+        if (result.Connected)
+        {
+            // A transport that just carried a successful verification is proven, exactly like a
+            // capability protocol that answered its probe. Capability probes alone would never
+            // record the transport, since Stream has no probe of its own (ADR-32).
+            camera.AddSupportedProtocol(camera.StreamProtocol == StreamProtocol.Dvrip
+                ? SupportedProtocol.Dvrip
+                : SupportedProtocol.Rtsp);
+
+            await SyncStreamsAsync(camera, ct);
+        }
+
         await cameras.UpdateAsync(camera, ct);
         return CameraStatusDto.From(camera, result.Guidance);
+    }
+
+    private async Task SyncStreamsAsync(Camera camera, CancellationToken ct)
+    {
+        var scenes = await streamEnumerator.EnumerateAsync(camera, ct);
+
+        // Only the scene this camera films is applied. Other scenes mean a multi-lens device, whose
+        // extra lenses become cameras of their own through onboarding, never streams here (ADR-38).
+        var scene = scenes.FirstOrDefault();
+        if (scene is null || scene.Streams.Count == 0)
+        {
+            return;
+        }
+
+        for (var ordinal = 0; ordinal < scene.Streams.Count; ordinal++)
+        {
+            var enumerated = scene.Streams[ordinal];
+            var existing = camera.Streams.FirstOrDefault(stream => stream.Ordinal == ordinal);
+            if (existing is null)
+            {
+                camera.Streams.Add(new CameraStream
+                {
+                    CameraId = camera.Id,
+                    Ordinal = ordinal,
+                    Path = enumerated.Path,
+                    Width = enumerated.Width,
+                    Height = enumerated.Height,
+                    Fps = enumerated.Fps,
+                });
+                continue;
+            }
+
+            // The main path is what the user entered and verified — enumeration refreshes what the
+            // camera reports about it, never overwrites the address that is known to work.
+            //
+            // Its size, however, is only adopted when the two addresses agree. Vendors alias their
+            // streams (a camera answering on /stream1 advertises /live/ch00_1 and /live/ch00_0 at
+            // different sizes), so attaching the advertised resolution to a path we cannot match
+            // would claim a size the stream does not have — and make Frigate upscale, which is the
+            // very waste this work removes (ADR-38).
+            var sizeApplies = ordinal != 0 || PathsMatch(existing.Path, enumerated.Path);
+
+            if (ordinal != 0)
+            {
+                existing.Path = enumerated.Path;
+            }
+
+            existing.Width = sizeApplies ? enumerated.Width : null;
+            existing.Height = sizeApplies ? enumerated.Height : null;
+            existing.Fps = sizeApplies ? enumerated.Fps : null;
+            existing.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        // A quality tier the camera no longer reports must not stay selectable — it would resolve to
+        // a stream that does not exist.
+        PruneStaleStreams(camera, scene);
+    }
+
+    private static bool PathsMatch(string? left, string? right)
+        => string.Equals(left?.TrimStart('/'), right?.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
+
+    // A rank the camera no longer reports must not stay selectable — it would resolve to a stream
+    // that does not exist. Rank 0 is never dropped: it holds the address the user verified.
+    private static void PruneStaleStreams(Camera camera, EnumeratedScene scene)
+    {
+        foreach (var stale in camera.Streams.Where(stream => stream.Ordinal >= scene.Streams.Count).ToList())
+        {
+            if (stale.Ordinal == 0) continue;
+            if (camera.DetectStreamId == stale.Id) camera.DetectStreamId = null;
+            camera.Streams.Remove(stale);
+        }
     }
 }
 
@@ -162,7 +250,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         camera.Host = normalizedHost;
         camera.Port = normalizedPort;
         camera.Username = normalizedUsername;
-        camera.StreamPath = normalizedStreamPath;
+        camera.SetMainStreamPath(normalizedStreamPath);
         camera.SourceType = normalizedSourceType;
         camera.VendorFamily = normalizedVendorFamily;
         camera.StreamProtocol = normalizedStreamProtocol;
@@ -350,7 +438,8 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
 internal static class CameraDraftFactory
 {
     public static Camera Build(CreateCameraRequest request, string slug)
-        => new()
+    {
+        var camera = new Camera
         {
             Slug = slug,
             DisplayName = request.DisplayName.Trim(),
@@ -358,7 +447,6 @@ internal static class CameraDraftFactory
             Port = request.Port > 0 ? request.Port : 554,
             Username = NormalizeOptional(request.Username),
             Password = NormalizeOptional(request.Password),
-            StreamPath = NormalizeStreamPath(request.StreamPath),
             VendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var vendorFamily) ? vendorFamily : null,
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
             StreamProtocol = SnakeCaseEnum.TryFromSnakeCase<StreamProtocol>(request.StreamProtocol, out var streamProtocol) ? streamProtocol : StreamProtocol.Rtsp,
@@ -368,6 +456,12 @@ internal static class CameraDraftFactory
             FrigateCameraName = slug.Replace('-', '_'),
             UpdatedAt = DateTimeOffset.UtcNow,
         };
+
+        // A camera is born with its main stream: the path given at onboarding is that stream's,
+        // not a column of the camera (ADR-38).
+        camera.SetMainStreamPath(NormalizeStreamPath(request.StreamPath));
+        return camera;
+    }
 
     public static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

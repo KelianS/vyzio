@@ -41,6 +41,7 @@ export function CamerasView() {
   const camerasLoading = useRootStore((s) => s.camerasLoading)
   const camerasError = useRootStore((s) => s.camerasError)
   const frigateStatus = useRootStore((s) => s.systemStats?.status ?? 'active')
+  const pendingChanges = useRootStore((s) => s.systemStats?.pendingChanges ?? false)
 
   const { selection } = uido
   const selectedCameraId = selection.kind === 'camera' ? selection.cameraId : null
@@ -53,6 +54,7 @@ export function CamerasView() {
     continuousRecordingEnabled: uido.detectionContinuousRecording,
     motionSensitivity: uido.detectionMotionSensitivity,
     motionSensitivityPinned: uido.detectionMotionSensitivityPinned,
+    detectStreamId: uido.detectionStreamId,
   }
 
   const [modalMedia, setModalMedia] = useState<{
@@ -1014,6 +1016,20 @@ export function CamerasView() {
                     continuousRecordingEnabled={uido.detectionContinuousRecording}
                     motionSensitivity={uido.detectionMotionSensitivity}
                     motionSensitivityPinned={uido.detectionMotionSensitivityPinned}
+                    streams={uido.detectionStreams}
+                    detectStreamId={uido.detectionStreamId}
+                    pendingChanges={pendingChanges}
+                    applyLoading={uido.applyLoading}
+                    onApplyConfiguration={handleApplyConfiguration}
+                    onChangeDetectStream={(streamId) => {
+                      if (selectedCameraId) {
+                        presenter.onChangeDetectStream(
+                          selectedCameraId,
+                          streamId,
+                          currentDetectionConfig,
+                        )
+                      }
+                    }}
                     onToggle={(value) => {
                       if (selectedCameraId) {
                         presenter.onToggleDetectionLabel(

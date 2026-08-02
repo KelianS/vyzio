@@ -60,6 +60,10 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux pouvoir integrer une camera qui ne supporte pas le RTSP nativement (ex. camera sur batterie ICSee/XMEye), afin de ne pas etre bloque par les limitations du protocole du fabricant.
 
+> **En tant qu'utilisateur**, je veux qu'un boitier a plusieurs objectifs apparaisse comme plusieurs cameras que je nomme separement, afin de retrouver chaque angle de vue par son nom dans mes alertes.
+
+> **En tant qu'utilisateur**, je veux choisir sur quel flux de ma camera l'analyse est faite, en voyant la resolution de chaque flux et ce que le choix change, afin d'arbitrer moi-meme entre fluidite du systeme et reconnaissance des visages.
+
 ### 2.2 Attendus fonctionnels
 
 - le systeme doit proposer un parcours guide d'ajout de camera ;
@@ -76,7 +80,12 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - chaque camera doit avoir un nom, un statut visible et une configuration editable ;
 - l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
 - une perte de flux doit etre detectee et visible sans diagnostic technique avance ;
-- lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, test de capacite) doivent etre suspendues avec un message explicite.
+- lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, test de capacite) doivent etre suspendues avec un message explicite ;
+- une camera designe **une seule scene** ; un boitier exposant plusieurs objectifs donne autant de cameras, nommables et configurables independamment, mais reconnaissables comme appartenant au meme appareil ;
+- lorsqu'une camera expose plusieurs flux de la meme scene, le produit doit les presenter avec leur resolution quand elle est connue, et laisser l'utilisateur choisir celui qui sert a l'analyse ;
+- ce choix doit etre accompagne d'une explication de ce qu'il change concretement (fluidite du systeme d'un cote, finesse de l'image analysee — donc reconnaissance des visages, vignette et images d'alerte — de l'autre) ; il n'est jamais impose silencieusement ;
+- par defaut, c'est le flux le plus leger qui est analyse : le moteur de detection reduit l'image de toute facon, donc analyser un flux tres detaille coute des ressources sans rien apporter ; ce defaut doit etre annonce comme tel dans l'interface, et le flux detaille doit rester accessible en un geste pour qui veut privilegier la reconnaissance des visages ;
+- le choix du flux d'analyse ne doit jamais degrader les enregistrements, qui restent faits sur le flux de meilleure qualite.
 
 ### 2.3 Catalogue de capacites et cameras non repertoriees
 

@@ -8,17 +8,19 @@ public sealed class GetSystemStatsUseCase(
     IFrigateStatsProvider statsProvider,
     IFrigateRestartTracker restartTracker,
     ICameraRepository cameras,
-    IFrigateDetectorPlanner detectorPlanner)
+    IFrigateDetectorPlanner detectorPlanner,
+    IFrigateConfigApplier configApplier)
 {
     public async Task<SystemStatsDto> ExecuteAsync(CancellationToken ct = default)
     {
         var detection = await ResolveDetectionConfigAsync(ct);
+        var pendingChanges = configApplier.HasPendingChanges;
         var stats = await statsProvider.TryGetStatsAsync(ct);
 
         if (stats is null)
         {
             var status = restartTracker.IsRestarting ? FrigateStatus.Restarting : FrigateStatus.Unavailable;
-            return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(status), Storage: null, Cameras: [], detection);
+            return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(status), Storage: null, Cameras: [], detection, pendingChanges);
         }
 
         restartTracker.MarkRestartComplete();
@@ -31,7 +33,7 @@ public sealed class GetSystemStatsUseCase(
             .Select(c => new CameraFpsDto(c.Camera, c.Fps))
             .ToList();
 
-        return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(FrigateStatus.Active), storage, cameraFps, detection);
+        return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(FrigateStatus.Active), storage, cameraFps, detection, pendingChanges);
     }
 
     private async Task<DetectionConfigDto> ResolveDetectionConfigAsync(CancellationToken ct)
@@ -47,7 +49,8 @@ public sealed record SystemStatsDto(
     string Status,
     StorageStatsDto? Storage,
     IReadOnlyList<CameraFpsDto> Cameras,
-    DetectionConfigDto Detection
+    DetectionConfigDto Detection,
+    bool PendingChanges
 );
 
 public sealed record StorageStatsDto(double TotalGb, double UsedGb, double FreeGb);
