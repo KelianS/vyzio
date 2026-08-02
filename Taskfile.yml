@@ -84,6 +84,12 @@ tasks:
     cmds:
       - pnpm format
 
+  front:format:check:
+    desc: Verifie le formatage du frontend sans le modifier (prettier --check)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm format:check
+
   # --- Backend (.NET) ---
 
   back:test:
