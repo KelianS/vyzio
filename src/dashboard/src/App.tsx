@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
 import './App.css'
 import { AppHeader } from './common/components/AppHeader'
 import { ToastProvider } from './common/components/Toast'
@@ -49,54 +49,61 @@ function AppShell() {
     <div className="layout-root">
       <AppHeader />
       <Suspense fallback={null}>
-        <Routes>
-          {/* Consultation */}
-          <Route path="/" element={<HubView />} />
-          <Route path="/history" element={<DetectionHistoryView />} />
-
-          {/* Reglages — arborescence a deux niveaux (ADR-40). Le routage porte la
-              selection : c'est lui, et non un etat d'ecran, qui dit ou l'on est. */}
-          <Route path="/settings" element={<SettingsView />}>
-            <Route path="cameras" element={<CamerasView />} />
-            <Route
-              path="detection"
-              element={<Navigate to="/settings/detection/personnes" replace />}
-            />
-            <Route path="detection/personnes" element={<ProfilesView />} />
-            <Route path="conservation" element={<ConservationPage />} />
-            <Route path="notifications" element={<NotificationSettingsView />} />
-            <Route path="systeme" element={<SystemPage />} />
-            <Route path="systeme/avance" element={<ExpertView />} />
-          </Route>
-
-          {/* Anciennes adresses : un lien garde ou un favori ne doit pas tomber
-              dans le vide parce que l'arborescence a change. */}
-          <Route path="/cameras" element={<Navigate to="/settings/cameras" replace />} />
-          <Route
-            path="/profiles"
-            element={<Navigate to="/settings/detection/personnes" replace />}
-          />
-          <Route
-            path="/notifications"
-            element={<Navigate to="/settings/notifications" replace />}
-          />
-          <Route path="/expert" element={<Navigate to="/settings/systeme/avance" replace />} />
-        </Routes>
+        <Outlet />
       </Suspense>
     </div>
   )
 }
 
-function App() {
+function Root() {
   return (
-    <BrowserRouter>
-      <AppContainerProvider>
-        <ToastProvider>
-          <AppShell />
-        </ToastProvider>
-      </AppContainerProvider>
-    </BrowserRouter>
+    <AppContainerProvider>
+      <ToastProvider>
+        <AppShell />
+      </ToastProvider>
+    </AppContainerProvider>
   )
+}
+
+// Routeur de donnees (et non `<BrowserRouter>`) : c'est ce qui donne acces a
+// `useBlocker`, seul moyen d'empecher une page modifiee d'etre quittee en
+// silence (ADR-41).
+const router = createBrowserRouter([
+  {
+    element: <Root />,
+    children: [
+      // Consultation
+      { path: '/', element: <HubView /> },
+      { path: '/history', element: <DetectionHistoryView /> },
+
+      // Reglages — arborescence a deux niveaux (ADR-40). Le routage porte la
+      // selection : c'est lui, et non un etat d'ecran, qui dit ou l'on est.
+      {
+        path: '/settings',
+        element: <SettingsView />,
+        children: [
+          { path: 'cameras', element: <CamerasView /> },
+          { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
+          { path: 'detection/personnes', element: <ProfilesView /> },
+          { path: 'conservation', element: <ConservationPage /> },
+          { path: 'notifications', element: <NotificationSettingsView /> },
+          { path: 'systeme', element: <SystemPage /> },
+          { path: 'systeme/avance', element: <ExpertView /> },
+        ],
+      },
+
+      // Anciennes adresses : un lien garde ou un favori ne doit pas tomber dans
+      // le vide parce que l'arborescence a change.
+      { path: '/cameras', element: <Navigate to="/settings/cameras" replace /> },
+      { path: '/profiles', element: <Navigate to="/settings/detection/personnes" replace /> },
+      { path: '/notifications', element: <Navigate to="/settings/notifications" replace /> },
+      { path: '/expert', element: <Navigate to="/settings/systeme/avance" replace /> },
+    ],
+  },
+])
+
+function App() {
+  return <RouterProvider router={router} />
 }
 
 export default App
