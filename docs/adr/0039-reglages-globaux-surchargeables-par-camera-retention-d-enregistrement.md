@@ -146,6 +146,12 @@ mais il ne s'applique qu'à la fenêtre « tout » — c'est la seule qui enregi
   légende, qui se répéterait sur chaque ligne sans rien apprendre. Le retour arrière n'existe que
   là où il y a quelque chose à annuler, et **nomme la valeur** qu'il rétablit plutôt que d'annoncer
   une remise à zéro : la valeur d'ensemble voyage donc jusqu'à la frontière API pour cela.
+- **La même mécanique vaut d'un cran au-dessus.** Une valeur d'installation jamais modifiée est
+  grisée par rapport à la valeur livrée, et se rétablit du même geste. La chaîne complète est donc
+  *valeur livrée → installation → caméra*, avec un seul mécanisme à comprendre : le niveau
+  au-dessus est toujours nommé et toujours récupérable. La différence est ce qui déclenche l'état
+  « suivi » — l'absence de surcharge côté caméra, l'égalité avec la valeur livrée côté installation,
+  car une installation n'a pas de surcharge à porter.
 - **La configuration générée ne répète pas ce qu'une caméra n'a pas surchargé.** Seul le réglage
   réellement propre à la caméra apparaît sous elle ; sinon le fichier laisserait croire que la valeur
   vient de la caméra alors qu'elle vient de l'installation.

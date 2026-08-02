@@ -2,10 +2,16 @@ import { useState } from 'react'
 import { RETENTION_EXPLANATION, RETENTION_LABEL, formatDays } from '../recording/retention'
 import type { RetentionWindow } from '../recording/retention'
 
-// What a camera-level field needs to say where its value comes from, and to give it back.
-export interface RetentionInheritance {
-  overridden: boolean
-  installationDays: number
+// The value this field falls back to, one level up: the installation values for a camera, the
+// shipped values for the installation itself. Same affordance at both levels.
+export interface RetentionFallback {
+  // Whether the field currently sits on its fallback — nothing to revert, nothing to signal.
+  atFallback: boolean
+  days: number
+  // Spelled out rather than derived from one another: French prepositions contract differently
+  // ("aux réglages généraux", "à la valeur d’origine") and a rule guessing that would be brittle.
+  followingLabel: string
+  revertLabel: string
   onRevert: () => void
 }
 
@@ -15,8 +21,7 @@ interface RetentionFieldProps {
   days: number
   maxDays: number
   onCommit: (days: number) => void
-  // Absent at installation level, where there is nothing above to inherit from.
-  inheritance?: RetentionInheritance
+  fallback?: RetentionFallback
 }
 
 // One retention duration, always showing the value that actually applies — never a blank field or
@@ -28,7 +33,7 @@ export function RetentionField({
   days,
   maxDays,
   onCommit,
-  inheritance,
+  fallback,
 }: RetentionFieldProps) {
   // Held while the user types so a half-typed number is never saved, and reconciled by being
   // dropped on commit — the props are the source of truth the rest of the time.
@@ -43,10 +48,11 @@ export function RetentionField({
     if (clamped !== days) onCommit(clamped)
   }
 
-  // Provenance is carried by the look of the value itself rather than by a caption: muted means
-  // inherited, plain means this camera owns it, and the revert only exists where there is something
-  // to revert. A caption on every row would repeat itself without teaching anything.
-  const inherited = inheritance !== undefined && !inheritance.overridden
+  // Provenance is carried by the look of the value rather than by a caption: muted while it sits on
+  // the fallback, plain once it has been set here, and the revert only exists where there is
+  // something to revert. A caption on every row would repeat itself without teaching anything.
+  const muted = fallback?.atFallback === true
+  const revertLabel = fallback && `${fallback.revertLabel} : ${formatDays(fallback.days)}`
 
   return (
     <div className="retention-row">
@@ -55,30 +61,30 @@ export function RetentionField({
       </label>
       <input
         id={id}
-        className={`retention-row-input${inherited ? ' retention-row-input--inherited' : ''}`}
+        className={`retention-row-input${muted ? ' retention-row-input--inherited' : ''}`}
         type="number"
         min={0}
         max={maxDays}
         value={typed ?? String(days)}
         // Hover and screen readers still get the words; the layout does not have to carry them.
-        title={inherited ? 'Suit les réglages généraux' : undefined}
+        title={muted ? fallback.followingLabel : undefined}
         onChange={(e) => setTyped(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') e.currentTarget.blur()
         }}
       />
-      <span className={`retention-row-unit${inherited ? ' retention-row-unit--inherited' : ''}`}>
+      <span className={`retention-row-unit${muted ? ' retention-row-unit--inherited' : ''}`}>
         jours
       </span>
 
-      {inheritance?.overridden && (
+      {fallback && !fallback.atFallback && (
         <button
           type="button"
           className="retention-revert"
-          onClick={inheritance.onRevert}
-          title={`Revenir aux réglages généraux : ${formatDays(inheritance.installationDays)}`}
-          aria-label={`Revenir aux réglages généraux : ${formatDays(inheritance.installationDays)}`}
+          onClick={fallback.onRevert}
+          title={revertLabel}
+          aria-label={revertLabel}
         >
           ↺
         </button>

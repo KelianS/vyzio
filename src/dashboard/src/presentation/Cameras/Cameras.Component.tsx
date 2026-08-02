@@ -625,7 +625,10 @@ export function CamerasView() {
               </div>
 
               <div className="camera-detail-sections">
-                <RecordingSettingsSection />
+                <RecordingSettingsSection
+                  getRecordingSettings={container.getRecordingSettings}
+                  saveRecordingSettings={container.saveRecordingSettings}
+                />
               </div>
             </>
           ) : selection.kind === 'manual' || selectedCandidate ? (

@@ -2,18 +2,21 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Settings;
 
-// Installation-wide retention (ADR-39). Three durations in days; zero means "keep nothing of this
-// kind", which is a legitimate answer and not an absent value.
+// One installation-wide retention window (ADR-39). `Default` is the value Vyzio ships with, sent so
+// the interface can offer a way back to it and name it — the same affordance a camera has for
+// returning to the installation values, one level up.
+public sealed record RetentionSettingDto(int Days, int Default);
+
 public sealed record RecordingSettingsDto(
-    int ContinuousDays,
-    int MotionDays,
-    int EventClipDays,
+    RetentionSettingDto Continuous,
+    RetentionSettingDto Motion,
+    RetentionSettingDto EventClip,
     int MaxDays)
 {
     public static RecordingSettingsDto From(RecordingSettings settings) => new(
-        settings.ContinuousDays,
-        settings.MotionDays,
-        settings.EventClipDays,
+        new RetentionSettingDto(settings.ContinuousDays, RecordingSettings.DefaultContinuousDays),
+        new RetentionSettingDto(settings.MotionDays, RecordingSettings.DefaultMotionDays),
+        new RetentionSettingDto(settings.EventClipDays, RecordingSettings.DefaultEventClipDays),
         RetentionPolicy.MaxDays);
 }
 

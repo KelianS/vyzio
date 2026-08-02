@@ -31,6 +31,10 @@ s'applique**. La couleur du nombre dit d'où il vient :
 
 Écrire dans un champ grisé suffit à en faire une valeur propre à la caméra.
 
+Les **Réglages généraux** marchent pareil, un cran au-dessus : une durée que vous n'avez jamais
+touchée reste grisée, et dès que vous la changez un **↺** apparaît pour revenir à la valeur d'origine
+de Vyzio. Vous pouvez donc toujours retrouver un état connu.
+
 **Chaque durée est indépendante.** Donner 30 jours de mouvement à la caméra du jardin ne détache pas
 ses deux autres durées : elles continuent de suivre les réglages généraux.
 

@@ -224,9 +224,13 @@ export function DetectionConfigSection({
                   days={retention[window].effective}
                   maxDays={retention.maxDays}
                   onCommit={(days) => onChangeRetention(window, days)}
-                  inheritance={{
-                    overridden: retention[window].override !== null,
-                    installationDays: retention[window].installation,
+                  fallback={{
+                    // Keyed on the override, not on value equality: a camera that happens to set
+                    // the same number still owns it, and must not follow later general changes.
+                    atFallback: retention[window].override === null,
+                    days: retention[window].installation,
+                    followingLabel: 'Suit les réglages généraux',
+                    revertLabel: 'Revenir aux réglages généraux',
                     onRevert: () => onChangeRetention(window, null),
                   }}
                 />
