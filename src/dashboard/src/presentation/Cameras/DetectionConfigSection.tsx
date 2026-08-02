@@ -1,7 +1,22 @@
 import { Btn } from '../../common/components/Btn'
 import { Select } from '../../common/components/Select'
-import type { CameraStream, MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  CameraStream,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+import {
+  CONTINUOUS_DISK_WARNING,
+  RETENTION_EFFECTIVE_FIELD,
+  RETENTION_EXPLANATION,
+  RETENTION_LABEL,
+  RETENTION_ORDER,
+  RETENTION_OVERRIDE_FIELD,
+  formatDays,
+  hasAnyOverride,
+  type RetentionWindow,
+} from '../../common/recording/retention'
 
 // Product wording only — the underlying Frigate setting is never named (principe produit #2).
 const SENSITIVITY_LABEL: Record<MotionSensitivity, string> = {
@@ -60,7 +75,7 @@ interface DetectionConfigSectionProps {
   availableLabels: string[]
   allLabels: DetectionLabel[]
   loading: boolean
-  continuousRecordingEnabled: boolean
+  retention: CameraRetention
   motionSensitivity: MotionSensitivity
   motionSensitivityPinned: boolean
   streams: CameraStream[]
@@ -68,7 +83,8 @@ interface DetectionConfigSectionProps {
   pendingChanges: boolean
   applyLoading: boolean
   onToggle: (value: string) => void
-  onToggleContinuousRecording: () => void
+  onChangeRetention: (window: RetentionWindow, days: number | null) => void
+  onToggleRetentionOverride: () => void
   onChangeMotionSensitivity: (value: MotionSensitivity) => void
   onToggleMotionSensitivityPin: () => void
   onChangeDetectStream: (streamId: string | null) => void
@@ -80,7 +96,7 @@ export function DetectionConfigSection({
   availableLabels,
   allLabels,
   loading,
-  continuousRecordingEnabled,
+  retention,
   motionSensitivity,
   motionSensitivityPinned,
   streams,
@@ -88,7 +104,8 @@ export function DetectionConfigSection({
   pendingChanges,
   applyLoading,
   onToggle,
-  onToggleContinuousRecording,
+  onChangeRetention,
+  onToggleRetentionOverride,
   onChangeMotionSensitivity,
   onToggleMotionSensitivityPin,
   onChangeDetectStream,
@@ -102,6 +119,8 @@ export function DetectionConfigSection({
   // A single stream leaves nothing to arbitrate — the choice only appears when the camera really
   // offers one (ADR-38).
   const selectedStream = streams.find((stream) => stream.id === detectStreamId)
+
+  const overridden = hasAnyOverride(retention)
 
   return (
     <section className="camera-detail-section">
@@ -204,19 +223,56 @@ export function DetectionConfigSection({
             </div>
 
             <div className="detection-field">
-              <span className="detection-field-label">Enregistrement</span>
+              <span className="detection-field-label">Ce qui est conservé</span>
               <label className="detection-check">
                 <input
                   type="checkbox"
-                  checked={continuousRecordingEnabled}
-                  onChange={onToggleContinuousRecording}
+                  checked={!overridden}
+                  onChange={onToggleRetentionOverride}
                 />
-                Enregistrer en continu
+                Comme le reste de l’installation
               </label>
-              {continuousRecordingEnabled && (
-                <p className="detection-field-hint">
-                  L’enregistrement continu consomme environ 1 a 3 Go par jour par camera.
-                </p>
+
+              {overridden ? (
+                <>
+                  {RETENTION_ORDER.map((window) => (
+                    <div key={window} className="retention-row">
+                      <label className="retention-row-label" htmlFor={`retention-${window}`}>
+                        {RETENTION_LABEL[window]}
+                      </label>
+                      <input
+                        id={`retention-${window}`}
+                        className="retention-row-input"
+                        type="number"
+                        min={0}
+                        max={365}
+                        value={retention[RETENTION_OVERRIDE_FIELD[window]] ?? retention[RETENTION_EFFECTIVE_FIELD[window]]}
+                        onChange={(e) =>
+                          onChangeRetention(window, Number.parseInt(e.target.value, 10) || 0)
+                        }
+                      />
+                      <span className="retention-row-unit">jours</span>
+                      <p className="detection-field-hint">{RETENTION_EXPLANATION[window]}</p>
+                    </div>
+                  ))}
+                  <p className="detection-field-hint">
+                    Mettre 0 signifie que rien n’est conservé de cette nature. Si les trois valent 0,
+                    cette caméra n’enregistre plus rien.
+                  </p>
+                </>
+              ) : (
+                <ul className="retention-summary">
+                  {RETENTION_ORDER.map((window) => (
+                    <li key={window}>
+                      {RETENTION_LABEL[window]} :{' '}
+                      <strong>{formatDays(retention[RETENTION_EFFECTIVE_FIELD[window]] as number)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {retention.effectiveContinuousDays > 0 && (
+                <p className="detection-field-hint">{CONTINUOUS_DISK_WARNING}</p>
               )}
             </div>
           </div>

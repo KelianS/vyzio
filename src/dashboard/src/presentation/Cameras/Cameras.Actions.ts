@@ -1,6 +1,10 @@
 import type { AppError } from '../../common/errors/AppError'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
-import type { DetectionConfig, MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  DetectionConfig,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
@@ -21,7 +25,7 @@ export type CamerasAction =
   | { type: 'DETECTION_CONFIG_LOAD_STARTED'; editForm: CameraDraftInput }
   | { type: 'DETECTION_CONFIG_LOADED'; config: DetectionConfig | null; strategy: string }
   | { type: 'DETECTION_LABELS_TOGGLED'; labels: string[] }
-  | { type: 'DETECTION_CONTINUOUS_TOGGLED'; value: boolean }
+  | { type: 'DETECTION_RETENTION_CHANGED'; retention: CameraRetention }
   | { type: 'MOTION_SENSITIVITY_CHANGED'; value: MotionSensitivity }
   | { type: 'MOTION_SENSITIVITY_PIN_TOGGLED'; pinned: boolean }
   | { type: 'DETECT_STREAM_CHANGED'; streamId: string | null }

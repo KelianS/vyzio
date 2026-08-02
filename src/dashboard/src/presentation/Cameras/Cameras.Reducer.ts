@@ -1,5 +1,5 @@
 import type { CamerasAction } from './Cameras.Actions'
-import type { CamerasUido } from './Cameras.Uido'
+import { emptyCameraRetention, type CamerasUido } from './Cameras.Uido'
 
 export function camerasReducer(state: CamerasUido, action: CamerasAction): CamerasUido {
   switch (action.type) {
@@ -90,7 +90,7 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
         editPassword: '',
         detectionLabels: ['person'],
         detectionAvailableLabels: [],
-        detectionContinuousRecording: false,
+        detectionRetention: emptyCameraRetention,
         detectionStreams: [],
         detectionStreamId: null,
         strategyFeedback: null,
@@ -106,7 +106,7 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
           ? {
               detectionLabels: action.config.labels,
               detectionAvailableLabels: action.config.availableLabels,
-              detectionContinuousRecording: action.config.continuousRecordingEnabled,
+              detectionRetention: action.config.retention,
               detectionMotionSensitivity: action.config.motionSensitivity,
               detectionMotionSensitivityPinned: action.config.motionSensitivityPinned,
               detectionStreams: action.config.streams,
@@ -118,8 +118,8 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
     case 'DETECTION_LABELS_TOGGLED':
       return { ...state, detectionLabels: action.labels }
 
-    case 'DETECTION_CONTINUOUS_TOGGLED':
-      return { ...state, detectionContinuousRecording: action.value }
+    case 'DETECTION_RETENTION_CHANGED':
+      return { ...state, detectionRetention: action.retention }
 
     case 'MOTION_SENSITIVITY_CHANGED':
       return { ...state, detectionMotionSensitivity: action.value }

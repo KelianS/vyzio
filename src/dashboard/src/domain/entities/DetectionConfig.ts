@@ -12,11 +12,23 @@ export interface CameraStream {
   fps: number | null
 }
 
+// Retention as this camera sees it (ADR-39). The overrides say what the camera decided for itself,
+// null meaning "follow the installation"; the effective days say what actually applies, so the view
+// never has to re-derive it.
+export interface CameraRetention {
+  continuousDaysOverride: number | null
+  motionDaysOverride: number | null
+  eventClipDaysOverride: number | null
+  effectiveContinuousDays: number
+  effectiveMotionDays: number
+  effectiveEventClipDays: number
+}
+
 export interface DetectionConfig {
   cameraId: string
   labels: string[]
   availableLabels: string[]
-  continuousRecordingEnabled: boolean
+  retention: CameraRetention
   motionSensitivity: MotionSensitivity
   motionSensitivityPinned: boolean
   streams: CameraStream[]
@@ -27,8 +39,10 @@ export interface DetectionConfig {
 // carry the rest through unchanged, which is exactly where a long positional list gets mis-ordered.
 export interface DetectionConfigUpdate {
   labels: string[]
-  continuousRecordingEnabled: boolean
   motionSensitivity: MotionSensitivity
   motionSensitivityPinned: boolean
   detectStreamId: string | null
+  continuousDaysOverride: number | null
+  motionDaysOverride: number | null
+  eventClipDaysOverride: number | null
 }

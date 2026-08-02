@@ -4,6 +4,7 @@ import type { ToastTone } from '../../common/components/Toast'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { Camera } from '../../domain/entities/Camera'
 import type {
+  CameraRetention,
   DetectionConfigUpdate,
   MotionSensitivity,
 } from '../../domain/entities/DetectionConfig'
@@ -12,6 +13,12 @@ import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { CamerasAction } from './Cameras.Actions'
 import type { CameraSelection } from './Cameras.Uido'
+import {
+  RETENTION_EFFECTIVE_FIELD,
+  RETENTION_OVERRIDE_FIELD,
+  hasAnyOverride,
+  type RetentionWindow,
+} from '../../common/recording/retention'
 
 export interface CamerasPresenterContext {
   container: CamerasContainer
@@ -28,6 +35,12 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
   function saveDetectionConfig(cameraId: string, update: DetectionConfigUpdate): void {
     container.saveCameraDetectionConfig
       .execute(cameraId, update)
+      .then((config) => {
+        // Effective retention is resolved server-side (override ?? installation), so clearing an
+        // override leaves the client with no way to know what the camera falls back to. It takes
+        // the resolved answer rather than guessing (ADR-39).
+        dispatch({ type: 'DETECTION_RETENTION_CHANGED', retention: config.retention })
+      })
       .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
   }
 
@@ -120,10 +133,42 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
       saveDetectionConfig(cameraId, { ...current, labels })
     },
 
-    onToggleDetectionContinuous(cameraId: string, current: DetectionConfigUpdate) {
-      const continuousRecordingEnabled = !current.continuousRecordingEnabled
-      dispatch({ type: 'DETECTION_CONTINUOUS_TOGGLED', value: continuousRecordingEnabled })
-      saveDetectionConfig(cameraId, { ...current, continuousRecordingEnabled })
+    onChangeRetention(
+      cameraId: string,
+      window: RetentionWindow,
+      days: number | null,
+      current: DetectionConfigUpdate,
+      retention: CameraRetention,
+    ) {
+      const update = { ...current, [RETENTION_OVERRIDE_FIELD[window]]: days }
+      // Optimistic on the window being edited; the server's answer replaces the whole thing on
+      // success, which is what keeps the untouched windows honest.
+      dispatch({
+        type: 'DETECTION_RETENTION_CHANGED',
+        retention: {
+          ...retention,
+          [RETENTION_OVERRIDE_FIELD[window]]: days,
+          [RETENTION_EFFECTIVE_FIELD[window]]: days ?? retention[RETENTION_EFFECTIVE_FIELD[window]],
+        },
+      })
+      saveDetectionConfig(cameraId, update)
+    },
+
+    // Switching a camera off the installation seeds its overrides with what already applied, so
+    // taking control changes nothing by itself. Switching back clears all three.
+    onToggleRetentionOverride(
+      cameraId: string,
+      current: DetectionConfigUpdate,
+      retention: CameraRetention,
+    ) {
+      const overridden = hasAnyOverride(retention)
+      const update: DetectionConfigUpdate = {
+        ...current,
+        continuousDaysOverride: overridden ? null : retention.effectiveContinuousDays,
+        motionDaysOverride: overridden ? null : retention.effectiveMotionDays,
+        eventClipDaysOverride: overridden ? null : retention.effectiveEventClipDays,
+      }
+      saveDetectionConfig(cameraId, update)
     },
 
     onChangeMotionSensitivity(

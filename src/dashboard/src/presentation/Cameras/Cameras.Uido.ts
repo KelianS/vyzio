@@ -1,6 +1,10 @@
 import type { AppError } from '../../common/errors/AppError'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
-import type { CameraStream, MotionSensitivity } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  CameraStream,
+  MotionSensitivity,
+} from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
@@ -19,6 +23,17 @@ export const emptyCameraDraft: CameraDraftInput = {
   vendorFamily: null,
   sourceType: 'rtsp_manual',
   streamProtocol: 'rtsp',
+}
+
+// Placeholder until the camera's real retention arrives: no overrides, and effective days at zero
+// so nothing claims to be kept before the server has said what is.
+export const emptyCameraRetention: CameraRetention = {
+  continuousDaysOverride: null,
+  motionDaysOverride: null,
+  eventClipDaysOverride: null,
+  effectiveContinuousDays: 0,
+  effectiveMotionDays: 0,
+  effectiveEventClipDays: 0,
 }
 
 export interface CamerasUido {
@@ -49,7 +64,7 @@ export interface CamerasUido {
   detectionLabels: string[]
   detectionAvailableLabels: string[]
   allDetectionLabels: DetectionLabel[]
-  detectionContinuousRecording: boolean
+  detectionRetention: CameraRetention
   detectionMotionSensitivity: MotionSensitivity
   detectionMotionSensitivityPinned: boolean
   detectionStreams: CameraStream[]
@@ -96,7 +111,7 @@ export function buildInitialCamerasUido(): CamerasUido {
     detectionLabels: ['person'],
     detectionAvailableLabels: [],
     allDetectionLabels: [],
-    detectionContinuousRecording: false,
+    detectionRetention: emptyCameraRetention,
     detectionMotionSensitivity: 'high',
     detectionMotionSensitivityPinned: false,
     detectionStreams: [],

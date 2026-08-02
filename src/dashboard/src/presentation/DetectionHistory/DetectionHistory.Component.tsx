@@ -9,6 +9,7 @@ import type { Profile } from '../../domain/entities/Profile'
 import { buildDetectionHistoryPresenter } from './DetectionHistory.Presenter'
 import { detectionHistoryReducer } from './DetectionHistory.Reducer'
 import { buildInitialDetectionHistoryUido } from './DetectionHistory.Uido'
+import { RecordingSettingsSection } from './RecordingSettingsSection'
 
 export function DetectionHistoryView() {
   const { apiBaseUrl, detectionHistory: container } = useAppContainer()
@@ -283,6 +284,8 @@ export function DetectionHistoryView() {
           )}
         </div>
       </div>
+
+      <RecordingSettingsSection />
     </div>
   )
 }

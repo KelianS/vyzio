@@ -51,10 +51,12 @@ export function CamerasView() {
   // as they currently stand rather than just the one it changes.
   const currentDetectionConfig: DetectionConfigUpdate = {
     labels: uido.detectionLabels,
-    continuousRecordingEnabled: uido.detectionContinuousRecording,
     motionSensitivity: uido.detectionMotionSensitivity,
     motionSensitivityPinned: uido.detectionMotionSensitivityPinned,
     detectStreamId: uido.detectionStreamId,
+    continuousDaysOverride: uido.detectionRetention.continuousDaysOverride,
+    motionDaysOverride: uido.detectionRetention.motionDaysOverride,
+    eventClipDaysOverride: uido.detectionRetention.eventClipDaysOverride,
   }
 
   const [modalMedia, setModalMedia] = useState<{
@@ -1013,7 +1015,7 @@ export function CamerasView() {
                     availableLabels={uido.detectionAvailableLabels}
                     allLabels={uido.allDetectionLabels}
                     loading={uido.detectionConfigLoading}
-                    continuousRecordingEnabled={uido.detectionContinuousRecording}
+                    retention={uido.detectionRetention}
                     motionSensitivity={uido.detectionMotionSensitivity}
                     motionSensitivityPinned={uido.detectionMotionSensitivityPinned}
                     streams={uido.detectionStreams}
@@ -1039,11 +1041,23 @@ export function CamerasView() {
                         )
                       }
                     }}
-                    onToggleContinuousRecording={() => {
+                    onChangeRetention={(window, days) => {
                       if (selectedCameraId) {
-                        presenter.onToggleDetectionContinuous(
+                        presenter.onChangeRetention(
+                          selectedCameraId,
+                          window,
+                          days,
+                          currentDetectionConfig,
+                          uido.detectionRetention,
+                        )
+                      }
+                    }}
+                    onToggleRetentionOverride={() => {
+                      if (selectedCameraId) {
+                        presenter.onToggleRetentionOverride(
                           selectedCameraId,
                           currentDetectionConfig,
+                          uido.detectionRetention,
                         )
                       }
                     }}

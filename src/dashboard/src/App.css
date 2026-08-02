@@ -3534,6 +3534,50 @@
   margin-top: 6px;
 }
 
+/* Retention rows (ADR-39): label, number of days, unit on one line, explanation underneath. */
+.retention-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  column-gap: 10px;
+  margin-top: 12px;
+}
+
+.retention-row-label {
+  font-size: 0.88rem;
+}
+
+.retention-row-input {
+  width: 76px;
+  padding: 6px 8px;
+  border: 1px solid rgba(24, 32, 29, 0.28);
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(24, 32, 29, 0.06);
+  font: inherit;
+  text-align: right;
+}
+
+.retention-row-unit {
+  font-size: 0.82rem;
+  opacity: 0.7;
+}
+
+.retention-row .detection-field-hint {
+  grid-column: 1 / -1;
+}
+
+.retention-summary {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 0.88rem;
+}
+
+.retention-summary li {
+  margin-bottom: 4px;
+}
+
 .detection-pending {
   margin-top: 20px;
   padding: 12px 14px;

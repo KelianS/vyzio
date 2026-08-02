@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DetectionConfigSection } from './DetectionConfigSection'
+import type { CameraRetention } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+
+// The shipped installation values, with this camera adding nothing of its own.
+const FOLLOWS_INSTALLATION: CameraRetention = {
+  continuousDaysOverride: null,
+  motionDaysOverride: null,
+  eventClipDaysOverride: null,
+  effectiveContinuousDays: 0,
+  effectiveMotionDays: 7,
+  effectiveEventClipDays: 14,
+}
 
 const ALL_LABELS: DetectionLabel[] = [
   { value: 'person', displayName: 'Personne', emoji: '🧑' },
@@ -20,7 +31,7 @@ function renderSection(overrides: Partial<Props> = {}) {
     availableLabels: [],
     allLabels: ALL_LABELS,
     loading: false,
-    continuousRecordingEnabled: false,
+    retention: FOLLOWS_INSTALLATION,
     motionSensitivity: 'high',
     motionSensitivityPinned: false,
     streams: [],
@@ -28,7 +39,8 @@ function renderSection(overrides: Partial<Props> = {}) {
     pendingChanges: false,
     applyLoading: false,
     onToggle: vi.fn(),
-    onToggleContinuousRecording: vi.fn(),
+    onChangeRetention: vi.fn(),
+    onToggleRetentionOverride: vi.fn(),
     onChangeMotionSensitivity: vi.fn(),
     onToggleMotionSensitivityPin: vi.fn(),
     onChangeDetectStream: vi.fn(),
@@ -76,23 +88,57 @@ describe('DetectionConfigSection', () => {
     expect(screen.queryByText(/reconnaissance faciale ne fonctionnera pas/)).not.toBeInTheDocument()
   })
 
-  it('shows the storage warning only when continuous recording is enabled', () => {
-    const { unmount } = renderSection({ continuousRecordingEnabled: false })
-    expect(screen.queryByText(/1 a 3 Go par jour/)).not.toBeInTheDocument()
+  // ── Retention (ADR-39) ──
+
+  it('shows the disk warning only when full video is actually kept', () => {
+    const { unmount } = renderSection()
+    expect(screen.queryByText(/1 à 3 Go par jour/)).not.toBeInTheDocument()
     unmount()
 
-    renderSection({ continuousRecordingEnabled: true })
-    expect(screen.getByText(/1 a 3 Go par jour/)).toBeInTheDocument()
+    renderSection({ retention: { ...FOLLOWS_INSTALLATION, effectiveContinuousDays: 3 } })
+    expect(screen.getByText(/1 à 3 Go par jour/)).toBeInTheDocument()
   })
 
-  it('calls onToggleContinuousRecording when the checkbox is toggled', async () => {
-    const onToggleContinuousRecording = vi.fn()
+  // Following the installation is a summary, not three inputs the user could mistake for its own.
+  it('summarises what applies while the camera follows the installation', () => {
+    renderSection()
+
+    expect(screen.getByText(/Vidéo complète/)).toBeInTheDocument()
+    expect(screen.getByText('non conservé')).toBeInTheDocument()
+    expect(screen.getByText('7 jours')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Séquences de mouvement')).not.toBeInTheDocument()
+  })
+
+  it('offers a field per window once the camera decides for itself', () => {
+    renderSection({ retention: { ...FOLLOWS_INSTALLATION, motionDaysOverride: 30 } })
+
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(30)
+    expect(screen.getByLabelText('Vidéo complète')).toBeInTheDocument()
+    expect(screen.getByLabelText('Clips d’alerte')).toBeInTheDocument()
+  })
+
+  it('calls onToggleRetentionOverride when the camera is taken off the installation', async () => {
+    const onToggleRetentionOverride = vi.fn()
     const user = userEvent.setup()
-    renderSection({ onToggleContinuousRecording })
+    renderSection({ onToggleRetentionOverride })
 
-    await user.click(screen.getByText('Enregistrer en continu'))
+    await user.click(screen.getByText('Comme le reste de l’installation'))
 
-    expect(onToggleContinuousRecording).toHaveBeenCalledOnce()
+    expect(onToggleRetentionOverride).toHaveBeenCalledOnce()
+  })
+
+  // fireEvent rather than userEvent.type: the field is controlled by props that do not move in a
+  // static render, so typing would append to the old value instead of replacing it.
+  it('calls onChangeRetention with the edited window and its new duration', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({
+      retention: { ...FOLLOWS_INSTALLATION, motionDaysOverride: 3 },
+      onChangeRetention,
+    })
+
+    fireEvent.change(screen.getByLabelText('Séquences de mouvement'), { target: { value: '9' } })
+
+    expect(onChangeRetention).toHaveBeenLastCalledWith('motion', 9)
   })
 
   // ── Analysed stream picker (ADR-38) ──

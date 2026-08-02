@@ -7,6 +7,7 @@ import {
 import { HttpHubRepository } from '../repositories/HttpHubRepository'
 import { HttpNotificationSettingsRepository } from '../repositories/HttpNotificationSettingsRepository'
 import { HttpProfileRepository } from '../repositories/HttpProfileRepository'
+import { HttpRecordingSettingsRepository } from '../repositories/HttpRecordingSettingsRepository'
 import { HttpSystemRepository } from '../repositories/HttpSystemRepository'
 import { makeCamerasContainer, type CamerasContainer } from './cameras.container'
 import {
@@ -37,6 +38,7 @@ export function makeAppContainer(): AppContainer {
   const notificationSettingsRepository = new HttpNotificationSettingsRepository(runtime.apiBaseUrl)
   const cameraLabelsRepository = new HttpCameraLabelsRepository(runtime.apiBaseUrl)
   const notificationLabelsRepository = new HttpNotificationLabelsRepository(runtime.apiBaseUrl)
+  const recordingSettingsRepository = new HttpRecordingSettingsRepository(runtime.apiBaseUrl)
 
   return {
     apiBaseUrl: runtime.apiBaseUrl,
@@ -48,7 +50,11 @@ export function makeAppContainer(): AppContainer {
       notificationSettingsRepository,
       notificationLabelsRepository,
     ),
-    detectionHistory: makeDetectionHistoryContainer(profileRepository, cameraLabelsRepository),
+    detectionHistory: makeDetectionHistoryContainer(
+      profileRepository,
+      cameraLabelsRepository,
+      recordingSettingsRepository,
+    ),
   }
 }
 
