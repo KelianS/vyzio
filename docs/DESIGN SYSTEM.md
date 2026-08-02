@@ -73,13 +73,27 @@ socle corrige, et rend toute mise a jour de primitive risquee.
 litterale de couleur, de rayon ou d'ombre n'est ecrite dans un composant : elle passe par un token.
 C'est ce qui rend un defaut de contraste corrigeable en un point plutot qu'ecran par ecran.
 
+### Ecrans de reglages
+
+Un reglage **se declare, il ne se dessine pas** : sa nature determine son controle, son alignement,
+sa provenance et son retour arriere. La table des controles et l'anatomie de la ligne de reglage sont
+fixees par [ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) —
+foyer unique, non recopie ici. Dessiner un reglage a la main est une exception a justifier.
+
 ### Regles de transition
 
-Tant que la migration n'est pas finie, deux systemes de style coexistent. Pour que ce soit une
-transition et pas un troisieme systeme :
+`App.css` est **supprime**, pas reduit : deux systemes de style sans echeance en font trois. La
+migration va jusqu'au bout, ecrans de consultation compris.
 
 - **aucune regle nouvelle dans `App.css`** — tout ecran nouveau ou repris est en Tailwind ;
-- **un ecran repris emporte la suppression de ses regles**, donc `App.css` decroit de facon monotone.
+- **un ecran repris emporte la suppression de ses regles**, donc `App.css` decroit de facon monotone ;
+  sa taille est l'indicateur d'avancement, sa disparition la condition de fin.
+
+Ce qui disparait, ce sont les **classes globales**. Les tokens restent en CSS : c'est le format natif
+de la configuration de theme, pas un reliquat.
+
+Le **theme sombre est supporte partout**. Chaque couleur employee etant un token qui porte ses deux
+valeurs, un ecran sans version sombre est un ecran qui ecrit une couleur en dur.
 
 Le responsive suit l'echelle de la bibliotheque, appliquee du petit ecran vers le grand. Un point de
 rupture hors echelle est une exception a justifier.

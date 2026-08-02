@@ -49,3 +49,4 @@ référence ces ADR sans les recopier.
 | [ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) | Architecture de l'information : séparer consulter et régler, arborescence de réglages à deux niveaux | Accepté |
 | [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) | Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer | Accepté |
 | [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) | Socle de composants d'interface : shadcn/ui sur Radix et Tailwind, tokens du design system en source unique | Accepté |
+| [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) | Grammaire des réglages : un réglage se déclare, il ne se dessine pas | Accepté |

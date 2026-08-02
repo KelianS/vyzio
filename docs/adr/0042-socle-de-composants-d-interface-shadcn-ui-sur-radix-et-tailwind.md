@@ -103,17 +103,27 @@ Le DESIGN SYSTEM reste la **source** des couleurs, rayons et ombres, et le thèm
 passe par un token. C'est ce qui rend un défaut de contraste corrigeable en un point plutôt qu'écran
 par écran.
 
-### La cohabitation avec le CSS existant est bornée dans le temps
+### Un seul système de style à l'arrivée : `App.css` disparaît
 
-Les deux systèmes coexistent pendant la transition — c'est le coût principal de cette décision et il
-est réel. Deux règles l'empêchent de s'installer :
+Deux systèmes de style qui cohabitent sans échéance ne sont pas une transition, ce sont trois
+systèmes — l'ancien, le nouveau, et la frontière entre les deux qu'il faut arbitrer à chaque écran.
+**La migration va donc jusqu'au bout : `App.css` est supprimé, pas réduit.**
+
+Deux règles pendant la reprise :
 
 - **aucune règle nouvelle n'est ajoutée à `App.css`** ; tout écran nouveau ou repris est en Tailwind ;
-- **un écran repris emporte la suppression de ses règles** dans `App.css`, qui décroît donc de façon
-  monotone jusqu'à disparaître.
+- **un écran repris emporte la suppression de ses règles**, si bien que le fichier décroît de façon
+  monotone. Sa taille est l'indicateur d'avancement du chantier, et sa disparition en est la
+  condition de fin.
 
-Un système de style laissé en cohabitation sans échéance est un troisième système, pas une
-transition.
+**Conséquence assumée sur le périmètre** : `App.css` habille les six écrans, pas seulement ceux de
+réglages. Aller au bout emporte donc la reprise des écrans de **consultation** — accueil, historique,
+profils — qui ne relèvent pas de la refonte de configuration. Le chantier est plus large que son
+déclencheur ; c'est le prix d'un socle unique, et le nier reviendrait à planifier la cohabitation
+qu'on vient d'écarter.
+
+**Attention à la distinction** : ce qui disparaît, ce sont les **classes globales**. Les tokens, eux,
+restent en CSS — c'est le format natif de la configuration de thème, pas un reliquat.
 
 ### Le responsive devient systématique
 
@@ -129,8 +139,9 @@ petit écran vers le grand, conformément au mobile-first posé par ADR-40. Un p
 - **Le DESIGN SYSTEM est réécrit** autour des tokens et des deux étages de composants. Il cesse de
   décrire quatre composants maison pour décrire un système ; palette et règle de forme y survivent
   inchangées.
-- **`App.css` devient un solde à liquider**, dont la décroissance est un indicateur de progression de
-  la refonte.
+- **`App.css` devient un solde à liquider**, dont la décroissance est l'indicateur de progression de
+  la refonte et la disparition la condition de fin. Le chantier englobe de ce fait les écrans de
+  consultation, au-delà de son déclencheur.
 - **Le pattern d'écran ne change pas.** La Clean Architecture du front, le découpage 5 fichiers et la
   pipeline d'erreurs (`src/dashboard/CLAUDE.md`) sont orthogonaux à cette décision : elle porte sur
   la couche de rendu, pas sur l'orchestration. Le dossier des primitives s'ajoute sous `common`, qui
@@ -138,9 +149,11 @@ petit écran vers le grand, conformément au mobile-first posé par ADR-40. Un p
 - **Les tests d'interface gagnent en stabilité** : les composants Radix exposent des rôles ARIA
   corrects, donc les sélecteurs par rôle — déjà la convention des tests Vitest et Playwright du
   projet — deviennent fiables au lieu de dépendre de classes CSS.
-- **Le thème sombre devient un choix explicite.** Les cinq requêtes `prefers-color-scheme` actuelles
-  sont un début non systématique ; le passage aux tokens oblige à trancher si le thème sombre est
-  supporté, et à le traiter partout ou nulle part.
+- **Le thème sombre est supporté, et il l'est partout.** Les cinq requêtes `prefers-color-scheme`
+  actuelles sont un début non systématique ; passer par les tokens le rend systématique par
+  construction, puisque chaque couleur employée est un token qui a ses deux valeurs. Un écran qui
+  n'aurait pas de version sombre serait donc un écran qui écrit une couleur en dur — c'est-à-dire une
+  violation de la règle ci-dessus, détectable comme telle plutôt que constatée à l'œil.
 - **Cette décision se livre avec ADR-40 et ADR-41.** Elles partagent un déclencheur et se
   neutralisent séparément : une arborescence propre remplie de formulaires incohérents, ou des
   composants impeccables dans une navigation qui n'a pas de place pour eux, ne règlent rien.
