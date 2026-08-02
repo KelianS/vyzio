@@ -21,21 +21,45 @@ public sealed record CameraStreamDto(
         stream.Fps);
 }
 
+// Retention as this camera sees it (ADR-39). Both halves are sent on purpose: the overrides say
+// what the camera decided for itself — null meaning "follow the installation" — and the effective
+// days say what actually applies, so the interface can show the value without re-deriving it.
+public sealed record CameraRetentionDto(
+    int? ContinuousDaysOverride,
+    int? MotionDaysOverride,
+    int? EventClipDaysOverride,
+    int EffectiveContinuousDays,
+    int EffectiveMotionDays,
+    int EffectiveEventClipDays)
+{
+    public static CameraRetentionDto From(RecordingSettings installation, Camera camera)
+    {
+        var policy = RetentionPolicy.Resolve(installation, camera);
+        return new CameraRetentionDto(
+            camera.ContinuousDaysOverride,
+            camera.MotionDaysOverride,
+            camera.EventClipDaysOverride,
+            policy.ContinuousDays,
+            policy.MotionDays,
+            policy.EventClipDays);
+    }
+}
+
 public sealed record CameraDetectionConfigDto(
     string CameraId,
     IReadOnlyList<string> Labels,
     IReadOnlyList<string> AvailableLabels,
-    bool ContinuousRecordingEnabled,
+    CameraRetentionDto Retention,
     string MotionSensitivity,
     bool MotionSensitivityPinned,
     IReadOnlyList<CameraStreamDto> Streams,
     string? DetectStreamId)
 {
-    public static CameraDetectionConfigDto From(Camera camera) => new(
+    public static CameraDetectionConfigDto From(RecordingSettings installation, Camera camera) => new(
         camera.Id,
         camera.GetDetectionLabels(),
         KnownDetectionLabels.All,
-        camera.ContinuousRecordingEnabled,
+        CameraRetentionDto.From(installation, camera),
         SnakeCaseEnum.ToSnakeCase(camera.MotionSensitivity),
         camera.MotionSensitivityPinned,
         [.. camera.Streams.OrderBy(stream => stream.Ordinal).Select(CameraStreamDto.From)],
@@ -47,9 +71,14 @@ public sealed record CameraDetectionConfigDto(
 // MotionSensitivity is only honoured when MotionSensitivityPinned is true — while unpinned the
 // tuning loop owns the level and any value sent here would be overwritten on its next pass
 // (ADR-35).
+//
+// The three retention values are overrides: null clears them and puts the camera back on the
+// installation's values. They are replaced wholesale on every save, like Labels.
 public sealed record SaveCameraDetectionConfigRequest(
     IReadOnlyList<string> Labels,
-    bool ContinuousRecordingEnabled = false,
     string? MotionSensitivity = null,
     bool MotionSensitivityPinned = false,
-    string? DetectStreamId = null);
+    string? DetectStreamId = null,
+    int? ContinuousDaysOverride = null,
+    int? MotionDaysOverride = null,
+    int? EventClipDaysOverride = null);

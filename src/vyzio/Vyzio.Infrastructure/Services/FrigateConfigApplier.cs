@@ -14,7 +14,8 @@ public sealed class FrigateConfigApplier(
     ILogger<FrigateConfigApplier> logger,
     IFrigateRestartTracker restartTracker,
     IFrigateDetectorPlanner detectorPlanner,
-    IFrigateModelAssetInstaller modelAssetInstaller) : IFrigateConfigApplier
+    IFrigateModelAssetInstaller modelAssetInstaller,
+    IRecordingSettingsRepository recordingSettings) : IFrigateConfigApplier
 {
     // Sentinel next to the generated config: the fact "written but not applied" belongs to the
     // config directory, not to a process. Kept out of the database on purpose — it survives an API
@@ -36,7 +37,10 @@ public sealed class FrigateConfigApplier(
         if (string.IsNullOrWhiteSpace(configPath))
             return;
 
-        var (document, detectorKind) = BuildDocument(cameras);
+        // Retention is an installation-wide setting a camera may override (ADR-39), so it reaches the
+        // applier through a port rather than through WriteConfigAsync's signature — no caller changes.
+        var installation = await recordingSettings.GetAsync(ct);
+        var (document, detectorKind) = BuildDocument(cameras, installation);
         var directory = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrWhiteSpace(directory))
         {
@@ -119,7 +123,9 @@ public sealed class FrigateConfigApplier(
         return new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", configPath);
     }
 
-    private (FrigateDocument Document, FrigateDetectorKind DetectorKind) BuildDocument(IReadOnlyList<Camera> cameras)
+    private (FrigateDocument Document, FrigateDetectorKind DetectorKind) BuildDocument(
+        IReadOnlyList<Camera> cameras,
+        RecordingSettings installation)
     {
         var validatedCameras = cameras
             .Where(camera => camera.IsEnabled)
@@ -174,9 +180,7 @@ public sealed class FrigateConfigApplier(
                             BoundingBox = true,
                             Retain = new FrigateRetainConfig { Default = 30 },
                         },
-                        Record = camera.ContinuousRecordingEnabled
-                            ? new FrigateCameraRecordConfig { Enabled = true }
-                            : null,
+                        Record = BuildCameraRecord(installation, camera),
                     };
                 },
                 StringComparer.OrdinalIgnoreCase);
@@ -243,7 +247,7 @@ public sealed class FrigateConfigApplier(
             Model = BuildModel(detectorKind),
             FaceRecognition = faceRecognition,
             Go2rtc = go2rtc,
-            Record = new FrigateRecordConfig { Enabled = true },
+            Record = BuildInstallationRecord(installation),
             Cameras = activeCameras,
         };
 
@@ -456,8 +460,57 @@ public sealed class FrigateConfigApplier(
         public FrigateMotionConfig? Motion { get; init; }
         public FrigateObjectsConfig? Objects { get; init; }
         public FrigateSnapshotsConfig? Snapshots { get; init; }
-        public FrigateCameraRecordConfig? Record { get; init; }
+        public FrigateRecordConfig? Record { get; init; }
     }
+
+    // The installation's own retention, at the root of the file — what every camera follows unless
+    // it says otherwise. Recording is switched off outright when nothing is kept, which is what
+    // finally gives "I want no recordings" an observable effect (ADR-39).
+    private static FrigateRecordConfig BuildInstallationRecord(RecordingSettings installation)
+    {
+        var policy = RetentionPolicy.ForInstallation(installation);
+
+        return new FrigateRecordConfig
+        {
+            Enabled = policy.KeepsAnything,
+            Continuous = new FrigateRetainDaysConfig { Days = policy.ContinuousDays },
+            Motion = new FrigateRetainDaysConfig { Days = policy.MotionDays },
+            // Frigate splits event clips into alerts and detections. That split belongs to its own
+            // review model and means nothing to a non-technical user (principle #1), so one Vyzio
+            // duration drives both rather than surfacing the distinction.
+            Alerts = BuildEventRecord(policy.EventClipDays),
+            Detections = BuildEventRecord(policy.EventClipDays),
+        };
+    }
+
+    // Only what this camera says differently. The installation values already sit at the root, and
+    // repeating them here would make the generated file lie about where a value comes from.
+    private static FrigateRecordConfig? BuildCameraRecord(RecordingSettings installation, Camera camera)
+    {
+        if (camera.ContinuousDaysOverride is null
+            && camera.MotionDaysOverride is null
+            && camera.EventClipDaysOverride is null)
+        {
+            return null;
+        }
+
+        var policy = RetentionPolicy.Resolve(installation, camera);
+
+        return new FrigateRecordConfig
+        {
+            Enabled = policy.KeepsAnything,
+            Continuous = BuildRetainDays(camera.ContinuousDaysOverride),
+            Motion = BuildRetainDays(camera.MotionDaysOverride),
+            Alerts = camera.EventClipDaysOverride is { } alertDays ? BuildEventRecord(alertDays) : null,
+            Detections = camera.EventClipDaysOverride is { } detectionDays ? BuildEventRecord(detectionDays) : null,
+        };
+    }
+
+    private static FrigateRetainDaysConfig? BuildRetainDays(int? days)
+        => days is { } value ? new FrigateRetainDaysConfig { Days = value } : null;
+
+    private static FrigateEventRecordConfig BuildEventRecord(int days)
+        => new() { Retain = new FrigateRetainDaysConfig { Days = days } };
 
     private sealed class FrigateMotionConfig
     {
@@ -500,14 +553,24 @@ public sealed class FrigateConfigApplier(
         public required int Default { get; init; }
     }
 
+    // Same shape at the root and under a camera — Frigate accepts the full RecordConfig in both
+    // places, so Vyzio's global/override model needs no translation (ADR-39).
     private sealed class FrigateRecordConfig
     {
-        public required bool Enabled { get; init; }
+        public bool? Enabled { get; init; }
+        public FrigateRetainDaysConfig? Continuous { get; init; }
+        public FrigateRetainDaysConfig? Motion { get; init; }
+        public FrigateEventRecordConfig? Alerts { get; init; }
+        public FrigateEventRecordConfig? Detections { get; init; }
     }
 
-    // Per-camera record override: only sets enabled; global retain/events apply otherwise.
-    private sealed class FrigateCameraRecordConfig
+    private sealed class FrigateRetainDaysConfig
     {
-        public required bool Enabled { get; init; }
+        public required int Days { get; init; }
+    }
+
+    private sealed class FrigateEventRecordConfig
+    {
+        public required FrigateRetainDaysConfig Retain { get; init; }
     }
 }

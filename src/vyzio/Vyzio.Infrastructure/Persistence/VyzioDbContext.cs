@@ -19,6 +19,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<NotificationChannelConfig> NotificationChannelConfigs => Set<NotificationChannelConfig>();
+    public DbSet<RecordingSettings> RecordingSettings => Set<RecordingSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

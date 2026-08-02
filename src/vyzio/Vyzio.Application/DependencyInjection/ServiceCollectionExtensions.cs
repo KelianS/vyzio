@@ -6,6 +6,7 @@ using Vyzio.Application.UseCases.Hub;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Application.UseCases.Profiles;
 using Vyzio.Application.UseCases.Monitoring;
+using Vyzio.Application.UseCases.Settings;
 
 namespace Vyzio.Application.DependencyInjection;
 
@@ -83,6 +84,8 @@ public static class ServiceCollectionExtensions
 
         // System
         services.AddScoped<GetSystemStatsUseCase>();
+        services.AddScoped<GetRecordingSettingsUseCase>();
+        services.AddScoped<SaveRecordingSettingsUseCase>();
 
         // Profile use cases
         services.AddScoped<CreateProfileUseCase>();
