@@ -134,6 +134,14 @@ au-dessus : Vyzio cesse d'agrandir une source plus petite que 1280×720.
   coïncident. Sinon elle est écartée, et Frigate retombe sur son défaut. Prêter à un flux la taille
   d'un autre réintroduirait exactement l'agrandissement que cet ADR supprime. Le sous-flux, lui,
   arrive comme un couple adresse/taille cohérent et garde les deux.
+- **Limite connue : un flux de taille inconnue peut être agrandi.** Sans `detect.width/height`, Frigate
+  sonde lui-même le flux (`need_detect_dimensions` → ffprobe) et ne retombe sur son défaut 1280×720 que
+  si la sonde échoue — ce qui arrive souvent au chargement de la configuration, et systématiquement sur
+  une caméra sur batterie endormie. Un sous-flux DVRIP 640×360 est alors analysé en 1280×720, soit
+  l'agrandissement que cet ADR supprime ailleurs. Le défaut reste néanmoins le flux le plus léger : le
+  gain de décodage mesuré (×6,4) est acquis et concerne précisément les caméras les plus coûteuses, là
+  où la perte est une image interpolée pour le modèle. Résolution durable renvoyée au backlog : mesurer
+  la taille depuis Vyzio plutôt que la lire dans une déclaration de protocole.
 - Ni `ffprobe` ni go2rtc ne comblent ce trou : le conteneur `vyzio-api` n'embarque pas ffmpeg, et
   l'API go2rtc ne rapporte pas les dimensions d'un flux DVRIP (vérifié — son objet `codec` se limite au
   nom du codec). Les obtenir supposerait de décoder le SPS du flux, hors de proportion avec l'enjeu.
