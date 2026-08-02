@@ -21,27 +21,32 @@ public sealed record CameraStreamDto(
         stream.Fps);
 }
 
-// Retention as this camera sees it (ADR-39). Both halves are sent on purpose: the overrides say
-// what the camera decided for itself — null meaning "follow the installation" — and the effective
-// days say what actually applies, so the interface can show the value without re-deriving it.
+// One retention window as this camera sees it (ADR-39). All three values travel together on
+// purpose: `Override` is what the camera decided for itself (null = follow the installation),
+// `Installation` is what it falls back to — the interface needs it to name the value a revert
+// returns to — and `Effective` is what actually applies. Effective is sent rather than left to the
+// client to compute, so `override ?? installation` keeps its single home in Core.
+public sealed record RetentionWindowDto(int? Override, int Installation, int Effective);
+
 public sealed record CameraRetentionDto(
-    int? ContinuousDaysOverride,
-    int? MotionDaysOverride,
-    int? EventClipDaysOverride,
-    int EffectiveContinuousDays,
-    int EffectiveMotionDays,
-    int EffectiveEventClipDays)
+    RetentionWindowDto Continuous,
+    RetentionWindowDto Motion,
+    RetentionWindowDto EventClip,
+    int MaxDays)
 {
     public static CameraRetentionDto From(RecordingSettings installation, Camera camera)
     {
-        var policy = RetentionPolicy.Resolve(installation, camera);
+        var effective = RetentionPolicy.Resolve(installation, camera);
+        var inherited = RetentionPolicy.ForInstallation(installation);
+
         return new CameraRetentionDto(
-            camera.ContinuousDaysOverride,
-            camera.MotionDaysOverride,
-            camera.EventClipDaysOverride,
-            policy.ContinuousDays,
-            policy.MotionDays,
-            policy.EventClipDays);
+            new RetentionWindowDto(
+                camera.ContinuousDaysOverride, inherited.ContinuousDays, effective.ContinuousDays),
+            new RetentionWindowDto(
+                camera.MotionDaysOverride, inherited.MotionDays, effective.MotionDays),
+            new RetentionWindowDto(
+                camera.EventClipDaysOverride, inherited.EventClipDays, effective.EventClipDays),
+            RetentionPolicy.MaxDays);
     }
 }
 

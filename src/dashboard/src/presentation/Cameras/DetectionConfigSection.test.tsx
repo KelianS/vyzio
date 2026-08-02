@@ -7,12 +7,16 @@ import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 
 // The shipped installation values, with this camera adding nothing of its own.
 const FOLLOWS_INSTALLATION: CameraRetention = {
-  continuousDaysOverride: null,
-  motionDaysOverride: null,
-  eventClipDaysOverride: null,
-  effectiveContinuousDays: 0,
-  effectiveMotionDays: 7,
-  effectiveEventClipDays: 14,
+  continuous: { override: null, installation: 0, effective: 0 },
+  motion: { override: null, installation: 7, effective: 7 },
+  eventClip: { override: null, installation: 14, effective: 14 },
+  maxDays: 365,
+}
+
+// One window taken over by the camera; the other two still follow the installation.
+const MOTION_OVERRIDDEN: CameraRetention = {
+  ...FOLLOWS_INSTALLATION,
+  motion: { override: 30, installation: 7, effective: 30 },
 }
 
 const ALL_LABELS: DetectionLabel[] = [
@@ -40,7 +44,6 @@ function renderSection(overrides: Partial<Props> = {}) {
     applyLoading: false,
     onToggle: vi.fn(),
     onChangeRetention: vi.fn(),
-    onToggleRetentionOverride: vi.fn(),
     onChangeMotionSensitivity: vi.fn(),
     onToggleMotionSensitivityPin: vi.fn(),
     onChangeDetectStream: vi.fn(),
@@ -95,50 +98,85 @@ describe('DetectionConfigSection', () => {
     expect(screen.queryByText(/1 à 3 Go par jour/)).not.toBeInTheDocument()
     unmount()
 
-    renderSection({ retention: { ...FOLLOWS_INSTALLATION, effectiveContinuousDays: 3 } })
+    renderSection({
+      retention: {
+        ...FOLLOWS_INSTALLATION,
+        continuous: { override: 3, installation: 0, effective: 3 },
+      },
+    })
     expect(screen.getByText(/1 à 3 Go par jour/)).toBeInTheDocument()
   })
 
-  // Following the installation is a summary, not three inputs the user could mistake for its own.
-  it('summarises what applies while the camera follows the installation', () => {
+  // The value that applies is always shown and always editable — never a blank field or a greyed
+  // placeholder, even when it is inherited.
+  it('shows every duration as an editable field, inherited or not', () => {
     renderSection()
 
-    expect(screen.getByText(/Vidéo complète/)).toBeInTheDocument()
-    expect(screen.getByText('non conservé')).toBeInTheDocument()
-    expect(screen.getByText('7 jours')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Séquences de mouvement')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Vidéo complète')).toHaveValue(0)
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
+    expect(screen.getByLabelText('Clips d’alerte')).toHaveValue(14)
+    expect(screen.getAllByText('Suit les réglages généraux')).toHaveLength(3)
   })
 
-  it('offers a field per window once the camera decides for itself', () => {
-    renderSection({ retention: { ...FOLLOWS_INSTALLATION, motionDaysOverride: 30 } })
+  // The core of the design: overriding one duration must not detach the other two.
+  it('marks only the overridden duration and leaves the others inherited', () => {
+    renderSection({ retention: MOTION_OVERRIDDEN })
 
     expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(30)
-    expect(screen.getByLabelText('Vidéo complète')).toBeInTheDocument()
-    expect(screen.getByLabelText('Clips d’alerte')).toBeInTheDocument()
+    expect(screen.getByText('Propre à cette caméra')).toBeInTheDocument()
+    expect(screen.getAllByText('Suit les réglages généraux')).toHaveLength(2)
   })
 
-  it('calls onToggleRetentionOverride when the camera is taken off the installation', async () => {
-    const onToggleRetentionOverride = vi.fn()
-    const user = userEvent.setup()
-    renderSection({ onToggleRetentionOverride })
-
-    await user.click(screen.getByText('Comme le reste de l’installation'))
-
-    expect(onToggleRetentionOverride).toHaveBeenCalledOnce()
-  })
-
-  // fireEvent rather than userEvent.type: the field is controlled by props that do not move in a
-  // static render, so typing would append to the old value instead of replacing it.
-  it('calls onChangeRetention with the edited window and its new duration', () => {
+  // A revert names the value it returns to rather than saying "reset".
+  it('offers a revert that names the inherited duration', async () => {
     const onChangeRetention = vi.fn()
-    renderSection({
-      retention: { ...FOLLOWS_INSTALLATION, motionDaysOverride: 3 },
-      onChangeRetention,
-    })
+    const user = userEvent.setup()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
 
-    fireEvent.change(screen.getByLabelText('Séquences de mouvement'), { target: { value: '9' } })
+    await user.click(screen.getByRole('button', { name: '↺ revenir à 7 jours' }))
 
-    expect(onChangeRetention).toHaveBeenLastCalledWith('motion', 9)
+    expect(onChangeRetention).toHaveBeenCalledWith('motion', null)
+  })
+
+  it('does not offer a revert on a duration that is already inherited', () => {
+    renderSection()
+
+    expect(screen.queryByRole('button', { name: /revenir à/ })).not.toBeInTheDocument()
+  })
+
+  // Committed on blur, not per keystroke: a half-typed number must never reach the server.
+  it('reports an edited duration only once the field is left', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
+
+    const field = screen.getByLabelText('Séquences de mouvement')
+    fireEvent.change(field, { target: { value: '9' } })
+    expect(onChangeRetention).not.toHaveBeenCalled()
+
+    fireEvent.blur(field)
+    expect(onChangeRetention).toHaveBeenCalledWith('motion', 9)
+  })
+
+  it('clamps a duration beyond the allowed maximum', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
+
+    const field = screen.getByLabelText('Séquences de mouvement')
+    fireEvent.change(field, { target: { value: '99999' } })
+    fireEvent.blur(field)
+
+    expect(onChangeRetention).toHaveBeenCalledWith('motion', 365)
+  })
+
+  it('says nothing when the field is left unchanged', () => {
+    const onChangeRetention = vi.fn()
+    renderSection({ retention: MOTION_OVERRIDDEN, onChangeRetention })
+
+    const field = screen.getByLabelText('Séquences de mouvement')
+    fireEvent.change(field, { target: { value: '30' } })
+    fireEvent.blur(field)
+
+    expect(onChangeRetention).not.toHaveBeenCalled()
   })
 
   // ── Analysed stream picker (ADR-38) ──

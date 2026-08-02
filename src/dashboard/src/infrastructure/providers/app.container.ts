@@ -44,17 +44,18 @@ export function makeAppContainer(): AppContainer {
     apiBaseUrl: runtime.apiBaseUrl,
     frigateBaseUrl: runtime.frigateBaseUrl,
     hub: makeHubContainer(hubRepository, systemRepository),
-    cameras: makeCamerasContainer(cameraRepository, profileRepository, cameraLabelsRepository),
+    cameras: makeCamerasContainer(
+      cameraRepository,
+      profileRepository,
+      cameraLabelsRepository,
+      recordingSettingsRepository,
+    ),
     profiles: makeProfilesContainer(profileRepository),
     notifications: makeNotificationsContainer(
       notificationSettingsRepository,
       notificationLabelsRepository,
     ),
-    detectionHistory: makeDetectionHistoryContainer(
-      profileRepository,
-      cameraLabelsRepository,
-      recordingSettingsRepository,
-    ),
+    detectionHistory: makeDetectionHistoryContainer(profileRepository, cameraLabelsRepository),
   }
 }
 

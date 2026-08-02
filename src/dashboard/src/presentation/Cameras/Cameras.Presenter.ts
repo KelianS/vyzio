@@ -14,9 +14,7 @@ import type { CamerasContainer } from '../../infrastructure/providers/cameras.co
 import type { CamerasAction } from './Cameras.Actions'
 import type { CameraSelection } from './Cameras.Uido'
 import {
-  RETENTION_EFFECTIVE_FIELD,
-  RETENTION_OVERRIDE_FIELD,
-  hasAnyOverride,
+  RETENTION_UPDATE_FIELD,
   type RetentionWindow,
 } from '../../common/recording/retention'
 
@@ -73,6 +71,10 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
 
     onSelectManualEntry() {
       dispatch({ type: 'MANUAL_ENTRY_SELECTED' })
+    },
+
+    onSelectGeneralSettings() {
+      dispatch({ type: 'GENERAL_SETTINGS_SELECTED' })
     },
 
     onSelectDiscoveryCandidate(index: number, candidate: DiscoveredCamera) {
@@ -140,35 +142,25 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
       current: DetectionConfigUpdate,
       retention: CameraRetention,
     ) {
-      const update = { ...current, [RETENTION_OVERRIDE_FIELD[window]]: days }
-      // Optimistic on the window being edited; the server's answer replaces the whole thing on
-      // success, which is what keeps the untouched windows honest.
+      // Only the edited window moves; the other two keep their own override, so setting one
+      // duration never quietly detaches the rest from the general settings (ADR-39).
       dispatch({
         type: 'DETECTION_RETENTION_CHANGED',
         retention: {
           ...retention,
-          [RETENTION_OVERRIDE_FIELD[window]]: days,
-          [RETENTION_EFFECTIVE_FIELD[window]]: days ?? retention[RETENTION_EFFECTIVE_FIELD[window]],
+          [window]: {
+            ...retention[window],
+            override: days,
+            // A revert falls back to a value only the server resolves; showing the installation
+            // value straight away is the same answer, without waiting for the round trip.
+            effective: days ?? retention[window].installation,
+          },
         },
       })
-      saveDetectionConfig(cameraId, update)
-    },
-
-    // Switching a camera off the installation seeds its overrides with what already applied, so
-    // taking control changes nothing by itself. Switching back clears all three.
-    onToggleRetentionOverride(
-      cameraId: string,
-      current: DetectionConfigUpdate,
-      retention: CameraRetention,
-    ) {
-      const overridden = hasAnyOverride(retention)
-      const update: DetectionConfigUpdate = {
+      saveDetectionConfig(cameraId, {
         ...current,
-        continuousDaysOverride: overridden ? null : retention.effectiveContinuousDays,
-        motionDaysOverride: overridden ? null : retention.effectiveMotionDays,
-        eventClipDaysOverride: overridden ? null : retention.effectiveEventClipDays,
-      }
-      saveDetectionConfig(cameraId, update)
+        [RETENTION_UPDATE_FIELD[window]]: days,
+      })
     },
 
     onChangeMotionSensitivity(

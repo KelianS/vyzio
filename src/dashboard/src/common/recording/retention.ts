@@ -1,32 +1,20 @@
 // Shared vocabulary for the three retention windows (ADR-39). Frigate's own words — continuous,
 // motion, alerts/detections — never surface: the user is told what is kept, not which bucket holds
-// it (principe produit #1 et #2).
+// it (principes produit #1 et #2).
 
-import type { CameraRetention } from '../../domain/entities/DetectionConfig'
+import type { CameraRetention, DetectionConfigUpdate } from '../../domain/entities/DetectionConfig'
 
-
-export type RetentionWindow = 'continuous' | 'motion' | 'eventClip'
+// Keyed to match CameraRetention, so a window indexes its values directly with no lookup table.
+export type RetentionWindow = keyof Omit<CameraRetention, 'maxDays'>
 
 export const RETENTION_ORDER: RetentionWindow[] = ['continuous', 'motion', 'eventClip']
 
-// The override keys are spelled the same on CameraRetention and on DetectionConfigUpdate, so one
-// map serves reading the current state and building the save.
-export const RETENTION_OVERRIDE_FIELD = {
+// The save request stays flat, so this is the one place the two shapes are bridged.
+export const RETENTION_UPDATE_FIELD = {
   continuous: 'continuousDaysOverride',
   motion: 'motionDaysOverride',
   eventClip: 'eventClipDaysOverride',
-} as const satisfies Record<RetentionWindow, keyof CameraRetention>
-
-export const RETENTION_EFFECTIVE_FIELD = {
-  continuous: 'effectiveContinuousDays',
-  motion: 'effectiveMotionDays',
-  eventClip: 'effectiveEventClipDays',
-} as const satisfies Record<RetentionWindow, keyof CameraRetention>
-
-// A camera is on its own as soon as it overrides any one window.
-export function hasAnyOverride(retention: CameraRetention): boolean {
-  return RETENTION_ORDER.some((window) => retention[RETENTION_OVERRIDE_FIELD[window]] !== null)
-}
+} as const satisfies Record<RetentionWindow, keyof DetectionConfigUpdate>
 
 export const RETENTION_LABEL: Record<RetentionWindow, string> = {
   continuous: 'Vidéo complète',

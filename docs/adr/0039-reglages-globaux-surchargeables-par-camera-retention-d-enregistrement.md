@@ -138,6 +138,15 @@ mais il ne s'applique qu'à la fenêtre « tout » — c'est la seule qui enregi
   immédiatement.
 - **Un changement de rétention exige un redémarrage du moteur**, comme tout changement de
   configuration : il emprunte le signal « configuration à appliquer » existant (ADR-38).
+- **La surcharge se décide réglage par réglage, jamais en bloc.** Une caméra qui fixe une seule durée
+  garde les autres attachées aux valeurs d'ensemble. Un interrupteur « cette caméra décide de tout »
+  aurait figé les deux autres durées à leur valeur du moment sans le dire, et c'est précisément ce
+  qu'un modèle par surcharge doit éviter. L'interface montre donc, sur chaque durée, si elle est
+  suivie ou propre à la caméra, et le retour arrière **nomme la valeur** qu'il rétablit plutôt que
+  d'annoncer une remise à zéro — la valeur d'ensemble voyage jusqu'à la frontière API pour cela.
+- **La configuration générée ne répète pas ce qu'une caméra n'a pas surchargé.** Seul le réglage
+  réellement propre à la caméra apparaît sous elle ; sinon le fichier laisserait croire que la valeur
+  vient de la caméra alors qu'elle vient de l'installation.
 - **L'alerte de capacité disque critique reste à faire.** SPECS §6.2 l'exige et cette décision la rend
   plus nécessaire, puisque la rétention devient réellement consommatrice ; elle reste un item de
   backlog distinct.

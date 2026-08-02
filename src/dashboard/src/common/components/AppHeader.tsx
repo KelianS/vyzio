@@ -3,7 +3,7 @@ import './AppHeader.css'
 
 const NAV_ITEMS = [
   { path: '/', label: 'Accueil' },
-  { path: '/cameras', label: 'Caméras' },
+  { path: '/cameras', label: 'Paramètres' },
   { path: '/profiles', label: 'Profils' },
   { path: '/notifications', label: 'Alertes' },
   { path: '/history', label: 'Historique' },

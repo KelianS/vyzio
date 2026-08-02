@@ -168,10 +168,12 @@ public class SaveCameraDetectionConfigUseCaseTests
 
         var dto = await _sut.ExecuteAsync(camera.Id, Request());
 
-        Assert.Null(dto!.Retention.ContinuousDaysOverride);
-        Assert.Equal(0, dto.Retention.EffectiveContinuousDays);
-        Assert.Equal(7, dto.Retention.EffectiveMotionDays);
-        Assert.Equal(14, dto.Retention.EffectiveEventClipDays);
+        Assert.Null(dto!.Retention.Continuous.Override);
+        Assert.Equal(0, dto.Retention.Continuous.Effective);
+        Assert.Equal(7, dto.Retention.Motion.Effective);
+        Assert.Equal(14, dto.Retention.EventClip.Effective);
+        // The inherited value travels too, so the interface can name what a revert returns to.
+        Assert.Equal(7, dto.Retention.Motion.Installation);
     }
 
     [Fact]
@@ -182,11 +184,13 @@ public class SaveCameraDetectionConfigUseCaseTests
         var dto = await _sut.ExecuteAsync(camera.Id, Request(continuousDays: 3, motionDays: 30));
 
         Assert.Equal(3, camera.ContinuousDaysOverride);
-        Assert.Equal(3, dto!.Retention.EffectiveContinuousDays);
-        Assert.Equal(30, dto.Retention.EffectiveMotionDays);
+        Assert.Equal(3, dto!.Retention.Continuous.Effective);
+        Assert.Equal(30, dto.Retention.Motion.Effective);
         // Untouched, so it still follows the installation rather than freezing today's value.
         Assert.Null(camera.EventClipDaysOverride);
-        Assert.Equal(14, dto.Retention.EffectiveEventClipDays);
+        Assert.Equal(14, dto.Retention.EventClip.Effective);
+        // The installation value is unchanged by the override, which is what makes a revert possible.
+        Assert.Equal(0, dto.Retention.Continuous.Installation);
     }
 
     // Zero is an answer, not an absent value — it must not collapse back to the installation.
@@ -198,7 +202,7 @@ public class SaveCameraDetectionConfigUseCaseTests
         var dto = await _sut.ExecuteAsync(camera.Id, Request(motionDays: 0));
 
         Assert.Equal(0, camera.MotionDaysOverride);
-        Assert.Equal(0, dto!.Retention.EffectiveMotionDays);
+        Assert.Equal(0, dto!.Retention.Motion.Effective);
     }
 
     [Fact]
@@ -210,7 +214,7 @@ public class SaveCameraDetectionConfigUseCaseTests
         var dto = await _sut.ExecuteAsync(camera.Id, Request(motionDays: null));
 
         Assert.Null(camera.MotionDaysOverride);
-        Assert.Equal(7, dto!.Retention.EffectiveMotionDays);
+        Assert.Equal(7, dto!.Retention.Motion.Effective);
     }
 
     [Fact]

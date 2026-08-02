@@ -3567,15 +3567,42 @@
   grid-column: 1 / -1;
 }
 
-.retention-summary {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  font-size: 0.88rem;
+/* Provenance of a value: silent when inherited, marked when the camera owns it. */
+.retention-row-origin {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  opacity: 0.6;
 }
 
-.retention-summary li {
-  margin-bottom: 4px;
+.retention-row-origin--overridden {
+  opacity: 1;
+  color: #8a5a00;
+}
+
+.retention-origin-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #c98a00;
+  flex: none;
+}
+
+.retention-row-input--overridden {
+  border-color: #c98a00;
+}
+
+.retention-revert {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .detection-pending {

@@ -12,16 +12,21 @@ export interface CameraStream {
   fps: number | null
 }
 
-// Retention as this camera sees it (ADR-39). The overrides say what the camera decided for itself,
-// null meaning "follow the installation"; the effective days say what actually applies, so the view
-// never has to re-derive it.
+// One retention window as this camera sees it (ADR-39). `override` is what the camera decided for
+// itself, null meaning "follow the installation"; `installation` is what it falls back to, which is
+// what lets a revert name the value it returns to; `effective` is what actually applies, resolved
+// server-side so the view never re-derives it.
+export interface RetentionWindowValue {
+  override: number | null
+  installation: number
+  effective: number
+}
+
 export interface CameraRetention {
-  continuousDaysOverride: number | null
-  motionDaysOverride: number | null
-  eventClipDaysOverride: number | null
-  effectiveContinuousDays: number
-  effectiveMotionDays: number
-  effectiveEventClipDays: number
+  continuous: RetentionWindowValue
+  motion: RetentionWindowValue
+  eventClip: RetentionWindowValue
+  maxDays: number
 }
 
 export interface DetectionConfig {

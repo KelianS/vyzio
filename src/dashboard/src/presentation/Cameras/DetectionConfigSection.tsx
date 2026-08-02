@@ -6,15 +6,10 @@ import type {
   MotionSensitivity,
 } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
+import { RetentionField } from '../../common/components/RetentionField'
 import {
   CONTINUOUS_DISK_WARNING,
-  RETENTION_EFFECTIVE_FIELD,
-  RETENTION_EXPLANATION,
-  RETENTION_LABEL,
   RETENTION_ORDER,
-  RETENTION_OVERRIDE_FIELD,
-  formatDays,
-  hasAnyOverride,
   type RetentionWindow,
 } from '../../common/recording/retention'
 
@@ -84,7 +79,6 @@ interface DetectionConfigSectionProps {
   applyLoading: boolean
   onToggle: (value: string) => void
   onChangeRetention: (window: RetentionWindow, days: number | null) => void
-  onToggleRetentionOverride: () => void
   onChangeMotionSensitivity: (value: MotionSensitivity) => void
   onToggleMotionSensitivityPin: () => void
   onChangeDetectStream: (streamId: string | null) => void
@@ -105,7 +99,6 @@ export function DetectionConfigSection({
   applyLoading,
   onToggle,
   onChangeRetention,
-  onToggleRetentionOverride,
   onChangeMotionSensitivity,
   onToggleMotionSensitivityPin,
   onChangeDetectStream,
@@ -119,8 +112,6 @@ export function DetectionConfigSection({
   // A single stream leaves nothing to arbitrate — the choice only appears when the camera really
   // offers one (ADR-38).
   const selectedStream = streams.find((stream) => stream.id === detectStreamId)
-
-  const overridden = hasAnyOverride(retention)
 
   return (
     <section className="camera-detail-section">
@@ -224,56 +215,30 @@ export function DetectionConfigSection({
 
             <div className="detection-field">
               <span className="detection-field-label">Ce qui est conservé</span>
-              <label className="detection-check">
-                <input
-                  type="checkbox"
-                  checked={!overridden}
-                  onChange={onToggleRetentionOverride}
+
+              {RETENTION_ORDER.map((window) => (
+                <RetentionField
+                  key={window}
+                  id={`retention-${window}`}
+                  window={window}
+                  days={retention[window].effective}
+                  maxDays={retention.maxDays}
+                  onCommit={(days) => onChangeRetention(window, days)}
+                  inheritance={{
+                    overridden: retention[window].override !== null,
+                    installationDays: retention[window].installation,
+                    onRevert: () => onChangeRetention(window, null),
+                  }}
                 />
-                Comme le reste de l’installation
-              </label>
+              ))}
 
-              {overridden ? (
-                <>
-                  {RETENTION_ORDER.map((window) => (
-                    <div key={window} className="retention-row">
-                      <label className="retention-row-label" htmlFor={`retention-${window}`}>
-                        {RETENTION_LABEL[window]}
-                      </label>
-                      <input
-                        id={`retention-${window}`}
-                        className="retention-row-input"
-                        type="number"
-                        min={0}
-                        max={365}
-                        value={retention[RETENTION_OVERRIDE_FIELD[window]] ?? retention[RETENTION_EFFECTIVE_FIELD[window]]}
-                        onChange={(e) =>
-                          onChangeRetention(window, Number.parseInt(e.target.value, 10) || 0)
-                        }
-                      />
-                      <span className="retention-row-unit">jours</span>
-                      <p className="detection-field-hint">{RETENTION_EXPLANATION[window]}</p>
-                    </div>
-                  ))}
-                  <p className="detection-field-hint">
-                    Mettre 0 signifie que rien n’est conservé de cette nature. Si les trois valent 0,
-                    cette caméra n’enregistre plus rien.
-                  </p>
-                </>
-              ) : (
-                <ul className="retention-summary">
-                  {RETENTION_ORDER.map((window) => (
-                    <li key={window}>
-                      {RETENTION_LABEL[window]} :{' '}
-                      <strong>{formatDays(retention[RETENTION_EFFECTIVE_FIELD[window]] as number)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {retention.effectiveContinuousDays > 0 && (
+              {retention.continuous.effective > 0 && (
                 <p className="detection-field-hint">{CONTINUOUS_DISK_WARNING}</p>
               )}
+              <p className="detection-field-hint">
+                Mettre 0 signifie que rien n’est conservé de cette nature. Si les trois valent 0,
+                cette caméra n’enregistre plus rien.
+              </p>
             </div>
           </div>
 

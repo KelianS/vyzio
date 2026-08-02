@@ -12,6 +12,8 @@ export type CameraSelection =
   | { kind: 'manual' }
   | { kind: 'candidate'; index: number }
   | { kind: 'camera'; cameraId: string }
+  // Settings that belong to the installation rather than to any one camera (ADR-39).
+  | { kind: 'general' }
 
 export const emptyCameraDraft: CameraDraftInput = {
   displayName: '',
@@ -25,15 +27,15 @@ export const emptyCameraDraft: CameraDraftInput = {
   streamProtocol: 'rtsp',
 }
 
-// Placeholder until the camera's real retention arrives: no overrides, and effective days at zero
-// so nothing claims to be kept before the server has said what is.
+// Placeholder until the camera's real retention arrives: no overrides, and zero days everywhere so
+// nothing claims to be kept before the server has said what is.
+const NOTHING_KEPT = { override: null, installation: 0, effective: 0 }
+
 export const emptyCameraRetention: CameraRetention = {
-  continuousDaysOverride: null,
-  motionDaysOverride: null,
-  eventClipDaysOverride: null,
-  effectiveContinuousDays: 0,
-  effectiveMotionDays: 0,
-  effectiveEventClipDays: 0,
+  continuous: NOTHING_KEPT,
+  motion: NOTHING_KEPT,
+  eventClip: NOTHING_KEPT,
+  maxDays: 365,
 }
 
 export interface CamerasUido {
