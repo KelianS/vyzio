@@ -10,7 +10,8 @@ export interface SettingsRubric {
   /** Segment de route sous `/settings`. */
   readonly slug: string
   readonly label: string
-  /** Ce que la rubrique gouverne, en une ligne, pour la liste de premier niveau. */
+  /** Ce que la rubrique gouverne, en quelques mots. Une phrase complete ici
+   *  concurrencerait le libelle au lieu de le preciser (ADR-43). */
   readonly summary: string
 }
 
@@ -18,27 +19,27 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
   {
     slug: 'cameras',
     label: 'Caméras',
-    summary: 'Ajouter une caméra, et régler chacune séparément.',
+    summary: 'Ajout et réglages',
   },
   {
     slug: 'detection',
     label: 'Détection',
-    summary: 'Ce que Vyzio cherche à reconnaître, et les personnes qu’il sait nommer.',
+    summary: 'Ce qui est reconnu',
   },
   {
     slug: 'conservation',
     label: 'Conservation',
-    summary: 'Combien de temps les enregistrements sont gardés, pour toutes les caméras.',
+    summary: 'Durée des enregistrements',
   },
   {
     slug: 'notifications',
     label: 'Notifications',
-    summary: 'Comment et quand vous êtes prévenu.',
+    summary: 'Canaux et horaires',
   },
   {
     slug: 'systeme',
     label: 'Système',
-    summary: 'Stockage, ressources, et les réglages rarement nécessaires.',
+    summary: 'Stockage et ressources',
   },
 ]
 

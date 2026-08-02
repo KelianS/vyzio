@@ -30,8 +30,8 @@ export function SettingsView() {
             atRoot ? 'block' : 'hidden md:block',
           )}
         >
-          <h1 className="font-serif text-xl px-3 pt-2 pb-3">Réglages</h1>
-          <ul className="flex flex-col gap-1">
+          <h1 className="px-3 pt-2 pb-3 font-serif text-2xl">Réglages</h1>
+          <ul className="flex flex-col gap-0.5">
             {SETTINGS_RUBRICS.map((rubric) => {
               const active = current?.slug === rubric.slug
               return (
@@ -46,8 +46,11 @@ export function SettingsView() {
                       active && 'bg-muted font-semibold',
                     )}
                   >
+                    {/* Deux niveaux distingues par trois signaux a la fois —
+                        taille, graisse et couleur. Un seul ne suffit pas :
+                        c'est ce qui rendait les deux lignes indistinctes. */}
                     <span className="min-w-0">
-                      <span className="block text-[0.95rem]">{rubric.label}</span>
+                      <span className="block font-medium">{rubric.label}</span>
                       <span className="block text-sm text-muted-foreground">{rubric.summary}</span>
                     </span>
                     <ChevronRight

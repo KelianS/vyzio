@@ -18,7 +18,9 @@
   --bg-muted: rgba(255, 250, 242, 0.72);
   --bg-strong: #1f3a33;
   --ink-strong: #18201d;
-  --ink-soft: #53605b;
+  /* Texte secondaire : assez clair pour se distinguer du texte principal au
+     premier coup d'oeil, assez sombre pour rester lisible (>= 4.5:1). */
+  --ink-soft: #6f7c76;
   --ink-inverse: #f7f4ed;
   --line-soft: #d8cfbf;
   --brand-moss: #2f6b59;
@@ -164,19 +166,20 @@
    Base document. Ce qui suit habille la page elle-meme, pas un composant.
    --------------------------------------------------------------------------- */
 
+/* Base typographique : celle de Tailwind, sans surcharge de taille racine. Le
+   `18px/1.5` d'origine ecrasait toute l'echelle — `text-sm` valait 14px face a
+   un corps de 18, soit un ecart trop faible pour separer deux niveaux
+   d'information. Repartir de 16px rend l'echelle par defaut utilisable telle
+   quelle, et supprime un reglage a compenser dans chaque composant. */
 :root {
-  font: 18px/1.5 var(--sans);
-  letter-spacing: 0.01em;
+  font-family: var(--sans);
+  line-height: 1.5;
   color: var(--ink-strong);
   background: var(--bg-canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 html {

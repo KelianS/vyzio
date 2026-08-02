@@ -15,9 +15,9 @@ export function SettingsPanel({
 }) {
   return (
     <section className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
-      <header className="mb-4">
-        <h2 className="font-serif text-2xl">{title}</h2>
-        {lede && <p className="mt-1 text-sm text-muted-foreground">{lede}</p>}
+      <header className="mb-5">
+        <h2 className="font-serif text-3xl">{title}</h2>
+        {lede && <p className="mt-1.5 text-sm text-muted-foreground">{lede}</p>}
       </header>
       {children}
     </section>

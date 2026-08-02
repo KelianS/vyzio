@@ -31,6 +31,24 @@ Le design MVP repose sur une interface claire, lumineuse et calme, avec une hier
 - La couleur `--alert-high` est reservee aux evenements importants et aux statuts d'attention.
 - L'acces avance Frigate doit rester visible, mais jamais presenter comme le parcours principal.
 
+## Typographie
+
+**L'echelle est celle de Tailwind, sans surcharge de taille racine** (base 16px). La base 18px
+d'origine ecrasait l'echelle : `text-sm` valait 14px face a un corps de 18, soit un ecart trop faible
+pour separer deux niveaux d'information — il fallait alors compenser dans chaque composant.
+
+Deux niveaux se distinguent par **trois signaux a la fois** — taille, graisse et couleur. Un seul ne
+suffit pas : c'est ce qui rendait un titre de rubrique et son resume quasi indistincts.
+
+| Role | Classe |
+| --- | --- |
+| Titre de page | `font-serif text-3xl` |
+| Titre de rubrique / section | `font-serif text-2xl` |
+| Libelle de reglage, entree de liste | `font-medium` (16px) |
+| Texte secondaire, resume, aide | `text-sm text-muted-foreground` |
+
+Le serif (`--heading`) est reserve aux titres ; il porte le caractere domestique de l'interface.
+
 ## Tokens d'interface
 
 Rayons (definis dans `src/index.css`) :
