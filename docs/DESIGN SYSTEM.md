@@ -56,9 +56,39 @@ Le rayon porte du sens et ne doit jamais etre choisi au hasard :
 
 C'est ce contraste qui permet a l'utilisateur de distinguer d'un coup d'oeil une pastille « Connectee » (etat) d'un bouton « Enregistrer » (action). Ne jamais donner un `box-shadow` surelevee ni une bordure marquee a une pastille d'etat : cela la fait ressembler a un bouton.
 
-## Composants UI
+## Socle de composants
 
-Quatre primitives partagees couvrent la quasi-totalite des besoins. **Toujours les reutiliser** plutot que recreer un `<button>` ou un `<select>` avec des classes ad hoc.
+Deux etages, jamais confondus
+([ADR-42](adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md)) :
+
+| Etage | Ce que c'est | Regle |
+| --- | --- | --- |
+| **Primitives** | Code shadcn/ui copie dans le depot (accessibilite, focus, clavier) | Modifiees **uniquement** pour le theme. Jamais de regle metier dedans. Pas du code Vyzio : hors discipline de redaction du projet. |
+| **Composants Vyzio** | Batis **au-dessus** des primitives, ils portent le vocabulaire produit (champ de reglage et sa provenance, ligne de reglage, section repliable, barre de brouillon) | C'est la que vit la valeur ajoutee, et la que s'applique la discipline de code du projet. |
+
+Franchir la frontiere — loger une regle Vyzio dans une primitive — reproduit l'enchevetrement que ce
+socle corrige, et rend toute mise a jour de primitive risquee.
+
+**Les tokens ci-dessus sont la source ; le theme Tailwind en est la realisation.** Aucune valeur
+litterale de couleur, de rayon ou d'ombre n'est ecrite dans un composant : elle passe par un token.
+C'est ce qui rend un defaut de contraste corrigeable en un point plutot qu'ecran par ecran.
+
+### Regles de transition
+
+Tant que la migration n'est pas finie, deux systemes de style coexistent. Pour que ce soit une
+transition et pas un troisieme systeme :
+
+- **aucune regle nouvelle dans `App.css`** — tout ecran nouveau ou repris est en Tailwind ;
+- **un ecran repris emporte la suppression de ses regles**, donc `App.css` decroit de facon monotone.
+
+Le responsive suit l'echelle de la bibliotheque, appliquee du petit ecran vers le grand. Un point de
+rupture hors echelle est une exception a justifier.
+
+## Composants de la base historique
+
+Ces quatre primitives maison restent **la reference pour tout ecran non encore migre** ; elles sont
+remplacees ecran par ecran par le socle ci-dessus. Sur un ecran non migre, **toujours les reutiliser**
+plutot que recreer un `<button>` ou un `<select>` avec des classes ad hoc.
 
 ### 1. Bouton — `<Btn>` (`src/common/components/Btn.tsx`)
 
@@ -169,7 +199,38 @@ Props : `size` (defaut `md`) : `sm | md` — mêmes hauteurs que `<Btn>`, pour a
 
 Regle : ne jamais styler un `<select>` brut avec des classes ad hoc — passer par `<Select>`, même pour un usage ponctuel.
 
-## Vocabulaire UX MVP
+## Vocabulaire UX
 
-- Dire `Hub`, `Evenements`, `Profils`, `Alertes`, `Mode avance`.
-- Eviter `MQTT`, `broker`, `frigate events`, `sub_label`, `NVR` dans le parcours nominal.
+Foyer unique des mots d'interface. Un meme geste porte **partout** le meme mot ; c'est ce qui permet
+a l'utilisateur d'apprendre l'interface une fois.
+
+### Navigation
+
+Un libelle dit la **nature** de l'ecran — consulter ou regler — jamais l'audience visee
+([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)).
+
+- Consulter : `Accueil`, `Direct`, `Historique`.
+- Regler : `Reglages`, puis une rubrique (`Cameras`, `Detection`, `Conservation`, `Notifications`, `Systeme`).
+- Le repli de fin de page se dit `Avance`. Ce n'est pas un mode a activer : c'est une position.
+- Proscrits comme entree de navigation : `Expert` (nomme une audience, pas un contenu), et `Alertes`
+  pour designer un ecran de reglages — le mot promet une liste d'evenements, que l'utilisateur
+  trouve sous `Historique`.
+
+### Cycle d'edition
+
+Deux temps, jamais trois
+([ADR-41](adr/0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md)).
+
+- **`Enregistrer`** — verbe unique de validation. Il persiste *et* met en service. Ne jamais employer
+  `Appliquer` a cote de lui : il n'y a plus deux gestes.
+- **`Annuler`** — verbe unique d'abandon, il rend la page a son dernier etat enregistre.
+- Le brouillon annonce **ce qui a change** et, le cas echeant, que la surveillance s'interrompra
+  brievement. Dire ce que l'utilisateur perd (« la detection s'interrompt quelques secondes »), pas
+  ce que le systeme fait (« redemarrage du moteur »).
+- L'echec de mise en service se dit en termes de **panne**, pas d'etape restante.
+
+### Interdits transverses
+
+- Jamais `MQTT`, `broker`, `frigate events`, `sub_label`, `NVR`, ni le nom du moteur de detection,
+  dans le parcours nominal (principe produit #2).
+- Jamais un etat opaque sans justification lisible (principe #4).
