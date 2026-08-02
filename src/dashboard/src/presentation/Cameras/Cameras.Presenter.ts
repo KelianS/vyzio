@@ -70,10 +70,6 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
       dispatch({ type: 'MANUAL_ENTRY_SELECTED' })
     },
 
-    onSelectGeneralSettings() {
-      dispatch({ type: 'GENERAL_SETTINGS_SELECTED' })
-    },
-
     onSelectDiscoveryCandidate(index: number, candidate: DiscoveredCamera) {
       dispatch({ type: 'CANDIDATE_SELECTED', index, candidate })
     },

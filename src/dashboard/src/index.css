@@ -100,6 +100,9 @@
   --destructive: var(--alert-high);
   --destructive-foreground: var(--ink-inverse);
   --success: var(--alert-ok);
+  /* Surface inversee : bandeau de navigation et panneaux structurants fonces. */
+  --surface-inverse: var(--bg-strong);
+  --surface-inverse-foreground: var(--ink-inverse);
   --border: var(--line-soft);
   --input: var(--line-soft);
   --ring: var(--brand-moss);
@@ -123,6 +126,8 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-foreground: var(--surface-inverse-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

@@ -186,10 +186,10 @@ function HubSetupState() {
           </div>
         </div>
         <div className="panel-cta-row">
-          <a className="primary-cta" href="/cameras">
+          <a className="primary-cta" href="/settings/cameras">
             Ajouter une caméra
           </a>
-          <a className="secondary-cta" href="/notifications">
+          <a className="secondary-cta" href="/settings/notifications">
             Configurer les alertes
           </a>
         </div>
@@ -289,7 +289,7 @@ function HubOperationalState({
                   : 'Mode vie privée global'}
               </button>
             )}
-            <a href="/cameras" className="hub-section-link">
+            <a href="/settings/cameras" className="hub-section-link">
               Gérer les caméras →
             </a>
           </div>
@@ -310,7 +310,7 @@ function HubOperationalState({
         ) : (
           <div className="hub-live-empty">
             <p>Aucune caméra active pour le moment.</p>
-            <a href="/cameras" className="secondary-cta">
+            <a href="/settings/cameras" className="secondary-cta">
               Gérer les caméras
             </a>
           </div>
@@ -421,7 +421,7 @@ function HubOperationalState({
               </div>
             </div>
             <div className="panel-cta-row">
-              <a href="/notifications" className="secondary-cta">
+              <a href="/settings/notifications" className="secondary-cta">
                 Configurer les alertes →
               </a>
             </div>

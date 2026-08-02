@@ -89,7 +89,7 @@ Les rubriques sont organisées **par domaine fonctionnel** (ce que le réglage g
 portée (installation ou caméra) ni par écran d'origine. La portée est traitée juste en dessous.
 
 ```
-Accueil · Direct · Historique                     Réglages
+Accueil · Historique                              Réglages
                                                    ├── Caméras ─────────┬── (découverte / ajout)
                                                    │                    └── <caméra> ──┬── Détection
                                                    │                                   ├── Conservation
@@ -103,6 +103,9 @@ Accueil · Direct · Historique                     Réglages
                                                    └── Système ─────────┬── Stockage, ressources
                                                                         └── Avancé (dont interface technique)
 ```
+
+La barre principale liste les écrans de consultation existants ; elle s'ouvre à d'autres si le besoin
+apparaît, mais **jamais à un réglage** — c'est la contrainte que pose cette décision.
 
 Les rubriques *Détection* et *Conservation* portent les valeurs d'installation ; leurs jumelles sous
 une caméra portent les surcharges. C'est la lecture littérale du modèle d'ADR-39.

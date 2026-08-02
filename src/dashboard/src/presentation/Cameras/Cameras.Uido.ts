@@ -12,8 +12,7 @@ export type CameraSelection =
   | { kind: 'manual' }
   | { kind: 'candidate'; index: number }
   | { kind: 'camera'; cameraId: string }
-  // Settings that belong to the installation rather than to any one camera (ADR-39).
-  | { kind: 'general' }
+// Settings that belong to the installation rather than to any one camera (ADR-39).
 
 export const emptyCameraDraft: CameraDraftInput = {
   displayName: '',

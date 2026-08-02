@@ -7,7 +7,7 @@ test.describe('Cameras — onboarding', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
 
-    await page.goto('/cameras')
+    await page.goto('/settings/cameras')
     await expect(page.getByRole('heading', { name: 'Decouverte guidee' })).toBeVisible()
     await expect(page.getByText('Aucune camera visible')).toBeVisible()
 

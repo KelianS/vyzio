@@ -28,7 +28,7 @@ common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), 
   avec `pnpm dlx shadcn@latest add <nom>`, jamais à la main. **Ne jamais y mettre de règle métier** :
   la règle ESLint `boundaries` interdit à `ui-primitive` d'importer autre chose que `ui-primitive`,
   et Prettier les ignore pour qu'une régénération ne produise aucun bruit.
-- **`common/components/`** = composants Vyzio bâtis *au-dessus* des primitives. C'est là que vivent
+- **`common/components/`** = composants Vyzio bâtis _au-dessus_ des primitives. C'est là que vivent
   le vocabulaire produit et la discipline de code du projet.
 - **Styles** : Tailwind v4 uniquement. Les tokens du
   [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) sont réalisés dans `src/index.css` (thème clair et

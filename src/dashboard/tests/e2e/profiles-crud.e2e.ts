@@ -7,7 +7,7 @@ test.describe('Profiles — create', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ profiles: [] }))
 
-    await page.goto('/profiles')
+    await page.goto('/settings/detection/personnes')
     await expect(page.getByRole('heading', { name: 'Gestion des personnes connues' })).toBeVisible()
     await expect(page.getByText('Aucun profil')).toBeVisible()
 

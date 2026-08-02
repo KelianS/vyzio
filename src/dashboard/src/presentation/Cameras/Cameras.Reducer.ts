@@ -54,15 +54,6 @@ export function camerasReducer(state: CamerasUido, action: CamerasAction): Camer
         formError: null,
       }
 
-    case 'GENERAL_SETTINGS_SELECTED':
-      return {
-        ...state,
-        selection: { kind: 'general' },
-        draftVerification: null,
-        detailError: null,
-        detailMessage: null,
-      }
-
     case 'CAMERA_SELECTED':
       return {
         ...state,

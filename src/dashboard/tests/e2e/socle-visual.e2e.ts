@@ -50,7 +50,7 @@ test.describe('Socle — non-regression du preflight', () => {
 
     await page.screenshot({ path: 'test-results/socle-hub.png', fullPage: true })
 
-    await page.goto('/cameras')
+    await page.goto('/settings/cameras')
     await expect(page.getByRole('heading', { name: 'Decouverte guidee' })).toBeVisible()
     await page.screenshot({ path: 'test-results/socle-parametres.png', fullPage: true })
   })

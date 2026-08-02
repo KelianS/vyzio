@@ -16,7 +16,6 @@ import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { PtzPresetsSection } from './PtzPresetsSection'
 import { ImageSettingsPanel } from './ImageSettingsPanel'
 import { DetectionConfigSection } from './DetectionConfigSection'
-import { RecordingSettingsSection } from './RecordingSettingsSection'
 import { useCameraStatus } from './useCameraStatus'
 import { useVendorAssistance } from './useVendorAssistance'
 import { resolveVendorLinkTarget } from './vendorLinks'
@@ -561,17 +560,6 @@ export function CamerasView() {
               </div>
             </button>
 
-            <button
-              type="button"
-              className={`camera-nav-item ${selection.kind === 'general' ? 'selected' : ''}`}
-              onClick={() => presenter.onSelectGeneralSettings()}
-            >
-              <div>
-                <strong>Réglages généraux</strong>
-                <p>Ce qui s’applique à toutes les caméras.</p>
-              </div>
-            </button>
-
             {unclaimedDiscoveryResults.length > 0 ? (
               unclaimedDiscoveryResults.map((candidate) => {
                 const originalIndex = uido.discoveryResults.indexOf(candidate)
@@ -617,21 +605,7 @@ export function CamerasView() {
         </aside>
 
         <article className="panel camera-detail-panel">
-          {selection.kind === 'general' ? (
-            <>
-              <div className="panel-heading">
-                <p className="section-kicker">Paramètres</p>
-                <h2>Réglages généraux</h2>
-              </div>
-
-              <div className="camera-detail-sections">
-                <RecordingSettingsSection
-                  getRecordingSettings={container.getRecordingSettings}
-                  saveRecordingSettings={container.saveRecordingSettings}
-                />
-              </div>
-            </>
-          ) : selection.kind === 'manual' || selectedCandidate ? (
+          {selection.kind === 'manual' || selectedCandidate ? (
             <>
               <div className="panel-heading">
                 <p className="section-kicker">Configuration</p>

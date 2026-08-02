@@ -13,7 +13,6 @@ export type CamerasAction =
   | { type: 'EDIT_FORM_UPDATED'; patch: Partial<CameraDraftInput> }
   | { type: 'EDIT_PASSWORD_CHANGED'; value: string }
   | { type: 'MANUAL_ENTRY_SELECTED' }
-  | { type: 'GENERAL_SETTINGS_SELECTED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }
   | { type: 'CAMERA_SELECTED'; cameraId: string }
   | {

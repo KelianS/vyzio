@@ -7,7 +7,7 @@ test.describe('Notifications — Telegram channel', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState())
 
-    await page.goto('/notifications')
+    await page.goto('/settings/notifications')
     await expect(page.getByRole('heading', { name: 'Configuration des alertes' })).toBeVisible()
     await expect(page.getByText('Aucun canal configure')).toBeVisible()
 

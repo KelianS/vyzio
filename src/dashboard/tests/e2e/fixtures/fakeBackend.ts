@@ -102,6 +102,12 @@ export interface FakeBackendState {
     hasClip: boolean
     hasSnapshot: boolean
   }[]
+  recordingSettings: {
+    continuous: { days: number; default: number }
+    motion: { days: number; default: number }
+    eventClip: { days: number; default: number }
+    maxDays: number
+  }
 }
 
 let nextId = 1
@@ -119,6 +125,13 @@ export function createFakeBackendState(
     profiles: [],
     notificationChannels: {},
     detectionHistory: [],
+    // Valeurs livrees par Vyzio (ADR-39).
+    recordingSettings: {
+      continuous: { days: 0, default: 0 },
+      motion: { days: 7, default: 7 },
+      eventClip: { days: 14, default: 14 },
+      maxDays: 365,
+    },
     ...overrides,
   }
 }
@@ -333,6 +346,20 @@ export async function installFakeBackend(
         { value: 'person', displayName: 'Personne', emoji: '🧑' },
         { value: 'car', displayName: 'Voiture', emoji: '🚗' },
       ])
+    }
+
+    // --- Recording settings (ADR-39) ---
+    if (path === '/api/settings/recording') {
+      if (method === 'PUT') {
+        const body = route.request().postDataJSON() as Record<string, number>
+        state.recordingSettings = {
+          continuous: { ...state.recordingSettings.continuous, days: body.continuousDays },
+          motion: { ...state.recordingSettings.motion, days: body.motionDays },
+          eventClip: { ...state.recordingSettings.eventClip, days: body.eventClipDays },
+          maxDays: state.recordingSettings.maxDays,
+        }
+      }
+      return json(route, state.recordingSettings)
     }
 
     // --- Profiles ---
