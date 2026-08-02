@@ -13,10 +13,7 @@ import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { CamerasAction } from './Cameras.Actions'
 import type { CameraSelection } from './Cameras.Uido'
-import {
-  RETENTION_UPDATE_FIELD,
-  type RetentionWindow,
-} from '../../common/recording/retention'
+import { RETENTION_UPDATE_FIELD, type RetentionWindow } from '../../common/recording/retention'
 
 export interface CamerasPresenterContext {
   container: CamerasContainer

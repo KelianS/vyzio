@@ -1,3 +1,17 @@
+@import 'tailwindcss';
+
+/* Le theme sombre suit une classe posee sur <html>, pas seulement la preference
+   systeme : l'utilisateur doit pouvoir choisir. `ThemePreference` applique l'une
+   ou l'autre au demarrage. */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Tokens Vyzio — realisation des valeurs definies par docs/DESIGN SYSTEM.md,
+   qui en reste la source. Toute couleur, tout rayon employe dans un composant
+   passe par un token : c'est ce qui rend un defaut de contraste corrigeable en
+   un point, et ce qui garantit le theme sombre par construction (ADR-42).
+   --------------------------------------------------------------------------- */
+
 :root {
   --bg-canvas: #f4efe6;
   --bg-elevated: #fffaf2;
@@ -13,15 +27,139 @@
   --alert-high: #c65c3d;
   --alert-ok: #2d7a52;
   --shadow-soft: 0 18px 50px rgba(24, 32, 29, 0.08);
+
+  /* Rayons du DESIGN SYSTEM. Conserves en CSS simple, hors `@theme` : `App.css`
+     les lit encore, et l'echelle `rounded-*` de Tailwind porte les memes noms
+     avec d'autres valeurs (voir plus bas). Ils disparaissent avec `App.css`. */
   --radius-xl: 28px;
   --radius-lg: 24px;
   --radius-md: 18px;
   --radius-sm: 8px;
   --radius-btn: 12px;
+
   --sans: 'Aptos', 'Segoe UI Variable Text', 'Trebuchet MS', sans-serif;
   --heading: 'Iowan Old Style', 'Palatino Linotype', serif;
   --mono: 'Cascadia Code', 'Consolas', monospace;
 
+  /* Fond de page : degrade chaud + trame discrete (voir body plus bas). */
+  --canvas-gradient:
+    radial-gradient(circle at top left, rgba(217, 179, 122, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(47, 107, 89, 0.14), transparent 22%),
+    linear-gradient(180deg, #f4efe6 0%, #ece3d4 100%);
+  --canvas-grid: rgba(24, 32, 29, 0.025);
+}
+
+/* Version sombre des memes tokens. Elle reste chaude et domestique : un theme
+   sombre clinique (gris neutres) contredirait l'intention du design system
+   autant qu'un theme clair clinique. */
+.dark {
+  --bg-canvas: #121a17;
+  --bg-elevated: #1b2723;
+  --bg-muted: rgba(27, 39, 35, 0.72);
+  --bg-strong: #0d1613;
+  --ink-strong: #f0ece3;
+  --ink-soft: #a3afa8;
+  --ink-inverse: #121916;
+  --line-soft: #2f3f38;
+  --brand-moss: #4e9a80;
+  --brand-moss-strong: #6bb89b;
+  --brand-sand: #e0bd8a;
+  --alert-high: #e07a5a;
+  --alert-ok: #4fa87a;
+  --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.45);
+
+  --canvas-gradient:
+    radial-gradient(circle at top left, rgba(217, 179, 122, 0.1), transparent 28%),
+    radial-gradient(circle at top right, rgba(47, 107, 89, 0.14), transparent 22%),
+    linear-gradient(180deg, #121a17 0%, #0d1512 100%);
+  --canvas-grid: rgba(240, 236, 227, 0.03);
+}
+
+/* ---------------------------------------------------------------------------
+   Couche semantique consommee par les primitives shadcn/ui. Elle ne definit
+   aucune couleur : elle nomme un role et pointe vers un token Vyzio. C'est ce
+   qui permet de rethematiser les primitives sans jamais les modifier (ADR-42).
+   --------------------------------------------------------------------------- */
+
+:root,
+.dark {
+  --background: var(--bg-canvas);
+  --foreground: var(--ink-strong);
+  --card: var(--bg-elevated);
+  --card-foreground: var(--ink-strong);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--ink-strong);
+  --primary: var(--brand-moss);
+  --primary-foreground: var(--ink-inverse);
+  --secondary: var(--bg-muted);
+  --secondary-foreground: var(--ink-strong);
+  --muted: var(--bg-muted);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--brand-sand);
+  --accent-foreground: var(--ink-strong);
+  --destructive: var(--alert-high);
+  --destructive-foreground: var(--ink-inverse);
+  --success: var(--alert-ok);
+  --border: var(--line-soft);
+  --input: var(--line-soft);
+  --ring: var(--brand-moss);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--sans);
+  --font-serif: var(--heading);
+  --font-mono: var(--mono);
+
+  --shadow-elevated: var(--shadow-soft);
+
+  /* Echelle `rounded-*` — celle des **elements cliquables**, conformement a la
+     regle de forme du DESIGN SYSTEM (rectangle arrondi = action, 8 a 12px).
+     Elle est calee sur le rayon de bouton Vyzio, ce qui rethematise les
+     primitives shadcn sans les modifier.
+
+     `inline` est essentiel ici : Tailwind n'emet alors aucune variable, il
+     inline la valeur dans l'utilitaire. Les `--radius-*` de `:root`, qui
+     portent les memes noms pour d'autres valeurs, restent donc intacts pour
+     `App.css` — les deux echelles coexistent sans se marcher dessus. */
+  --radius: 12px;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Rayons de **surface** (non cliquables) : noms distincts, donc aucune
+     collision, et l'intention reste lisible a l'usage. */
+  --radius-inset: 18px;
+  --radius-card: 24px;
+  --radius-panel: 28px;
+}
+
+/* ---------------------------------------------------------------------------
+   Base document. Ce qui suit habille la page elle-meme, pas un composant.
+   --------------------------------------------------------------------------- */
+
+:root {
   font: 18px/1.5 var(--sans);
   letter-spacing: 0.01em;
   color: var(--ink-strong);
@@ -36,10 +174,6 @@
   }
 }
 
-* {
-  box-sizing: border-box;
-}
-
 html {
   min-width: 320px;
 }
@@ -47,10 +181,7 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top left, rgba(217, 179, 122, 0.22), transparent 28%),
-    radial-gradient(circle at top right, rgba(47, 107, 89, 0.14), transparent 22%),
-    linear-gradient(180deg, #f4efe6 0%, #ece3d4 100%);
+  background: var(--canvas-gradient);
 }
 
 body::before {
@@ -58,8 +189,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(24, 32, 29, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(24, 32, 29, 0.025) 1px, transparent 1px);
+    linear-gradient(var(--canvas-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--canvas-grid) 1px, transparent 1px);
   background-size: 36px 36px;
   pointer-events: none;
   opacity: 0.35;
@@ -74,23 +205,23 @@ body::before {
   min-height: 100svh;
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
 a {
   color: inherit;
   text-decoration: none;
 }
 
-h1,
-h2,
-h3,
-p {
-  margin: 0;
+/* ---------------------------------------------------------------------------
+   Compatibilite de transition — a supprimer avec App.css (ADR-42).
+   Le preflight Tailwind neutralise les styles par defaut des elements ; les
+   ecrans non encore repris comptent dessus. Ces trois regles les maintiennent
+   a l'identique et disparaissent avec la derniere reprise d'ecran.
+   --------------------------------------------------------------------------- */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 h1,
