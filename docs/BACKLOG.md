@@ -71,7 +71,11 @@ Mesures de référence et hiérarchie des leviers :
 
 ### `recording` — Rétention d'enregistrement
 
-- **Bug : l'enregistrement continu ne conserve rien.** `FrigateConfigApplier` n'émet que `record.enabled: true`, or les défauts Frigate 0.17 sont `continuous.days: 0` et `motion.days: 0`. `Camera.ContinuousRecordingEnabled` ([ADR-18](adr/0018-enregistrement-continu-activation-par-camera-dans-la.md)) n'a donc aucun effet de rétention — vérifié sur disque : 7 heures retenues après 8 jours de fonctionnement, 55 Mo. L'UI annonce pourtant « 1 à 3 Go par jour », donc la promesse produit est fausse dans les deux sens. **Trancher avant implémentation** : nombre de jours conservés, et mode `all` (tout) vs `motion` (seulement les portions avec mouvement) — arbitrage produit et capacité disque.
+Direction tranchee par [ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) : trois durees de retention (tout / mouvement / clips d'evenement), globales et surchargeables par camera.
+
+1. **Retention d'enregistrement** — entite `RecordingSettings` (singleton), surcharges nullables sur `Camera`, resolution `surcharge ?? global` unique dans `Core`. Projection sur `record.continuous.days`, `record.motion.days` et `alerts`/`detections.retain.days`. `Camera.ContinuousRecordingEnabled` disparait au profit d'une duree. Corrige au passage le fait que le reglage par camera etait inerte dans les deux sens (`record.enabled: true` global sans surcharge).
+
+2. **Alerte de capacite disque critique** — exigee par SPECS §6.2, rendue plus necessaire par l'item ci-dessus puisque la retention devient reellement consommatrice. Reste a cadrer : seuil, canal d'alerte, et comportement quand le disque sature (arreter d'enregistrer ou raccourcir la retention).
 
 ---
 
