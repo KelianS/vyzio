@@ -59,9 +59,9 @@ const CameraConnectionPage = lazy(() =>
 const ProfilesView = lazy(() =>
   import('./presentation/Profiles/Profiles.Component').then((m) => ({ default: m.ProfilesView })),
 )
-const NotificationSettingsView = lazy(() =>
-  import('./presentation/Notifications/Notifications.Component').then((m) => ({
-    default: m.NotificationSettingsView,
+const NotificationsPage = lazy(() =>
+  import('./presentation/Notifications/NotificationsPage').then((m) => ({
+    default: m.NotificationsPage,
   })),
 )
 const ConservationPage = lazy(() =>
@@ -147,7 +147,7 @@ const router = createBrowserRouter([
           // la page s'annoncerait deux fois.
           { path: 'detection/personnes', element: <ProfilesView />, handle: OWN_HEADER_ONLY },
           { path: 'conservation', element: <ConservationPage /> },
-          { path: 'notifications', element: <NotificationSettingsView />, handle: OWN_HEADER_ONLY },
+          { path: 'notifications', element: <NotificationsPage /> },
           { path: 'systeme', element: <SystemPage /> },
           { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
         ],

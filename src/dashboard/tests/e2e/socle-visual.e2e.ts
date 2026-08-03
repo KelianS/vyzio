@@ -52,8 +52,8 @@ test.describe('Socle — non-regression du preflight', () => {
 
     // Un ecran encore hors socle : celui de l'ajout ne l'est plus, il ne peut
     // donc plus temoigner de ce que le preflight fait aux anciens.
-    await page.goto('/settings/notifications')
-    await expect(page.getByRole('heading', { name: 'Configuration des alertes' })).toBeVisible()
+    await page.goto('/settings/systeme/avance')
+    await expect(page.locator('.expert-shell, .expert-error-panel')).toBeVisible()
     await page.screenshot({ path: 'test-results/socle-parametres.png', fullPage: true })
   })
 })

@@ -48,7 +48,7 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('heading', { name: 'Conservation' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Notifications/ }).click()
-    await expect(page.getByRole('heading', { name: 'Configuration des alertes' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Système/ }).click()
     await expect(page.getByRole('heading', { name: 'Système' })).toBeVisible()
