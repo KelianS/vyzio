@@ -4,6 +4,7 @@ import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 export type AddCameraAction =
   | { type: 'FORM_UPDATED'; patch: Partial<CameraDraftInput> }
   | { type: 'MANUAL_ENTRY_SELECTED' }
+  | { type: 'SELECTION_CLEARED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }
   | {
       type: 'DVRIP_MODE_TOGGLED'
@@ -12,12 +13,7 @@ export type AddCameraAction =
       fallbackStreamPath: string | null
     }
   | { type: 'DISCOVERY_STARTED' }
-  | {
-      type: 'DISCOVERY_SUCCEEDED'
-      candidates: DiscoveredCamera[]
-      message: string
-      selectFirst: boolean
-    }
+  | { type: 'DISCOVERY_SUCCEEDED'; candidates: DiscoveredCamera[]; message: string }
   | { type: 'DISCOVERY_FAILED'; message: string }
   | { type: 'REFRESH_CANDIDATE_STARTED' }
   | {

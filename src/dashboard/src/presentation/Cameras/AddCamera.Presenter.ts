@@ -31,6 +31,11 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
       dispatch({ type: 'MANUAL_ENTRY_SELECTED' })
     },
 
+    /** Revenir au choix de la camera, sans perdre les resultats de recherche. */
+    onClearSelection() {
+      dispatch({ type: 'SELECTION_CLEARED' })
+    },
+
     onSelectCandidate(index: number, candidate: DiscoveredCamera) {
       dispatch({ type: 'CANDIDATE_SELECTED', index, candidate })
     },
@@ -51,7 +56,6 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
         dispatch({
           type: 'DISCOVERY_SUCCEEDED',
           candidates,
-          selectFirst: candidates.length > 0,
           message:
             candidates.length > 0
               ? `${candidates.length} caméra(s) trouvée(s).`

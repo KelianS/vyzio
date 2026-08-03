@@ -28,6 +28,17 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         error: null,
       }
 
+    case 'SELECTION_CLEARED':
+      return {
+        ...state,
+        selection: { kind: 'none' },
+        form: emptyCameraDraft,
+        dvripMode: false,
+        verification: null,
+        message: null,
+        error: null,
+      }
+
     case 'MANUAL_ENTRY_SELECTED':
       return {
         ...state,
@@ -70,22 +81,16 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
     case 'DISCOVERY_STARTED':
       return { ...state, discovering: true, message: null, error: null }
 
-    case 'DISCOVERY_SUCCEEDED': {
-      const base = {
+    // Rien n'est choisi a l'arrivee des resultats : designer d'office la premiere
+    // camera ouvrirait un formulaire pour un appareil que l'utilisateur n'a pas
+    // encore regarde, et le clic sur les autres n'aurait alors plus d'effet visible.
+    case 'DISCOVERY_SUCCEEDED':
+      return {
         ...state,
         discovering: false,
         discoveryResults: action.candidates,
         message: action.message,
       }
-      if (!action.selectFirst) return base
-      return {
-        ...base,
-        selection: { kind: 'candidate' as const, index: 0 },
-        form: draftFromCandidate(state, action.candidates[0]),
-        dvripMode: false,
-        verification: null,
-      }
-    }
 
     case 'DISCOVERY_FAILED':
       return { ...state, discovering: false, error: action.message }

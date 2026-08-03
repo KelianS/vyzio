@@ -1,7 +1,7 @@
 import { useEffect, useReducer, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Link, useNavigate } from 'react-router'
-import { ChevronLeft, Radar } from 'lucide-react'
+import { ChevronLeft, Keyboard, Radar } from 'lucide-react'
 import { appErrorMessage } from '../../common/errors/AppError'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
@@ -61,8 +61,10 @@ export function AddCameraView() {
   )
 
   useEffect(() => {
+    // Le candidat choisi a disparu d'une nouvelle recherche : mieux vaut revenir
+    // au choix que garder un formulaire rempli pour un appareil evanoui.
     if (uido.selection.kind === 'candidate' && !uido.discoveryResults[uido.selection.index]) {
-      presenter.onSelectManualEntry()
+      presenter.onClearSelection()
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
@@ -74,6 +76,18 @@ export function AddCameraView() {
   )
 
   const busy = uido.discovering || uido.refreshing || uido.verifying || uido.creating
+
+  // Ce que la premiere etape a retenu, dit en une ligne quand elle est repliee.
+  const chosen = candidate
+    ? {
+        title: candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName,
+        detail: [candidate.host, formatVendorFamily(candidate.vendorFamily)]
+          .filter(Boolean)
+          .join(' · '),
+      }
+    : uido.selection.kind === 'manual'
+      ? { title: 'Adresse saisie à la main', detail: uido.form.host || 'Adresse à renseigner' }
+      : null
 
   // Sans flux joignable ni voie de secours, il n'y a rien a renseigner : la
   // camera doit d'abord etre ouverte depuis son application.
@@ -185,45 +199,78 @@ export function AddCameraView() {
         <h1 className="mt-1 font-serif text-3xl">Ajouter une caméra</h1>
       </div>
 
-      <SettingsPage lede="Vyzio peut chercher les caméras de votre réseau, ou vous pouvez saisir l’adresse vous-même.">
-        <div className="flex flex-col gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="self-start"
-            disabled={busy}
-            onClick={() => presenter.onConfirmScanSet(true)}
-          >
-            <Radar aria-hidden="true" />
-            {uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
-          </Button>
-
-          <ul className="divide-y divide-border border-y border-border">
-            {unclaimed.map((entry) => {
-              const index = uido.discoveryResults.indexOf(entry)
-              return (
-                <CandidateRow
-                  key={`${entry.host}-${entry.port}`}
-                  candidate={entry}
-                  selected={uido.selection.kind === 'candidate' && uido.selection.index === index}
-                  onSelect={() => presenter.onSelectCandidate(index, entry)}
-                />
-              )
-            })}
-
-            <li>
-              <SelectableRow
-                selected={uido.selection.kind === 'manual'}
-                onSelect={() => presenter.onSelectManualEntry()}
+      <SettingsPage lede="Deux étapes : désigner la caméra, puis lui donner de quoi se connecter.">
+        <SettingsSection
+          title="Quelle caméra ?"
+          lede={
+            chosen
+              ? undefined
+              : 'Vyzio peut la chercher sur votre réseau, ou vous pouvez saisir son adresse.'
+          }
+        >
+          {/* Une fois la camera designee, la liste se replie : sur un ecran de
+              telephone elle repoussait la configuration hors de vue, si bien
+              qu'un clic ne semblait rien faire. Elle reste a un geste. */}
+          {chosen ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block font-medium">{chosen.title}</span>
+                <span className="block text-sm text-muted-foreground">{chosen.detail}</span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={presenter.onClearSelection}
               >
-                <span className="block font-medium">Saisir l’adresse moi-même</span>
-                <span className="block text-sm text-muted-foreground">
-                  Utile si la caméra ne répond pas à la recherche.
-                </span>
-              </SelectableRow>
-            </li>
-          </ul>
-        </div>
+                Changer
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {/* Deux facons d'en designer une, donc deux boutons de meme
+                  nature. La saisie manuelle trainait au bas de la liste des
+                  resultats, ou elle se lisait comme une camera trouvee. */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => presenter.onConfirmScanSet(true)}
+                >
+                  <Radar aria-hidden="true" />
+                  {uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => presenter.onSelectManualEntry()}
+                >
+                  <Keyboard aria-hidden="true" />
+                  Saisir l’adresse moi-même
+                </Button>
+              </div>
+
+              <Feedback message={uido.message} error={uido.error} />
+
+              {/* La liste ne contient plus que ce que la recherche a trouve. */}
+              {unclaimed.length > 0 && (
+                <ul className="divide-y divide-border border-y border-border">
+                  {unclaimed.map((entry) => {
+                    const index = uido.discoveryResults.indexOf(entry)
+                    return (
+                      <CandidateRow
+                        key={`${entry.host}-${entry.port}`}
+                        candidate={entry}
+                        onSelect={() => presenter.onSelectCandidate(index, entry)}
+                      />
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+        </SettingsSection>
 
         {needsActivation && (
           <SettingsSection
@@ -268,8 +315,9 @@ export function AddCameraView() {
           <SettingsSection title="Connexion" lede="Comment Vyzio joindra cette caméra.">
             <SettingsList settings={declarations} />
 
-            {uido.message && <p className="mt-4 text-sm text-success">{uido.message}</p>}
-            {uido.error && <p className="mt-4 text-sm text-destructive">{uido.error}</p>}
+            <div className="mt-4">
+              <Feedback message={uido.message} error={uido.error} />
+            </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
@@ -327,61 +375,66 @@ export function AddCameraView() {
 
 function CandidateRow({
   candidate,
-  selected,
   onSelect,
 }: {
   candidate: DiscoveredCamera
-  selected: boolean
   onSelect: () => void
 }) {
   const title = candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
   const vendor = formatVendorFamily(candidate.vendorFamily)
+  // Une notice constructeur vaut reconnaissance : Vyzio sait quoi faire de la
+  // camera meme quand la marque n'est pas nommee.
+  const recognised = Boolean(vendor || candidate.vendorDocumentation?.markdown?.trim())
 
   return (
     <li>
-      <SelectableRow selected={selected} onSelect={onSelect}>
-        <span className="flex items-baseline justify-between gap-3">
-          <span className="min-w-0">
-            <span className="block font-medium">{title}</span>
-            <span className="block text-sm text-muted-foreground">
-              {candidate.host}
-              {vendor ? ` · ${vendor}` : ''}
-            </span>
-          </span>
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-xs',
-              candidate.streamPath
-                ? 'bg-success/15 text-foreground'
-                : 'bg-muted text-muted-foreground',
-            )}
-          >
+      <SelectableRow onSelect={onSelect}>
+        <span className="block font-medium">{title}</span>
+        <span className="block text-sm text-muted-foreground">{candidate.host}</span>
+        {/* Ces deux pastilles disent le degre de confiance : la marque
+            reconnue, et l'appareil pret a etre ajoute. Sans elles il faut
+            ouvrir chaque candidat pour savoir lequel a une chance. */}
+        <span className="mt-1.5 flex flex-wrap gap-1.5">
+          <Badge tone={recognised ? 'ok' : 'neutral'}>
+            {vendor ?? (recognised ? 'Marque connue' : 'Marque inconnue')}
+          </Badge>
+          <Badge tone={candidate.streamPath ? 'ok' : 'neutral'}>
             {candidate.streamPath ? 'Prête' : 'À préparer'}
-          </span>
+          </Badge>
         </span>
       </SelectableRow>
     </li>
   )
 }
 
-function SelectableRow({
-  selected,
-  onSelect,
-  children,
-}: {
-  selected: boolean
-  onSelect: () => void
-  children: ReactNode
-}) {
+/** Ce que la derniere action a repondu : une reussite, ou un echec, jamais les deux. */
+function Feedback({ message, error }: { message: string | null; error: string | null }) {
+  if (error) return <p className="text-sm text-destructive">{error}</p>
+  if (message) return <p className="text-sm text-success">{message}</p>
+  return null
+}
+
+function Badge({ tone, children }: { tone: 'ok' | 'neutral'; children: ReactNode }) {
+  return (
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-xs',
+        tone === 'ok' ? 'bg-success/15 text-foreground' : 'bg-muted text-muted-foreground',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function SelectableRow({ onSelect, children }: { onSelect: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
-      aria-pressed={selected}
       onClick={onSelect}
       className={cn(
-        'w-full px-3 py-3 text-left transition-colors',
+        'w-full px-3 py-3 text-left transition-colors hover:bg-muted/60',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-        selected ? 'bg-muted' : 'hover:bg-muted/60',
       )}
     >
       {children}

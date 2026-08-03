@@ -7,7 +7,9 @@ import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
  * camera **existante** — un objet deja regle n'ayant rien a faire dans un ecran
  * d'ajout, il vit maintenant sous sa propre route (ADR-40).
  */
-export type AddCameraSelection = { kind: 'manual' } | { kind: 'candidate'; index: number }
+export type AddCameraSelection =
+  /** Rien n'est choisi : on cherche encore laquelle ajouter. */
+  { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
 
 export const emptyCameraDraft: CameraDraftInput = {
   displayName: '',
@@ -43,7 +45,7 @@ export interface AddCameraUido {
 
 export function buildInitialAddCameraUido(): AddCameraUido {
   return {
-    selection: { kind: 'manual' },
+    selection: { kind: 'none' },
     form: emptyCameraDraft,
     dvripMode: false,
 

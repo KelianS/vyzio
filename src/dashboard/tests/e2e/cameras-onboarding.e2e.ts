@@ -13,7 +13,9 @@ test.describe('Cameras — ajout', () => {
     await expect(page.getByRole('dialog')).toContainText('15 à 30 secondes')
     await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
 
-    await expect(page.getByRole('button', { name: /Caméra détectée/ })).toBeVisible()
+    // Le formulaire n'existe pas avant qu'une camera soit designee.
+    await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
+    await page.getByRole('button', { name: /Caméra détectée/ }).click()
 
     await page.getByRole('button', { name: 'Vérifier la connexion' }).click()
     await expect(page.getByText(/Flux valide/)).toBeVisible()
@@ -33,9 +35,35 @@ test.describe('Cameras — ajout', () => {
     await page.goto('/settings/cameras/ajout')
 
     // La saisie manuelle est offerte d'emblee, sans avoir a chercher d'abord.
-    await page.getByRole('button', { name: /Saisir l’adresse moi-même/ }).click()
+    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
     await expect(page.getByRole('textbox', { name: 'Nom' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Adresse' })).toBeVisible()
+  })
+
+  test('user_When choosing a camera_Should see the list fold away, and be able to reopen it', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/settings/cameras/ajout')
+
+    await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
+
+    // La confiance se lit sans ouvrir : marque reconnue, et camera joignable.
+    const candidate = page.getByRole('button', { name: /Caméra détectée/ })
+    await expect(candidate).toContainText('Marque inconnue')
+    await expect(candidate).toContainText('Prête')
+
+    await candidate.click()
+
+    // Repliee, la liste laisse la place a la configuration — sur un telephone
+    // elle la repoussait hors de vue.
+    await expect(candidate).toHaveCount(0)
+    await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Changer' }).click()
+    await expect(candidate).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
   })
 
   test('user_When a camera is already in the catalogue_Should not be offered again', async ({
