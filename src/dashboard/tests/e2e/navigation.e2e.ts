@@ -42,7 +42,7 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('heading', { name: 'Caméras' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Détection/ }).click()
-    await expect(page.getByRole('heading', { name: 'Gestion des personnes connues' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Détection' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Conservation/ }).click()
     await expect(page.getByRole('heading', { name: 'Conservation' })).toBeVisible()

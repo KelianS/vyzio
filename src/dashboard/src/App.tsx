@@ -56,8 +56,27 @@ const CameraConnectionPage = lazy(() =>
     default: m.CameraConnectionPage,
   })),
 )
-const ProfilesView = lazy(() =>
-  import('./presentation/Profiles/Profiles.Component').then((m) => ({ default: m.ProfilesView })),
+const PersonListPage = lazy(() =>
+  import('./presentation/Profiles/PersonListPage').then((m) => ({ default: m.PersonListPage })),
+)
+const AddPersonPage = lazy(() =>
+  import('./presentation/Profiles/AddPersonPage').then((m) => ({ default: m.AddPersonPage })),
+)
+const PersonShell = lazy(() =>
+  import('./presentation/Profiles/PersonShell').then((m) => ({ default: m.PersonShell })),
+)
+const PersonIdentityPage = lazy(() =>
+  import('./presentation/Profiles/PersonIdentityPage').then((m) => ({
+    default: m.PersonIdentityPage,
+  })),
+)
+const PersonPhotosPage = lazy(() =>
+  import('./presentation/Profiles/PersonPhotosPage').then((m) => ({ default: m.PersonPhotosPage })),
+)
+const PersonCamerasPage = lazy(() =>
+  import('./presentation/Profiles/PersonCamerasPage').then((m) => ({
+    default: m.PersonCamerasPage,
+  })),
 )
 const NotificationsPage = lazy(() =>
   import('./presentation/Notifications/NotificationsPage').then((m) => ({
@@ -145,7 +164,21 @@ const router = createBrowserRouter([
           // Ecrans pas encore repris : ils portent deja un titre, jamais de
           // retour. Le marqueur tombera avec leur reprise, pas avant — sans lui
           // la page s'annoncerait deux fois.
-          { path: 'detection/personnes', element: <ProfilesView />, handle: OWN_HEADER_ONLY },
+          { path: 'detection/personnes', element: <PersonListPage /> },
+          // Nomme la tache, pas la rubrique.
+          { path: 'detection/personnes/ajout', element: <AddPersonPage />, handle: OWN_HEADER },
+          {
+            path: 'detection/personnes/:profileId',
+            element: <PersonShell />,
+            // Porte le nom de la personne ouverte, et ses onglets.
+            handle: OWN_HEADER,
+            children: [
+              { index: true, element: <Navigate to="identite" replace /> },
+              { path: 'identite', element: <PersonIdentityPage /> },
+              { path: 'photos', element: <PersonPhotosPage /> },
+              { path: 'cameras', element: <PersonCamerasPage /> },
+            ],
+          },
           { path: 'conservation', element: <ConservationPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'systeme', element: <SystemPage /> },

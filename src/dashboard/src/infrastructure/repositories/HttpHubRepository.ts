@@ -1,7 +1,7 @@
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
 import type { HubOverview } from '../../domain/entities/HubOverview'
 import type { NotificationSummary } from '../../domain/entities/NotificationSummary'
-import type { Profile } from '../../domain/entities/Profile'
+import type { Profile, ProfileAlertMode, ProfileCategory } from '../../domain/entities/Profile'
 import type { HubRepository } from '../../domain/ports/HubRepository'
 import { fetchJson } from '../http/fetchJson'
 
@@ -22,8 +22,8 @@ interface DetectionEventDto {
 interface ProfileDto {
   id: string
   name: string
-  category: string
-  alertMode: string
+  category: ProfileCategory
+  alertMode: ProfileAlertMode
   lastSeenAt: string | null
   createdAt: string
 }
