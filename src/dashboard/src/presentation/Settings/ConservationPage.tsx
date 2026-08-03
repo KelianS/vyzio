@@ -1,6 +1,6 @@
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
-import { UnsavedChangesGuard } from '../../common/settings/UnsavedChangesGuard'
+import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { useAsync } from '../../common/hooks/useAsync'
@@ -82,6 +82,8 @@ function ConservationForm({
     labels: DRAFT_LABELS,
   })
 
+  useUnsavedChanges(draft.dirty)
+
   const saving = useAsyncAction(async () => save.execute(draft.values), {
     onSuccess: () => {
       draft.accept()
@@ -118,8 +120,6 @@ function ConservationForm({
 
   return (
     <>
-      <UnsavedChangesGuard when={draft.dirty} />
-
       <SettingsPage lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée.">
         <SettingsList settings={declarations} />
         <p className="mt-4 text-sm text-muted-foreground">

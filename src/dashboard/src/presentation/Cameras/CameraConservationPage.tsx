@@ -1,7 +1,7 @@
 import { useParams } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
-import { UnsavedChangesGuard } from '../../common/settings/UnsavedChangesGuard'
+import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { useAsync } from '../../common/hooks/useAsync'
@@ -70,6 +70,8 @@ function ConservationForm({
     labels: DRAFT_LABELS,
   })
 
+  useUnsavedChanges(draft.dirty)
+
   const saving = useAsyncAction(
     async () =>
       container.saveCameraDetectionConfig.execute(cameraId, {
@@ -117,8 +119,6 @@ function ConservationForm({
 
   return (
     <>
-      <UnsavedChangesGuard when={draft.dirty} />
-
       <SettingsPage lede="Cette caméra suit les durées d’ensemble tant qu’elle n’en fixe pas une à elle. Chaque durée est indépendante.">
         <SettingsList settings={declarations} />
       </SettingsPage>

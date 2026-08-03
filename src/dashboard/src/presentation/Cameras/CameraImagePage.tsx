@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
-import { UnsavedChangesGuard } from '../../common/settings/UnsavedChangesGuard'
+import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { useAsync } from '../../common/hooks/useAsync'
@@ -106,6 +106,8 @@ function ImageForm({
 
   const draft = useSettingsDraft<CameraImageSettings>({ saved: settings, labels: DRAFT_LABELS })
 
+  useUnsavedChanges(draft.dirty)
+
   const saving = useAsyncAction(
     async () => container.setCameraImageSettings.execute(camera.id, draft.values),
     {
@@ -142,8 +144,6 @@ function ImageForm({
 
   return (
     <>
-      <UnsavedChangesGuard when={draft.dirty} />
-
       <SettingsPage lede="Ce que la caméra envoie, avant toute analyse.">
         <SettingsList settings={declarations} />
         {children}

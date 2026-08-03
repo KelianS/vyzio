@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
-import { UnsavedChangesGuard } from '../../common/settings/UnsavedChangesGuard'
+import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
@@ -62,6 +62,8 @@ function ConnectionForm({ camera }: { camera: Camera }) {
   function reloadCameras() {
     void useRootStore.getState().loadCameras(container.getCameras)
   }
+
+  useUnsavedChanges(draft.dirty)
 
   const saving = useAsyncAction(
     async () =>
@@ -165,8 +167,6 @@ function ConnectionForm({ camera }: { camera: Camera }) {
 
   return (
     <>
-      <UnsavedChangesGuard when={draft.dirty} />
-
       <SettingsPage lede="Comment Vyzio joint cette caméra.">
         <SettingsList settings={declarations} />
 

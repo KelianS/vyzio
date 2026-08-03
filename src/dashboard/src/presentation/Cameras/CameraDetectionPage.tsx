@@ -1,7 +1,7 @@
 import { useParams } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
-import { UnsavedChangesGuard } from '../../common/settings/UnsavedChangesGuard'
+import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
@@ -64,6 +64,8 @@ function DetectionForm({
     labels: DETECTION_DRAFT_LABELS,
   })
 
+  useUnsavedChanges(draft.dirty)
+
   const saving = useAsyncAction(
     async () =>
       container.saveCameraDetectionConfig.execute(cameraId, {
@@ -92,8 +94,6 @@ function DetectionForm({
 
   return (
     <>
-      <UnsavedChangesGuard when={draft.dirty} />
-
       <SettingsPage lede="Ce que cette caméra cherche, et avec quelle image.">
         <SettingsList settings={declarations} />
       </SettingsPage>

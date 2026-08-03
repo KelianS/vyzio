@@ -5,11 +5,19 @@ import {
   createSurveillanceRestartSlice,
   type SurveillanceRestartSlice,
 } from './slices/surveillanceRestart.slice'
+import {
+  createNavigationGuardSlice,
+  type NavigationGuardSlice,
+} from './slices/navigationGuard.slice'
 
-export type RootStore = CamerasSlice & SystemStatsSlice & SurveillanceRestartSlice
+export type RootStore = CamerasSlice &
+  SystemStatsSlice &
+  SurveillanceRestartSlice &
+  NavigationGuardSlice
 
 export const useRootStore = create<RootStore>()((...a) => ({
   ...createCamerasSlice(...a),
   ...createSystemStatsSlice(...a),
   ...createSurveillanceRestartSlice(...a),
+  ...createNavigationGuardSlice(...a),
 }))

@@ -1,7 +1,7 @@
 import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
-import { UnsavedChangesGuard } from '../../common/settings/UnsavedChangesGuard'
+import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
@@ -25,6 +25,8 @@ export function CameraPrivacyPage() {
     labels: DRAFT_LABELS,
   })
 
+  useUnsavedChanges(draft.dirty)
+
   const saving = useAsyncAction(
     async () => container.setPrivacyStrategy.execute(camera.id, draft.values.strategy),
     {
@@ -44,8 +46,6 @@ export function CameraPrivacyPage() {
 
   return (
     <>
-      <UnsavedChangesGuard when={draft.dirty} />
-
       {/* Le mode et ses plages horaires repondent a une seule question : quand la
           surveillance s'arrete, et comment. Les separer en deux cadres donnait
           deux titres a un unique reglage. */}

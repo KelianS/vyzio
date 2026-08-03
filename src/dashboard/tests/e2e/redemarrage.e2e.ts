@@ -81,22 +81,46 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
-  test('user_When leaving the settings_Should be asked, and let through either way', async ({
-    page,
-  }) => {
+  // Wait for the page to be mounted: with two blockers competing this passed by a race.
+  for (const [url, where] of [
+    ['/settings/conservation', 'a settings page'],
+    ['/settings/cameras/camera-1/detection', 'a camera page'],
+  ]) {
+    test(`user_When leaving the settings from ${where}_Should be asked, and let through either way`, async ({
+      page,
+    }) => {
+      const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
+      state.pendingChanges = true
+      await installFakeBackend(page, state)
+      await page.goto(url)
+      await expect(page.getByRole('region', { name: 'Modifications en attente' })).toBeHidden()
+
+      await page.getByRole('link', { name: 'Accueil' }).click()
+
+      const dialog = page.getByRole('dialog')
+      await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
+
+      // « Plus tard » lets through too: the gap is allowed.
+      await dialog.getByRole('button', { name: 'Plus tard' }).click()
+      await expect(page).toHaveURL('/')
+      await expect(page.getByRole('button', trigger())).toBeVisible()
+    })
+  }
+
+  test('user_When a page has unsaved edits_Should be asked about those first', async ({ page }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.pendingChanges = true
     await installFakeBackend(page, state)
     await page.goto('/settings/conservation')
 
+    const motion = page.getByRole('spinbutton').nth(1)
+    await motion.fill('30')
+    await motion.blur()
+
     await page.getByRole('link', { name: 'Accueil' }).click()
 
+    // Losing edits comes first: the only one of the two whose wrong answer destroys something.
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
-
-    // « Plus tard » lets through too: the gap is allowed.
-    await dialog.getByRole('button', { name: 'Plus tard' }).click()
-    await expect(page).toHaveURL('/')
-    await expect(page.getByRole('button', trigger())).toBeVisible()
+    await expect(dialog).toContainText('Quitter sans enregistrer ?')
   })
 })
