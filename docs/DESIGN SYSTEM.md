@@ -261,18 +261,25 @@ Un reglage s'enregistre ; la surveillance se redemarre a part
 [ADR-44](adr/0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md)).
 
 - **`Enregistrer`** — verbe unique de validation. Il persiste, et rien de plus : la surveillance n'est
-  pas touchee. Ne jamais employer `Appliquer`, ni `Mettre en service` : un terme de service generique
-  cache l'interruption au lieu de la dire.
+  pas touchee. Ne jamais l'appeler `Appliquer` ni `Mettre en service` : le premier promet une prise
+  d'effet qui n'a pas lieu, le second cache l'interruption derriere un terme de service generique.
 - **`Annuler`** — verbe unique d'abandon, il rend la page a son dernier etat enregistre.
 - Le brouillon annonce **ce qui a change**. Il n'annonce plus d'interruption : elle appartient au
   redemarrage.
 
 | Ou | Texte |
 | --- | --- |
-| Declencheur | `Redemarrer la surveillance` |
+| Declencheur | `Appliquer les changements` |
 | Question | `Redemarrer la surveillance maintenant ?` |
 | Corps | `Des reglages enregistres ne sont pas encore appliques. La surveillance s'interrompt quelques secondes.` |
+| En cours | `Redemarrage…` |
 | Echec | `Redemarrage echoue` — persistant, avec `Reessayer` |
+
+Le declencheur nomme **l'etat en attente**, la question nomme **l'acte**. Ce n'est pas une nuance de
+style : le declencheur survit a la session ou le reglage a ete enregistre, et se lit deux jours plus
+tard sans que rien n'ait redemarre entre-temps. `Redemarrer` y annoncerait un acte deja fait ;
+`Appliquer les changements` dit ce qui reste vrai tant qu'on n'a pas clique. L'interruption, elle,
+n'est jamais tue : elle est enoncee au moment ou l'on decide.
 
 Le declencheur **n'apparait que s'il y a quelque chose a reprendre** : sa presence est le message,
 son absence une information positive. On ne nomme pas la rubrique en attente — une categorie de notre

@@ -3,7 +3,7 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 
 // Restarting is the user's act (ADR-44): saving interrupts nothing, and the question is only asked on the way out.
 test.describe('Redémarrage de la surveillance', () => {
-  const trigger = (name = /Redémarrer la surveillance/) => ({ name })
+  const trigger = (name = /Appliquer les changements/) => ({ name })
 
   test('user_When nothing was changed_Should not be offered a restart at all', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))

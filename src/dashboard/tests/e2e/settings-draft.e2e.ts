@@ -55,9 +55,9 @@ test.describe('Réglages — cycle d’édition', () => {
 
     await page.getByRole('button', { name: 'Enregistrer' }).click()
 
+    // Un seul geste sur la page : le brouillon est solde, sans second bouton a
+    // chercher. Le redemarrage se decide ailleurs (ADR-44, redemarrage.e2e.ts).
     await expect(page.getByRole('region', { name: 'Modifications en attente' })).toBeHidden()
-    // Un seul geste : il n'y a pas d'« Appliquer » a chercher ensuite.
-    await expect(page.getByRole('button', { name: 'Appliquer' })).toBeHidden()
 
     await page.reload()
     await expect(page.getByRole('spinbutton').nth(1)).toHaveValue('30')

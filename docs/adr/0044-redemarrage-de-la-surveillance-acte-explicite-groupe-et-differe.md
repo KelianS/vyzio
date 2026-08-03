@@ -106,9 +106,13 @@ convoquer le déclencheur, et un enregistrement qui ne change rien ne le convoqu
 Le principe produit #2 interdit de nommer le moteur, **pas** de nommer ce qui se passe. Un terme de
 service générique — « mettre en service » — ne cacherait pas un détail d'implémentation : il cacherait
 l'interruption elle-même. Le verbe retenu est donc **« redémarrer la surveillance »** : le mécanisme
-est dit, l'objet nommé est celui que l'utilisateur reconnaît, et le moteur n'est jamais prononcé. Les
-formulations exactes vivent dans le [DESIGN SYSTEM](../DESIGN%20SYSTEM.md), foyer unique du
-vocabulaire d'interface.
+est dit, l'objet nommé est celui que l'utilisateur reconnaît, et le moteur n'est jamais prononcé.
+
+Mais le déclencheur et la question ne parlent pas du même instant. La question est posée au moment de
+décider, et nomme l'acte. Le déclencheur, lui, **peut se lire des jours après l'enregistrement**, sans
+que rien n'ait redémarré : il nomme donc l'état qui persiste, **« appliquer les changements »**, et non
+un acte accompli. L'interruption reste énoncée là où elle se décide. Les formulations exactes vivent
+dans le [DESIGN SYSTEM](../DESIGN%20SYSTEM.md), foyer unique du vocabulaire d'interface.
 
 ## Conséquences
 
