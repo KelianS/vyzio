@@ -18,7 +18,7 @@ test.describe('Notifications — canal Telegram', () => {
 
     // Invariant vie privee : les images quittent le reseau local, on le dit
     // avant, pas apres.
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('serveurs de Telegram')
     await dialog.getByRole('button', { name: 'Activer' }).click()
 

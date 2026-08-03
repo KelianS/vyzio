@@ -10,8 +10,8 @@ test.describe('Cameras — ajout', () => {
 
     // Le cout de la recherche est annonce avant de l'engager.
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
-    await expect(page.getByRole('dialog')).toContainText('15 à 30 secondes')
-    await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
+    await expect(page.getByRole('alertdialog')).toContainText('15 à 30 secondes')
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     // Le formulaire n'existe pas avant qu'une camera soit designee.
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
@@ -47,7 +47,7 @@ test.describe('Cameras — ajout', () => {
     await page.goto('/settings/cameras/ajout')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     // La confiance se lit sans ouvrir : marque reconnue, et camera joignable.
     const candidate = page.getByRole('button', { name: /Caméra détectée/ })
@@ -77,7 +77,7 @@ test.describe('Cameras — ajout', () => {
     await page.goto('/settings/cameras/ajout')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     // La recherche a bien eu lieu — c'est son resultat qui est ecarte.
     await expect(page.getByText('1 caméra(s) trouvée(s).')).toBeVisible()

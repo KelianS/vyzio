@@ -17,7 +17,7 @@ test.describe('Accueil — couper la surveillance', () => {
     await page.getByRole('button', { name: 'Tout couper' }).click()
 
     // Le cout est dit avant : plus rien n'est enregistre ni signale.
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Plus rien n’est enregistré ni signalé')
     await dialog.getByRole('button', { name: 'Tout couper' }).click()
 

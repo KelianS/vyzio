@@ -41,7 +41,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await page.getByRole('button', trigger()).click()
 
     // The cost is stated before acting.
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('La surveillance s’interrompt quelques secondes.')
 
     await dialog.getByRole('button', { name: 'Redémarrer' }).click()
@@ -58,7 +58,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await page.goto('/settings/conservation')
 
     await page.getByRole('button', trigger()).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Redémarrer' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
 
     // Saying it once then forgetting would let the user believe the settings were taken up.
     const failed = page.getByRole('button', { name: /Redémarrage échoué/ })
@@ -78,7 +78,7 @@ test.describe('Redémarrage de la surveillance', () => {
     // The most common gesture while configuring: asking here would nag, and stack with the draft guard.
     await page.getByRole('link', { name: 'Conservation', exact: true }).click()
     await expect(page).toHaveURL('/settings/cameras/camera-1/conservation')
-    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })
 
   // Wait for the page to be mounted: with two blockers competing this passed by a race.
@@ -97,7 +97,7 @@ test.describe('Redémarrage de la surveillance', () => {
 
       await page.getByRole('link', { name: 'Accueil' }).click()
 
-      const dialog = page.getByRole('dialog')
+      const dialog = page.getByRole('alertdialog')
       await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
 
       // « Plus tard » lets through too: the gap is allowed.
@@ -120,7 +120,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await page.getByRole('link', { name: 'Accueil' }).click()
 
     // Losing edits comes first: the only one of the two whose wrong answer destroys something.
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Quitter sans enregistrer ?')
   })
 })
