@@ -238,7 +238,9 @@ public class SaveCameraDetectionConfigUseCaseTests
         await _sut.ExecuteAsync(camera.Id, Request("low", pinned: true));
 
         await _configApplier.DidNotReceive().WriteConfigAsync(
-            Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+            Arg.Any<IReadOnlyList<Camera>>(),
+            Arg.Any<IReadOnlyList<SurveillanceChangeScope>>(),
+            Arg.Any<CancellationToken>());
         await _publisher.DidNotReceive().TryPublishSensitivityAsync(
             Arg.Any<string>(), Arg.Any<MotionSensitivity>(), Arg.Any<CancellationToken>());
     }

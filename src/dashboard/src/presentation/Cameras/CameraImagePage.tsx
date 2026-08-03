@@ -151,9 +151,6 @@ function ImageForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        // Ces reglages partent directement a la camera : la surveillance n'est
-        // pas interrompue.
-        interruptsMonitoring={false}
         saving={saving.loading}
         onSave={() => void saving.run()}
         onDiscard={draft.discard}

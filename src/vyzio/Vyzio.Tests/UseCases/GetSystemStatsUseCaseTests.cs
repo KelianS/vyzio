@@ -20,15 +20,29 @@ public class GetSystemStatsUseCaseTests
     }
 
     [Fact]
-    public async Task Stats_report_a_configuration_written_but_not_applied_yet()
+    public async Task Stats_name_what_is_waiting_for_a_restart()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _detectorPlanner.Plan(Arg.Any<int>()).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 5, FrigateHwAccel.None));
-        _configApplier.HasPendingChanges.Returns(true);
+        _configApplier.PendingChanges.Returns([SurveillanceChangeScope.Detection, SurveillanceChangeScope.Retention]);
 
         var result = await _sut.ExecuteAsync();
 
-        Assert.True(result.PendingChanges);
+        // Naming them is the point: the user decides when to restart, so the prompt has to say
+        // what it would take up (ADR-44).
+        Assert.Equal(["detection", "retention"], result.PendingChanges);
+    }
+
+    [Fact]
+    public async Task Stats_report_nothing_waiting_when_the_configuration_is_up_to_date()
+    {
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _detectorPlanner.Plan(Arg.Any<int>()).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 5, FrigateHwAccel.None));
+        _configApplier.PendingChanges.Returns([]);
+
+        var result = await _sut.ExecuteAsync();
+
+        Assert.Empty(result.PendingChanges);
     }
 
     private static Camera MakeCamera(bool isEnabled = true, string validationState = "validated") => new()

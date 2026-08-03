@@ -67,7 +67,6 @@ export function CameraPrivacyPage() {
 
       <SettingsDraftBar
         changes={draft.changes}
-        interruptsMonitoring
         saving={saving.loading}
         onSave={() => void saving.run()}
         onDiscard={draft.discard}

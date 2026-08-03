@@ -126,9 +126,6 @@ function ConservationForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        // La retention est ecrite dans la configuration du moteur : l'enregistrer
-        // le redemarre. L'API dira elle-meme quels reglages l'exigent.
-        interruptsMonitoring
         saving={saving.loading}
         onSave={() => void saving.run()}
         onDiscard={draft.discard}

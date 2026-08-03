@@ -417,13 +417,13 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubFrigateConfigApplier : IFrigateConfigApplier
     {
-        public Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+        public Task WriteConfigAsync(IReadOnlyList<Camera> cameras, IReadOnlyList<SurveillanceChangeScope> scopes, CancellationToken ct = default)
             => Task.CompletedTask;
 
         public Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
             => Task.FromResult(new FrigateConfigApplyResult(true, "Frigate configuration applied successfully.", "config/frigate.generated.yml"));
 
-        public bool HasPendingChanges => false;
+        public IReadOnlyList<SurveillanceChangeScope> PendingChanges => [];
     }
 
     private sealed class StubVendorAssistanceService : IVendorAssistanceService

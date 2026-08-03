@@ -12,7 +12,7 @@ test.describe('Réglages — cycle d’édition', () => {
     await page.goto('/settings/conservation')
   })
 
-  test('user_When editing a value_Should see what changed and what it costs, with nothing saved yet', async ({
+  test('user_When editing a value_Should see what changed, with nothing saved yet', async ({
     page,
   }) => {
     const bar = page.getByRole('region', { name: 'Modifications en attente' })
@@ -26,8 +26,9 @@ test.describe('Réglages — cycle d’édition', () => {
     await expect(bar).toBeVisible()
     await expect(bar).toContainText('1 modification')
     await expect(bar).toContainText('Séquences de mouvement')
-    // Et il annonce ce que valider coute, avant de valider.
-    await expect(bar).toContainText('La détection s’interrompt')
+    // Et il n'annonce aucune interruption : enregistrer ne touche pas la
+    // surveillance, c'est le redemarrage qui l'interrompt (ADR-44).
+    await expect(bar).not.toContainText('interrompt')
 
     // Rien n'est parti : la page rechargee retrouve la valeur enregistree.
     await page.reload()

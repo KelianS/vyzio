@@ -14,7 +14,10 @@ public sealed class GetSystemStatsUseCase(
     public async Task<SystemStatsDto> ExecuteAsync(CancellationToken ct = default)
     {
         var detection = await ResolveDetectionConfigAsync(ct);
-        var pendingChanges = configApplier.HasPendingChanges;
+        // Named, not merely counted: the restart prompt has to say what is waiting (ADR-44).
+        var pendingChanges = configApplier.PendingChanges
+            .Select(SnakeCaseEnum.ToSnakeCase)
+            .ToList();
         var stats = await statsProvider.TryGetStatsAsync(ct);
 
         if (stats is null)
@@ -50,7 +53,7 @@ public sealed record SystemStatsDto(
     StorageStatsDto? Storage,
     IReadOnlyList<CameraFpsDto> Cameras,
     DetectionConfigDto Detection,
-    bool PendingChanges
+    IReadOnlyList<string> PendingChanges
 );
 
 public sealed record StorageStatsDto(double TotalGb, double UsedGb, double FreeGb);

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -29,13 +30,23 @@ public sealed class FrigateConfigApplier(
         }
     }
 
-    public bool HasPendingChanges => PendingMarkerPath is { } path && File.Exists(path);
+    public IReadOnlyList<SurveillanceChangeScope> PendingChanges => ReadPending();
 
-    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, IReadOnlyList<SurveillanceChangeScope> scopes, CancellationToken ct = default)
+    {
+        if (!await WriteDocumentAsync(cameras, ct))
+            return;
+
+        MarkPending(scopes);
+    }
+
+    // Generating the file and recording that it is waiting are two different facts: ApplyAsync
+    // writes and restarts in one go, so marking there would only create a marker to erase.
+    private async Task<bool> WriteDocumentAsync(IReadOnlyList<Camera> cameras, CancellationToken ct)
     {
         var configPath = settings.Frigate.ConfigPath;
         if (string.IsNullOrWhiteSpace(configPath))
-            return;
+            return false;
 
         // Retention is an installation-wide setting a camera may override (ADR-39), so it reaches the
         // applier through a port rather than through WriteConfigAsync's signature — no caller changes.
@@ -59,14 +70,41 @@ public sealed class FrigateConfigApplier(
         await File.WriteAllTextAsync(tempPath, yaml, ct);
         File.Move(tempPath, configPath, true);
 
-        MarkPending();
+        return true;
     }
 
-    private void MarkPending()
+    // Scopes accumulate: several settings can be changed across several pages before the user
+    // decides to restart, and each has to keep its name until then.
+    private void MarkPending(IReadOnlyList<SurveillanceChangeScope> scopes)
     {
         if (PendingMarkerPath is not { } path) return;
-        try { File.WriteAllText(path, string.Empty); }
-        catch (IOException) { /* the banner is a convenience, never a reason to fail a save */ }
+
+        var known = ReadPending();
+        var merged = known.Concat(scopes).Distinct().ToList();
+        if (merged.Count == known.Count) return;
+
+        try { File.WriteAllLines(path, merged.Select(SnakeCaseEnum.ToSnakeCase)); }
+        catch (IOException) { /* naming the wait is a convenience, never a reason to fail a save */ }
+    }
+
+    private IReadOnlyList<SurveillanceChangeScope> ReadPending()
+    {
+        if (PendingMarkerPath is not { } path || !File.Exists(path)) return [];
+
+        try
+        {
+            return File.ReadAllLines(path)
+                .Select(line => SnakeCaseEnum.TryFromSnakeCase<SurveillanceChangeScope>(line.Trim(), out var scope)
+                    ? scope
+                    : (SurveillanceChangeScope?)null)
+                .OfType<SurveillanceChangeScope>()
+                .Distinct()
+                .ToList();
+        }
+        catch (IOException)
+        {
+            return [];
+        }
     }
 
     private void ClearPending()
@@ -85,7 +123,7 @@ public sealed class FrigateConfigApplier(
             return new FrigateConfigApplyResult(false, "Frigate config path is not configured.", string.Empty);
         }
 
-        await WriteConfigAsync(cameras, ct);
+        await WriteDocumentAsync(cameras, ct);
 
         if (string.IsNullOrWhiteSpace(settings.Frigate.ApplyCommand))
         {

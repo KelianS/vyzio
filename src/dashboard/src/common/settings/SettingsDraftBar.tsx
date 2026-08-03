@@ -10,20 +10,18 @@ import type { DraftChange } from './useSettingsDraft'
  * rend trouvable, singulierement sur mobile ou un bouton en fin de page est
  * hors ecran.
  *
- * Elle dit **ce qui a change** et, le cas echeant, **ce que valider coute**.
- * L'annonce du cout est calculee sur le contenu reel du brouillon : tous les
- * reglages n'interrompent pas la surveillance, et un bouton qui l'annoncerait
- * toujours mentirait une fois sur deux.
+ * Elle dit **ce qui a change**, et rien de plus. Enregistrer n'interrompt pas la
+ * surveillance : l'interruption appartient au redemarrage, que l'utilisateur
+ * declenche lui-meme
+ * (ADR-44).
  */
 export function SettingsDraftBar({
   changes,
-  interruptsMonitoring,
   saving,
   onSave,
   onDiscard,
 }: {
   changes: readonly DraftChange[]
-  interruptsMonitoring: boolean
   saving: boolean
   onSave: () => void
   onDiscard: () => void
@@ -49,12 +47,6 @@ export function SettingsDraftBar({
         <p className="truncate text-sm text-muted-foreground" title={summary}>
           {summary}
         </p>
-        {interruptsMonitoring && (
-          // Dire ce que l'utilisateur perd, pas ce que le systeme fait.
-          <p className="mt-1 text-sm text-muted-foreground">
-            La détection s’interrompt quelques secondes après l’enregistrement.
-          </p>
-        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

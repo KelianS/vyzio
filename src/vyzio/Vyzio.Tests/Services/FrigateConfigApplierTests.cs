@@ -25,6 +25,7 @@ public class FrigateConfigApplierTests : IDisposable
     public void Dispose()
     {
         if (File.Exists(_configPath)) File.Delete(_configPath);
+        if (File.Exists($"{_configPath}.pending")) File.Delete($"{_configPath}.pending");
     }
 
     private static Camera MakeValidatedCamera(string slug, StreamProtocol streamProtocol = StreamProtocol.Rtsp, string? streamPath = "/stream1", int port = 554) => new()
@@ -84,6 +85,64 @@ public class FrigateConfigApplierTests : IDisposable
             new StubRecordingSettingsRepository(recordingSettings ?? RecordingSettings.CreateDefault()));
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
+    }
+
+    private FrigateConfigApplier BuildApplier()
+    {
+        var settings = Settings;
+        return new FrigateConfigApplier(
+            settings,
+            NullLogger<FrigateConfigApplier>.Instance,
+            new FrigateRestartTracker(),
+            new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(FrigateDetectorKind.Cpu)),
+            new NoopModelAssetInstaller(),
+            new StubRecordingSettingsRepository(RecordingSettings.CreateDefault()));
+    }
+
+    // Restarting is the user's decision (ADR-44), so between a save and that decision the wait has
+    // to survive *and* keep the name of what is waiting. These four tests are that contract.
+
+    [Fact]
+    public void Nothing_waits_before_anything_is_written()
+    {
+        Assert.Empty(BuildApplier().PendingChanges);
+    }
+
+    [Fact]
+    public async Task Writing_the_config_records_what_is_waiting_by_name()
+    {
+        var applier = BuildApplier();
+
+        await applier.WriteConfigAsync([MakeValidatedCamera("front-door")], [SurveillanceChangeScope.Detection]);
+
+        Assert.Equal([SurveillanceChangeScope.Detection], applier.PendingChanges);
+    }
+
+    [Fact]
+    public async Task Successive_writes_accumulate_their_scopes_without_repeating_them()
+    {
+        var applier = BuildApplier();
+        var cameras = new[] { MakeValidatedCamera("front-door") };
+
+        // Several settings, several pages, one restart later on: each has to keep its name until
+        // the user decides.
+        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Detection]);
+        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Retention]);
+        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Detection]);
+
+        Assert.Equal([SurveillanceChangeScope.Detection, SurveillanceChangeScope.Retention], applier.PendingChanges);
+    }
+
+    [Fact]
+    public async Task Applying_the_config_clears_the_wait()
+    {
+        var applier = BuildApplier();
+        var cameras = new[] { MakeValidatedCamera("front-door") };
+        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Detection]);
+
+        await applier.ApplyAsync(cameras);
+
+        Assert.Empty(applier.PendingChanges);
     }
 
     [Fact]
