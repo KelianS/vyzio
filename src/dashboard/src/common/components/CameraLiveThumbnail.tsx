@@ -55,23 +55,22 @@ export function CameraLiveThumbnail({
   }
 
   return (
-    <article
-      className={cn(
-        'overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]',
-        expandable && 'cursor-pointer',
-      )}
-      onClick={camera.privacyModeActive ? undefined : onExpand}
-      role={expandable ? 'button' : undefined}
-      tabIndex={expandable ? 0 : undefined}
-      onKeyDown={
-        expandable
-          ? (event) => {
-              if (event.key === 'Enter' || event.key === ' ') onExpand?.()
-            }
-          : undefined
-      }
-    >
-      <div className="relative aspect-video bg-surface-inverse">
+    <article className="overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]">
+      {/* Only the frame is the button: the footer holds a real one (privacy
+          toggle), and nesting interactive controls confuses screen readers. */}
+      <div
+        className={cn('relative aspect-video bg-surface-inverse', expandable && 'cursor-pointer')}
+        onClick={camera.privacyModeActive ? undefined : onExpand}
+        role={expandable ? 'button' : undefined}
+        tabIndex={expandable ? 0 : undefined}
+        onKeyDown={
+          expandable
+            ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') onExpand?.()
+              }
+            : undefined
+        }
+      >
         {camera.privacyModeActive ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
             {camera.privacyVendorCut ? (

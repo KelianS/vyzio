@@ -197,6 +197,7 @@ function RangeControl({
     <div className="flex w-full items-center gap-3">
       <Slider
         id={setting.id}
+        aria-labelledby={`${setting.id}-label`}
         className="min-w-32 flex-1"
         min={nature.min}
         max={nature.max}

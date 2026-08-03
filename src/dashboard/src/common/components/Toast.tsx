@@ -34,6 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       <div
+        role="region"
         className="pointer-events-none fixed right-4 bottom-4 z-50 grid gap-2"
         aria-live="polite"
         aria-label="Notifications"
