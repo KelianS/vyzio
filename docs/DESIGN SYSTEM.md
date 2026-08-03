@@ -256,16 +256,28 @@ Un libelle dit la **nature** de l'ecran — consulter ou regler — jamais l'aud
 
 ### Cycle d'edition
 
-Deux temps, jamais trois
-([ADR-41](adr/0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md)).
+Un reglage s'enregistre ; la surveillance se redemarre a part
+([ADR-41](adr/0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md),
+[ADR-44](adr/0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md)).
 
-- **`Enregistrer`** — verbe unique de validation. Il persiste *et* met en service. Ne jamais employer
-  `Appliquer` a cote de lui : il n'y a plus deux gestes.
+- **`Enregistrer`** — verbe unique de validation. Il persiste, et rien de plus : la surveillance n'est
+  pas touchee. Ne jamais employer `Appliquer`, ni `Mettre en service` : un terme de service generique
+  cache l'interruption au lieu de la dire.
 - **`Annuler`** — verbe unique d'abandon, il rend la page a son dernier etat enregistre.
-- Le brouillon annonce **ce qui a change** et, le cas echeant, que la surveillance s'interrompra
-  brievement. Dire ce que l'utilisateur perd (« la detection s'interrompt quelques secondes »), pas
-  ce que le systeme fait (« redemarrage du moteur »).
-- L'echec de mise en service se dit en termes de **panne**, pas d'etape restante.
+- Le brouillon annonce **ce qui a change**. Il n'annonce plus d'interruption : elle appartient au
+  redemarrage.
+
+| Ou | Texte |
+| --- | --- |
+| Declencheur | `Redemarrer la surveillance` |
+| Etat en attente | `3 reglages attendent le redemarrage` |
+| Cout annonce | `La surveillance s'interrompt quelques secondes.` |
+| Question en sortie | `Redemarrer la surveillance maintenant ?` — « 3 reglages enregistres ne s'appliqueront qu'au redemarrage. » |
+
+Regle sous-jacente, valable au-dela de ce cas : **on ne nomme pas la technique, mais on nomme toujours
+l'effet.** Le principe produit #2 interdit de prononcer le nom du moteur, pas de dire ce qui se passe.
+
+- L'echec du redemarrage se dit en termes de **panne**, pas d'etape restante.
 
 ### Interdits transverses
 

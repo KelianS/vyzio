@@ -65,7 +65,7 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 4. **Primitives d'edition** — brouillon de page, barre d'actions a position fixe, annonce de ce qui a change et du cout (interruption de la surveillance), confirmation a la sortie d'une page modifiee. Le retour arriere par champ d'ADR-39 est repris tel quel par-dessus.
 
-5. **Enregistrer sans bloquer** — la persistance rend la main immediatement, la mise en service se poursuit en arriere-plan sur le statut moteur existant ([ADR-33](adr/0033-statut-du-moteur-de-detection-expose-au-hub.md)), et une demande emise pendant un redemarrage se fusionne au lieu de s'empiler. Cote backend, l'API doit aussi savoir dire **avant** enregistrement si un reglage exige un redemarrage.
+5. **Redemarrer la surveillance, sur decision de l'utilisateur** ([ADR-44](adr/0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md)) — enregistrer n'interrompt plus rien ; un declencheur atteignable depuis n'importe ou redemarre la surveillance, et la question se pose en quittant les reglages. Cote backend, l'API doit dire **avant** enregistrement si un reglage exige un redemarrage, et `HasPendingChanges` doit dire **lesquels** attendent, pas seulement qu'il y en a. Prerequis de l'etape 8 : l'ecran d'ajout herite est aujourd'hui le seul appelant du declencheur.
 
 6. **Reprise des ecrans de reglages**, en commencant par les reglages d'installation (les plus recents, les moins intriques), puis notifications, puis detection. Chaque ecran repris emporte la suppression de ses regles dans `App.css`.
 

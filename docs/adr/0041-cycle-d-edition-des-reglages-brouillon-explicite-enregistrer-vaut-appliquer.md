@@ -1,6 +1,11 @@
 # ADR-41 — Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer
 
-> Statut : Accepté
+> Statut : Accepté — volet « enregistrer vaut appliquer » remplacé par
+> [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md).
+>
+> Les sections « Deux temps, pas trois » et « Enregistrer rend la main tout de suite ; la mise en
+> service se poursuit derrière » ne font plus foi. Tout le reste — le brouillon, son unité par page,
+> la confirmation de sortie, le coût déclaré, l'échec persistant — reste en vigueur.
 
 ## Contexte
 
