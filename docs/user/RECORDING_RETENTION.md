@@ -1,6 +1,6 @@
 # Durées de conservation
 
-> Où : page **Paramètres** → **Réglages généraux** → **Ce que Vyzio conserve**, pour toutes les caméras.
+> Où : **Réglages** → **Conservation**, pour toutes les caméras.
 > Pour une caméra en particulier : sa fiche → section **Détection** → bloc **Ce qui est conservé**.
 
 ## À quoi ça sert
@@ -18,27 +18,37 @@ caméra, cette caméra n'enregistre plus rien du tout.
 
 ## Le réglage vaut pour toutes les caméras, sauf si l'une en décide autrement
 
-Dans **Réglages généraux**, vous fixez les trois durées **pour toutes vos caméras**. C'est le cas
+Dans **Réglages** → **Conservation**, vous fixez les trois durées **pour toutes vos caméras**. C'est le cas
 normal : l'espace disque est partagé, autant raisonner sur l'ensemble.
 
-Sur la fiche d'une caméra, les trois mêmes durées apparaissent, **déjà remplies avec ce qui
+Sur la fiche d'une caméra (**Réglages** → **Caméras**), les trois mêmes durées apparaissent, **déjà remplies avec ce qui
 s'applique**. La couleur du nombre dit d'où il vient :
 
-- **Grisé** — la valeur vient des réglages généraux. Si vous les changez, cette caméra suivra.
+- **Grisé** — la valeur vient de la page **Conservation**. Si vous la changez, cette caméra suivra.
 - **Normal, avec un bouton ↺ à côté** — cette durée-là est propre à la caméra et ne bouge plus avec
-  les réglages généraux. Le bouton vous y ramène en un clic, et vous dit au survol la valeur que
-  vous retrouverez.
+  le réglage d'ensemble. Le bouton vous y ramène, en nommant la valeur que vous retrouverez.
 
 Écrire dans un champ grisé suffit à en faire une valeur propre à la caméra.
 
-Les **Réglages généraux** marchent pareil, un cran au-dessus : une durée que vous n'avez jamais
+La page **Conservation** marche pareil, un cran au-dessus : une durée que vous n'avez jamais
 touchée reste grisée, et dès que vous la changez un **↺** apparaît pour revenir à la valeur d'origine
 de Vyzio. Vous pouvez donc toujours retrouver un état connu.
 
 **Chaque durée est indépendante.** Donner 30 jours de mouvement à la caméra du jardin ne détache pas
-ses deux autres durées : elles continuent de suivre les réglages généraux.
+ses deux autres durées : elles continuent de suivre le réglage d'ensemble.
 
-Il n'y a pas de bouton « Enregistrer » : la modification part quand vous quittez le champ.
+## Rien ne part tant que vous n'avez pas validé
+
+Vous pouvez changer les durées, revenir en arrière, essayer : **tant que vous n'avez pas
+enregistré, rien ne bouge**. Une barre apparaît en bas de l'écran dès la première modification.
+Elle vous dit **combien** de réglages ont changé, **lesquels**, et que la détection s'interrompra
+quelques secondes.
+
+De là, deux gestes seulement : **Annuler**, qui remet la page comme vous l'avez trouvée, et
+**Enregistrer**, qui fait tout — il n'y a rien à « appliquer » ensuite.
+
+Si vous quittez la page en ayant oublié d'enregistrer, Vyzio vous le demande avant de vous laisser
+partir.
 
 ## Pourquoi la vidéo complète est à 0 par défaut
 
@@ -52,10 +62,11 @@ remonter le temps sans dépendre de ce que Vyzio a jugé être un mouvement.
 
 ## Quand le changement prend effet
 
-**Au redémarrage du moteur de détection**, pas immédiatement. Après avoir changé une durée, la page
-Paramètres vous propose d'appliquer la configuration.
+La surveillance reprend les nouvelles durées **quelques secondes après l'enregistrement**, le temps
+qu'elle redémarre. Vous n'avez rien à faire pendant ce temps, et vous pouvez continuer à régler
+ailleurs.
 
-Et une fois la nouvelle durée active, **le ménage n'est pas instantané** : Vyzio repasse environ
+Une fois la nouvelle durée active, **le ménage n'est pas instantané** : Vyzio repasse environ
 toutes les heures pour supprimer ce qui a dépassé son terme. Raccourcir une durée ne libère donc pas
 le disque dans la seconde.
 

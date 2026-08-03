@@ -7,8 +7,7 @@ export interface SystemStats {
   storage: StorageStats | null
   cameras: CameraFps[]
   detection: DetectionConfig
-  // A configuration has been written but not applied: most settings only take effect once the
-  // detection engine restarts (ADR-38).
+  // Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44).
   pendingChanges: boolean
 }
 

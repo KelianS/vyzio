@@ -46,3 +46,9 @@ référence ces ADR sans les recopier.
 | [ADR-37](0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) | Décodage vidéo matériel : `preset-vaapi` retenu, QuickSync différé (faute de codec connu par caméra) | Accepté |
 | [ADR-38](0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md) | Modèle de flux caméra : un flux = une qualité, un objectif = une caméra, rôles `detect`/`record` séparés | Accepté |
 | [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) | Réglages globaux surchargeables par caméra, appliqué à la rétention d'enregistrement | Accepté |
+| [ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) | Architecture de l'information : séparer consulter et régler, arborescence de réglages à deux niveaux | Accepté |
+| [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) | Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer | Accepté (volet « enregistrer vaut appliquer » remplacé par ADR-44) |
+| [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) | Socle de composants d'interface : shadcn/ui sur Radix et Tailwind, tokens du design system en source unique | Accepté |
+| [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) | Grammaire des réglages : un réglage se déclare, il ne se dessine pas | Accepté |
+| [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md) | Redémarrage de la surveillance : un acte explicite de l'utilisateur, groupé et différé | Accepté |
+| [ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) | Positions PTZ configurées depuis la vue live, jamais depuis les réglages | Accepté |

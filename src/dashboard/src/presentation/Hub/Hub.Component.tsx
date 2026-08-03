@@ -1,7 +1,11 @@
-import { useEffect, useReducer, useState } from 'react'
-import { appErrorMessage } from '../../common/errors/AppError'
-import type { AppError } from '../../common/errors/AppError'
+import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
+import { Play, TriangleAlert } from 'lucide-react'
+import { appErrorMessage, type AppError } from '../../common/errors/AppError'
+import { Button } from '../../common/ui/button'
+import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
+import { Overlay } from '../../common/components/Overlay'
 import { CameraLiveThumbnail } from '../../common/components/CameraLiveThumbnail'
 import { LiveFeedModal } from '../../common/components/LiveFeedModal'
 import { usePresenter } from '../../common/presenter/usePresenter'
@@ -10,12 +14,7 @@ import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
 import type { HubOverview } from '../../domain/entities/HubOverview'
 import type { SystemStats } from '../../domain/entities/SystemStats'
-import {
-  formatEventDetail,
-  formatEventTime,
-  formatEventTitle,
-  getEventTone,
-} from './hub.formatters'
+import { formatEventDetail, formatEventTime, formatEventTitle } from './hub.formatters'
 import { SystemMonitorPanel } from './SystemMonitorPanel'
 import { buildHubPresenter } from './Hub.Presenter'
 import { hubReducer } from './Hub.Reducer'
@@ -40,33 +39,20 @@ export function HubView() {
     presenter.onMount()
   }, [presenter])
 
-  const isLoading = uido.loading || camerasLoading
-
-  if (isLoading) {
-    return <HubLoadingState />
-  }
-
-  if (uido.error || (!uido.loading && !uido.data?.systemHealthy)) {
-    return <HubDegradedState error={uido.error} />
-  }
-
-  const activeCameras = cameras.filter((c) => c.isEnabled)
-
-  if (cameras.length === 0) {
-    return <HubSetupState />
-  }
+  if (uido.loading || camerasLoading) return <HubLoading />
+  if (uido.error || !uido.data?.systemHealthy) return <HubUnreachable error={uido.error} />
+  if (cameras.length === 0) return <HubWelcome />
 
   return (
     <>
-      <HubOperationalState
+      <HubOperational
         data={uido.data}
-        cameras={activeCameras}
-        allCameras={cameras}
+        cameras={cameras}
         apiBaseUrl={apiBaseUrl}
         systemStats={systemStats}
         batchPending={uido.batchPending}
         batchToggleLoading={uido.batchToggleLoading}
-        onBatchPendingSet={(value) => presenter.onBatchPendingSet(value)}
+        onBatchPendingSet={presenter.onBatchPendingSet}
         onOpenMedia={(type, url) => setModalMedia({ type, url })}
         onOpenLive={(camera) =>
           setModalMedia({
@@ -77,131 +63,138 @@ export function HubView() {
           })
         }
         onTogglePrivacy={(camera, active) => presenter.onTogglePrivacy(camera.id, active)}
-        onBatchTogglePrivacy={(cameraIds, active) =>
-          presenter.onBatchTogglePrivacy(cameraIds, active)
-        }
+        onBatchTogglePrivacy={presenter.onBatchTogglePrivacy}
       />
 
       {modalMedia && (
-        <div onClick={() => setModalMedia(null)} className="media-modal-backdrop">
-          <div onClick={(e) => e.stopPropagation()} className="media-modal-content">
-            <button type="button" onClick={() => setModalMedia(null)} className="media-modal-close">
-              ✕
-            </button>
-            {modalMedia.type === 'live' ? (
-              <LiveFeedModal
-                cameraId={modalMedia.cameraId}
-                apiBaseUrl={apiBaseUrl}
-                label={modalMedia.label}
-                ptzSupported={modalMedia.ptzSupported}
-                frigateStatus={systemStats?.status ?? 'active'}
-                ptzStep={camerasContainer.ptzStep}
-                ptzGoToPreset={camerasContainer.ptzGoToPreset}
-                getPtzPresets={camerasContainer.getPtzPresets}
-                capturePtzPresetThumbnail={camerasContainer.capturePtzPresetThumbnail}
-              />
-            ) : modalMedia.type === 'image' ? (
-              <img src={modalMedia.url} alt="Aperçu détection" className="media-modal-media" />
-            ) : (
-              <video src={modalMedia.url} controls autoPlay className="media-modal-media" />
-            )}
-          </div>
-        </div>
+        <Overlay label="Aperçu" onClose={() => setModalMedia(null)}>
+          {modalMedia.type === 'live' ? (
+            <LiveFeedModal
+              cameraId={modalMedia.cameraId}
+              apiBaseUrl={apiBaseUrl}
+              label={modalMedia.label}
+              ptzSupported={modalMedia.ptzSupported}
+              frigateStatus={systemStats?.status ?? 'active'}
+              ptzStep={camerasContainer.ptzStep}
+              ptzGoToPreset={camerasContainer.ptzGoToPreset}
+              getPtzPresets={camerasContainer.getPtzPresets}
+              ptzSaveCurrentAsPreset={camerasContainer.ptzSaveCurrentAsPreset}
+              capturePtzPresetThumbnail={camerasContainer.capturePtzPresetThumbnail}
+            />
+          ) : modalMedia.type === 'image' ? (
+            <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />
+          ) : (
+            <video src={modalMedia.url} controls autoPlay className="max-h-[85vh] rounded-lg" />
+          )}
+        </Overlay>
       )}
     </>
   )
 }
 
-function HubLoadingState() {
+function Card({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <main className="app-shell hub-loading">
-      <div className="hub-skeleton hub-skeleton--hero" aria-label="Chargement..." />
-      <div className="hub-skeleton-row">
-        <div className="hub-skeleton hub-skeleton--card" />
-        <div className="hub-skeleton hub-skeleton--card" />
-        <div className="hub-skeleton hub-skeleton--card" />
+    <section
+      className={cn(
+        'rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6',
+        className,
+      )}
+    >
+      {children}
+    </section>
+  )
+}
+
+function HubLoading() {
+  return (
+    <main className="flex flex-col gap-4 py-4" aria-label="Chargement">
+      <div className="h-24 animate-pulse rounded-card bg-card" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="h-40 animate-pulse rounded-card bg-card" />
+        <div className="h-40 animate-pulse rounded-card bg-card" />
+        <div className="h-40 animate-pulse rounded-card bg-card" />
       </div>
     </main>
   )
 }
 
-function HubDegradedState({ error }: { error: AppError | null }) {
+/** Vyzio unreachable: name the failure and what to check. */
+function HubUnreachable({ error }: { error: AppError | null }) {
   return (
-    <main className="app-shell">
-      <section className="hub-degraded-panel panel">
-        <div className="hub-degraded-icon" aria-hidden="true">
-          ⚠
+    <main className="py-4">
+      <Card>
+        <div className="flex items-start gap-3">
+          <TriangleAlert className="mt-1 size-5 shrink-0 text-destructive" aria-hidden="true" />
+          <div>
+            <h1 className="font-serif text-3xl">Vyzio ne répond pas</h1>
+            <p className="mt-1 text-muted-foreground">
+              La surveillance continue peut-être, mais cette page ne peut pas le confirmer.
+            </p>
+
+            <p className="mt-5 font-medium">À vérifier :</p>
+            <ol className="mt-1 list-decimal space-y-1 pl-5 text-muted-foreground">
+              <li>Le boîtier Vyzio est allumé et connecté au réseau.</li>
+              <li>Vous êtes sur le même réseau que lui.</li>
+              <li>Son adresse n’a pas changé.</li>
+            </ol>
+
+            {error && <p className="mt-4 text-sm text-destructive">{appErrorMessage(error)}</p>}
+          </div>
         </div>
-        <div>
-          <p className="eyebrow">Système indisponible</p>
-          <h1>Vyzio ne répond pas</h1>
-          <p className="lede">Le hub ne peut pas joindre le service Vyzio pour le moment.</p>
-        </div>
-        <div className="hub-degraded-steps">
-          <p>Vérifiez que :</p>
-          <ol>
-            <li>Le service Vyzio API est bien démarré</li>
-            <li>Le conteneur Docker est en cours d'exécution</li>
-            <li>L'adresse du backend est correcte dans la configuration</li>
-          </ol>
-          {error && <p className="hub-degraded-error">{appErrorMessage(error)}</p>}
-        </div>
-      </section>
+      </Card>
     </main>
   )
 }
 
-function HubSetupState() {
+const WELCOME_STEPS = [
+  {
+    title: 'Ajouter une caméra',
+    body: 'Vyzio la cherche sur votre réseau, ou vous donnez son adresse.',
+  },
+  {
+    title: 'Choisir ce qui compte',
+    body: 'Personnes, animaux, véhicules : à vous de dire ce qui mérite une alerte.',
+  },
+  { title: 'Être prévenu', body: 'Les alertes arrivent sur Telegram, aux heures que vous fixez.' },
+]
+
+function HubWelcome() {
   return (
-    <main className="app-shell">
-      <section className="hub-setup-hero panel">
-        <div className="hub-setup-copy">
-          <p className="eyebrow">Bienvenue sur Vyzio</p>
-          <h1>Configurer votre première caméra</h1>
-          <p className="lede">
-            Connectez vos caméras IP existantes en quelques étapes pour démarrer la surveillance.
-          </p>
+    <main className="py-4">
+      <Card>
+        <h1 className="font-serif text-3xl">Bienvenue</h1>
+        <p className="mt-1 text-muted-foreground">
+          Trois étapes, et vos caméras sont sous surveillance.
+        </p>
+
+        <ol className="mt-6 grid gap-5 sm:grid-cols-3">
+          {WELCOME_STEPS.map((step, index) => (
+            <li key={step.title}>
+              <span className="flex size-8 items-center justify-center rounded-full bg-muted font-medium">
+                {index + 1}
+              </span>
+              <p className="mt-2 font-medium">{step.title}</p>
+              <p className="text-sm text-muted-foreground">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button asChild>
+            <Link to="/settings/cameras/ajout">Ajouter une caméra</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/settings/notifications">Configurer les alertes</Link>
+          </Button>
         </div>
-        <div className="hub-setup-steps">
-          <div className="hub-setup-step">
-            <div className="hub-setup-step-num">1</div>
-            <div>
-              <strong>Ajouter une caméra</strong>
-              <p>Détection automatique ou saisie manuelle de votre caméra.</p>
-            </div>
-          </div>
-          <div className="hub-setup-step">
-            <div className="hub-setup-step-num">2</div>
-            <div>
-              <strong>Configurer la détection</strong>
-              <p>Choisissez ce que Vyzio doit surveiller : personnes, animaux, véhicules.</p>
-            </div>
-          </div>
-          <div className="hub-setup-step">
-            <div className="hub-setup-step-num">3</div>
-            <div>
-              <strong>Activer les alertes</strong>
-              <p>Recevez vos premières notifications sur Telegram.</p>
-            </div>
-          </div>
-        </div>
-        <div className="panel-cta-row">
-          <a className="primary-cta" href="/cameras">
-            Ajouter une caméra
-          </a>
-          <a className="secondary-cta" href="/notifications">
-            Configurer les alertes
-          </a>
-        </div>
-      </section>
+      </Card>
     </main>
   )
 }
 
-interface HubOperationalStateProps {
-  data: HubOverview | null
+interface HubOperationalProps {
+  data: HubOverview
   cameras: Camera[]
-  allCameras: Camera[]
   apiBaseUrl: string
   systemStats: SystemStats | null
   batchPending: boolean | null
@@ -213,10 +206,9 @@ interface HubOperationalStateProps {
   onBatchTogglePrivacy: (cameraIds: string[], active: boolean) => void
 }
 
-function HubOperationalState({
+function HubOperational({
   data,
   cameras,
-  allCameras,
   apiBaseUrl,
   systemStats,
   batchPending,
@@ -226,228 +218,178 @@ function HubOperationalState({
   onOpenLive,
   onTogglePrivacy,
   onBatchTogglePrivacy,
-}: HubOperationalStateProps) {
+}: HubOperationalProps) {
   const frigateStatus = systemStats?.status ?? 'active'
-
-  const recentEvents = data?.recentEvents ?? []
-  const notifications = data?.notifications
-  const warnings = data?.warnings ?? []
-  const lastEvent = recentEvents[0]
-
-  const cameraCount = allCameras.length
-  const activeCameraCount = cameras.length
-  const profileCount = data?.profiles.length ?? 0
+  const allPrivate = cameras.every((camera) => camera.privacyModeActive)
+  const watched = cameras.filter((camera) => camera.isEnabled && !camera.privacyModeActive).length
 
   return (
-    <main className="app-shell">
-      <section className="hub-status-bar">
-        <div className="hub-status-facts">
-          <div className="hub-status-fact">
-            <strong>
-              {activeCameraCount}/{cameraCount}
-            </strong>
-            <span>caméras actives</span>
-          </div>
-          <div className="hub-status-fact">
-            <strong>{profileCount}</strong>
-            <span>profils</span>
-          </div>
-          <div className="hub-status-fact">
-            <strong>{notifications?.sentCount ?? 0}</strong>
-            <span>alertes envoyées</span>
-          </div>
-          {lastEvent && (
-            <div className="hub-status-fact">
-              <strong>{formatEventTime(lastEvent.occurredAt)}</strong>
-              <span>dernier événement</span>
-            </div>
-          )}
-        </div>
-        {warnings.length > 0 && (
-          <div className="hub-status-warnings">
-            {warnings.map((w) => (
-              <p key={w} className="hub-status-warning">
-                {w}
-              </p>
+    <main className="flex flex-col gap-4 py-4">
+      {/* Une phrase, pas une rangee de compteurs : ce que l'on vient verifier en
+          arrivant, c'est que la surveillance tourne. */}
+      <div>
+        <h1 className="font-serif text-3xl">
+          {allPrivate
+            ? 'Surveillance coupée'
+            : watched === 0
+              ? 'Aucune caméra surveillée'
+              : `${watched} caméra${watched > 1 ? 's' : ''} sous surveillance`}
+        </h1>
+        {data.warnings.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {data.warnings.map((warning) => (
+              <li key={warning} className="flex items-start gap-2 text-sm text-destructive">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                {warning}
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </section>
+      </div>
 
-      <section className="hub-live-section">
-        <div className="hub-section-header">
-          <h2>Flux en direct</h2>
-          <div className="hub-section-actions">
-            {allCameras.length > 0 && (
-              <button
-                type="button"
-                className={`hub-privacy-global-btn${allCameras.every((c) => c.privacyModeActive) ? ' hub-privacy-global-btn--active' : ''}`}
-                onClick={() => onBatchPendingSet(!allCameras.every((c) => c.privacyModeActive))}
-              >
-                {allCameras.every((c) => c.privacyModeActive)
-                  ? 'Désactiver le mode vie privée'
-                  : 'Mode vie privée global'}
-              </button>
-            )}
-            <a href="/cameras" className="hub-section-link">
-              Gérer les caméras →
-            </a>
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-medium">En direct</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={allPrivate ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onBatchPendingSet(!allPrivate)}
+            >
+              {allPrivate ? 'Reprendre la surveillance' : 'Tout couper'}
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/settings/cameras">Gérer les caméras</Link>
+            </Button>
           </div>
         </div>
-        {cameras.length > 0 || allCameras.some((c) => c.privacyModeActive) ? (
-          <div className="hub-live-grid">
-            {allCameras.map((camera) => (
-              <CameraLiveThumbnail
-                key={camera.id}
-                camera={camera}
-                apiBaseUrl={apiBaseUrl}
-                frigateStatus={frigateStatus}
-                onExpand={camera.privacyModeActive ? undefined : () => onOpenLive(camera)}
-                onTogglePrivacy={onTogglePrivacy}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="hub-live-empty">
-            <p>Aucune caméra active pour le moment.</p>
-            <a href="/cameras" className="secondary-cta">
-              Gérer les caméras
-            </a>
-          </div>
-        )}
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {cameras.map((camera) => (
+            <CameraLiveThumbnail
+              key={camera.id}
+              camera={camera}
+              apiBaseUrl={apiBaseUrl}
+              frigateStatus={frigateStatus}
+              onExpand={camera.privacyModeActive ? undefined : () => onOpenLive(camera)}
+              onTogglePrivacy={onTogglePrivacy}
+            />
+          ))}
+        </div>
       </section>
 
-      <section className="hub-bottom">
-        <article className="panel hub-events" id="events">
-          <div className="panel-heading">
-            <h2>Détections récentes</h2>
-          </div>
-          <div className="event-list">
-            {recentEvents.length > 0 ? (
-              recentEvents.map((event) => (
-                <article key={event.eventId} className={`event-card ${getEventTone(event)}`}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
+        <Card>
+          <h2 className="font-medium">Dernières détections</h2>
+
+          {data.recentEvents.length > 0 ? (
+            <ul className="mt-3 divide-y divide-border">
+              {data.recentEvents.map((event) => (
+                <li
+                  key={event.eventId}
+                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                >
                   {event.hasSnapshot && (
                     <button
                       type="button"
-                      className="event-card-thumb"
+                      aria-label={`Voir l’aperçu — ${formatEventTitle(event)}`}
+                      className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                       onClick={() =>
                         onOpenMedia(
                           'image',
                           `${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`,
                         )
                       }
-                      title="Voir l'aperçu"
                     >
                       <img
                         src={`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`}
-                        alt={formatEventTitle(event)}
+                        alt=""
                         loading="lazy"
+                        className="size-14 rounded-lg object-cover"
                       />
-                      {frigateStatus === 'restarting' && (
-                        <span className="media-loading-overlay" aria-hidden="true">
-                          <span className="media-loading-spinner" />
-                        </span>
-                      )}
                     </button>
                   )}
-                  <div className="event-card-body">
-                    <h3>{formatEventTitle(event)}</h3>
-                    <div className="event-card-meta">
-                      {event.confidence !== null && (
-                        <span className="event-card-confidence">
-                          {Math.round(event.confidence * 100)}&nbsp;%
-                        </span>
-                      )}
-                      {event.hasClip && (
-                        <button
-                          type="button"
-                          className="event-card-clip"
-                          onClick={() =>
-                            onOpenMedia(
-                              'video',
-                              `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
-                            )
-                          }
-                        >
-                          ▶ Clip
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="event-card-aside">
-                    <span className="event-card-time">{formatEventTime(event.occurredAt)}</span>
-                    <span className="event-card-camera">{formatEventDetail(event)}</span>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <article className="event-card empty">
-                <div>
-                  <h3>Aucune détection récente</h3>
-                  <p>Les événements apparaîtront ici dès que la surveillance sera active.</p>
-                </div>
-              </article>
-            )}
-          </div>
-          <div className="panel-cta-row">
-            <a className="primary-cta" href="/history">
-              Tout l'historique
-            </a>
-          </div>
-        </article>
 
-        <aside className="hub-sidebar">
-          <article className="panel hub-alert-status">
-            <div className="panel-heading">
-              <h2>Notifications</h2>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">{formatEventTitle(event)}</span>
+                    <span className="block text-sm text-muted-foreground">
+                      {formatEventDetail(event)} · {formatEventTime(event.occurredAt)}
+                    </span>
+                  </span>
+
+                  {event.hasClip && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        onOpenMedia(
+                          'video',
+                          `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
+                        )
+                      }
+                    >
+                      <Play aria-hidden="true" />
+                      Vidéo
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-muted-foreground">
+              Rien à signaler. Les détections apparaîtront ici.
+            </p>
+          )}
+
+          <div className="mt-4">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/history">Tout l’historique</Link>
+            </Button>
+          </div>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <Card>
+            <h2 className="font-medium">Alertes</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {data.notifications.telegramConfigured
+                ? `${data.notifications.sentCount} envoyée${data.notifications.sentCount > 1 ? 's' : ''}${
+                    data.notifications.lastSentAt
+                      ? ` · dernière à ${formatEventTime(data.notifications.lastSentAt)}`
+                      : ''
+                  }`
+                : 'Aucun canal configuré : Vyzio ne peut pas vous prévenir.'}
+            </p>
+            <div className="mt-4">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/settings/notifications">Configurer les alertes</Link>
+              </Button>
             </div>
-            <div className="hub-alert-items">
-              <div
-                className={`hub-alert-item${notifications?.telegramConfigured ? ' hub-alert-item--ok' : ' hub-alert-item--warn'}`}
-              >
-                <span className="hub-alert-dot" />
-                <div className="hub-alert-body">
-                  <strong>
-                    {notifications?.telegramConfigured
-                      ? 'Telegram configuré'
-                      : 'Telegram non configuré'}
-                  </strong>
-                  <p>
-                    {notifications?.telegramConfigured
-                      ? `${notifications.sentCount} alerte${notifications.sentCount !== 1 ? 's' : ''} envoyée${notifications.sentCount !== 1 ? 's' : ''}${notifications?.lastSentAt ? ` · dernière à ${formatEventTime(notifications.lastSentAt)}` : ''}`
-                      : 'Aucun canal de notification actif'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="panel-cta-row">
-              <a href="/notifications" className="secondary-cta">
-                Configurer les alertes →
-              </a>
-            </div>
-          </article>
+          </Card>
 
           {systemStats && <SystemMonitorPanel stats={systemStats} />}
-        </aside>
-      </section>
+        </div>
+      </div>
 
       {batchPending !== null && (
         <ConfirmModal
-          title={batchPending ? 'Activer le mode vie privée' : 'Désactiver le mode vie privée'}
+          title={batchPending ? 'Couper toutes les caméras ?' : 'Reprendre la surveillance ?'}
           body={
             batchPending
-              ? `Vyzio va arrêter l'enregistrement sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}. Aucune alerte ne sera générée pendant cette période.`
-              : `Vyzio va reprendre la surveillance sur ${allCameras.length > 1 ? `les ${allCameras.length} caméras` : 'la caméra'}.`
+              ? 'Plus rien n’est enregistré ni signalé tant que vous ne les rallumez pas.'
+              : 'Les caméras recommencent à enregistrer et à vous signaler ce qu’elles voient.'
           }
-          confirmLabel={batchPending ? 'Couper toutes les caméras' : 'Réactiver toutes les caméras'}
-          tone={batchPending ? 'warn' : 'default'}
+          confirmLabel={batchPending ? 'Tout couper' : 'Reprendre'}
+          tone={batchPending ? 'warn' : 'confirm'}
           loading={batchToggleLoading}
-          onConfirm={() => {
+          onConfirm={() =>
             onBatchTogglePrivacy(
-              allCameras.map((c) => c.id),
+              cameras.map((camera) => camera.id),
               batchPending,
             )
-          }}
+          }
           onCancel={() => onBatchPendingSet(null)}
         />
       )}

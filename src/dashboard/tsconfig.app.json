@@ -15,6 +15,13 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Alias — `@/…` designe la racine `src/`, convention shadcn/ui (ADR-42).
+       Sans `baseUrl`, deprecie en TS 6 : les chemins se resolvent relativement
+       a ce fichier. */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,

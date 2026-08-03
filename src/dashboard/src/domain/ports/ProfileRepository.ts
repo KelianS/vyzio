@@ -1,4 +1,4 @@
-import type { Profile } from '../entities/Profile'
+import type { Profile, ProfileAlertMode, ProfileCategory } from '../entities/Profile'
 import type { ProfilePhoto } from '../entities/ProfilePhoto'
 import type { ProfileCameraLink } from '../entities/ProfileCameraLink'
 import type { DetectionConfig, DetectionConfigUpdate } from '../entities/DetectionConfig'
@@ -6,14 +6,14 @@ import type { DetectionHistoryPage, DetectionHistoryQuery } from '../entities/De
 
 export interface CreateProfileRequest {
   name: string
-  category: string
-  alertMode: string
+  category: ProfileCategory
+  alertMode: ProfileAlertMode
 }
 
 export interface UpdateProfileRequest {
   name: string
-  category: string
-  alertMode: string
+  category: ProfileCategory
+  alertMode: ProfileAlertMode
 }
 
 export interface ProfileRepository {

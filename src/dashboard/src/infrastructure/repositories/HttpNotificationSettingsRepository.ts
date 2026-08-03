@@ -16,8 +16,11 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
       return await fetchJson<NotificationChannelConfig>(
         `${this.apiBaseUrl}/api/notifications/settings/${channel}`,
       )
-    } catch {
-      return null
+    } catch (error) {
+      // Un canal jamais configure n'est pas une panne. Tout le reste en est une,
+      // et l'avaler ferait passer un serveur en vrac pour un canal vierge.
+      if (error instanceof HttpError && error.status === 404) return null
+      throw error
     }
   }
 
@@ -46,12 +49,6 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
   }
 
   async getNotificationLog(channel: string): Promise<NotificationLogEntry[]> {
-    try {
-      return await fetchJson<NotificationLogEntry[]>(
-        `${this.apiBaseUrl}/api/notifications/log/${channel}`,
-      )
-    } catch {
-      return []
-    }
+    return fetchJson<NotificationLogEntry[]>(`${this.apiBaseUrl}/api/notifications/log/${channel}`)
   }
 }

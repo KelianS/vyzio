@@ -417,7 +417,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubFrigateConfigApplier : IFrigateConfigApplier
     {
-        public Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+        public Task WriteConfigAsync(IReadOnlyList<Camera> cameras, bool changed, CancellationToken ct = default)
             => Task.CompletedTask;
 
         public Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
