@@ -162,7 +162,9 @@ function NumberControl({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    // Le champ occupe la colonne comme tout autre controle : une largeur propre au
+    // nombre rompait l'alignement vertical que l'anatomie fixe cherche (ADR-43).
+    <div className="flex w-full items-center gap-2">
       <Input
         id={setting.id}
         type="number"
@@ -170,7 +172,7 @@ function NumberControl({
         min={min}
         max={max}
         disabled={setting.disabled}
-        className={cn('w-24 text-right tabular-nums', followingClass(setting))}
+        className={cn('w-full text-right tabular-nums', followingClass(setting))}
         value={typed ?? String(setting.value)}
         onChange={(event) => setTyped(event.target.value)}
         onBlur={commit}
@@ -179,7 +181,7 @@ function NumberControl({
         }}
       />
       {/* L'unite appartient a la valeur, jamais au libelle. */}
-      <span className={cn('text-sm text-muted-foreground')}>{nature.unit}</span>
+      {nature.unit && <span className="shrink-0 text-sm text-muted-foreground">{nature.unit}</span>}
     </div>
   )
 }

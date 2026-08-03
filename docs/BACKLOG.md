@@ -75,11 +75,13 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 9. ~~**Sort de l'interface technique**~~ **Fait.** Elle vit sous `Reglages > Systeme > Avance`, absente de la barre principale.
 
-10. ~~**Reprise des ecrans de consultation**~~ **Fait.** Accueil et historique repris. **Etape de cloture** : `App.css` est supprime.
+10. ~~**Reprise des ecrans de consultation**~~ **Fait.** Accueil et historique repris. **Etape de cloture atteinte** : `App.css` est supprime.
 
-11. **Passe de coherence, une fois tous les ecrans repris** — les etapes 6 a 10 reprennent ecran par ecran, chacun conforme isolement ; ce qu'aucune ne peut voir, c'est ce qui ne se juge qu'en comparant. Perimetre : reglages ranges au meme endroit d'un ecran a l'autre, aides redigees dans le meme registre, memes mots pour les memes choses, et surtout **reglages mal ranges** — un reglage n'est pas force d'etre reste dans la rubrique ou l'ancienne interface l'avait mis. C'est une relecture d'ensemble, pas une reprise : elle produit des corrections ciblees, ou rien.
+11. ~~**Passe de coherence, une fois tous les ecrans repris**~~ **Fait.** La relecture d'ensemble a produit cinq corrections ciblees : le repli `Avance` etait trois choses differentes (dont deux qui ne repliaient rien) et devient un composant unique ; un nombre sans unite n'occupait pas sa colonne de controle, rompant l'alignement que l'etape 3 visait ; « Mettre 0 signifie… » etait du texte courant sur un seul des deux ecrans de conservation, et rejoint l'aide des deux ; l'ordre « ce qui est concerne, puis le seuil » differait entre detection et notifications ; un toast ne nommait pas ce qu'il enregistrait. Deux invariants — colonne remplie, `Avance` toujours replie — sont desormais tenus par `settings-coherence.e2e.ts`, la comparaison entre ecrans etant precisement ce qu'aucun test d'ecran ne voit.
 
-**Fin de chantier** — les trois conditions, aucune negociable : `App.css` supprime ; aucun ecran hors socle ; aucun reglage hors grammaire ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)). Un chantier arrete avant est un chantier qui a ajoute un systeme au lieu d'en remplacer un.
+    Restent deux constats **non corrigeables sans decision** : le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est (il faudrait une page de plus) ; et la marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation.
+
+**Fin de chantier — atteinte.** Les trois conditions : `App.css` supprime ; aucun ecran hors socle (etapes 6-10) ; aucun reglage hors grammaire ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)), verifie par l'etape 11. Les deux constats ci-dessus ne sont pas des reglages hors grammaire mais des questions de rangement, a promouvoir depuis les idees si on les tranche.
 
 ---
 

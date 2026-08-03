@@ -29,6 +29,14 @@ export const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
   eventClip: 'Les extraits rattachés à une détection — ceux que vous retrouvez dans l’historique.',
 }
 
+// Se dit dans l'aide de chaque duree : hors de la ligne, c'etait du texte courant, proscrit (ADR-43).
+export const RETENTION_ZERO_NOTE = 'Mettre 0 signifie que rien n’est conservé de cette nature.'
+
+/** L'aide d'une duree, la meme a l'installation et sur une camera. */
+export function retentionHelp(window: RetentionWindow): string {
+  return `${RETENTION_EXPLANATION[window]} ${RETENTION_ZERO_NOTE}`
+}
+
 // Zero is a real answer, so it gets words rather than a bare "0 jour".
 export function formatDays(days: number): string {
   if (days <= 0) return 'non conservé'

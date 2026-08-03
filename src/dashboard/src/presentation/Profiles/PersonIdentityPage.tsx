@@ -48,7 +48,7 @@ export function PersonIdentityPage() {
     {
       onSuccess: () => {
         draft.accept()
-        toast('Modifications enregistrées.', 'success')
+        toast('Identité enregistrée.', 'success')
         reload()
       },
     },

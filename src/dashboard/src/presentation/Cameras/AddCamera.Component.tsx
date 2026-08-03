@@ -10,6 +10,7 @@ import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { useToast } from '../../common/components/Toast'
 import { usePresenter } from '../../common/presenter/usePresenter'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
+import { AdvancedFold } from '../../common/settings/AdvancedFold'
 import { SettingsList } from '../../common/settings/SettingsList'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
@@ -447,7 +448,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   ]
 
   return (
-    <SettingsSection title="Avancé">
+    <AdvancedFold>
       <dl className="divide-y divide-border text-sm">
         {facts.map(([term, value]) => (
           <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
@@ -456,7 +457,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
           </div>
         ))}
       </dl>
-    </SettingsSection>
+    </AdvancedFold>
   )
 }
 

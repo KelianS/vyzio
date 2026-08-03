@@ -127,7 +127,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
     {
       id: 'connection-port',
       label: 'Port',
-      nature: { kind: 'number', unit: '', min: 1, max: 65535 },
+      nature: { kind: 'number', min: 1, max: 65535 },
       value: draft.values.port,
       onChange: (value) => draft.set('port', value as number),
     },

@@ -158,15 +158,8 @@ function NotificationsForm({
     },
   ]
 
+  // Meme ordre que la detection : ce qui est concerne d'abord, le seuil ensuite.
   const when: SettingDeclaration[] = [
-    {
-      id: 'telegram-confidence',
-      label: 'Certitude minimale',
-      nature: { kind: 'range', unit: '%', min: 50, max: 99 },
-      help: 'En dessous, la détection n’est pas notifiée. Trop bas, vous recevrez des fausses alertes ; trop haut, des détections réelles passeront sous silence.',
-      value: draft.values.minimumConfidence,
-      onChange: (value) => draft.set('minimumConfidence', value as number),
-    },
     {
       id: 'telegram-labels',
       label: 'Ce qui déclenche une alerte',
@@ -177,8 +170,17 @@ function NotificationsForm({
           label: `${label.emoji} ${label.displayName}`,
         })),
       },
+      help: 'Seules les catégories cochées vous sont notifiées. Les autres restent détectées et consultables dans l’historique.',
       value: draft.values.allowedLabels,
       onChange: (value) => draft.set('allowedLabels', value as string[]),
+    },
+    {
+      id: 'telegram-confidence',
+      label: 'Certitude minimale',
+      nature: { kind: 'range', unit: '%', min: 50, max: 99 },
+      help: 'En dessous, la détection n’est pas notifiée. Trop bas, vous recevrez des fausses alertes ; trop haut, des détections réelles passeront sous silence.',
+      value: draft.values.minimumConfidence,
+      onChange: (value) => draft.set('minimumConfidence', value as number),
     },
     {
       id: 'telegram-hours',

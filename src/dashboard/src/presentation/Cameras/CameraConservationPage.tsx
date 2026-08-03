@@ -12,11 +12,11 @@ import { useAppContainer } from '../../infrastructure/providers/AppContainerCont
 import type { DetectionConfig, DetectionConfigUpdate } from '../../domain/entities/DetectionConfig'
 import {
   CONTINUOUS_DISK_WARNING,
-  RETENTION_EXPLANATION,
   RETENTION_LABEL,
   RETENTION_ORDER,
   RETENTION_UPDATE_FIELD,
   formatDays,
+  retentionHelp,
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 
@@ -97,7 +97,7 @@ function ConservationForm({
       id: `camera-retention-${window}`,
       label: RETENTION_LABEL[window],
       nature: { kind: 'number', unit: 'jours', min: 0, max: config.retention.maxDays },
-      help: RETENTION_EXPLANATION[window],
+      help: retentionHelp(window),
       consequence: window === 'continuous' && effective > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: effective,
       // Writing to the field is what creates the override.

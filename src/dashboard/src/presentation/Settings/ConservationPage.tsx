@@ -15,10 +15,10 @@ import type {
 import type { SaveRecordingSettings } from '../../domain/usecases/SaveRecordingSettings'
 import {
   CONTINUOUS_DISK_WARNING,
-  RETENTION_EXPLANATION,
   RETENTION_LABEL,
   RETENTION_ORDER,
   formatDays,
+  retentionHelp,
   type RetentionWindow,
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
@@ -92,7 +92,7 @@ function ConservationForm({
       id: `retention-${window}`,
       label: RETENTION_LABEL[window],
       nature: { kind: 'number', unit: 'jours', min: 0, max: settings.maxDays },
-      help: RETENTION_EXPLANATION[window],
+      help: retentionHelp(window),
       // A cost stays visible without an extra gesture (ADR-43).
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
@@ -111,9 +111,6 @@ function ConservationForm({
     <>
       <SettingsPage lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée.">
         <SettingsList settings={declarations} />
-        <p className="mt-4 text-sm text-muted-foreground">
-          Mettre 0 signifie que rien n’est conservé de cette nature.
-        </p>
       </SettingsPage>
 
       <SettingsDraftBar

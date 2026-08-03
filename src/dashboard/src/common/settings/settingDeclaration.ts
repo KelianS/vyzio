@@ -28,10 +28,10 @@ export type SettingNature =
   | { readonly kind: 'choice'; readonly options: readonly SettingOption[] }
   /** Choix multiple → cases visibles jusqu'a 7 options, liste cherchable au-dela. */
   | { readonly kind: 'multiChoice'; readonly options: readonly SettingOption[] }
-  /** Nombre avec unite → champ numerique, unite en suffixe du controle. */
+  /** Nombre → champ numerique, unite en suffixe du controle quand il y en a une. */
   | {
       readonly kind: 'number'
-      readonly unit: string
+      readonly unit?: string
       readonly min?: number
       readonly max?: number
     }

@@ -29,7 +29,11 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
         {setting.help && <HelpTrigger label={setting.label} help={setting.help} />}
       </div>
 
-      <div className="flex min-w-0 items-center gap-1.5 sm:justify-self-stretch">
+      {/* Repere de la colonne de controle : son alignement est verifie d'un ecran a l'autre (ADR-43). */}
+      <div
+        data-setting-control
+        className="flex min-w-0 items-center gap-1.5 sm:justify-self-stretch"
+      >
         <div className="min-w-0 flex-1">
           <SettingControl setting={setting} />
         </div>

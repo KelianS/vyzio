@@ -2,7 +2,8 @@ import { useRef, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
-import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
+import { SettingsPage } from '../../common/settings/SettingsPage'
+import { AdvancedFold } from '../../common/settings/AdvancedFold'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
@@ -109,10 +110,7 @@ export function PersonPhotosPage() {
           </p>
         )}
 
-        <SettingsSection
-          title="Avancé"
-          lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance."
-        >
+        <AdvancedFold lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance.">
           <Button
             type="button"
             variant="outline"
@@ -121,7 +119,7 @@ export function PersonPhotosPage() {
           >
             {resyncing.loading ? 'Reprise…' : 'Reprendre toutes les photos'}
           </Button>
-        </SettingsSection>
+        </AdvancedFold>
       </SettingsPage>
 
       {confirmDelete && (
