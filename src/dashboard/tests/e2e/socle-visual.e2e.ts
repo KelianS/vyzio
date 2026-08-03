@@ -2,34 +2,24 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
 /**
- * Le socle Tailwind introduit un preflight qui neutralise les styles par defaut
- * des elements. Les ecrans non encore repris comptent dessus (ADR-42) : ce test
- * verifie qu'ils traversent l'operation intacts.
- *
- * Le theme sombre n'est pas teste ici et c'est delibere : il n'est branche qu'a
- * partir de la coquille de navigation (voir `src/common/theme.ts`), parce que
- * l'activer sur les ecrans non repris introduirait des defauts de contraste au
- * lieu d'en reveler.
+ * Le preflight Tailwind neutralise les styles par defaut des elements. Ce que
+ * `index.css` rattrape ensuite — la police des titres, celle des controles, le
+ * rayon des surfaces — se perdrait en silence : rien ne casse, tout se met a
+ * ressembler a une page nue. Ce test le tient.
  */
-test.describe('Socle — non-regression du preflight', () => {
-  test('socle_When Tailwind preflight is active_Should leave existing screens intact', async ({
+test.describe('Socle — typographie et surfaces', () => {
+  test('socle_When Tailwind preflight is active_Should keep headings, controls and surfaces', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
 
     await page.goto('/')
-    await expect(
-      page.locator('.hub-status-bar, .hub-setup-hero, .hub-degraded-panel'),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
 
-    // Tant que la coquille n'est pas livree, aucun theme sombre n'est applique.
     await expect(page.locator('html')).not.toHaveClass(/dark/)
 
-    // Le preflight ecrase en premier la police des titres et celle des controles.
-    // Les deux sont rattrapes dans index.css ; sans ce test la perte serait
-    // silencieuse et ne se verrait qu'a l'oeil, longtemps apres.
     const headingFont = await page
-      .locator('h2')
+      .locator('h1')
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily)
     expect(headingFont).toContain('Iowan Old Style')
@@ -40,18 +30,17 @@ test.describe('Socle — non-regression du preflight', () => {
       .evaluate((el) => getComputedStyle(el).fontFamily)
     expect(controlFont).toContain('Aptos')
 
-    // Les surfaces gardent leurs grands rayons : c'est ce qui distingue
-    // l'echelle des surfaces de celle, plus serree, des elements cliquables.
-    const panelRadius = await page
-      .locator('.panel')
+    // Les surfaces gardent leurs grands rayons : c'est ce qui distingue leur
+    // echelle de celle, plus serree, des elements cliquables.
+    const cardRadius = await page
+      .locator('.rounded-card')
       .first()
       .evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
-    expect(panelRadius).toBe('24px')
+    expect(cardRadius).toBe('24px')
 
     await page.screenshot({ path: 'test-results/socle-hub.png', fullPage: true })
 
-    // Un ecran encore hors socle : celui de l'ajout ne l'est plus, il ne peut
-    // donc plus temoigner de ce que le preflight fait aux anciens.
+    // Le dernier ecran encore hors socle, tel que le preflight le laisse.
     await page.goto('/settings/systeme/avance')
     await expect(page.locator('.expert-shell, .expert-error-panel')).toBeVisible()
     await page.screenshot({ path: 'test-results/socle-parametres.png', fullPage: true })

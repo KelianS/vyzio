@@ -25,9 +25,7 @@ test.describe('Navigation', () => {
     const rubrics = page.getByRole('navigation', { name: 'Rubriques de réglages' })
 
     await page.goto('/')
-    await expect(
-      page.locator('.hub-status-bar, .hub-setup-hero, .hub-degraded-panel'),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
 
     // La barre principale ne porte que la consultation, plus une entree de reglages.
     await mainNav.getByRole('link', { name: 'Historique', exact: true }).click()
