@@ -1,0 +1,53 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../common/ui/select'
+
+/**
+ * « Aucun choix » est une valeur comme une autre pour la liste deroulante — le
+ * vide n'en est pas une. Ces sentinelles ne sortent jamais d'ici : au-dehors,
+ * l'absence de filtre reste la chaine vide.
+ */
+export const ALL = '__all__'
+export const UNKNOWN = '__unknown__'
+
+interface PickOneOption {
+  value: string
+  label: string
+}
+
+export function PickOne({
+  value,
+  options,
+  anyLabel,
+  anyValue = ALL,
+  onChange,
+}: {
+  value: string
+  options: PickOneOption[]
+  anyLabel: string
+  anyValue?: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <Select
+      value={value || anyValue}
+      onValueChange={(picked) => onChange(picked === anyValue ? '' : picked)}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={anyValue}>{anyLabel}</SelectItem>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}

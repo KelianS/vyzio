@@ -31,7 +31,7 @@ test.describe('Navigation', () => {
 
     // La barre principale ne porte que la consultation, plus une entree de reglages.
     await mainNav.getByRole('link', { name: 'Historique', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Historique des detections' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
 
     // Chaque rubrique de reglages est atteignable depuis le premier niveau.
     await mainNav.getByRole('link', { name: 'Réglages', exact: true }).click()

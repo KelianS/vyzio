@@ -9,7 +9,13 @@ import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
 import { Btn } from '../../common/components/Btn'
-import { Select } from '../../common/components/Select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../common/ui/select'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 
 interface CapabilitySectionProps {
@@ -278,17 +284,11 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           <div className="capability-manual-form-fields" style={{ marginTop: 6 }}>
             <label>
               <span>Protocole</span>
-              <Select
-                size="sm"
+              <Picker
                 value={editProtocol}
-                onChange={(e) => setEditProtocol(e.target.value as SupportedProtocol)}
-              >
-                {protocolOptions.map(({ value, label }) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
+                options={protocolOptions}
+                onChange={(value) => setEditProtocol(value as SupportedProtocol)}
+              />
             </label>
           </div>
         </div>
@@ -520,36 +520,27 @@ function ManualCapabilityForm({
       <div className="capability-manual-form-fields">
         <label>
           <span>Capacité</span>
-          <Select
-            size="sm"
+          <Picker
             value={selectedCapability}
-            onChange={(e) => {
-              const cap = e.target.value as Capability
+            options={availableCapabilities.map((cap) => ({
+              value: cap,
+              label: CAPABILITY_LABELS[cap],
+            }))}
+            onChange={(value) => {
+              const cap = value as Capability
               setSelectedCapability(cap)
               setSelectedProtocol(protocolOptionsFor(cap)[0].value)
             }}
-          >
-            {availableCapabilities.map((cap) => (
-              <option key={cap} value={cap}>
-                {CAPABILITY_LABELS[cap]}
-              </option>
-            ))}
-          </Select>
+          />
         </label>
 
         <label>
           <span>Protocole</span>
-          <Select
-            size="sm"
+          <Picker
             value={selectedProtocol}
-            onChange={(e) => setSelectedProtocol(e.target.value as SupportedProtocol)}
-          >
-            {protocolOptions.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
+            options={protocolOptions}
+            onChange={(value) => setSelectedProtocol(value as SupportedProtocol)}
+          />
         </label>
 
         <Btn
@@ -567,5 +558,31 @@ function ManualCapabilityForm({
         La capacité est testée immédiatement et activée en cas de succès.
       </p>
     </div>
+  )
+}
+
+/** Liste deroulante du socle, avec des options deja formatees (ADR-42). */
+function Picker({
+  value,
+  options,
+  onChange,
+}: {
+  value: string
+  options: readonly { value: string; label: string }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger size="sm" className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

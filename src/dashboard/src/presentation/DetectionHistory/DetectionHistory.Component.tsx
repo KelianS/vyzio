@@ -1,6 +1,8 @@
-import { useEffect, useReducer, useState } from 'react'
-import { Btn } from '../../common/components/Btn'
-import { Select } from '../../common/components/Select'
+import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { Image, Play, X } from 'lucide-react'
+import { Button } from '../../common/ui/button'
+import { Input } from '../../common/ui/input'
+import { cn } from '../../common/ui/utils'
 import { useToast } from '../../common/components/Toast'
 import { usePresenter } from '../../common/presenter/usePresenter'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
@@ -9,6 +11,15 @@ import type { Profile } from '../../domain/entities/Profile'
 import { buildDetectionHistoryPresenter } from './DetectionHistory.Presenter'
 import { detectionHistoryReducer } from './DetectionHistory.Reducer'
 import { buildInitialDetectionHistoryUido } from './DetectionHistory.Uido'
+import { PickOne, UNKNOWN } from './HistoryPickers'
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+})
+
+/** Une detection sans identite n'est pas anonyme par erreur : elle est inconnue. */
+const UNIDENTIFIED = 'Inconnu'
 
 export function DetectionHistoryView() {
   const { apiBaseUrl, detectionHistory: container } = useAppContainer()
@@ -47,243 +58,158 @@ export function DetectionHistoryView() {
     uido.currentPage,
   ])
 
-  function isoToDatetimeLocal(iso: string): string {
-    if (!iso) return ''
-    const d = new Date(iso)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  }
+  const filtered = Boolean(
+    uido.filterCamera ||
+    uido.filterLabel ||
+    uido.filterProfileId ||
+    uido.filterFrom ||
+    uido.filterTo,
+  )
 
   return (
-    <div className="app-shell app-shell-cameras">
-      {uido.snapshotUrl && (
-        <div
-          onClick={() => presenter.onSnapshotSet(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.85)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
-            <button
-              type="button"
-              onClick={() => presenter.onSnapshotSet(null)}
-              style={{
-                position: 'absolute',
-                top: -36,
-                right: 0,
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                lineHeight: 1,
-              }}
-            >
-              ✕
-            </button>
-            <img
-              src={uido.snapshotUrl}
-              alt="Aperçu détection"
-              style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, display: 'block' }}
+    <main className="flex flex-col gap-4 py-4">
+      <div>
+        <h1 className="font-serif text-3xl">Historique</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {uido.page
+            ? `${uido.page.total} détection${uido.page.total > 1 ? 's' : ''}${filtered ? ' avec ces filtres' : ''}.`
+            : 'Ce que Vyzio a vu, et qui il a cru reconnaître.'}
+        </p>
+      </div>
+
+      <section
+        aria-label="Filtres"
+        className="rounded-card bg-card p-4 text-card-foreground shadow-[var(--shadow-soft)]"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Caméra">
+            <Input
+              value={uido.filterCamera}
+              placeholder="Toutes"
+              onChange={(event) => presenter.onFilterCameraChange(event.target.value)}
             />
-          </div>
+          </Field>
+
+          <Field label="Type">
+            <PickOne
+              value={uido.filterLabel}
+              anyLabel="Tous"
+              options={uido.detectionLabels.map((label) => ({
+                value: label.value,
+                label: `${label.emoji} ${label.displayName}`,
+              }))}
+              onChange={presenter.onFilterLabelChange}
+            />
+          </Field>
+
+          <Field label="Personne">
+            <PickOne
+              value={uido.filterProfileId}
+              anyLabel="Toutes"
+              options={uido.profiles.map((profile) => ({
+                value: profile.id,
+                label: profile.name,
+              }))}
+              onChange={presenter.onFilterProfileChange}
+            />
+          </Field>
+
+          <Field label="Depuis">
+            <Input
+              type="datetime-local"
+              value={toLocalInput(uido.filterFrom)}
+              onChange={(event) => presenter.onFilterFromChange(fromLocalInput(event.target.value))}
+            />
+          </Field>
+
+          <Field label="Jusqu’à">
+            <Input
+              type="datetime-local"
+              value={toLocalInput(uido.filterTo)}
+              onChange={(event) => presenter.onFilterToChange(fromLocalInput(event.target.value))}
+            />
+          </Field>
+        </div>
+
+        {/* Reinitialiser n'existe que s'il y a quelque chose a reinitialiser. */}
+        {filtered && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-3"
+            onClick={presenter.onResetFilters}
+          >
+            Tout afficher
+          </Button>
+        )}
+      </section>
+
+      {uido.error && <p className="text-destructive">{uido.error}</p>}
+
+      {uido.loading && <p className="text-muted-foreground">Chargement…</p>}
+
+      {!uido.loading && uido.page && uido.page.items.length === 0 && (
+        <p className="rounded-card bg-card p-6 text-center text-muted-foreground shadow-[var(--shadow-soft)]">
+          {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
+        </p>
+      )}
+
+      {!uido.loading && uido.page && uido.page.items.length > 0 && (
+        <ul className="divide-y divide-border rounded-card bg-card px-4 text-card-foreground shadow-[var(--shadow-soft)]">
+          {uido.page.items.map((event) => (
+            <EventRow
+              key={event.eventId}
+              event={event}
+              profiles={uido.profiles}
+              apiBaseUrl={apiBaseUrl}
+              correcting={uido.correctingEventId === event.eventId}
+              onCorrect={(profileId) => presenter.onCorrect(event.eventId, profileId, query)}
+              onShowSnapshot={presenter.onSnapshotSet}
+            />
+          ))}
+        </ul>
+      )}
+
+      {uido.page && uido.page.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uido.currentPage <= 1}
+            onClick={() => presenter.onPageChange(uido.currentPage - 1)}
+          >
+            Précédent
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {uido.page.page} sur {uido.page.totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uido.currentPage >= uido.page.totalPages}
+            onClick={() => presenter.onPageChange(uido.currentPage + 1)}
+          >
+            Suivant
+          </Button>
         </div>
       )}
-      <div className="camera-toolbar panel">
-        <div className="camera-toolbar-copy">
-          <p className="eyebrow">Historique</p>
-          <h1>Historique des detections</h1>
-          <p className="camera-toolbar-lede">
-            Consultez l'historique filtre et corrigez les identifications incorrectes.
-          </p>
-        </div>
-        <div className="camera-toolbar-status">
-          {uido.page && (
-            <div className="status-pill online">
-              {uido.page.total} detection{uido.page.total !== 1 ? 's' : ''}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="history-layout">
-        <aside className="panel history-filters">
-          <h2>Filtres</h2>
+      {uido.snapshotUrl && (
+        <SnapshotOverlay url={uido.snapshotUrl} onClose={() => presenter.onSnapshotSet(null)} />
+      )}
+    </main>
+  )
+}
 
-          <div className="camera-form-field">
-            <label>Caméra</label>
-            <input
-              type="text"
-              placeholder="Nom de la caméra"
-              value={uido.filterCamera}
-              onChange={(e) => presenter.onFilterCameraChange(e.target.value)}
-            />
-          </div>
-
-          <div className="camera-form-field">
-            <label>Type</label>
-            <Select
-              value={uido.filterLabel}
-              onChange={(e) => presenter.onFilterLabelChange(e.target.value)}
-            >
-              <option value="">Tous</option>
-              {uido.detectionLabels.map(({ value, displayName, emoji }) => (
-                <option key={value} value={value}>
-                  {emoji} {displayName}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div className="camera-form-field">
-            <label>Profil</label>
-            <Select
-              value={uido.filterProfileId}
-              onChange={(e) => presenter.onFilterProfileChange(e.target.value)}
-            >
-              <option value="">Tous</option>
-              {uido.profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div className="camera-form-field">
-            <label>Depuis</label>
-            <input
-              type="datetime-local"
-              value={isoToDatetimeLocal(uido.filterFrom)}
-              onChange={(e) =>
-                presenter.onFilterFromChange(
-                  e.target.value ? new Date(e.target.value).toISOString() : '',
-                )
-              }
-            />
-          </div>
-
-          <div className="camera-form-field">
-            <label>Jusqu'à</label>
-            <input
-              type="datetime-local"
-              value={isoToDatetimeLocal(uido.filterTo)}
-              onChange={(e) =>
-                presenter.onFilterToChange(
-                  e.target.value ? new Date(e.target.value).toISOString() : '',
-                )
-              }
-            />
-          </div>
-
-          <Btn variant="secondary" size="sm" onClick={() => presenter.onResetFilters()}>
-            Réinitialiser
-          </Btn>
-        </aside>
-
-        <div className="history-events">
-          {uido.error && <p className="history-load-error">{uido.error}</p>}
-
-          {uido.loading && <p className="history-loading">Chargement…</p>}
-
-          {!uido.loading && uido.page && (
-            <>
-              {uido.page.items.length === 0 ? (
-                <div className="panel" style={{ padding: 24, textAlign: 'center', opacity: 0.6 }}>
-                  Aucune detection pour ces filtres.
-                </div>
-              ) : (
-                <div className="panel">
-                  <div style={{ overflowX: 'auto', minWidth: 0 }}>
-                    <table
-                      style={{
-                        width: '100%',
-                        minWidth: 540,
-                        borderCollapse: 'collapse',
-                        fontSize: '0.88rem',
-                      }}
-                    >
-                      <thead>
-                        <tr
-                          style={{
-                            textAlign: 'left',
-                            borderBottom: '1px solid rgba(247,244,237,0.15)',
-                          }}
-                        >
-                          {['Date', 'Camera', 'Type', 'Confiance', 'Identite', 'Action'].map(
-                            (h) => (
-                              <th key={h} style={{ padding: '10px 12px', fontWeight: 600 }}>
-                                {h}
-                              </th>
-                            ),
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {uido.page.items.map((event) => (
-                          <EventRow
-                            key={event.eventId}
-                            event={event}
-                            profiles={uido.profiles}
-                            apiBaseUrl={apiBaseUrl}
-                            correcting={uido.correctingEventId === event.eventId}
-                            onCorrect={(profileId) =>
-                              presenter.onCorrect(event.eventId, profileId, query)
-                            }
-                            onShowSnapshot={(url) => presenter.onSnapshotSet(url)}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {uido.page.totalPages > 1 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 8,
-                    alignItems: 'center',
-                    marginTop: 12,
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Btn
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => presenter.onPageChange(Math.max(1, uido.currentPage - 1))}
-                    disabled={uido.currentPage <= 1}
-                  >
-                    ← Precedent
-                  </Btn>
-                  <span style={{ opacity: 0.7, fontSize: '0.88rem' }}>
-                    Page {uido.page.page} / {uido.page.totalPages}
-                  </span>
-                  <Btn
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      presenter.onPageChange(Math.min(uido.page!.totalPages, uido.currentPage + 1))
-                    }
-                    disabled={uido.currentPage >= uido.page.totalPages}
-                  >
-                    Suivant →
-                  </Btn>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      {children}
+    </label>
   )
 }
 
@@ -302,102 +228,139 @@ function EventRow({
   onCorrect: (profileId: string | null) => Promise<void>
   onShowSnapshot: (url: string) => void
 }) {
-  const [showCorrect, setShowCorrect] = useState(false)
-  const [showClip, setShowClip] = useState(false)
-  const [selectedProfileId, setSelectedProfileId] = useState(event.profileId ?? '')
-
-  async function handleApply() {
-    await onCorrect(selectedProfileId || null)
-    setShowCorrect(false)
-  }
-
-  const confidence = event.confidence !== null ? `${Math.round(event.confidence * 100)} %` : '—'
-  const identity = event.identity ?? '—'
+  const [fixing, setFixing] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const [pickedProfileId, setPickedProfileId] = useState(event.profileId ?? '')
 
   return (
-    <>
-      <tr style={{ borderBottom: showClip ? 'none' : '1px solid rgba(247,244,237,0.07)' }}>
-        <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
-          {new Date(event.occurredAt).toLocaleString('fr-FR')}
-        </td>
-        <td style={{ padding: '8px 12px' }}>{event.camera}</td>
-        <td style={{ padding: '8px 12px' }}>
-          <span className="camera-support-badge unknown">{event.label}</span>
-        </td>
-        <td style={{ padding: '8px 12px' }}>{confidence}</td>
-        <td style={{ padding: '8px 12px' }}>
-          {event.hasSnapshot && (
-            <button
-              type="button"
-              onClick={() =>
-                onShowSnapshot(`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)
-              }
-              style={{
-                marginRight: 6,
-                opacity: 0.7,
-                fontSize: '0.8rem',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-              title="Voir l'aperçu"
-            >
-              🖼
-            </button>
-          )}
-          {identity}
-        </td>
-        <td style={{ padding: '8px 12px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {!showCorrect ? (
-              <div style={{ display: 'flex', gap: 4 }}>
-                <Btn variant="secondary" size="sm" onClick={() => setShowCorrect(true)}>
-                  Corriger
-                </Btn>
-                {event.hasClip && (
-                  <Btn variant="ghost" size="sm" onClick={() => setShowClip((v) => !v)}>
-                    {showClip ? '✕ Clip' : '▶ Clip'}
-                  </Btn>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                <Select
-                  size="sm"
-                  value={selectedProfileId}
-                  onChange={(e) => setSelectedProfileId(e.target.value)}
-                >
-                  <option value="">Inconnu</option>
-                  {profiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
-                <Btn variant="primary" size="sm" loading={correcting} onClick={handleApply}>
-                  OK
-                </Btn>
-                <Btn variant="ghost" size="sm" onClick={() => setShowCorrect(false)}>
-                  ×
-                </Btn>
-              </div>
-            )}
-          </div>
-        </td>
-      </tr>
-      {showClip && (
-        <tr style={{ borderBottom: '1px solid rgba(247,244,237,0.07)' }}>
-          <td colSpan={6} style={{ padding: '0 12px 12px' }}>
-            <video
-              src={`${apiBaseUrl}/api/detection-events/${event.eventId}/clip`}
-              controls
-              preload="metadata"
-              style={{ width: '100%', maxHeight: 320, borderRadius: 4, background: '#000' }}
+    <li className="py-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="font-medium">{event.identity ?? UNIDENTIFIED}</span>
+        <span className="text-sm text-muted-foreground">
+          {dateFormatter.format(new Date(event.occurredAt))}
+        </span>
+      </div>
+
+      {/* Ce que la detection dit d'elle-meme : ou, quoi, et avec quelle
+          certitude. La certitude ne se lit que si le moteur en a donne une. */}
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        {[
+          event.camera,
+          event.label,
+          event.confidence !== null ? `${Math.round(event.confidence * 100)} % de certitude` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {event.hasSnapshot && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              onShowSnapshot(`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)
+            }
+          >
+            <Image aria-hidden="true" />
+            Aperçu
+          </Button>
+        )}
+        {event.hasClip && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setPlaying((previous) => !previous)}
+          >
+            <Play aria-hidden="true" />
+            {playing ? 'Masquer la vidéo' : 'Vidéo'}
+          </Button>
+        )}
+
+        {fixing ? (
+          <span className="flex flex-wrap items-center gap-2">
+            <PickOne
+              value={pickedProfileId}
+              anyLabel={UNIDENTIFIED}
+              anyValue={UNKNOWN}
+              options={profiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+              onChange={setPickedProfileId}
             />
-          </td>
-        </tr>
+            <Button
+              type="button"
+              size="sm"
+              disabled={correcting}
+              onClick={async () => {
+                await onCorrect(pickedProfileId || null)
+                setFixing(false)
+              }}
+            >
+              {correcting ? 'Correction…' : 'Valider'}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFixing(false)}>
+              Annuler
+            </Button>
+          </span>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setFixing(true)}>
+            {event.identity ? 'Ce n’est pas elle' : 'Je sais qui c’est'}
+          </Button>
+        )}
+      </div>
+
+      {playing && (
+        <video
+          src={`${apiBaseUrl}/api/detection-events/${event.eventId}/clip`}
+          controls
+          preload="metadata"
+          className="mt-3 max-h-80 w-full rounded-lg bg-surface-inverse"
+        />
       )}
-    </>
+    </li>
   )
+}
+
+function SnapshotOverlay({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-label="Aperçu de la détection"
+      onClick={onClose}
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center p-4',
+        'bg-surface-inverse/85 backdrop-blur-sm',
+      )}
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Fermer"
+        className="absolute top-4 right-4 text-surface-inverse-foreground"
+        onClick={onClose}
+      >
+        <X aria-hidden="true" />
+      </Button>
+      <img
+        src={url}
+        alt=""
+        onClick={(event) => event.stopPropagation()}
+        className="max-h-full max-w-full rounded-lg"
+      />
+    </div>
+  )
+}
+
+/** `datetime-local` parle l'heure locale sans fuseau ; le filtre stocke de l'ISO. */
+function toLocalInput(iso: string): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function fromLocalInput(value: string): string {
+  return value ? new Date(value).toISOString() : ''
 }

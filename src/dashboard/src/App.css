@@ -28,55 +28,6 @@
   }
 }
 
-.app-shell-cameras {
-  gap: 20px;
-}
-
-.camera-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-  gap: 18px;
-  align-items: start;
-  background:
-    radial-gradient(circle at top left, rgba(217, 179, 122, 0.22), transparent 30%),
-    linear-gradient(145deg, rgba(255, 250, 242, 0.94), rgba(255, 245, 234, 0.92));
-}
-
-@media (max-width: 900px) {
-  .camera-toolbar {
-    grid-template-columns: 1fr;
-  }
-}
-
-.camera-toolbar-copy {
-  display: grid;
-  gap: 10px;
-}
-
-.camera-toolbar-copy h1 {
-  font-size: clamp(2rem, 5vw, 3.4rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
-}
-
-.camera-toolbar-lede {
-  max-width: 42rem;
-  color: var(--ink-soft);
-}
-
-.camera-toolbar-status {
-  display: grid;
-  gap: 14px;
-  padding: 18px;
-  border-radius: var(--radius-lg);
-  background: var(--bg-strong);
-  color: var(--ink-inverse);
-}
-
-.camera-toolbar-status p {
-  color: rgba(247, 244, 237, 0.74);
-}
-
 .camera-sidebar-actions .primary-cta,
 .camera-sidebar-actions .secondary-cta {
   min-height: 38px;
@@ -94,19 +45,6 @@
   margin-top: 0;
   flex-wrap: nowrap;
   align-items: center;
-}
-
-.camera-qualification-badge,
-.camera-support-badge,
-.camera-rtsp-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
 }
 
 .camera-qualification-badge.confirmed {
@@ -181,12 +119,6 @@
 .camera-section-copy,
 .camera-section-footnote {
   color: var(--ink-soft);
-}
-
-.camera-summary-list dd .camera-qualification-badge,
-.camera-summary-list dd .camera-support-badge,
-.camera-summary-list dd .camera-rtsp-badge {
-  vertical-align: middle;
 }
 
 /* ── Capability section ── */
@@ -530,20 +462,6 @@
 .select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.select--md {
-  min-height: 46px;
-  padding: 0 32px 0 14px;
-  font-size: 0.9rem;
-}
-
-.select--sm {
-  min-height: 30px;
-  padding: 3px 26px 3px 8px;
-  font-size: 0.8rem;
-  background-position: right 8px center;
-  background-size: 10px 7px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -2085,53 +2003,6 @@
   border-bottom: 2px solid var(--brand-moss);
 }
 
-/* ── Detection history layout ── */
-
-.history-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
-@media (max-width: 860px) {
-  .history-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-.history-filters {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  padding: 16px;
-  align-content: start;
-  min-width: 0;
-}
-
-.history-events {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-}
-
-.history-loading {
-  font-size: 0.88rem;
-  color: var(--ink-soft);
-  opacity: 0.7;
-  padding: 24px;
-  text-align: center;
-}
-
-.history-load-error {
-  color: var(--alert-high);
-  font-size: 0.88rem;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  background: rgba(198, 92, 61, 0.08);
-  border: 1px solid rgba(198, 92, 61, 0.18);
-}
-
 /* ── Hub alert status panel ── */
 
 .hub-alert-items {
@@ -2301,18 +2172,6 @@
   background:
     radial-gradient(circle at top left, rgba(217, 179, 122, 0.22), transparent 30%),
     linear-gradient(145deg, rgba(255, 250, 242, 0.96), rgba(255, 245, 234, 0.94));
-}
-
-/* ── Sidebar section titles — normalized ── */
-
-.camera-sidebar-header h2,
-.history-filters > h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  font-family: var(--heading);
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-  color: var(--brand-moss);
 }
 
 /* ── Camera live view (onboarding detail) ── */
