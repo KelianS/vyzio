@@ -61,6 +61,9 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
 
 export interface FakeBackendState {
   cameras: FakeCamera[]
+  /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
+  pendingChanges: boolean
+  restartFails: boolean
   profiles: {
     id: string
     name: string
@@ -102,6 +105,21 @@ export interface FakeBackendState {
     hasClip: boolean
     hasSnapshot: boolean
   }[]
+  detectionConfig: {
+    labels: string[]
+    motionSensitivity: 'high' | 'medium' | 'low'
+    motionSensitivityPinned: boolean
+    detectStreamId: string | null
+    continuousDaysOverride: number | null
+    motionDaysOverride: number | null
+    eventClipDaysOverride: number | null
+  }
+  recordingSettings: {
+    continuous: { days: number; default: number }
+    motion: { days: number; default: number }
+    eventClip: { days: number; default: number }
+    maxDays: number
+  }
 }
 
 let nextId = 1
@@ -116,9 +134,27 @@ export function createFakeBackendState(
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
+    pendingChanges: false,
+    restartFails: false,
     profiles: [],
     notificationChannels: {},
     detectionHistory: [],
+    detectionConfig: {
+      labels: ['person'],
+      motionSensitivity: 'medium',
+      motionSensitivityPinned: false,
+      detectStreamId: 'sub',
+      continuousDaysOverride: null,
+      motionDaysOverride: null,
+      eventClipDaysOverride: null,
+    },
+    // Valeurs livrees par Vyzio (ADR-39).
+    recordingSettings: {
+      continuous: { days: 0, default: 0 },
+      motion: { days: 7, default: 7 },
+      eventClip: { days: 14, default: 14 },
+      maxDays: 365,
+    },
     ...overrides,
   }
 }
@@ -165,6 +201,7 @@ export async function installFakeBackend(
         storage: { totalGb: 500, usedGb: 120, freeGb: 380 },
         cameras: state.cameras.map((c) => ({ camera: c.slug, fps: 10 })),
         detection: { hardware: 'cpu', targetFps: 5 },
+        pendingChanges: state.pendingChanges,
       })
     }
 
@@ -183,6 +220,8 @@ export async function installFakeBackend(
         status: 'online',
       })
       state.cameras.push(camera)
+      // Comme le vrai : le catalogue a change, la surveillance ne l'a pas repris.
+      state.pendingChanges = true
       return json(route, camera)
     }
     if (path === '/api/cameras/discovery' && method === 'POST') {
@@ -230,6 +269,15 @@ export async function installFakeBackend(
       })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
+      // Comme le vrai : un redemarrage reussi vide l'attente, un echec la laisse.
+      if (state.restartFails) {
+        return json(route, {
+          applied: false,
+          message: 'La surveillance n’a pas redémarré.',
+          cameraCount: state.cameras.length,
+        })
+      }
+      state.pendingChanges = false
       return json(route, {
         applied: true,
         message: 'Configuration appliquée',
@@ -266,6 +314,7 @@ export async function installFakeBackend(
           id: cameraId,
         } as Partial<FakeCamera>)
         state.cameras = state.cameras.map((c) => (c.id === cameraId ? updated : c))
+        state.pendingChanges = true
         return json(route, updated)
       }
       if (rest === '/status' && method === 'GET') {
@@ -306,8 +355,43 @@ export async function installFakeBackend(
       if (rest === '/privacy/schedules' && method === 'GET') {
         return json(route, [])
       }
-      if (rest === '/detection-config' && method === 'GET') {
-        return json(route, null)
+      if (rest === '/detection-config') {
+        if (method === 'PUT') {
+          const body = route.request().postDataJSON() as Record<string, unknown>
+          state.detectionConfig = { ...state.detectionConfig, ...body }
+          state.pendingChanges = true
+        }
+        const config = state.detectionConfig
+        return json(route, {
+          cameraId,
+          labels: config.labels,
+          availableLabels: ['person', 'car'],
+          retention: {
+            continuous: {
+              override: config.continuousDaysOverride,
+              installation: state.recordingSettings.continuous.days,
+              effective: config.continuousDaysOverride ?? state.recordingSettings.continuous.days,
+            },
+            motion: {
+              override: config.motionDaysOverride,
+              installation: state.recordingSettings.motion.days,
+              effective: config.motionDaysOverride ?? state.recordingSettings.motion.days,
+            },
+            eventClip: {
+              override: config.eventClipDaysOverride,
+              installation: state.recordingSettings.eventClip.days,
+              effective: config.eventClipDaysOverride ?? state.recordingSettings.eventClip.days,
+            },
+            maxDays: state.recordingSettings.maxDays,
+          },
+          motionSensitivity: config.motionSensitivity,
+          motionSensitivityPinned: config.motionSensitivityPinned,
+          streams: [
+            { id: 'main', ordinal: 0, width: 1920, height: 1080, fps: 15 },
+            { id: 'sub', ordinal: 1, width: 640, height: 360, fps: 10 },
+          ],
+          detectStreamId: config.detectStreamId,
+        })
       }
       if (rest === '/image-settings' && method === 'GET') {
         return json(route, {
@@ -323,6 +407,7 @@ export async function installFakeBackend(
       }
       if (method === 'DELETE') {
         state.cameras = state.cameras.filter((c) => c.id !== cameraId)
+        state.pendingChanges = true
         return json(route, { deleted: true, message: 'Caméra supprimée', configPath: '/config' })
       }
     }
@@ -333,6 +418,21 @@ export async function installFakeBackend(
         { value: 'person', displayName: 'Personne', emoji: '🧑' },
         { value: 'car', displayName: 'Voiture', emoji: '🚗' },
       ])
+    }
+
+    // --- Recording settings (ADR-39) ---
+    if (path === '/api/settings/recording') {
+      if (method === 'PUT') {
+        const body = route.request().postDataJSON() as Record<string, number>
+        state.recordingSettings = {
+          continuous: { ...state.recordingSettings.continuous, days: body.continuousDays },
+          motion: { ...state.recordingSettings.motion, days: body.motionDays },
+          eventClip: { ...state.recordingSettings.eventClip, days: body.eventClipDays },
+          maxDays: state.recordingSettings.maxDays,
+        }
+        state.pendingChanges = true
+      }
+      return json(route, state.recordingSettings)
     }
 
     // --- Profiles ---

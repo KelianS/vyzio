@@ -20,7 +20,7 @@ public class GetSystemStatsUseCaseTests
     }
 
     [Fact]
-    public async Task Stats_report_a_configuration_written_but_not_applied_yet()
+    public async Task Stats_report_a_configuration_written_but_not_taken_up_yet()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _detectorPlanner.Plan(Arg.Any<int>()).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 5, FrigateHwAccel.None));

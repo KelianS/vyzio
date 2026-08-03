@@ -59,6 +59,32 @@ public class SaveCameraDetectionConfigUseCaseTests
         return stream;
     }
 
+    // The restart prompt only appears when something genuinely waits.
+
+    [Fact]
+    public async Task A_save_that_changes_nothing_leaves_nothing_waiting_for_a_restart()
+    {
+        var camera = GivenCamera();
+        camera.DetectionLabelsJson = "[\"person\"]";
+
+        await _sut.ExecuteAsync(camera.Id, Request());
+
+        await _configApplier.Received(1).WriteConfigAsync(
+            Arg.Any<IReadOnlyList<Camera>>(), false, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task A_save_that_changes_a_retention_override_makes_the_restart_wait()
+    {
+        var camera = GivenCamera();
+        camera.DetectionLabelsJson = "[\"person\"]";
+
+        await _sut.ExecuteAsync(camera.Id, Request(motionDays: 30));
+
+        await _configApplier.Received(1).WriteConfigAsync(
+            Arg.Any<IReadOnlyList<Camera>>(), true, Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task Choosing_a_stream_of_this_camera_stores_it_as_the_analysis_source()
     {
@@ -238,7 +264,7 @@ public class SaveCameraDetectionConfigUseCaseTests
         await _sut.ExecuteAsync(camera.Id, Request("low", pinned: true));
 
         await _configApplier.DidNotReceive().WriteConfigAsync(
-            Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+            Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
         await _publisher.DidNotReceive().TryPublishSensitivityAsync(
             Arg.Any<string>(), Arg.Any<MotionSensitivity>(), Arg.Any<CancellationToken>());
     }

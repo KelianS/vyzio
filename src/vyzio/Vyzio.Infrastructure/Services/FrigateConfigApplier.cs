@@ -31,11 +31,20 @@ public sealed class FrigateConfigApplier(
 
     public bool HasPendingChanges => PendingMarkerPath is { } path && File.Exists(path);
 
-    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default)
+    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, bool changed, CancellationToken ct = default)
+    {
+        if (!await WriteDocumentAsync(cameras, ct))
+            return;
+
+        if (changed) MarkPending();
+    }
+
+    // ApplyAsync writes and restarts in one go, so marking there would only create a marker to erase.
+    private async Task<bool> WriteDocumentAsync(IReadOnlyList<Camera> cameras, CancellationToken ct)
     {
         var configPath = settings.Frigate.ConfigPath;
         if (string.IsNullOrWhiteSpace(configPath))
-            return;
+            return false;
 
         // Retention is an installation-wide setting a camera may override (ADR-39), so it reaches the
         // applier through a port rather than through WriteConfigAsync's signature — no caller changes.
@@ -59,14 +68,14 @@ public sealed class FrigateConfigApplier(
         await File.WriteAllTextAsync(tempPath, yaml, ct);
         File.Move(tempPath, configPath, true);
 
-        MarkPending();
+        return true;
     }
 
     private void MarkPending()
     {
         if (PendingMarkerPath is not { } path) return;
         try { File.WriteAllText(path, string.Empty); }
-        catch (IOException) { /* the banner is a convenience, never a reason to fail a save */ }
+        catch (IOException) { /* the prompt is a convenience, never a reason to fail a save */ }
     }
 
     private void ClearPending()
@@ -85,7 +94,7 @@ public sealed class FrigateConfigApplier(
             return new FrigateConfigApplyResult(false, "Frigate config path is not configured.", string.Empty);
         }
 
-        await WriteConfigAsync(cameras, ct);
+        await WriteDocumentAsync(cameras, ct);
 
         if (string.IsNullOrWhiteSpace(settings.Frigate.ApplyCommand))
         {

@@ -25,6 +25,7 @@ public class FrigateConfigApplierTests : IDisposable
     public void Dispose()
     {
         if (File.Exists(_configPath)) File.Delete(_configPath);
+        if (File.Exists($"{_configPath}.pending")) File.Delete($"{_configPath}.pending");
     }
 
     private static Camera MakeValidatedCamera(string slug, StreamProtocol streamProtocol = StreamProtocol.Rtsp, string? streamPath = "/stream1", int port = 554) => new()
@@ -84,6 +85,58 @@ public class FrigateConfigApplierTests : IDisposable
             new StubRecordingSettingsRepository(recordingSettings ?? RecordingSettings.CreateDefault()));
         await applier.ApplyAsync(cameras);
         return await File.ReadAllTextAsync(_configPath);
+    }
+
+    private FrigateConfigApplier BuildApplier()
+    {
+        var settings = Settings;
+        return new FrigateConfigApplier(
+            settings,
+            NullLogger<FrigateConfigApplier>.Instance,
+            new FrigateRestartTracker(),
+            new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(FrigateDetectorKind.Cpu)),
+            new NoopModelAssetInstaller(),
+            new StubRecordingSettingsRepository(RecordingSettings.CreateDefault()));
+    }
+
+    // The wait survives between a save and the user's restart, and only a real change starts it.
+
+    [Fact]
+    public void Nothing_waits_before_anything_is_written()
+    {
+        Assert.False(BuildApplier().HasPendingChanges);
+    }
+
+    [Fact]
+    public async Task Writing_a_real_change_makes_the_restart_wait()
+    {
+        var applier = BuildApplier();
+
+        await applier.WriteConfigAsync([MakeValidatedCamera("front-door")], changed: true);
+
+        Assert.True(applier.HasPendingChanges);
+    }
+
+    [Fact]
+    public async Task Writing_without_a_real_change_leaves_nothing_waiting()
+    {
+        var applier = BuildApplier();
+
+        await applier.WriteConfigAsync([MakeValidatedCamera("front-door")], changed: false);
+
+        Assert.False(applier.HasPendingChanges);
+    }
+
+    [Fact]
+    public async Task Applying_the_config_clears_the_wait()
+    {
+        var applier = BuildApplier();
+        var cameras = new[] { MakeValidatedCamera("front-door") };
+        await applier.WriteConfigAsync(cameras, changed: true);
+
+        await applier.ApplyAsync(cameras);
+
+        Assert.False(applier.HasPendingChanges);
     }
 
     [Fact]

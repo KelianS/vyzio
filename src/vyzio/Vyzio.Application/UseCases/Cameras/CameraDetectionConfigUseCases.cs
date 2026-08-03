@@ -46,6 +46,10 @@ public sealed class SaveCameraDetectionConfigUseCase(
         if (validatedLabels.Count == 0)
             validatedLabels = ["person"];
 
+        // A save that changes nothing must not summon the restart prompt.
+        var detectionBefore = (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId);
+        var retentionBefore = (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
+
         camera.DetectionLabelsJson = JsonSerializer.Serialize(validatedLabels);
 
         // Clamped rather than rejected: an out-of-range number is a slip, not a reason to lose the
@@ -57,6 +61,10 @@ public sealed class SaveCameraDetectionConfigUseCase(
         var sensitivityChanged = ApplySensitivity(camera, request);
         ApplyDetectStream(camera, request);
 
+        var changed =
+            detectionBefore != (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId)
+            || retentionBefore != (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
+
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
 
@@ -66,7 +74,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         if (isLive)
         {
             var allCameras = await cameras.GetAllAsync(ct);
-            await frigateConfigApplier.WriteConfigAsync(allCameras, ct);
+            await frigateConfigApplier.WriteConfigAsync(allCameras, changed, ct);
 
             // Writing the config alone would only take effect on the next Frigate restart; the
             // runtime command makes a user-chosen level apply straight away (ADR-35).

@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
-test.describe('Hub — privacy toggle', () => {
-  test('user_When enabling privacy mode on a camera_Should confirm and reflect it live', async ({
+test.describe('Accueil — couper la surveillance', () => {
+  test('user_When cutting every camera_Should confirm, then see the page say so', async ({
     page,
   }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon', isEnabled: true })
@@ -10,15 +10,18 @@ test.describe('Hub — privacy toggle', () => {
 
     await page.goto('/')
 
-    await expect(page.locator('.hub-live-grid').getByText('Salon')).toBeVisible()
+    // L'accueil dit d'abord ce qui est surveille — c'est ce qu'on vient verifier.
+    await expect(page.getByRole('heading', { name: '1 caméra sous surveillance' })).toBeVisible()
+    await expect(page.getByText('Salon')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Mode vie privée global' }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByRole('dialog')).toContainText('vie privée')
+    await page.getByRole('button', { name: 'Tout couper' }).click()
 
-    await page.getByRole('button', { name: 'Couper toutes les caméras' }).click()
-    await expect(page.getByRole('dialog')).toBeHidden()
+    // Le cout est dit avant : plus rien n'est enregistre ni signale.
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toContainText('Plus rien n’est enregistré ni signalé')
+    await dialog.getByRole('button', { name: 'Tout couper' }).click()
 
-    await expect(page.getByRole('button', { name: 'Désactiver le mode vie privée' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Surveillance coupée' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reprendre la surveillance' })).toBeVisible()
   })
 })

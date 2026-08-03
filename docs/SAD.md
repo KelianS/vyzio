@@ -209,7 +209,7 @@ CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, label
 CameraStreamEnumerator (.NET)     → Énumération des flux d'une caméra et de leur résolution (ADR-38), via ONVIF ou convention protocole
 MotionSensitivityTuner (.NET)     → Boucle d'auto-réglage de la sensibilité par caméra (ADR-35), appliquée à chaud via MQTT
 API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
-Dashboard / Hub (React + TS)      → UI grand public guidée
+Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et arborescence de réglages (ADR-40), cycle d'édition unique (ADR-41), socle shadcn/ui (ADR-42)
 ```
 
 ### 6.2 Flux complet : détection → notification

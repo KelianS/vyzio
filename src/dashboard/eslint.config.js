@@ -29,6 +29,9 @@ export default defineConfig([
         typescript: { alwaysTryTypes: true },
       },
       'boundaries/elements': [
+        // Declare avant `common` : le premier motif qui correspond gagne, et
+        // `src/common/ui/**` serait sinon capte par `src/common/**`.
+        { type: 'ui-primitive', pattern: 'src/common/ui/**' },
         { type: 'common', pattern: 'src/common/**' },
         { type: 'domain', pattern: 'src/domain/**' },
         { type: 'infrastructure', pattern: 'src/infrastructure/**' },
@@ -46,7 +49,16 @@ export default defineConfig([
           policies: [
             {
               from: { element: { types: '*' } },
-              allow: { to: { element: { types: 'common' } } },
+              allow: { to: { element: { types: { anyOf: ['common', 'ui-primitive'] } } } },
+            },
+            // Vendored shadcn/ui primitives (ADR-42): they may only reach each other.
+            // A primitive that imports domain, infrastructure or a Vyzio component is a
+            // business rule smuggled into vendored code — the one thing that makes
+            // upstream updates risky. This policy is what makes the tier boundary real
+            // rather than a convention.
+            {
+              from: { element: { types: 'ui-primitive' } },
+              allow: { to: { element: { types: 'ui-primitive' } } },
             },
             {
               from: { element: { types: 'common' } },
@@ -69,6 +81,17 @@ export default defineConfig([
           ],
         },
       ],
+    },
+  },
+  {
+    // Vendored shadcn/ui primitives (ADR-42) — code copie, pas ecrit ici, et mis
+    // a jour en le regenerant. Les regles qui supposent du code maison ne s'y
+    // appliquent pas : les faire respecter obligerait a editer du code vendu,
+    // donc a rendre risquee toute mise a jour. Leur forme amont exporte les
+    // variantes a cote du composant, ce que `react-refresh` interdit.
+    files: ['src/common/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
     },
   },
 ])

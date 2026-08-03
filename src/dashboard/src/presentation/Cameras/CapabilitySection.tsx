@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -8,8 +9,18 @@ import type { Camera } from '../../domain/entities/Camera'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
-import { Btn } from '../../common/components/Btn'
-import { Select } from '../../common/components/Select'
+import { Badge } from '../../common/components/Badge'
+import { ConfirmModal } from '../../common/components/ConfirmModal'
+import { Button } from '../../common/ui/button'
+import { Input } from '../../common/ui/input'
+import { cn } from '../../common/ui/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../common/ui/select'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 
 interface CapabilitySectionProps {
@@ -94,35 +105,28 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
   )
 
   if (loading) {
-    return (
-      <section className="camera-detail-section capability-section-compact">
-        <h4>Capacités</h4>
-        <p className="capability-protocol">Chargement…</p>
-      </section>
-    )
+    return <p className="text-muted-foreground">Chargement…</p>
   }
 
   return (
-    <section className="camera-detail-section capability-section-compact">
-      <h4>Capacités</h4>
-
+    <div className="flex flex-col gap-3">
       {camera.supportedProtocols.length > 0 && (
-        <div className="capability-protocol-badges">
+        <div className="flex flex-wrap gap-1.5">
           {camera.supportedProtocols.map((p) => (
-            <span key={p} className="capability-protocol-badge">
+            <Badge key={p} tone="neutral">
               {SUPPORTED_PROTOCOL_LABELS[p] ?? p.toUpperCase()}
-            </span>
+            </Badge>
           ))}
         </div>
       )}
 
       {offline && (
-        <p className="camera-inline-state" style={{ marginBottom: 8 }}>
+        <p className="text-sm text-muted-foreground">
           Caméra hors ligne — la détection sera disponible dès que la caméra sera joignable.
         </p>
       )}
 
-      <div className="capability-list">
+      <ul className="divide-y divide-border">
         {(bindings ?? []).map((b) => (
           <CapabilityRow
             key={b.capability}
@@ -133,44 +137,48 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
             onToast={toast}
           />
         ))}
+      </ul>
 
-        {availableCapabilities.length > 0 &&
-          !offline &&
-          (showManualForm ? (
-            <ManualCapabilityForm
-              cameraId={camera.id}
-              availableCapabilities={availableCapabilities}
-              onDone={() => {
-                setShowManualForm(false)
-                handleReload()
-              }}
-              onCancel={() => setShowManualForm(false)}
-            />
-          ) : (
-            <button
-              type="button"
-              className="capability-manual-form-trigger"
-              title="Configurer une capacité manuellement"
-              aria-label="Configurer une capacité manuellement"
-              onClick={() => setShowManualForm(true)}
-            >
-              +
-            </button>
-          ))}
-      </div>
+      {availableCapabilities.length > 0 &&
+        !offline &&
+        (showManualForm ? (
+          <ManualCapabilityForm
+            cameraId={camera.id}
+            availableCapabilities={availableCapabilities}
+            onDone={() => {
+              setShowManualForm(false)
+              handleReload()
+            }}
+            onCancel={() => setShowManualForm(false)}
+          />
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() => setShowManualForm(true)}
+          >
+            <Plus aria-hidden="true" />
+            Configurer une capacité manuellement
+          </Button>
+        ))}
 
-      <div className="capability-detect-row">
-        <span className="capability-detect-hint">PTZ, vie privée matérielle, réglages image…</span>
-        <Btn
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+        <span className="text-sm text-muted-foreground">
+          PTZ, vie privée matérielle, réglages image…
+        </span>
+        <Button
+          type="button"
           variant="ghost"
+          size="sm"
           disabled={detectAction.loading || offline}
-          loading={detectAction.loading}
           onClick={() => detectAction.run()}
         >
-          Détecter les capacités
-        </Btn>
+          {detectAction.loading ? 'Détection…' : 'Détecter les capacités'}
+        </Button>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -273,149 +281,164 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
 
   if (isEditing) {
     return (
-      <div className="capability-row capability-row--editing">
-        <div className="capability-info">
-          <div className="capability-label">{CAPABILITY_LABELS[binding.capability]}</div>
-          <div className="capability-manual-form-fields" style={{ marginTop: 6 }}>
-            <label>
-              <span>Protocole</span>
-              <Select
-                size="sm"
-                value={editProtocol}
-                onChange={(e) => setEditProtocol(e.target.value as SupportedProtocol)}
-              >
-                {protocolOptions.map(({ value, label }) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          </div>
+      <li className="flex flex-wrap items-end justify-between gap-3 py-3">
+        <div className="min-w-0 flex-1">
+          <div className="font-medium">{CAPABILITY_LABELS[binding.capability]}</div>
+          <label className="mt-2 flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground">Protocole</span>
+            <Picker
+              value={editProtocol}
+              options={protocolOptions}
+              onChange={(value) => setEditProtocol(value as SupportedProtocol)}
+            />
+          </label>
         </div>
-        <div className="capability-actions">
-          <Btn
-            variant="secondary"
-            loading={configureAction.loading}
+        <div className="flex shrink-0 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={configureAction.loading}
             onClick={() => configureAction.run()}
           >
-            Enregistrer
-          </Btn>
-          <Btn
+            {configureAction.loading ? 'Enregistrement…' : 'Enregistrer'}
+          </Button>
+          <Button
+            type="button"
             variant="ghost"
+            size="sm"
             onClick={() => {
               setEditProtocol(binding.protocol)
               setIsEditing(false)
             }}
           >
             Annuler
-          </Btn>
+          </Button>
         </div>
-      </div>
+      </li>
     )
   }
 
   return (
-    <div className="capability-row">
-      <div className="capability-info">
-        <div className="capability-label">
+    <li className="flex flex-wrap items-center justify-between gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 font-medium">
           {CAPABILITY_LABELS[binding.capability]}
           {isConfigured && (
-            <span className={`capability-status-dot ${isVerified ? 'ok' : 'fail'}`} />
+            <span
+              className={cn('size-1.5 rounded-full', isVerified ? 'bg-success' : 'bg-destructive')}
+              aria-hidden="true"
+            />
           )}
         </div>
-        <div className="capability-protocol">
+        <div className="text-sm text-muted-foreground">
           {PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}
         </div>
         {!isVerified && binding.lastError && (
-          <div className="capability-error">{binding.lastError}</div>
+          <div className="text-sm text-destructive">{binding.lastError}</div>
         )}
         {isVerified && verifiedAtLabel && (
-          <div className="capability-verified-at">Vérifié le {verifiedAtLabel}</div>
+          <div className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</div>
         )}
 
         {showV380IdInput && (
-          <div className="capability-v380-id-form">
-            <label>
-              <span>Identifiant V380 (décimal)</span>
-              <input
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">Identifiant V380 (décimal)</span>
+              <Input
                 type="text"
                 placeholder="ex : 26970853"
                 value={v380DeviceId}
                 onChange={(e) => setV380DeviceId(e.target.value)}
+                className="w-40"
               />
             </label>
-            <Btn
-              variant="secondary"
-              disabled={!v380DeviceId}
-              loading={configureAction.loading}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!v380DeviceId || configureAction.loading}
               onClick={() => configureAction.run()}
             >
-              Appliquer
-            </Btn>
+              {configureAction.loading ? 'Envoi…' : 'Appliquer'}
+            </Button>
           </div>
         )}
       </div>
 
-      <div className="capability-actions">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         {binding.capability === 'ptz' && isConfigured && (
           <>
-            <span
-              className={`capability-status-badge ${ptzEnabled ? 'capability-status-badge--on' : 'capability-status-badge--off'}`}
-            >
-              {ptzEnabled ? 'Actif' : 'Inactif'}
-            </span>
+            <Badge tone={ptzEnabled ? 'ok' : 'neutral'}>{ptzEnabled ? 'Actif' : 'Inactif'}</Badge>
             {ptzEnabled ? (
-              <Btn
-                variant="danger-outline"
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-destructive text-destructive hover:bg-destructive/10"
                 disabled={offline}
                 onClick={() => setConfirmDisable(true)}
               >
                 Désactiver
-              </Btn>
+              </Button>
             ) : (
-              <Btn
+              <Button
+                type="button"
                 variant="ghost"
-                loading={toggleAction.loading}
-                disabled={offline}
+                size="sm"
+                disabled={toggleAction.loading || offline}
                 onClick={() => toggleAction.run()}
               >
-                Activer
-              </Btn>
+                {toggleAction.loading ? '…' : 'Activer'}
+              </Button>
             )}
           </>
         )}
         {!isConfigured && (
-          <Btn
-            variant="secondary"
-            loading={configureAction.loading}
-            disabled={offline}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={configureAction.loading || offline}
             onClick={() => configureAction.run()}
           >
-            Configurer
-          </Btn>
+            {configureAction.loading ? 'Configuration…' : 'Configurer'}
+          </Button>
         )}
         {isConfigured && (
-          <Btn variant="ghost" disabled={offline} onClick={() => setIsEditing(true)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={offline}
+            onClick={() => setIsEditing(true)}
+          >
             Modifier
-          </Btn>
+          </Button>
         )}
         {isConfigured && binding.capability !== 'ptz' && (
-          <Btn variant="danger-outline" onClick={() => setConfirmRemove(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-destructive text-destructive hover:bg-destructive/10"
+            onClick={() => setConfirmRemove(true)}
+          >
             Retirer
-          </Btn>
+          </Button>
         )}
       </div>
 
       {confirmDisable && (
         <ConfirmModal
           title="Désactiver le PTZ ?"
-          description="Le panneau de contrôle PTZ sera masqué dans l'interface. La configuration reste sauvegardée et peut être réactivée à tout moment."
+          body="Le panneau de contrôle PTZ sera masqué dans l'interface. La configuration reste sauvegardée et peut être réactivée à tout moment."
           confirmLabel="Désactiver"
+          tone="warn"
           loading={toggleAction.loading}
-          onConfirm={() => {
+          onConfirm={async () => {
+            await toggleAction.run()
             setConfirmDisable(false)
-            toggleAction.run()
           }}
           onCancel={() => setConfirmDisable(false)}
         />
@@ -424,54 +447,18 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
       {confirmRemove && (
         <ConfirmModal
           title={`Retirer « ${CAPABILITY_LABELS[binding.capability]} » ?`}
-          description="La configuration de cette capacité sera supprimée. Vous pourrez la reconfigurer à tout moment via le bouton + ."
+          body="La configuration de cette capacité sera supprimée. Vous pourrez la reconfigurer à tout moment."
           confirmLabel="Retirer"
+          tone="danger"
           loading={removeAction.loading}
-          onConfirm={() => {
+          onConfirm={async () => {
+            await removeAction.run()
             setConfirmRemove(false)
-            removeAction.run()
           }}
           onCancel={() => setConfirmRemove(false)}
         />
       )}
-    </div>
-  )
-}
-
-// --- ConfirmModal ---
-
-interface ConfirmModalProps {
-  title: string
-  description: string
-  confirmLabel: string
-  loading?: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function ConfirmModal({
-  title,
-  description,
-  confirmLabel,
-  loading,
-  onConfirm,
-  onCancel,
-}: ConfirmModalProps) {
-  return (
-    <div className="confirm-modal-backdrop" onClick={onCancel}>
-      <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="confirm-modal-title">{title}</p>
-        <p className="confirm-modal-desc">{description}</p>
-        <div className="confirm-modal-actions">
-          <Btn variant="ghost" size="md" onClick={onCancel}>
-            Annuler
-          </Btn>
-          <Btn variant="danger" size="md" loading={loading} onClick={onConfirm}>
-            {confirmLabel}
-          </Btn>
-        </div>
-      </div>
-    </div>
+    </li>
   )
 }
 
@@ -497,8 +484,7 @@ function ManualCapabilityForm({
   )
 
   // Falls back to the first still-available capability when the current selection disappears
-  // from the list (e.g. it just got configured elsewhere) — adjusted during render instead of an
-  // effect so it doesn't cause an extra setState-in-effect cascade.
+  // (e.g. it just got configured elsewhere) — adjusted during render, not an effect.
   const [prevAvailableCapabilities, setPrevAvailableCapabilities] = useState(availableCapabilities)
   if (availableCapabilities !== prevAvailableCapabilities) {
     setPrevAvailableCapabilities(availableCapabilities)
@@ -516,57 +502,82 @@ function ManualCapabilityForm({
   )
 
   return (
-    <div className="capability-manual-form">
-      <div className="capability-manual-form-title">Configurer manuellement</div>
-      <div className="capability-manual-form-fields">
-        <label>
-          <span>Capacité</span>
-          <Select
-            size="sm"
+    <div className="rounded-inset border border-border p-3">
+      <p className="font-medium">Configurer manuellement</p>
+      <div className="mt-2 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-muted-foreground">Capacité</span>
+          <Picker
             value={selectedCapability}
-            onChange={(e) => {
-              const cap = e.target.value as Capability
+            options={availableCapabilities.map((cap) => ({
+              value: cap,
+              label: CAPABILITY_LABELS[cap],
+            }))}
+            onChange={(value) => {
+              const cap = value as Capability
               setSelectedCapability(cap)
               setSelectedProtocol(protocolOptionsFor(cap)[0].value)
             }}
-          >
-            {availableCapabilities.map((cap) => (
-              <option key={cap} value={cap}>
-                {CAPABILITY_LABELS[cap]}
-              </option>
-            ))}
-          </Select>
+          />
         </label>
 
-        <label>
-          <span>Protocole</span>
-          <Select
-            size="sm"
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-muted-foreground">Protocole</span>
+          <Picker
             value={selectedProtocol}
-            onChange={(e) => setSelectedProtocol(e.target.value as SupportedProtocol)}
-          >
-            {protocolOptions.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
+            options={protocolOptions}
+            onChange={(value) => setSelectedProtocol(value as SupportedProtocol)}
+          />
         </label>
 
-        <Btn
-          variant="secondary"
-          loading={configureAction.loading}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={configureAction.loading}
           onClick={() => configureAction.run()}
         >
-          Configurer
-        </Btn>
-        <Btn variant="ghost" disabled={configureAction.loading} onClick={onCancel}>
+          {configureAction.loading ? 'Configuration…' : 'Configurer'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={configureAction.loading}
+          onClick={onCancel}
+        >
           Annuler
-        </Btn>
+        </Button>
       </div>
-      <p className="capability-manual-form-hint">
+      <p className="mt-2 text-sm text-muted-foreground">
         La capacité est testée immédiatement et activée en cas de succès.
       </p>
     </div>
+  )
+}
+
+/** Socle dropdown with pre-formatted options (ADR-42). */
+function Picker({
+  value,
+  options,
+  onChange,
+}: {
+  value: string
+  options: readonly { value: string; label: string }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger size="sm" className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

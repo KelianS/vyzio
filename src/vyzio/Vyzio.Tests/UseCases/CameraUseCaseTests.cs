@@ -216,9 +216,10 @@ public class CreateCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityOnboardingQueue _queue = Substitute.For<ICameraCapabilityOnboardingQueue>();
+    private readonly IFrigateConfigApplier _configApplier = Substitute.For<IFrigateConfigApplier>();
     private readonly CreateCameraUseCase _sut;
 
-    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue);
+    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier);
 
     [Fact]
     public async Task Execute_creates_draft_camera_with_slug_and_defaults()
@@ -244,6 +245,19 @@ public class CreateCameraUseCaseTests
         await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", 554, null, null, null, null, "icsee"));
 
         _queue.Received(1).Enqueue(Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task Execute_marks_the_configuration_as_waiting_for_a_restart()
+    {
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", 554, null, null, null, null, null));
+
+        // Otherwise the trigger stays hidden, and its absence says everything is in service (ADR-44).
+        await _configApplier.Received(1).WriteConfigAsync(
+            Arg.Any<IReadOnlyList<Camera>>(), changed: true, Arg.Any<CancellationToken>());
     }
 }
 

@@ -35,7 +35,10 @@ public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAs
     }
 }
 
-public sealed class CreateCameraUseCase(ICameraRepository cameras, ICameraCapabilityOnboardingQueue onboardingQueue)
+public sealed class CreateCameraUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityOnboardingQueue onboardingQueue,
+    IFrigateConfigApplier frigateConfigApplier)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
     {
@@ -52,6 +55,13 @@ public sealed class CreateCameraUseCase(ICameraRepository cameras, ICameraCapabi
         // Kick off background capability probe (A1 + A3): seeds preset bindings and probes each
         // one so the capability section is pre-populated when the user opens the camera detail.
         onboardingQueue.Enqueue(camera.Id);
+
+        // A new camera is something the surveillance has not taken up yet: without this the restart
+        // trigger would stay hidden, and its absence claims everything saved is in service (ADR-44).
+        var applicable = (await cameras.GetAllAsync(ct))
+            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
         return CameraDto.From(camera);
     }
@@ -282,7 +292,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         var applicable = catalog
             .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, ct);
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
         return CameraDto.From(camera);
     }
@@ -361,7 +371,7 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfi
         var applicable = catalog
             .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, ct);
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
         return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" queued for removal. Apply the configuration to update Frigate.", string.Empty);
     }

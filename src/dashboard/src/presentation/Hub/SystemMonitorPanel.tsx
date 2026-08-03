@@ -1,73 +1,63 @@
+import type { ReactNode } from 'react'
+import { Link } from 'react-router'
+import { Badge, type BadgeTone } from '../../common/components/Badge'
+import { Button } from '../../common/ui/button'
+import { cn } from '../../common/ui/utils'
 import type {
   FrigateDetectorKind,
   FrigateStatus,
   SystemStats,
 } from '../../domain/entities/SystemStats'
 
-interface SystemMonitorPanelProps {
-  stats: SystemStats
-}
-
-const STATUS_PILL_CLASS: Record<FrigateStatus, string> = {
-  active: 'online',
-  restarting: 'loading',
-  unavailable: 'degraded',
-}
-
 const STATUS_LABEL: Record<FrigateStatus, string> = {
-  active: 'Actif',
+  active: 'En marche',
   restarting: 'Redémarrage…',
-  unavailable: 'Indisponible',
+  unavailable: 'Arrêtée',
 }
 
-function SystemStatusPill({ status }: { status: FrigateStatus }) {
-  return <span className={`status-pill ${STATUS_PILL_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+const STATUS_TONE: Record<FrigateStatus, BadgeTone> = {
+  active: 'ok',
+  restarting: 'neutral',
+  unavailable: 'danger',
 }
 
 const DETECTOR_HARDWARE_LABEL: Record<FrigateDetectorKind, string> = {
-  edge_tpu: 'Accélérateur dédié (Coral)',
-  openvino: 'Carte graphique (Intel)',
-  cpu: 'Processeur (CPU)',
+  edge_tpu: 'Accélérateur dédié',
+  openvino: 'Carte graphique',
+  cpu: 'Processeur',
 }
 
 type DegradedStatus = Exclude<FrigateStatus, 'active'>
 
 const DEGRADED_MESSAGE: Record<DegradedStatus, string> = {
-  restarting: 'Redémarrage en cours — les métriques réapparaîtront automatiquement.',
-  unavailable: 'Système de détection inaccessible — métriques indisponibles.',
+  restarting: 'Les mesures réapparaîtront d’elles-mêmes.',
+  unavailable: 'Aucune mesure tant que la surveillance ne tourne pas.',
 }
 
-const DEGRADED_SHOW_DIAGNOSE_LINK: Record<DegradedStatus, boolean> = {
+/** Diagnosis link only makes sense when the state won't resolve on its own. */
+const DEGRADED_SHOWS_DIAGNOSIS: Record<DegradedStatus, boolean> = {
   restarting: false,
   unavailable: true,
 }
 
-function DegradedPanel({ status }: { status: DegradedStatus }) {
-  return (
-    <article className="panel hub-monitor-panel">
-      <div className="hub-monitor-heading-row">
-        <h2>Système</h2>
-        <SystemStatusPill status={status} />
-      </div>
-      <p style={{ fontSize: '0.85rem', opacity: 0.6, padding: '0 0 8px' }}>
-        {DEGRADED_MESSAGE[status]}
-      </p>
-      {DEGRADED_SHOW_DIAGNOSE_LINK[status] && (
-        <div className="panel-cta-row">
-          <a href="expert" className="secondary-cta">
-            Diagnostiquer →
-          </a>
-        </div>
-      )}
-    </article>
-  )
-}
+const ADVANCED_PATH = '/settings/systeme/avance'
 
-export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
+export function SystemMonitorPanel({ stats }: { stats: SystemStats }) {
   switch (stats.status) {
     case 'restarting':
     case 'unavailable':
-      return <DegradedPanel status={stats.status} />
+      return (
+        <Panel status={stats.status}>
+          <p className="mt-3 text-sm text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
+          {DEGRADED_SHOWS_DIAGNOSIS[stats.status] && (
+            <div className="mt-4">
+              <Button asChild variant="outline" size="sm">
+                <Link to={ADVANCED_PATH}>Diagnostiquer</Link>
+              </Button>
+            </div>
+          )}
+        </Panel>
+      )
     case 'active':
       break
     default: {
@@ -76,63 +66,75 @@ export function SystemMonitorPanel({ stats }: SystemMonitorPanelProps) {
     }
   }
 
+  const usedRatio =
+    stats.storage && stats.storage.totalGb > 0 ? stats.storage.usedGb / stats.storage.totalGb : 0
+
   return (
-    <article className="panel hub-monitor-panel">
-      <div className="hub-monitor-heading-row">
-        <h2>Système</h2>
-        <SystemStatusPill status={stats.status} />
-      </div>
-
-      <div className="hub-monitor-section">
-        <p className="hub-monitor-label">Détection</p>
-        <p className="hub-monitor-bar-legend">
-          {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · cible {stats.detection.targetFps}{' '}
-          fps
-        </p>
-      </div>
-
-      {stats.storage && (
-        <div className="hub-monitor-section">
-          <p className="hub-monitor-label">Stockage media</p>
-          <div className="hub-monitor-bar-track">
-            <div
-              className="hub-monitor-bar-fill"
-              style={{
-                width:
-                  stats.storage.totalGb > 0
-                    ? `${Math.min(100, (stats.storage.usedGb / stats.storage.totalGb) * 100).toFixed(1)}%`
-                    : '0%',
-              }}
-            />
-          </div>
-          <p className="hub-monitor-bar-legend">
-            {stats.storage.usedGb} Go utilisés · {stats.storage.freeGb} Go libres ·{' '}
-            {stats.storage.totalGb} Go total
-          </p>
+    <Panel status={stats.status}>
+      <dl className="mt-3 space-y-3 text-sm">
+        <div>
+          <dt className="text-muted-foreground">Analyse des images</dt>
+          <dd>
+            {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · {stats.detection.targetFps} images
+            par seconde
+          </dd>
         </div>
-      )}
 
-      {stats.cameras.length > 0 && (
-        <div className="hub-monitor-section">
-          <p className="hub-monitor-label">FPS caméras</p>
-          <div className="hub-monitor-camera-list">
-            {stats.cameras.map(({ camera, fps }) => (
-              <div key={camera} className="hub-monitor-camera-row">
-                <span className="hub-monitor-camera-name">{camera}</span>
-                <span className={`hub-monitor-fps${fps < 1 ? ' hub-monitor-fps--warn' : ''}`}>
-                  {fps.toFixed(1)} fps
-                </span>
+        {stats.storage && (
+          <div>
+            <dt className="text-muted-foreground">Espace disque</dt>
+            <dd>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn(
+                    'h-full rounded-full',
+                    usedRatio > 0.9 ? 'bg-destructive' : 'bg-primary',
+                  )}
+                  style={{ width: `${Math.min(100, usedRatio * 100).toFixed(1)}%` }}
+                />
               </div>
-            ))}
+              <span className="mt-1 block">
+                {stats.storage.freeGb} Go libres sur {stats.storage.totalGb} Go
+              </span>
+            </dd>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="panel-cta-row">
-        <a href="expert" className="secondary-cta">
-          Détails techniques →
-        </a>
+        {stats.cameras.length > 0 && (
+          <div>
+            <dt className="text-muted-foreground">Images reçues</dt>
+            <dd className="mt-1 space-y-0.5">
+              {stats.cameras.map(({ camera, fps }) => (
+                <span key={camera} className="flex justify-between gap-3">
+                  <span className="min-w-0 truncate">{camera.replaceAll('_', ' ')}</span>
+                  {/* Sous une image par seconde, la camera ne suit plus. */}
+                  <span className={cn('tabular-nums', fps < 1 && 'text-destructive')}>
+                    {fps.toFixed(1)}/s
+                  </span>
+                </span>
+              ))}
+            </dd>
+          </div>
+        )}
+      </dl>
+
+      <div className="mt-4">
+        <Button asChild variant="ghost" size="sm">
+          <Link to={ADVANCED_PATH}>Détails techniques</Link>
+        </Button>
       </div>
-    </article>
+    </Panel>
+  )
+}
+
+function Panel({ status, children }: { status: FrigateStatus; children: ReactNode }) {
+  return (
+    <section className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-medium">Surveillance</h2>
+        <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
+      </div>
+      {children}
+    </section>
   )
 }

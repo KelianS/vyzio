@@ -1,5 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
-import { Btn } from './Btn'
+import { useState, type MouseEvent } from 'react'
+import type { VariantProps } from 'class-variance-authority'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog'
+import type { buttonVariants } from '../ui/button'
+import { cn } from '../ui/utils'
+
+type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>['variant']>
 
 interface ConfirmModalProps {
   title: string
@@ -12,6 +26,14 @@ interface ConfirmModalProps {
   loading?: boolean
 }
 
+const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant> = {
+  danger: 'destructive',
+  warn: 'outline',
+  confirm: 'default',
+  default: 'secondary',
+}
+
+/** Confirmation dialog on the shadcn AlertDialog primitive (ADR-42): focus trap and Escape come from Radix. */
 export function ConfirmModal({
   title,
   body,
@@ -22,50 +44,12 @@ export function ConfirmModal({
   onCancel,
   loading = false,
 }: ConfirmModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
   const [internalLoading, setInternalLoading] = useState(false)
   const isLoading = loading || internalLoading
 
-  useEffect(() => {
-    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    )
-    focusable?.[0]?.focus()
-  }, [])
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        if (!isLoading) onCancel()
-        return
-      }
-      if (e.key === 'Tab' && dialogRef.current) {
-        const focusable = Array.from(
-          dialogRef.current.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          ),
-        )
-        if (focusable.length === 0) return
-        const first = focusable[0]
-        const last = focusable[focusable.length - 1]
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault()
-            last.focus()
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault()
-            first.focus()
-          }
-        }
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [onCancel, isLoading])
-
-  async function handleConfirm() {
+  async function handleConfirm(event: MouseEvent) {
+    // Stays mounted for the async action; the caller unmounts once it settles.
+    event.preventDefault()
     setInternalLoading(true)
     try {
       await onConfirm()
@@ -74,38 +58,34 @@ export function ConfirmModal({
     }
   }
 
-  const confirmVariant =
-    tone === 'danger'
-      ? 'danger'
-      : tone === 'warn'
-        ? 'danger-outline'
-        : tone === 'confirm'
-          ? 'primary'
-          : 'secondary'
+  function handleCancel(event: MouseEvent) {
+    event.preventDefault()
+    onCancel()
+  }
 
   return (
-    <div className="privacy-modal-backdrop" onClick={() => !isLoading && onCancel()}>
-      <div
-        ref={dialogRef}
-        className="privacy-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="confirm-modal-title" className="privacy-modal-title">
-          {title}
-        </h2>
-        <p className="privacy-modal-body">{body}</p>
-        <div className="privacy-modal-actions">
-          <Btn variant={confirmVariant} size="md" loading={isLoading} onClick={handleConfirm}>
-            {confirmLabel}
-          </Btn>
-          <Btn variant="ghost" size="md" disabled={isLoading} onClick={onCancel}>
+    <AlertDialog open onOpenChange={(open) => !open && !isLoading && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{body}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isLoading} onClick={handleCancel}>
             {cancelLabel}
-          </Btn>
-        </div>
-      </div>
-    </div>
+          </AlertDialogCancel>
+          <AlertDialogAction
+            variant={CONFIRM_VARIANT[tone]}
+            className={cn(
+              tone === 'warn' && 'border-destructive text-destructive hover:bg-destructive/10',
+            )}
+            disabled={isLoading}
+            onClick={handleConfirm}
+          >
+            {isLoading ? '…' : confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

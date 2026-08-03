@@ -4,11 +4,11 @@ namespace Vyzio.Core.Interfaces;
 
 public interface IFrigateConfigApplier
 {
-    Task WriteConfigAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default);
+    // `changed` comes from the caller: once the config is generated, a write that changes something
+    // looks exactly like one that does not, and only a real change may summon the restart prompt.
+    Task WriteConfigAsync(IReadOnlyList<Camera> cameras, bool changed, CancellationToken ct = default);
     Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default);
 
-    // True when a written configuration has not been applied yet. Most settings only take effect on
-    // the next restart of the detection engine, and leaving the user to guess that was a real gap:
-    // they changed a setting, nothing happened, and nothing said why.
+    // Written but not taken up yet: the user decides when to restart (ADR-44).
     bool HasPendingChanges { get; }
 }

@@ -74,6 +74,9 @@ jobs:
       - name: Lint
         run: task front:lint
 
+      - name: Format check
+        run: task front:format:check
+
       - name: Test
         run: |
           set -o pipefail
