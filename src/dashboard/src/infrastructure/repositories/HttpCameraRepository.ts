@@ -1,4 +1,3 @@
-import type { CameraApplyResult } from '../../domain/entities/CameraApplyResult'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { Camera } from '../../domain/entities/Camera'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/CameraConfigurationApplyResult'
@@ -111,13 +110,6 @@ interface VendorAssistanceDto {
   markdown: string
 }
 
-interface ApplyCameraDto {
-  applied: boolean
-  message: string
-  configPath: string
-  camera: CameraStatusDto
-}
-
 interface DeleteCameraDto {
   deleted: boolean
   message: string
@@ -137,13 +129,6 @@ export class HttpCameraRepository implements CameraRepository {
   async getAll(): Promise<Camera[]> {
     const payload = await fetchJson<CameraDto[]>(`${this.apiBaseUrl}/api/cameras`)
     return payload.map(mapCamera)
-  }
-
-  async getStatus(cameraId: string): Promise<CameraStatus> {
-    const payload = await fetchJson<CameraStatusDto>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/status`,
-    )
-    return mapCameraStatus(payload)
   }
 
   async discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]> {
@@ -184,18 +169,6 @@ export class HttpCameraRepository implements CameraRepository {
       `${this.apiBaseUrl}/api/cameras/${cameraId}/verify`,
     )
     return mapCameraStatus(payload)
-  }
-
-  async apply(cameraId: string): Promise<CameraApplyResult> {
-    const payload = await postJson<ApplyCameraDto>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/apply`,
-    )
-    return {
-      applied: payload.applied,
-      message: payload.message,
-      configPath: payload.configPath,
-      camera: mapCameraStatus(payload.camera),
-    }
   }
 
   async applyConfiguration(): Promise<CameraConfigurationApplyResult> {

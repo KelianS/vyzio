@@ -1,4 +1,3 @@
-import { ApplyCamera } from '../../domain/usecases/ApplyCamera'
 import { RestartSurveillance } from '../../domain/usecases/RestartSurveillance'
 import { BatchToggleCameraPrivacyMode } from '../../domain/usecases/BatchToggleCameraPrivacyMode'
 import { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtzPresetThumbnail'
@@ -13,7 +12,6 @@ import { GetCameraCapabilities } from '../../domain/usecases/GetCameraCapabiliti
 import { GetCameraDetectionConfig } from '../../domain/usecases/GetCameraDetectionConfig'
 import { GetCameraImageSettings } from '../../domain/usecases/GetCameraImageSettings'
 import { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraPrivacySchedules'
-import { GetCameraStatus } from '../../domain/usecases/GetCameraStatus'
 import { GetCameras } from '../../domain/usecases/GetCameras'
 import { GetDetectionLabels } from '../../domain/usecases/GetDetectionLabels'
 import { GetRecordingSettings } from '../../domain/usecases/GetRecordingSettings'
@@ -40,14 +38,12 @@ import type { RecordingSettingsRepository } from '../../domain/ports/RecordingSe
 
 export interface CamerasContainer {
   getCameras: GetCameras
-  getCameraStatus: GetCameraStatus
   discoverCameras: DiscoverCameras
   getVendorAssistance: GetVendorAssistance
   createCamera: CreateCamera
   updateCamera: UpdateCamera
   verifyDraftCamera: VerifyDraftCamera
   verifyCamera: VerifyCamera
-  applyCamera: ApplyCamera
   restartSurveillance: RestartSurveillance
   deleteCamera: DeleteCamera
   toggleCameraPrivacyMode: ToggleCameraPrivacyMode
@@ -84,14 +80,12 @@ export function makeCamerasContainer(
 ): CamerasContainer {
   return {
     getCameras: new GetCameras(cameraRepository),
-    getCameraStatus: new GetCameraStatus(cameraRepository),
     discoverCameras: new DiscoverCameras(cameraRepository),
     getVendorAssistance: new GetVendorAssistance(cameraRepository),
     createCamera: new CreateCamera(cameraRepository),
     updateCamera: new UpdateCamera(cameraRepository),
     verifyDraftCamera: new VerifyDraftCamera(cameraRepository),
     verifyCamera: new VerifyCamera(cameraRepository),
-    applyCamera: new ApplyCamera(cameraRepository),
     restartSurveillance: new RestartSurveillance(cameraRepository),
     deleteCamera: new DeleteCamera(cameraRepository),
     toggleCameraPrivacyMode: new ToggleCameraPrivacyMode(cameraRepository),

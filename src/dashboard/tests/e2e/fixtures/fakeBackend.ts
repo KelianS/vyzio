@@ -220,6 +220,8 @@ export async function installFakeBackend(
         status: 'online',
       })
       state.cameras.push(camera)
+      // Comme le vrai : le catalogue a change, la surveillance ne l'a pas repris.
+      state.pendingChanges = true
       return json(route, camera)
     }
     if (path === '/api/cameras/discovery' && method === 'POST') {
@@ -312,6 +314,7 @@ export async function installFakeBackend(
           id: cameraId,
         } as Partial<FakeCamera>)
         state.cameras = state.cameras.map((c) => (c.id === cameraId ? updated : c))
+        state.pendingChanges = true
         return json(route, updated)
       }
       if (rest === '/status' && method === 'GET') {
@@ -404,6 +407,7 @@ export async function installFakeBackend(
       }
       if (method === 'DELETE') {
         state.cameras = state.cameras.filter((c) => c.id !== cameraId)
+        state.pendingChanges = true
         return json(route, { deleted: true, message: 'Caméra supprimée', configPath: '/config' })
       }
     }

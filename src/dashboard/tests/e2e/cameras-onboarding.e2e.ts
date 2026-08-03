@@ -1,29 +1,58 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState } from './fixtures/fakeBackend'
+import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
-test.describe('Cameras — onboarding', () => {
-  test('user_When discovering and adding a camera_Should land on its settings', async ({
-    page,
-  }) => {
+test.describe('Cameras — ajout', () => {
+  test('user_When finding and adding a camera_Should land on its settings', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
 
     await page.goto('/settings/cameras/ajout')
-    await expect(page.getByRole('heading', { name: 'Decouverte guidee' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Ajouter une caméra' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Scanner' }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await page.getByRole('button', { name: 'Lancer le scan' }).click()
+    // Le cout de la recherche est annonce avant de l'engager.
+    await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
+    await expect(page.getByRole('dialog')).toContainText('15 à 30 secondes')
+    await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
 
-    await expect(page.getByRole('heading', { name: 'Caméra détectée' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Caméra détectée/ })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Verifier la connexion', exact: true }).click()
+    await page.getByRole('button', { name: 'Vérifier la connexion' }).click()
     await expect(page.getByText(/Flux valide/)).toBeVisible()
 
-    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
+    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
-    // La camera ajoutee rejoint la liste, qui est desormais le premier niveau
-    // de la rubrique — la decouverte n'occupe plus l'ecran une fois finie.
-    await page.goto('/settings/cameras')
-    await expect(page.getByRole('link', { name: /Camera detectee|Caméra détectée/ })).toBeVisible()
+    // L'ajout conduit la ou l'on regle la camera : c'est la suite de la tache.
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/detection$/)
+    // Et le redemarrage devient possible, la configuration ayant change (ADR-44).
+    await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
+  })
+
+  test('user_When the network yields nothing_Should still be able to type the address', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/settings/cameras/ajout')
+
+    // La saisie manuelle est offerte d'emblee, sans avoir a chercher d'abord.
+    await page.getByRole('button', { name: /Saisir l’adresse moi-même/ }).click()
+    await expect(page.getByRole('textbox', { name: 'Nom' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Adresse' })).toBeVisible()
+  })
+
+  test('user_When a camera is already in the catalogue_Should not be offered again', async ({
+    page,
+  }) => {
+    // Meme hote que la camera trouvee par la recherche.
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ cameras: [makeFakeCamera({ host: '192.168.1.77' })] }),
+    )
+    await page.goto('/settings/cameras/ajout')
+
+    await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Rechercher' }).click()
+
+    // La recherche a bien eu lieu — c'est son resultat qui est ecarte.
+    await expect(page.getByText('1 caméra(s) trouvée(s).')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Caméra détectée/ })).toHaveCount(0)
   })
 })

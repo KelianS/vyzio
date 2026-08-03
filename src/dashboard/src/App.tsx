@@ -24,8 +24,8 @@ const DetectionHistoryView = lazy(() =>
 const SettingsView = lazy(() =>
   import('./presentation/Settings/Settings.Component').then((m) => ({ default: m.SettingsView })),
 )
-const CamerasView = lazy(() =>
-  import('./presentation/Cameras/Cameras.Component').then((m) => ({ default: m.CamerasView })),
+const AddCameraView = lazy(() =>
+  import('./presentation/Cameras/AddCamera.Component').then((m) => ({ default: m.AddCameraView })),
 )
 const CameraListPage = lazy(() =>
   import('./presentation/Cameras/CameraListPage').then((m) => ({ default: m.CameraListPage })),
@@ -126,7 +126,7 @@ const router = createBrowserRouter([
         children: [
           { path: 'cameras', element: <CameraListPage /> },
           // Nomme la tache, pas la rubrique.
-          { path: 'cameras/ajout', element: <CamerasView />, handle: OWN_HEADER },
+          { path: 'cameras/ajout', element: <AddCameraView />, handle: OWN_HEADER },
           {
             path: 'cameras/:cameraId',
             element: <CameraShell />,
