@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
+import { Badge as BadgePrimitive } from '../ui/badge'
 import { cn } from '../ui/utils'
 
 /**
  * Pastille d'etat : une **qualification**, jamais une action (DESIGN SYSTEM,
- * regle de forme pilule vs rectangle).
+ * regle de forme pilule vs rectangle). Batie sur la primitive shadcn/ui
+ * (ADR-42) plutot que redessinee a la main.
  *
  * Le texte reste `foreground` et seule la teinte de fond porte le ton : c'est
  * ce qui garantit le contraste sur une surface claire comme sombre. Les
@@ -29,14 +31,8 @@ export function Badge({
   children: ReactNode
 }) {
   return (
-    <span
-      className={cn(
-        'inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs whitespace-nowrap',
-        TONE_CLASS[tone],
-        className,
-      )}
-    >
+    <BadgePrimitive variant="default" className={cn(TONE_CLASS[tone], className)}>
       {children}
-    </span>
+    </BadgePrimitive>
   )
 }
