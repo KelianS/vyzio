@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
-import './App.css'
 import { AppHeader } from './common/components/AppHeader'
 import { ToastProvider } from './common/components/Toast'
 import { useSystemStatsPolling } from './infrastructure/store/useSystemStatsPolling'
@@ -105,7 +104,7 @@ function AppShell() {
   }, [cameras.getCameras])
 
   return (
-    <div className="layout-root">
+    <div className="grid min-w-0 max-w-full gap-6 pt-5 *:min-w-0">
       <AppHeader trailing={<RestartSurveillanceTrigger />} />
       {/* Unique garde de navigation : react-router n'en accepte qu'un. */}
       <NavigationGuard />

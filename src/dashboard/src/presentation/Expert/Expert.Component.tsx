@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { TriangleAlert } from 'lucide-react'
+import { Button } from '../../common/ui/button'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 
 // Static-ish screen: local timeout state only, no domain/use-case call to orchestrate — same
@@ -24,46 +27,51 @@ export function ExpertView() {
 
   if (timedOut && !loaded) {
     return (
-      <main className="app-shell">
-        <div className="panel expert-error-panel">
-          <div className="hub-degraded-icon" aria-hidden="true">
-            ⚠
-          </div>
+      <SettingsPage>
+        <div className="flex items-start gap-3">
+          <TriangleAlert className="mt-1 size-5 shrink-0 text-destructive" aria-hidden="true" />
           <div>
-            <p className="eyebrow">Expert</p>
-            <h1>Frigate inaccessible</h1>
-            <p className="lede">L'interface Frigate n'a pas pu être chargée dans les délais.</p>
-          </div>
-          <div className="hub-degraded-steps">
-            <p>Vérifiez que :</p>
-            <ol>
-              <li>Le service Frigate est bien démarré</li>
+            <h1 className="font-serif text-3xl">Frigate inaccessible</h1>
+            <p className="mt-1 text-muted-foreground">
+              L’interface Frigate n’a pas pu être chargée dans les délais.
+            </p>
+
+            <p className="mt-5 font-medium">À vérifier :</p>
+            <ol className="mt-1 list-decimal space-y-1 pl-5 text-muted-foreground">
+              <li>Le service Frigate est bien démarré.</li>
               <li>
-                L'adresse <code>{frigateBaseUrl}</code> est joignable depuis ce navigateur
+                L’adresse <code>{frigateBaseUrl}</code> est joignable depuis ce navigateur.
               </li>
               <li>
-                Frigate n'est pas configuré avec <code>X-Frame-Options: DENY</code>
+                Frigate n’est pas configuré avec <code>X-Frame-Options: DENY</code>.
               </li>
             </ol>
-          </div>
-          <div className="panel-cta-row">
-            <a href={frigateBaseUrl} target="_blank" rel="noreferrer" className="primary-cta">
-              Ouvrir Frigate dans un onglet
-            </a>
+
+            <div className="mt-5">
+              <Button asChild variant="outline">
+                <a href={frigateBaseUrl} target="_blank" rel="noreferrer">
+                  Ouvrir Frigate dans un onglet
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
-      </main>
+      </SettingsPage>
     )
   }
 
   return (
-    <div className="expert-shell">
+    <div className="relative h-[calc(100vh-6rem)] min-h-100">
       {!loaded && (
-        <div className="hub-skeleton expert-skeleton" aria-label="Chargement de Frigate..." />
+        <div
+          role="status"
+          className="absolute inset-0 animate-pulse rounded-card bg-card"
+          aria-label="Chargement de Frigate…"
+        />
       )}
       <iframe
         src={frigateBaseUrl}
-        className={`expert-iframe${loaded ? '' : ' expert-iframe--hidden'}`}
+        className={loaded ? 'size-full rounded-card' : 'invisible size-full rounded-card'}
         onLoad={handleLoad}
         title="Frigate NVR"
         allow="fullscreen"

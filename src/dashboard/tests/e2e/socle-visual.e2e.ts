@@ -89,9 +89,15 @@ test.describe('Socle — typographie et surfaces', () => {
     await expect(badge).toBeVisible()
     expect(await contrastOf(badge)).toBeGreaterThan(3)
 
-    // Le dernier ecran encore hors socle, tel que le preflight le laisse.
+    // The iframe shell, last screen brought onto the socle.
     await page.goto('/settings/systeme/avance')
-    await expect(page.locator('.expert-shell, .expert-error-panel')).toBeVisible()
+    await expect(
+      page
+        .getByRole('status', { name: 'Chargement de Frigate…' })
+        .or(page.getByTitle('Frigate NVR'))
+        .or(page.getByRole('heading', { name: 'Frigate inaccessible' }))
+        .first(),
+    ).toBeVisible()
     await page.screenshot({ path: 'test-results/socle-parametres.png', fullPage: true })
   })
 })

@@ -67,17 +67,15 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 5. ~~**Redemarrer la surveillance, sur decision de l'utilisateur**~~ **Fait.** ([ADR-44](adr/0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md)) Enregistrer n'interrompt plus rien ; un declencheur d'en-tete redemarre la surveillance, et la question se pose en quittant les reglages. Le marqueur d'attente reste un booleen : nommer la rubrique en attente n'apprenait rien (retracte dans l'ADR), et l'annonce prealable du cout disparait avec la decision. Debloque l'etape 8, dont l'ecran d'ajout etait le seul appelant du declencheur.
 
-6. **Reprise des ecrans de reglages** — installation, cameras, **notifications** et **personnes** faits ; reste la detection. Chaque ecran repris emporte la suppression de ses regles dans `App.css`. Un ecran n'est repris que quand ses reglages passent par la grammaire (ADR-43) et son nom par la coquille (ADR-40 § « Une page est nommee une seule fois ») — le marqueur `OWN_HEADER_ONLY` de sa route tombe a ce moment-la, et sa disparition est le signal d'avancement de l'etape.
+6. ~~**Reprise des ecrans de reglages**~~ **Fait.** Installation, cameras, notifications, personnes : tous repris. La rubrique « Detection » de premier niveau n'a jamais ete un ecran a elle — elle redirige vers Personnes, deja repris.
 
 7. ~~**Aplatir la hierarchie a l'interieur d'une page.**~~ **Fait.** La regle est tranchee et vit dans [ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) § « Une page est nommee une seule fois » : le nom appartient a ce qui mene a la page, jamais a la page. Les pages camera l'appliquent (mode vie privee et plages horaires fusionnes, image et pilotage reunis, capacites rattachees a la connexion), et un test e2e la tient. Reste a l'appliquer aux ecrans repris aux etapes 6 et 10, qui portent encore leur propre titre.
 
 8. ~~**Demontage de `Cameras.Component.tsx`**~~ **Fait.** L'ecran de 800 lignes est remplace par `AddCamera.*`, qui ne porte plus que la tache d'ajout : la fiche camera et ses reglages vivent sous `CameraShell`, et l'union `CameraSelection` est scindee — `AddCameraSelection` ne connait plus la selection d'une camera existante. Les trois etages du pipeline de decouverte ne sont plus des titres d'ecran : les faits techniques sont sous « Avance ». Au passage, `ApplyCamera` et `GetCameraStatus`, devenus sans appelant, sont supprimes jusqu'au port.
 
-9. **Sort de l'interface technique** — elle quitte la barre principale pour la section avancee des reglages systeme.
+9. ~~**Sort de l'interface technique**~~ **Fait.** Elle vit sous `Reglages > Systeme > Avance`, absente de la barre principale.
 
-10. **Reprise des ecrans de consultation** — accueil et historique. Hors declencheur, mais la coherence visuelle et la nouvelle hierarchie de navigation valent pour toute l'application, pas seulement pour les reglages. **Etape de cloture** : c'est elle qui vide le dernier reste d'`App.css`, et donc elle qui termine le chantier.
-
-    Les profils **ne sont pas ici** : ils vivent sous `Reglages > Detection > Personnes` (ADR-40) et se reprennent a l'etape 6, avec les autres ecrans de reglages.
+10. ~~**Reprise des ecrans de consultation**~~ **Fait.** Accueil et historique repris. **Etape de cloture** : `App.css` est supprime.
 
 11. **Passe de coherence, une fois tous les ecrans repris** — les etapes 6 a 10 reprennent ecran par ecran, chacun conforme isolement ; ce qu'aucune ne peut voir, c'est ce qui ne se juge qu'en comparant. Perimetre : reglages ranges au meme endroit d'un ecran a l'autre, aides redigees dans le meme registre, memes mots pour les memes choses, et surtout **reglages mal ranges** — un reglage n'est pas force d'etre reste dans la rubrique ou l'ancienne interface l'avait mis. C'est une relecture d'ensemble, pas une reprise : elle produit des corrections ciblees, ou rien.
 

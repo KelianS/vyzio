@@ -56,7 +56,13 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('link', { name: /interface technique/ })).toBeHidden()
     await page.getByRole('group').filter({ hasText: 'Avancé' }).getByText('Avancé').click()
     await page.getByRole('link', { name: /interface technique/ }).click()
-    await expect(page.locator('.expert-shell, .expert-error-panel')).toBeVisible()
+    await expect(
+      page
+        .getByRole('status', { name: 'Chargement de Frigate…' })
+        .or(page.getByTitle('Frigate NVR'))
+        .or(page.getByRole('heading', { name: 'Frigate inaccessible' }))
+        .first(),
+    ).toBeVisible()
 
     await mainNav.getByRole('link', { name: 'Accueil', exact: true }).click()
     await expect(page).toHaveURL('/')
