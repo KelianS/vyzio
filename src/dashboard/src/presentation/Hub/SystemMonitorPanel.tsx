@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { Badge, type BadgeTone } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import type {
@@ -14,10 +15,10 @@ const STATUS_LABEL: Record<FrigateStatus, string> = {
   unavailable: 'Arrêtée',
 }
 
-const STATUS_TONE: Record<FrigateStatus, string> = {
-  active: 'bg-success/15 text-foreground',
-  restarting: 'bg-muted text-muted-foreground',
-  unavailable: 'bg-destructive/15 text-foreground',
+const STATUS_TONE: Record<FrigateStatus, BadgeTone> = {
+  active: 'ok',
+  restarting: 'neutral',
+  unavailable: 'danger',
 }
 
 const DETECTOR_HARDWARE_LABEL: Record<FrigateDetectorKind, string> = {
@@ -131,9 +132,7 @@ function Panel({ status, children }: { status: FrigateStatus; children: ReactNod
     <section className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-medium">Surveillance</h2>
-        <span className={cn('rounded-full px-2 py-0.5 text-xs', STATUS_TONE[status])}>
-          {STATUS_LABEL[status]}
-        </span>
+        <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
       </div>
       {children}
     </section>

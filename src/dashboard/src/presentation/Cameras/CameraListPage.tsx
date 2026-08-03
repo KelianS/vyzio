@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
+import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
-import { cn } from '../../common/ui/utils'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import {
@@ -38,9 +38,9 @@ export function CameraListPage() {
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
-                  <span className={cn('status-pill', formatStatusTone(camera))}>
+                  <Badge tone={formatStatusTone(camera)}>
                     {formatCameraStatusLabel(camera.status)}
-                  </span>
+                  </Badge>
                   <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
                 </span>
               </Link>

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
-import { cn } from '../../common/ui/utils'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
@@ -81,16 +81,12 @@ export function PersonPhotosPage() {
                   alt=""
                   className="aspect-square w-full rounded-lg object-cover"
                 />
-                <span
-                  className={cn(
-                    'absolute bottom-1 left-1 rounded-full px-2 py-0.5 text-xs',
-                    photo.frigateSynced
-                      ? 'bg-success/15 text-foreground'
-                      : 'bg-muted text-muted-foreground',
-                  )}
+                <Badge
+                  tone={photo.frigateSynced ? 'ok' : 'neutral'}
+                  className="absolute bottom-1 left-1"
                 >
                   {photo.frigateSynced ? 'Prise en compte' : 'En attente'}
-                </span>
+                </Badge>
                 <Button
                   type="button"
                   variant="ghost"

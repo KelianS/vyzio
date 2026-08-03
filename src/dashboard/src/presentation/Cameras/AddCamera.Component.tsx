@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import { Link, useNavigate } from 'react-router'
 import { ChevronLeft, Keyboard, Radar } from 'lucide-react'
 import { appErrorMessage } from '../../common/errors/AppError'
+import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
@@ -398,7 +399,7 @@ function CandidateRow({
           <Badge tone={recognised ? 'ok' : 'neutral'}>
             {vendor ?? (recognised ? 'Marque connue' : 'Marque inconnue')}
           </Badge>
-          <Badge tone={candidate.streamPath ? 'ok' : 'neutral'}>
+          <Badge tone={candidate.streamPath ? 'ok' : 'warn'}>
             {candidate.streamPath ? 'Prête' : 'À préparer'}
           </Badge>
         </span>
@@ -412,19 +413,6 @@ function Feedback({ message, error }: { message: string | null; error: string | 
   if (error) return <p className="text-sm text-destructive">{error}</p>
   if (message) return <p className="text-sm text-success">{message}</p>
   return null
-}
-
-function Badge({ tone, children }: { tone: 'ok' | 'neutral'; children: ReactNode }) {
-  return (
-    <span
-      className={cn(
-        'rounded-full px-2 py-0.5 text-xs',
-        tone === 'ok' ? 'bg-success/15 text-foreground' : 'bg-muted text-muted-foreground',
-      )}
-    >
-      {children}
-    </span>
-  )
 }
 
 function SelectableRow({ onSelect, children }: { onSelect: () => void; children: ReactNode }) {

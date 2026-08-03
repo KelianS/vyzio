@@ -1,5 +1,46 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
+
+/**
+ * Rapport de contraste WCAG entre un element et le fond qu'il recouvre — la
+ * seule facon de tenir « ca se lit », que la visibilite au sens de la mise en
+ * page ne dit pas.
+ */
+async function contrastOf(locator: Locator): Promise<number> {
+  return locator.evaluate((el) => {
+    const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number)
+    const luminance = ([r, g, b]: number[]) => {
+      const channel = (c: number) => {
+        const v = c / 255
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+
+    // Le fond de la pastille est semi-transparent : ce qui compte est ce que
+    // l'oeil voit, donc le resultat compose sur la surface qui la porte.
+    const over = (front: number[], back: number[]) => {
+      const alpha = front[3] ?? 1
+      return [0, 1, 2].map((i) => front[i] * alpha + back[i] * (1 - alpha))
+    }
+
+    let node: HTMLElement | null = el as HTMLElement
+    let backdrop = [255, 255, 255]
+    while (node) {
+      const layer = parse(getComputedStyle(node).backgroundColor)
+      if (layer.length && (layer[3] ?? 1) > 0) {
+        backdrop =
+          layer[3] === 1 || layer[3] === undefined ? layer.slice(0, 3) : over(layer, backdrop)
+        if ((layer[3] ?? 1) === 1) break
+      }
+      node = node.parentElement
+    }
+
+    const text = over(parse(getComputedStyle(el).color), backdrop)
+    const [bright, dark] = [luminance(text), luminance(backdrop)].sort((a, b) => b - a)
+    return (bright + 0.05) / (dark + 0.05)
+  })
+}
 
 /**
  * Le preflight Tailwind neutralise les styles par defaut des elements. Ce que
@@ -39,6 +80,14 @@ test.describe('Socle — typographie et surfaces', () => {
     expect(cardRadius).toBe('24px')
 
     await page.screenshot({ path: 'test-results/socle-hub.png', fullPage: true })
+
+    // Une pastille d'etat doit se lire. Les anciennes peignaient leur texte en
+    // clair pour un panneau sombre : posees sur une surface claire, elles
+    // devenaient invisibles — et `toBeVisible()` n'en disait rien.
+    await page.goto('/settings/cameras')
+    const badge = page.getByText('Connectee')
+    await expect(badge).toBeVisible()
+    expect(await contrastOf(badge)).toBeGreaterThan(3)
 
     // Le dernier ecran encore hors socle, tel que le preflight le laisse.
     await page.goto('/settings/systeme/avance')

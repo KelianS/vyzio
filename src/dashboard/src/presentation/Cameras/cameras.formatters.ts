@@ -1,3 +1,4 @@
+import type { BadgeTone } from '../../common/components/Badge'
 import type { Camera } from '../../domain/entities/Camera'
 
 export function formatCameraStatusLabel(status: string): string {
@@ -19,14 +20,8 @@ export function formatCameraAddress(camera: Camera): string {
   return `${camera.host}:${camera.port}`
 }
 
-export function formatStatusTone(camera: Camera): 'ok' | 'warning' | 'degraded' {
-  if (camera.status === 'online' && !camera.needsAttention) {
-    return 'ok'
-  }
-
-  if (camera.status === 'degraded') {
-    return 'degraded'
-  }
-
-  return 'warning'
+export function formatStatusTone(camera: Camera): BadgeTone {
+  if (camera.status === 'online' && !camera.needsAttention) return 'ok'
+  if (camera.status === 'offline') return 'danger'
+  return 'warn'
 }

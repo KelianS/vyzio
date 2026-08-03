@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { WifiOff } from 'lucide-react'
 import type { Camera } from '../../domain/entities/Camera'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
 
@@ -79,7 +80,12 @@ export function CameraLiveThumbnail({
             </span>
           </div>
         ) : deviceOffline ? (
-          <div className="live-thumb-offline">Hors ligne</div>
+          // Sur le cadre sombre, le texte reste clair — mais lisible, pas a
+          // demi efface comme l'ancienne pastille.
+          <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
+            <WifiOff className="size-4" aria-hidden="true" />
+            Hors ligne
+          </div>
         ) : (
           <>
             <img
