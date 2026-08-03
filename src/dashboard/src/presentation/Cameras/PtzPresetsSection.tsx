@@ -9,7 +9,8 @@ import type { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtz
 import { toAppError } from '../../common/errors/toAppError'
 import { appErrorMessage } from '../../common/errors/AppError'
 import { useToast } from '../../common/components/Toast'
-import { Btn } from '../../common/components/Btn'
+import { Badge } from '../../common/components/Badge'
+import { Button } from '../../common/ui/button'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]
 const CAPTURE_DELAY_MS = 1500
@@ -70,9 +71,7 @@ export function PtzPresetsSection({
     }
   }, [cameraId, getPtzPresets])
 
-  // Loads the presets on mount/camera change without a synchronous setState at the top of the
-  // effect (unlike `reload`, used by the user-triggered actions below): everything runs after the
-  // first `await`, so switching cameras doesn't flash "Chargement…" over the still-valid list.
+  // Everything runs after the first await, so switching cameras swaps the list without flashing "Chargement…".
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -153,46 +152,45 @@ export function PtzPresetsSection({
     presets.find((p) => p.presetId === presetId)
 
   return (
-    // Plus de surface propre : la page en fournit deja une, et l'empiler
-    // dessinait une boite dans une boite.
-    <div className="grid ptz-presets-section">
-      {/* Sans titre propre : « Pilotage » le nomme deja juste au-dessus. */}
-      <div className="ptz-presets-header">
-        {calibrated && currentPosition && (
-          <span className="ptz-position-indicator">
-            Position actuelle&nbsp;: {currentPosition.x},{currentPosition.y}
-          </span>
-        )}
-      </div>
-
-      {loading && (
-        <p className="camera-section-copy" style={{ margin: 0 }}>
-          Chargement…
-        </p>
+    // No own surface: the page provides one already.
+    <div className="flex flex-col gap-3">
+      {calibrated && currentPosition && (
+        <span className="text-sm text-muted-foreground">
+          Position actuelle : {currentPosition.x}, {currentPosition.y}
+        </span>
       )}
-      {error && <p className="ptz-presets-error">{error}</p>}
+
+      {loading && <p className="text-muted-foreground">Chargement…</p>}
+      {error && <p className="text-destructive">{error}</p>}
 
       {!loading && !error && (
         <>
           {!calibrated && (
-            <div className="ptz-calibration-banner">
-              <p className="ptz-calibration-text">
+            <div className="flex flex-col gap-2 rounded-inset border border-border bg-muted/40 p-3">
+              <p className="text-sm text-muted-foreground">
                 Calibrez la caméra pour établir la position de référence (butée mécanique), puis
                 naviguez vers la position souhaitée avant de définir un preset.
               </p>
-              <Btn variant="secondary" loading={calibrating} onClick={handleCalibrate}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                disabled={calibrating}
+                onClick={handleCalibrate}
+              >
                 {calibrating ? 'Calibration en cours…' : 'Calibrer (position 0)'}
-              </Btn>
+              </Button>
             </div>
           )}
 
           {calibrated && (
-            <p className="camera-section-copy" style={{ margin: 0, fontSize: '0.82rem' }}>
-              Orientez la caméra, puis «&nbsp;Définir ici&nbsp;» pour sauvegarder la position.
+            <p className="text-sm text-muted-foreground">
+              Orientez la caméra, puis « Définir ici » pour sauvegarder la position.
             </p>
           )}
 
-          <ul className="ptz-presets-list">
+          <ul className="divide-y divide-border">
             {ALL_PRESET_IDS.map((presetId) => {
               const preset = getPreset(presetId)
               const state = actionStates[presetId] ?? 'idle'
@@ -208,58 +206,60 @@ export function PtzPresetsSection({
               const thumbSrc = `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/thumbnail?t=${thumbVersions[presetId] ?? 1}`
 
               return (
-                <li key={presetId} className="ptz-preset-row">
-                  <div className="ptz-preset-thumb">
+                <li key={presetId} className="flex items-center gap-3 py-3">
+                  <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                     {preset && (
                       <img
                         key={thumbSrc}
                         src={thumbSrc}
                         alt=""
-                        className="ptz-preset-thumb-img"
+                        className="size-full object-cover"
                         onError={(e) => {
-                          ;(e.target as HTMLImageElement).style.visibility = 'hidden'
+                          e.currentTarget.style.visibility = 'hidden'
                         }}
                         onLoad={(e) => {
-                          ;(e.target as HTMLImageElement).style.visibility = 'visible'
+                          e.currentTarget.style.visibility = 'visible'
                         }}
                       />
                     )}
                   </div>
-                  <div className="ptz-preset-info">
-                    <span className="ptz-preset-label">
+
+                  <div className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5 font-medium">
                       {label}
-                      {reserved && <span className="ptz-preset-badge">réservé</span>}
+                      {reserved && <Badge tone="neutral">réservé</Badge>}
                     </span>
-                    {preset ? (
-                      <span className="ptz-preset-status ptz-preset-status--configured">
-                        {preset.native
+                    <span className="block text-sm text-muted-foreground">
+                      {preset
+                        ? preset.native
                           ? 'Natif'
-                          : `${preset.stepsX ?? 0}, ${preset.stepsY ?? 0} pas`}
-                      </span>
-                    ) : (
-                      <span className="ptz-preset-status">Non défini</span>
-                    )}
+                          : `${preset.stepsX ?? 0}, ${preset.stepsY ?? 0} pas`
+                        : 'Non défini'}
+                    </span>
                   </div>
-                  <div className="ptz-preset-actions">
+
+                  <div className="flex shrink-0 gap-2">
                     {preset && (
-                      <Btn
-                        variant="secondary"
-                        loading={state === 'going'}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         disabled={state !== 'idle'}
                         onClick={() => handleGoto(presetId)}
                       >
-                        Aller
-                      </Btn>
+                        {state === 'going' ? '…' : 'Aller'}
+                      </Button>
                     )}
-                    <Btn
+                    <Button
+                      type="button"
                       variant="ghost"
-                      loading={state === 'saving'}
+                      size="sm"
                       disabled={state !== 'idle' || !calibrated}
                       title={!calibrated ? "Calibrez la caméra d'abord" : undefined}
                       onClick={() => handleSave(presetId)}
                     >
-                      Définir ici
-                    </Btn>
+                      {state === 'saving' ? '…' : 'Définir ici'}
+                    </Button>
                   </div>
                 </li>
               )
