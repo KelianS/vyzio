@@ -28,8 +28,7 @@ export function CameraLiveThumbnail({
   const deviceOffline = !camera.connected
   const expandable = Boolean(onExpand) && !camera.privacyModeActive
 
-  // Resets the broken-image flag whenever the camera identity/connectivity actually changes,
-  // without the cascading extra render a setState-in-effect would cause (react-hooks/set-state-in-effect).
+  // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
   const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
   const [prevResetKey, setPrevResetKey] = useState(resetKey)
   if (resetKey !== prevResetKey) {
@@ -56,8 +55,7 @@ export function CameraLiveThumbnail({
 
   return (
     <article className="overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]">
-      {/* Only the frame is the button: the footer holds a real one (privacy
-          toggle), and nesting interactive controls confuses screen readers. */}
+      {/* Only the frame is the button — the footer's privacy toggle is a real one, and nesting is invalid. */}
       <div
         className={cn('relative aspect-video bg-surface-inverse', expandable && 'cursor-pointer')}
         onClick={camera.privacyModeActive ? undefined : onExpand}

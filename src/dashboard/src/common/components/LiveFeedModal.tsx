@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { PtzStep } from '../../domain/usecases/PtzStep'
 import type { PtzGoToPreset } from '../../domain/usecases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
+import type { PtzSaveCurrentAsPreset } from '../../domain/usecases/PtzSaveCurrentAsPreset'
 import type { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtzPresetThumbnail'
-import type { PtzPreset } from '../../domain/entities/PtzPreset'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
 import { PtzControlPanel } from './PtzControlPanel'
 
@@ -16,6 +16,7 @@ interface LiveFeedModalProps {
   ptzStep: PtzStep
   ptzGoToPreset: PtzGoToPreset
   getPtzPresets?: GetPtzPresets
+  ptzSaveCurrentAsPreset?: PtzSaveCurrentAsPreset
   capturePtzPresetThumbnail?: CapturePtzPresetThumbnail
 }
 
@@ -28,12 +29,12 @@ export function LiveFeedModal({
   ptzStep,
   ptzGoToPreset,
   getPtzPresets,
+  ptzSaveCurrentAsPreset,
   capturePtzPresetThumbnail,
 }: LiveFeedModalProps) {
   const [src, setSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
   )
-  const [presets, setPresets] = useState<PtzPreset[]>([])
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -45,11 +46,6 @@ export function LiveFeedModal({
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [cameraId, apiBaseUrl])
-
-  useEffect(() => {
-    if (!ptzSupported || !getPtzPresets) return
-    getPtzPresets.execute(cameraId).then((data) => setPresets(data.presets ?? []))
-  }, [cameraId, ptzSupported, getPtzPresets])
 
   return (
     <div className="flex max-w-[90vw] flex-col items-center gap-3">
@@ -74,9 +70,7 @@ export function LiveFeedModal({
         )}
       </div>
 
-      {/* Below the image, not overlaid on it: on a phone in portrait, stacking
-          the two on the video itself crowded the frame while the space below
-          it went unused. */}
+      {/* Below the image, not overlaid: stacking both on the video crowded a phone in portrait. */}
       {ptzSupported && (
         <div className="w-full max-w-full overflow-x-auto rounded-card bg-card p-3 text-card-foreground shadow-[var(--shadow-soft)]">
           <PtzControlPanel
@@ -84,7 +78,8 @@ export function LiveFeedModal({
             apiBaseUrl={apiBaseUrl}
             ptzStep={ptzStep}
             ptzGoToPreset={ptzGoToPreset}
-            presets={presets}
+            getPtzPresets={getPtzPresets}
+            ptzSaveCurrentAsPreset={ptzSaveCurrentAsPreset}
             compact
             capturePtzPresetThumbnail={capturePtzPresetThumbnail}
           />

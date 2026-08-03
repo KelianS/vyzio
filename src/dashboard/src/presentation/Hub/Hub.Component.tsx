@@ -78,6 +78,7 @@ export function HubView() {
               ptzStep={camerasContainer.ptzStep}
               ptzGoToPreset={camerasContainer.ptzGoToPreset}
               getPtzPresets={camerasContainer.getPtzPresets}
+              ptzSaveCurrentAsPreset={camerasContainer.ptzSaveCurrentAsPreset}
               capturePtzPresetThumbnail={camerasContainer.capturePtzPresetThumbnail}
             />
           ) : modalMedia.type === 'image' ? (

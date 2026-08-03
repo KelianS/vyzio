@@ -17,12 +17,15 @@ Le design MVP repose sur une interface claire, lumineuse et calme, avec une hier
 - `--bg-elevated: #fffaf2` : surfaces principales.
 - `--bg-strong: #1f3a33` : panneaux fonces structurants.
 - `--ink-strong: #18201d` : texte principal.
-- `--ink-soft: #53605b` : texte secondaire.
+- `--ink-soft: #606d67` : texte secondaire.
 - `--line-soft: #d8cfbf` : bordures discretes.
 - `--brand-moss: #2f6b59` : couleur produit principale.
 - `--brand-sand: #d9b37a` : accent chaud pour la mise en avant.
-- `--alert-high: #c65c3d` : evenement prioritaire.
+- `--alert-high: #b04c30` : evenement prioritaire.
 - `--alert-ok: #2d7a52` : etat sain.
+
+Valeurs du theme clair ; le theme sombre (memes roles, valeurs propres) vit dans `src/index.css`,
+seul foyer des deux themes.
 
 ## Regles d'usage
 
@@ -51,16 +54,15 @@ Le serif (`--heading`) est reserve aux titres ; il porte le caractere domestique
 
 ## Tokens d'interface
 
-Rayons (definis dans `src/index.css`) :
+Rayons (definis dans `src/index.css`, deux echelles distinctes — jamais confondues) :
 
-| Token | Valeur | Usage |
-| --- | --- | --- |
-| `--radius-xl` | `28px` | Grandes surfaces / modales pleines |
-| `--radius-lg` | `24px` | Cartes, panneaux, header |
-| `--radius-md` | `18px` | Sous-cartes, encarts |
-| `--radius-sm` | `8px` | Petits controles (boutons `.btn`, inputs, petites pastilles) |
-| `--radius-btn` | `12px` | Gros CTA (`min-height: 46px`) |
-| `999px` | pilule | **Reserve** : liens de navigation + pastilles d'etat (voir regle plus bas) |
+| Token | Usage |
+| --- | --- |
+| `--radius`, `--radius-sm/md/lg/xl` | Elements **cliquables** (boutons, inputs, petites pastilles) — echelle Tailwind `rounded-*` |
+| `--radius-inset`, `--radius-card`, `--radius-panel` | Surfaces **non cliquables** (cartes, panneaux, modales) |
+| `999px` | pilule — **reservee** : liens de navigation + pastilles d'etat (voir regle plus bas) |
+
+Valeurs exactes dans `src/index.css`, seul foyer — non recopiees ici pour ne pas driver a nouveau.
 
 - Ombre douce : `0 18px 50px rgba(24, 32, 29, 0.08)`
 - Espacement de section : `24px` a `32px`
@@ -70,7 +72,7 @@ Rayons (definis dans `src/index.css`) :
 Le rayon porte du sens et ne doit jamais etre choisi au hasard :
 
 - **Pilule (`999px`)** → element **non cliquable** : pastille d'etat, badge, lien de navigation du header. Une pilule signale « statut / navigation », jamais « bouton d'action ».
-- **Rectangle arrondi (`8px` / `12px`)** → element **cliquable** : tout bouton d'action.
+- **Rectangle arrondi** (`--radius-sm`/`--radius`) → element **cliquable** : tout bouton d'action.
 
 C'est ce contraste qui permet a l'utilisateur de distinguer d'un coup d'oeil une pastille « Connectee » (etat) d'un bouton « Enregistrer » (action). Ne jamais donner un `box-shadow` surelevee ni une bordure marquee a une pastille d'etat : cela la fait ressembler a un bouton.
 
@@ -104,138 +106,17 @@ Concretement, `SettingsPage` est une surface **sans titre** ; `SettingsSection` 
 l'interieur d'une page que si celle-ci traite plusieurs sujets, et ce titre nomme alors autre chose
 que la page. Un titre de section qui repete celui de la page signale qu'il fallait une page de plus.
 
-### Regles de transition
+### Style et theme
 
-`App.css` est **supprime**, pas reduit : deux systemes de style sans echeance en font trois. La
-migration va jusqu'au bout, ecrans de consultation compris.
-
-- **aucune regle nouvelle dans `App.css`** — tout ecran nouveau ou repris est en Tailwind ;
-- **un ecran repris emporte la suppression de ses regles**, donc `App.css` decroit de facon monotone ;
-  sa taille est l'indicateur d'avancement, sa disparition la condition de fin.
-
-Ce qui disparait, ce sont les **classes globales**. Les tokens restent en CSS : c'est le format natif
-de la configuration de theme, pas un reliquat.
+`App.css` (CSS global, classes nommees a la main) n'existe plus : un seul systeme de style, Tailwind
++ tokens ([ADR-42](adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md)).
+Aucune classe globale, aucune couleur ni rayon litteral dans un composant — toujours un token.
 
 Le **theme sombre est supporte partout**. Chaque couleur employee etant un token qui porte ses deux
 valeurs, un ecran sans version sombre est un ecran qui ecrit une couleur en dur.
 
 Le responsive suit l'echelle de la bibliotheque, appliquee du petit ecran vers le grand. Un point de
 rupture hors echelle est une exception a justifier.
-
-## Composants de la base historique
-
-Ces quatre primitives maison restent **la reference pour tout ecran non encore migre** ; elles sont
-remplacees ecran par ecran par le socle ci-dessus. Sur un ecran non migre, **toujours les reutiliser**
-plutot que recreer un `<button>` ou un `<select>` avec des classes ad hoc.
-
-### 1. Bouton — `<Btn>` (`src/common/components/Btn.tsx`)
-
-Composant unique pour toutes les actions inline. Etend `ButtonHTMLAttributes` (donc `onClick`, `disabled`, `title`, `type`, `style`… passent directement).
-
-```tsx
-import { Btn } from './Btn'
-
-<Btn variant="primary" size="md" loading={saving} onClick={handleSave}>
-  Enregistrer
-</Btn>
-```
-
-Props :
-
-- `variant` (defaut `secondary`) : `primary | secondary | ghost | danger-outline | danger`
-- `size` (defaut `sm`) : `sm` (28px) | `md` (34px)
-- `loading` : affiche `…` et desactive le bouton
-- `type` : `button` par defaut (mettre `type="submit"` dans un formulaire)
-
-Regles de choix du **variant** :
-
-| Variant | Quand l'utiliser |
-| --- | --- |
-| `primary` | Action principale d'un ecran/formulaire (vert plein). **Une seule par groupe.** |
-| `secondary` | Action neutre courante (Verifier, Rafraichir, Tester…). |
-| `ghost` | Action tertiaire / discrete (Annuler, Modifier, toggle). |
-| `danger-outline` | Action destructrice **reversible ou de premier niveau** (Desactiver, Supprimer le canal). Rouge contour. |
-| `danger` | Confirmation destructrice **finale**, typiquement dans une modale (rouge plein). |
-
-Regles de **taille** : `sm` pour les actions dans une liste / barre d'outils / ligne de tableau ; `md` pour les CTA de formulaire et les actions de modale.
-
-**A ne pas faire** : ne pas reintroduire les anciennes classes `.primary-cta` / `.secondary-cta` / `.danger-cta` / `.capability-btn` pour de nouveaux boutons. Elles subsistent uniquement pour les gros CTA pleine largeur et les liens `<a>` de navigation (Hub, Expert).
-
-### 2. Pastille d'etat (CSS, pas de composant)
-
-Indicateur **non cliquable** signalant un etat vivant (connexion, sante, actif/inactif). Toujours une **pilule** avec un **point de couleur en tete** (ajoute via `::before`, teinte = `currentColor`).
-
-```tsx
-<span className={`status-pill ${connected ? 'online' : 'warning'}`}>
-  {connected ? 'Connectée' : 'Hors ligne'}
-</span>
-
-<span className={`capability-status-badge capability-status-badge--${on ? 'on' : 'off'}`}>
-  {on ? 'Actif' : 'Inactif'}
-</span>
-```
-
-Classes disponibles :
-
-- `.status-pill` + `.online | .loading | .warning | .degraded` — etat systeme / camera.
-- `.capability-status-badge` + `--on | --off` — capacite activee/desactivee (`pointer-events: none`).
-
-Regles :
-
-- Une pastille d'etat **n'est jamais un bouton**. Si l'utilisateur doit agir, mettre un `<Btn>` **a cote**, pas transformer la pastille en action (cf. le duo statut « Actif » + bouton « Desactiver » dans `CapabilitySection`).
-- Reserver le point + pilule aux **etats** (on/off/sante). Les **libelles descriptifs** (protocole « ONVIF », qualification « Confirme », « Oui/Non ») restent des badges plats sans point (`.camera-support-badge`, `.camera-qualification-badge`, `.camera-rtsp-badge`).
-- Semantique couleur : vert = sain (`online`/`on`), ambre = attention (`warning`/`loading`), rouge = degrade (`degraded`).
-
-### 3. Modale de validation — `<ConfirmModal>` (`src/common/components/ConfirmModal.tsx`)
-
-A utiliser pour **toute action destructrice ou difficilement reversible** (suppression, desactivation, application en masse). Gere deja le focus trap, `Escape`, `Tab` et l'etat de chargement d'un `onConfirm` asynchrone.
-
-```tsx
-{confirmOpen && (
-  <ConfirmModal
-    title="Désactiver le PTZ ?"
-    body="Le panneau de contrôle sera masqué. La configuration reste sauvegardée."
-    confirmLabel="Désactiver"
-    tone="danger"
-    onConfirm={async () => { await disable(); setConfirmOpen(false) }}
-    onCancel={() => setConfirmOpen(false)}
-  />
-)}
-```
-
-Props : `title`, `body`, `confirmLabel`, `cancelLabel` (defaut `Annuler`), `tone` (`default | confirm | warn | danger`), `onConfirm`, `onCancel`, `loading`.
-
-Le `tone` mappe automatiquement le variant du bouton de confirmation :
-
-| `tone` | Bouton de confirmation | Quand |
-| --- | --- | --- |
-| `default` | `secondary` | Confirmation neutre (peu de risque). |
-| `confirm` | `primary` (vert plein) | Validation positive, pas destructrice (ex. lancer une action). |
-| `warn` | `danger-outline` | Action sensible mais reversible. |
-| `danger` | `danger` (rouge plein) | Suppression / action irreversible. |
-
-Regles :
-
-- **Quand ouvrir une modale** : action irreversible, action en masse (plusieurs cameras/profils), ou perte de donnees. Pour une action simple et reversible, un `<Btn>` direct suffit — ne pas sur-solliciter la confirmation.
-- Le bouton d'annulation est toujours `ghost` ; il ne doit jamais attirer l'oeil autant que la confirmation.
-- Le `onConfirm` peut etre `async` : la modale gere seule l'etat « Traitement… ».
-
-### 4. Selection — `<Select>` (`src/common/components/Select.tsx`)
-
-Wrapper fin sur `<select>` natif : etend `SelectHTMLAttributes` (donc `value`, `onChange`, `disabled`… passent directement), applique juste le style commun.
-
-```tsx
-import { Select } from './Select'
-
-<Select size="md" value={vendor} onChange={(e) => setVendor(e.target.value)}>
-  <option value="">Detection automatique</option>
-  <option value="v380_pro">V380 Pro</option>
-</Select>
-```
-
-Props : `size` (defaut `md`) : `sm | md` — mêmes hauteurs que `<Btn>`, pour aligner select et bouton sur une même ligne.
-
-Regle : ne jamais styler un `<select>` brut avec des classes ad hoc — passer par `<Select>`, même pour un usage ponctuel.
 
 ## Vocabulaire UX
 

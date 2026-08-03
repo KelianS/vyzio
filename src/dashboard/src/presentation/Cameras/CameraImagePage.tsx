@@ -9,10 +9,11 @@ import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
+import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
 import type { CameraImageSettings, IrCutMode } from '../../domain/entities/CameraImageSettings'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
-import { PtzPresetsSection } from './PtzPresetsSection'
+import { PtzCalibrationSection } from './PtzCalibrationSection'
 
 const ADJUSTMENTS = [
   { key: 'brightness', label: 'Luminosité' },
@@ -35,11 +36,7 @@ const DRAFT_LABELS: Record<keyof CameraImageSettings, string> = {
   irCutMode: 'Vision nocturne',
 }
 
-/**
- * Seule page a porter deux sujets — ce que la camera envoie, et comment on
- * l'oriente. Ils tiennent sur une seule surface : les couper en deux cadres
- * donnait deux titres dont l'un repetait l'onglet.
- */
+/** Seule page a porter deux sujets (image et pilotage) : les couper en deux cadres dupliquait le titre d'onglet. */
 export function CameraImagePage() {
   const camera = useOutletContext<Camera>()
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
@@ -65,8 +62,7 @@ function ImageAdjustments({ camera, children }: { camera: Camera; children: Reac
   const settings = useAsync(() => container.getCameraImageSettings.execute(camera.id), [camera.id])
   const bindings = useAsync(() => container.getCameraCapabilities.execute(camera.id), [camera.id])
 
-  // Le pilotage ne depend pas de ces reglages : il reste affiche pendant leur
-  // chargement, et meme s'ils echouent.
+  // Le pilotage ne depend pas de ces reglages : reste affiche pendant leur chargement, meme en echec.
   if (settings.loading) return <SettingsPage>Chargement…{children}</SettingsPage>
   if (settings.error || !settings.data) return <SettingsPage>{children}</SettingsPage>
 
@@ -74,9 +70,7 @@ function ImageAdjustments({ camera, children }: { camera: Camera; children: Reac
     <ImageForm
       camera={camera}
       settings={settings.data}
-      // La nettete et la vision nocturne ne sont pas confirmees inscriptibles en
-      // DVRIP (ADR-29) : mieux vaut ne pas offrir un reglage que la camera
-      // ignorerait en silence.
+      // Nettete/vision nocturne pas confirmees inscriptibles en DVRIP (ADR-29) : ne pas l'offrir en silence.
       writableBeyondBasics={
         bindings.data?.find((binding) => binding.capability === 'image_settings')?.protocol !==
         'dvrip'
@@ -161,16 +155,20 @@ function ImageForm({
 
 function PilotageSection({ camera }: { camera: Camera }) {
   const { apiBaseUrl, cameras: container } = useAppContainer()
+  const systemStats = useRootStore((s) => s.systemStats)
 
   return (
-    <SettingsSection title="Pilotage" lede="Positions enregistrées et calibration.">
-      <PtzPresetsSection
+    <SettingsSection title="Pilotage" lede="Calibration et positions enregistrées.">
+      <PtzCalibrationSection
         cameraId={camera.id}
+        cameraLabel={camera.displayName}
         apiBaseUrl={apiBaseUrl}
+        frigateStatus={systemStats?.status ?? 'active'}
         getPtzPresets={container.getPtzPresets}
-        ptzSaveCurrentAsPreset={container.ptzSaveCurrentAsPreset}
-        ptzGoToPreset={container.ptzGoToPreset}
         ptzCalibrate={container.ptzCalibrate}
+        ptzStep={container.ptzStep}
+        ptzGoToPreset={container.ptzGoToPreset}
+        ptzSaveCurrentAsPreset={container.ptzSaveCurrentAsPreset}
         capturePtzPresetThumbnail={container.capturePtzPresetThumbnail}
       />
     </SettingsSection>
