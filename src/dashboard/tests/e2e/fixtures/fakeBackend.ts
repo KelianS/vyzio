@@ -61,6 +61,9 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
 
 export interface FakeBackendState {
   cameras: FakeCamera[]
+  /** Ce qui attend un redemarrage de la surveillance (ADR-44). */
+  pendingChanges: string[]
+  restartFails: boolean
   profiles: {
     id: string
     name: string
@@ -126,11 +129,19 @@ const ONE_PIXEL_GIF = Buffer.from(
   'base64',
 )
 
+// Comme le vrai marqueur : les sujets s'accumulent sans se repeter, jusqu'au
+// redemarrage que l'utilisateur declenche (ADR-44).
+function markPending(state: FakeBackendState, scope: string) {
+  if (!state.pendingChanges.includes(scope)) state.pendingChanges.push(scope)
+}
+
 export function createFakeBackendState(
   overrides: Partial<FakeBackendState> = {},
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
+    pendingChanges: [],
+    restartFails: false,
     profiles: [],
     notificationChannels: {},
     detectionHistory: [],
@@ -196,6 +207,7 @@ export async function installFakeBackend(
         storage: { totalGb: 500, usedGb: 120, freeGb: 380 },
         cameras: state.cameras.map((c) => ({ camera: c.slug, fps: 10 })),
         detection: { hardware: 'cpu', targetFps: 5 },
+        pendingChanges: state.pendingChanges,
       })
     }
 
@@ -261,6 +273,15 @@ export async function installFakeBackend(
       })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
+      // Comme le vrai : un redemarrage reussi vide l'attente, un echec la laisse.
+      if (state.restartFails) {
+        return json(route, {
+          applied: false,
+          message: 'La surveillance n’a pas redémarré.',
+          cameraCount: state.cameras.length,
+        })
+      }
+      state.pendingChanges = []
       return json(route, {
         applied: true,
         message: 'Configuration appliquée',
@@ -341,6 +362,7 @@ export async function installFakeBackend(
         if (method === 'PUT') {
           const body = route.request().postDataJSON() as Record<string, unknown>
           state.detectionConfig = { ...state.detectionConfig, ...body }
+          markPending(state, 'detection')
         }
         const config = state.detectionConfig
         return json(route, {
@@ -410,6 +432,7 @@ export async function installFakeBackend(
           eventClip: { ...state.recordingSettings.eventClip, days: body.eventClipDays },
           maxDays: state.recordingSettings.maxDays,
         }
+        markPending(state, 'retention')
       }
       return json(route, state.recordingSettings)
     }

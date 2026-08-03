@@ -46,9 +46,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         if (validatedLabels.Count == 0)
             validatedLabels = ["person"];
 
-        // This request carries two different subjects, edited on two different pages. What waits for
-        // a restart has to be named as the user knows it, so the two are told apart here rather
-        // than lumped under whichever one happens to own the endpoint.
+        // One request, two subjects edited on two pages: told apart so the wait is named correctly.
         var detectionBefore = (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId);
         var retentionBefore = (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
 

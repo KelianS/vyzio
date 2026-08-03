@@ -10,10 +10,8 @@ import type { DraftChange } from './useSettingsDraft'
  * rend trouvable, singulierement sur mobile ou un bouton en fin de page est
  * hors ecran.
  *
- * Elle dit **ce qui a change**, et rien de plus. Enregistrer n'interrompt pas la
- * surveillance : l'interruption appartient au redemarrage, que l'utilisateur
- * declenche lui-meme
- * (ADR-44).
+ * Elle dit **ce qui a change**, et rien de plus : enregistrer n'interrompt pas
+ * la surveillance, l'interruption appartient au redemarrage (ADR-44).
  */
 export function SettingsDraftBar({
   changes,

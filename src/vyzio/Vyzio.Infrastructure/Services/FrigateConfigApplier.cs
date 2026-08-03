@@ -40,8 +40,7 @@ public sealed class FrigateConfigApplier(
         MarkPending(scopes);
     }
 
-    // Generating the file and recording that it is waiting are two different facts: ApplyAsync
-    // writes and restarts in one go, so marking there would only create a marker to erase.
+    // ApplyAsync writes and restarts in one go, so marking there would only create a marker to erase.
     private async Task<bool> WriteDocumentAsync(IReadOnlyList<Camera> cameras, CancellationToken ct)
     {
         var configPath = settings.Frigate.ConfigPath;
@@ -73,8 +72,7 @@ public sealed class FrigateConfigApplier(
         return true;
     }
 
-    // Scopes accumulate: several settings can be changed across several pages before the user
-    // decides to restart, and each has to keep its name until then.
+    // Scopes accumulate: several pages can be edited before the user decides to restart.
     private void MarkPending(IReadOnlyList<SurveillanceChangeScope> scopes)
     {
         if (PendingMarkerPath is not { } path) return;

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ApplyCameraConfiguration } from './ApplyCameraConfiguration'
+import { RestartSurveillance } from './RestartSurveillance'
 import type { CameraRepository } from '../ports/CameraRepository'
 
-describe('ApplyCameraConfiguration', () => {
-  it('delegates global configuration apply to the camera repository', async () => {
+describe('RestartSurveillance', () => {
+  it('delegates the installation-wide restart to the camera repository', async () => {
     const result = {
       applied: true,
       message: 'Configuration appliquee pour 2 cameras.',
@@ -25,7 +25,7 @@ describe('ApplyCameraConfiguration', () => {
       getVendorAssistance: vi.fn(),
     }
 
-    const useCase = new ApplyCameraConfiguration(repository as unknown as CameraRepository)
+    const useCase = new RestartSurveillance(repository as unknown as CameraRepository)
 
     await expect(useCase.execute()).resolves.toEqual(result)
     expect(repository.applyConfiguration).toHaveBeenCalledWith()

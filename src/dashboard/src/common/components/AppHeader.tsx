@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { cn } from '../ui/utils'
 
@@ -21,7 +22,8 @@ function isActive(pathname: string, path: string) {
   return path === '/' ? pathname === '/' : pathname.startsWith(path)
 }
 
-export function AppHeader() {
+// `trailing` is a slot, not a nav entry: it keeps the bar closed and dependency-free.
+export function AppHeader({ trailing }: { trailing?: ReactNode }) {
   const { pathname } = useLocation()
 
   const linkClass = (active: boolean) =>
@@ -76,6 +78,8 @@ export function AppHeader() {
           {SETTINGS_ITEM.label}
         </Link>
       </nav>
+
+      {trailing}
     </header>
   )
 }

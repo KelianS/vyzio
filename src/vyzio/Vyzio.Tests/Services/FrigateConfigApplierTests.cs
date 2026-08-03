@@ -99,8 +99,7 @@ public class FrigateConfigApplierTests : IDisposable
             new StubRecordingSettingsRepository(RecordingSettings.CreateDefault()));
     }
 
-    // Restarting is the user's decision (ADR-44), so between a save and that decision the wait has
-    // to survive *and* keep the name of what is waiting. These four tests are that contract.
+    // The wait must survive between a save and the user's restart, and keep what it is waiting on.
 
     [Fact]
     public void Nothing_waits_before_anything_is_written()

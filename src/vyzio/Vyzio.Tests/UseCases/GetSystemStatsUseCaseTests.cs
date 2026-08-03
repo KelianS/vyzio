@@ -28,8 +28,6 @@ public class GetSystemStatsUseCaseTests
 
         var result = await _sut.ExecuteAsync();
 
-        // Naming them is the point: the user decides when to restart, so the prompt has to say
-        // what it would take up (ADR-44).
         Assert.Equal(["detection", "retention"], result.PendingChanges);
     }
 

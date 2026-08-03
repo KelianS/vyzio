@@ -82,9 +82,18 @@ réglages** vers la consultation : là, l'utilisateur a fini de régler, et la q
 ### Le déclencheur ne s'allume que si un redémarrage est requis
 
 Notifications, profils, positions PTZ et réglages d'image ne touchent pas la configuration du moteur.
-Le besoin posé par ADR-41 survit et devient indispensable : **l'API doit dire, avant enregistrement,
-si un réglage exige un redémarrage.** Sans cela le déclencheur crie au loup, et l'état nommé
-ci-dessus ment.
+Un déclencheur qui apparaîtrait après ces réglages-là crierait au loup, et l'état nommé ci-dessus
+mentirait.
+
+La garantie est **structurelle** plutôt que déclarative : ce qui attend est nourri par les écritures
+réellement faites dans la configuration, chacune nommant son sujet. Un réglage qui n'écrit pas ne
+peut donc pas convoquer le déclencheur, et un enregistrement qui ne change rien ne le convoque pas
+non plus.
+
+> ADR-41 demandait en plus que l'API dise **avant** enregistrement si un réglage exigeait un
+> redémarrage, pour que le brouillon en annonce le coût. Ce besoin **disparaît avec la présente
+> décision** : enregistrer ne coûte plus rien à annoncer. Construire cette réponse ne servirait
+> aucun lecteur.
 
 ### Le vocabulaire nomme l'effet, jamais la technique
 

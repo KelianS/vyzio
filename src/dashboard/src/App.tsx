@@ -10,6 +10,8 @@ import {
   useAppContainer,
 } from './infrastructure/providers/AppContainerContext'
 import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/Settings/settings.rubrics'
+import { RestartSurveillanceTrigger } from './presentation/Surveillance/RestartSurveillanceTrigger'
+import { LeavingSettingsPrompt } from './presentation/Surveillance/LeavingSettingsPrompt'
 
 const HubView = lazy(() =>
   import('./presentation/Hub/Hub.Component').then((m) => ({ default: m.HubView })),
@@ -85,7 +87,10 @@ function AppShell() {
 
   return (
     <div className="layout-root">
-      <AppHeader />
+      <AppHeader trailing={<RestartSurveillanceTrigger />} />
+      {/* Monte a la racine : la question se pose au moment ou l'on quitte les
+          reglages, ce qu'aucun ecran de reglages ne peut observer seul. */}
+      <LeavingSettingsPrompt />
       <Suspense fallback={null}>
         <Outlet />
       </Suspense>

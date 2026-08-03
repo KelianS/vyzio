@@ -6,6 +6,7 @@ import type { SettingDeclaration } from '../../common/settings/settingDeclaratio
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
+import { useSurveillanceRefresh } from '../Surveillance/useSurveillanceRefresh'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import type {
   RecordingSettings,
@@ -70,6 +71,7 @@ function ConservationForm({
   save: SaveRecordingSettings
 }) {
   const { toast } = useToast()
+  const refreshSurveillance = useSurveillanceRefresh()
 
   const draft = useSettingsDraft<RecordingSettingsUpdate>({
     saved: {
@@ -84,6 +86,7 @@ function ConservationForm({
     onSuccess: () => {
       draft.accept()
       toast('Durées de conservation enregistrées.', 'success')
+      refreshSurveillance()
       reload()
     },
   })

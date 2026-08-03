@@ -322,7 +322,7 @@ export function buildCamerasPresenter({ container, dispatch, toast }: CamerasPre
       dispatch({ type: 'APPLY_STARTED' })
       const scope = selectionKind === 'camera' ? 'detail' : 'form'
       try {
-        const result = await container.applyCameraConfiguration.execute()
+        const result = await container.restartSurveillance.execute()
         reloadCameras()
         if (!result.applied) {
           dispatch({ type: 'APPLY_NOT_APPLIED', scope, message: result.message })

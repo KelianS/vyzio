@@ -7,6 +7,7 @@ import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
+import { useSurveillanceRefresh } from '../Surveillance/useSurveillanceRefresh'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { Button } from '../../common/ui/button'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
@@ -42,6 +43,7 @@ export function CameraConnectionPage() {
 function ConnectionForm({ camera }: { camera: Camera }) {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
+  const refreshSurveillance = useSurveillanceRefresh()
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -81,6 +83,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
       onSuccess: () => {
         draft.accept()
         toast('Connexion enregistrée.', 'success')
+        refreshSurveillance()
         reloadCameras()
       },
     },

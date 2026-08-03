@@ -6,6 +6,7 @@ import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
+import { useSurveillanceRefresh } from '../Surveillance/useSurveillanceRefresh'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import type { DetectionConfig } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
@@ -51,6 +52,7 @@ function DetectionForm({
 }) {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
+  const refreshSurveillance = useSurveillanceRefresh()
 
   const draft = useSettingsDraft<DetectionUpdate>({
     saved: {
@@ -75,6 +77,7 @@ function DetectionForm({
       onSuccess: () => {
         draft.accept()
         toast('Réglages de détection enregistrés.', 'success')
+        refreshSurveillance()
         reload()
       },
     },

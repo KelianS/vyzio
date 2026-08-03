@@ -1,5 +1,5 @@
 import { ApplyCamera } from '../../domain/usecases/ApplyCamera'
-import { ApplyCameraConfiguration } from '../../domain/usecases/ApplyCameraConfiguration'
+import { RestartSurveillance } from '../../domain/usecases/RestartSurveillance'
 import { BatchToggleCameraPrivacyMode } from '../../domain/usecases/BatchToggleCameraPrivacyMode'
 import { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtzPresetThumbnail'
 import { ConfigureCameraCapability } from '../../domain/usecases/ConfigureCameraCapability'
@@ -48,7 +48,7 @@ export interface CamerasContainer {
   verifyDraftCamera: VerifyDraftCamera
   verifyCamera: VerifyCamera
   applyCamera: ApplyCamera
-  applyCameraConfiguration: ApplyCameraConfiguration
+  restartSurveillance: RestartSurveillance
   deleteCamera: DeleteCamera
   toggleCameraPrivacyMode: ToggleCameraPrivacyMode
   batchToggleCameraPrivacyMode: BatchToggleCameraPrivacyMode
@@ -92,7 +92,7 @@ export function makeCamerasContainer(
     verifyDraftCamera: new VerifyDraftCamera(cameraRepository),
     verifyCamera: new VerifyCamera(cameraRepository),
     applyCamera: new ApplyCamera(cameraRepository),
-    applyCameraConfiguration: new ApplyCameraConfiguration(cameraRepository),
+    restartSurveillance: new RestartSurveillance(cameraRepository),
     deleteCamera: new DeleteCamera(cameraRepository),
     toggleCameraPrivacyMode: new ToggleCameraPrivacyMode(cameraRepository),
     batchToggleCameraPrivacyMode: new BatchToggleCameraPrivacyMode(cameraRepository),

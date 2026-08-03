@@ -59,6 +59,37 @@ public class SaveCameraDetectionConfigUseCaseTests
         return stream;
     }
 
+    // The restart prompt only appears when something genuinely waits, and names the right subject.
+
+    [Fact]
+    public async Task A_save_that_changes_nothing_leaves_nothing_waiting_for_a_restart()
+    {
+        var camera = GivenCamera();
+        camera.DetectionLabelsJson = "[\"person\"]";
+
+        await _sut.ExecuteAsync(camera.Id, Request());
+
+        await _configApplier.Received(1).WriteConfigAsync(
+            Arg.Any<IReadOnlyList<Camera>>(),
+            Arg.Is<IReadOnlyList<SurveillanceChangeScope>>(scopes => scopes.Count == 0),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Changing_only_a_retention_override_names_retention_not_detection()
+    {
+        var camera = GivenCamera();
+        camera.DetectionLabelsJson = "[\"person\"]";
+
+        await _sut.ExecuteAsync(camera.Id, Request(motionDays: 30));
+
+        await _configApplier.Received(1).WriteConfigAsync(
+            Arg.Any<IReadOnlyList<Camera>>(),
+            Arg.Is<IReadOnlyList<SurveillanceChangeScope>>(scopes =>
+                scopes.Count == 1 && scopes[0] == SurveillanceChangeScope.Retention),
+            Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task Choosing_a_stream_of_this_camera_stores_it_as_the_analysis_source()
     {
