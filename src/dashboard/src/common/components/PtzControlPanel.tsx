@@ -1,4 +1,13 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type TouchEvent,
+} from 'react'
+import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from 'lucide-react'
+import { cn } from '../ui/utils'
 import type { PtzStep } from '../../domain/usecases/PtzStep'
 import type { PtzGoToPreset } from '../../domain/usecases/PtzGoToPreset'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
@@ -18,6 +27,40 @@ interface PtzControlPanelProps {
 }
 
 type Direction = 'Up' | 'Down' | 'Left' | 'Right' | 'UpLeft' | 'UpRight' | 'DownLeft' | 'DownRight'
+
+function DirButton({
+  cellSize,
+  diagonal,
+  title,
+  children,
+  ...handlers
+}: {
+  cellSize: string
+  diagonal?: boolean
+  title: string
+  children: ReactNode
+  onMouseDown: () => void
+  onMouseUp: () => void
+  onMouseLeave: () => void
+  onTouchStart: (e: TouchEvent) => void
+  onTouchEnd: () => void
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      {...handlers}
+      className={cn(
+        cellSize,
+        'flex items-center justify-center rounded-none bg-muted text-foreground transition-colors',
+        'hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground',
+        diagonal && 'text-xs opacity-75',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
 
 // Tap: single step of STEP_MS on server (Move → wait → Stop in one HTTP call).
 // Hold: once HOLD_THRESHOLD_MS has elapsed, chain repeated step calls until release.
@@ -124,69 +167,49 @@ export function PtzControlPanel({
     onMouseDown: () => handlePress(d),
     onMouseUp: handleRelease,
     onMouseLeave: handleRelease,
-    onTouchStart: (e: React.TouchEvent) => {
+    onTouchStart: (e: TouchEvent) => {
       e.preventDefault()
       handlePress(d)
     },
     onTouchEnd: handleRelease,
   })
 
+  const cellSize = compact ? 'size-[34px]' : 'size-10'
+
   return (
-    <div className={`ptz-panel${compact ? ' ptz-panel--compact' : ''}`}>
-      <div className="ptz-panel-inner">
-        <div className="ptz-grid">
-          <button
-            type="button"
-            className="ptz-btn ptz-btn--diag"
-            title="Haut-gauche"
-            {...dir('UpLeft')}
-          >
-            ↖
-          </button>
-          <button type="button" className="ptz-btn" title="Haut" {...dir('Up')}>
-            ↑
-          </button>
-          <button
-            type="button"
-            className="ptz-btn ptz-btn--diag"
-            title="Haut-droite"
-            {...dir('UpRight')}
-          >
-            ↗
-          </button>
+    <div className={cn('flex items-center gap-2.5', compact && 'gap-1.5')}>
+      <div className={cn('grid overflow-hidden rounded-md', 'grid-cols-3 grid-rows-3')}>
+        <DirButton cellSize={cellSize} diagonal title="Haut-gauche" {...dir('UpLeft')}>
+          ↖
+        </DirButton>
+        <DirButton cellSize={cellSize} title="Haut" {...dir('Up')}>
+          <ArrowUp className="size-4" aria-hidden="true" />
+        </DirButton>
+        <DirButton cellSize={cellSize} diagonal title="Haut-droite" {...dir('UpRight')}>
+          ↗
+        </DirButton>
 
-          <button type="button" className="ptz-btn" title="Gauche" {...dir('Left')}>
-            ←
-          </button>
-          <div className="ptz-btn ptz-btn--placeholder" aria-hidden />
-          <button type="button" className="ptz-btn" title="Droite" {...dir('Right')}>
-            →
-          </button>
+        <DirButton cellSize={cellSize} title="Gauche" {...dir('Left')}>
+          <ArrowLeft className="size-4" aria-hidden="true" />
+        </DirButton>
+        <div className={cn(cellSize, 'pointer-events-none bg-transparent')} aria-hidden="true" />
+        <DirButton cellSize={cellSize} title="Droite" {...dir('Right')}>
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </DirButton>
 
-          <button
-            type="button"
-            className="ptz-btn ptz-btn--diag"
-            title="Bas-gauche"
-            {...dir('DownLeft')}
-          >
-            ↙
-          </button>
-          <button type="button" className="ptz-btn" title="Bas" {...dir('Down')}>
-            ↓
-          </button>
-          <button
-            type="button"
-            className="ptz-btn ptz-btn--diag"
-            title="Bas-droite"
-            {...dir('DownRight')}
-          >
-            ↘
-          </button>
-        </div>
+        <DirButton cellSize={cellSize} diagonal title="Bas-gauche" {...dir('DownLeft')}>
+          ↙
+        </DirButton>
+        <DirButton cellSize={cellSize} title="Bas" {...dir('Down')}>
+          <ArrowDown className="size-4" aria-hidden="true" />
+        </DirButton>
+        <DirButton cellSize={cellSize} diagonal title="Bas-droite" {...dir('DownRight')}>
+          ↘
+        </DirButton>
       </div>
 
       {presets.length > 0 && (
-        <div className="ptz-preset-shortcuts">
+        <div className="flex flex-wrap content-start gap-1.5">
           {presets.map((p) => {
             const version = thumbVersions[p.presetId] ?? 1
             const thumbKey = `${p.presetId}:${version}`
@@ -200,17 +223,17 @@ export function PtzControlPanel({
               <button
                 key={p.presetId}
                 type="button"
-                className="ptz-return-btn"
                 disabled={gotoLoading !== null}
                 onClick={() => handleGotoPreset(p.presetId)}
                 title={`Aller à : ${p.label}`}
+                className="flex flex-col items-start gap-0.5 rounded-sm border border-border bg-muted px-2.5 py-1 text-left text-xs text-foreground hover:bg-muted/70 disabled:opacity-50"
               >
                 {thumbSrc && (
                   <img
                     key={thumbSrc}
                     src={thumbSrc}
                     alt=""
-                    className="ptz-shortcut-thumb"
+                    className="block h-[42px] w-full rounded-xs object-cover"
                     style={thumbLoaded ? undefined : { height: 0 }}
                     onLoad={() => setLoadedThumbs((v) => ({ ...v, [thumbKey]: true }))}
                     onError={() => {}}

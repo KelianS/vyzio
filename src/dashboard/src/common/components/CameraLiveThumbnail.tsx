@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import { WifiOff } from 'lucide-react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { EyeOff, Lock, WifiOff } from 'lucide-react'
+import { Button } from '../ui/button'
+import { cn } from '../ui/utils'
 import type { Camera } from '../../domain/entities/Camera'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
 
@@ -24,6 +26,7 @@ export function CameraLiveThumbnail({
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
+  const expandable = Boolean(onExpand) && !camera.privacyModeActive
 
   // Resets the broken-image flag whenever the camera identity/connectivity actually changes,
   // without the cascading extra render a setState-in-effect would cause (react-hooks/set-state-in-effect).
@@ -46,41 +49,43 @@ export function CameraLiveThumbnail({
     }
   }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
 
-  const handleTogglePrivacy = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  function handleTogglePrivacy(event: MouseEvent) {
+    event.stopPropagation()
     onTogglePrivacy?.(camera, !camera.privacyModeActive)
   }
 
   return (
     <article
-      className={`live-thumb${deviceOffline ? ' live-thumb--offline' : ''}${camera.privacyModeActive ? (camera.privacyVendorCut ? ' live-thumb--privacy-hw' : ' live-thumb--privacy') : ''}${onExpand && !camera.privacyModeActive ? ' live-thumb--expandable' : ''}`}
+      className={cn(
+        'overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]',
+        expandable && 'cursor-pointer',
+      )}
       onClick={camera.privacyModeActive ? undefined : onExpand}
-      role={onExpand && !camera.privacyModeActive ? 'button' : undefined}
-      tabIndex={onExpand && !camera.privacyModeActive ? 0 : undefined}
+      role={expandable ? 'button' : undefined}
+      tabIndex={expandable ? 0 : undefined}
       onKeyDown={
-        onExpand && !camera.privacyModeActive
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') onExpand()
+        expandable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') onExpand?.()
             }
           : undefined
       }
     >
-      <div className="live-thumb-frame">
+      <div className="relative aspect-video bg-surface-inverse">
         {camera.privacyModeActive ? (
-          <div
-            className={`live-thumb-privacy-screen${camera.privacyVendorCut ? ' live-thumb-privacy-screen--hw' : ''}`}
-          >
-            <span className="live-thumb-privacy-icon" aria-hidden="true">
-              {camera.privacyVendorCut ? '🔒' : '🔇'}
-            </span>
-            <span className="live-thumb-privacy-label">
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
+            {camera.privacyVendorCut ? (
+              <Lock className="size-5" aria-hidden="true" />
+            ) : (
+              <EyeOff className="size-5" aria-hidden="true" />
+            )}
+            <span className="text-sm font-medium">
               {camera.privacyVendorCut
                 ? 'Caméra coupée — matériel'
                 : 'Caméra en pause — enregistrement désactivé'}
             </span>
           </div>
         ) : deviceOffline ? (
-          // Light text on the dark frame, but fully opaque unlike the old faded pill.
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
             <WifiOff className="size-4" aria-hidden="true" />
             Hors ligne
@@ -90,43 +95,49 @@ export function CameraLiveThumbnail({
             <img
               src={imgSrc}
               alt={camera.displayName}
-              className="live-thumb-img"
+              className="size-full object-cover"
               onError={() => setImageError(true)}
               onLoad={() => setImageError(false)}
             />
             {(frigateStatus === 'restarting' || imageError) && (
-              <div className="media-loading-overlay" aria-hidden="true">
-                <span className="media-loading-spinner" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-inverse/70">
+                <span
+                  className="size-6 animate-spin rounded-full border-2 border-surface-inverse-foreground/30 border-t-surface-inverse-foreground"
+                  aria-hidden="true"
+                />
                 {frigateStatus === 'restarting' && (
-                  <span className="media-loading-label">Redémarrage en cours…</span>
+                  <span className="text-sm text-surface-inverse-foreground">
+                    Redémarrage en cours…
+                  </span>
                 )}
               </div>
             )}
           </>
         )}
       </div>
-      <div className="live-thumb-footer">
-        {camera.privacyModeActive ? (
-          <span
-            className={`live-dot${camera.privacyVendorCut ? ' live-dot--privacy-hw' : ' live-dot--privacy'}`}
-            aria-hidden="true"
-          />
-        ) : (
-          <span className={`live-dot${deviceOffline ? '' : ' live-dot--on'}`} aria-hidden="true" />
-        )}
-        <span className="live-thumb-name">{camera.displayName}</span>
+
+      <div className="flex items-center gap-2 p-3">
+        <span
+          className={cn(
+            'size-2 shrink-0 rounded-full',
+            camera.privacyModeActive || deviceOffline ? 'bg-muted-foreground/40' : 'bg-success',
+          )}
+          aria-hidden="true"
+        />
+        <span className="min-w-0 flex-1 truncate font-medium">{camera.displayName}</span>
         {camera.privacyModeSource === 'schedule' && (
           <span
-            className="live-thumb-badge live-thumb-badge--schedule"
+            className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
             title="Activé par planification"
           >
             planifié
           </span>
         )}
         {onTogglePrivacy && (
-          <button
+          <Button
             type="button"
-            className={`live-thumb-privacy-btn${camera.privacyModeActive ? ' live-thumb-privacy-btn--active' : ''}`}
+            variant={camera.privacyModeActive ? 'default' : 'outline'}
+            size="sm"
             onClick={handleTogglePrivacy}
             title={
               camera.privacyModeActive
@@ -135,7 +146,7 @@ export function CameraLiveThumbnail({
             }
           >
             {camera.privacyModeActive ? 'Réactiver' : 'Pause'}
-          </button>
+          </Button>
         )}
       </div>
     </article>
