@@ -1,11 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
-/**
- * Redemarrer la surveillance est un acte de l'utilisateur (ADR-44) : enregistrer
- * n'interrompt rien, l'attente se voit et se nomme, et la question ne se pose
- * qu'en quittant les reglages.
- */
+// Restarting is the user's act (ADR-44): saving interrupts nothing, and the question is only asked on the way out.
 test.describe('Redémarrage de la surveillance', () => {
   const trigger = (name = /Redémarrer la surveillance/) => ({ name })
 
@@ -13,12 +9,11 @@ test.describe('Redémarrage de la surveillance', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/conservation')
 
-    // L'absence du declencheur est une information : tout ce qui est enregistre
-    // est en service.
+    // Its absence is the information: everything saved is in service.
     await expect(page.getByRole('button', trigger())).toHaveCount(0)
   })
 
-  test('user_When saving a setting_Should be told what waits, without anything being interrupted', async ({
+  test('user_When saving a setting_Should be offered a restart, without anything being interrupted', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -39,15 +34,14 @@ test.describe('Redémarrage de la surveillance', () => {
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
-    state.pendingChanges = ['detection', 'retention']
+    state.pendingChanges = true
     await installFakeBackend(page, state)
     await page.goto('/settings/conservation')
 
     await page.getByRole('button', trigger()).click()
 
-    // Ce qui attend est nomme, et le cout est dit avant d'agir.
+    // The cost is stated before acting.
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('Détection et Conservation attendent le redémarrage.')
     await expect(dialog).toContainText('La surveillance s’interrompt quelques secondes.')
 
     await dialog.getByRole('button', { name: 'Redémarrer' }).click()
@@ -58,7 +52,7 @@ test.describe('Redémarrage de la surveillance', () => {
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
-    state.pendingChanges = ['detection']
+    state.pendingChanges = true
     state.restartFails = true
     await installFakeBackend(page, state)
     await page.goto('/settings/conservation')
@@ -66,8 +60,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await page.getByRole('button', trigger()).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Redémarrer' }).click()
 
-    // Vyzio et la surveillance divergent : le dire une fois puis l'oublier
-    // laisserait croire que les reglages sont repris.
+    // Saying it once then forgetting would let the user believe the settings were taken up.
     const failed = page.getByRole('button', { name: /Redémarrage échoué/ })
     await expect(failed).toBeVisible()
     await page.getByRole('link', { name: 'Accueil' }).click()
@@ -78,12 +71,11 @@ test.describe('Redémarrage de la surveillance', () => {
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
-    state.pendingChanges = ['detection']
+    state.pendingChanges = true
     await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/detection')
 
-    // Le geste le plus courant quand on regle : poser la question ici serait du
-    // harcelement, et s'empilerait avec la confirmation de brouillon.
+    // The most common gesture while configuring: asking here would nag, and stack with the draft guard.
     await page.getByRole('link', { name: 'Conservation', exact: true }).click()
     await expect(page).toHaveURL('/settings/cameras/camera-1/conservation')
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -93,7 +85,7 @@ test.describe('Redémarrage de la surveillance', () => {
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
-    state.pendingChanges = ['detection']
+    state.pendingChanges = true
     await installFakeBackend(page, state)
     await page.goto('/settings/conservation')
 
@@ -102,8 +94,7 @@ test.describe('Redémarrage de la surveillance', () => {
     const dialog = page.getByRole('dialog')
     await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
 
-    // « Plus tard » laisse partir : l'ecart est autorise, rien n'oblige a
-    // reconcilier tout de suite.
+    // « Plus tard » lets through too: the gap is allowed.
     await dialog.getByRole('button', { name: 'Plus tard' }).click()
     await expect(page).toHaveURL('/')
     await expect(page.getByRole('button', trigger())).toBeVisible()

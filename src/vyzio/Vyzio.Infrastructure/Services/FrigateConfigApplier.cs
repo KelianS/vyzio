@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -30,14 +29,14 @@ public sealed class FrigateConfigApplier(
         }
     }
 
-    public IReadOnlyList<SurveillanceChangeScope> PendingChanges => ReadPending();
+    public bool HasPendingChanges => PendingMarkerPath is { } path && File.Exists(path);
 
-    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, IReadOnlyList<SurveillanceChangeScope> scopes, CancellationToken ct = default)
+    public async Task WriteConfigAsync(IReadOnlyList<Camera> cameras, bool changed, CancellationToken ct = default)
     {
         if (!await WriteDocumentAsync(cameras, ct))
             return;
 
-        MarkPending(scopes);
+        if (changed) MarkPending();
     }
 
     // ApplyAsync writes and restarts in one go, so marking there would only create a marker to erase.
@@ -72,37 +71,11 @@ public sealed class FrigateConfigApplier(
         return true;
     }
 
-    // Scopes accumulate: several pages can be edited before the user decides to restart.
-    private void MarkPending(IReadOnlyList<SurveillanceChangeScope> scopes)
+    private void MarkPending()
     {
         if (PendingMarkerPath is not { } path) return;
-
-        var known = ReadPending();
-        var merged = known.Concat(scopes).Distinct().ToList();
-        if (merged.Count == known.Count) return;
-
-        try { File.WriteAllLines(path, merged.Select(SnakeCaseEnum.ToSnakeCase)); }
-        catch (IOException) { /* naming the wait is a convenience, never a reason to fail a save */ }
-    }
-
-    private IReadOnlyList<SurveillanceChangeScope> ReadPending()
-    {
-        if (PendingMarkerPath is not { } path || !File.Exists(path)) return [];
-
-        try
-        {
-            return File.ReadAllLines(path)
-                .Select(line => SnakeCaseEnum.TryFromSnakeCase<SurveillanceChangeScope>(line.Trim(), out var scope)
-                    ? scope
-                    : (SurveillanceChangeScope?)null)
-                .OfType<SurveillanceChangeScope>()
-                .Distinct()
-                .ToList();
-        }
-        catch (IOException)
-        {
-            return [];
-        }
+        try { File.WriteAllText(path, string.Empty); }
+        catch (IOException) { /* the prompt is a convenience, never a reason to fail a save */ }
     }
 
     private void ClearPending()

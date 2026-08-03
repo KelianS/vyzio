@@ -46,7 +46,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         if (validatedLabels.Count == 0)
             validatedLabels = ["person"];
 
-        // One request, two subjects edited on two pages: told apart so the wait is named correctly.
+        // A save that changes nothing must not summon the restart prompt.
         var detectionBefore = (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId);
         var retentionBefore = (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
 
@@ -61,11 +61,9 @@ public sealed class SaveCameraDetectionConfigUseCase(
         var sensitivityChanged = ApplySensitivity(camera, request);
         ApplyDetectStream(camera, request);
 
-        var scopes = new List<SurveillanceChangeScope>();
-        if (detectionBefore != (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId))
-            scopes.Add(SurveillanceChangeScope.Detection);
-        if (retentionBefore != (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride))
-            scopes.Add(SurveillanceChangeScope.Retention);
+        var changed =
+            detectionBefore != (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId)
+            || retentionBefore != (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
@@ -76,7 +74,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         if (isLive)
         {
             var allCameras = await cameras.GetAllAsync(ct);
-            await frigateConfigApplier.WriteConfigAsync(allCameras, scopes, ct);
+            await frigateConfigApplier.WriteConfigAsync(allCameras, changed, ct);
 
             // Writing the config alone would only take effect on the next Frigate restart; the
             // runtime command makes a user-chosen level apply straight away (ADR-35).

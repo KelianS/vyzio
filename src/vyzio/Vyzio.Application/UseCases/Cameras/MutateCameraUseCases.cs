@@ -282,7 +282,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         var applicable = catalog
             .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, [SurveillanceChangeScope.Cameras], ct);
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
         return CameraDto.From(camera);
     }
@@ -361,7 +361,7 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfi
         var applicable = catalog
             .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, [SurveillanceChangeScope.Cameras], ct);
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
         return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" queued for removal. Apply the configuration to update Frigate.", string.Empty);
     }

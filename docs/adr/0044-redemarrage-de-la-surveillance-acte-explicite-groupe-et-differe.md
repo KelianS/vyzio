@@ -62,12 +62,19 @@ La frontière existe déjà, tracée par le brouillon d'ADR-41 : vérifier une c
 caméra, couper la surveillance sont des **actions** — elles agissent et rendent un résultat. Elles ne
 diffèrent jamais. Un **réglage** est une valeur ; il attend.
 
-### Le décalage est un état nommé, jamais un état second
+### Le décalage se voit, et le déclencheur est ce qui le dit
 
 Vyzio et le moteur ont le droit de diverger temporairement, et rien n'oblige à réconcilier tout de
-suite. Cette permission n'est tenable qu'à une condition : le décalage se voit, et **dit son
-contenu**. « 3 réglages attendent le redémarrage », avec la liste — jamais une pastille seule, qui
-serait l'état opaque que le principe produit #4 proscrit.
+suite. Cette permission n'est tenable qu'à une condition : le décalage **se voit**. C'est le rôle du
+déclencheur lui-même, dont la seule présence énonce qu'il reste quelque chose à reprendre — jamais
+une pastille muette à côté, qui serait l'état opaque que le principe produit #4 proscrit.
+
+> Une première version nommait en plus le **domaine** touché (« Détection et Conservation attendent
+> le redémarrage »). Retiré à l'usage : le domaine est une catégorie de notre architecture de
+> l'information, pas une chose que l'utilisateur reconnaît — il vient de régler une sensibilité, pas
+> « la Détection ». Nommer un domaine satisfaisait la lettre de l'exigence sans rien apprendre. Le
+> niveau de détail qui aurait servi — le réglage exact — supposerait de faire remonter le vocabulaire
+> d'interface jusque dans la couche applicative, ce qui coûte plus qu'il ne rend.
 
 ### Le déclencheur est toujours atteignable, et la question se pose en sortant des réglages
 
@@ -85,10 +92,9 @@ Notifications, profils, positions PTZ et réglages d'image ne touchent pas la co
 Un déclencheur qui apparaîtrait après ces réglages-là crierait au loup, et l'état nommé ci-dessus
 mentirait.
 
-La garantie est **structurelle** plutôt que déclarative : ce qui attend est nourri par les écritures
-réellement faites dans la configuration, chacune nommant son sujet. Un réglage qui n'écrit pas ne
-peut donc pas convoquer le déclencheur, et un enregistrement qui ne change rien ne le convoque pas
-non plus.
+La garantie est **structurelle** plutôt que déclarative : l'attente n'est nourrie que par les
+écritures qui changent réellement la configuration. Un réglage qui n'écrit pas ne peut donc pas
+convoquer le déclencheur, et un enregistrement qui ne change rien ne le convoque pas non plus.
 
 > ADR-41 demandait en plus que l'API dise **avant** enregistrement si un réglage exigeait un
 > redémarrage, pour que le brouillon en annonce le coût. Ce besoin **disparaît avec la présente
@@ -115,7 +121,7 @@ vocabulaire d'interface.
   redémarrage.
 - **Ni file d'attente ni service de fond.** Le besoin disparaît avec la décision : c'est l'utilisateur
   qui ordonnance, et il ne redémarre qu'une fois.
-- **`HasPendingChanges` redevient un état de premier plan**, mais ne suffit plus tel quel : un booléen
-  ne peut pas dire *quels* réglages attendent.
+- **`HasPendingChanges` redevient un état de premier plan**, et un booléen suffit : c'est la présence
+  du déclencheur qui porte le message, pas une énumération.
 - **L'écran d'ajout hérité ne peut être démonté qu'après le relogement du déclencheur**, dont il est
   aujourd'hui le seul appelant.

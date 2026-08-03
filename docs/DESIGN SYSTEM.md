@@ -270,9 +270,13 @@ Un reglage s'enregistre ; la surveillance se redemarre a part
 | Ou | Texte |
 | --- | --- |
 | Declencheur | `Redemarrer la surveillance` |
-| Etat en attente | `3 reglages attendent le redemarrage` |
-| Cout annonce | `La surveillance s'interrompt quelques secondes.` |
-| Question en sortie | `Redemarrer la surveillance maintenant ?` — « 3 reglages enregistres ne s'appliqueront qu'au redemarrage. » |
+| Question | `Redemarrer la surveillance maintenant ?` |
+| Corps | `Des reglages enregistres ne sont pas encore appliques. La surveillance s'interrompt quelques secondes.` |
+| Echec | `Redemarrage echoue` — persistant, avec `Reessayer` |
+
+Le declencheur **n'apparait que s'il y a quelque chose a reprendre** : sa presence est le message,
+son absence une information positive. On ne nomme pas la rubrique en attente — une categorie de notre
+arborescence n'apprend rien a qui vient de regler une valeur.
 
 Regle sous-jacente, valable au-dela de ce cas : **on ne nomme pas la technique, mais on nomme toujours
 l'effet.** Le principe produit #2 interdit de prononcer le nom du moteur, pas de dire ce qui se passe.

@@ -1,10 +1,6 @@
 import { useBlocker } from 'react-router'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
-import {
-  RESTART_COST,
-  RESTART_QUESTION,
-  describePendingRestart,
-} from '../../common/surveillance/pendingRestart'
+import { RESTART_BODY, RESTART_QUESTION } from '../../common/surveillance/pendingRestart'
 import { useRestartSurveillance } from './useRestartSurveillance'
 
 const SETTINGS_ROOT = '/settings'
@@ -19,9 +15,7 @@ export function LeavingSettingsPrompt() {
 
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      pending.length > 0 &&
-      isSettings(currentLocation.pathname) &&
-      !isSettings(nextLocation.pathname),
+      pending && isSettings(currentLocation.pathname) && !isSettings(nextLocation.pathname),
   )
 
   if (blocker.state !== 'blocked') return null
@@ -29,7 +23,7 @@ export function LeavingSettingsPrompt() {
   return (
     <ConfirmModal
       title={RESTART_QUESTION}
-      body={`${describePendingRestart(pending)} ${RESTART_COST}`}
+      body={RESTART_BODY}
       confirmLabel="Redémarrer"
       cancelLabel="Plus tard"
       tone="confirm"

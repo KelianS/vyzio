@@ -99,37 +99,32 @@ public class FrigateConfigApplierTests : IDisposable
             new StubRecordingSettingsRepository(RecordingSettings.CreateDefault()));
     }
 
-    // The wait must survive between a save and the user's restart, and keep what it is waiting on.
+    // The wait survives between a save and the user's restart, and only a real change starts it.
 
     [Fact]
     public void Nothing_waits_before_anything_is_written()
     {
-        Assert.Empty(BuildApplier().PendingChanges);
+        Assert.False(BuildApplier().HasPendingChanges);
     }
 
     [Fact]
-    public async Task Writing_the_config_records_what_is_waiting_by_name()
+    public async Task Writing_a_real_change_makes_the_restart_wait()
     {
         var applier = BuildApplier();
 
-        await applier.WriteConfigAsync([MakeValidatedCamera("front-door")], [SurveillanceChangeScope.Detection]);
+        await applier.WriteConfigAsync([MakeValidatedCamera("front-door")], changed: true);
 
-        Assert.Equal([SurveillanceChangeScope.Detection], applier.PendingChanges);
+        Assert.True(applier.HasPendingChanges);
     }
 
     [Fact]
-    public async Task Successive_writes_accumulate_their_scopes_without_repeating_them()
+    public async Task Writing_without_a_real_change_leaves_nothing_waiting()
     {
         var applier = BuildApplier();
-        var cameras = new[] { MakeValidatedCamera("front-door") };
 
-        // Several settings, several pages, one restart later on: each has to keep its name until
-        // the user decides.
-        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Detection]);
-        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Retention]);
-        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Detection]);
+        await applier.WriteConfigAsync([MakeValidatedCamera("front-door")], changed: false);
 
-        Assert.Equal([SurveillanceChangeScope.Detection, SurveillanceChangeScope.Retention], applier.PendingChanges);
+        Assert.False(applier.HasPendingChanges);
     }
 
     [Fact]
@@ -137,11 +132,11 @@ public class FrigateConfigApplierTests : IDisposable
     {
         var applier = BuildApplier();
         var cameras = new[] { MakeValidatedCamera("front-door") };
-        await applier.WriteConfigAsync(cameras, [SurveillanceChangeScope.Detection]);
+        await applier.WriteConfigAsync(cameras, changed: true);
 
         await applier.ApplyAsync(cameras);
 
-        Assert.Empty(applier.PendingChanges);
+        Assert.False(applier.HasPendingChanges);
     }
 
     [Fact]

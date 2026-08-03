@@ -61,8 +61,8 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
 
 export interface FakeBackendState {
   cameras: FakeCamera[]
-  /** Ce qui attend un redemarrage de la surveillance (ADR-44). */
-  pendingChanges: string[]
+  /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
+  pendingChanges: boolean
   restartFails: boolean
   profiles: {
     id: string
@@ -129,18 +129,12 @@ const ONE_PIXEL_GIF = Buffer.from(
   'base64',
 )
 
-// Comme le vrai marqueur : les sujets s'accumulent sans se repeter, jusqu'au
-// redemarrage que l'utilisateur declenche (ADR-44).
-function markPending(state: FakeBackendState, scope: string) {
-  if (!state.pendingChanges.includes(scope)) state.pendingChanges.push(scope)
-}
-
 export function createFakeBackendState(
   overrides: Partial<FakeBackendState> = {},
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
-    pendingChanges: [],
+    pendingChanges: false,
     restartFails: false,
     profiles: [],
     notificationChannels: {},
@@ -281,7 +275,7 @@ export async function installFakeBackend(
           cameraCount: state.cameras.length,
         })
       }
-      state.pendingChanges = []
+      state.pendingChanges = false
       return json(route, {
         applied: true,
         message: 'Configuration appliquée',
@@ -362,7 +356,7 @@ export async function installFakeBackend(
         if (method === 'PUT') {
           const body = route.request().postDataJSON() as Record<string, unknown>
           state.detectionConfig = { ...state.detectionConfig, ...body }
-          markPending(state, 'detection')
+          state.pendingChanges = true
         }
         const config = state.detectionConfig
         return json(route, {
@@ -432,7 +426,7 @@ export async function installFakeBackend(
           eventClip: { ...state.recordingSettings.eventClip, days: body.eventClipDays },
           maxDays: state.recordingSettings.maxDays,
         }
-        markPending(state, 'retention')
+        state.pendingChanges = true
       }
       return json(route, state.recordingSettings)
     }

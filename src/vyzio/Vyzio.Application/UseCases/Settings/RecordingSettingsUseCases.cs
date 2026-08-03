@@ -29,7 +29,7 @@ public sealed class SaveRecordingSettingsUseCase(
         // Retention lives in the generated config, so a change is only real once the file is
         // rewritten — and only takes effect once the user restarts the surveillance (ADR-44).
         var allCameras = await cameras.GetAllAsync(ct);
-        await frigateConfigApplier.WriteConfigAsync(allCameras, [SurveillanceChangeScope.Retention], ct);
+        await frigateConfigApplier.WriteConfigAsync(allCameras, changed: true, ct);
 
         return RecordingSettingsDto.From(settings);
     }

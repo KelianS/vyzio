@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { RotateCw, TriangleAlert } from 'lucide-react'
+import { Button } from '../../common/ui/button'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { cn } from '../../common/ui/utils'
 import {
   RESTART_ACTION,
-  RESTART_COST,
+  RESTART_BODY,
   RESTART_QUESTION,
-  describePendingRestart,
 } from '../../common/surveillance/pendingRestart'
 import { useRestartSurveillance } from './useRestartSurveillance'
 
@@ -15,42 +15,31 @@ export function RestartSurveillanceTrigger() {
   const { pending, restarting, failure, restart } = useRestartSurveillance()
   const [asking, setAsking] = useState(false)
 
-  if (pending.length === 0 && !failure) return null
-
-  const summary = describePendingRestart(pending)
+  if (!pending && !failure) return null
 
   return (
     <>
-      <button
+      <Button
         type="button"
-        onClick={() => setAsking(true)}
+        size="sm"
+        variant={failure ? 'destructive' : 'default'}
         disabled={restarting}
-        // Rounded rectangle: an action, not a state (DESIGN SYSTEM shape rule).
-        className={cn(
-          'inline-flex h-8 items-center justify-center gap-1.5 rounded-btn px-3 text-sm font-medium',
-          // Own line on small screens: beside the nav it squeezed it into a vertical stack.
-          'basis-full sm:basis-auto sm:shrink-0',
-          'transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current',
-          'disabled:opacity-60',
-          failure
-            ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-            : 'bg-surface-inverse-foreground text-surface-inverse hover:bg-surface-inverse-foreground/90',
-        )}
-        title={failure ?? summary}
+        onClick={() => setAsking(true)}
+        // Own line on small screens: beside the nav it squeezed it into a vertical stack.
+        className="basis-full sm:basis-auto"
       >
         {failure ? (
-          <TriangleAlert className="size-4" aria-hidden="true" />
+          <TriangleAlert aria-hidden="true" />
         ) : (
-          <RotateCw className={cn('size-4', restarting && 'animate-spin')} aria-hidden="true" />
+          <RotateCw className={cn(restarting && 'animate-spin')} aria-hidden="true" />
         )}
         {restarting ? 'Redémarrage…' : failure ? 'Redémarrage échoué' : RESTART_ACTION}
-      </button>
+      </Button>
 
       {asking && (
         <ConfirmModal
           title={RESTART_QUESTION}
-          // What waits, then what it costs; a previous failure is repeated here.
-          body={[failure, summary, RESTART_COST].filter(Boolean).join(' ')}
+          body={failure ? `${failure} ${RESTART_BODY}` : RESTART_BODY}
           confirmLabel={failure ? 'Réessayer' : 'Redémarrer'}
           cancelLabel="Plus tard"
           tone="confirm"
