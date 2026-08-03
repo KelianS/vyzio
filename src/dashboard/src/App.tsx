@@ -9,6 +9,7 @@ import {
   AppContainerProvider,
   useAppContainer,
 } from './infrastructure/providers/AppContainerContext'
+import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/Settings/settings.rubrics'
 
 const HubView = lazy(() =>
   import('./presentation/Hub/Hub.Component').then((m) => ({ default: m.HubView })),
@@ -120,10 +121,13 @@ const router = createBrowserRouter([
         element: <SettingsView />,
         children: [
           { path: 'cameras', element: <CameraListPage /> },
-          { path: 'cameras/ajout', element: <CamerasView /> },
+          // Nomme la tache, pas la rubrique.
+          { path: 'cameras/ajout', element: <CamerasView />, handle: OWN_HEADER },
           {
             path: 'cameras/:cameraId',
             element: <CameraShell />,
+            // Porte le nom de la camera ouverte, et ses onglets.
+            handle: OWN_HEADER,
             children: [
               { index: true, element: <Navigate to="detection" replace /> },
               { path: 'detection', element: <CameraDetectionPage /> },
@@ -134,11 +138,14 @@ const router = createBrowserRouter([
             ],
           },
           { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
-          { path: 'detection/personnes', element: <ProfilesView /> },
+          // Ecrans pas encore repris : ils portent deja un titre, jamais de
+          // retour. Le marqueur tombera avec leur reprise, pas avant — sans lui
+          // la page s'annoncerait deux fois.
+          { path: 'detection/personnes', element: <ProfilesView />, handle: OWN_HEADER_ONLY },
           { path: 'conservation', element: <ConservationPage /> },
-          { path: 'notifications', element: <NotificationSettingsView /> },
+          { path: 'notifications', element: <NotificationSettingsView />, handle: OWN_HEADER_ONLY },
           { path: 'systeme', element: <SystemPage /> },
-          { path: 'systeme/avance', element: <ExpertView /> },
+          { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
         ],
       },
 

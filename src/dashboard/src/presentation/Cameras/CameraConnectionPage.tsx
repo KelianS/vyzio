@@ -12,7 +12,7 @@ import { Button } from '../../common/ui/button'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { CapabilitySection } from './CapabilitySection'
 
 interface ConnectionValues {
@@ -36,18 +36,7 @@ const DRAFT_LABELS: Record<keyof ConnectionValues, string> = {
 export function CameraConnectionPage() {
   const camera = useOutletContext<Camera>()
 
-  return (
-    <div className="flex flex-col gap-4">
-      <ConnectionForm camera={camera} />
-
-      {/* Section non encore reprise : configurer une capacite est une **action**
-          — elle teste une connexion et rend un resultat — pas une valeur. Elle
-          ne rentre donc pas telle quelle dans le cycle de brouillon. */}
-      <SettingsPanel title="Capacités" lede="Ce que Vyzio a vérifié auprès de cette caméra.">
-        <CapabilitySection camera={camera} />
-      </SettingsPanel>
-    </div>
-  )
+  return <ConnectionForm camera={camera} />
 }
 
 function ConnectionForm({ camera }: { camera: Camera }) {
@@ -175,7 +164,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
     <>
       <UnsavedChangesGuard when={draft.dirty} />
 
-      <SettingsPanel title="Connexion" lede="Comment Vyzio joint cette caméra.">
+      <SettingsPage lede="Comment Vyzio joint cette caméra.">
         <SettingsList settings={declarations} />
 
         {/* Verifier et supprimer sont des **actions** : elles agissent tout de
@@ -193,7 +182,14 @@ function ConnectionForm({ camera }: { camera: Camera }) {
             Supprimer cette caméra
           </Button>
         </div>
-      </SettingsPanel>
+
+        {/* Section non encore reprise : configurer une capacite est une **action**
+            — elle teste une connexion et rend un resultat — pas une valeur. Elle
+            ne rentre donc pas telle quelle dans le cycle de brouillon. */}
+        <SettingsSection title="Capacités" lede="Ce que Vyzio a vérifié auprès de cette caméra.">
+          <CapabilitySection camera={camera} />
+        </SettingsSection>
+      </SettingsPage>
 
       <SettingsDraftBar
         changes={draft.changes}

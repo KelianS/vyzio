@@ -3,7 +3,7 @@ import { ChevronRight, Plus } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { useRootStore } from '../../infrastructure/store/rootStore'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 import {
   formatCameraAddress,
   formatCameraStatusLabel,
@@ -22,7 +22,7 @@ export function CameraListPage() {
   const loading = useRootStore((state) => state.camerasLoading)
 
   return (
-    <SettingsPanel title="Caméras" lede="Choisissez une caméra pour la régler.">
+    <SettingsPage lede="Choisissez une caméra pour la régler.">
       {cameras.length > 0 ? (
         <ul className="divide-y divide-border">
           {cameras.map((camera) => (
@@ -61,6 +61,6 @@ export function CameraListPage() {
           </Link>
         </Button>
       </div>
-    </SettingsPanel>
+    </SettingsPage>
   )
 }

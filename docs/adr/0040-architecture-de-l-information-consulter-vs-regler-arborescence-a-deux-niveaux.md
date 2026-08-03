@@ -163,6 +163,25 @@ visible à la fois**, et le grand écran développe cette structure au lieu qu'e
 qui rend la décision tenable pour la cible réelle du produit, et cela change l'attendu des SPECS
 §7.2, aujourd'hui limité à des actions « faisables sur mobile et desktop ».
 
+### Une page est nommée une seule fois
+
+Un arbre pose un nom à chaque palier, et chaque palier est tenté de le redire : l'onglet « Vie
+privée », puis le cadre « Vie privée », puis la section héritée du même nom — trois titres
+identiques pour un unique réglage, et une page qui paraît plus profonde qu'elle n'est.
+
+Le nom appartient donc à **ce qui mène à la page**, jamais à la page elle-même : la coquille des
+réglages le rend à partir de la rubrique ouverte, la fiche caméra le remplace par le nom de la
+caméra. Une page ne pose plus de cadre titré autour d'elle-même ; elle n'ouvre une section titrée
+que si elle traite réellement **plusieurs sujets**, et cette section nomme alors autre chose que la
+page.
+
+Corollaire : un titre de section qui répète celui de la page est le signe qu'il fallait une page de
+plus, pas un cadre de plus.
+
+Le petit écran est le cas qui tranche, et il tranche dans les deux sens : le menu des rubriques s'y
+efface, donc la page **doit** être nommée quelque part ; et deux fils d'ariane empilés y coûtent
+tout de suite une hauteur d'écran, donc elle ne peut l'être qu'une fois.
+
 ## Conséquences
 
 - **Les libellés de navigation disent la nature de l'écran.** « Alertes », qui nommait un écran de

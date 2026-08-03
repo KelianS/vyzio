@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
@@ -10,7 +11,7 @@ import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import type { Camera } from '../../domain/entities/Camera'
 import type { CameraImageSettings, IrCutMode } from '../../domain/entities/CameraImageSettings'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { PtzPresetsSection } from './PtzPresetsSection'
 
 const ADJUSTMENTS = [
@@ -34,32 +35,40 @@ const DRAFT_LABELS: Record<keyof CameraImageSettings, string> = {
   irCutMode: 'Vision nocturne',
 }
 
+/**
+ * Seule page a porter deux sujets — ce que la camera envoie, et comment on
+ * l'oriente. Ils tiennent sur une seule surface : les couper en deux cadres
+ * donnait deux titres dont l'un repetait l'onglet.
+ */
 export function CameraImagePage() {
   const camera = useOutletContext<Camera>()
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
+  const pilotage = camera.ptzSupported ? <PilotageSection camera={camera} /> : null
 
-  return (
-    <div className="flex flex-col gap-4">
-      {hasImageSettings && <ImageAdjustments camera={camera} />}
-      {camera.ptzSupported && <PtzPanel camera={camera} />}
-      {!hasImageSettings && !camera.ptzSupported && (
-        <SettingsPanel title="Image et pilotage">
+  if (!hasImageSettings) {
+    return (
+      <SettingsPage>
+        {pilotage ?? (
           <p className="text-muted-foreground">
             Cette caméra n’expose ni réglages d’image ni pilotage.
           </p>
-        </SettingsPanel>
-      )}
-    </div>
-  )
+        )}
+      </SettingsPage>
+    )
+  }
+
+  return <ImageAdjustments camera={camera}>{pilotage}</ImageAdjustments>
 }
 
-function ImageAdjustments({ camera }: { camera: Camera }) {
+function ImageAdjustments({ camera, children }: { camera: Camera; children: ReactNode }) {
   const { cameras: container } = useAppContainer()
   const settings = useAsync(() => container.getCameraImageSettings.execute(camera.id), [camera.id])
   const bindings = useAsync(() => container.getCameraCapabilities.execute(camera.id), [camera.id])
 
-  if (settings.loading) return <SettingsPanel title="Image">Chargement…</SettingsPanel>
-  if (settings.error || !settings.data) return null
+  // Le pilotage ne depend pas de ces reglages : il reste affiche pendant leur
+  // chargement, et meme s'ils echouent.
+  if (settings.loading) return <SettingsPage>Chargement…{children}</SettingsPage>
+  if (settings.error || !settings.data) return <SettingsPage>{children}</SettingsPage>
 
   return (
     <ImageForm
@@ -73,7 +82,9 @@ function ImageAdjustments({ camera }: { camera: Camera }) {
         'dvrip'
       }
       reload={settings.reload}
-    />
+    >
+      {children}
+    </ImageForm>
   )
 }
 
@@ -82,11 +93,13 @@ function ImageForm({
   settings,
   writableBeyondBasics,
   reload,
+  children,
 }: {
   camera: Camera
   settings: CameraImageSettings
   writableBeyondBasics: boolean
   reload: () => void
+  children: ReactNode
 }) {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
@@ -131,9 +144,10 @@ function ImageForm({
     <>
       <UnsavedChangesGuard when={draft.dirty} />
 
-      <SettingsPanel title="Image" lede="Ce que la caméra envoie, avant toute analyse.">
+      <SettingsPage lede="Ce que la caméra envoie, avant toute analyse.">
         <SettingsList settings={declarations} />
-      </SettingsPanel>
+        {children}
+      </SettingsPage>
 
       <SettingsDraftBar
         changes={draft.changes}
@@ -148,11 +162,11 @@ function ImageForm({
   )
 }
 
-function PtzPanel({ camera }: { camera: Camera }) {
+function PilotageSection({ camera }: { camera: Camera }) {
   const { apiBaseUrl, cameras: container } = useAppContainer()
 
   return (
-    <SettingsPanel title="Pilotage" lede="Positions enregistrées et calibration.">
+    <SettingsSection title="Pilotage" lede="Positions enregistrées et calibration.">
       <PtzPresetsSection
         cameraId={camera.id}
         apiBaseUrl={apiBaseUrl}
@@ -162,6 +176,6 @@ function PtzPanel({ camera }: { camera: Camera }) {
         ptzCalibrate={container.ptzCalibrate}
         capturePtzPresetThumbnail={container.capturePtzPresetThumbnail}
       />
-    </SettingsPanel>
+    </SettingsSection>
   )
 }

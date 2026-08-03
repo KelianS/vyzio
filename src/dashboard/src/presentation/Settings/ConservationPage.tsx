@@ -20,7 +20,7 @@ import {
   formatDays,
   type RetentionWindow,
 } from '../../common/recording/retention'
-import { SettingsPanel } from './SettingsPanel'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 
 // La requete d'enregistrement est plate quand la lecture est groupee par fenetre :
 // un seul endroit fait le pont entre les deux formes.
@@ -54,7 +54,7 @@ export function ConservationPage() {
     [],
   )
 
-  if (loading) return <SettingsPanel title="Conservation">Chargement…</SettingsPanel>
+  if (loading) return <SettingsPage>Chargement…</SettingsPage>
   if (error || !data) return null
 
   return <ConservationForm settings={data} reload={reload} save={container.saveRecordingSettings} />
@@ -117,15 +117,12 @@ function ConservationForm({
     <>
       <UnsavedChangesGuard when={draft.dirty} />
 
-      <SettingsPanel
-        title="Conservation"
-        lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée."
-      >
+      <SettingsPage lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée.">
         <SettingsList settings={declarations} />
         <p className="mt-4 text-sm text-muted-foreground">
           Mettre 0 signifie que rien n’est conservé de cette nature.
         </p>
-      </SettingsPanel>
+      </SettingsPage>
 
       <SettingsDraftBar
         changes={draft.changes}

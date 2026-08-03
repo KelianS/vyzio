@@ -69,7 +69,7 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 6. **Reprise des ecrans de reglages**, en commencant par les reglages d'installation (les plus recents, les moins intriques), puis notifications, puis detection. Chaque ecran repris emporte la suppression de ses regles dans `App.css`.
 
-7. **Aplatir la hierarchie a l'interieur d'une page.** Constat en livrant les pages camera : l'onglet nomme deja la page, le panneau repete ce nom, et le contenu se reduit parfois a **un seul reglage** — trois niveaux pour une valeur (constate sur Vie privee et sur Detection). A trancher : un cadre sert a **grouper dans** une page, jamais a encadrer la page elle-meme, et un titre de page ne repete pas le libelle de navigation qui y mene. Corollaire a verifier page par page : deux panneaux voisins qui traitent le meme sujet (mode vie privee et plages horaires) n'en font qu'un.
+7. ~~**Aplatir la hierarchie a l'interieur d'une page.**~~ **Fait.** La regle est tranchee et vit dans [ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) § « Une page est nommee une seule fois » : le nom appartient a ce qui mene a la page, jamais a la page. Les pages camera l'appliquent (mode vie privee et plages horaires fusionnes, image et pilotage reunis, capacites rattachees a la connexion), et un test e2e la tient. Reste a l'appliquer aux ecrans repris aux etapes 6 et 10, qui portent encore leur propre titre.
 
 8. **Demontage de `Cameras.Component.tsx`** — separer decouverte, onboarding, fiche camera et reglages ; scinder l'union `CameraSelection` qui sert a la fois de selection d'objet et de routage d'ecran. Apres l'etape 6, parce que c'est le plus intrique et que la coquille doit exister avant.
 

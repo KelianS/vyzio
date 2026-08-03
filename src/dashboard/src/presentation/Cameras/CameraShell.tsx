@@ -2,7 +2,7 @@ import { Link, NavLink, Outlet, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { cn } from '../../common/ui/utils'
 import { useRootStore } from '../../infrastructure/store/rootStore'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 import { formatCameraAddress, formatCameraStatusLabel } from './cameras.formatters'
 
 /**
@@ -26,11 +26,14 @@ export function CameraShell() {
 
   if (!camera) {
     return (
-      <SettingsPanel title="Caméra introuvable">
-        <Link to="/settings/cameras" className="underline underline-offset-2">
+      // Cette route annonce porter son propre en-tete : sans camera a nommer,
+      // c'est a l'echec de le faire, sinon la page resterait anonyme.
+      <SettingsPage>
+        <h1 className="font-serif text-3xl">Caméra introuvable</h1>
+        <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">
           Revenir à la liste des caméras
         </Link>
-      </SettingsPanel>
+      </SettingsPage>
     )
   }
 

@@ -1,5 +1,7 @@
 import { useEffect, useReducer, useState, type ComponentPropsWithoutRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { Link } from 'react-router'
+import { ChevronLeft } from 'lucide-react'
 import { appErrorMessage } from '../../common/errors/AppError'
 import { Btn } from '../../common/components/Btn'
 import { Select } from '../../common/components/Select'
@@ -405,7 +407,16 @@ export function CamerasView() {
     <main className="app-shell app-shell-cameras">
       <section className="panel camera-toolbar">
         <div className="camera-toolbar-copy">
-          <p className="eyebrow">Parcours camera</p>
+          {/* Cet ecran porte son propre en-tete : le retour vers la liste lui
+              revient donc aussi. Sans lui, l'ajout serait sans issue sur petit
+              ecran, ou le menu des rubriques est masque. */}
+          <Link
+            to="/settings/cameras"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="size-4" aria-hidden="true" />
+            Caméras
+          </Link>
           <h1>Decouverte guidee</h1>
           <p className="camera-toolbar-lede">
             Selectionnez un candidat ou une camera existante, puis agissez dans un seul panneau de

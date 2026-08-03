@@ -8,7 +8,7 @@ import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { buildPrivacySettings, type PrivacyStrategy } from './cameraPrivacySettings'
 
@@ -46,16 +46,14 @@ export function CameraPrivacyPage() {
     <>
       <UnsavedChangesGuard when={draft.dirty} />
 
-      <div className="flex flex-col gap-4">
-        <SettingsPanel
-          title="Vie privée"
-          lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé."
-        >
-          <SettingsList settings={settings} />
-        </SettingsPanel>
+      {/* Le mode et ses plages horaires repondent a une seule question : quand la
+          surveillance s'arrete, et comment. Les separer en deux cadres donnait
+          deux titres a un unique reglage. */}
+      <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
+        <SettingsList settings={settings} />
 
         {/* Section non encore reprise : elle garde ses propres actions. */}
-        <SettingsPanel title="Plages horaires" lede="Couper et rétablir automatiquement.">
+        <SettingsSection title="Plages horaires" lede="Couper et rétablir automatiquement.">
           <PrivacyScheduleSection
             camera={camera}
             cameraId={camera.id}
@@ -64,8 +62,8 @@ export function CameraPrivacyPage() {
             createSchedule={container.createCameraPrivacySchedule}
             deleteSchedule={container.deleteCameraPrivacySchedule}
           />
-        </SettingsPanel>
-      </div>
+        </SettingsSection>
+      </SettingsPage>
 
       <SettingsDraftBar
         changes={draft.changes}

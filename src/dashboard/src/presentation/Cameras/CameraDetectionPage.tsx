@@ -9,7 +9,7 @@ import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import type { DetectionConfig } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 import {
   DETECTION_DRAFT_LABELS,
   buildDetectionSettings,
@@ -24,7 +24,7 @@ export function CameraDetectionPage() {
   const labels = useAsync(() => container.getCameraLabels.execute(), [])
 
   if (config.loading || labels.loading) {
-    return <SettingsPanel title="Détection">Chargement…</SettingsPanel>
+    return <SettingsPage>Chargement…</SettingsPage>
   }
   if (!config.data || !labels.data) return null
 
@@ -91,9 +91,9 @@ function DetectionForm({
     <>
       <UnsavedChangesGuard when={draft.dirty} />
 
-      <SettingsPanel title="Détection" lede="Ce que cette caméra cherche, et avec quelle image.">
+      <SettingsPage lede="Ce que cette caméra cherche, et avec quelle image.">
         <SettingsList settings={declarations} />
-      </SettingsPanel>
+      </SettingsPage>
 
       <SettingsDraftBar
         changes={draft.changes}

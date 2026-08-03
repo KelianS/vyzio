@@ -153,9 +153,11 @@ export function PtzPresetsSection({
     presets.find((p) => p.presetId === presetId)
 
   return (
-    <div className="camera-detail-section ptz-presets-section">
+    // Plus de surface propre : la page en fournit deja une, et l'empiler
+    // dessinait une boite dans une boite.
+    <div className="grid ptz-presets-section">
+      {/* Sans titre propre : « Pilotage » le nomme deja juste au-dessus. */}
       <div className="ptz-presets-header">
-        <h3 className="ptz-presets-title">Positions</h3>
         {calibrated && currentPosition && (
           <span className="ptz-position-indicator">
             Position actuelle&nbsp;: {currentPosition.x},{currentPosition.y}

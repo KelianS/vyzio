@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { ChevronRight } from 'lucide-react'
-import { SettingsPanel } from './SettingsPanel'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 
 /**
  * Reglages systeme, et le repli « Avance » de fin de page (ADR-40).
@@ -12,10 +12,7 @@ import { SettingsPanel } from './SettingsPanel'
  */
 export function SystemPage() {
   return (
-    <SettingsPanel
-      title="Système"
-      lede="Ressources de la machine et réglages rarement nécessaires."
-    >
+    <SettingsPage lede="Ressources de la machine et réglages rarement nécessaires.">
       <p className="text-sm text-muted-foreground">
         L’état du stockage et des ressources est visible depuis l’accueil. Les seuils d’alerte
         arriveront ici.
@@ -39,6 +36,6 @@ export function SystemPage() {
           </Link>
         </div>
       </details>
-    </SettingsPanel>
+    </SettingsPage>
   )
 }

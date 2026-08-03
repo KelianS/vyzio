@@ -17,7 +17,7 @@ import {
   RETENTION_UPDATE_FIELD,
   formatDays,
 } from '../../common/recording/retention'
-import { SettingsPanel } from '../Settings/SettingsPanel'
+import { SettingsPage } from '../../common/settings/SettingsPage'
 
 type RetentionOverrides = Pick<
   DetectionConfigUpdate,
@@ -41,7 +41,7 @@ export function CameraConservationPage() {
   const { cameras: container } = useAppContainer()
   const config = useAsync(() => container.getCameraDetectionConfig.execute(cameraId!), [cameraId])
 
-  if (config.loading) return <SettingsPanel title="Conservation">Chargement…</SettingsPanel>
+  if (config.loading) return <SettingsPage>Chargement…</SettingsPage>
   if (!config.data) return null
 
   return <ConservationForm cameraId={cameraId!} config={config.data} reload={config.reload} />
@@ -116,12 +116,9 @@ function ConservationForm({
     <>
       <UnsavedChangesGuard when={draft.dirty} />
 
-      <SettingsPanel
-        title="Conservation"
-        lede="Cette caméra suit les durées d’ensemble tant qu’elle n’en fixe pas une à elle. Chaque durée est indépendante."
-      >
+      <SettingsPage lede="Cette caméra suit les durées d’ensemble tant qu’elle n’en fixe pas une à elle. Chaque durée est indépendante.">
         <SettingsList settings={declarations} />
-      </SettingsPanel>
+      </SettingsPage>
 
       <SettingsDraftBar
         changes={draft.changes}

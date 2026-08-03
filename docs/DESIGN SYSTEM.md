@@ -98,6 +98,12 @@ sa provenance et son retour arriere. La table des controles et l'anatomie de la 
 fixees par [ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) —
 foyer unique, non recopie ici. Dessiner un reglage a la main est une exception a justifier.
 
+Une page **ne se nomme pas elle-meme** : ce qui y mene l'a deja nommee
+([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)).
+Concretement, `SettingsPage` est une surface **sans titre** ; `SettingsSection` n'ouvre un titre a
+l'interieur d'une page que si celle-ci traite plusieurs sujets, et ce titre nomme alors autre chose
+que la page. Un titre de section qui repete celui de la page signale qu'il fallait une page de plus.
+
 ### Regles de transition
 
 `App.css` est **supprime**, pas reduit : deux systemes de style sans echeance en font trois. La

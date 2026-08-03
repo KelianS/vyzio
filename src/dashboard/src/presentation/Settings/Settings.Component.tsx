@@ -1,7 +1,13 @@
-import { Link, Outlet, useLocation } from 'react-router'
+import { Link, Outlet, useLocation, useMatches } from 'react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '../../common/ui/utils'
-import { SETTINGS_RUBRICS, SETTINGS_ROOT, rubricPath } from './settings.rubrics'
+import {
+  SETTINGS_RUBRICS,
+  SETTINGS_ROOT,
+  declaresOwnBackLink,
+  declaresOwnHeader,
+  rubricPath,
+} from './settings.rubrics'
 
 /**
  * Coquille des reglages (ADR-40) : premier niveau = les rubriques, second =
@@ -18,6 +24,12 @@ export function SettingsView() {
   const current = SETTINGS_RUBRICS.find((rubric) =>
     location.pathname.startsWith(rubricPath(rubric.slug)),
   )
+  const matches = useMatches()
+  // Titre et retour sont deux services rendus separement : un ecran peut se
+  // nommer sans savoir d'ou l'on vient. Les confondre empilait deux fleches sur
+  // la fiche camera, ou laissait les ecrans non repris sans issue.
+  const showRubricTitle = current !== undefined && !declaresOwnHeader(matches)
+  const showRubricBackLink = current !== undefined && !declaresOwnBackLink(matches)
 
   return (
     <main className="py-4">
@@ -65,15 +77,17 @@ export function SettingsView() {
         </nav>
 
         <div className={cn('min-w-0', atRoot ? 'hidden md:block' : 'block')}>
-          {current && (
+          {showRubricBackLink && (
             <Link
               to={SETTINGS_ROOT}
-              className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground md:hidden"
+              className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground md:hidden"
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
               Réglages
             </Link>
           )}
+
+          {showRubricTitle && <h1 className="mb-3 font-serif text-3xl">{current.label}</h1>}
 
           {atRoot ? (
             <p className="hidden md:block rounded-card bg-card p-6 text-muted-foreground shadow-[var(--shadow-soft)]">

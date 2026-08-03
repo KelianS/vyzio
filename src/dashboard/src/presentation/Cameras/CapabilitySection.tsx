@@ -95,17 +95,16 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 
   if (loading) {
     return (
-      <section className="camera-detail-section capability-section-compact">
-        <h4>Capacités</h4>
+      <section className="grid gap-1.5">
         <p className="capability-protocol">Chargement…</p>
       </section>
     )
   }
 
   return (
-    <section className="camera-detail-section capability-section-compact">
-      <h4>Capacités</h4>
-
+    // Le titre vient de la section qui l'accueille : le porter aussi ici
+    // affichait « Capacites » deux fois de suite.
+    <section className="grid gap-1.5">
       {camera.supportedProtocols.length > 0 && (
         <div className="capability-protocol-badges">
           {camera.supportedProtocols.map((p) => (

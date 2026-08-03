@@ -127,9 +127,9 @@ export function PrivacyScheduleSection({
         : null
 
   return (
-    <section className="camera-detail-section">
-      <h3 className="camera-detail-section-title">Vie privée — planification</h3>
-
+    // Ni cadre ni titre propres : la page les porte deja, et les empiler
+    // donnait un troisieme nom pour la meme chose.
+    <section>
       {privacyCutLabel && (
         <div className={`privacy-cut-badge ${privacyCutLabel.cls}`}>
           {camera.privacyVendorCut ? '🔒' : '🔇'} {privacyCutLabel.text}

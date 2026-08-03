@@ -560,11 +560,6 @@
 
 /* ── Capability section ── */
 
-.capability-section-compact {
-  gap: 6px !important;
-  padding: 12px 14px !important;
-}
-
 .capability-detect-row {
   display: flex;
   align-items: center;
@@ -682,15 +677,6 @@
     background: var(--bg-elevated, #1e1e1e);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
-}
-
-.capability-section-compact h4 {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  margin: 0 0 4px;
 }
 
 .capability-list {
