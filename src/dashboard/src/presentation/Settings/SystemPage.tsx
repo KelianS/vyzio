@@ -2,14 +2,7 @@ import { Link } from 'react-router'
 import { ChevronRight } from 'lucide-react'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 
-/**
- * Reglages systeme, et le repli « Avance » de fin de page (ADR-40).
- *
- * L'interface technique du moteur y est reculee : elle reste un **recours**,
- * parce que la retirer priverait d'un secours reel en cas de probleme, mais
- * cesse d'etre un parcours de premier rang — ce qui aligne la navigation sur le
- * principe produit #2.
- */
+/** System settings with the "Advanced" fold (ADR-40): the engine's technical UI stays a fallback, not a front-row path (principle #2). */
 export function SystemPage() {
   return (
     <SettingsPage lede="Ressources de la machine et réglages rarement nécessaires.">

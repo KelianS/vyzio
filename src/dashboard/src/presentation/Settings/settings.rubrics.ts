@@ -1,17 +1,9 @@
-/**
- * Les rubriques de reglages, declarees comme une donnee (ADR-40).
- *
- * Ranger un reglage nouveau consiste a l'ajouter dans une rubrique existante ou
- * a en creer une ici — la question « il va ou ? » a donc une reponse mecanique,
- * ce qui etait l'objet meme de la decision. Les rubriques sont organisees par
- * **domaine fonctionnel**, jamais par portee ni par ecran d'origine.
- */
+/** Settings rubrics, declared as data (ADR-40) — organized by functional domain, never by scope or screen of origin. */
 export interface SettingsRubric {
-  /** Segment de route sous `/settings`. */
+  /** Route segment under `/settings`. */
   readonly slug: string
   readonly label: string
-  /** Ce que la rubrique gouverne, en quelques mots. Une phrase complete ici
-   *  concurrencerait le libelle au lieu de le preciser (ADR-43). */
+  /** What the rubric governs, in a few words — a full sentence would compete with the label (ADR-43). */
   readonly summary: string
 }
 
@@ -49,31 +41,18 @@ export function rubricPath(slug: string) {
   return `${SETTINGS_ROOT}/${slug}`
 }
 
-/**
- * Une page est nommee **une seule fois**. Par defaut c'est la coquille des
- * reglages qui s'en charge, a partir de la rubrique ouverte.
- *
- * Certaines routes nomment autre chose que leur rubrique — la fiche d'une camera
- * porte le nom de la camera, l'ajout porte le nom de la tache. Elles le
- * declarent ici, sur la route : c'est la seule information que la coquille ne
- * peut pas deduire, et la mettre dans l'arbre de routes evite d'y repondre par
- * une liste de chemins particuliers.
- */
+/** A page is named once — the settings shell does it by default; routes naming something else (a camera, a task) declare it here. */
 export interface SettingsRouteHandle {
-  /** La route affiche son propre titre : la rubrique n'en ajoute pas. */
+  /** The route shows its own title; the rubric shell adds none. */
   readonly ownHeader?: boolean
-  /** La route affiche son propre retour : la rubrique n'en ajoute pas. */
+  /** The route shows its own back link; the rubric shell adds none. */
   readonly ownBackLink?: boolean
 }
 
-/** Ecran repris qui se nomme **et** ramene d'ou il vient. */
+/** Migrated screen that names itself and provides its own way back. */
 export const OWN_HEADER: SettingsRouteHandle = { ownHeader: true, ownBackLink: true }
 
-/**
- * Ecran pas encore repris : il porte deja un titre, mais aucun retour. Lui
- * retirer celui de la rubrique le rendrait sans issue sur petit ecran, ou le
- * menu est masque.
- */
+/** Not-yet-migrated screen: has its own title but no back link, so the shell keeps providing one. */
 export const OWN_HEADER_ONLY: SettingsRouteHandle = { ownHeader: true }
 
 function handlesOf(matches: readonly { readonly handle?: unknown }[]) {

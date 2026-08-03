@@ -13,11 +13,7 @@ import {
   type SettingNature,
 } from './settingDeclaration'
 
-/**
- * Traduit une nature de valeur en controle (ADR-43). C'est **le seul endroit**
- * ou ce choix se fait : ailleurs dans l'application, un reglage ne peut pas
- * s'offrir un controle a lui.
- */
+/** Nature -> control (ADR-43): the only place this choice is made. */
 export function SettingControl({ setting }: { setting: SettingDeclaration }) {
   const { nature } = setting
 
@@ -37,14 +33,14 @@ export function SettingControl({ setting }: { setting: SettingDeclaration }) {
     case 'secret':
       return <SecretControl setting={setting} nature={nature} />
     default: {
-      // Exhaustivite : ajouter une nature sans son controle ne compile pas.
+      // Exhaustiveness: a new nature without its control fails to compile.
       const exhaustive: never = nature
       return exhaustive
     }
   }
 }
 
-/** Attenue la valeur tant qu'elle est suivie du niveau au-dessus (ADR-39). */
+/** Dims the value while it's inherited from the level above (ADR-39). */
 function followingClass(setting: SettingDeclaration) {
   return setting.provenance?.following ? 'text-muted-foreground' : undefined
 }
@@ -151,8 +147,7 @@ function NumberControl({
   setting: SettingDeclaration
   nature: Narrow<'number'>
 }) {
-  // Saisie libre tant que le champ a le focus : sans cela, taper « 30 » enverrait
-  // d'abord « 3 » et la valeur sauterait sous les doigts.
+  // Free typing while focused; otherwise "30" would fire "3" first and jump under the cursor.
   const [typed, setTyped] = useState<string | null>(null)
   const min = nature.min ?? 0
   const max = nature.max

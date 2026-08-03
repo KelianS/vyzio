@@ -73,8 +73,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
         port: draft.values.port,
         streamPath: draft.values.streamPath.trim() || null,
         username: draft.values.username.trim() || null,
-        // Un mot de passe vide ne dit pas « pas de mot de passe » mais « je n'y
-        // touche pas » : l'envoyer vide effacerait celui en place.
+        // Empty means "leave unchanged", not "no password" — sending it blank would erase it.
         password: draft.values.password.trim() ? draft.values.password : null,
         vendorFamily: camera.vendorFamily,
         sourceType: camera.sourceType,
@@ -134,8 +133,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
     },
   ]
 
-  // En mode alternatif, l'adresse du flux est deduite par le protocole : la
-  // faire saisir n'aurait pas de sens.
+  // DVRIP derives the stream path from the protocol; asking for it makes no sense.
   if (camera.streamProtocol !== 'dvrip') {
     declarations.push({
       id: 'connection-stream-path',

@@ -10,13 +10,7 @@ import {
   formatStatusTone,
 } from './cameras.formatters'
 
-/**
- * Premier niveau de la rubrique Cameras : **la liste**.
- *
- * Ajouter une camera est une tache distincte, avec sa propre page — la
- * decouverte reseau occupait jusqu'ici tout l'ecran alors qu'elle ne sert qu'une
- * fois par camera, en reléguant la liste au second plan.
- */
+/** First level of the Cameras rubric: the list. Adding a camera is its own task/page. */
 export function CameraListPage() {
   const cameras = useRootStore((state) => state.cameras)
   const loading = useRootStore((state) => state.camerasLoading)

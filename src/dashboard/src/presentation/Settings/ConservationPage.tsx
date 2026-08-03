@@ -23,8 +23,7 @@ import {
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 
-// La requete d'enregistrement est plate quand la lecture est groupee par fenetre :
-// un seul endroit fait le pont entre les deux formes.
+// The save request is flat while reads are grouped by window; this bridges the two shapes.
 const FIELD_OF = {
   continuous: 'continuousDays',
   motion: 'motionDays',
@@ -37,18 +36,9 @@ const DRAFT_LABELS: Record<keyof RecordingSettingsUpdate, string> = {
   eventClipDays: RETENTION_LABEL.eventClip,
 }
 
-/**
- * Durees de conservation de l'installation (ADR-39), ecrite dans la grammaire
- * des reglages (ADR-43) et le cycle d'edition en deux temps (ADR-41).
- *
- * L'enregistrement a la sortie du champ livre avec ADR-39 disparait ici : il
- * etait le seul de son espece, et le brouillon rend le regroupement des
- * changements visible au lieu d'en faire un effet de bord.
- */
+/** Installation-wide retention (ADR-39), in the settings grammar (ADR-43) and draft cycle (ADR-41). */
 export function ConservationPage() {
-  // Ces cas d'usage vivent encore dans le container « cameras », heritage de
-  // l'endroit ou la section etait affichee. Ils rejoindront un container propre
-  // a la reprise des ecrans de reglages.
+  // Still wired through the "cameras" container, a holdover from where this section used to live.
   const { cameras: container } = useAppContainer()
   const { data, loading, error, reload } = useAsync(
     () => container.getRecordingSettings.execute(),
@@ -103,13 +93,12 @@ function ConservationForm({
       label: RETENTION_LABEL[window],
       nature: { kind: 'number', unit: 'jours', min: 0, max: settings.maxDays },
       help: RETENTION_EXPLANATION[window],
-      // Un cout reste visible sans geste supplementaire (ADR-43).
+      // A cost stays visible without an extra gesture (ADR-43).
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
       onChange: (days) => draft.set(field, days as number),
       provenance: {
-        // Un cran au-dessus de la camera : il n'y a pas de surcharge sur quoi
-        // s'appuyer, se tenir sur la valeur livree *est* la suivre.
+        // One level above a camera: there's no override to fall back to, so matching the shipped value *is* following it.
         following: current === shipped,
         fallbackLabel: formatDays(shipped),
         revertLabel: 'Revenir à la valeur d’origine',

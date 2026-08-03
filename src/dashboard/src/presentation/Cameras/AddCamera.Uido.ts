@@ -1,14 +1,9 @@
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
-/**
- * Ce que l'on est en train d'ajouter : une camera trouvee sur le reseau, ou une
- * adresse saisie a la main. L'ancienne union melait a cela la selection d'une
- * camera **existante** — un objet deja regle n'ayant rien a faire dans un ecran
- * d'ajout, il vit maintenant sous sa propre route (ADR-40).
- */
+/** What's being added: a discovered camera, or a manually typed address (ADR-40). */
 export type AddCameraSelection =
-  /** Rien n'est choisi : on cherche encore laquelle ajouter. */
+  /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
 
 export const emptyCameraDraft: CameraDraftInput = {
@@ -26,7 +21,7 @@ export const emptyCameraDraft: CameraDraftInput = {
 export interface AddCameraUido {
   selection: AddCameraSelection
   form: CameraDraftInput
-  /** Voie de secours quand le flux standard n'est pas joignable (ICSee et similaires). */
+  /** Fallback when the standard stream is unreachable (ICSee and similar). */
   dvripMode: boolean
 
   discoveryResults: DiscoveredCamera[]
@@ -35,7 +30,7 @@ export interface AddCameraUido {
   verifying: boolean
   creating: boolean
 
-  /** Resultat de la derniere verification du brouillon ; toute edition l'invalide. */
+  /** Last draft-verification result; any edit invalidates it. */
   verification: { connected: boolean; guidance: string | null } | null
 
   message: string | null

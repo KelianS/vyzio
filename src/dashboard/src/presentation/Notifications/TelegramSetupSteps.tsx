@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-/** Mise en route du bot : quatre gestes qui ont lieu **dans Telegram**, pas ici. */
+/** Bot setup: four steps that happen in Telegram, not here. */
 export function TelegramSetupSteps() {
   return (
     <ol className="list-decimal space-y-3 pl-5 text-sm">

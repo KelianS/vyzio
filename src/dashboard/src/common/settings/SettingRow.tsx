@@ -5,18 +5,7 @@ import { cn } from '../ui/utils'
 import { SettingControl } from './SettingControl'
 import type { SettingDeclaration } from './settingDeclaration'
 
-/**
- * Anatomie **fixe** d'une ligne de reglage (ADR-43) :
- *
- *   nom · aide · controle · provenance · retour arriere
- *
- * Toujours les memes parties, dans le meme ordre, et le controle dans une
- * colonne de largeur commune a toute l'application — c'est ce qui aligne les
- * valeurs verticalement et permet de balayer une page au lieu de la lire.
- *
- * Sur petit ecran la ligne se plie en deux niveaux, nom au-dessus et controle
- * en dessous, mais la colonne reste commune.
- */
+/** Fixed row anatomy (ADR-43): label · help · control · provenance · revert, control column shared app-wide. */
 export function SettingRow({ setting }: { setting: SettingDeclaration }) {
   const { provenance } = setting
   const revertLabel = provenance && `${provenance.revertLabel} : ${provenance.fallbackLabel}`
@@ -40,8 +29,16 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
         {setting.help && <HelpTrigger label={setting.label} help={setting.help} />}
       </div>
 
-      <div className="flex min-w-0 sm:justify-self-stretch">
-        <SettingControl setting={setting} />
+      <div className="flex min-w-0 items-center gap-1.5 sm:justify-self-stretch">
+        <div className="min-w-0 flex-1">
+          <SettingControl setting={setting} />
+        </div>
+
+        {/* Meme geste sur mobile qu'en colonne desktop : une icone-fleche, pas
+            un lien texte — le retour arriere est une action, pas une phrase. */}
+        {provenance && !provenance.following && (
+          <RevertButton label={revertLabel!} onClick={provenance.onRevert} className="sm:hidden" />
+        )}
       </div>
 
       {/* Le retour arriere n'existe que la ou il y a quelque chose a annuler.
@@ -49,31 +46,9 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
           selon qu'un reglage est surcharge ou non. */}
       <div className="hidden sm:flex sm:justify-center">
         {provenance && !provenance.following && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 text-accent-foreground/70 hover:text-foreground"
-            title={revertLabel}
-            aria-label={revertLabel}
-            onClick={provenance.onRevert}
-          >
-            <Undo2 aria-hidden="true" />
-          </Button>
+          <RevertButton label={revertLabel!} onClick={provenance.onRevert} />
         )}
       </div>
-
-      {/* Sur mobile le retour arriere passe sous le controle : une colonne de
-          plus y serait illisible. */}
-      {provenance && !provenance.following && (
-        <button
-          type="button"
-          className="justify-self-start text-sm text-muted-foreground underline underline-offset-2 sm:hidden"
-          onClick={provenance.onRevert}
-        >
-          {revertLabel}
-        </button>
-      )}
 
       {setting.consequence && (
         <p className="text-sm text-muted-foreground sm:col-span-3">{setting.consequence}</p>
@@ -82,11 +57,32 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
   )
 }
 
-/**
- * L'aide, derriere un declencheur **explicite**. Jamais au survol seul : sur la
- * cible mobile, une info-bulle au survol est inatteignable au doigt, donc
- * inexistante.
- */
+/** Arrow icon everywhere — revert names what it restores via title/aria-label, never a visible label. */
+function RevertButton({
+  label,
+  onClick,
+  className,
+}: {
+  label: string
+  onClick: () => void
+  className?: string
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className={cn('size-8 shrink-0 text-accent-foreground/70 hover:text-foreground', className)}
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+    >
+      <Undo2 aria-hidden="true" />
+    </Button>
+  )
+}
+
+/** Help behind an explicit trigger, never hover-only — unreachable by touch. */
 function HelpTrigger({ label, help }: { label: string; help: string }) {
   return (
     <Popover>

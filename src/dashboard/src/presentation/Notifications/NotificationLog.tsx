@@ -9,11 +9,7 @@ const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
   timeStyle: 'short',
 })
 
-/**
- * Ce que Vyzio a reellement envoye. C'est la seule preuve accessible que le
- * canal fonctionne en dehors d'un test, et la seule facon de voir qu'un envoi
- * echoue en silence.
- */
+/** What Vyzio actually sent — the only proof the channel works outside of a manual test. */
 export function NotificationLog({ channel }: { channel: string }) {
   const { notifications: container } = useAppContainer()
   const log = useAsync(() => container.getNotificationLog.execute(channel), [channel])

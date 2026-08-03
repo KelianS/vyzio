@@ -1,43 +1,31 @@
 import { useCallback, useMemo, useState } from 'react'
 
-/**
- * Brouillon de page (ADR-41).
- *
- * Modifier des valeurs **n'a aucun effet** : tout reste local jusqu'a
- * l'enregistrement. Le brouillon reprend au passage le role que la separation
- * « enregistrer puis appliquer » jouait en douce — **grouper plusieurs
- * changements en une seule mise en service** — mais il le rend visible au lieu
- * d'en faire un effet de bord.
- *
- * L'unite est la **page** : un brouillon qui traverse la navigation serait
- * invisible depuis l'endroit ou il agit, impossible a suivre et facile a
- * perdre.
- */
+/** Page draft (ADR-41): edits are local until save, scoped to one page so it stays visible. */
 
-/** Ce qui a change, dit avec les mots de l'utilisateur. */
+/** A change, named in the user's words. */
 export interface DraftChange {
   readonly key: string
   readonly label: string
 }
 
 export interface SettingsDraft<T> {
-  /** Ce qui s'applique a l'ecran : la base, recouverte du brouillon. */
+  /** What the screen renders: saved values overlaid with the draft. */
   readonly values: T
-  /** La derniere valeur enregistree, pour comparer. */
+  /** Last saved value, for comparison. */
   readonly saved: T
   readonly dirty: boolean
   readonly changes: readonly DraftChange[]
   readonly set: <K extends keyof T>(key: K, value: T[K]) => void
-  /** Rend la page a son dernier etat enregistre. */
+  /** Reverts the page to its last saved state. */
   readonly discard: () => void
-  /** Vide le brouillon apres un enregistrement reussi. */
+  /** Clears the draft after a successful save. */
   readonly accept: () => void
 }
 
 export interface UseSettingsDraftOptions<T> {
-  /** Valeurs enregistrees. Un rechargement les remplace. */
+  /** Saved values; a reload replaces them. */
   readonly saved: T
-  /** Nom lisible de chaque reglage, pour dire **ce qui** a change. */
+  /** Human label per setting, to say what changed. */
   readonly labels: Readonly<Record<keyof T, string>>
 }
 
@@ -47,19 +35,15 @@ export function useSettingsDraft<T extends object>({
 }: UseSettingsDraftOptions<T>): SettingsDraft<T> {
   const [edits, setEdits] = useState<Partial<T>>({})
 
-  // Recouvrement plutot qu'une copie posee dans un effet : une copie se
-  // desynchroniserait du serveur des qu'une valeur revient d'ailleurs.
+  // Overlay rather than a copy-in-effect, which would drift once a value changes server-side.
   const values = useMemo(() => ({ ...saved, ...edits }) as T, [saved, edits])
 
   const changes = useMemo(() => {
     const touched = (Object.keys(edits) as (keyof T)[])
-      // Revenir a la valeur enregistree annule la modification : ce n'est plus
-      // un changement, et le brouillon ne doit pas pretendre le contraire.
+      // Back to the saved value is no longer a change.
       .filter((key) => !Object.is(edits[key], saved[key]))
 
-    // Un meme reglage peut s'ecrire sur plusieurs cles — un niveau et le fait
-    // qu'il soit fixe, par exemple. L'utilisateur, lui, n'en a change qu'un :
-    // compter deux fois le meme libelle lui ferait douter de ce qu'il a fait.
+    // One setting can span several keys (a level and whether it's pinned); count its label once.
     const seen = new Set<string>()
     return touched.reduce<DraftChange[]>((accumulated, key) => {
       const label = labels[key]

@@ -31,7 +31,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
       dispatch({ type: 'MANUAL_ENTRY_SELECTED' })
     },
 
-    /** Revenir au choix de la camera, sans perdre les resultats de recherche. */
+    /** Back to picking a camera, keeping the scan results. */
     onClearSelection() {
       dispatch({ type: 'SELECTION_CLEARED' })
     },
@@ -111,7 +111,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
       }
     },
 
-    /** Rend la camera creee pour que l'ecran puisse y conduire, ou `null` en cas d'echec. */
+    /** Returns the created camera so the screen can navigate to it, or `null` on failure. */
     async onCreate(
       dvripMode: boolean,
       verified: boolean,
@@ -127,8 +127,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
       dispatch({ type: 'CREATE_STARTED' })
       try {
         const created = await container.createCamera.execute(form)
-        // La verification post-creation confirme la camera telle que le serveur
-        // l'a enregistree, et rapporte ce qu'il reste eventuellement a faire.
+        // Post-create verification confirms the camera as the server saved it.
         const status = await container.verifyCamera.execute(created.id)
         reloadCameras()
         dispatch({ type: 'CREATE_SUCCEEDED' })

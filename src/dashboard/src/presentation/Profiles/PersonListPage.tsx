@@ -6,13 +6,7 @@ import { useAsync } from '../../common/hooks/useAsync'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { ALERT_MODE_LABELS, CATEGORY_LABELS } from './personLabels'
 
-/**
- * Premier niveau de la rubrique Personnes : **la liste** (ADR-40).
- *
- * Ajouter quelqu'un est une tache distincte, avec sa propre page — le
- * formulaire de creation occupait jusqu'ici le meme panneau que la fiche, si
- * bien qu'on ne savait pas toujours si l'on creait ou si l'on modifiait.
- */
+/** First level of the Persons rubric: the list (ADR-40). Adding is its own task/page. */
 export function PersonListPage() {
   const { profiles: container } = useAppContainer()
   const people = useAsync(() => container.getProfiles.execute(), [])

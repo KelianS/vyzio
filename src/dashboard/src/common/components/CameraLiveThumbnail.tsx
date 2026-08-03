@@ -80,8 +80,7 @@ export function CameraLiveThumbnail({
             </span>
           </div>
         ) : deviceOffline ? (
-          // Sur le cadre sombre, le texte reste clair — mais lisible, pas a
-          // demi efface comme l'ancienne pastille.
+          // Light text on the dark frame, but fully opaque unlike the old faded pill.
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
             <WifiOff className="size-4" aria-hidden="true" />
             Hors ligne

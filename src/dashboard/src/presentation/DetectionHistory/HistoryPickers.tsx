@@ -6,11 +6,7 @@ import {
   SelectValue,
 } from '../../common/ui/select'
 
-/**
- * « Aucun choix » est une valeur comme une autre pour la liste deroulante — le
- * vide n'en est pas une. Ces sentinelles ne sortent jamais d'ici : au-dehors,
- * l'absence de filtre reste la chaine vide.
- */
+/** "Any" is a real value for the dropdown, since empty isn't one; never leaks past this file. */
 export const ALL = '__all__'
 export const UNKNOWN = '__unknown__'
 

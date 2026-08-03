@@ -26,7 +26,7 @@ import {
   type NotificationValues,
 } from './notificationSettings'
 
-/** Seul canal a ce jour : une liste de canaux pour un seul element serait un detour. */
+/** Only channel for now — a channel list for one item would be overkill. */
 const CHANNEL = 'telegram'
 
 const MEDIA_MODE_OPTIONS: readonly { value: MediaMode; label: string }[] = [
@@ -121,8 +121,7 @@ function NotificationsForm({
     },
   )
 
-  // Activer envoie des images hors du reseau local : la question se pose une
-  // fois, au moment de l'enregistrer, jamais en cochant (invariant vie privee).
+  // Enabling ships images off the local network: asked once, at save, never on the toggle itself.
   function save() {
     if (draft.values.enabled && !config?.isEnabled) {
       setConfirmEnable(true)
@@ -203,8 +202,7 @@ function NotificationsForm({
         id: 'telegram-to',
         label: 'Jusqu’à',
         nature: { kind: 'choice', options: HOUR_OPTIONS },
-        // Une plage qui finit avant de commencer traverse minuit : c'est le cas
-        // le plus courant (la nuit), et il vaut mieux le dire que l'interdire.
+        // A range ending before it starts crosses midnight — the common case, worth stating.
         consequence:
           draft.values.fromHour > draft.values.toHour
             ? 'La plage passe minuit : les alertes s’arrêtent le lendemain matin.'
@@ -341,7 +339,7 @@ function NotificationsForm({
   )
 }
 
-/** L'etat du canal se dit en une phrase, la ou il se regle. */
+/** Channel status in one sentence, right where it's configured. */
 function describeChannel(config: NotificationChannelConfig | null): string {
   if (!config?.hasToken || !config.chatId) return 'Pas encore configuré.'
   if (!config.isEnabled) return 'Configuré, mais aucune alerte n’est envoyée.'

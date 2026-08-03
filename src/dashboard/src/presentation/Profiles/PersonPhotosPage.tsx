@@ -10,7 +10,7 @@ import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { usePerson } from './personContext'
 
-/** En dessous, la reconnaissance se trompe plus qu'elle ne reconnait. */
+/** Below this, recognition misfires more than it recognizes. */
 const ADVISED_PHOTOS = 3
 
 export function PersonPhotosPage() {
@@ -161,7 +161,7 @@ export function PersonPhotosPage() {
   )
 }
 
-/** Dit ou l'on en est du seuil, plutot que d'afficher un compteur a interpreter. */
+/** States where the count stands relative to the threshold, instead of a bare number. */
 function describeCoverage(count: number, loading: boolean): string {
   if (loading) return 'Chargement…'
   if (count === 0) return 'Aucune photo : la reconnaissance est inactive pour cette personne.'

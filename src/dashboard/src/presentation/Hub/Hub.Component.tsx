@@ -117,7 +117,7 @@ function HubLoading() {
   )
 }
 
-/** Vyzio ne repond pas : on nomme la panne, et ce qu'il y a a verifier. */
+/** Vyzio unreachable: name the failure and what to check. */
 function HubUnreachable({ error }: { error: AppError | null }) {
   return (
     <main className="py-4">

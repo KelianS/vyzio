@@ -28,19 +28,10 @@ import { buildAddCameraPresenter } from './AddCamera.Presenter'
 import { addCameraReducer } from './AddCamera.Reducer'
 import { buildInitialAddCameraUido } from './AddCamera.Uido'
 
-/** Signal de decouverte qui autorise la voie de secours (ADR-32). */
+/** Discovery signal that unlocks the DVRIP fallback (ADR-32). */
 const DVRIP_SIGNAL = 'dvrip_port_detected'
 
-/**
- * Ajouter une camera : **une tache**, donc une page (ADR-40).
- *
- * L'ecran hérité mettait la decouverte reseau au centre de la rubrique alors
- * qu'elle ne sert qu'une fois par camera, et exposait les trois etages du
- * pipeline de decouverte (identification, enrichissement, interpretation) comme
- * autant de titres : une carte du backend, utile a nous seuls. Ici l'ordre est
- * celui de la tache — trouver, renseigner, verifier, ajouter — et les faits
- * techniques attendent sous « Avance ».
- */
+/** Adding a camera is one task, one page (ADR-40): find, fill in, verify, add — technical facts under "Advanced". */
 export function AddCameraView() {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
@@ -55,15 +46,13 @@ export function AddCameraView() {
       ? (uido.discoveryResults[uido.selection.index] ?? null)
       : null
 
-  // Une camera deja au catalogue n'est plus a ajouter : la reproposer inviterait
-  // a creer un doublon.
+  // Already-catalogued cameras are dropped to avoid re-adding a duplicate.
   const unclaimed = uido.discoveryResults.filter(
     (entry) => !knownCameras.some((known) => known.host === entry.host),
   )
 
   useEffect(() => {
-    // Le candidat choisi a disparu d'une nouvelle recherche : mieux vaut revenir
-    // au choix que garder un formulaire rempli pour un appareil evanoui.
+    // Chosen candidate vanished from a fresh scan: clear rather than keep a stale form.
     if (uido.selection.kind === 'candidate' && !uido.discoveryResults[uido.selection.index]) {
       presenter.onClearSelection()
     }
@@ -78,7 +67,7 @@ export function AddCameraView() {
 
   const busy = uido.discovering || uido.refreshing || uido.verifying || uido.creating
 
-  // Ce que la premiere etape a retenu, dit en une ligne quand elle est repliee.
+  // One-line summary of step 1's pick, shown once the list collapses.
   const chosen = candidate
     ? {
         title: candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName,
@@ -90,8 +79,7 @@ export function AddCameraView() {
       ? { title: 'Adresse saisie à la main', detail: uido.form.host || 'Adresse à renseigner' }
       : null
 
-  // Sans flux joignable ni voie de secours, il n'y a rien a renseigner : la
-  // camera doit d'abord etre ouverte depuis son application.
+  // No reachable stream and no fallback: the camera must be opened from its app first.
   const needsActivation = Boolean(candidate && !candidate.streamPath && !uido.dvripMode)
   const dvripAvailable = Boolean(
     candidate?.qualificationReasons.includes(DVRIP_SIGNAL) && !candidate.streamPath,
@@ -106,8 +94,7 @@ export function AddCameraView() {
       uido.form.host.trim() &&
       (uido.dvripMode || uido.form.streamPath?.trim()),
     )
-  // En voie de secours la verification du brouillon ne s'applique pas : le flux
-  // n'existe qu'une fois la camera ouverte par le protocole proprietaire.
+  // DVRIP mode has no draft verification: the stream only exists once opened by that protocol.
   const canAdd = Boolean(uido.verification?.connected) || uido.dvripMode
 
   async function add() {
@@ -186,9 +173,7 @@ export function AddCameraView() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Cet ecran nomme une tache, pas la rubrique : le retour vers la liste
-          lui revient donc aussi, sinon l'ajout serait sans issue sur petit
-          ecran, ou le menu des rubriques est masque. */}
+      {/* Own back link: this route names a task, not the rubric, and owns its exit on mobile. */}
       <div>
         <Link
           to="/settings/cameras"
@@ -383,8 +368,7 @@ function CandidateRow({
 }) {
   const title = candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
   const vendor = formatVendorFamily(candidate.vendorFamily)
-  // Une notice constructeur vaut reconnaissance : Vyzio sait quoi faire de la
-  // camera meme quand la marque n'est pas nommee.
+  // Vendor docs count as recognition even when the brand itself isn't named.
   const recognised = Boolean(vendor || candidate.vendorDocumentation?.markdown?.trim())
 
   return (
@@ -408,7 +392,7 @@ function CandidateRow({
   )
 }
 
-/** Ce que la derniere action a repondu : une reussite, ou un echec, jamais les deux. */
+/** Last action's outcome: success or failure, never both. */
 function Feedback({ message, error }: { message: string | null; error: string | null }) {
   if (error) return <p className="text-sm text-destructive">{error}</p>
   if (message) return <p className="text-sm text-success">{message}</p>
@@ -430,11 +414,7 @@ function SelectableRow({ onSelect, children }: { onSelect: () => void; children:
   )
 }
 
-/**
- * Les faits bruts de la decouverte, sous le repli de fin de page. Ils ne servent
- * qu'a diagnostiquer un ajout qui resiste : les mettre dans le parcours ferait
- * lire un rapport reseau pour brancher une camera.
- */
+/** Raw discovery facts, kept under the closing fold — only useful to diagnose a stuck add. */
 function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   const details = candidate.technicalDetails
   const ports = details?.detectedPorts ?? []

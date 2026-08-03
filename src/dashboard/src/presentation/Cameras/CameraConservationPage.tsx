@@ -31,12 +31,7 @@ const DRAFT_LABELS: Record<keyof RetentionOverrides, string> = {
   eventClipDaysOverride: RETENTION_LABEL.eventClip,
 }
 
-/**
- * Conservation **de cette camera** : la jumelle, un cran plus bas, de la page
- * Conservation de l'installation. Meme forme, meme contenu — seule change ce qui
- * declenche l'etat « suivi » : ici l'absence de surcharge, la-haut l'egalite
- * avec la valeur livree (ADR-39).
- */
+/** Per-camera retention: same shape as the installation page, "following" means no override here (ADR-39). */
 export function CameraConservationPage() {
   const { cameraId } = useParams()
   const { cameras: container } = useAppContainer()
@@ -95,8 +90,7 @@ function ConservationForm({
     const field = RETENTION_UPDATE_FIELD[window]
     const override = draft.values[field]
     const inherited = config.retention[window].installation
-    // La valeur qui s'applique : la surcharge si elle existe, sinon celle de
-    // l'installation. `null` signifie « suivre », jamais une valeur deguisee.
+    // Override if set, otherwise the installation value; `null` means "follow", never a disguised value.
     const effective = override ?? inherited
 
     return {
@@ -106,7 +100,7 @@ function ConservationForm({
       help: RETENTION_EXPLANATION[window],
       consequence: window === 'continuous' && effective > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: effective,
-      // Ecrire dans le champ suffit a creer la surcharge.
+      // Writing to the field is what creates the override.
       onChange: (days) => draft.set(field, days as number),
       provenance: {
         following: override === null,

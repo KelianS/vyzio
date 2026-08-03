@@ -7,20 +7,13 @@ import type {
 } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 
-// Les surcharges de conservation vivent sur leur propre page : les inclure ici
-// ferait porter a un brouillon des reglages que l'ecran n'affiche pas.
+// Retention overrides live on their own page; a shared draft here would track unrendered fields.
 export type DetectionUpdate = Omit<
   DetectionConfigUpdate,
   'continuousDaysOverride' | 'motionDaysOverride' | 'eventClipDaysOverride'
 >
 
-/**
- * « Automatique » est une **valeur du meme reglage**, pas un interrupteur a
- * cote : l'ajustement automatique (ADR-35) et un niveau fixe sont deux reponses
- * exclusives a la meme question. Les separer en deux controles ferait deux
- * sources de verite pour un seul fait — et, faute d'un chemin de retour, rendait
- * l'automatique irrecuperable des qu'un niveau avait ete choisi une fois.
- */
+/** "Auto" is a value of the same setting, not a side switch (ADR-35) — auto-tune and a pinned level are exclusive answers to one question. */
 const AUTO = 'auto'
 
 const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
@@ -50,9 +43,7 @@ export const DETECTION_DRAFT_LABELS: Record<keyof DetectionUpdate, string> = {
   detectStreamId: 'Image analysée',
 }
 
-// Un flux est decrit par ce que la camera a reellement annonce, jamais par un
-// nom de palier invente. Le rang ne sert que de repli quand le protocole liste
-// ses flux sans les mesurer (ADR-38).
+// A stream is described by what the camera actually reports; ordinal is only a fallback (ADR-38).
 function describeStream(stream: CameraStream, total: number): string {
   const parts: string[] = []
 
@@ -74,13 +65,7 @@ function describeStream(stream: CameraStream, total: number): string {
   return parts.join(' · ') + suffix
 }
 
-/**
- * Traduit l'etat d'une camera en reglages declares. Extrait du composant pour
- * rester verifiable : les regles qui vivent ici — quelles categories sont
- * proposees, le fait que choisir une sensibilite arrete l'ajustement
- * automatique, l'absence de choix quand il n'y a qu'un flux — sont du metier,
- * pas du rendu.
- */
+/** Camera state -> declared settings. Kept out of the component so these business rules stay testable. */
 export function buildDetectionSettings({
   config,
   allLabels,
@@ -92,8 +77,7 @@ export function buildDetectionSettings({
   values: DetectionUpdate
   set: <K extends keyof DetectionUpdate>(key: K, value: DetectionUpdate[K]) => void
 }): SettingDeclaration[] {
-  // Une camera ne propose que ce qu'elle sait reellement detecter, quand elle
-  // le dit ; sinon le catalogue complet.
+  // Only what the camera actually reports detecting, when it says so; otherwise the full catalogue.
   const displayLabels =
     config.availableLabels.length > 0
       ? allLabels.filter((label) => config.availableLabels.includes(label.value))
@@ -121,12 +105,11 @@ export function buildDetectionSettings({
       help: SENSITIVITY_HELP,
       consequence:
         SENSITIVITY_CONSEQUENCE[values.motionSensitivityPinned ? values.motionSensitivity : AUTO],
-      // Tant que rien n'est fixe, c'est bien « Automatique » qui s'applique.
+      // Auto applies as long as nothing is pinned.
       value: values.motionSensitivityPinned ? values.motionSensitivity : AUTO,
       onChange: (value) => {
         if (value === AUTO) {
-          // Le niveau atteint est conserve : il redevient simplement le point de
-          // depart de l'ajustement, au lieu d'etre efface.
+          // The reached level is kept as auto-tune's new starting point, not erased.
           set('motionSensitivityPinned', false)
           return
         }
@@ -136,8 +119,7 @@ export function buildDetectionSettings({
     },
   ]
 
-  // Le choix n'apparait que si la camera offre vraiment plusieurs flux (ADR-38) :
-  // un seul flux ne laisse rien a arbitrer.
+  // Only shown with more than one stream (ADR-38) — a single stream leaves nothing to choose.
   if (config.streams.length > 1) {
     declarations.push({
       id: 'detection-stream',

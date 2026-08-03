@@ -4,8 +4,7 @@ import type { CameraStream, DetectionConfig } from '../../domain/entities/Detect
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { SettingDeclaration, SettingOption } from '../../common/settings/settingDeclaration'
 
-// Les natures « a options » sont les seules interrogees ici ; y acceder sans ce
-// garde-fou obligerait a un cast qui masquerait une erreur de nature.
+// Only "options" natures are queried here; a guard beats a cast that would hide a nature mismatch.
 function optionsOf(setting: SettingDeclaration): readonly SettingOption[] {
   const { nature } = setting
   if (nature.kind !== 'choice' && nature.kind !== 'multiChoice') {
@@ -86,7 +85,7 @@ describe('Réglages de détection d’une caméra', () => {
     const { settings } = build(config(), values({ motionSensitivityPinned: false }))
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
-    // « Automatique » est une valeur du reglage, pas un interrupteur a cote.
+    // "Auto" is a value of the setting, not a side switch.
     expect(sensitivity.value).toBe('auto')
     expect(optionsOf(sensitivity).map((option) => option.value)).toEqual([
       'auto',

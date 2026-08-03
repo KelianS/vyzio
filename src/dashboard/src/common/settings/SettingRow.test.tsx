@@ -162,7 +162,7 @@ describe('Grammaire des réglages — saisie numérique', () => {
 
     const input = screen.getByRole('spinbutton')
     await userEvent.type(input, '30')
-    // Sauver a chaque frappe enverrait « 3 » puis « 30 ».
+    // Saving on every keystroke would fire "3" then "30".
     expect(onChange).not.toHaveBeenCalled()
 
     await userEvent.tab()

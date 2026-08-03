@@ -2,16 +2,7 @@ import type { ReactNode } from 'react'
 import { Badge as BadgePrimitive } from '../ui/badge'
 import { cn } from '../ui/utils'
 
-/**
- * Pastille d'etat : une **qualification**, jamais une action (DESIGN SYSTEM,
- * regle de forme pilule vs rectangle). Batie sur la primitive shadcn/ui
- * (ADR-42) plutot que redessinee a la main.
- *
- * Le texte reste `foreground` et seule la teinte de fond porte le ton : c'est
- * ce qui garantit le contraste sur une surface claire comme sombre. Les
- * anciennes pastilles peignaient le texte en clair — invisible des qu'elles
- * ont quitte les panneaux sombres.
- */
+/** State badge, built on the shadcn primitive (ADR-42); tone is background-only so text stays readable on any surface. */
 export type BadgeTone = 'ok' | 'warn' | 'danger' | 'neutral'
 
 const TONE_CLASS: Record<BadgeTone, string> = {

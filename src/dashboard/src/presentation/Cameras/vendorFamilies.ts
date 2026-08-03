@@ -1,11 +1,6 @@
 import type { SettingOption } from '../../common/settings/settingDeclaration'
 
-/**
- * Les marques que Vyzio sait reconnaitre.
- *
- * Foyer unique : la liste servait a trois endroits de l'ecran d'ajout, et la
- * moindre divergence entre eux se lisait comme deux marques differentes.
- */
+/** Vendor families Vyzio recognizes — single source, was duplicated across the add screen. */
 export const VENDOR_FAMILY_LABELS = {
   v380_pro: 'V380 PRO',
   tplink_tapo: 'TP-Link Tapo',
@@ -14,7 +9,7 @@ export const VENDOR_FAMILY_LABELS = {
 
 export type VendorFamily = keyof typeof VENDOR_FAMILY_LABELS
 
-/** « Pas de marque » est une valeur du choix, pas une absence : une liste ne peut pas offrir le vide. */
+/** "No vendor" is a choice value, not an absence: a dropdown can't offer emptiness. */
 export const VENDOR_UNKNOWN = 'unknown'
 
 export const VENDOR_FAMILY_OPTIONS: readonly SettingOption[] = [

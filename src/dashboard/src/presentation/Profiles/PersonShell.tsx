@@ -12,7 +12,7 @@ const PERSON_PAGES = [
   { slug: 'cameras', label: 'Caméras' },
 ]
 
-/** Troisieme niveau : les pages d'**une** personne (ADR-40), comme pour une camera. */
+/** Third level: pages of one person (ADR-40), mirroring the camera shell. */
 export function PersonShell() {
   const { profileId } = useParams()
   const { profiles: container } = useAppContainer()
@@ -23,8 +23,7 @@ export function PersonShell() {
 
   if (!found) {
     return (
-      // Cette route annonce porter son propre en-tete : sans personne a nommer,
-      // c'est a l'echec de le faire, sinon la page resterait anonyme.
+      // This route owns its header; with no person to name, it must do so itself.
       <SettingsPage>
         <h1 className="font-serif text-3xl">Personne introuvable</h1>
         <Link

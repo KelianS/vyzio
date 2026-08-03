@@ -18,7 +18,7 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
   timeStyle: 'short',
 })
 
-/** Une detection sans identite n'est pas anonyme par erreur : elle est inconnue. */
+/** A detection without an identity isn't anonymous by mistake — it's unknown. */
 const UNIDENTIFIED = 'Inconnu'
 
 export function DetectionHistoryView() {
@@ -353,7 +353,7 @@ function SnapshotOverlay({ url, onClose }: { url: string; onClose: () => void })
   )
 }
 
-/** `datetime-local` parle l'heure locale sans fuseau ; le filtre stocke de l'ISO. */
+/** `datetime-local` speaks local time with no timezone; the filter stores ISO. */
 function toLocalInput(iso: string): string {
   if (!iso) return ''
   const date = new Date(iso)

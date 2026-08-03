@@ -34,7 +34,7 @@ const DEGRADED_MESSAGE: Record<DegradedStatus, string> = {
   unavailable: 'Aucune mesure tant que la surveillance ne tourne pas.',
 }
 
-/** Le diagnostic n'a de sens que si l'etat ne se resout pas tout seul. */
+/** Diagnosis link only makes sense when the state won't resolve on its own. */
 const DEGRADED_SHOWS_DIAGNOSIS: Record<DegradedStatus, boolean> = {
   restarting: false,
   unavailable: true,

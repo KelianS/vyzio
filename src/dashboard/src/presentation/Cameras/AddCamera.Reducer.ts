@@ -2,7 +2,7 @@ import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import type { AddCameraAction } from './AddCamera.Actions'
 import { emptyCameraDraft, type AddCameraUido } from './AddCamera.Uido'
 
-// Ce qu'un candidat dicte du formulaire. Le reste (identifiants) reste a l'utilisateur.
+// What a candidate dictates on the form; credentials stay the user's own.
 function draftFromCandidate(state: AddCameraUido, candidate: DiscoveredCamera) {
   return {
     ...state.form,
@@ -19,7 +19,7 @@ function draftFromCandidate(state: AddCameraUido, candidate: DiscoveredCamera) {
 export function addCameraReducer(state: AddCameraUido, action: AddCameraAction): AddCameraUido {
   switch (action.type) {
     case 'FORM_UPDATED':
-      // Une verification porte sur des valeurs precises : les changer la perime.
+      // Editing invalidates the verification, which was for the previous values.
       return {
         ...state,
         form: { ...state.form, ...action.patch },
@@ -81,9 +81,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
     case 'DISCOVERY_STARTED':
       return { ...state, discovering: true, message: null, error: null }
 
-    // Rien n'est choisi a l'arrivee des resultats : designer d'office la premiere
-    // camera ouvrirait un formulaire pour un appareil que l'utilisateur n'a pas
-    // encore regarde, et le clic sur les autres n'aurait alors plus d'effet visible.
+    // Auto-selecting the first result would open a form for a camera nobody looked at yet.
     case 'DISCOVERY_SUCCEEDED':
       return {
         ...state,

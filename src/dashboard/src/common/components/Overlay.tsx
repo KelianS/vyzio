@@ -3,12 +3,7 @@ import { X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { cn } from '../ui/utils'
 
-/**
- * Plein ecran sombre pour regarder une image ou une video.
- *
- * Distinct de `ConfirmModal` : ici rien n'est demande, on montre. Fermer est
- * donc offert partout — le bouton, et le fond lui-meme.
- */
+/** Full-screen dark viewer for an image or video — shows, asks nothing, unlike ConfirmModal. */
 export function Overlay({
   label,
   onClose,
@@ -39,7 +34,7 @@ export function Overlay({
         <X aria-hidden="true" />
       </Button>
 
-      {/* Le contenu ne ferme pas : on clique dedans pour lire une video. */}
+      {/* Content doesn't close on click: needed to interact with a video. */}
       <div className="max-h-full max-w-full" onClick={(event) => event.stopPropagation()}>
         {children}
       </div>

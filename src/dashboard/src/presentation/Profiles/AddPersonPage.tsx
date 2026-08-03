@@ -11,7 +11,7 @@ import { useAppContainer } from '../../infrastructure/providers/AppContainerCont
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/Profile'
 import { ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './personLabels'
 
-/** Ajouter une personne : une tache, donc une page qui la nomme (ADR-40). */
+/** Adding a person is one task, one page (ADR-40). */
 export function AddPersonPage() {
   const { profiles: container } = useAppContainer()
   const { toast } = useToast()
@@ -26,8 +26,7 @@ export function AddPersonPage() {
     {
       onSuccess: (person) => {
         toast(`« ${person!.name} » ajoutée.`, 'success')
-        // La suite de la tache est d'ajouter ses photos : sans elles, la
-        // reconnaissance ne peut rien faire de ce profil.
+        // Photos are next: without them recognition can't do anything with this profile.
         void navigate(`/settings/detection/personnes/${person!.id}/photos`)
       },
     },

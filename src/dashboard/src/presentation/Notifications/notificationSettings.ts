@@ -4,16 +4,10 @@ import type {
   SaveNotificationChannelConfigRequest,
 } from '../../domain/entities/NotificationChannelConfig'
 
-/**
- * Les valeurs telles que l'ecran les manipule, et leur traduction vers l'API.
- *
- * L'ecran ne connait ni pourcentages fractionnaires ni « null qui veut dire
- * desactive » : chaque bascule de l'interface est un booleen a elle, et la
- * conversion vit ici, en un seul endroit.
- */
+/** Screen-facing values and their API translation — one place for every fractional/null quirk. */
 export interface NotificationValues {
   enabled: boolean
-  /** Vide = on garde celle deja enregistree ; l'API ne renvoie jamais la cle. */
+  /** Empty means keep the stored key; the API never returns it. */
   botToken: string
   chatId: string
   minimumConfidence: number
@@ -70,8 +64,7 @@ export function toNotificationValues(config: NotificationChannelConfig): Notific
     minimumConfidence: Math.round(config.minimumConfidence * 100),
     allowedLabels: config.allowedLabels.length > 0 ? config.allowedLabels : DEFAULT_LABELS,
     restrictHours,
-    // Les heures gardent leur valeur quand la plage est levee : la reactiver
-    // retrouve celle qu'on avait choisie, au lieu de repartir d'un defaut.
+    // Hours keep their value when the range toggle is off, so re-enabling restores them.
     fromHour: config.activeFromHour ?? DEFAULT_NOTIFICATION_VALUES.fromHour,
     toHour: config.activeToHour ?? DEFAULT_NOTIFICATION_VALUES.toHour,
     limitRepeats: config.cooldownMinutes !== null,

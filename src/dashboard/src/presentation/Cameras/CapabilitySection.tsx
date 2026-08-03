@@ -108,8 +108,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
   }
 
   return (
-    // Le titre vient de la section qui l'accueille : le porter aussi ici
-    // affichait « Capacites » deux fois de suite.
+    // Title comes from the hosting section; repeating it here doubled up.
     <section className="grid gap-1.5">
       {camera.supportedProtocols.length > 0 && (
         <div className="capability-protocol-badges">
@@ -561,7 +560,7 @@ function ManualCapabilityForm({
   )
 }
 
-/** Liste deroulante du socle, avec des options deja formatees (ADR-42). */
+/** Socle dropdown with pre-formatted options (ADR-42). */
 function Picker({
   value,
   options,
