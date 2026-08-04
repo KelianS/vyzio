@@ -89,6 +89,35 @@ réconcilié sur Frigate.** Frigate est le dépositaire des médias et de leur d
 l'index métier — identité, profil, notification — et **ne prétend jamais savoir seul** ce que Frigate
 détient encore.
 
+### Qui détient quoi — un fait, un détenteur
+
+Rien n'est maintenu en double : chaque fait a un propriétaire unique, déterminé par sa nature.
+
+| Nature du fait | Détenteur | Ce que fait Vyzio |
+| --- | --- | --- |
+| Existence et durée de vie des médias (clip, aperçu) | Frigate | Ne stocke rien, demande au moment où la réponse sert |
+| Descripteurs figés à la fin de l'événement (caméra, label, score, horodatage) | Frigate | En garde une copie de lecture, jamais réécrite ni arbitrée |
+| Faits métier de Vyzio (profil résolu, notification envoyée, correction d'identité) | Vyzio | Seul détenteur ; Frigate n'en a pas connaissance |
+
+**En cas de désaccord sur un fait détenu par Frigate, Frigate gagne, sans arbitrage ni fusion.**
+C'est ce qui distingue un index d'une seconde source de vérité, et c'est ce qui rend `HasClip` /
+`HasSnapshot` illégitimes : un cache jamais invalidé sur une valeur qui change.
+
+La copie des descripteurs figés est assumée : sans elle, afficher une page d'historique coûterait un
+aller-retour par ligne, et une coupure de Frigate rendrait une page vide. Elle est licite parce que
+ces valeurs ne changent plus une fois l'événement terminé — l'invalidation qui manque aux drapeaux
+n'a donc pas d'objet ici.
+
+L'identité est le seul fait qui **change de détenteur** : elle arrive du `sub_label` de Frigate, et
+passe sous la propriété de Vyzio dès que l'utilisateur la corrige. La correction ne peut plus être
+écrasée par une relecture.
+
+Vyzio reste par ailleurs la seule façade : Frigate n'est jamais exposé
+([ADR-16](0016-acces-au-flux-live-polling-latest-jpg-via-vyzio.md),
+[ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md)), et le port Frigate dans
+`Core` est ce qui donne au domaine un vocabulaire à lui, absorbant les évolutions de Frigate au lieu
+de les propager.
+
 ### Un seul foyer pour « quel média a cet événement »
 
 Un use case unique répond à cette question, et **demande plutôt que de croire**. Le repli déjà écrit
