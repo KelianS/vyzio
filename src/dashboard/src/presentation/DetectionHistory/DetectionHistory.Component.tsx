@@ -57,10 +57,10 @@ export function DetectionHistoryView() {
 
   const filtered = Boolean(
     uido.filterCamera ||
-      uido.filterLabel ||
-      uido.filterProfileId ||
-      uido.filterFrom ||
-      uido.filterTo,
+    uido.filterLabel ||
+    uido.filterProfileId ||
+    uido.filterFrom ||
+    uido.filterTo,
   )
 
   return (

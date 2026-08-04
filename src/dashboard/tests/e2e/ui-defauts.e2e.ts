@@ -85,7 +85,10 @@ test.describe('Vue live', () => {
 })
 
 test.describe('Positions PTZ, depuis la vue live', () => {
-  async function openLive(page: Page, ptz: Partial<ReturnType<typeof createFakeBackendState>['ptz']> = {}) {
+  async function openLive(
+    page: Page,
+    ptz: Partial<ReturnType<typeof createFakeBackendState>['ptz']> = {},
+  ) {
     const state = createFakeBackendState({
       cameras: [makeFakeCamera({ id: 'camera-1', displayName: 'Salon', ptzSupported: true })],
     })
@@ -157,7 +160,9 @@ test.describe('Historique', () => {
   async function openHistory(page: Page) {
     await installFakeBackend(
       page,
-      createFakeBackendState({ detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2' })] }),
+      createFakeBackendState({
+        detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2' })],
+      }),
     )
     await page.goto('/history')
   }
