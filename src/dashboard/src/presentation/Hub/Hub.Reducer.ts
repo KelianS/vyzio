@@ -9,13 +9,14 @@ export function hubReducer(state: HubUido, action: HubAction): HubUido {
       return { ...state, loading: false, data: action.data }
     case 'LOAD_FAILED':
       return { ...state, loading: false, error: action.error }
-    case 'BATCH_PENDING_SET':
-      return { ...state, batchPending: action.value }
-    case 'BATCH_TOGGLE_STARTED':
-      return { ...state, batchToggleLoading: true }
-    case 'BATCH_TOGGLE_SUCCEEDED':
-      return { ...state, batchToggleLoading: false, batchPending: null }
-    case 'BATCH_TOGGLE_FAILED':
-      return { ...state, batchToggleLoading: false }
+    case 'PRIVACY_PENDING_SET':
+      return { ...state, privacyPending: action.request }
+    case 'PRIVACY_TOGGLE_STARTED':
+      return { ...state, privacyLoading: true }
+    case 'PRIVACY_TOGGLE_SUCCEEDED':
+      return { ...state, privacyLoading: false, privacyPending: null }
+    case 'PRIVACY_TOGGLE_FAILED':
+      // La demande reste a l'ecran : l'utilisateur voit sur quoi l'erreur porte, et peut reessayer.
+      return { ...state, privacyLoading: false }
   }
 }

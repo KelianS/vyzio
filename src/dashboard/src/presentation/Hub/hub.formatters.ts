@@ -1,52 +1,13 @@
-import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
 import type { NotificationSummary } from '../../domain/entities/NotificationSummary'
 import type { Profile } from '../../domain/entities/Profile'
+
+// Ce qu'une detection dit d'elle-meme se formate dans `common/detection/detectionFormatters`,
+// l'accueil et l'historique montrant la meme liste.
 
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
   hour: '2-digit',
   minute: '2-digit',
 })
-
-const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
-export function formatEventTime(value: string): string {
-  const date = new Date(value)
-  const now = new Date()
-  const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  return isToday ? timeFormatter.format(date) : dateTimeFormatter.format(date)
-}
-
-export function formatEventTitle(event: DetectionEvent): string {
-  if (event.identity) {
-    return `${event.identity} detectee`
-  }
-
-  return `Detection '${event.label}'`
-}
-
-export function formatEventDetail(event: DetectionEvent): string {
-  return event.camera.replaceAll('_', ' ')
-}
-
-export function getEventTone(event: DetectionEvent): 'high' | 'ok' | 'normal' {
-  if (event.identity || event.label.toLowerCase() === 'person') {
-    return 'high'
-  }
-
-  if (event.lifecycle.toLowerCase() === 'end') {
-    return 'ok'
-  }
-
-  return 'normal'
-}
 
 export function formatProfileMeta(profile: Profile): string {
   return `${profile.category} · ${profile.alertMode}`

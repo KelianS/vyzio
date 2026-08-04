@@ -3,17 +3,14 @@ import { RotateCw, TriangleAlert } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { cn } from '../../common/ui/utils'
-import {
-  RESTART_ACTION,
-  RESTART_BODY,
-  RESTART_QUESTION,
-} from '../../common/surveillance/pendingRestart'
+import { RESTART_QUESTION, restartWording } from '../../common/surveillance/pendingRestart'
 import { useRestartSurveillance } from './useRestartSurveillance'
 
 // Shown only when something is actually waiting, so its absence is a positive statement (ADR-44).
 export function RestartSurveillanceTrigger() {
   const { pending, restarting, failure, restart } = useRestartSurveillance()
   const [asking, setAsking] = useState(false)
+  const wording = restartWording(failure)
 
   if (!pending && !failure) return null
 
@@ -33,14 +30,14 @@ export function RestartSurveillanceTrigger() {
         ) : (
           <RotateCw className={cn(restarting && 'animate-spin')} aria-hidden="true" />
         )}
-        {restarting ? 'Redémarrage…' : failure ? 'Redémarrage échoué' : RESTART_ACTION}
+        {restarting ? 'Redémarrage…' : wording.triggerLabel}
       </Button>
 
       {asking && (
         <ConfirmModal
           title={RESTART_QUESTION}
-          body={failure ? `${failure} ${RESTART_BODY}` : RESTART_BODY}
-          confirmLabel={failure ? 'Réessayer' : 'Redémarrer'}
+          body={wording.body}
+          confirmLabel={wording.confirmLabel}
           cancelLabel="Plus tard"
           tone="confirm"
           loading={restarting}

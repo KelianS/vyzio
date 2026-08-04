@@ -1,2 +1,7 @@
 allowBuilds:
   unrs-resolver: true
+  esbuild: true
+
+overrides:
+  # Remonte le correctif de GHSA-rgw5-rvv9-x895, qu'ESLint traine encore via minimatch.
+  brace-expansion: '>=5.0.9'

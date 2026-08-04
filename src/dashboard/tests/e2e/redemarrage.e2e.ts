@@ -63,7 +63,13 @@ test.describe('Redémarrage de la surveillance', () => {
     // Saying it once then forgetting would let the user believe the settings were taken up.
     const failed = page.getByRole('button', { name: /Redémarrage échoué/ })
     await expect(failed).toBeVisible()
+
+    // Quitter les reglages repose la question — elle doit repartir de l'echec, pas de zero.
     await page.getByRole('link', { name: 'Accueil' }).click()
+    const guard = page.getByRole('alertdialog')
+    await expect(guard).toContainText('La surveillance n’a pas redémarré.')
+    await guard.getByRole('button', { name: 'Réessayer' }).click()
+
     await expect(failed).toBeVisible()
   })
 

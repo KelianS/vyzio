@@ -85,6 +85,68 @@ Les quatre decisions se livrent ensemble : une arborescence propre remplie de fo
 
 ---
 
+### `ui-defauts` — Défauts relevés à l'usage
+
+Relevés en manipulant l'application après le chantier [`config-ui`](#). Ce ne sont pas des questions
+de cadrage : chacun est un comportement qui trompe l'utilisateur ou lui cache ce qui se passe. Chacun
+est reproduit par un test avant d'être corrigé.
+
+1. **Une caméra qu'on met en pause ne dit rien.** Le bouton `Pause` / `Réactiver` d'une vignette
+   déclenche une opération longue (le mode vie privée touche la caméra elle-même) sans confirmation,
+   sans attente visible, et sans dire si elle a abouti — alors que `Tout couper`, qui fait la même
+   chose pour toutes, demande confirmation et montre son attente.
+
+2. **Les miniatures de détection n'ont plus de chargement.** Pendant un redémarrage de la
+   surveillance, l'aperçu d'une détection ne se charge pas et laisse une image cassée ; le
+   chargement qui l'accompagnait a disparu.
+
+3. **Une image cassée apparaît derrière « Redémarrage en cours… ».** Le voile n'est pas opaque et
+   l'image en échec reste visible dessous — sur la vignette comme en plein écran, où elle se réduit
+   en plus à un timbre-poste, l'image sans données n'ayant plus de dimensions.
+
+4. **Une miniature en échec le reste jusqu'au rechargement de la page.** Aucun réessai : ce qui a
+   échoué une fois ne se retente jamais, même quand la surveillance est revenue.
+
+5. **La vue live n'a pas de fermeture visible.** Rien n'indique qu'il faut cliquer en dehors.
+
+6. **L'historique ne ressemble pas à l'accueil**, alors que l'accueil montre la même chose en mieux :
+   filtres dépliés en permanence occupant le haut de l'écran, et aucune miniature. Les deux écrans
+   doivent partager le même composant de liste, l'accueil n'en étant que les cinq dernières.
+
+7. **Enregistrer sa première position PTZ demande un appui long.** La tuile `+` annonce une action
+   simple ; l'appui long est le geste de l'écrasement, pas celui de la création.
+
+8. **Les positions PTZ ne répondent pas.** Un appui n'accuse rien, et rien n'indique sur quelle
+   position la caméra se trouve — alors que le backend renvoie déjà `currentPosition`.
+
+9. **Une caméra non calibrée ne le dit pas.** Les positions sont inertes et aucun message n'explique
+   pourquoi ; il faut passer par les réglages pour que ça reparte. `getPtzPresets` renvoie pourtant
+   `calibrated`, que la vue live jette.
+
+10. **Sur mobile, l'appui long PTZ ouvre le menu contextuel du navigateur** au lieu de redéfinir la
+    position.
+
+**Fait.** Les dix sont corrigés, chacun tenu par un test :
+[`ui-defauts.e2e.ts`](../src/dashboard/tests/e2e/ui-defauts.e2e.ts) pour ce qui ne se voit qu'à
+l'écran entier, [`PtzControlPanel.test.tsx`](../src/dashboard/src/common/components/PtzControlPanel.test.tsx)
+et [`DetectionThumbnail.test.tsx`](../src/dashboard/src/common/components/DetectionThumbnail.test.tsx)
+pour les gestes et les réessais. Trois corrections ont dépassé le défaut signalé, la cause étant
+plus haute :
+
+- **Couper une caméra passe par le même chemin que les couper toutes** — une seule demande, une
+  seule confirmation, une seule annonce ([`privacyRequest.ts`](../src/dashboard/src/presentation/Hub/privacyRequest.ts)).
+  Deux chemins pour le même acte étaient la raison pour laquelle l'un avait tout ce que l'autre
+  n'avait pas.
+- **L'accueil et l'historique partagent `common/detection/DetectionList`**, l'accueil n'en étant que
+  les cinq dernières. C'est ce qui rend impossible qu'ils redivergent.
+- **La croix de la vue live était sous l'en-tête collé** (`z-100` contre `z-50`) : elle était bien
+  là, mais inatteignable. Le voile passe au-dessus de la chrome de l'application.
+
+Deux décisions ont dû être prises pour les défauts 7 à 9 : elles rétractent deux points d'ADR-45 et
+vivent dans [ADR-46](adr/0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md).
+
+---
+
 ### `onboarding` — Onboarding & capacités
 
 Itérations courtes, buildables indépendamment. Priorité décroissante.

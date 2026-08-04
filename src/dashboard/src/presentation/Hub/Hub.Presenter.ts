@@ -1,16 +1,25 @@
+import { appErrorMessage } from '../../common/errors/AppError'
 import { toAppError } from '../../common/errors/toAppError'
+import type { ToastTone } from '../../common/components/Toast'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { HubAction } from './Hub.Actions'
+import { privacyWording, type PrivacyRequest } from './privacyRequest'
 
 export interface HubPresenterContext {
   container: HubContainer
   camerasContainer: CamerasContainer
   dispatch: (action: HubAction) => void
+  toast: (message: string, tone?: ToastTone) => void
 }
 
-export function buildHubPresenter({ container, camerasContainer, dispatch }: HubPresenterContext) {
+export function buildHubPresenter({
+  container,
+  camerasContainer,
+  dispatch,
+  toast,
+}: HubPresenterContext) {
   function reloadCameras() {
     void useRootStore.getState().loadCameras(camerasContainer.getCameras)
   }
@@ -25,23 +34,24 @@ export function buildHubPresenter({ container, camerasContainer, dispatch }: Hub
         .catch((e: unknown) => dispatch({ type: 'LOAD_FAILED', error: toAppError(e) }))
     },
 
-    onBatchPendingSet(value: boolean | null) {
-      dispatch({ type: 'BATCH_PENDING_SET', value })
+    onPrivacyPendingSet(request: PrivacyRequest | null) {
+      dispatch({ type: 'PRIVACY_PENDING_SET', request })
     },
 
-    async onTogglePrivacy(cameraId: string, active: boolean): Promise<void> {
-      await camerasContainer.toggleCameraPrivacyMode.execute(cameraId, active)
-      reloadCameras()
-    },
-
-    async onBatchTogglePrivacy(cameraIds: string[], active: boolean): Promise<void> {
-      dispatch({ type: 'BATCH_TOGGLE_STARTED' })
+    // Une camera ou toutes : meme chemin, donc meme confirmation, meme attente, meme annonce.
+    async onTogglePrivacy(request: PrivacyRequest): Promise<void> {
+      dispatch({ type: 'PRIVACY_TOGGLE_STARTED' })
       try {
-        await camerasContainer.batchToggleCameraPrivacyMode.execute(cameraIds, active)
+        await camerasContainer.batchToggleCameraPrivacyMode.execute(
+          request.cameraIds,
+          request.active,
+        )
         reloadCameras()
-        dispatch({ type: 'BATCH_TOGGLE_SUCCEEDED' })
-      } catch {
-        dispatch({ type: 'BATCH_TOGGLE_FAILED' })
+        dispatch({ type: 'PRIVACY_TOGGLE_SUCCEEDED' })
+        toast(privacyWording(request).done, 'success')
+      } catch (e) {
+        dispatch({ type: 'PRIVACY_TOGGLE_FAILED' })
+        toast(appErrorMessage(toAppError(e)), 'error')
       }
     },
   }
