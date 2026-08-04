@@ -41,6 +41,9 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Distinguer détection de présence (« person ») et reconnaissance faciale (identification) — aujourd'hui les deux sont couplées sans option pour les découpler : `FrigateConfigApplier` active `face_recognition` globalement dès qu'une caméra est activée, et toute caméra qui suit le label `person` se voit automatiquement ajouter `face` (voir commentaire « face must be tracked whenever person is »). Une caméra qui ne veut que savoir « quelqu'un est présent » paie donc quand même le coût du pipeline d'identification faciale (embeddings, un process séparé de la détection d'objets). À investiguer : impact réel sur les perfs d'inférence, et si un découplage par caméra (suivre `person` sans `face`) est pertinent.
 - Support Nvidia (tensorrt) et AMD (rocm) pour le détecteur Frigate — nécessite de recréer le conteneur sur le variant d'image adapté (`-tensorrt`/`-rocm`), pas seulement de changer `config.yml` ; écarté de [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) faute de besoin terrain confirmé. Coral USB (en plus du PCIe déjà supporté) également hors scope actuel.
 - Benchmarker `yolox_s` (retenu pour le palier Intel GPU dans [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md)) sur du matériel varié et évaluer une variante plus précise (`yolox_m`/`l`) si le terrain le justifie — pas de mesure exhaustive à ce stade. Le palier CPU seul reste sur le détecteur natif `cpu` (YOLOX, même la plus petite variante, a produit des pics CPU ~800% et des détections dégradées en test terrain — pas un gain sur ce palier). YOLOv9 écarté (licence GPL-3.0, test exploratoire erratique : voir [investigation](investigations/yolov9_frigate_openvino.md)) ; YOLO-NAS écarté (poids non-commerciaux).
+- Le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est — il faudrait une page de plus. Constat de la passe de coherence du chantier `config-ui`, non corrigeable sans trancher le rangement.
+- La marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
+- Corriger une identite n'apprend rien : `CorrectDetectionIdentityUseCase` reecrit la ligne d'historique, rien de plus — la photo ne rejoint pas la bibliotheque du profil, le moteur ne reapprend pas. SPECS §3.1 demande pourtant « afin d'ameliorer la qualite du systeme dans le temps », et le mecanisme existe deja (`/api/profiles/resync-face-library`). A trancher : cabler la boucle, ou renommer honnetement ce que le bouton fait.
 - Enregistrer le codec du flux par caméra (relevé à la vérification de la caméra), ce qui ouvrirait deux choses : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur Intel gen13+/Arc — écarté d'[ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) faute de ce prérequis, les presets QuickSync n'existant qu'en variantes codec-spécifiques — et signaler qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
 
 ---
@@ -49,101 +52,114 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 Chaque theme a un tag stable (pas d'ordre impose entre thematiques). Un theme termine disparait simplement, sans decaler les autres.
 
-### `config-ui` — Socle de configuration : navigation, edition, composants
+### `detection-pipeline` — Une seule source de vérité sur une détection
 
-Direction tranchee et cadrage aligne : [ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) (architecture de l'information), [ADR-41](adr/0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) (cycle d'edition), [ADR-42](adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) (composants), [ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) (grammaire des reglages). Constat chiffre et options ecartees : [investigation](investigations/socle-configuration-navigation.md).
+Relevé à l'usage : **une ligne d'historique sur deux pointe vers un média qui n'existe plus.** Mesuré
+sur l'instance de développement le 2026-08-04 (416 lignes en base, 216 événements côté Frigate) :
 
-Les quatre decisions se livrent ensemble : une arborescence propre remplie de formulaires incoherents, ou des composants impeccables dans une navigation qui n'a pas de place pour eux, ne reglent rien. L'ordre ci-dessous est celui des dependances, pas des preferences.
+| Constat | Nombre |
+| --- | --- |
+| Événement disparu de Frigate, ligne conservée par Vyzio | 200 (48 %) |
+| Aperçu ou bouton « Vidéo » proposé qui répond 404 | 138 |
+| Bouton « Vidéo » pour un clip expiré à 14 jours | 187 |
+| Ni aperçu ni vidéo — Frigate n'a rien gardé, et a supprimé l'événement | 62 |
 
-**Le chantier va jusqu'au bout** : `App.css` est supprime, pas reduit (ADR-42). Il habille les six ecrans, donc le perimetre inclut les ecrans de **consultation** — accueil, historique, profils — au-dela du declencheur. La taille du fichier est l'indicateur d'avancement, sa disparition la condition de fin.
+Trois causes distinctes, toutes vérifiées :
 
-1. **Outillage du socle** — Tailwind et primitives shadcn/ui installes, tokens du [DESIGN SYSTEM](DESIGN%20SYSTEM.md) declares comme theme, dossier de primitives separe des composants Vyzio. Aucune reprise d'ecran a cette etape : la seule sortie attendue est qu'un ecran neuf puisse etre ecrit dans le nouveau socle.
+- **Vyzio croit des drapeaux périmés.** `HasClip` / `HasSnapshot` sont la recopie du dernier message
+  MQTT reçu, jamais revérifiée. Frigate, lui, expire les clips à la durée choisie et remet
+  `has_clip` à `false` — la coupure observée tombe exactement sur J-14.
+- **Vyzio conserve ce que Frigate jette.** Un objet dont Frigate ne garde aucun média voit son
+  événement supprimé de la base de Frigate ; Vyzio a persisté la ligne au message `end` et la garde
+  pour toujours. Réparties uniformément sur toutes les caméras, tous les labels, tous les jours, avec
+  la même distribution de confiance que les autres — ce n'est pas une panne, c'est une décision de
+  Frigate par objet.
+- **Les deux durées divergent par construction.** `FrigateConfigApplier` fixe la rétention des
+  aperçus à 30 jours en dur, quand les clips suivent le réglage utilisateur — la fenêtre où l'aperçu
+  survit au clip est fabriquée par Vyzio, pas par Frigate.
 
-2. **Coquille de navigation** — barre principale reduite a la consultation, arborescence de reglages a deux niveaux, routage porteur de la selection. Les ecrans existants sont branches dessous **tels quels**, sans regression fonctionnelle : c'est ce qui rend la transition incrementale au lieu d'un big-bang.
+**La réponse est déjà écrite dans le code, à un seul endroit.**
+`SendTelegramDetectionNotificationUseCase` porte en commentaire que les drapeaux du message `end`
+sont peu fiables, et **demande à Frigate plutôt que de les croire** : il attend la finalisation,
+tente le clip, retombe sur l'aperçu, puis sur le texte. L'historique fait l'inverse et n'a aucun
+repli. La même question — « quel média a cet événement ? » — reçoit **trois réponses différentes**
+(`/snapshot` ignore le drapeau, `/clip` le croit, la notification s'en passe). C'est une violation de
+la règle suprême au niveau d'un fait métier, pas d'un texte : il n'y a pas de foyer unique.
 
-3. **Grammaire des reglages** ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)) — la ligne de reglage et son rendu declaratif : un reglage est decrit (nature, options, unite, portee), le composant en deduit controle, alignement, provenance et retour arriere. C'est le prerequis des etapes 6 et 9 : sans lui, chaque ecran repris redessine ses champs et la derive recommence.
+#### Le pipeline n'est pas au bon étage
 
-4. **Primitives d'edition** — brouillon de page, barre d'actions a position fixe, annonce de ce qui a change et du cout (interruption de la surveillance), confirmation a la sortie d'une page modifiee. Le retour arriere par champ d'ADR-39 est repris tel quel par-dessus.
+Audit préalable — le squelette Clean est en place partout ailleurs, ce pipeline lui a échappé :
 
-5. ~~**Redemarrer la surveillance, sur decision de l'utilisateur**~~ **Fait.** ([ADR-44](adr/0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md)) Enregistrer n'interrompt plus rien ; un declencheur d'en-tete redemarre la surveillance, et la question se pose en quittant les reglages. Le marqueur d'attente reste un booleen : nommer la rubrique en attente n'apprenait rien (retracte dans l'ADR), et l'annonce prealable du cout disparait avec la decision. Debloque l'etape 8, dont l'ecran d'ajout etait le seul appelant du declencheur.
+- `FrigateAdapter` est le use case d'ingestion (résoudre l'identité, résoudre le profil, persister,
+  notifier) mais vit dans `Api/Integration/`.
+- `IFrigateRestClient` est **le seul port Frigate déclaré dans `Api`** au lieu de `Core/Interfaces`.
+  C'est le blocage dur : `Application` ne dépendant pas de `Api`, aucun use case ne peut interroger
+  Frigate sur un événement. La réconciliation est impossible à écrire au bon endroit tant que ce
+  port n'a pas bougé.
+- Les endpoints `/clip` et `/snapshot` injectent le repository et le client Frigate et portent
+  eux-mêmes la décision — donc inaccessible aux notifications.
+- **Ingestion et utilisation ne sont pas découplées** : l'ingestion appelle le dispatcher de
+  notification en ligne, sur le thread MQTT. L'attente de finalisation s'exécute donc dans le
+  handler de message, que MQTTnet attend avant de traiter le suivant (à confirmer sous charge).
 
-6. ~~**Reprise des ecrans de reglages**~~ **Fait.** Installation, cameras, notifications, personnes : tous repris. La rubrique « Detection » de premier niveau n'a jamais ete un ecran a elle — elle redirige vers Personnes, deja repris.
+Le code est bon, il est au mauvais étage : c'est un déplacement, pas une refonte.
 
-7. ~~**Aplatir la hierarchie a l'interieur d'une page.**~~ **Fait.** La regle est tranchee et vit dans [ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) § « Une page est nommee une seule fois » : le nom appartient a ce qui mene a la page, jamais a la page. Les pages camera l'appliquent (mode vie privee et plages horaires fusionnes, image et pilotage reunis, capacites rattachees a la connexion), et un test e2e la tient. Reste a l'appliquer aux ecrans repris aux etapes 6 et 10, qui portent encore leur propre titre.
+#### Ordre d'exécution
 
-8. ~~**Demontage de `Cameras.Component.tsx`**~~ **Fait.** L'ecran de 800 lignes est remplace par `AddCamera.*`, qui ne porte plus que la tache d'ajout : la fiche camera et ses reglages vivent sous `CameraShell`, et l'union `CameraSelection` est scindee — `AddCameraSelection` ne connait plus la selection d'une camera existante. Les trois etages du pipeline de decouverte ne sont plus des titres d'ecran : les faits techniques sont sous « Avance ». Au passage, `ApplyCamera` et `GetCameraStatus`, devenus sans appelant, sont supprimes jusqu'au port.
+1. **Remonter le port et le use case.** `IFrigateRestClient` rejoint `Core/Interfaces` ;
+   `FrigateAdapter` devient un use case d'`Application`. Prérequis de tout le reste, sans changement
+   de comportement.
 
-9. ~~**Sort de l'interface technique**~~ **Fait.** Elle vit sous `Reglages > Systeme > Avance`, absente de la barre principale.
+2. **Découpler ingestion et utilisation.** L'ingestion enregistre le fait et rend la main ;
+   la notification est déclenchée par ce fait, pas appelée dedans. Ce qui suit repose sur ce
+   découplage : c'est ce qui permet à la vérification du média d'avoir lieu sans bloquer l'ingestion.
 
-10. ~~**Reprise des ecrans de consultation**~~ **Fait.** Accueil et historique repris. **Etape de cloture atteinte** : `App.css` est supprime.
+3. **Un seul foyer pour « quel média a cet événement ».** On demande, on ne croit pas. Le repli de la
+   notification devient la règle commune, et les trois politiques actuelles disparaissent.
 
-11. ~~**Passe de coherence, une fois tous les ecrans repris**~~ **Fait.** La relecture d'ensemble a produit cinq corrections ciblees : le repli `Avance` etait trois choses differentes (dont deux qui ne repliaient rien) et devient un composant unique ; un nombre sans unite n'occupait pas sa colonne de controle, rompant l'alignement que l'etape 3 visait ; « Mettre 0 signifie… » etait du texte courant sur un seul des deux ecrans de conservation, et rejoint l'aide des deux ; l'ordre « ce qui est concerne, puis le seuil » differait entre detection et notifications ; un toast ne nommait pas ce qu'il enregistrait. Deux invariants — colonne remplie, `Avance` toujours replie — sont desormais tenus par `settings-coherence.e2e.ts`, la comparaison entre ecrans etant precisement ce qu'aucun test d'ecran ne voit.
+4. **La stabilisation écrit ce qu'elle découvre.** L'attente de finalisation établit déjà la vérité
+   sur le média et la jette ; elle doit la consigner. Ne couvre que les événements notifiés
+   (`person_known` / `person_unknown` par défaut, seuil, plage horaire, cooldown) — donc premier
+   filet, pas le seul.
 
-    Restent deux constats **non corrigeables sans decision** : le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est (il faudrait une page de plus) ; et la marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation.
+5. **Réconciliation par lot à la lecture**, pour tout ce que l'étape 4 ne couvre pas : une requête
+   par page d'historique. Seule étape **rétroactive** — elle répare les lignes déjà cassées sans
+   migration.
 
-**Fin de chantier — atteinte.** Les trois conditions : `App.css` supprime ; aucun ecran hors socle (etapes 6-10) ; aucun reglage hors grammaire ([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)), verifie par l'etape 11. Les deux constats ci-dessus ne sont pas des reglages hors grammaire mais des questions de rangement, a promouvoir depuis les idees si on les tranche.
+6. **Ne pas garder ce que Frigate jette** — après stabilisation, jamais au message `end` :
+   `Notification.EventId` n'est pas une clé étrangère, mais supprimer une ligne qu'une notification
+   vient de référencer ferait perdre son ancre à la déduplication `HasSentAsync`.
 
----
+7. **Deux images nommées, pas une URL fabriquée deux fois.** L'aperçu de liste et l'image pleine sont
+   deux besoins distincts : la liste télécharge aujourd'hui 123 Ko de plan large pour une tuile de
+   56 px, quand Frigate a déjà écrit la même image recadrée sur l'objet détecté en 8 Ko
+   (`thumbnail.jpg`, 175x175). Telegram, lui, veut le plan large — le contexte est ce qui rend la
+   notification utile. Mesuré : les paramètres `?crop=`/`?height=` sont inertes sur un événement
+   terminé, seule la route dédiée répond.
 
-### `ui-defauts` — Défauts relevés à l'usage
+8. **Rétention minimale d'un jour** sur la durée qui porte l'historique, au lieu de gérer partout le
+   cas « zéro ». Supprime `record.enabled: false` et tout le pan d'explicabilité qui allait avec.
+   L'enregistrement continu reste optionnel. **Rétracte le volet « une caméra qui ne garde rien
+   n'enregistre rien » d'[ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)**,
+   qui est gelé — donc par un nouvel ADR, pas par modification.
 
-Relevés en manipulant l'application après le chantier [`config-ui`](#). Ce ne sont pas des questions
-de cadrage : chacun est un comportement qui trompe l'utilisateur ou lui cache ce qui se passe. Chacun
-est reproduit par un test avant d'être corrigé.
+9. **Aligner la rétention des aperçus sur celle des clips** — supprimer le 30 en dur.
 
-1. **Une caméra qu'on met en pause ne dit rien.** Le bouton `Pause` / `Réactiver` d'une vignette
-   déclenche une opération longue (le mode vie privée touche la caméra elle-même) sans confirmation,
-   sans attente visible, et sans dire si elle a abouti — alors que `Tout couper`, qui fait la même
-   chose pour toutes, demande confirmation et montre son attente.
+10. **Dire l'expiration, côté écran seulement.** Un média expiré est une conséquence du réglage de
+    conservation, pas une panne : l'historique l'écrit (principe #4). **Cette information ne remonte
+    jamais dans le chemin de notification** — une notification part quelques secondes après la
+    détection, très loin de toute expiration, et rien de cette logique ne doit l'atteindre par effet
+    de bord.
 
-2. **Les miniatures de détection n'ont plus de chargement.** Pendant un redémarrage de la
-   surveillance, l'aperçu d'une détection ne se charge pas et laisse une image cassée ; le
-   chargement qui l'accompagnait a disparu.
+Les étapes 1 à 6 forment une seule décision : **la base cesse d'être la mémoire autonome des
+détections pour devenir un index réconcilié sur Frigate.** À cadrer en ADR avant tout code, avec
+l'étape 8 qui rétracte ADR-39. Les étapes 7, 9 et 10 sont du chantier sans décision nouvelle.
 
-3. **Une image cassée apparaît derrière « Redémarrage en cours… ».** Le voile n'est pas opaque et
-   l'image en échec reste visible dessous — sur la vignette comme en plein écran, où elle se réduit
-   en plus à un timbre-poste, l'image sans données n'ayant plus de dimensions.
-
-4. **Une miniature en échec le reste jusqu'au rechargement de la page.** Aucun réessai : ce qui a
-   échoué une fois ne se retente jamais, même quand la surveillance est revenue.
-
-5. **La vue live n'a pas de fermeture visible.** Rien n'indique qu'il faut cliquer en dehors.
-
-6. **L'historique ne ressemble pas à l'accueil**, alors que l'accueil montre la même chose en mieux :
-   filtres dépliés en permanence occupant le haut de l'écran, et aucune miniature. Les deux écrans
-   doivent partager le même composant de liste, l'accueil n'en étant que les cinq dernières.
-
-7. **Enregistrer sa première position PTZ demande un appui long.** La tuile `+` annonce une action
-   simple ; l'appui long est le geste de l'écrasement, pas celui de la création.
-
-8. **Les positions PTZ ne répondent pas.** Un appui n'accuse rien, et rien n'indique sur quelle
-   position la caméra se trouve — alors que le backend renvoie déjà `currentPosition`.
-
-9. **Une caméra non calibrée ne le dit pas.** Les positions sont inertes et aucun message n'explique
-   pourquoi ; il faut passer par les réglages pour que ça reparte. `getPtzPresets` renvoie pourtant
-   `calibrated`, que la vue live jette.
-
-10. **Sur mobile, l'appui long PTZ ouvre le menu contextuel du navigateur** au lieu de redéfinir la
-    position.
-
-**Fait.** Les dix sont corrigés, chacun tenu par un test :
-[`ui-defauts.e2e.ts`](../src/dashboard/tests/e2e/ui-defauts.e2e.ts) pour ce qui ne se voit qu'à
-l'écran entier, [`PtzControlPanel.test.tsx`](../src/dashboard/src/common/components/PtzControlPanel.test.tsx)
-et [`DetectionThumbnail.test.tsx`](../src/dashboard/src/common/components/DetectionThumbnail.test.tsx)
-pour les gestes et les réessais. Trois corrections ont dépassé le défaut signalé, la cause étant
-plus haute :
-
-- **Couper une caméra passe par le même chemin que les couper toutes** — une seule demande, une
-  seule confirmation, une seule annonce ([`privacyRequest.ts`](../src/dashboard/src/presentation/Hub/privacyRequest.ts)).
-  Deux chemins pour le même acte étaient la raison pour laquelle l'un avait tout ce que l'autre
-  n'avait pas.
-- **L'accueil et l'historique partagent `common/detection/DetectionList`**, l'accueil n'en étant que
-  les cinq dernières. C'est ce qui rend impossible qu'ils redivergent.
-- **La croix de la vue live était sous l'en-tête collé** (`z-100` contre `z-50`) : elle était bien
-  là, mais inatteignable. Le voile passe au-dessus de la chrome de l'application.
-
-Deux décisions ont dû être prises pour les défauts 7 à 9 : elles rétractent deux points d'ADR-45 et
-vivent dans [ADR-46](adr/0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md).
+Piste non retenue à ce stade, notée pour mémoire : Frigate expose un modèle *review*
+(sévérité `alert` / `detection`, regroupement des objets d'un même passage) qu'il alimente déjà et
+que Vyzio ignore — mesuré, 15 détections `person` correspondent à 7 items de review. Exploitable pour
+un historique qui trie ce qui mérite un regard, mais sa rétention est celle des clips, il ne peut
+donc pas remplacer l'historique. Chantier produit distinct.
 
 ---
 
@@ -172,7 +188,7 @@ Mesures de référence et hiérarchie des leviers :
 
 Les trois durees de retention sont livrees ([ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)), globales et surchargeables par camera.
 
-1. **Alerte de capacite disque critique** — exigee par SPECS §6.2, et rendue necessaire par la livraison ci-dessus : la retention consomme desormais reellement du disque, la ou elle ne conservait presque rien. Reste a cadrer : seuil de declenchement, canal d'alerte, et surtout comportement quand le disque sature — arreter d'enregistrer, ou raccourcir la retention de soi-meme (ce qui supprimerait des enregistrements que l'utilisateur croyait garder).
+1. **Alerte de capacite disque critique** — exigee par SPECS §6.2, et rendue necessaire par la livraison ci-dessus : la retention consomme desormais reellement du disque, la ou elle ne conservait presque rien. Reste a cadrer : seuil de declenchement, canal d'alerte, et surtout comportement quand le disque sature — arreter d'enregistrer, ou raccourcir la retention de soi-meme (ce qui supprimerait des enregistrements que l'utilisateur croyait garder). A trancher avec le plancher d'un jour pose par [`detection-pipeline`](#detection-pipeline--une-seule-source-de-verite-sur-une-detection) etape 8 : la retention ne peut plus servir a ne rien enregistrer.
 
 ---
 
