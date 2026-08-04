@@ -1,6 +1,8 @@
 # ADR-45 — Positions PTZ configurées depuis la vue live, jamais depuis les réglages
 
-> Statut : Accepté
+> Statut : Accepté — la calibration restée dans les réglages et l'appui long comme geste de
+> création sont rétractés par
+> [ADR-46](0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md).
 
 ## Contexte
 

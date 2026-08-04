@@ -120,6 +120,19 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
+  /** Le pilotage d'une camera : ses positions enregistrees, et si elle sait ou elle est (ADR-25). */
+  ptz: {
+    presets: {
+      presetId: number
+      label: string
+      native: boolean
+      stepsX: number | null
+      stepsY: number | null
+      configured: boolean
+    }[]
+    calibrated: boolean
+    currentPosition: { x: number; y: number } | null
+  }
 }
 
 let nextId = 1
@@ -155,6 +168,7 @@ export function createFakeBackendState(
       eventClip: { days: 14, default: 14 },
       maxDays: 365,
     },
+    ptz: { presets: [], calibrated: true, currentPosition: { x: 0, y: 0 } },
     ...overrides,
   }
 }
@@ -349,6 +363,46 @@ export async function installFakeBackend(
         if (camera) camera.privacyModeActive = Boolean(postData?.active)
         return json(route, camera)
       }
+      // --- Pilotage (PTZ) ---
+      if (rest === '/ptz/presets' && method === 'GET') {
+        return json(route, state.ptz)
+      }
+      if (rest === '/ptz/step' && method === 'POST') {
+        state.ptz.currentPosition = null
+        return json(route, {})
+      }
+      if (rest === '/ptz/calibrate' && method === 'POST') {
+        state.ptz.calibrated = true
+        state.ptz.currentPosition = { x: 0, y: 0 }
+        return json(route, {})
+      }
+      if (rest === '/ptz/preset/goto' && method === 'POST') {
+        const target = state.ptz.presets.find((p) => p.presetId === postData?.presetId)
+        state.ptz.currentPosition = target ? { x: target.stepsX ?? 0, y: target.stepsY ?? 0 } : null
+        return json(route, {})
+      }
+      if (rest === '/ptz/preset/save' && method === 'POST') {
+        // Comme le vrai : sans reference, la position courante est inconnue, rien ne s'enregistre.
+        if (!state.ptz.calibrated) return json(route, { message: 'not_calibrated' }, 409)
+        const presetId = Number(postData?.presetId)
+        const position = state.ptz.currentPosition ?? { x: 0, y: 0 }
+        state.ptz.presets = [
+          ...state.ptz.presets.filter((p) => p.presetId !== presetId),
+          {
+            presetId,
+            label: `Position ${presetId}`,
+            native: false,
+            stepsX: position.x,
+            stepsY: position.y,
+            configured: true,
+          },
+        ]
+        return json(route, {})
+      }
+      if (rest?.startsWith('/ptz/presets/') && rest.endsWith('/snapshot')) {
+        return json(route, {})
+      }
+
       if (rest === '/capabilities' && method === 'GET') {
         return json(route, [])
       }

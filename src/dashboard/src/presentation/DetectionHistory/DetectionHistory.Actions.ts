@@ -1,6 +1,7 @@
 import type { DetectionHistoryPage } from '../../domain/entities/DetectionHistory'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { Profile } from '../../domain/entities/Profile'
+import type { DetectionMedia } from './DetectionHistory.Uido'
 
 export type DetectionHistoryAction =
   | { type: 'PROFILES_LOADED'; profiles: Profile[] }
@@ -15,7 +16,8 @@ export type DetectionHistoryAction =
   | { type: 'FILTER_TO_SET'; value: string }
   | { type: 'FILTERS_RESET' }
   | { type: 'PAGE_SET'; page: number }
-  | { type: 'SNAPSHOT_SET'; url: string | null }
+  | { type: 'MEDIA_SET'; media: DetectionMedia | null }
+  | { type: 'FILTERS_TOGGLED' }
   | { type: 'CORRECT_STARTED'; eventId: string }
   | { type: 'CORRECT_SUCCEEDED'; page: DetectionHistoryPage }
   | { type: 'CORRECT_FAILED' }

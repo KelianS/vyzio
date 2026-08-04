@@ -1,7 +1,7 @@
 import { useBlocker } from 'react-router'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { useRootStore } from '../../infrastructure/store/rootStore'
-import { RESTART_BODY, RESTART_QUESTION } from '../../common/surveillance/pendingRestart'
+import { RESTART_QUESTION, restartWording } from '../../common/surveillance/pendingRestart'
 import { useRestartSurveillance } from '../Surveillance/useRestartSurveillance'
 
 const SETTINGS_ROOT = '/settings'
@@ -21,7 +21,8 @@ function isSettings(pathname: string) {
  */
 export function NavigationGuard() {
   const unsaved = useRootStore((state) => state.unsavedChanges)
-  const { pending, restarting, restart } = useRestartSurveillance()
+  const { pending, restarting, failure, restart } = useRestartSurveillance()
+  const wording = restartWording(failure)
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
     if (currentLocation.pathname === nextLocation.pathname) return false
@@ -57,8 +58,8 @@ export function NavigationGuard() {
   return (
     <ConfirmModal
       title={RESTART_QUESTION}
-      body={RESTART_BODY}
-      confirmLabel="Redémarrer"
+      body={wording.body}
+      confirmLabel={wording.confirmLabel}
       cancelLabel="Plus tard"
       tone="confirm"
       loading={restarting}

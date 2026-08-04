@@ -9,6 +9,8 @@ interface CameraLiveThumbnailProps {
   camera: Camera
   apiBaseUrl: string
   frigateStatus?: FrigateStatus
+  /** Une bascule vie privee est en cours sur cette camera : l'attente se voit ici, pas seulement dans la modale. */
+  busy?: boolean
   onExpand?: () => void
   onTogglePrivacy?: (camera: Camera, active: boolean) => void
 }
@@ -17,6 +19,7 @@ export function CameraLiveThumbnail({
   camera,
   apiBaseUrl,
   frigateStatus = 'active',
+  busy = false,
   onExpand,
   onTogglePrivacy,
 }: CameraLiveThumbnailProps) {
@@ -60,6 +63,8 @@ export function CameraLiveThumbnail({
         className={cn('relative aspect-video bg-surface-inverse', expandable && 'cursor-pointer')}
         onClick={camera.privacyModeActive ? undefined : onExpand}
         role={expandable ? 'button' : undefined}
+        // Nomme le cadre lui-meme : l'image cachee pendant une coupure emportait son nom avec elle.
+        aria-label={expandable ? camera.displayName : undefined}
         tabIndex={expandable ? 0 : undefined}
         onKeyDown={
           expandable
@@ -92,21 +97,21 @@ export function CameraLiveThumbnail({
             <img
               src={imgSrc}
               alt={camera.displayName}
-              className="size-full object-cover"
+              // Une image sans donnees affiche l'icone de rupture du navigateur : elle transparait
+              // sous le voile d'attente, alors on la cache tant qu'elle n'a rien a montrer.
+              className={cn('size-full object-cover', imageError && 'invisible')}
               onError={() => setImageError(true)}
               onLoad={() => setImageError(false)}
             />
             {(frigateStatus === 'restarting' || imageError) && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-inverse/70">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-inverse/90">
                 <span
                   className="size-6 animate-spin rounded-full border-2 border-surface-inverse-foreground/30 border-t-surface-inverse-foreground"
                   aria-hidden="true"
                 />
-                {frigateStatus === 'restarting' && (
-                  <span className="text-sm text-surface-inverse-foreground">
-                    Redémarrage en cours…
-                  </span>
-                )}
+                <span className="text-sm text-surface-inverse-foreground">
+                  {frigateStatus === 'restarting' ? 'Redémarrage en cours…' : 'Reconnexion…'}
+                </span>
               </div>
             )}
           </>
@@ -135,6 +140,7 @@ export function CameraLiveThumbnail({
             type="button"
             variant={camera.privacyModeActive ? 'default' : 'outline'}
             size="sm"
+            disabled={busy}
             onClick={handleTogglePrivacy}
             title={
               camera.privacyModeActive
@@ -142,7 +148,7 @@ export function CameraLiveThumbnail({
                 : 'Activer le mode vie privée'
             }
           >
-            {camera.privacyModeActive ? 'Réactiver' : 'Pause'}
+            {busy ? 'En cours…' : camera.privacyModeActive ? 'Réactiver' : 'Pause'}
           </Button>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Play, TriangleAlert } from 'lucide-react'
+import { TriangleAlert } from 'lucide-react'
 import { appErrorMessage, type AppError } from '../../common/errors/AppError'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
@@ -8,17 +8,23 @@ import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { Overlay } from '../../common/components/Overlay'
 import { CameraLiveThumbnail } from '../../common/components/CameraLiveThumbnail'
 import { LiveFeedModal } from '../../common/components/LiveFeedModal'
+import { useToast } from '../../common/components/Toast'
 import { usePresenter } from '../../common/presenter/usePresenter'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
 import type { HubOverview } from '../../domain/entities/HubOverview'
 import type { SystemStats } from '../../domain/entities/SystemStats'
-import { formatEventDetail, formatEventTime, formatEventTitle } from './hub.formatters'
+import { DetectionList } from '../../common/detection/DetectionList'
+import { formatEventTime } from '../../common/detection/detectionFormatters'
 import { SystemMonitorPanel } from './SystemMonitorPanel'
 import { buildHubPresenter } from './Hub.Presenter'
 import { hubReducer } from './Hub.Reducer'
 import { buildInitialHubUido } from './Hub.Uido'
+import { privacyWording, type PrivacyRequest } from './privacyRequest'
+
+/** L'accueil ne montre que les dernieres ; l'historique montre les memes, toutes. */
+const RECENT_EVENTS_MAX = 5
 
 type ModalMedia =
   | { type: 'image' | 'video'; url: string }
@@ -26,8 +32,14 @@ type ModalMedia =
 
 export function HubView() {
   const { apiBaseUrl, hub: container, cameras: camerasContainer } = useAppContainer()
+  const { toast } = useToast()
   const [uido, dispatch] = useReducer(hubReducer, undefined, buildInitialHubUido)
-  const presenter = usePresenter(buildHubPresenter, { container, camerasContainer, dispatch })
+  const presenter = usePresenter(buildHubPresenter, {
+    container,
+    camerasContainer,
+    dispatch,
+    toast,
+  })
 
   const cameras = useRootStore((s) => s.cameras)
   const camerasLoading = useRootStore((s) => s.camerasLoading)
@@ -50,9 +62,10 @@ export function HubView() {
         cameras={cameras}
         apiBaseUrl={apiBaseUrl}
         systemStats={systemStats}
-        batchPending={uido.batchPending}
-        batchToggleLoading={uido.batchToggleLoading}
-        onBatchPendingSet={presenter.onBatchPendingSet}
+        privacyPending={uido.privacyPending}
+        privacyLoading={uido.privacyLoading}
+        onPrivacyPendingSet={presenter.onPrivacyPendingSet}
+        onTogglePrivacy={presenter.onTogglePrivacy}
         onOpenMedia={(type, url) => setModalMedia({ type, url })}
         onOpenLive={(camera) =>
           setModalMedia({
@@ -62,8 +75,6 @@ export function HubView() {
             ptzSupported: camera.ptzSupported,
           })
         }
-        onTogglePrivacy={(camera, active) => presenter.onTogglePrivacy(camera.id, active)}
-        onBatchTogglePrivacy={presenter.onBatchTogglePrivacy}
       />
 
       {modalMedia && (
@@ -80,6 +91,7 @@ export function HubView() {
               getPtzPresets={camerasContainer.getPtzPresets}
               ptzSaveCurrentAsPreset={camerasContainer.ptzSaveCurrentAsPreset}
               capturePtzPresetThumbnail={camerasContainer.capturePtzPresetThumbnail}
+              ptzCalibrate={camerasContainer.ptzCalibrate}
             />
           ) : modalMedia.type === 'image' ? (
             <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />
@@ -197,13 +209,12 @@ interface HubOperationalProps {
   cameras: Camera[]
   apiBaseUrl: string
   systemStats: SystemStats | null
-  batchPending: boolean | null
-  batchToggleLoading: boolean
-  onBatchPendingSet: (value: boolean | null) => void
+  privacyPending: PrivacyRequest | null
+  privacyLoading: boolean
+  onPrivacyPendingSet: (request: PrivacyRequest | null) => void
+  onTogglePrivacy: (request: PrivacyRequest) => void
   onOpenMedia: (type: 'image' | 'video', url: string) => void
   onOpenLive: (camera: Camera) => void
-  onTogglePrivacy: (camera: Camera, active: boolean) => void
-  onBatchTogglePrivacy: (cameraIds: string[], active: boolean) => void
 }
 
 function HubOperational({
@@ -211,16 +222,18 @@ function HubOperational({
   cameras,
   apiBaseUrl,
   systemStats,
-  batchPending,
-  batchToggleLoading,
-  onBatchPendingSet,
+  privacyPending,
+  privacyLoading,
+  onPrivacyPendingSet,
+  onTogglePrivacy,
   onOpenMedia,
   onOpenLive,
-  onTogglePrivacy,
-  onBatchTogglePrivacy,
 }: HubOperationalProps) {
   const frigateStatus = systemStats?.status ?? 'active'
   const allPrivate = cameras.every((camera) => camera.privacyModeActive)
+  // L'attente se montre sur la vignette concernee, pas seulement dans la modale : couper touche la
+  // camera elle-meme, et rien ne bouge a l'ecran avant qu'elle ait repondu.
+  const privacyBusyIds = new Set(privacyLoading ? (privacyPending?.cameraIds ?? []) : [])
   const watched = cameras.filter((camera) => camera.isEnabled && !camera.privacyModeActive).length
 
   return (
@@ -255,7 +268,13 @@ function HubOperational({
               type="button"
               variant={allPrivate ? 'default' : 'outline'}
               size="sm"
-              onClick={() => onBatchPendingSet(!allPrivate)}
+              onClick={() =>
+                onPrivacyPendingSet({
+                  cameraIds: cameras.map((camera) => camera.id),
+                  active: !allPrivate,
+                  cameraLabel: null,
+                })
+              }
             >
               {allPrivate ? 'Reprendre la surveillance' : 'Tout couper'}
             </Button>
@@ -273,7 +292,14 @@ function HubOperational({
               apiBaseUrl={apiBaseUrl}
               frigateStatus={frigateStatus}
               onExpand={camera.privacyModeActive ? undefined : () => onOpenLive(camera)}
-              onTogglePrivacy={onTogglePrivacy}
+              busy={privacyBusyIds.has(camera.id)}
+              onTogglePrivacy={(target, active) =>
+                onPrivacyPendingSet({
+                  cameraIds: [target.id],
+                  active,
+                  cameraLabel: target.displayName,
+                })
+              }
             />
           ))}
         </div>
@@ -284,59 +310,13 @@ function HubOperational({
           <h2 className="font-medium">Dernières détections</h2>
 
           {data.recentEvents.length > 0 ? (
-            <ul className="mt-3 divide-y divide-border">
-              {data.recentEvents.map((event) => (
-                <li
-                  key={event.eventId}
-                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
-                >
-                  {event.hasSnapshot && (
-                    <button
-                      type="button"
-                      aria-label={`Voir l’aperçu — ${formatEventTitle(event)}`}
-                      className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                      onClick={() =>
-                        onOpenMedia(
-                          'image',
-                          `${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`,
-                        )
-                      }
-                    >
-                      <img
-                        src={`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`}
-                        alt=""
-                        loading="lazy"
-                        className="size-14 rounded-lg object-cover"
-                      />
-                    </button>
-                  )}
-
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{formatEventTitle(event)}</span>
-                    <span className="block text-sm text-muted-foreground">
-                      {formatEventDetail(event)} · {formatEventTime(event.occurredAt)}
-                    </span>
-                  </span>
-
-                  {event.hasClip && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        onOpenMedia(
-                          'video',
-                          `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
-                        )
-                      }
-                    >
-                      <Play aria-hidden="true" />
-                      Vidéo
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <DetectionList
+                events={data.recentEvents.slice(0, RECENT_EVENTS_MAX)}
+                apiBaseUrl={apiBaseUrl}
+                onOpenMedia={onOpenMedia}
+              />
+            </div>
           ) : (
             <p className="mt-3 text-muted-foreground">
               Rien à signaler. Les détections apparaîtront ici.
@@ -373,24 +353,15 @@ function HubOperational({
         </div>
       </div>
 
-      {batchPending !== null && (
+      {privacyPending && (
         <ConfirmModal
-          title={batchPending ? 'Couper toutes les caméras ?' : 'Reprendre la surveillance ?'}
-          body={
-            batchPending
-              ? 'Plus rien n’est enregistré ni signalé tant que vous ne les rallumez pas.'
-              : 'Les caméras recommencent à enregistrer et à vous signaler ce qu’elles voient.'
-          }
-          confirmLabel={batchPending ? 'Tout couper' : 'Reprendre'}
-          tone={batchPending ? 'warn' : 'confirm'}
-          loading={batchToggleLoading}
-          onConfirm={() =>
-            onBatchTogglePrivacy(
-              cameras.map((camera) => camera.id),
-              batchPending,
-            )
-          }
-          onCancel={() => onBatchPendingSet(null)}
+          title={privacyWording(privacyPending).title}
+          body={privacyWording(privacyPending).body}
+          confirmLabel={privacyWording(privacyPending).confirmLabel}
+          tone={privacyPending.active ? 'warn' : 'confirm'}
+          loading={privacyLoading}
+          onConfirm={() => onTogglePrivacy(privacyPending)}
+          onCancel={() => onPrivacyPendingSet(null)}
         />
       )}
     </main>

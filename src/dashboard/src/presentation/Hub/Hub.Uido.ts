@@ -1,12 +1,13 @@
 import type { AppError } from '../../common/errors/AppError'
 import type { HubOverview } from '../../domain/entities/HubOverview'
+import type { PrivacyRequest } from './privacyRequest'
 
 export interface HubUido {
   data: HubOverview | null
   loading: boolean
   error: AppError | null
-  batchPending: boolean | null
-  batchToggleLoading: boolean
+  privacyPending: PrivacyRequest | null
+  privacyLoading: boolean
 }
 
 export function buildInitialHubUido(): HubUido {
@@ -14,7 +15,7 @@ export function buildInitialHubUido(): HubUido {
     data: null,
     loading: true,
     error: null,
-    batchPending: null,
-    batchToggleLoading: false,
+    privacyPending: null,
+    privacyLoading: false,
   }
 }

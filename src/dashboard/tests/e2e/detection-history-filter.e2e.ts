@@ -28,18 +28,20 @@ test.describe('Historique — filtres', () => {
       }),
     )
     await page.goto('/history')
+    // Les filtres sont une option qu'on ouvre (voir `ui-defauts.e2e.ts`), pas le haut de l'ecran.
+    await page.getByRole('button', { name: 'Filtrer' }).click()
   })
 
   test('user_When filtering by detection type_Should narrow the list', async ({ page }) => {
     await expect(page.getByText('2 détections.')).toBeVisible()
-    await expect(page.getByText(/front_door/)).toBeVisible()
+    await expect(page.getByText(/front door/)).toBeVisible()
     await expect(page.getByText(/garage/)).toBeVisible()
 
     await page.getByRole('combobox').filter({ hasText: 'Tous' }).click()
     await page.getByRole('option', { name: /Voiture/ }).click()
 
     await expect(page.getByText(/garage/)).toBeVisible()
-    await expect(page.getByText(/front_door/)).toHaveCount(0)
+    await expect(page.getByText(/front door/)).toHaveCount(0)
     // Le compte suit le filtre, et dit qu'il en vient un.
     await expect(page.getByText('1 détection avec ces filtres.')).toBeVisible()
   })

@@ -39,6 +39,10 @@ common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), 
   fixe la table des contrôles et l'anatomie de la ligne de réglage.
 - Le repli de fin de page `Avancé` est le composant `common/settings/AdvancedFold` — jamais un
   `<details>` réécrit ni une section qui ne replie rien (c'est une position, pas un mode, ADR-40).
+- Une liste de détections est `common/detection/DetectionList`, à l'accueil comme dans l'historique
+  (l'accueil n'en est que les dernières) — deux rendus séparés avaient divergé.
+- Un aperçu de détection passe par `common/components/DetectionThumbnail` : jamais un `<img>` nu,
+  qui laisse une image cassée quand la surveillance redémarre et ne retente jamais.
 
 - **domain** ne dépend de rien (ni framework, ni HTTP). Un port = une interface (`CameraRepository`).
   Un use case = une classe avec `execute()`, dépend uniquement des ports du domaine.
