@@ -223,7 +223,9 @@ Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et 
    └─► Transporte frigate/events vers les consommateurs Vyzio
 
 3. FrigateAdapter (.NET) — souscrit frigate/events
-   └─► Normalise l'événement : label, sub_label (via REST si absent du MQTT), score, liens clips/snapshot
+   └─► Normalise l'événement : label, sub_label (via REST si absent du MQTT), score
+   └─► N'enregistre aucune vérité sur les médias : leur existence se demande à Frigate au moment
+       où elle sert, jamais depuis le message MQTT qui la périme (ADR-47)
    └─► Publie MQTT: vyzio/events/detection_enriched { frigate_event_id, camera, label, identity: "Alice", confidence }
 
 4. Services Vyzio (souscripteurs MQTT indépendants, en parallèle) :
@@ -273,7 +275,7 @@ Vyzio gère uniquement ses propres données (profils, événements enrichis, not
 | `CameraStream` | Point d'accès vidéo d'une caméra : qualité, chemin, résolution relevée (ADR-38) | → `Camera` |
 | `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
 | `RecordingSettings` | Durées de rétention de l'installation, surchargeables par caméra (ADR-39) | singleton |
-| `DetectionEvent` | Événement enrichi consommé de Frigate (référence `frigate_event_id`) | → `Profile` (optionnel) |
+| `DetectionEvent` | Index métier d'un événement Frigate (référence `frigate_event_id`) : identité, profil, notification — **jamais dépositaire des médias**, réconcilié sur Frigate (ADR-47) | → `Profile` (optionnel) |
 | `Notification` | Envoi par canal pour un événement | → `DetectionEvent` |
 | `Session` | Refresh token | — |
 

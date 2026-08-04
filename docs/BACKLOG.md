@@ -44,6 +44,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est — il faudrait une page de plus. Constat de la passe de coherence du chantier `config-ui`, non corrigeable sans trancher le rangement.
 - La marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
 - Corriger une identite n'apprend rien : `CorrectDetectionIdentityUseCase` reecrit la ligne d'historique, rien de plus — la photo ne rejoint pas la bibliotheque du profil, le moteur ne reapprend pas. SPECS §3.1 demande pourtant « afin d'ameliorer la qualite du systeme dans le temps », et le mecanisme existe deja (`/api/profiles/resync-face-library`). A trancher : cabler la boucle, ou renommer honnetement ce que le bouton fait.
+- Trier l'historique sur le modèle *review* de Frigate (sévérité `alert` / `detection`, regroupement des objets d'un même passage), que Vyzio ignore aujourd'hui — hors périmètre d'[ADR-47](adr/0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md), qui en pose le constat. Chantier produit distinct : il change ce que l'historique montre, pas d'où il tient sa vérité.
 - Enregistrer le codec du flux par caméra (relevé à la vérification de la caméra), ce qui ouvrirait deux choses : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur Intel gen13+/Arc — écarté d'[ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) faute de ce prérequis, les presets QuickSync n'existant qu'en variantes codec-spécifiques — et signaler qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
 
 ---
@@ -54,53 +55,12 @@ Chaque theme a un tag stable (pas d'ordre impose entre thematiques). Un theme te
 
 ### `detection-pipeline` — Une seule source de vérité sur une détection
 
-Relevé à l'usage : **une ligne d'historique sur deux pointe vers un média qui n'existe plus.** Mesuré
-sur l'instance de développement le 2026-08-04 (416 lignes en base, 216 événements côté Frigate) :
-
-| Constat | Nombre |
-| --- | --- |
-| Événement disparu de Frigate, ligne conservée par Vyzio | 200 (48 %) |
-| Aperçu ou bouton « Vidéo » proposé qui répond 404 | 138 |
-| Bouton « Vidéo » pour un clip expiré à 14 jours | 187 |
-| Ni aperçu ni vidéo — Frigate n'a rien gardé, et a supprimé l'événement | 62 |
-
-Trois causes distinctes, toutes vérifiées :
-
-- **Vyzio croit des drapeaux périmés.** `HasClip` / `HasSnapshot` sont la recopie du dernier message
-  MQTT reçu, jamais revérifiée. Frigate, lui, expire les clips à la durée choisie et remet
-  `has_clip` à `false` — la coupure observée tombe exactement sur J-14.
-- **Vyzio conserve ce que Frigate jette.** Un objet dont Frigate ne garde aucun média voit son
-  événement supprimé de la base de Frigate ; Vyzio a persisté la ligne au message `end` et la garde
-  pour toujours. Réparties uniformément sur toutes les caméras, tous les labels, tous les jours, avec
-  la même distribution de confiance que les autres — ce n'est pas une panne, c'est une décision de
-  Frigate par objet.
-- **Les deux durées divergent par construction.** `FrigateConfigApplier` fixe la rétention des
-  aperçus à 30 jours en dur, quand les clips suivent le réglage utilisateur — la fenêtre où l'aperçu
-  survit au clip est fabriquée par Vyzio, pas par Frigate.
-
-**La réponse est déjà écrite dans le code, à un seul endroit.**
-`SendTelegramDetectionNotificationUseCase` porte en commentaire que les drapeaux du message `end`
-sont peu fiables, et **demande à Frigate plutôt que de les croire** : il attend la finalisation,
-tente le clip, retombe sur l'aperçu, puis sur le texte. L'historique fait l'inverse et n'a aucun
-repli. La même question — « quel média a cet événement ? » — reçoit **trois réponses différentes**
-(`/snapshot` ignore le drapeau, `/clip` le croit, la notification s'en passe). C'est une violation de
-la règle suprême au niveau d'un fait métier, pas d'un texte : il n'y a pas de foyer unique.
-
-#### Le pipeline n'est pas au bon étage
-
-Audit préalable — le squelette Clean est en place partout ailleurs, ce pipeline lui a échappé :
-
-- `FrigateAdapter` est le use case d'ingestion (résoudre l'identité, résoudre le profil, persister,
-  notifier) mais vit dans `Api/Integration/`.
-- `IFrigateRestClient` est **le seul port Frigate déclaré dans `Api`** au lieu de `Core/Interfaces`.
-  C'est le blocage dur : `Application` ne dépendant pas de `Api`, aucun use case ne peut interroger
-  Frigate sur un événement. La réconciliation est impossible à écrire au bon endroit tant que ce
-  port n'a pas bougé.
-- Les endpoints `/clip` et `/snapshot` injectent le repository et le client Frigate et portent
-  eux-mêmes la décision — donc inaccessible aux notifications.
-- **Ingestion et utilisation ne sont pas découplées** : l'ingestion appelle le dispatcher de
-  notification en ligne, sur le thread MQTT. L'attente de finalisation s'exécute donc dans le
-  handler de message, que MQTTnet attend avant de traiter le suivant (à confirmer sous charge).
+Relevé à l'usage : **une ligne d'historique sur deux pointe vers un média qui n'existe plus.** Les
+mesures, les trois causes et l'audit d'architecture qui les accompagne sont dans
+[ADR-47](adr/0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md),
+qui tranche : la base cesse d'être la mémoire autonome des détections pour devenir un index
+réconcilié sur Frigate. La rétention minimale qui en découle est
+[ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md).
 
 Le code est bon, il est au mauvais étage : c'est un déplacement, pas une refonte.
 
@@ -137,11 +97,11 @@ Le code est bon, il est au mauvais étage : c'est un déplacement, pas une refon
    notification utile. Mesuré : les paramètres `?crop=`/`?height=` sont inertes sur un événement
    terminé, seule la route dédiée répond.
 
-8. **Rétention minimale d'un jour** sur la durée qui porte l'historique, au lieu de gérer partout le
-   cas « zéro ». Supprime `record.enabled: false` et tout le pan d'explicabilité qui allait avec.
-   L'enregistrement continu reste optionnel. **Rétracte le volet « une caméra qui ne garde rien
-   n'enregistre rien » d'[ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)**,
-   qui est gelé — donc par un nouvel ADR, pas par modification.
+8. **Rétention minimale d'un jour** sur la durée qui porte l'historique
+   ([ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md)) :
+   plancher posé au foyer de résolution, `KeepsAnything` et `record.enabled: false` disparaissent,
+   et l'interface refuse zéro sur cette durée avant la saisie. L'enregistrement continu reste
+   optionnel.
 
 9. **Aligner la rétention des aperçus sur celle des clips** — supprimer le 30 en dur.
 
@@ -150,16 +110,6 @@ Le code est bon, il est au mauvais étage : c'est un déplacement, pas une refon
     jamais dans le chemin de notification** — une notification part quelques secondes après la
     détection, très loin de toute expiration, et rien de cette logique ne doit l'atteindre par effet
     de bord.
-
-Les étapes 1 à 6 forment une seule décision : **la base cesse d'être la mémoire autonome des
-détections pour devenir un index réconcilié sur Frigate.** À cadrer en ADR avant tout code, avec
-l'étape 8 qui rétracte ADR-39. Les étapes 7, 9 et 10 sont du chantier sans décision nouvelle.
-
-Piste non retenue à ce stade, notée pour mémoire : Frigate expose un modèle *review*
-(sévérité `alert` / `detection`, regroupement des objets d'un même passage) qu'il alimente déjà et
-que Vyzio ignore — mesuré, 15 détections `person` correspondent à 7 items de review. Exploitable pour
-un historique qui trie ce qui mérite un regard, mais sa rétention est celle des clips, il ne peut
-donc pas remplacer l'historique. Chantier produit distinct.
 
 ---
 
@@ -188,7 +138,7 @@ Mesures de référence et hiérarchie des leviers :
 
 Les trois durees de retention sont livrees ([ADR-39](adr/0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)), globales et surchargeables par camera.
 
-1. **Alerte de capacite disque critique** — exigee par SPECS §6.2, et rendue necessaire par la livraison ci-dessus : la retention consomme desormais reellement du disque, la ou elle ne conservait presque rien. Reste a cadrer : seuil de declenchement, canal d'alerte, et surtout comportement quand le disque sature — arreter d'enregistrer, ou raccourcir la retention de soi-meme (ce qui supprimerait des enregistrements que l'utilisateur croyait garder). A trancher avec le plancher d'un jour pose par [`detection-pipeline`](#detection-pipeline--une-seule-source-de-verite-sur-une-detection) etape 8 : la retention ne peut plus servir a ne rien enregistrer.
+1. **Alerte de capacite disque critique** — exigee par SPECS §6.2, et rendue necessaire par la livraison ci-dessus : la retention consomme desormais reellement du disque, la ou elle ne conservait presque rien. Reste a cadrer : seuil de declenchement, canal d'alerte, et surtout comportement quand le disque sature — arreter d'enregistrer, ou raccourcir la retention de soi-meme (ce qui supprimerait des enregistrements que l'utilisateur croyait garder). Contrainte : [ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md) ferme la porte a « ne plus rien enregistrer » comme reponse a la saturation.
 
 ---
 
