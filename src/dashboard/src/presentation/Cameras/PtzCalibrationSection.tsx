@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
 import type { PtzCalibrate } from '../../domain/usecases/PtzCalibrate'
 import type { PtzStep } from '../../domain/usecases/PtzStep'
@@ -8,7 +8,6 @@ import type { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtz
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
 import { toAppError } from '../../common/errors/toAppError'
 import { appErrorMessage } from '../../common/errors/AppError'
-import { useToast } from '../../common/components/Toast'
 import { Button } from '../../common/ui/button'
 import { Overlay } from '../../common/components/Overlay'
 import { LiveFeedModal } from '../../common/components/LiveFeedModal'
@@ -26,7 +25,10 @@ interface PtzCalibrationSectionProps {
   capturePtzPresetThumbnail: CapturePtzPresetThumbnail
 }
 
-/** Presets are set from the live view (see `PtzControlPanel`); this keeps only calibration and the door into it. */
+/**
+ * Tout le pilotage se fait dans la vue live (ADR-45), calibration comprise : on ne calibre pas
+ * une camera sans la voir. Cet ecran dit ou elle en est, et ouvre la porte.
+ */
 export function PtzCalibrationSection({
   cameraId,
   cameraLabel,
@@ -39,12 +41,10 @@ export function PtzCalibrationSection({
   ptzSaveCurrentAsPreset,
   capturePtzPresetThumbnail,
 }: PtzCalibrationSectionProps) {
-  const { toast } = useToast()
   const [calibrated, setCalibrated] = useState(true)
   const [currentPosition, setCurrentPosition] = useState<{ x: number; y: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [calibrating, setCalibrating] = useState(false)
   const [liveViewOpen, setLiveViewOpen] = useState(false)
 
   // Everything runs after the first await, so switching cameras swaps the state without flashing "Chargement…".
@@ -62,27 +62,11 @@ export function PtzCalibrationSection({
         if (!cancelled) setLoading(false)
       }
     })()
+    // La vue live peut avoir calibre ou deplace la camera : on relit en la refermant.
     return () => {
       cancelled = true
     }
-  }, [cameraId, getPtzPresets])
-
-  const handleCalibrate = useCallback(async () => {
-    setCalibrating(true)
-    try {
-      await ptzCalibrate.execute(cameraId)
-      setCalibrated(true)
-      setCurrentPosition({ x: 0, y: 0 })
-      toast(
-        'Calibration terminée — la caméra est à la position 0. Ouvrez la vue live pour définir les positions.',
-        'success',
-      )
-    } catch (e) {
-      toast(appErrorMessage(toAppError(e)), 'error')
-    } finally {
-      setCalibrating(false)
-    }
-  }, [cameraId, ptzCalibrate, toast])
+  }, [cameraId, getPtzPresets, liveViewOpen])
 
   return (
     <div className="flex flex-col gap-3">
@@ -91,30 +75,13 @@ export function PtzCalibrationSection({
 
       {!loading && !error && (
         <>
-          {calibrated && currentPosition && (
-            <span className="text-sm text-muted-foreground">
-              Position actuelle : {currentPosition.x}, {currentPosition.y}
-            </span>
-          )}
-
-          {!calibrated && (
-            <div className="flex flex-col gap-2 rounded-inset border border-border bg-muted/40 p-3">
-              <p className="text-sm text-muted-foreground">
-                Calibrez la caméra pour établir la position de référence (butée mécanique), puis
-                ouvrez la vue live pour définir les positions.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                disabled={calibrating}
-                onClick={handleCalibrate}
-              >
-                {calibrating ? 'Calibration en cours…' : 'Calibrer (position 0)'}
-              </Button>
-            </div>
-          )}
+          <span className="text-sm text-muted-foreground">
+            {!calibrated
+              ? 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue live pour la calibrer, puis définir ses positions.'
+              : currentPosition
+                ? `Position actuelle : ${currentPosition.x}, ${currentPosition.y}`
+                : 'Ouvrez la vue live pour définir les positions de cette caméra.'}
+          </span>
 
           <Button
             type="button"
@@ -123,7 +90,7 @@ export function PtzCalibrationSection({
             className="self-start"
             onClick={() => setLiveViewOpen(true)}
           >
-            Configurer les positions
+            Piloter la caméra
           </Button>
         </>
       )}
@@ -141,6 +108,7 @@ export function PtzCalibrationSection({
             getPtzPresets={getPtzPresets}
             ptzSaveCurrentAsPreset={ptzSaveCurrentAsPreset}
             capturePtzPresetThumbnail={capturePtzPresetThumbnail}
+            ptzCalibrate={ptzCalibrate}
           />
         </Overlay>
       )}

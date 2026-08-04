@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Plus } from 'lucide-react'
 import { cn } from '../ui/utils'
+import { Button } from '../ui/button'
 import { useToast } from './Toast'
 import { ConfirmModal } from './ConfirmModal'
 import { toAppError } from '../errors/toAppError'
@@ -16,6 +17,7 @@ import { appErrorMessage } from '../errors/AppError'
 import type { PtzStep } from '../../domain/usecases/PtzStep'
 import type { PtzGoToPreset } from '../../domain/usecases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
+import type { PtzCalibrate } from '../../domain/usecases/PtzCalibrate'
 import type { PtzSaveCurrentAsPreset } from '../../domain/usecases/PtzSaveCurrentAsPreset'
 import type { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtzPresetThumbnail'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
@@ -33,6 +35,7 @@ interface PtzControlPanelProps {
   getPtzPresets?: GetPtzPresets
   ptzSaveCurrentAsPreset?: PtzSaveCurrentAsPreset
   capturePtzPresetThumbnail?: CapturePtzPresetThumbnail
+  ptzCalibrate?: PtzCalibrate
   speed?: number
   compact?: boolean
 }
@@ -84,12 +87,14 @@ function DirButton({
 // Hold: once HOLD_THRESHOLD_MS has elapsed, chain repeated step calls until release.
 const HOLD_THRESHOLD_MS = 300
 
-// Tap goes to the preset; holding this long redefines it — same gesture start, so timing is what tells them apart.
+// Sur une position deja definie, tap = y aller et appui long = la redefinir : meme debut de geste,
+// seule la duree les distingue. Une position vide n'a rien a distinguer, elle s'enregistre au tap.
 const LONG_PRESS_MS = 600
 
 function PresetTile({
   preset,
   reserved,
+  active,
   thumbSrc,
   thumbLoaded,
   onThumbLoad,
@@ -100,6 +105,7 @@ function PresetTile({
 }: {
   preset: PtzPreset | undefined
   reserved: boolean
+  active: boolean
   thumbSrc: string | null
   thumbLoaded: boolean
   onThumbLoad: () => void
@@ -112,7 +118,7 @@ function PresetTile({
   const longPressedRef = useRef(false)
 
   function start() {
-    if (!editable) return
+    if (!editable || !preset) return
     longPressedRef.current = false
     pressTimerRef.current = setTimeout(() => {
       longPressedRef.current = true
@@ -125,18 +131,21 @@ function PresetTile({
       clearTimeout(pressTimerRef.current)
       pressTimerRef.current = null
     }
-    if (tap && !longPressedRef.current && preset) onGoto()
+    if (!tap || longPressedRef.current) return
+    if (preset) onGoto()
+    else if (editable) onSave()
   }
 
   return (
     <button
       type="button"
-      disabled={state !== 'idle'}
+      disabled={state !== 'idle' || (!preset && !editable)}
+      aria-pressed={preset ? active : undefined}
       title={
         preset
           ? `${preset.label} — appui : y aller, appui long : redéfinir ici`
           : editable
-            ? 'Appui long : définir cette position ici'
+            ? 'Enregistrer la position actuelle ici'
             : 'Non définie'
       }
       onMouseDown={start}
@@ -147,8 +156,12 @@ function PresetTile({
         start()
       }}
       onTouchEnd={() => end(true)}
+      // L'appui long est notre geste : sans ca le navigateur mobile ouvre son menu par-dessus.
+      onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        'relative size-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted transition-colors',
+        'relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted transition-colors select-none',
+        '[-webkit-touch-callout:none]',
+        active ? 'border-primary ring-2 ring-primary' : 'border-border',
         'disabled:opacity-60',
       )}
     >
@@ -182,6 +195,15 @@ function PresetTile({
   )
 }
 
+/** La position ou se trouve la camera, quand elle correspond a une position enregistree. */
+function matchPreset(
+  presets: PtzPreset[],
+  position: { x: number; y: number } | null,
+): number | null {
+  if (!position) return null
+  return presets.find((p) => p.stepsX === position.x && p.stepsY === position.y)?.presetId ?? null
+}
+
 export function PtzControlPanel({
   cameraId,
   apiBaseUrl,
@@ -192,10 +214,14 @@ export function PtzControlPanel({
   speed = 50,
   compact = false,
   capturePtzPresetThumbnail,
+  ptzCalibrate,
 }: PtzControlPanelProps) {
   const { toast } = useToast()
   const [presets, setPresets] = useState<PtzPreset[]>([])
   const [presetsError, setPresetsError] = useState<string | null>(null)
+  const [calibrated, setCalibrated] = useState(true)
+  const [calibrating, setCalibrating] = useState(false)
+  const [activePresetId, setActivePresetId] = useState<number | null>(null)
   const [actionStates, setActionStates] = useState<Record<number, 'idle' | 'saving' | 'going'>>({})
   const [thumbVersions, setThumbVersions] = useState<Record<number, number>>({})
   const [loadedThumbs, setLoadedThumbs] = useState<Record<string, boolean>>({})
@@ -231,6 +257,8 @@ export function PtzControlPanel({
       if (isPressedRef.current) return
       isPressedRef.current = true
       isHoldingRef.current = false
+      // Bouger, c'est quitter la position enregistree.
+      setActivePresetId(null)
 
       // Fire the first step immediately (tap behavior).
       ptzStep.execute(cameraId, direction, speed).catch(() => {
@@ -260,13 +288,11 @@ export function PtzControlPanel({
 
   const reloadPresets = useCallback(async () => {
     if (!getPtzPresets) return
-    try {
-      const data = await getPtzPresets.execute(cameraId)
-      setPresets(data.presets ?? [])
-      setPresetsError(null)
-    } catch (e) {
-      setPresetsError(appErrorMessage(toAppError(e)))
-    }
+    const data = await getPtzPresets.execute(cameraId)
+    setPresets(data.presets ?? [])
+    setCalibrated(data.calibrated ?? true)
+    setActivePresetId(matchPreset(data.presets ?? [], data.currentPosition ?? null))
+    setPresetsError(null)
   }, [cameraId, getPtzPresets])
 
   // Everything runs after the first await, so switching cameras swaps the list without flashing stale data.
@@ -278,6 +304,8 @@ export function PtzControlPanel({
         const data = await getPtzPresets.execute(cameraId)
         if (cancelled) return
         setPresets(data.presets ?? [])
+        setCalibrated(data.calibrated ?? true)
+        setActivePresetId(matchPreset(data.presets ?? [], data.currentPosition ?? null))
         setPresetsError(null)
       } catch (e) {
         if (!cancelled) setPresetsError(appErrorMessage(toAppError(e)))
@@ -301,11 +329,22 @@ export function PtzControlPanel({
     [cameraId, capturePtzPresetThumbnail],
   )
 
+  const presetLabel = useCallback(
+    (presetId: number) =>
+      presets.find((p) => p.presetId === presetId)?.label ??
+      PRESET_LABELS[presetId] ??
+      `Position ${presetId}`,
+    [presets],
+  )
+
   const handleGoto = useCallback(
     async (presetId: number) => {
       setActionStates((s) => ({ ...s, [presetId]: 'going' }))
       try {
         await ptzGoToPreset.execute(cameraId, presetId)
+        setActivePresetId(presetId)
+        // Un deplacement dure : sans accuse, l'appui semble n'avoir rien fait.
+        toast(`Caméra en position « ${presetLabel(presetId)} ».`, 'success')
         scheduleCapture(presetId)
       } catch (e) {
         toast(appErrorMessage(toAppError(e)), 'error')
@@ -313,7 +352,7 @@ export function PtzControlPanel({
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
     },
-    [cameraId, ptzGoToPreset, scheduleCapture, toast],
+    [cameraId, ptzGoToPreset, presetLabel, scheduleCapture, toast],
   )
 
   const handleSave = useCallback(
@@ -322,23 +361,38 @@ export function PtzControlPanel({
       setActionStates((s) => ({ ...s, [presetId]: 'saving' }))
       try {
         await ptzSaveCurrentAsPreset.execute(cameraId, presetId)
-        toast('Position enregistrée.', 'success')
+        toast(`Position « ${presetLabel(presetId)} » enregistrée.`, 'success')
         await reloadPresets()
+        setActivePresetId(presetId)
         scheduleCapture(presetId)
       } catch (e) {
         const msg = appErrorMessage(toAppError(e))
-        toast(
-          msg.includes('not_calibrated') || msg.includes('Conflict')
-            ? "Calibrez d'abord la caméra depuis ses réglages de pilotage."
-            : msg,
-          'error',
-        )
+        if (msg.includes('not_calibrated') || msg.includes('Conflict')) {
+          setCalibrated(false)
+          toast('Cette caméra doit d’abord être calibrée.', 'error')
+        } else {
+          toast(msg, 'error')
+        }
       } finally {
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
     },
-    [cameraId, ptzSaveCurrentAsPreset, reloadPresets, scheduleCapture, toast],
+    [cameraId, ptzSaveCurrentAsPreset, presetLabel, reloadPresets, scheduleCapture, toast],
   )
+
+  const handleCalibrate = useCallback(async () => {
+    if (!ptzCalibrate) return
+    setCalibrating(true)
+    try {
+      await ptzCalibrate.execute(cameraId)
+      await reloadPresets()
+      toast('Caméra calibrée — les positions sont de nouveau utilisables.', 'success')
+    } catch (e) {
+      toast(appErrorMessage(toAppError(e)), 'error')
+    } finally {
+      setCalibrating(false)
+    }
+  }, [cameraId, ptzCalibrate, reloadPresets, toast])
 
   const dir = (d: Direction) => ({
     onMouseDown: () => handlePress(d),
@@ -392,6 +446,28 @@ export function PtzControlPanel({
         <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 sm:items-start">
           {presetsError && <p className="text-sm text-destructive">{presetsError}</p>}
 
+          {/* Sans reference, la camera ne sait pas ou elle est : les positions sont inertes, et
+              c'etait la seule chose que rien ne disait. */}
+          {!calibrated && (
+            <div className="flex flex-col items-center gap-2 rounded-inset border border-border bg-muted/40 p-2.5 sm:items-start">
+              <p className="text-sm text-muted-foreground">
+                Cette caméra n’a pas de position de référence : les positions enregistrées ne sont
+                pas utilisables tant qu’elle n’est pas calibrée.
+              </p>
+              {ptzCalibrate && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={calibrating}
+                  onClick={handleCalibrate}
+                >
+                  {calibrating ? 'Calibration en cours…' : 'Calibrer maintenant'}
+                </Button>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
             {ALL_PRESET_IDS.map((presetId) => {
               const preset = presets.find((p) => p.presetId === presetId)
@@ -401,23 +477,30 @@ export function PtzControlPanel({
               const thumbSrc = preset
                 ? `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/thumbnail?t=${version}`
                 : null
-              const label = preset?.label ?? PRESET_LABELS[presetId] ?? `Position ${presetId}`
 
               return (
                 <div key={presetId} className="flex w-16 flex-col items-center gap-1">
                   <PresetTile
                     preset={preset}
                     reserved={isReservedPreset(presetId)}
+                    active={activePresetId === presetId}
                     thumbSrc={thumbSrc}
                     thumbLoaded={!!loadedThumbs[thumbKey]}
                     onThumbLoad={() => setLoadedThumbs((v) => ({ ...v, [thumbKey]: true }))}
                     state={state}
-                    editable={!!ptzSaveCurrentAsPreset}
+                    editable={!!ptzSaveCurrentAsPreset && calibrated}
                     onGoto={() => handleGoto(presetId)}
                     onSave={() => (preset ? setOverridePresetId(presetId) : handleSave(presetId))}
                   />
-                  <span className="w-full text-center text-[11px] leading-tight text-muted-foreground">
-                    {label}
+                  <span
+                    className={cn(
+                      'w-full text-center text-[11px] leading-tight',
+                      activePresetId === presetId
+                        ? 'font-medium text-foreground'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {presetLabel(presetId)}
                   </span>
                 </div>
               )

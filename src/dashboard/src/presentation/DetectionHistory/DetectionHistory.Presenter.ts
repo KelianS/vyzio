@@ -4,6 +4,7 @@ import { toAppError } from '../../common/errors/toAppError'
 import type { DetectionHistoryQuery } from '../../domain/entities/DetectionHistory'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detectionHistory.container'
 import type { DetectionHistoryAction } from './DetectionHistory.Actions'
+import type { DetectionMedia } from './DetectionHistory.Uido'
 
 export interface DetectionHistoryPresenterContext {
   container: DetectionHistoryContainer
@@ -58,8 +59,11 @@ export function buildDetectionHistoryPresenter({
     onPageChange(page: number) {
       dispatch({ type: 'PAGE_SET', page })
     },
-    onSnapshotSet(url: string | null) {
-      dispatch({ type: 'SNAPSHOT_SET', url })
+    onMediaSet(media: DetectionMedia | null) {
+      dispatch({ type: 'MEDIA_SET', media })
+    },
+    onFiltersToggle() {
+      dispatch({ type: 'FILTERS_TOGGLED' })
     },
 
     async onCorrect(

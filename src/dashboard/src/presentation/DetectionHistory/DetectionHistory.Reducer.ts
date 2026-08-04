@@ -41,8 +41,10 @@ export function detectionHistoryReducer(
     case 'PAGE_SET':
       return { ...state, currentPage: action.page }
 
-    case 'SNAPSHOT_SET':
-      return { ...state, snapshotUrl: action.url }
+    case 'MEDIA_SET':
+      return { ...state, media: action.media }
+    case 'FILTERS_TOGGLED':
+      return { ...state, filtersOpen: !state.filtersOpen }
 
     case 'CORRECT_STARTED':
       return { ...state, correctingEventId: action.eventId }

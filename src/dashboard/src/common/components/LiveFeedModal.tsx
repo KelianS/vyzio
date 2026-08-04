@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { cn } from '../ui/utils'
 import type { PtzStep } from '../../domain/usecases/PtzStep'
 import type { PtzGoToPreset } from '../../domain/usecases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
 import type { PtzSaveCurrentAsPreset } from '../../domain/usecases/PtzSaveCurrentAsPreset'
 import type { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtzPresetThumbnail'
+import type { PtzCalibrate } from '../../domain/usecases/PtzCalibrate'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
 import { PtzControlPanel } from './PtzControlPanel'
 
@@ -18,6 +20,7 @@ interface LiveFeedModalProps {
   getPtzPresets?: GetPtzPresets
   ptzSaveCurrentAsPreset?: PtzSaveCurrentAsPreset
   capturePtzPresetThumbnail?: CapturePtzPresetThumbnail
+  ptzCalibrate?: PtzCalibrate
 }
 
 export function LiveFeedModal({
@@ -31,6 +34,7 @@ export function LiveFeedModal({
   getPtzPresets,
   ptzSaveCurrentAsPreset,
   capturePtzPresetThumbnail,
+  ptzCalibrate,
 }: LiveFeedModalProps) {
   const [src, setSrc] = useState(
     () => `${apiBaseUrl}/api/cameras/${cameraId}/live/latest.jpg?t=${Date.now()}`,
@@ -47,25 +51,34 @@ export function LiveFeedModal({
     }
   }, [cameraId, apiBaseUrl])
 
+  const waiting = frigateStatus === 'restarting' || imageError
+
   return (
     <div className="flex max-w-[90vw] flex-col items-center gap-3">
-      <div className="relative">
+      {/* Une image sans donnees perd ses dimensions : sans plancher, le voile d'attente se
+          reduisait a un timbre-poste portant l'icone de rupture du navigateur. */}
+      <div
+        className={cn(
+          'relative flex items-center justify-center overflow-hidden rounded-lg',
+          waiting && 'aspect-video w-[min(90vw,48rem)] bg-surface-inverse',
+        )}
+      >
         <img
           src={src}
           alt={label}
-          className="block max-h-[75vh] max-w-[90vw] rounded-lg"
+          className={cn('block max-h-[75vh] max-w-[90vw] rounded-lg', waiting && 'invisible')}
           onError={() => setImageError(true)}
           onLoad={() => setImageError(false)}
         />
-        {(frigateStatus === 'restarting' || imageError) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-inverse/70">
+        {waiting && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <span
               className="size-6 animate-spin rounded-full border-2 border-surface-inverse-foreground/30 border-t-surface-inverse-foreground"
               aria-hidden="true"
             />
-            {frigateStatus === 'restarting' && (
-              <span className="text-sm text-surface-inverse-foreground">Redémarrage en cours…</span>
-            )}
+            <span className="text-sm text-surface-inverse-foreground">
+              {frigateStatus === 'restarting' ? 'Redémarrage en cours…' : 'Reconnexion…'}
+            </span>
           </div>
         )}
       </div>
@@ -82,6 +95,7 @@ export function LiveFeedModal({
             ptzSaveCurrentAsPreset={ptzSaveCurrentAsPreset}
             compact
             capturePtzPresetThumbnail={capturePtzPresetThumbnail}
+            ptzCalibrate={ptzCalibrate}
           />
         </div>
       )}

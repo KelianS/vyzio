@@ -1,9 +1,11 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { Image, Play, X } from 'lucide-react'
+import { SlidersHorizontal, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
-import { cn } from '../../common/ui/utils'
 import { useToast } from '../../common/components/Toast'
+import { Overlay } from '../../common/components/Overlay'
+import { DetectionList } from '../../common/detection/DetectionList'
+import { carriesIdentity } from '../../common/detection/detectionFormatters'
 import { usePresenter } from '../../common/presenter/usePresenter'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
@@ -12,11 +14,6 @@ import { buildDetectionHistoryPresenter } from './DetectionHistory.Presenter'
 import { detectionHistoryReducer } from './DetectionHistory.Reducer'
 import { buildInitialDetectionHistoryUido } from './DetectionHistory.Uido'
 import { PickOne, UNKNOWN } from './HistoryPickers'
-
-const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-})
 
 /** A detection without an identity isn't anonymous by mistake — it's unknown. */
 const UNIDENTIFIED = 'Inconnu'
@@ -60,90 +57,111 @@ export function DetectionHistoryView() {
 
   const filtered = Boolean(
     uido.filterCamera ||
-    uido.filterLabel ||
-    uido.filterProfileId ||
-    uido.filterFrom ||
-    uido.filterTo,
+      uido.filterLabel ||
+      uido.filterProfileId ||
+      uido.filterFrom ||
+      uido.filterTo,
   )
 
   return (
     <main className="flex flex-col gap-4 py-4">
-      <div>
-        <h1 className="font-serif text-3xl">Historique</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {uido.page
-            ? `${uido.page.total} détection${uido.page.total > 1 ? 's' : ''}${filtered ? ' avec ces filtres' : ''}.`
-            : 'Ce que Vyzio a vu, et qui il a cru reconnaître.'}
-        </p>
-      </div>
-
-      <section
-        aria-label="Filtres"
-        className="rounded-card bg-card p-4 text-card-foreground shadow-[var(--shadow-soft)]"
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Caméra">
-            <Input
-              value={uido.filterCamera}
-              placeholder="Toutes"
-              onChange={(event) => presenter.onFilterCameraChange(event.target.value)}
-            />
-          </Field>
-
-          <Field label="Type">
-            <PickOne
-              value={uido.filterLabel}
-              anyLabel="Tous"
-              options={uido.detectionLabels.map((label) => ({
-                value: label.value,
-                label: `${label.emoji} ${label.displayName}`,
-              }))}
-              onChange={presenter.onFilterLabelChange}
-            />
-          </Field>
-
-          <Field label="Personne">
-            <PickOne
-              value={uido.filterProfileId}
-              anyLabel="Toutes"
-              options={uido.profiles.map((profile) => ({
-                value: profile.id,
-                label: profile.name,
-              }))}
-              onChange={presenter.onFilterProfileChange}
-            />
-          </Field>
-
-          <Field label="Depuis">
-            <Input
-              type="datetime-local"
-              value={toLocalInput(uido.filterFrom)}
-              onChange={(event) => presenter.onFilterFromChange(fromLocalInput(event.target.value))}
-            />
-          </Field>
-
-          <Field label="Jusqu’à">
-            <Input
-              type="datetime-local"
-              value={toLocalInput(uido.filterTo)}
-              onChange={(event) => presenter.onFilterToChange(fromLocalInput(event.target.value))}
-            />
-          </Field>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="font-serif text-3xl">Historique</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {uido.page
+              ? `${uido.page.total} détection${uido.page.total > 1 ? 's' : ''}${filtered ? ' avec ces filtres' : ''}.`
+              : 'Ce que Vyzio a vu, et qui il a cru reconnaître.'}
+          </p>
         </div>
 
-        {/* Reinitialiser n'existe que s'il y a quelque chose a reinitialiser. */}
-        {filtered && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mt-3"
-            onClick={presenter.onResetFilters}
-          >
-            Tout afficher
-          </Button>
-        )}
-      </section>
+        {/* Filtrer est une option qu'on ouvre, pas le haut de l'ecran : ce qu'on vient lire ici,
+            ce sont les detections. */}
+        <Button
+          type="button"
+          variant={uido.filtersOpen || filtered ? 'default' : 'outline'}
+          size="sm"
+          aria-expanded={uido.filtersOpen}
+          aria-controls="history-filters"
+          onClick={presenter.onFiltersToggle}
+        >
+          <SlidersHorizontal aria-hidden="true" />
+          Filtrer
+        </Button>
+      </div>
+
+      {uido.filtersOpen && (
+        <section
+          id="history-filters"
+          aria-label="Filtres"
+          className="rounded-card bg-card p-4 text-card-foreground shadow-[var(--shadow-soft)]"
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Caméra">
+              <Input
+                value={uido.filterCamera}
+                placeholder="Toutes"
+                onChange={(event) => presenter.onFilterCameraChange(event.target.value)}
+              />
+            </Field>
+
+            <Field label="Type">
+              <PickOne
+                value={uido.filterLabel}
+                anyLabel="Tous"
+                options={uido.detectionLabels.map((label) => ({
+                  value: label.value,
+                  label: `${label.emoji} ${label.displayName}`,
+                }))}
+                onChange={presenter.onFilterLabelChange}
+              />
+            </Field>
+
+            <Field label="Personne">
+              <PickOne
+                value={uido.filterProfileId}
+                anyLabel="Toutes"
+                options={uido.profiles.map((profile) => ({
+                  value: profile.id,
+                  label: profile.name,
+                }))}
+                onChange={presenter.onFilterProfileChange}
+              />
+            </Field>
+
+            <Field label="Depuis">
+              <Input
+                type="datetime-local"
+                value={toLocalInput(uido.filterFrom)}
+                onChange={(event) =>
+                  presenter.onFilterFromChange(fromLocalInput(event.target.value))
+                }
+              />
+            </Field>
+
+            <Field label="Jusqu’à">
+              <Input
+                type="datetime-local"
+                value={toLocalInput(uido.filterTo)}
+                onChange={(event) => presenter.onFilterToChange(fromLocalInput(event.target.value))}
+              />
+            </Field>
+          </div>
+
+          {/* Reinitialiser n'existe que s'il y a quelque chose a reinitialiser. */}
+          {filtered && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-3"
+              onClick={presenter.onResetFilters}
+            >
+              Tout afficher
+            </Button>
+          )}
+        </section>
+      )}
 
       {uido.error && <p className="text-destructive">{uido.error}</p>}
 
@@ -156,19 +174,23 @@ export function DetectionHistoryView() {
       )}
 
       {!uido.loading && uido.page && uido.page.items.length > 0 && (
-        <ul className="divide-y divide-border rounded-card bg-card px-4 text-card-foreground shadow-[var(--shadow-soft)]">
-          {uido.page.items.map((event) => (
-            <EventRow
-              key={event.eventId}
-              event={event}
-              profiles={uido.profiles}
-              apiBaseUrl={apiBaseUrl}
-              correcting={uido.correctingEventId === event.eventId}
-              onCorrect={(profileId) => presenter.onCorrect(event.eventId, profileId, query)}
-              onShowSnapshot={presenter.onSnapshotSet}
-            />
-          ))}
-        </ul>
+        <div className="rounded-card bg-card px-4 py-2 text-card-foreground shadow-[var(--shadow-soft)]">
+          <DetectionList
+            events={uido.page.items}
+            apiBaseUrl={apiBaseUrl}
+            onOpenMedia={(type, url) => presenter.onMediaSet({ type, url })}
+            renderExtra={(event) =>
+              carriesIdentity(event) && (
+                <IdentityCorrection
+                  event={event}
+                  profiles={uido.profiles}
+                  correcting={uido.correctingEventId === event.eventId}
+                  onCorrect={(profileId) => presenter.onCorrect(event.eventId, profileId, query)}
+                />
+              )
+            }
+          />
+        </div>
       )}
 
       {uido.page && uido.page.totalPages > 1 && (
@@ -197,8 +219,14 @@ export function DetectionHistoryView() {
         </div>
       )}
 
-      {uido.snapshotUrl && (
-        <SnapshotOverlay url={uido.snapshotUrl} onClose={() => presenter.onSnapshotSet(null)} />
+      {uido.media && (
+        <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>
+          {uido.media.type === 'image' ? (
+            <img src={uido.media.url} alt="" className="max-h-[85vh] rounded-lg" />
+          ) : (
+            <video src={uido.media.url} controls autoPlay className="max-h-[85vh] rounded-lg" />
+          )}
+        </Overlay>
       )}
     </main>
   )
@@ -213,143 +241,61 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function EventRow({
+/** Ce que l'historique ajoute a une ligne de detection : dire qui c'etait vraiment. */
+function IdentityCorrection({
   event,
   profiles,
-  apiBaseUrl,
   correcting,
   onCorrect,
-  onShowSnapshot,
 }: {
   event: DetectionEvent
   profiles: Profile[]
-  apiBaseUrl: string
   correcting: boolean
   onCorrect: (profileId: string | null) => Promise<void>
-  onShowSnapshot: (url: string) => void
 }) {
   const [fixing, setFixing] = useState(false)
-  const [playing, setPlaying] = useState(false)
   const [pickedProfileId, setPickedProfileId] = useState(event.profileId ?? '')
 
-  return (
-    <li className="py-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="font-medium">{event.identity ?? UNIDENTIFIED}</span>
-        <span className="text-sm text-muted-foreground">
-          {dateFormatter.format(new Date(event.occurredAt))}
-        </span>
-      </div>
-
-      {/* Ce que la detection dit d'elle-meme : ou, quoi, et avec quelle
-          certitude. La certitude ne se lit que si le moteur en a donne une. */}
-      <p className="mt-0.5 text-sm text-muted-foreground">
-        {[
-          event.camera,
-          event.label,
-          event.confidence !== null ? `${Math.round(event.confidence * 100)} % de certitude` : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        {event.hasSnapshot && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              onShowSnapshot(`${apiBaseUrl}/api/detection-events/${event.eventId}/snapshot`)
-            }
-          >
-            <Image aria-hidden="true" />
-            Aperçu
-          </Button>
-        )}
-        {event.hasClip && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setPlaying((previous) => !previous)}
-          >
-            <Play aria-hidden="true" />
-            {playing ? 'Masquer la vidéo' : 'Vidéo'}
-          </Button>
-        )}
-
-        {fixing ? (
-          <span className="flex flex-wrap items-center gap-2">
-            <PickOne
-              value={pickedProfileId}
-              anyLabel={UNIDENTIFIED}
-              anyValue={UNKNOWN}
-              options={profiles.map((profile) => ({ value: profile.id, label: profile.name }))}
-              onChange={setPickedProfileId}
-            />
-            <Button
-              type="button"
-              size="sm"
-              disabled={correcting}
-              onClick={async () => {
-                await onCorrect(pickedProfileId || null)
-                setFixing(false)
-              }}
-            >
-              {correcting ? 'Correction…' : 'Valider'}
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setFixing(false)}>
-              Annuler
-            </Button>
-          </span>
-        ) : (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setFixing(true)}>
-            {event.identity ? 'Ce n’est pas elle' : 'Je sais qui c’est'}
-          </Button>
-        )}
-      </div>
-
-      {playing && (
-        <video
-          src={`${apiBaseUrl}/api/detection-events/${event.eventId}/clip`}
-          controls
-          preload="metadata"
-          className="mt-3 max-h-80 w-full rounded-lg bg-surface-inverse"
-        />
-      )}
-    </li>
-  )
-}
-
-function SnapshotOverlay({ url, onClose }: { url: string; onClose: () => void }) {
-  return (
-    <div
-      role="dialog"
-      aria-label="Aperçu de la détection"
-      onClick={onClose}
-      className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center p-4',
-        'bg-surface-inverse/85 backdrop-blur-sm',
-      )}
-    >
+  if (!fixing) {
+    return (
+      // `ghost` ne se donnait pas pour un bouton, pose sous une ligne de texte gris.
       <Button
         type="button"
-        variant="ghost"
-        size="icon"
-        aria-label="Fermer"
-        className="absolute top-4 right-4 text-surface-inverse-foreground"
-        onClick={onClose}
+        variant="outline"
+        size="sm"
+        className="mt-1.5"
+        onClick={() => setFixing(true)}
       >
-        <X aria-hidden="true" />
+        <UserRoundPen aria-hidden="true" />
+        {event.identity ? 'Corriger' : 'Identifier'}
       </Button>
-      <img
-        src={url}
-        alt=""
-        onClick={(event) => event.stopPropagation()}
-        className="max-h-full max-w-full rounded-lg"
+    )
+  }
+
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-2">
+      <PickOne
+        value={pickedProfileId}
+        anyLabel={UNIDENTIFIED}
+        anyValue={UNKNOWN}
+        options={profiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+        onChange={setPickedProfileId}
       />
-    </div>
+      <Button
+        type="button"
+        size="sm"
+        disabled={correcting}
+        onClick={async () => {
+          await onCorrect(pickedProfileId || null)
+          setFixing(false)
+        }}
+      >
+        {correcting ? 'Correction…' : 'Valider'}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => setFixing(false)}>
+        Annuler
+      </Button>
+    </span>
   )
 }
 
