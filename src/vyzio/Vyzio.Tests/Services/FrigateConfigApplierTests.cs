@@ -419,25 +419,27 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.Equal(1, CountOccurrences(yaml, "days: 7"));
     }
 
-    // Previously impossible to express: `record.enabled: true` was global and no camera overrode it,
-    // so a camera the user did not want recorded was recorded anyway.
+    // ADR-48: a camera that keeps nothing no longer exists — an enabled camera keeps at least a day
+    // of event clips, and not wanting its video is said by disabling the camera itself.
     [Fact]
-    public async Task A_camera_keeping_nothing_has_recording_switched_off()
+    public async Task A_camera_asking_for_zero_event_clips_keeps_a_day_and_stays_recorded()
     {
         var camera = MakeValidatedCamera("front-door");
         camera.ContinuousDaysOverride = 0;
         camera.MotionDaysOverride = 0;
         camera.EventClipDaysOverride = 0;
 
-        var yaml = await ApplyAndReadYamlAsync([camera]);
+        // An installation duration that shares no prefix with "1", so the count below is the camera's.
+        var yaml = await ApplyAndReadYamlAsync(
+            [camera],
+            recordingSettings: new RecordingSettings { EventClipDays = 30 });
 
-        // The camera's own record block is the only thing switched off — the camera itself stays
-        // enabled for detection, and the installation still records everyone else.
-        Assert.Equal(1, CountOccurrences(yaml, "enabled: false"));
+        Assert.DoesNotContain("enabled: false", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, CountOccurrences(yaml, "days: 1"));
     }
 
     [Fact]
-    public async Task An_installation_keeping_nothing_switches_recording_off_at_the_root()
+    public async Task An_installation_asking_for_zero_event_clips_keeps_a_day_at_the_root()
     {
         var yaml = await ApplyAndReadYamlAsync(
             [MakeValidatedCamera("front-door")],
@@ -445,7 +447,9 @@ public class FrigateConfigApplierTests : IDisposable
 
         var recordIndex = yaml.IndexOf("record:", StringComparison.OrdinalIgnoreCase);
         Assert.True(recordIndex >= 0);
-        Assert.Contains("enabled: false", yaml[recordIndex..], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("enabled: true", yaml[recordIndex..], StringComparison.OrdinalIgnoreCase);
+        // Alerts and detections both follow the single Vyzio duration, floored at one day.
+        Assert.Equal(2, CountOccurrences(yaml, "days: 1"));
     }
 
     private static int CountOccurrences(string haystack, string needle)

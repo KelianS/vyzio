@@ -32,7 +32,9 @@ public sealed record CameraRetentionDto(
     RetentionWindowDto Continuous,
     RetentionWindowDto Motion,
     RetentionWindowDto EventClip,
-    int MaxDays)
+    int MaxDays,
+    // Sent so the interface can refuse zero before the input rather than after (ADR-48).
+    int MinEventClipDays)
 {
     public static CameraRetentionDto From(RecordingSettings installation, Camera camera)
     {
@@ -45,8 +47,11 @@ public sealed record CameraRetentionDto(
             new RetentionWindowDto(
                 camera.MotionDaysOverride, inherited.MotionDays, effective.MotionDays),
             new RetentionWindowDto(
-                camera.EventClipDaysOverride, inherited.EventClipDays, effective.EventClipDays),
-            RetentionPolicy.MaxDays);
+                RetentionPolicy.ClampEventClipDays(camera.EventClipDaysOverride),
+                inherited.EventClipDays,
+                effective.EventClipDays),
+            RetentionPolicy.MaxDays,
+            RetentionPolicy.MinEventClipDays);
     }
 }
 

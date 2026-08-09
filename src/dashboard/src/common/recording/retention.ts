@@ -5,7 +5,7 @@
 import type { CameraRetention, DetectionConfigUpdate } from '../../domain/entities/DetectionConfig'
 
 // Keyed to match CameraRetention, so a window indexes its values directly with no lookup table.
-export type RetentionWindow = keyof Omit<CameraRetention, 'maxDays'>
+export type RetentionWindow = keyof Omit<CameraRetention, 'maxDays' | 'minEventClipDays'>
 
 export const RETENTION_ORDER: RetentionWindow[] = ['continuous', 'motion', 'eventClip']
 
@@ -30,11 +30,18 @@ export const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
 }
 
 // Se dit dans l'aide de chaque duree : hors de la ligne, c'etait du texte courant, proscrit (ADR-43).
-export const RETENTION_ZERO_NOTE = 'Mettre 0 signifie que rien n’est conservé de cette nature.'
+const RETENTION_ZERO_NOTE = 'Mettre 0 signifie que rien n’est conservé de cette nature.'
+const RETENTION_FLOOR_NOTE = 'Au moins un jour : c’est ce que votre historique peut remonter.'
 
 /** L'aide d'une duree, la meme a l'installation et sur une camera. */
 export function retentionHelp(window: RetentionWindow): string {
-  return `${RETENTION_EXPLANATION[window]} ${RETENTION_ZERO_NOTE}`
+  const note = window === 'eventClip' ? RETENTION_FLOOR_NOTE : RETENTION_ZERO_NOTE
+  return `${RETENTION_EXPLANATION[window]} ${note}`
+}
+
+/** Le plancher d'une duree : seule celle qui porte l'historique en a un (ADR-48). */
+export function retentionMinDays(window: RetentionWindow, minEventClipDays: number): number {
+  return window === 'eventClip' ? minEventClipDays : 0
 }
 
 // Zero is a real answer, so it gets words rather than a bare "0 jour".

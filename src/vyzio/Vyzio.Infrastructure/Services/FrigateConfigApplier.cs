@@ -473,15 +473,15 @@ public sealed class FrigateConfigApplier(
     }
 
     // The installation's own retention, at the root of the file — what every camera follows unless
-    // it says otherwise. Recording is switched off outright when nothing is kept, which is what
-    // finally gives "I want no recordings" an observable effect (ADR-39).
+    // it says otherwise. Recording stays on: an enabled camera keeps at least a day of event clips,
+    // and not wanting video from a camera is said by disabling it (ADR-48).
     private static FrigateRecordConfig BuildInstallationRecord(RecordingSettings installation)
     {
         var policy = RetentionPolicy.ForInstallation(installation);
 
         return new FrigateRecordConfig
         {
-            Enabled = policy.KeepsAnything,
+            Enabled = true,
             Continuous = new FrigateRetainDaysConfig { Days = policy.ContinuousDays },
             Motion = new FrigateRetainDaysConfig { Days = policy.MotionDays },
             // Frigate splits event clips into alerts and detections. That split belongs to its own
@@ -503,15 +503,14 @@ public sealed class FrigateConfigApplier(
             return null;
         }
 
-        var policy = RetentionPolicy.Resolve(installation, camera);
+        var eventClipDays = RetentionPolicy.ClampEventClipDays(camera.EventClipDaysOverride);
 
         return new FrigateRecordConfig
         {
-            Enabled = policy.KeepsAnything,
             Continuous = BuildRetainDays(camera.ContinuousDaysOverride),
             Motion = BuildRetainDays(camera.MotionDaysOverride),
-            Alerts = camera.EventClipDaysOverride is { } alertDays ? BuildEventRecord(alertDays) : null,
-            Detections = camera.EventClipDaysOverride is { } detectionDays ? BuildEventRecord(detectionDays) : null,
+            Alerts = eventClipDays is { } alertDays ? BuildEventRecord(alertDays) : null,
+            Detections = eventClipDays is { } detectionDays ? BuildEventRecord(detectionDays) : null,
         };
     }
 

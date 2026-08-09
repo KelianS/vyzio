@@ -19,6 +19,7 @@ import {
   RETENTION_ORDER,
   formatDays,
   retentionHelp,
+  retentionMinDays,
   type RetentionWindow,
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
@@ -91,7 +92,12 @@ function ConservationForm({
     return {
       id: `retention-${window}`,
       label: RETENTION_LABEL[window],
-      nature: { kind: 'number', unit: 'jours', min: 0, max: settings.maxDays },
+      nature: {
+        kind: 'number',
+        unit: 'jours',
+        min: retentionMinDays(window, settings.minEventClipDays),
+        max: settings.maxDays,
+      },
       help: retentionHelp(window),
       // A cost stays visible without an extra gesture (ADR-43).
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,

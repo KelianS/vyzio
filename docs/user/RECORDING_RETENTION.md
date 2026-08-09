@@ -13,8 +13,10 @@ Vyzio conserve trois choses différentes, et vous décidez combien de temps chac
 | **Séquences de mouvement** | Seulement les moments où l'image bouge | 7 jours |
 | **Clips d'alerte** | Les extraits rattachés à une détection, ceux de l'historique | 14 jours |
 
-Mettre **0** signifie que rien n'est conservé de cette nature. Si les trois valent 0 pour une
-caméra, cette caméra n'enregistre plus rien du tout.
+Mettre **0** signifie que rien n'est conservé de cette nature — pour les deux premières seulement.
+Les **clips d'alerte gardent au moins un jour** : c'est eux que votre historique montre, et une
+durée nulle ne le raccourcirait pas, elle le viderait. Ne rien vouloir d'une caméra se dit en
+désactivant la caméra, ce qui arrête aussi sa détection.
 
 ## Le réglage vaut pour toutes les caméras, sauf si l'une en décide autrement
 
