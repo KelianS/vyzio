@@ -3,55 +3,53 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
+/// <summary>
+/// Everything a channel is configured with: the part every channel shares, and — behind
+/// <see cref="Credentials"/> — the part that belongs to the channel alone (ADR-50).
+/// </summary>
 [Table("notification_channel_configs")]
 public class NotificationChannelConfig
 {
     [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
-    [Required, MaxLength(50)]
-    public required string Channel { get; set; } // "telegram"
+    [Required]
+    public required NotificationChannel Channel { get; set; }
 
     public bool IsEnabled { get; set; }
 
-    [MaxLength(500)]
-    public string? BotToken { get; set; }
+    /// <summary>Serialized <see cref="ChannelCredentials"/>; go through <see cref="Credentials"/> instead.</summary>
+    public string? CredentialsJson { get; set; }
 
-    [MaxLength(100)]
-    public string? ChatId { get; set; }
+    [NotMapped]
+    public ChannelCredentials Credentials
+    {
+        get => ChannelCredentials.FromJson(CredentialsJson);
+        set => CredentialsJson = value.ToJson();
+    }
 
+    // --- When to notify -------------------------------------------------
     public float MinimumConfidence { get; set; } = 0.75f;
 
-    /// <summary>JSON array of allowed detection labels. Null means default ["person"].</summary>
-    [MaxLength(500)]
     public string? AllowedLabelsJson { get; set; }
 
-    /// <summary>Local hour (0-23) from which notifications are active. Null means no restriction.</summary>
     public int? ActiveFromHour { get; set; }
 
-    /// <summary>Local hour (0-23, exclusive) until which notifications are active. Null means no restriction.</summary>
     public int? ActiveToHour { get; set; }
 
-    /// <summary>JSON array of enabled message fields. Null means all fields enabled.</summary>
-    [MaxLength(200)]
-    public string? MessageFieldsJson { get; set; }
-
-    /// <summary>Media format for Telegram notifications: "clip_or_photo" (default), "photo", or "text".</summary>
-    [MaxLength(20)]
-    public string? MediaMode { get; set; }
-
-    /// <summary>Minimum minutes between two notifications for the same (camera, label). Null = no cooldown.</summary>
     public int? CooldownMinutes { get; set; }
 
+    // --- What to send ---------------------------------------------------
+    public string? MessageFieldsJson { get; set; }
+
+    public MediaMode MediaMode { get; set; } = MediaMode.ClipOrPhoto;
+
+    // --- Trace ----------------------------------------------------------
     public DateTimeOffset? ConfiguredAt { get; set; }
 
     public DateTimeOffset? LastTestedAt { get; set; }
 
-    [MaxLength(50)]
-    public string? LastTestStatus { get; set; } // "success" | "failure"
+    public ChannelTestOutcome? LastTestOutcome { get; set; }
 
     public string? LastTestError { get; set; }
-
-    public bool HasCredentials =>
-        !string.IsNullOrWhiteSpace(BotToken) && !string.IsNullOrWhiteSpace(ChatId);
 }

@@ -1,15 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
-using Vyzio.Infrastructure.Persistence;
 
 namespace Vyzio.Infrastructure.Persistence.Repositories;
 
 public sealed class NotificationChannelConfigRepository(VyzioDbContext db) : INotificationChannelConfigRepository
 {
-    public Task<NotificationChannelConfig?> GetByChannelAsync(string channel, CancellationToken ct = default)
+    public Task<NotificationChannelConfig?> GetByChannelAsync(NotificationChannel channel, CancellationToken ct = default)
         => db.NotificationChannelConfigs
              .FirstOrDefaultAsync(c => c.Channel == channel, ct);
+
+    public async Task<IReadOnlyList<NotificationChannelConfig>> GetAllAsync(CancellationToken ct = default)
+        => await db.NotificationChannelConfigs.ToListAsync(ct);
 
     public async Task UpsertAsync(NotificationChannelConfig config, CancellationToken ct = default)
     {
@@ -17,26 +19,17 @@ public sealed class NotificationChannelConfigRepository(VyzioDbContext db) : INo
             .FirstOrDefaultAsync(c => c.Channel == config.Channel, ct);
 
         if (existing is null)
-        {
             db.NotificationChannelConfigs.Add(config);
-        }
-        else
+        else if (!ReferenceEquals(existing, config))
         {
-            existing.IsEnabled = config.IsEnabled;
-            existing.BotToken = config.BotToken;
-            existing.ChatId = config.ChatId;
-            existing.MinimumConfidence = config.MinimumConfidence;
-            existing.AllowedLabelsJson = config.AllowedLabelsJson;
-            existing.ConfiguredAt = config.ConfiguredAt;
-            existing.LastTestedAt = config.LastTestedAt;
-            existing.LastTestStatus = config.LastTestStatus;
-            existing.LastTestError = config.LastTestError;
+            config.Id = existing.Id; // the channel identifies the row, the key only stores it
+            db.Entry(existing).CurrentValues.SetValues(config);
         }
 
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> DeleteByChannelAsync(string channel, CancellationToken ct = default)
+    public async Task<bool> DeleteByChannelAsync(NotificationChannel channel, CancellationToken ct = default)
     {
         var existing = await db.NotificationChannelConfigs
             .FirstOrDefaultAsync(c => c.Channel == channel, ct);

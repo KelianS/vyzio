@@ -80,10 +80,10 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
             db.Notifications.Add(new Notification
             {
                 FrigateEventId = "event-1",
-                Channel = "telegram",
+                Channel = NotificationChannel.Telegram,
                 Camera = "front_door",
                 Label = "person",
-                Status = "sent",
+                Status = NotificationStatus.Sent,
                 SentAt = DateTimeOffset.Parse("2026-05-12T09:05:00+00:00")
             });
 

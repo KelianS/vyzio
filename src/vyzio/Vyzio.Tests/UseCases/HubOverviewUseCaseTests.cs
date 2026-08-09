@@ -4,6 +4,7 @@ using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Hub;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.Notifications;
 
 namespace Vyzio.Tests.UseCases;
 
@@ -18,6 +19,22 @@ public class GetHubOverviewUseCaseTests
 
     private readonly IRecordingSettingsRepository _recordingSettings = Substitute.For<IRecordingSettingsRepository>();
 
+    private static readonly ChannelCredentials WorkingCredentials = new(new Dictionary<ChannelCredential, string>
+    {
+        [ChannelCredential.WebhookUrl] = "https://channel.test/hook"
+    });
+
+    private static INotificationChannelCatalog Catalog()
+    {
+        var sender = Substitute.For<INotificationChannelSender>();
+        sender.Descriptor.Returns(new NotificationChannelDescriptor(
+            NotificationChannel.Telegram,
+            "Telegram",
+            new ChannelCapabilities(true, true, true, false, 1024),
+            [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]));
+        return new NotificationChannelCatalog([sender]);
+    }
+
     private GetHubOverviewUseCase CreateSut()
     {
         _recordingSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(RecordingSettings.CreateDefault());
@@ -31,7 +48,8 @@ public class GetHubOverviewUseCaseTests
                     _recordingSettings)),
             _profiles,
             _notifications,
-            _channelConfigs);
+            _channelConfigs,
+            Catalog());
     }
 
     [Fact]
@@ -47,17 +65,18 @@ public class GetHubOverviewUseCaseTests
             new Profile { Name = "Alice", Category = "household", AlertMode = "notify" },
             new Profile { Name = "Bob", Category = "known", AlertMode = "silent" }
         ]);
-        _notifications.CountSentAsync("telegram", Arg.Any<CancellationToken>()).Returns(3);
-        _notifications.GetLastSentAtAsync("telegram", Arg.Any<CancellationToken>())
+        _notifications.CountSentAsync(Arg.Any<CancellationToken>()).Returns(3);
+        _notifications.GetLastSentAtAsync(Arg.Any<CancellationToken>())
             .Returns(DateTimeOffset.Parse("2026-05-12T10:30:00+00:00"));
-        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
-            .Returns(new NotificationChannelConfig
+        _channelConfigs.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new NotificationChannelConfig
             {
-                Channel = "telegram",
+                Channel = NotificationChannel.Telegram,
                 IsEnabled = true,
-                BotToken = "token",
-                ChatId = "chat"
-            });
+                Credentials = WorkingCredentials
+            }
+        ]);
 
         var sut = CreateSut();
 
@@ -66,25 +85,24 @@ public class GetHubOverviewUseCaseTests
         Assert.True(overview.SystemHealthy);
         Assert.Single(overview.RecentEvents);
         Assert.Equal(2, overview.Profiles.Count);
-        Assert.True(overview.Notifications.TelegramConfigured);
+        Assert.Equal(1, overview.Notifications.ActiveChannels);
         Assert.Equal(3, overview.Notifications.SentCount);
         Assert.Empty(overview.Warnings);
     }
 
     [Fact]
-    public async Task Execute_adds_warning_when_telegram_is_not_configured()
+    public async Task Execute_adds_warning_when_no_channel_is_configured()
     {
         _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns([]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _notifications.CountSentAsync("telegram", Arg.Any<CancellationToken>()).Returns(0);
-        _notifications.GetLastSentAtAsync("telegram", Arg.Any<CancellationToken>()).Returns((DateTimeOffset?)null);
-        _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
-            .Returns((NotificationChannelConfig?)null);
+        _notifications.CountSentAsync(Arg.Any<CancellationToken>()).Returns(0);
+        _notifications.GetLastSentAtAsync(Arg.Any<CancellationToken>()).Returns((DateTimeOffset?)null);
+        _channelConfigs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
 
         var sut = CreateSut();
 
         var overview = await sut.ExecuteAsync();
 
-        Assert.Contains("Telegram n'est pas encore configure.", overview.Warnings);
+        Assert.Contains("Aucun canal de notification n'est configure.", overview.Warnings);
     }
 }

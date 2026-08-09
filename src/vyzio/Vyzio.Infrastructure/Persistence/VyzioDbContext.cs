@@ -128,8 +128,22 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                 .HasDatabaseName("idx_pcl_profile");
         });
 
+        modelBuilder.Entity<NotificationChannelConfig>(config =>
+        {
+            config.Property(c => c.Channel).HasConversion<SnakeCaseEnumConverter<NotificationChannel>>();
+            config.Property(c => c.MediaMode).HasConversion<SnakeCaseEnumConverter<MediaMode>>();
+            config.Property(c => c.LastTestOutcome).HasConversion<NullableSnakeCaseEnumConverter<ChannelTestOutcome>>();
+
+            config.HasIndex(c => c.Channel)
+                  .IsUnique()
+                  .HasDatabaseName("ux_notification_channel");
+        });
+
         modelBuilder.Entity<Notification>(notification =>
         {
+            notification.Property(n => n.Channel).HasConversion<SnakeCaseEnumConverter<NotificationChannel>>();
+            notification.Property(n => n.Status).HasConversion<SnakeCaseEnumConverter<NotificationStatus>>();
+
             notification.HasIndex(n => new { n.FrigateEventId, n.Channel })
                         .HasDatabaseName("idx_notifications_event");
 
