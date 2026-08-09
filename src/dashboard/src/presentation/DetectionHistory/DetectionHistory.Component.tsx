@@ -34,7 +34,6 @@ export function DetectionHistoryView() {
     profileId: uido.filterProfileId || undefined,
     from: uido.filterFrom || undefined,
     to: uido.filterTo || undefined,
-    page: uido.currentPage,
     limit: 20,
   }
 
@@ -52,7 +51,6 @@ export function DetectionHistoryView() {
     uido.filterProfileId,
     uido.filterFrom,
     uido.filterTo,
-    uido.currentPage,
   ])
 
   const filtered = Boolean(
@@ -69,9 +67,7 @@ export function DetectionHistoryView() {
         <div>
           <h1 className="font-serif text-3xl">Historique</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {uido.page
-              ? `${uido.page.total} détection${uido.page.total > 1 ? 's' : ''}${filtered ? ' avec ces filtres' : ''}.`
-              : 'Ce que Vyzio a vu, et qui il a cru reconnaître.'}
+            Ce que Vyzio a vu, et qui il a cru reconnaître.
           </p>
         </div>
 
@@ -167,16 +163,16 @@ export function DetectionHistoryView() {
 
       {uido.loading && <p className="text-muted-foreground">Chargement…</p>}
 
-      {!uido.loading && uido.page && uido.page.items.length === 0 && (
+      {!uido.loading && uido.loaded && uido.items.length === 0 && (
         <p className="rounded-card bg-card p-6 text-center text-muted-foreground shadow-[var(--shadow-soft)]">
           {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
         </p>
       )}
 
-      {!uido.loading && uido.page && uido.page.items.length > 0 && (
+      {!uido.loading && uido.items.length > 0 && (
         <div className="rounded-card bg-card px-4 py-2 text-card-foreground shadow-[var(--shadow-soft)]">
           <DetectionList
-            events={uido.page.items}
+            events={uido.items}
             apiBaseUrl={apiBaseUrl}
             onOpenMedia={(type, url) => presenter.onMediaSet({ type, url })}
             renderExtra={(event) =>
@@ -185,7 +181,7 @@ export function DetectionHistoryView() {
                   event={event}
                   profiles={uido.profiles}
                   correcting={uido.correctingEventId === event.eventId}
-                  onCorrect={(profileId) => presenter.onCorrect(event.eventId, profileId, query)}
+                  onCorrect={(profile) => presenter.onCorrect(event.eventId, profile)}
                 />
               )
             }
@@ -193,28 +189,17 @@ export function DetectionHistoryView() {
         </div>
       )}
 
-      {uido.page && uido.page.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
+      {/* L'historique se parcourt en remontant le temps : une page suivante n'a pas de numero. */}
+      {!uido.loading && uido.nextCursor && (
+        <div className="flex justify-center">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            disabled={uido.currentPage <= 1}
-            onClick={() => presenter.onPageChange(uido.currentPage - 1)}
+            disabled={uido.loadingMore}
+            onClick={() => presenter.onLoadMore(query, uido.nextCursor!)}
           >
-            Précédent
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {uido.page.page} sur {uido.page.totalPages}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={uido.currentPage >= uido.page.totalPages}
-            onClick={() => presenter.onPageChange(uido.currentPage + 1)}
-          >
-            Suivant
+            {uido.loadingMore ? 'Chargement…' : 'Voir plus ancien'}
           </Button>
         </div>
       )}
@@ -251,7 +236,7 @@ function IdentityCorrection({
   event: DetectionEvent
   profiles: Profile[]
   correcting: boolean
-  onCorrect: (profileId: string | null) => Promise<void>
+  onCorrect: (profile: Profile | null) => Promise<void>
 }) {
   const [fixing, setFixing] = useState(false)
   const [pickedProfileId, setPickedProfileId] = useState(event.profileId ?? '')
@@ -286,7 +271,7 @@ function IdentityCorrection({
         size="sm"
         disabled={correcting}
         onClick={async () => {
-          await onCorrect(pickedProfileId || null)
+          await onCorrect(profiles.find((profile) => profile.id === pickedProfileId) ?? null)
           setFixing(false)
         }}
       >

@@ -2,6 +2,7 @@ import type { ToastTone } from '../../common/components/Toast'
 import { appErrorMessage } from '../../common/errors/AppError'
 import { toAppError } from '../../common/errors/toAppError'
 import type { DetectionHistoryQuery } from '../../domain/entities/DetectionHistory'
+import type { Profile } from '../../domain/entities/Profile'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detectionHistory.container'
 import type { DetectionHistoryAction } from './DetectionHistory.Actions'
 import type { DetectionMedia } from './DetectionHistory.Uido'
@@ -35,7 +36,18 @@ export function buildDetectionHistoryPresenter({
       container.getDetectionHistory
         .execute(query)
         .then((page) => dispatch({ type: 'HISTORY_LOAD_SUCCEEDED', page }))
-        .catch(() => dispatch({ type: 'HISTORY_LOAD_FAILED' }))
+        .catch((e: unknown) => dispatch({ type: 'HISTORY_LOAD_FAILED', error: toAppError(e) }))
+    },
+
+    onLoadMore(query: DetectionHistoryQuery, cursor: string) {
+      dispatch({ type: 'HISTORY_MORE_STARTED' })
+      container.getDetectionHistory
+        .execute({ ...query, cursor })
+        .then((page) => dispatch({ type: 'HISTORY_MORE_SUCCEEDED', page }))
+        .catch((e: unknown) => {
+          dispatch({ type: 'HISTORY_MORE_FAILED' })
+          toast(appErrorMessage(toAppError(e)), 'error')
+        })
     },
 
     onFilterCameraChange(value: string) {
@@ -56,9 +68,6 @@ export function buildDetectionHistoryPresenter({
     onResetFilters() {
       dispatch({ type: 'FILTERS_RESET' })
     },
-    onPageChange(page: number) {
-      dispatch({ type: 'PAGE_SET', page })
-    },
     onMediaSet(media: DetectionMedia | null) {
       dispatch({ type: 'MEDIA_SET', media })
     },
@@ -66,17 +75,17 @@ export function buildDetectionHistoryPresenter({
       dispatch({ type: 'FILTERS_TOGGLED' })
     },
 
-    async onCorrect(
-      eventId: string,
-      profileId: string | null,
-      query: DetectionHistoryQuery,
-    ): Promise<void> {
+    async onCorrect(eventId: string, profile: Profile | null): Promise<void> {
       dispatch({ type: 'CORRECT_STARTED', eventId })
       try {
-        await container.correctDetectionIdentity.execute(eventId, profileId)
-        const page = await container.getDetectionHistory.execute(query)
-        dispatch({ type: 'CORRECT_SUCCEEDED', page })
-        toast(profileId ? 'Reconnaissance corrigée' : 'Identité retirée', 'success')
+        await container.correctDetectionIdentity.execute(eventId, profile?.id ?? null)
+        dispatch({
+          type: 'CORRECT_SUCCEEDED',
+          eventId,
+          identity: profile?.name ?? null,
+          profileId: profile?.id ?? null,
+        })
+        toast(profile ? 'Reconnaissance corrigée' : 'Identité retirée', 'success')
       } catch {
         dispatch({ type: 'CORRECT_FAILED' })
         toast("Erreur lors de la correction de l'identité.", 'error')

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Vyzio.Core.Entities;
@@ -11,7 +10,6 @@ namespace Vyzio.Infrastructure.Services;
 
 public sealed class FrigateConfigApplier(
     VyzioRuntimeSettings settings,
-    ILogger<FrigateConfigApplier> logger,
     IFrigateRestartTracker restartTracker,
     IFrigateDetectorPlanner detectorPlanner,
     IFrigateModelAssetInstaller modelAssetInstaller,
@@ -147,10 +145,10 @@ public sealed class FrigateConfigApplier(
 
         var activeCameras = validatedCameras
             .ToDictionary(
-                camera => camera.FrigateCameraName ?? camera.Slug.Replace('-', '_'),
+                camera => camera.FrigateName,
                 camera =>
                 {
-                    var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+                    var frigateKey = camera.FrigateName;
                     var labels = camera.GetDetectionLabels();
                     // face must be tracked whenever person is — Frigate needs it for face recognition.
                     var frigateLabels = labels.Contains("person")
@@ -187,7 +185,12 @@ public sealed class FrigateConfigApplier(
                         {
                             Enabled = true,
                             BoundingBox = true,
-                            Retain = new FrigateRetainConfig { Default = 30 },
+                            // An image outliving its clip, or dying before it, would make the history
+                            // lie about its own depth: one duration answers for both (ADR-48).
+                            Retain = new FrigateRetainConfig
+                            {
+                                Default = RetentionPolicy.Resolve(installation, camera).EventClipDays,
+                            },
                         },
                         Record = BuildCameraRecord(installation, camera),
                     };
@@ -224,7 +227,7 @@ public sealed class FrigateConfigApplier(
         var dvripStreams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var camera in validatedCameras.Where(c => c.StreamProtocol == StreamProtocol.Dvrip))
         {
-            var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var frigateKey = camera.FrigateName;
             foreach (var stream in DistinctRoleStreams(camera))
             {
                 dvripStreams[Go2rtcStreamName(frigateKey, stream)] = [BuildDvripUrl(camera, stream)];
@@ -473,15 +476,15 @@ public sealed class FrigateConfigApplier(
     }
 
     // The installation's own retention, at the root of the file — what every camera follows unless
-    // it says otherwise. Recording is switched off outright when nothing is kept, which is what
-    // finally gives "I want no recordings" an observable effect (ADR-39).
+    // it says otherwise. Recording stays on: an enabled camera keeps at least a day of event clips,
+    // and not wanting video from a camera is said by disabling it (ADR-48).
     private static FrigateRecordConfig BuildInstallationRecord(RecordingSettings installation)
     {
         var policy = RetentionPolicy.ForInstallation(installation);
 
         return new FrigateRecordConfig
         {
-            Enabled = policy.KeepsAnything,
+            Enabled = true,
             Continuous = new FrigateRetainDaysConfig { Days = policy.ContinuousDays },
             Motion = new FrigateRetainDaysConfig { Days = policy.MotionDays },
             // Frigate splits event clips into alerts and detections. That split belongs to its own
@@ -503,15 +506,14 @@ public sealed class FrigateConfigApplier(
             return null;
         }
 
-        var policy = RetentionPolicy.Resolve(installation, camera);
+        var eventClipDays = RetentionPolicy.ClampEventClipDays(camera.EventClipDaysOverride);
 
         return new FrigateRecordConfig
         {
-            Enabled = policy.KeepsAnything,
             Continuous = BuildRetainDays(camera.ContinuousDaysOverride),
             Motion = BuildRetainDays(camera.MotionDaysOverride),
-            Alerts = camera.EventClipDaysOverride is { } alertDays ? BuildEventRecord(alertDays) : null,
-            Detections = camera.EventClipDaysOverride is { } detectionDays ? BuildEventRecord(detectionDays) : null,
+            Alerts = eventClipDays is { } alertDays ? BuildEventRecord(alertDays) : null,
+            Detections = eventClipDays is { } detectionDays ? BuildEventRecord(detectionDays) : null,
         };
     }
 

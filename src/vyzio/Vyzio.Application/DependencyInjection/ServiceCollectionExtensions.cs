@@ -21,7 +21,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(tz);
         services.AddSingleton(new FrigateLabelFilter(retainedFrigateLabels));
         services.AddSingleton<FrigateEventContractAdapter>();
-        services.AddSingleton<DetectionEventContractProjector>();
+        services.AddScoped<DetectionEventContractProjector>();
+        services.AddScoped<DetectionProfileResolver>();
+        services.AddScoped<CameraDirectory>();
         services.AddSingleton(new DetectionTelegramMessageFormatter(tz));
 
         // Camera use cases
@@ -66,6 +68,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<Services.MotionSensitivityTunerService>();
 
         // Detection event use cases
+        services.AddScoped<IngestFrigateEventUseCase>();
         services.AddScoped<GetRecentDetectionEventsUseCase>();
         services.AddScoped<GetProfileDetectionEventsUseCase>();
         services.AddScoped<GetDetectionHistoryUseCase>();
@@ -76,6 +79,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDetectionNotificationDispatcher, SendTelegramDetectionNotificationUseCase>();
 
         // Notification use cases
+        services.AddScoped<NotifyDetectionUseCase>();
+        services.AddHostedService<Services.DetectionNotificationWorker>();
         services.AddScoped<GetNotificationChannelConfigUseCase>();
         services.AddScoped<SaveNotificationChannelConfigUseCase>();
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();

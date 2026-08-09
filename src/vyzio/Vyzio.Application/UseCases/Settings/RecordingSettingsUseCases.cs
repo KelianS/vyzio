@@ -22,7 +22,7 @@ public sealed class SaveRecordingSettingsUseCase(
         var settings = await recordingSettings.GetAsync(ct);
         settings.ContinuousDays = RetentionPolicy.ClampDays(request.ContinuousDays);
         settings.MotionDays = RetentionPolicy.ClampDays(request.MotionDays);
-        settings.EventClipDays = RetentionPolicy.ClampDays(request.EventClipDays);
+        settings.EventClipDays = RetentionPolicy.ClampEventClipDays(request.EventClipDays);
 
         await recordingSettings.SaveAsync(settings, ct);
 

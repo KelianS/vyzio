@@ -16,6 +16,7 @@ export function toAppError(e: unknown): AppError {
   }
   if (isHttpLike(e)) {
     if (e.status === 404) return { kind: AppErrorKind.NotFound }
+    if (e.status === 503) return { kind: AppErrorKind.SurveillanceDown }
     if (e.status >= 500) return { kind: AppErrorKind.Server, status: e.status }
     return { kind: AppErrorKind.Unknown, message: `HTTP ${e.status}` }
   }

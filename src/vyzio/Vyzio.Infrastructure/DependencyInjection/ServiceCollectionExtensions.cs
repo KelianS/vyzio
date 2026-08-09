@@ -28,7 +28,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IProfilePhotoRepository, ProfilePhotoRepository>();
         services.AddScoped<IProfileCameraLinkRepository, ProfileCameraLinkRepository>();
-        services.AddScoped<IDetectionEventRepository, DetectionEventRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationChannelConfigRepository, NotificationChannelConfigRepository>();
         services.AddScoped<IRecordingSettingsRepository, RecordingSettingsRepository>();
@@ -72,6 +71,9 @@ public static class ServiceCollectionExtensions
 
         // Background onboarding probe (A1 + A3): singleton queue so CreateCameraUseCase can enqueue.
         services.AddSingleton<ICameraCapabilityOnboardingQueue, CameraCapabilityOnboardingQueue>();
+
+        // Singleton queue so the MQTT handler can hand a detection over and return (ADR-49).
+        services.AddSingleton<IDetectionNotificationQueue, DetectionNotificationQueue>();
 
         return services;
     }

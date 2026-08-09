@@ -108,7 +108,7 @@ export class HttpProfileRepository implements ProfileRepository {
     if (query.profileId) params.set('profileId', query.profileId)
     if (query.from) params.set('from', query.from)
     if (query.to) params.set('to', query.to)
-    if (query.page !== undefined) params.set('page', String(query.page))
+    if (query.cursor) params.set('cursor', query.cursor)
     if (query.limit !== undefined) params.set('limit', String(query.limit))
     return fetchJson<DetectionHistoryPage>(
       `${this.apiBaseUrl}/api/detection-events/history?${params}`,

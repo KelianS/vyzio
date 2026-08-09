@@ -203,7 +203,8 @@ FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consu
 FrigateRestClient (.NET)          → Appels REST Frigate : sub_label, upload photos faces, bibliothèque
 Profile & Rules Service (.NET)    → Profils produit, mapping sub_label → profil, filtre profil-caméra, règles d'alertes
 Notification Service (.NET)       → Règles + envoi FCM/webhook/email
-Storage Service (.NET)            → Persistance événements enrichis (EF Core)
+Storage Service (.NET)            → Persistance des données propres à Vyzio (EF Core) — jamais les détections (ADR-49)
+DetectionHistoryReader (.NET)     → Lecture des événements Frigate, filtrés et enrichis à la lecture (profil, nom de caméra, médias)
 FaceLibrarySyncService (.NET)     → Synchronisation des photos de profil Vyzio vers la bibliothèque Frigate
 CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, labels détection, face_recognition, rôles detect/record
 CameraStreamEnumerator (.NET)     → Énumération des flux d'une caméra et de leur résolution (ADR-38), via ONVIF ou convention protocole
@@ -223,24 +224,26 @@ Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et 
    └─► Transporte frigate/events vers les consommateurs Vyzio
 
 3. FrigateAdapter (.NET) — souscrit frigate/events
-   └─► Normalise l'événement : label, sub_label (via REST si absent du MQTT), score, liens clips/snapshot
-   └─► Publie MQTT: vyzio/events/detection_enriched { frigate_event_id, camera, label, identity: "Alice", confidence }
+   └─► Ne persiste rien : la détection appartient à Frigate (ADR-49)
+   └─► Ne retient que la fin d'un événement, filtre les labels, puis passe la détection en file
+   └─► Rend la main immédiatement — aucune attente dans le handler du message
 
-4. Services Vyzio (souscripteurs MQTT indépendants, en parallèle) :
-
-   StorageService — souscrit vyzio/events/detection_enriched
-   └─► EF Core INSERT observed_events (identity = "Alice", profile_id = résolu si lien actif)
-
-   ProfileRulesService — souscrit vyzio/events/detection_enriched
-   └─► Résolution profil : identity "Alice" → chercher profil Vyzio par name
-   └─► Vérification lien profil-caméra : Alice associée à "front_door" ? (ADR-15)
-       → si oui ou aucun lien défini : mapper → profil Alice, appliquer alert_mode
-       → si non : événement sans profil mappé, pas de notification profil
-   └─► Publie vyzio/events/notification_ready { profile_id, priority, channels }
-
-   NotificationService — souscrit vyzio/events/notification_ready
+4. NotificationService — consomme la file, hors du handler MQTT
+   └─► Relit l'identité auprès de Frigate (sub_label "Alice") — la résolution du profil, elle,
+       appartient à la lecture de l'historique (ADR-15)
+   └─► Récupère le média avec reprise (Frigate le finalise quelques secondes après la fin),
+       et retombe sur le texte si rien ne vient
    └─► Telegram sendPhoto : "Alice est arrivée • Porte d'entrée • 09:32" + photo
+   └─► Journalise l'envoi, ancré sur l'identifiant d'événement Frigate — seul fait persisté
    └─► SignalR : push vers dashboard ouvert
+
+4bis. Consultation de l'historique (indépendante du flux ci-dessus)
+   └─► DetectionHistoryReader lit /api/events (filtres caméra, label, identité, période ;
+       pagination au curseur temporel), enrichit profil et nom de caméra à la lecture
+   └─► La profondeur de l'historique est celle de la rétention des clips d'événement
+   └─► Deux manques, deux causes distinctes, dites à l'écran seulement (ADR-49) : un média
+       au-delà de la rétention est marqué expiré à la lecture ; une surveillance injoignable
+       répond 503, car aucun historique n'est autre chose qu'un historique vide
 
 5. Flux de synchronisation bibliothèque (indépendant du flux de détection) :
    FaceLibrarySyncService
@@ -256,7 +259,7 @@ Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et 
 
 ### 7.1 Périmètre
 
-Vyzio gère uniquement ses propres données (profils, événements enrichis, notifications, sessions). Les clips et événements vidéo bruts restent dans la base Frigate — Vyzio y accède uniquement via l'API REST Frigate.
+Vyzio gère uniquement ses propres données (profils, caméras, réglages, notifications, sessions). Les événements de détection comme leurs médias restent dans la base Frigate — Vyzio les lit via l'API REST et les enrichit à la lecture, sans jamais en garder copie (ADR-49).
 
 ### 7.2 Entités et relations
 
@@ -266,15 +269,14 @@ Vyzio gère uniquement ses propres données (profils, événements enrichis, not
 
 | Entité | Rôle | Relations clés |
 |---|---|---|
-| `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink`, `DetectionEvent` |
+| `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink` |
 | `ProfilePhoto` | Photo de référence synchronisée vers Frigate (ADR-13) | → `Profile` |
 | `ProfileCameraLink` | Filtrage reconnaissance profil ↔ caméra (ADR-15) | → `Profile`, `Camera` |
 | `Camera` | Caméra : **une scène**, connexion, statut, privacy mode, protocoles détectés (ADR-38) | ← `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
 | `CameraStream` | Point d'accès vidéo d'une caméra : qualité, chemin, résolution relevée (ADR-38) | → `Camera` |
 | `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
 | `RecordingSettings` | Durées de rétention de l'installation, surchargeables par caméra (ADR-39) | singleton |
-| `DetectionEvent` | Événement enrichi consommé de Frigate (référence `frigate_event_id`) | → `Profile` (optionnel) |
-| `Notification` | Envoi par canal pour un événement | → `DetectionEvent` |
+| `Notification` | Envoi par canal pour un événement, ancré sur l'identifiant Frigate. **Seul fait persisté d'une détection** : les détections elles-mêmes ne sont pas stockées (ADR-49) | — |
 | `Session` | Refresh token | — |
 
 Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de

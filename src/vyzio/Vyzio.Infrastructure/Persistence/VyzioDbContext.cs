@@ -15,7 +15,6 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
     public DbSet<ProfileCameraLink> ProfileCameraLinks => Set<ProfileCameraLink>();
-    public DbSet<DetectionEvent> DetectionEvents => Set<DetectionEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<NotificationChannelConfig> NotificationChannelConfigs => Set<NotificationChannelConfig>();
@@ -129,24 +128,14 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                 .HasDatabaseName("idx_pcl_profile");
         });
 
-        modelBuilder.Entity<DetectionEvent>(e =>
+        modelBuilder.Entity<Notification>(notification =>
         {
-            e.HasOne(ev => ev.Profile)
-             .WithMany(p => p.DetectionEvents)
-             .HasForeignKey(ev => ev.ProfileId)
-             .OnDelete(DeleteBehavior.Cascade);
+            notification.HasIndex(n => new { n.FrigateEventId, n.Channel })
+                        .HasDatabaseName("idx_notifications_event");
 
-            e.HasIndex(ev => ev.OccurredAt)
-             .HasDatabaseName("idx_events_occurred");
-            e.HasIndex(ev => new { ev.ProfileId, ev.OccurredAt })
-             .HasDatabaseName("idx_events_profile");
-            e.HasIndex(ev => new { ev.Camera, ev.OccurredAt })
-             .HasDatabaseName("idx_events_camera");
-            e.HasIndex(ev => new { ev.Label, ev.OccurredAt })
-             .HasDatabaseName("idx_events_label");
-            e.HasIndex(ev => ev.FrigateEventId)
-             .IsUnique()
-             .HasDatabaseName("ux_events_frigate_event_id");
+            // The cooldown looks up the last send for a camera/label pair, now held by the journal itself (ADR-49).
+            notification.HasIndex(n => new { n.Channel, n.Camera, n.Label, n.SentAt })
+                        .HasDatabaseName("idx_notifications_cooldown");
         });
     }
 

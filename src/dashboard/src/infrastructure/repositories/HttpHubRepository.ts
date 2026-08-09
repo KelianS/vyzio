@@ -7,9 +7,8 @@ import { fetchJson } from '../http/fetchJson'
 
 interface DetectionEventDto {
   eventId: string
-  frigateEventId: string
-  lifecycle: string
   camera: string
+  cameraName: string
   label: string
   identity: string | null
   profileId: string | null
@@ -17,6 +16,7 @@ interface DetectionEventDto {
   occurredAt: string
   hasClip: boolean
   hasSnapshot: boolean
+  mediaExpired: boolean
 }
 
 interface ProfileDto {
@@ -59,9 +59,8 @@ export class HttpHubRepository implements HubRepository {
 function mapDetectionEvent(event: DetectionEventDto): DetectionEvent {
   return {
     eventId: event.eventId,
-    frigateEventId: event.frigateEventId,
-    lifecycle: event.lifecycle,
     camera: event.camera,
+    cameraName: event.cameraName,
     label: event.label,
     identity: event.identity,
     profileId: event.profileId,
@@ -69,6 +68,7 @@ function mapDetectionEvent(event: DetectionEventDto): DetectionEvent {
     occurredAt: event.occurredAt,
     hasClip: event.hasClip,
     hasSnapshot: event.hasSnapshot,
+    mediaExpired: event.mediaExpired,
   }
 }
 

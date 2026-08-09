@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Protocol;
+using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Integration.Frigate;
@@ -27,8 +28,8 @@ public sealed class FrigateMqttIngressService(
                 var payload = Encoding.UTF8.GetString(args.ApplicationMessage.Payload.ToArray());
 
                 using var scope = scopeFactory.CreateScope();
-                var adapter = scope.ServiceProvider.GetRequiredService<FrigateAdapter>();
-                await adapter.ProcessMessageAsync(args.ApplicationMessage.Topic, payload, stoppingToken);
+                var ingest = scope.ServiceProvider.GetRequiredService<IngestFrigateEventUseCase>();
+                await ingest.ExecuteAsync(args.ApplicationMessage.Topic, payload, stoppingToken);
             };
 
             client.DisconnectedAsync += _ =>

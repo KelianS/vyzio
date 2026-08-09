@@ -1,27 +1,15 @@
 import { test, expect, type Page } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
+import {
+  installFakeBackend,
+  createFakeBackendState,
+  makeFakeCamera,
+  makeFakeDetectionEvent as makeEvent,
+} from './fixtures/fakeBackend'
 
 /**
  * Les defauts releves a l'usage apres le chantier `config-ui` (voir `docs/BACKLOG.md`,
  * chantier `ui-defauts`). Chacun est reproduit ici avant d'etre corrige.
  */
-
-function makeEvent(overrides: Record<string, unknown> = {}) {
-  return {
-    eventId: 'event-1',
-    frigateEventId: 'frigate-1',
-    lifecycle: 'end',
-    camera: 'front_door',
-    label: 'person',
-    identity: null,
-    profileId: null,
-    confidence: 0.92,
-    occurredAt: new Date().toISOString(),
-    hasClip: false,
-    hasSnapshot: true,
-    ...overrides,
-  }
-}
 
 test.describe('Mettre une caméra en pause', () => {
   test('user_When pausing one camera_Should confirm, wait, then say it happened', async ({
