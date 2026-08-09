@@ -79,6 +79,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDetectionNotificationDispatcher, SendTelegramDetectionNotificationUseCase>();
 
         // Notification use cases
+        services.AddScoped<NotifyDetectionUseCase>();
+        services.AddHostedService<Services.DetectionNotificationWorker>();
         services.AddScoped<GetNotificationChannelConfigUseCase>();
         services.AddScoped<SaveNotificationChannelConfigUseCase>();
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();

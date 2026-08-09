@@ -225,10 +225,12 @@ Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et 
 
 3. FrigateAdapter (.NET) — souscrit frigate/events
    └─► Ne persiste rien : la détection appartient à Frigate (ADR-49)
-   └─► Résolution profil : sub_label "Alice" → profil Vyzio, filtré par lien profil-caméra (ADR-15)
+   └─► Ne retient que la fin d'un événement, filtre les labels, puis passe la détection en file
    └─► Rend la main immédiatement — aucune attente dans le handler du message
 
-4. NotificationService
+4. NotificationService — consomme la file, hors du handler MQTT
+   └─► Relit l'identité auprès de Frigate (sub_label "Alice") — la résolution du profil, elle,
+       appartient à la lecture de l'historique (ADR-15)
    └─► Récupère le média avec reprise (Frigate le finalise quelques secondes après la fin),
        et retombe sur le texte si rien ne vient
    └─► Telegram sendPhoto : "Alice est arrivée • Porte d'entrée • 09:32" + photo

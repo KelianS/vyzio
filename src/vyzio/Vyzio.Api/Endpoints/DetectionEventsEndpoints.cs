@@ -42,7 +42,7 @@ public static class DetectionEventsEndpoints
         // Clip proxy — streams MP4 from Frigate with Range support (ADR-17)
         group.MapGet("/{id}/clip", async (string id, IFrigateClipProvider clips, CancellationToken ct) =>
         {
-            var stream = await clips.TryGetClipAsync(id, ct);
+            var stream = await clips.TryGetClipAsync(id, ct: ct);
             if (stream is null) return Results.NotFound();
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });
@@ -50,7 +50,7 @@ public static class DetectionEventsEndpoints
         // Snapshot proxy — serves JPEG from Frigate (ADR-17), avoids CORS from browser direct access
         group.MapGet("/{id}/snapshot", async (string id, IFrigateSnapshotProvider snapshots, CancellationToken ct) =>
         {
-            var stream = await snapshots.TryGetSnapshotAsync(id, ct);
+            var stream = await snapshots.TryGetSnapshotAsync(id, ct: ct);
             if (stream is null) return Results.NotFound();
 
             return Results.Stream(stream, "image/jpeg");

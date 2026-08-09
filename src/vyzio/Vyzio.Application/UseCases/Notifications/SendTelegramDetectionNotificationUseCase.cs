@@ -19,10 +19,13 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     DetectionTelegramMessageFormatter formatter,
     TimeZoneInfo timeZone,
     ILogger<SendTelegramDetectionNotificationUseCase> logger,
-    int clipFetchDelaySeconds = 10) : IDetectionNotificationDispatcher
+    TimeSpan? mediaFinalizationWindow = null) : IDetectionNotificationDispatcher
 {
     private const string TelegramChannel = "telegram";
     private static readonly string[] DefaultAllowedLabels = ["person_unknown", "person_known"];
+    private static readonly TimeSpan DefaultMediaFinalizationWindow = TimeSpan.FromSeconds(20);
+
+    private readonly TimeSpan mediaWindow = mediaFinalizationWindow ?? DefaultMediaFinalizationWindow;
 
     public async Task<bool> ExecuteAsync(FrigateDetection detection, CancellationToken ct = default)
     {
@@ -91,24 +94,17 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             var caption = formatter.Format(detection, enabledFields);
 
             // has_clip/has_snapshot in the MQTT end payload are unreliable: Frigate may report false
-            // and finalize the file a few seconds later. We always attempt the fetch after the delay,
-            // regardless of the flags, and fall through on 404.
-            var wantMedia = mediaMode != "text" && enabledFields.Contains(MessageField.Snapshot);
-
-            if (wantMedia && clipFetchDelaySeconds > 0)
-            {
-                logger.LogDebug("Waiting {Seconds}s for Frigate to finalize media for event {EventId}",
-                    clipFetchDelaySeconds, detection.EventId);
-                await Task.Delay(TimeSpan.FromSeconds(clipFetchDelaySeconds), ct);
-            }
+            // and finalize the file a few seconds later. We always attempt the fetch, regardless of
+            // the flags, and let the read retry until the file exists or the window closes (ADR-49).
 
             // Priority 1: send clip + snapshot as media group (album) when mode allows it.
             if (mediaMode == "clip_or_photo" && enabledFields.Contains(MessageField.Snapshot))
             {
-                var clip = await clipProvider.TryGetClipAsync(detection.EventId, ct);
+                var clip = await clipProvider.TryGetClipAsync(detection.EventId, mediaWindow, ct);
                 if (clip is not null)
                 {
-                    var snapshot = await snapshotProvider.TryGetSnapshotAsync(detection.EventId, ct);
+                    // The clip being written proves Frigate finalized the event: no window left to grant.
+                    var snapshot = await snapshotProvider.TryGetSnapshotAsync(detection.EventId, ct: ct);
                     if (snapshot is not null)
                     {
                         logger.LogInformation("Sending Telegram media group for event {EventId}", detection.EventId);
@@ -143,7 +139,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             // Photo: send snapshot when mode allows it.
             if (mediaMode is "clip_or_photo" or "photo" && enabledFields.Contains(MessageField.Snapshot))
             {
-                var snapshot = await snapshotProvider.TryGetSnapshotAsync(detection.EventId, ct);
+                var snapshot = await snapshotProvider.TryGetSnapshotAsync(detection.EventId, mediaWindow, ct);
                 if (snapshot is not null)
                 {
                     logger.LogInformation("Sending Telegram photo for event {EventId}", detection.EventId);

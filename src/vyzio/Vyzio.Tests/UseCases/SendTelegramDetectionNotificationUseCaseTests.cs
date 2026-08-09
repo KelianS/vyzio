@@ -38,7 +38,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
             new DetectionTelegramMessageFormatter(),
             TimeZoneInfo.Local,
             NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
-            clipFetchDelaySeconds: 0);
+            mediaFinalizationWindow: TimeSpan.Zero);
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var detection = CreateDetection(hasClip: true, hasSnapshot: true);
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
         var snapshotStream = new MemoryStream(new byte[] { 4, 5, 6 });
-        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clipStream);
+        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
         var sent = await _sut.ExecuteAsync(detection);
 
@@ -71,8 +71,8 @@ public class SendTelegramDetectionNotificationUseCaseTests
     {
         var detection = CreateDetection(hasClip: true, hasSnapshot: false);
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
-        _snapshotProvider.TryGetSnapshotAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clipStream);
+        _snapshotProvider.TryGetSnapshotAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
 
         var sent = await _sut.ExecuteAsync(detection);
 
@@ -92,9 +92,9 @@ public class SendTelegramDetectionNotificationUseCaseTests
     public async Task Execute_falls_back_to_snapshot_on_end_when_clip_unavailable()
     {
         var detection = CreateDetection(hasClip: true, hasSnapshot: true);
-        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
         var sent = await _sut.ExecuteAsync(detection);
 
@@ -112,9 +112,9 @@ public class SendTelegramDetectionNotificationUseCaseTests
     {
         // has_clip flag is unreliable — we always attempt fetch; here clip returns null, snapshot wins.
         var detection = CreateDetection(hasClip: false, hasSnapshot: true);
-        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
         var sent = await _sut.ExecuteAsync(detection);
 
