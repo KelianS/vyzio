@@ -32,11 +32,19 @@ var appTimeZone = string.IsNullOrWhiteSpace(runtimeSettings.TimeZone)
     ? TimeZoneInfo.Local
     : TimeZoneInfo.FindSystemTimeZoneById(runtimeSettings.TimeZone);
 builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels, appTimeZone);
-builder.Services.AddHttpClient<IFrigateRestClient, FrigateRestClient>(client =>
+builder.Services.AddHttpClient<IFrigateEventReader, FrigateEventReader>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
-builder.Services.AddHttpClient<IFrigateSnapshotProvider, FrigateSnapshotProvider>(client =>
+builder.Services.AddHttpClient<IFrigateLiveFrameProvider, FrigateLiveFrameProvider>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
+builder.Services.AddHttpClient<IFrigateIdentityWriter, FrigateIdentityWriter>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
+builder.Services.AddHttpClient<IFrigateEventImageProvider, FrigateEventImageProvider>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
@@ -53,7 +61,8 @@ builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(cl
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
 builder.Services.AddHttpClient<ITelegramNotificationSender, TelegramNotificationSender>();
-builder.Services.AddScoped<FrigateAdapter>();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
 builder.Services.AddHostedService<PrivacySchedulerService>();
 
@@ -65,6 +74,8 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 
 }
+
+app.UseExceptionHandler();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" }));

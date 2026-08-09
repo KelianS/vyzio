@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
+import {
+  installFakeBackend,
+  createFakeBackendState,
+  makeFakeCamera,
+  makeFakeDetectionEvent,
+} from './fixtures/fakeBackend'
 
 /**
  * WCAG 2.1 A/AA scan (axe-core) of every screen, populated with real content —
@@ -35,8 +40,8 @@ test.describe('Accessibilite — WCAG 2.1 A/AA', () => {
           makeFakeCamera({
             id: 'camera-2',
             displayName: 'Garage',
+            // Unreachable: the fake backend derives the connection from it (`status !== 'offline'`).
             status: 'offline',
-            connected: false,
           }),
         ],
         profiles: [
@@ -50,19 +55,12 @@ test.describe('Accessibilite — WCAG 2.1 A/AA', () => {
           },
         ],
         detectionHistory: [
-          {
+          makeFakeDetectionEvent({
             eventId: 'evt-1',
-            frigateEventId: 'frigate-1',
-            lifecycle: 'end',
-            camera: 'front_door',
-            label: 'person',
             identity: 'Alice',
             profileId: 'profile-1',
-            confidence: 0.92,
-            occurredAt: new Date().toISOString(),
             hasClip: true,
-            hasSnapshot: true,
-          },
+          }),
         ],
       }),
     )

@@ -56,7 +56,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         // detection labels carried by the same save.
         camera.ContinuousDaysOverride = RetentionPolicy.ClampDays(request.ContinuousDaysOverride);
         camera.MotionDaysOverride = RetentionPolicy.ClampDays(request.MotionDaysOverride);
-        camera.EventClipDaysOverride = RetentionPolicy.ClampDays(request.EventClipDaysOverride);
+        camera.EventClipDaysOverride = RetentionPolicy.ClampEventClipDays(request.EventClipDaysOverride);
 
         var sensitivityChanged = ApplySensitivity(camera, request);
         ApplyDetectStream(camera, request);

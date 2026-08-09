@@ -11,7 +11,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly ITelegramNotificationSender _telegramSender = Substitute.For<ITelegramNotificationSender>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
-    private readonly IFrigateSnapshotProvider _snapshotProvider = Substitute.For<IFrigateSnapshotProvider>();
+    private readonly IFrigateEventImageProvider _imageProvider = Substitute.For<IFrigateEventImageProvider>();
     private readonly IFrigateClipProvider _clipProvider = Substitute.For<IFrigateClipProvider>();
     private readonly SendTelegramDetectionNotificationUseCase _sut;
 
@@ -33,24 +33,24 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _notifications,
             _telegramSender,
             _channelConfigs,
-            _snapshotProvider,
+            _imageProvider,
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
             TimeZoneInfo.Local,
             NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
-            clipFetchDelaySeconds: 0);
+            mediaFinalizationWindow: TimeSpan.Zero);
     }
 
     [Fact]
     public async Task Execute_sends_media_group_on_end_when_clip_and_snapshot_available()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true, hasSnapshot: true);
+        var detection = CreateDetection(hasClip: true, hasSnapshot: true);
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
         var snapshotStream = new MemoryStream(new byte[] { 4, 5, 6 });
-        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clipStream);
+        _imageProvider.TryGetImageAsync("frigate-evt-900", FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendMediaGroupAsync(
@@ -69,12 +69,12 @@ public class SendTelegramDetectionNotificationUseCaseTests
     [Fact]
     public async Task Execute_sends_video_on_end_when_clip_available_but_no_snapshot()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true, hasSnapshot: false);
+        var detection = CreateDetection(hasClip: true, hasSnapshot: false);
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(clipStream);
-        _snapshotProvider.TryGetSnapshotAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clipStream);
+        _imageProvider.TryGetImageAsync(Arg.Any<string>(), FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendVideoAsync(
@@ -91,12 +91,12 @@ public class SendTelegramDetectionNotificationUseCaseTests
     [Fact]
     public async Task Execute_falls_back_to_snapshot_on_end_when_clip_unavailable()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: true, hasSnapshot: true);
-        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        var detection = CreateDetection(hasClip: true, hasSnapshot: true);
+        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _imageProvider.TryGetImageAsync("frigate-evt-900", FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendPhotoAsync(
@@ -111,12 +111,12 @@ public class SendTelegramDetectionNotificationUseCaseTests
     public async Task Execute_sends_photo_on_end_when_clip_unavailable_but_snapshot_available()
     {
         // has_clip flag is unreliable — we always attempt fetch; here clip returns null, snapshot wins.
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: true);
-        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        var detection = CreateDetection(hasClip: false, hasSnapshot: true);
+        _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _imageProvider.TryGetImageAsync("frigate-evt-900", FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendPhotoAsync(
@@ -130,9 +130,9 @@ public class SendTelegramDetectionNotificationUseCaseTests
     [Fact]
     public async Task Execute_sends_text_on_end_when_neither_clip_nor_snapshot()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: false);
+        var detection = CreateDetection(hasClip: false, hasSnapshot: false);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.True(sent);
         await _telegramSender.Received(1).SendAsync(
@@ -140,36 +140,12 @@ public class SendTelegramDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_new_lifecycle()
-    {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "new");
-
-        var sent = await _sut.ExecuteAsync(detectionEvent);
-
-        Assert.False(sent);
-        await _telegramSender.DidNotReceive().SendAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Execute_skips_update_lifecycle()
-    {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "update");
-
-        var sent = await _sut.ExecuteAsync(detectionEvent);
-
-        Assert.False(sent);
-        await _telegramSender.DidNotReceive().SendAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task Execute_skips_duplicate_notifications_for_the_same_event()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end");
-        _notifications.HasSentAsync(detectionEvent.Id, "telegram", Arg.Any<CancellationToken>()).Returns(true);
+        var detection = CreateDetection();
+        _notifications.HasSentAsync(detection.EventId, "telegram", Arg.Any<CancellationToken>()).Returns(true);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.False(sent);
         await _telegramSender.DidNotReceive().SendAsync(
@@ -182,7 +158,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
             .Returns((NotificationChannelConfig?)null);
 
-        var sent = await _sut.ExecuteAsync(CreateDetectionEvent(lifecycle: "end"));
+        var sent = await _sut.ExecuteAsync(CreateDetection());
 
         Assert.False(sent);
         await _telegramSender.DidNotReceive().SendAsync(
@@ -195,7 +171,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
             .Returns(new NotificationChannelConfig { Channel = "telegram", IsEnabled = false, BotToken = "token", ChatId = "chat" });
 
-        var sent = await _sut.ExecuteAsync(CreateDetectionEvent(lifecycle: "end"));
+        var sent = await _sut.ExecuteAsync(CreateDetection());
 
         Assert.False(sent);
         await _telegramSender.DidNotReceive().SendAsync(
@@ -205,16 +181,16 @@ public class SendTelegramDetectionNotificationUseCaseTests
     [Fact]
     public async Task Execute_records_failed_notifications_when_telegram_send_fails()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", hasClip: false, hasSnapshot: false);
+        var detection = CreateDetection(hasClip: false, hasSnapshot: false);
         _telegramSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new HttpRequestException("telegram unavailable")));
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.False(sent);
         await _notifications.Received(1).AddAsync(
             Arg.Is<Notification>(n =>
-                n.EventId == detectionEvent.Id
+                n.FrigateEventId == detection.EventId
                 && n.Status == "failed"
                 && n.ErrorMessage == "telegram unavailable"),
             Arg.Any<CancellationToken>());
@@ -223,9 +199,9 @@ public class SendTelegramDetectionNotificationUseCaseTests
     [Fact]
     public async Task Execute_skips_below_minimum_confidence()
     {
-        var detectionEvent = CreateDetectionEvent(lifecycle: "end", confidence: 0.5f);
+        var detection = CreateDetection(confidence: 0.5f);
 
-        var sent = await _sut.ExecuteAsync(detectionEvent);
+        var sent = await _sut.ExecuteAsync(detection);
 
         Assert.False(sent);
     }
@@ -248,25 +224,20 @@ public class SendTelegramDetectionNotificationUseCaseTests
     private static DateTimeOffset LocalTime(int year, int month, int day, int hour, int minute) =>
         new(year, month, day, hour, minute, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(year, month, day, hour, minute, 0)));
 
-    private static DetectionEvent CreateDetectionEvent(
-        string lifecycle = "end",
+    private static FrigateDetection CreateDetection(
         float confidence = 0.91f,
         string label = "person",
         bool hasClip = true,
         bool hasSnapshot = true)
-        => new()
-        {
-            Id = "evt-900",
-            FrigateEventId = "frigate-evt-900",
-            Lifecycle = lifecycle,
-            Camera = "front_door",
-            Label = label,
-            Identity = "Alice",
-            Confidence = confidence,
-            OccurredAt = LocalTime(2026, 5, 10, 10, 15),
-            HasSnapshot = hasSnapshot,
-            HasClip = hasClip
-        };
+        => new(
+            "frigate-evt-900",
+            "front_door",
+            label,
+            "Alice",
+            confidence,
+            LocalTime(2026, 5, 10, 10, 15),
+            hasClip,
+            hasSnapshot);
 }
 
 public class LabelRoutingTests
@@ -313,23 +284,21 @@ public class DetectionTelegramMessageFormatterTests
 {
     private readonly DetectionTelegramMessageFormatter _sut = new();
 
-    private static DetectionEvent EventWith(
+    private static FrigateDetection EventWith(
         string camera = "front_door",
         string label = "person",
         string? identity = null,
-        float confidence = 0.82f) => new()
-    {
-        Id = "e1",
-        FrigateEventId = "f1",
-        Lifecycle = "end",
-        Camera = camera,
-        Label = label,
-        Identity = identity,
-        Confidence = confidence,
-        OccurredAt = new DateTimeOffset(2026, 5, 10, 8, 30, 0,
-            TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 5, 10, 8, 30, 0))),
-        HasSnapshot = true
-    };
+        float confidence = 0.82f)
+        => new(
+            "f1",
+            camera,
+            label,
+            identity,
+            confidence,
+            new DateTimeOffset(2026, 5, 10, 8, 30, 0,
+                TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 5, 10, 8, 30, 0))),
+            HasClip: false,
+            HasSnapshot: true);
 
     [Fact]
     public void Format_all_fields_enabled_returns_all_parts()

@@ -17,6 +17,7 @@ import {
   RETENTION_UPDATE_FIELD,
   formatDays,
   retentionHelp,
+  retentionMinDays,
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 
@@ -96,7 +97,12 @@ function ConservationForm({
     return {
       id: `camera-retention-${window}`,
       label: RETENTION_LABEL[window],
-      nature: { kind: 'number', unit: 'jours', min: 0, max: config.retention.maxDays },
+      nature: {
+        kind: 'number',
+        unit: 'jours',
+        min: retentionMinDays(window, config.retention.minEventClipDays),
+        max: config.retention.maxDays,
+      },
       help: retentionHelp(window),
       consequence: window === 'continuous' && effective > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: effective,

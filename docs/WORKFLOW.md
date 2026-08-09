@@ -72,3 +72,28 @@ l'autre — voir la règle suprême zéro-duplication dans [`../CLAUDE.md`](../C
 
 - Branches : `main` (stable), `dev` (intégration), `feature/*` (travail).
 - PR : review + tests au vert obligatoires.
+
+### Commits et PR — anglais, format conventionnel
+
+Un commit et une PR s'adressent à l'outillage et aux tiers, pas aux documents de cadrage : ils
+suivent donc la langue du code, **l'anglais**, et le format [Conventional
+Commits](https://www.conventionalcommits.org/en/v1.0.0/) — sujet, corps, titre et description de PR
+compris. Les documents de cadrage (`docs/`) restent en français, voir la précédence ci-dessus.
+
+```
+type(scope): subject à l'impératif, minuscule, sans point final (≤ 72 caracteres)
+
+Le corps dit le *pourquoi* : ce que le diff ne montre pas. Une ligne vide le
+sépare du sujet. ASCII uniquement.
+
+Co-Authored-By: …
+```
+
+- **type** : `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `chore`. Un changement
+  cassant s'écrit `type(scope)!: …`.
+- **scope** : la zone touchée, optionnelle mais préférée — `api`, `dashboard`, `e2e`, `docs`,
+  `frigate`, `ptz`… Un seul, celui qui porte le changement.
+- **sujet** : l'effet obtenu, pas la mécanique employée. « ce que ça change pour qui lit », jamais
+  « ajoute une méthode X ».
+- **PR** : titre au même format que le sujet de commit, description en anglais — le *pourquoi*, le
+  périmètre, et ce qui a été vérifié.

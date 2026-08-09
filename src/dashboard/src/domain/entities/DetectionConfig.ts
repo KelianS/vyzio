@@ -27,6 +27,8 @@ export interface CameraRetention {
   motion: RetentionWindowValue
   eventClip: RetentionWindowValue
   maxDays: number
+  /** Plancher de la duree qui porte l'historique : le zero n'y est pas une reponse (ADR-48). */
+  minEventClipDays: number
 }
 
 export interface DetectionConfig {

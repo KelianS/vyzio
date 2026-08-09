@@ -1,9 +1,14 @@
 import type { ReactNode } from 'react'
-import { Play } from 'lucide-react'
+import { CalendarOff, Play } from 'lucide-react'
 import { Button } from '../ui/button'
 import { DetectionThumbnail } from '../components/DetectionThumbnail'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
-import { formatEventDetail, formatEventTitle, snapshotUrl } from './detectionFormatters'
+import {
+  formatEventDetail,
+  formatEventTitle,
+  snapshotUrl,
+  thumbnailUrl,
+} from './detectionFormatters'
 
 interface DetectionListProps {
   events: DetectionEvent[]
@@ -27,24 +32,40 @@ export function DetectionList({
     <ul className="divide-y divide-border">
       {events.map((event) => (
         <li key={event.eventId} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-          {event.hasSnapshot && (
+          {/* Un media expire n'est pas une panne : rien a retenter, donc rien a cliquer. */}
+          {event.mediaExpired && (
+            <span
+              aria-hidden="true"
+              className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+            >
+              <CalendarOff className="size-4" />
+            </span>
+          )}
+
+          {event.hasSnapshot && !event.mediaExpired && (
             <button
               type="button"
               aria-label={`Voir l’aperçu — ${formatEventTitle(event)}`}
               className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              // La tuile montre le recadrage, l'ouverture montre le plan large : deux images, pas deux tailles.
               onClick={() => onOpenMedia('image', snapshotUrl(apiBaseUrl, event.eventId))}
             >
-              <DetectionThumbnail src={snapshotUrl(apiBaseUrl, event.eventId)} />
+              <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />
             </button>
           )}
 
           <span className="min-w-0 flex-1">
             <span className="block font-medium">{formatEventTitle(event)}</span>
             <span className="block text-sm text-muted-foreground">{formatEventDetail(event)}</span>
+            {event.mediaExpired && (
+              <span className="block text-sm text-muted-foreground">
+                Aperçu et vidéo effacés — au-delà de la durée de conservation.
+              </span>
+            )}
             {renderExtra?.(event)}
           </span>
 
-          {event.hasClip && (
+          {event.hasClip && !event.mediaExpired && (
             <Button
               type="button"
               variant="ghost"

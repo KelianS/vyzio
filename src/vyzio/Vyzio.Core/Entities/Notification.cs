@@ -10,10 +10,16 @@ public class Notification
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
     [Required, MaxLength(100)]
-    public required string EventId { get; set; }
+    public required string FrigateEventId { get; set; }
 
     [Required, MaxLength(50)]
     public required string Channel { get; set; }
+
+    [Required, MaxLength(200)]
+    public required string Camera { get; set; }
+
+    [Required, MaxLength(50)]
+    public required string Label { get; set; }
 
     [Required, MaxLength(50)]
     public required string Status { get; set; }  // sent|failed

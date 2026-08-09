@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
-using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.UseCases.Frigate;
+using Vyzio.Infrastructure.Services;
 
 namespace Vyzio.Tests.Contracts;
 
@@ -59,7 +59,7 @@ public sealed class FrigateRestContractFixtureTests
         {
             BaseAddress = new Uri("http://frigate.test/")
         };
-        var sut = new FrigateRestClient(httpClient);
+        var sut = new FrigateEventReader(httpClient);
 
         var identity = await sut.TryGetIdentityAsync("frigate-evt-rest", CancellationToken.None);
 
@@ -73,7 +73,7 @@ public sealed class FrigateRestContractFixtureTests
         {
             BaseAddress = new Uri("http://frigate.test/")
         };
-        var sut = new FrigateRestClient(httpClient);
+        var sut = new FrigateEventReader(httpClient);
 
         await Assert.ThrowsAsync<HttpRequestException>(() => sut.TryGetIdentityAsync("frigate-evt-rest", CancellationToken.None));
     }

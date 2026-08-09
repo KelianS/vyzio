@@ -1,31 +1,16 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "target": "es2023",
     "lib": ["ES2023", "DOM"],
-    "module": "esnext",
     "types": ["vite/client"],
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Alias — `@/…` designe la racine `src/`, convention shadcn/ui (ADR-42).
-       Sans `baseUrl`, deprecie en TS 6 : les chemins se resolvent relativement
-       a ce fichier. */
+    /* Alias — `@/…` is the `src/` root, shadcn/ui convention (ADR-42). Without
+       `baseUrl`, deprecated in TS 6: paths resolve relative to this file. */
     "paths": {
       "@/*": ["./src/*"]
-    },
-
-    /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    }
   },
   "include": ["src"]
 }

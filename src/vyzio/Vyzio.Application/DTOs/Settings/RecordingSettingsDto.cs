@@ -11,13 +11,18 @@ public sealed record RecordingSettingsDto(
     RetentionSettingDto Continuous,
     RetentionSettingDto Motion,
     RetentionSettingDto EventClip,
-    int MaxDays)
+    int MaxDays,
+    // Sent so the interface can refuse zero before the input rather than after (ADR-48).
+    int MinEventClipDays)
 {
     public static RecordingSettingsDto From(RecordingSettings settings) => new(
         new RetentionSettingDto(settings.ContinuousDays, RecordingSettings.DefaultContinuousDays),
         new RetentionSettingDto(settings.MotionDays, RecordingSettings.DefaultMotionDays),
-        new RetentionSettingDto(settings.EventClipDays, RecordingSettings.DefaultEventClipDays),
-        RetentionPolicy.MaxDays);
+        new RetentionSettingDto(
+            RetentionPolicy.ClampEventClipDays(settings.EventClipDays),
+            RecordingSettings.DefaultEventClipDays),
+        RetentionPolicy.MaxDays,
+        RetentionPolicy.MinEventClipDays);
 }
 
 public sealed record SaveRecordingSettingsRequest(

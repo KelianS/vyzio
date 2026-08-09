@@ -1,4 +1,5 @@
 using NSubstitute;
+using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Hub;
 using Vyzio.Core.Entities;
@@ -8,25 +9,38 @@ namespace Vyzio.Tests.UseCases;
 
 public class GetHubOverviewUseCaseTests
 {
-    private readonly IDetectionEventRepository _events = Substitute.For<IDetectionEventRepository>();
+    private readonly IFrigateEventReader _events = Substitute.For<IFrigateEventReader>();
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly IProfileCameraLinkRepository _links = Substitute.For<IProfileCameraLinkRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
 
+    private readonly IRecordingSettingsRepository _recordingSettings = Substitute.For<IRecordingSettingsRepository>();
+
+    private GetHubOverviewUseCase CreateSut()
+    {
+        _recordingSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(RecordingSettings.CreateDefault());
+
+        return new(
+            new GetRecentDetectionEventsUseCase(
+                _events,
+                new DetectionEventContractProjector(
+                    new CameraDirectory(_cameras),
+                    new DetectionProfileResolver(_profiles, _links),
+                    _recordingSettings)),
+            _profiles,
+            _notifications,
+            _channelConfigs);
+    }
+
     [Fact]
     public async Task Execute_returns_hub_overview_with_recent_events_profiles_and_notification_summary()
     {
-        _events.GetRecentAsync(5, Arg.Any<CancellationToken>()).Returns(
+        _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns(
         [
-            new DetectionEvent
-            {
-                Id = "evt-1",
-                FrigateEventId = "frigate-1",
-                Lifecycle = "new",
-                Camera = "front_door",
-                Label = "person",
-                Identity = "Alice"
-            }
+            new FrigateDetection("frigate-1", "front_door", "person", "Alice", 0.9f,
+                DateTimeOffset.Parse("2026-05-12T10:00:00+00:00"), HasClip: true, HasSnapshot: true)
         ]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -45,12 +59,7 @@ public class GetHubOverviewUseCaseTests
                 ChatId = "chat"
             });
 
-        var sut = new GetHubOverviewUseCase(
-            _events,
-            _profiles,
-            _notifications,
-            _channelConfigs,
-            new DetectionEventContractProjector());
+        var sut = CreateSut();
 
         var overview = await sut.ExecuteAsync();
 
@@ -65,19 +74,14 @@ public class GetHubOverviewUseCaseTests
     [Fact]
     public async Task Execute_adds_warning_when_telegram_is_not_configured()
     {
-        _events.GetRecentAsync(5, Arg.Any<CancellationToken>()).Returns([]);
+        _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns([]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _notifications.CountSentAsync("telegram", Arg.Any<CancellationToken>()).Returns(0);
         _notifications.GetLastSentAtAsync("telegram", Arg.Any<CancellationToken>()).Returns((DateTimeOffset?)null);
         _channelConfigs.GetByChannelAsync("telegram", Arg.Any<CancellationToken>())
             .Returns((NotificationChannelConfig?)null);
 
-        var sut = new GetHubOverviewUseCase(
-            _events,
-            _profiles,
-            _notifications,
-            _channelConfigs,
-            new DetectionEventContractProjector());
+        var sut = CreateSut();
 
         var overview = await sut.ExecuteAsync();
 

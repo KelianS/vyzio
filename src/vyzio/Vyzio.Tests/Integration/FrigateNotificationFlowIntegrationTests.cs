@@ -2,7 +2,6 @@ using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -16,12 +15,13 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;
-    private readonly DetectionEventRepository _detectionEvents;
     private readonly NotificationRepository _notifications;
     private readonly RecordingTelegramSender _telegramSender;
-    private readonly StubFrigateRestClient _restClient;
+    private readonly StubFrigateEventReader _eventReader;
     private readonly StubClipProvider _clipProvider;
-    private readonly FrigateAdapter _sut;
+    private readonly TestDetectionQueue _queue;
+    private readonly NotifyDetectionUseCase _notify;
+    private readonly IngestFrigateEventUseCase _sut;
 
     public FrigateNotificationFlowIntegrationTests()
     {
@@ -36,10 +36,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         _db = new VyzioDbContext(options);
         _db.Database.EnsureCreated();
 
-        _detectionEvents = new DetectionEventRepository(_db);
         _notifications = new NotificationRepository(_db);
         _telegramSender = new RecordingTelegramSender();
-        _restClient = new StubFrigateRestClient();
+        _eventReader = new StubFrigateEventReader();
         _clipProvider = new StubClipProvider();
 
         var channelConfigs = new NotificationChannelConfigRepository(_db);
@@ -56,21 +55,34 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _notifications,
             _telegramSender,
             channelConfigs,
-            Substitute.For<IFrigateSnapshotProvider>(),
+            Substitute.For<IFrigateEventImageProvider>(),
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
             TimeZoneInfo.Local,
             NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
-            clipFetchDelaySeconds: 0);
+            mediaFinalizationWindow: TimeSpan.Zero);
 
-        _sut = new FrigateAdapter(
+        _queue = new TestDetectionQueue();
+        _notify = new NotifyDetectionUseCase(
+            _eventReader, dispatcher, NullLogger<NotifyDetectionUseCase>.Instance);
+
+        _sut = new IngestFrigateEventUseCase(
             new FrigateEventContractAdapter(new FrigateLabelFilter(["person"])),
-            _detectionEvents,
-            dispatcher,
-            _restClient,
-            Substitute.For<IProfileRepository>(),
-            Substitute.For<IProfileCameraLinkRepository>(),
-            NullLogger<FrigateAdapter>.Instance);
+            _queue,
+            NullLogger<IngestFrigateEventUseCase>.Instance);
+    }
+
+    // The handler only enqueues (ADR-49): the flow is complete once the queue is drained.
+    private async Task<bool> IngestAndNotifyAsync(string payload)
+    {
+        var ingested = await _sut.ExecuteAsync("frigate/events", payload);
+
+        while (_queue.TryDequeue(out var detection))
+        {
+            await _notify.ExecuteAsync(detection);
+        }
+
+        return ingested;
     }
 
     public void Dispose()
@@ -80,34 +92,26 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_persists_detection_on_new_event_without_notifying()
+    public async Task ExecuteAsync_ignores_an_event_still_in_progress()
     {
-        _restClient.Identity = "Alice";
+        _eventReader.Identity = "Alice";
 
-        var processed = await _sut.ProcessMessageAsync("frigate/events", Payload("frigate-ti-001", lifecycle: "new", topScore: 0.97f));
+        var processed = await IngestAndNotifyAsync(Payload("frigate-ti-001", lifecycle: "new", topScore: 0.97f));
 
-        Assert.True(processed);
-
-        var detection = await _db.DetectionEvents.SingleAsync();
-        Assert.Equal("frigate-ti-001", detection.FrigateEventId);
-        Assert.Equal("Alice", detection.Identity);
-        Assert.Equal("new", detection.Lifecycle);
-
-        // No notification yet — we wait for lifecycle=end.
+        // Nothing to keep, nothing to send: only the end of an event matters (ADR-49).
+        Assert.False(processed);
         Assert.Equal(0, await _db.Notifications.CountAsync());
         Assert.Empty(_telegramSender.Messages);
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_sends_notification_with_clip_on_end()
+    public async Task ExecuteAsync_sends_notification_with_clip_on_end()
     {
-        _restClient.Identity = "Alice";
+        _eventReader.Identity = "Alice";
         _clipProvider.Clip = new MemoryStream(new byte[] { 1, 2, 3 });
 
-        await _sut.ProcessMessageAsync("frigate/events", Payload("frigate-ti-002", lifecycle: "new", topScore: 0.97f, hasClip: false));
-        await _sut.ProcessMessageAsync("frigate/events", Payload("frigate-ti-002", lifecycle: "end", topScore: 0.97f, hasClip: true));
+        await IngestAndNotifyAsync(Payload("frigate-ti-002", lifecycle: "end", topScore: 0.97f, hasClip: true));
 
-        Assert.Equal(1, await _db.DetectionEvents.CountAsync());
         Assert.Equal(1, await _db.Notifications.CountAsync());
         // Snapshot provider returns null → media group not possible → video-only fallback
         Assert.Single(_telegramSender.Videos);
@@ -116,27 +120,29 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         var notification = await _db.Notifications.SingleAsync();
         Assert.Equal("sent", notification.Status);
+        Assert.Equal("frigate-ti-002", notification.FrigateEventId);
+        Assert.Equal("front_door", notification.Camera);
+        Assert.Equal("person", notification.Label);
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_does_not_create_duplicate_notification_on_multiple_end_events()
+    public async Task ExecuteAsync_does_not_create_duplicate_notification_on_multiple_end_events()
     {
-        _restClient.Identity = "Alice";
+        _eventReader.Identity = "Alice";
 
-        await _sut.ProcessMessageAsync("frigate/events", Payload("frigate-ti-003", lifecycle: "end", hasClip: false));
-        await _sut.ProcessMessageAsync("frigate/events", Payload("frigate-ti-003", lifecycle: "end", hasClip: false));
+        await IngestAndNotifyAsync(Payload("frigate-ti-003", lifecycle: "end", hasClip: false));
+        await IngestAndNotifyAsync(Payload("frigate-ti-003", lifecycle: "end", hasClip: false));
 
         Assert.Equal(1, await _db.Notifications.CountAsync());
         Assert.Single(_telegramSender.Messages);
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_ignores_filtered_labels_without_persisting_or_notifying()
+    public async Task ExecuteAsync_ignores_filtered_labels_without_notifying()
     {
-        var processed = await _sut.ProcessMessageAsync("frigate/events", Payload("frigate-ti-004", label: "cat", lifecycle: "new", topScore: 0.91f));
+        var processed = await IngestAndNotifyAsync(Payload("frigate-ti-004", label: "cat", lifecycle: "end", topScore: 0.91f));
 
         Assert.False(processed);
-        Assert.Equal(0, await _db.DetectionEvents.CountAsync());
         Assert.Equal(0, await _db.Notifications.CountAsync());
         Assert.Empty(_telegramSender.Messages);
     }
@@ -195,25 +201,40 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         }
     }
 
-    private sealed class StubFrigateRestClient : IFrigateRestClient
+    private sealed class TestDetectionQueue : IDetectionNotificationQueue
+    {
+        private readonly Queue<FrigateDetection> _pending = new();
+
+        public bool TryEnqueue(FrigateDetection detection)
+        {
+            _pending.Enqueue(detection);
+            return true;
+        }
+
+        public bool TryDequeue(out FrigateDetection detection) => _pending.TryDequeue(out detection!);
+
+        // The worker is not what this test exercises: the flow is drained synchronously.
+        public IAsyncEnumerable<FrigateDetection> ReadAllAsync(CancellationToken ct = default)
+            => throw new NotSupportedException();
+    }
+
+    private sealed class StubFrigateEventReader : IFrigateEventReader
     {
         public string? Identity { get; set; }
 
         public Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default)
             => Task.FromResult(Identity);
 
-        public Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default)
-            => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StreamContent(Stream.Null) });
-
-        public Task<Stream?> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
-            => Task.FromResult<Stream?>(Stream.Null);
+        public Task<IReadOnlyList<FrigateDetection>> QueryAsync(FrigateDetectionQuery query, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<FrigateDetection>>([]);
     }
 
     private sealed class StubClipProvider : IFrigateClipProvider
     {
         public Stream? Clip { get; set; }
 
-        public Task<Stream?> TryGetClipAsync(string frigateEventId, CancellationToken ct = default)
+        public Task<Stream?> TryGetClipAsync(
+            string frigateEventId, TimeSpan finalizationWindow = default, CancellationToken ct = default)
             => Task.FromResult(Clip);
     }
 }

@@ -34,6 +34,7 @@ function config(overrides: Partial<DetectionConfig> = {}): DetectionConfig {
       motion: { override: null, installation: 7, effective: 7 },
       eventClip: { override: null, installation: 14, effective: 14 },
       maxDays: 365,
+      minEventClipDays: 1,
     },
     motionSensitivity: 'medium',
     motionSensitivityPinned: false,

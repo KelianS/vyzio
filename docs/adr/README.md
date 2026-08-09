@@ -45,7 +45,7 @@ référence ces ADR sans les recopier.
 | [ADR-36](0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md) | Alignement du débit d'images sur la caméra : capacité `StreamConfig`, conditionnée à la séparation détection/enregistrement | Accepté |
 | [ADR-37](0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) | Décodage vidéo matériel : `preset-vaapi` retenu, QuickSync différé (faute de codec connu par caméra) | Accepté |
 | [ADR-38](0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md) | Modèle de flux caméra : un flux = une qualité, un objectif = une caméra, rôles `detect`/`record` séparés | Accepté |
-| [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) | Réglages globaux surchargeables par caméra, appliqué à la rétention d'enregistrement | Accepté |
+| [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) | Réglages globaux surchargeables par caméra, appliqué à la rétention d'enregistrement | Accepté (zéro sur les clips d'événement et l'extinction qui en découlait rétractés par ADR-48) |
 | [ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) | Architecture de l'information : séparer consulter et régler, arborescence de réglages à deux niveaux | Accepté |
 | [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) | Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer | Accepté (volet « enregistrer vaut appliquer » remplacé par ADR-44) |
 | [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) | Socle de composants d'interface : shadcn/ui sur Radix et Tailwind, tokens du design system en source unique | Accepté |
@@ -53,3 +53,6 @@ référence ces ADR sans les recopier.
 | [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md) | Redémarrage de la surveillance : un acte explicite de l'utilisateur, groupé et différé | Accepté |
 | [ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) | Positions PTZ configurées depuis la vue live, jamais depuis les réglages | Accepté (calibration et geste de création rétractés par ADR-46) |
 | [ADR-46](0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md) | Tout le pilotage PTZ dans la vue live, calibration comprise | Accepté |
+| [ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md) | L'historique des détections : un index réconcilié sur Frigate, pas une mémoire autonome | Remplacé par ADR-49 |
+| [ADR-48](0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md) | Rétention minimale d'un jour : la conservation se règle, elle ne s'éteint pas | Accepté |
+| [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) | Vyzio ne persiste pas les détections : l'historique est la liste de Frigate, enrichie à la lecture | Accepté |
