@@ -62,7 +62,7 @@ Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, archi
 | **Onboarding guidé caméras** (scan, test, nommage, zones) | ✅ Vyzio Dashboard |
 | **Profils produit et règles métier** (foyer, livreur, plages horaires, priorités) | ✅ Vyzio Core |
 | **Notifications intelligentes multi-canaux** (Telegram, Discord, ntfy, webhook, email) | ✅ Notification Service |
-| **Accès distant aux photos** via tunnel sécurisé | ✅ Vyzio Core |
+| **Usage hors du domicile** : commandes par messagerie, accès distant guidé sans exposition publique | ✅ Vyzio Core |
 | **UI grand public** : parcours simplifié, mobile-first, termes non-techniques | ✅ Dashboard React |
 | **Packaging all-in-one** : livré prêt à brancher, zéro configuration technique | ✅ Hub + Compose / Appliance |
 | **Support français** et documentation non-technicienne | ✅ Produit |
@@ -299,15 +299,23 @@ notification…) : voir le dossier des entités.
 
 ### 8.1 Docker Compose (self-hosted)
 
-Trois conteneurs sur un réseau Docker interne — fichier réel : [`docker-compose.yml`](../docker-compose.yml) :
+Quatre conteneurs sur un réseau Docker interne — fichier réel : [`docker-compose.yml`](../docker-compose.yml) :
 
-- **frigate** — pipeline vidéo ; API `:5000` liée à `127.0.0.1` (jamais exposée) ; accès matériel
-  optionnel (`/dev/dri` VAAPI, Coral USB).
-- **mqtt** (Mosquitto) — bus d'événements ; `:1883` lié à `127.0.0.1`.
-- **vyzio** — Core + API ; **seul port exposé à l'utilisateur : `8443` (HTTPS)**.
+- **vyzio-dashboard** — sert l'interface et relaie l'API ; **seul service publié à l'utilisateur**.
+- **vyzio-api** — Core + API ; joignable uniquement depuis le réseau Docker.
+- **mqtt** (Mosquitto) — bus d'événements ; aucun port publié.
+- **frigate** — pipeline vidéo ; API liée à `127.0.0.1` (jamais exposée au réseau) ; accès matériel
+  optionnel (VAAPI, Coral).
 
-Frigate n'est jamais joignable directement depuis le réseau : tout transite par le proxy
-authentifié Vyzio (ADR-07/16/17).
+Deux propriétés tiennent la sécurité de ce découpage : **un seul point d'entrée** pour l'utilisateur,
+et **Frigate jamais joignable directement** — tout transite par le proxy authentifié Vyzio
+(ADR-07/16/17).
+
+> **Écart cible / réalité — le seul du document.** Le point d'entrée est aujourd'hui **en clair
+> (HTTP)** : il n'y a pas de TLS, ni certificat, ni redirection. La cible est un point d'entrée
+> chiffré (annexe A) ; tant qu'il ne l'est pas, l'identifiant de session circule en clair sur le
+> réseau local, et l'accès distant (ADR-51) ne peut pas être annoncé. Chantier suivi au
+> [`BACKLOG`](BACKLOG.md) § `remote-access`.
 
 ### 8.2 Onboarding guidé (zéro fichier YAML pour l'utilisateur)
 
@@ -330,10 +338,12 @@ Dashboard Vyzio — Assistant de configuration
 
 | Menace | Surface | Mitigation |
 |---|---|---|
-| Accès non autorisé au dashboard | Réseau local | JWT + TLS, rate limiting |
+| Accès non autorisé au dashboard | Réseau local | JWT, rate limiting — **le chiffrement du transport reste à livrer**, cf. §8.1 |
 | Accès direct API Frigate | Réseau local | Frigate lié à `127.0.0.1`, non routable hors Docker |
 | Exfiltration données biométriques Frigate | API Vyzio | Vyzio ne stocke pas d'embeddings ; seules des métadonnées métier sont exposées |
-| Interception thumbnail hors réseau | FCM / Tunnel | URL signée HMAC TTL 5min + HTTPS |
+| Interception d'images hors réseau | Canal de messagerie | HTTPS + aucun intermédiaire qui déchiffre le flux du produit (ADR-51) |
+| Accès distant au hub | Réseau overlay | Chiffrement de bout en bout, hub pair et non passerelle : le réseau local n'est pas annoncé (ADR-51) |
+| Commande non autorisée depuis un canal de messagerie | Canal entrant | Conversation appairée explicitement et révocable ; toute autre origine ignorée sans réponse (ADR-50) |
 | Injection via EF Core | API | Requêtes paramétrées uniquement, zéro SQL brut |
 | Credentials caméra en clair | SQLite | Chiffrement via `Microsoft.AspNetCore.DataProtection` |
 | Brute-force login | POST /api/auth/login | Rate limiting 5 req/15min/IP |
@@ -341,11 +351,14 @@ Dashboard Vyzio — Assistant de configuration
 ### 9.2 Isolation réseau
 
 ```
-Internet (optionnel)
-  └─► Cloudflare Tunnel ──► 8443 (HTTPS Vyzio)
+Extérieur du domicile (optionnel, ADR-51)
+  ├─► Canal de messagerie ─► commandes (ADR-50) ──┐
+  └─► Réseau overlay ──────► point d'entrée Vyzio ─┤
+                                                  │
+Réseau local                                      │
+  └─► Navigateur ──────────► point d'entrée Vyzio ┘
                                         │
-Réseau local                            │
-  └─► Navigateur ──► 8443 (HTTPS) ─► Vyzio API
+                                    Vyzio API
                                         │
 Docker internal network (non routable depuis l'extérieur)
   ├── vyzio ──► frigate:5000    (HTTP REST)
@@ -412,8 +425,9 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence 
 | Notification principale | **Telegram Bot** | FCM | Image native hors réseau, setup 30s |
 | Notification alternative | **Discord / FCM / ntfy / Email** | WhatsApp (écarté) | Selon préférence utilisateur |
 | Auth | **JWT + bcrypt + refresh tokens** | OAuth2/Keycloak | Local-first |
-| TLS | **Certificat auto-signé** | Let's Encrypt | Fonctionne hors-ligne |
-| Accès distant images | **URL signée HMAC** + tunnel opt-in | Relay Vyzio | Image reste sur l'appliance |
+| TLS | **Certificat auto-signé** (cible, non livrée — §8.1) | Let's Encrypt | Fonctionne hors-ligne, sans dépendre d'un domaine public |
+| Accès distant à l'interface | **Réseau overlay NetBird**, opt-in, opéré par l'utilisateur | Tunnel de publication web, redirection de port, relais Vyzio | ADR-51 |
+| Usage courant à distance | **Canal de messagerie bidirectionnel** | Accès réseau obligatoire | ADR-50 — rend l'accès réseau optionnel |
 
 ---
 
