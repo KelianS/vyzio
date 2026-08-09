@@ -14,6 +14,7 @@ const event: DetectionEvent = {
   occurredAt: '2026-08-09T10:00:00Z',
   hasClip: false,
   hasSnapshot: true,
+  mediaExpired: false,
 }
 
 describe('DetectionList', () => {
@@ -32,5 +33,14 @@ describe('DetectionList', () => {
       'image',
       'http://api/api/detection-events/evt-1/snapshot',
     )
+  })
+
+  it('dit qu’un média expiré est effacé, sans rien à cliquer', () => {
+    const expired = { ...event, hasClip: true, mediaExpired: true }
+    render(<DetectionList events={[expired]} apiBaseUrl="http://api" onOpenMedia={vi.fn()} />)
+
+    expect(screen.getByText(/au-delà de la durée de conservation/i)).toBeInTheDocument()
+    expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })

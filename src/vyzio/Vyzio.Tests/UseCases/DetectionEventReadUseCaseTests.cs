@@ -13,8 +13,17 @@ public abstract class DetectionReadTestBase
     protected readonly IProfileRepository Profiles = Substitute.For<IProfileRepository>();
     protected readonly IProfileCameraLinkRepository Links = Substitute.For<IProfileCameraLinkRepository>();
 
+    protected readonly IRecordingSettingsRepository RecordingSettings =
+        Substitute.For<IRecordingSettingsRepository>();
+
     protected DetectionEventContractProjector Projector()
-        => new(new CameraDirectory(Cameras), new DetectionProfileResolver(Profiles, Links));
+    {
+        RecordingSettings.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(Vyzio.Core.Entities.RecordingSettings.CreateDefault());
+
+        return new DetectionEventContractProjector(
+            new CameraDirectory(Cameras), new DetectionProfileResolver(Profiles, Links), RecordingSettings);
+    }
 
     protected static FrigateDetection Detection(string eventId, DateTimeOffset? occurredAt = null)
         => new(eventId, "front_door", "person", null, 0.9f,

@@ -241,6 +241,9 @@ Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et 
    └─► DetectionHistoryReader lit /api/events (filtres caméra, label, identité, période ;
        pagination au curseur temporel), enrichit profil et nom de caméra à la lecture
    └─► La profondeur de l'historique est celle de la rétention des clips d'événement
+   └─► Deux manques, deux causes distinctes, dites à l'écran seulement (ADR-49) : un média
+       au-delà de la rétention est marqué expiré à la lecture ; une surveillance injoignable
+       répond 503, car aucun historique n'est autre chose qu'un historique vide
 
 5. Flux de synchronisation bibliothèque (indépendant du flux de détection) :
    FaceLibrarySyncService

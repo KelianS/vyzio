@@ -19,8 +19,15 @@ public sealed class FrigateEventReader(HttpClient httpClient) : IFrigateEventRea
         FrigateDetectionQuery query,
         CancellationToken ct = default)
     {
-        var events = await httpClient.GetFromJsonAsync<List<FrigateEventDto>>(BuildUrl(query), ct);
-        return events?.Select(ToDetection).ToArray() ?? [];
+        try
+        {
+            var events = await httpClient.GetFromJsonAsync<List<FrigateEventDto>>(BuildUrl(query), ct);
+            return events?.Select(ToDetection).ToArray() ?? [];
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            throw new FrigateUnavailableException(ex);
+        }
     }
 
     private static string BuildUrl(FrigateDetectionQuery query)

@@ -16,16 +16,23 @@ public class GetHubOverviewUseCaseTests
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
 
+    private readonly IRecordingSettingsRepository _recordingSettings = Substitute.For<IRecordingSettingsRepository>();
+
     private GetHubOverviewUseCase CreateSut()
-        => new(
+    {
+        _recordingSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(RecordingSettings.CreateDefault());
+
+        return new(
             new GetRecentDetectionEventsUseCase(
                 _events,
                 new DetectionEventContractProjector(
                     new CameraDirectory(_cameras),
-                    new DetectionProfileResolver(_profiles, _links))),
+                    new DetectionProfileResolver(_profiles, _links),
+                    _recordingSettings)),
             _profiles,
             _notifications,
             _channelConfigs);
+    }
 
     [Fact]
     public async Task Execute_returns_hub_overview_with_recent_events_profiles_and_notification_summary()

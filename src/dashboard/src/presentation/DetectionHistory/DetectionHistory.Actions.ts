@@ -1,3 +1,4 @@
+import type { AppError } from '../../common/errors/AppError'
 import type { DetectionHistoryPage } from '../../domain/entities/DetectionHistory'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import type { Profile } from '../../domain/entities/Profile'
@@ -8,7 +9,7 @@ export type DetectionHistoryAction =
   | { type: 'LABELS_LOADED'; labels: DetectionLabel[] }
   | { type: 'HISTORY_LOAD_STARTED' }
   | { type: 'HISTORY_LOAD_SUCCEEDED'; page: DetectionHistoryPage }
-  | { type: 'HISTORY_LOAD_FAILED' }
+  | { type: 'HISTORY_LOAD_FAILED'; error: AppError }
   | { type: 'HISTORY_MORE_STARTED' }
   | { type: 'HISTORY_MORE_SUCCEEDED'; page: DetectionHistoryPage }
   | { type: 'HISTORY_MORE_FAILED' }

@@ -14,4 +14,9 @@ public sealed record DetectionEventContract(
     float? Confidence,
     DateTimeOffset OccurredAt,
     bool HasClip,
-    bool HasSnapshot);
+    bool HasSnapshot,
+    /// <summary>
+    /// The detection is older than what its camera keeps: its media is gone, and that is a setting
+    /// doing its job rather than a failure (ADR-48). Screens only — never the notification path.
+    /// </summary>
+    bool MediaExpired);

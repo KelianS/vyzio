@@ -61,6 +61,8 @@ builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(cl
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
 builder.Services.AddHttpClient<ITelegramNotificationSender, TelegramNotificationSender>();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
 builder.Services.AddHostedService<PrivacySchedulerService>();
 
@@ -72,6 +74,8 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 
 }
+
+app.UseExceptionHandler();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" }));

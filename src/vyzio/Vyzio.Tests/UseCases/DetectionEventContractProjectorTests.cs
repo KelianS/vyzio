@@ -11,9 +11,18 @@ public class DetectionEventContractProjectorTests
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly IProfileCameraLinkRepository _links = Substitute.For<IProfileCameraLinkRepository>();
+    private readonly IRecordingSettingsRepository _recordingSettings = Substitute.For<IRecordingSettingsRepository>();
 
-    private DetectionEventContractProjector CreateSut()
-        => new(new CameraDirectory(_cameras), new DetectionProfileResolver(_profiles, _links));
+    private DetectionEventContractProjector CreateSut(int eventClipDays = 14)
+    {
+        _recordingSettings.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(new RecordingSettings { EventClipDays = eventClipDays });
+
+        return new DetectionEventContractProjector(
+            new CameraDirectory(_cameras),
+            new DetectionProfileResolver(_profiles, _links),
+            _recordingSettings);
+    }
 
     private static Camera FrontDoor() => new()
     {
@@ -80,6 +89,31 @@ public class DetectionEventContractProjectorTests
 
         Assert.Equal("Alice", contract.Identity);
         Assert.Null(contract.ProfileId);
+    }
+
+    [Fact]
+    public async Task ToContract_says_a_media_is_gone_once_past_what_the_camera_keeps()
+    {
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
+        var detection = Detection("frigate-evt-001") with { OccurredAt = DateTimeOffset.UtcNow.AddDays(-20) };
+
+        var contract = await CreateSut(eventClipDays: 14).ToContractAsync(detection);
+
+        Assert.True(contract.MediaExpired);
+    }
+
+    [Fact]
+    public async Task ToContract_leaves_a_media_alive_within_the_camera_own_duration()
+    {
+        var camera = FrontDoor();
+        // The camera keeps longer than the installation: the expiry follows what applies to it.
+        camera.EventClipDaysOverride = 30;
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        var detection = Detection("frigate-evt-001") with { OccurredAt = DateTimeOffset.UtcNow.AddDays(-20) };
+
+        var contract = await CreateSut(eventClipDays: 14).ToContractAsync(detection);
+
+        Assert.False(contract.MediaExpired);
     }
 
     [Fact]

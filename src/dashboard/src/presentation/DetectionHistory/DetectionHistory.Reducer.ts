@@ -1,5 +1,16 @@
+import { AppErrorKind, type AppError } from '../../common/errors/AppError'
 import type { DetectionHistoryAction } from './DetectionHistory.Actions'
 import type { DetectionHistoryUido } from './DetectionHistory.Uido'
+
+/**
+ * La surveillance arretee et une panne de lecture ne se disent pas pareil : sans surveillance il n'y
+ * a pas d'historique du tout, et le taire le ferait lire comme « aucune detection » (principe #4).
+ */
+function historyErrorMessage(error: AppError): string {
+  return error.kind === AppErrorKind.SurveillanceDown
+    ? 'La surveillance ne répond pas : tant qu’elle est arrêtée, il n’y a pas d’historique à afficher.'
+    : "Impossible de charger l'historique."
+}
 
 /** Changer un filtre relit depuis le debut : un curseur ne survit pas au critere qui l'a produit. */
 const REFILTERED: Pick<DetectionHistoryUido, 'items' | 'nextCursor' | 'loaded'> = {
@@ -29,7 +40,7 @@ export function detectionHistoryReducer(
         nextCursor: action.page.nextCursor,
       }
     case 'HISTORY_LOAD_FAILED':
-      return { ...state, loading: false, error: "Impossible de charger l'historique." }
+      return { ...state, loading: false, error: historyErrorMessage(action.error) }
 
     case 'HISTORY_MORE_STARTED':
       return { ...state, loadingMore: true }

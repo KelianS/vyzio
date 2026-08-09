@@ -36,7 +36,7 @@ export function buildDetectionHistoryPresenter({
       container.getDetectionHistory
         .execute(query)
         .then((page) => dispatch({ type: 'HISTORY_LOAD_SUCCEEDED', page }))
-        .catch(() => dispatch({ type: 'HISTORY_LOAD_FAILED' }))
+        .catch((e: unknown) => dispatch({ type: 'HISTORY_LOAD_FAILED', error: toAppError(e) }))
     },
 
     onLoadMore(query: DetectionHistoryQuery, cursor: string) {

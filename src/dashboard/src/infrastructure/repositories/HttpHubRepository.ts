@@ -16,6 +16,7 @@ interface DetectionEventDto {
   occurredAt: string
   hasClip: boolean
   hasSnapshot: boolean
+  mediaExpired: boolean
 }
 
 interface ProfileDto {
@@ -67,6 +68,7 @@ function mapDetectionEvent(event: DetectionEventDto): DetectionEvent {
     occurredAt: event.occurredAt,
     hasClip: event.hasClip,
     hasSnapshot: event.hasSnapshot,
+    mediaExpired: event.mediaExpired,
   }
 }
 
