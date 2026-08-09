@@ -94,20 +94,15 @@ public sealed class GetDetectionHistoryUseCase(
 }
 
 public sealed class CorrectDetectionIdentityUseCase(
-    IDetectionEventRepository detectionEvents,
-    IProfileRepository profiles)
+    IProfileRepository profiles,
+    IFrigateIdentityWriter identities)
 {
     public async Task<bool> ExecuteAsync(
         string frigateEventId,
         CorrectDetectionIdentityRequest request,
         CancellationToken ct = default)
     {
-        var evt = await detectionEvents.GetByFrigateEventIdAsync(frigateEventId, ct);
-        if (evt is null)
-            return false;
-
         string? identity = null;
-        string? profileId = null;
 
         if (!string.IsNullOrWhiteSpace(request.ProfileId))
         {
@@ -115,11 +110,10 @@ public sealed class CorrectDetectionIdentityUseCase(
             if (profile is null)
                 return false;
 
+            // Frigate knows a profile by its name, the only thing it recognized in the first place.
             identity = profile.Name;
-            profileId = profile.Id;
         }
 
-        await detectionEvents.UpdateIdentityAsync(evt.Id, identity, profileId, ct);
-        return true;
+        return await identities.TrySetIdentityAsync(frigateEventId, identity, ct);
     }
 }

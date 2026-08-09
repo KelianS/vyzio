@@ -21,14 +21,4 @@ public sealed class DetectionEventRepository(VyzioDbContext db) : IDetectionEven
         db.DetectionEvents.Update(evt);
         await db.SaveChangesAsync(ct);
     }
-
-    public async Task UpdateIdentityAsync(string id, string? identity, string? profileId, CancellationToken ct = default)
-    {
-        await db.DetectionEvents
-            .Where(e => e.Id == id)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(e => e.Identity, identity)
-                .SetProperty(e => e.ProfileId, profileId),
-                ct);
-    }
 }

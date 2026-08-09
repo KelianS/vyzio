@@ -195,57 +195,55 @@ public class SetCameraProfileLinksUseCaseTests
 
 public class CorrectDetectionIdentityUseCaseTests
 {
-    private readonly IDetectionEventRepository _events = Substitute.For<IDetectionEventRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
+    private readonly IFrigateIdentityWriter _identities = Substitute.For<IFrigateIdentityWriter>();
     private readonly CorrectDetectionIdentityUseCase _sut;
 
     public CorrectDetectionIdentityUseCaseTests()
-        => _sut = new(_events, _profiles);
+        => _sut = new(_profiles, _identities);
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_event_not_found()
+    public async Task ExecuteAsync_clears_the_identity_in_Frigate_when_profileId_is_null()
     {
-        _events.GetByFrigateEventIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((DetectionEvent?)null);
+        _identities.TrySetIdentityAsync("evt-1", null, Arg.Any<CancellationToken>()).Returns(true);
 
-        var result = await _sut.ExecuteAsync("missing", new CorrectDetectionIdentityRequest("pid"));
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_clears_identity_when_profileId_is_null()
-    {
-        var evt = new DetectionEvent { FrigateEventId = "x", Lifecycle = "end", Camera = "c", Label = "person" };
-        _events.GetByFrigateEventIdAsync(evt.FrigateEventId, Arg.Any<CancellationToken>()).Returns(evt);
-
-        var result = await _sut.ExecuteAsync(evt.FrigateEventId, new CorrectDetectionIdentityRequest(null));
+        var result = await _sut.ExecuteAsync("evt-1", new CorrectDetectionIdentityRequest(null));
 
         Assert.True(result);
-        await _events.Received(1).UpdateIdentityAsync(evt.Id, null, null, Arg.Any<CancellationToken>());
+        await _identities.Received(1).TrySetIdentityAsync("evt-1", null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_sets_identity_from_profile_name()
+    public async Task ExecuteAsync_writes_the_profile_name_Frigate_recognizes()
     {
-        var evt = new DetectionEvent { FrigateEventId = "x", Lifecycle = "end", Camera = "c", Label = "person" };
         var profile = new Profile { Name = "Alice" };
-        _events.GetByFrigateEventIdAsync(evt.FrigateEventId, Arg.Any<CancellationToken>()).Returns(evt);
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
+        _identities.TrySetIdentityAsync("evt-1", "Alice", Arg.Any<CancellationToken>()).Returns(true);
 
-        var result = await _sut.ExecuteAsync(evt.FrigateEventId, new CorrectDetectionIdentityRequest(profile.Id));
+        var result = await _sut.ExecuteAsync("evt-1", new CorrectDetectionIdentityRequest(profile.Id));
 
         Assert.True(result);
-        await _events.Received(1).UpdateIdentityAsync(evt.Id, "Alice", profile.Id, Arg.Any<CancellationToken>());
+        await _identities.Received(1).TrySetIdentityAsync("evt-1", "Alice", Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ExecuteAsync_returns_false_when_profile_not_found()
     {
-        var evt = new DetectionEvent { FrigateEventId = "x", Lifecycle = "end", Camera = "c", Label = "person" };
-        _events.GetByFrigateEventIdAsync(evt.FrigateEventId, Arg.Any<CancellationToken>()).Returns(evt);
         _profiles.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
-        var result = await _sut.ExecuteAsync(evt.FrigateEventId, new CorrectDetectionIdentityRequest("bad-pid"));
+        var result = await _sut.ExecuteAsync("evt-1", new CorrectDetectionIdentityRequest("bad-pid"));
+
+        Assert.False(result);
+        await _identities.DidNotReceive().TrySetIdentityAsync(
+            Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_returns_false_when_Frigate_refuses()
+    {
+        _identities.TrySetIdentityAsync("evt-unknown", null, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await _sut.ExecuteAsync("evt-unknown", new CorrectDetectionIdentityRequest(null));
 
         Assert.False(result);
     }
