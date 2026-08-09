@@ -109,6 +109,20 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     private IReadOnlyList<int> RtspProbePorts => _settings.Discovery.RtspPortsOverride ?? DiscoveryPortCatalog.RtspProbePorts;
     private IReadOnlyList<int> HttpProbePorts => _settings.Discovery.HttpPortsOverride ?? DiscoveryPortCatalog.HttpProbePorts;
 
+    // Same, for the port → fingerprint mapping: an override answers for the ports it names, and
+    // leaves the others without any fingerprint to attempt (open, unidentified).
+    private IReadOnlyList<DiscoveryPortCatalog.Fingerprint> FingerprintsForPort(int port)
+    {
+        if (_settings.Discovery.PortFingerprintsOverride is not { } overrides)
+        {
+            return DiscoveryPortCatalog.FingerprintsForPort(port);
+        }
+
+        return overrides.TryGetValue(port, out var protocol)
+            ? [new DiscoveryPortCatalog.Fingerprint(protocol, DiscoveryPortCatalog.FormatProtocolLabel(protocol), [port])]
+            : [];
+    }
+
     // A single named target (e.g. "verify this host" from the manual-add form) is always
     // enriched directly — Stage 1 (identification) only exists to filter down a blind CIDR
     // sweep, and never applies to a host the user pointed at explicitly.
@@ -178,7 +192,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
             var macAddress = await ResolveMacAddressAsync(host, ct);
             var confirmed = new List<DiscoveryPortCatalog.Fingerprint>();
-            foreach (var fingerprint in DiscoveryPortCatalog.FingerprintsForPort(port))
+            foreach (var fingerprint in FingerprintsForPort(port))
             {
                 if (await ConfirmProtocolAsync(fingerprint.Protocol, host, port, ct))
                 {
@@ -343,8 +357,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverOnvifSignalsAsync(CancellationToken ct)
+    private async Task<IReadOnlyList<RawCameraDiscoverySignal>> DiscoverOnvifSignalsAsync(CancellationToken ct)
     {
+        if (!_settings.Discovery.OnvifMulticastEnabled)
+        {
+            return [];
+        }
+
         var results = new List<RawCameraDiscoverySignal>();
         using var udpClient = new UdpClient(AddressFamily.InterNetwork)
         {

@@ -64,6 +64,15 @@ public class VyzioRuntimeSettings
         public IReadOnlyList<int>? ScanPortsOverride { get; init; }
         public IReadOnlyList<int>? RtspPortsOverride { get; init; }
         public IReadOnlyList<int>? HttpPortsOverride { get; init; }
+
+        // Which fingerprint to attempt on a port, overriding the catalog's port → protocol mapping.
+        // Lets a test exercise a fingerprint on an ephemeral port instead of binding the well-known
+        // one, which collides with whatever already listens on the machine.
+        public IReadOnlyDictionary<int, SupportedProtocol>? PortFingerprintsOverride { get; init; }
+
+        // ONVIF discovery is a WS-Discovery multicast on the real LAN: it answers with whatever
+        // cameras are around and always waits out its 2s window. Tests turn it off to stay hermetic.
+        public bool OnvifMulticastEnabled { get; init; } = true;
     }
 
     public sealed class DocumentationSettings
