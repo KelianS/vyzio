@@ -22,5 +22,10 @@ export type DetectionHistoryAction =
   | { type: 'MEDIA_SET'; media: DetectionMedia | null }
   | { type: 'FILTERS_TOGGLED' }
   | { type: 'CORRECT_STARTED'; eventId: string }
-  | { type: 'CORRECT_SUCCEEDED'; eventId: string; identity: string | null; profileId: string | null }
+  | {
+      type: 'CORRECT_SUCCEEDED'
+      eventId: string
+      identity: string | null
+      profileId: string | null
+    }
   | { type: 'CORRECT_FAILED' }

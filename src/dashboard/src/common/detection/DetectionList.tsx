@@ -3,7 +3,12 @@ import { CalendarOff, Play } from 'lucide-react'
 import { Button } from '../ui/button'
 import { DetectionThumbnail } from '../components/DetectionThumbnail'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
-import { formatEventDetail, formatEventTitle, snapshotUrl, thumbnailUrl } from './detectionFormatters'
+import {
+  formatEventDetail,
+  formatEventTitle,
+  snapshotUrl,
+  thumbnailUrl,
+} from './detectionFormatters'
 
 interface DetectionListProps {
   events: DetectionEvent[]
