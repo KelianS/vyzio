@@ -19,14 +19,16 @@ export const RETENTION_UPDATE_FIELD = {
 export const RETENTION_LABEL: Record<RetentionWindow, string> = {
   continuous: 'Vidéo complète',
   motion: 'Séquences de mouvement',
-  eventClip: 'Clips d’alerte',
+  // Nommee par son effet observable, pas par le bucket Frigate qui la porte (ADR-49).
+  eventClip: 'Historique de détection',
 }
 
 export const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
   continuous:
     'Tout est enregistré, même quand il ne se passe rien. C’est ce qui occupe de loin le plus d’espace disque.',
   motion: 'Seuls les moments où l’image bouge sont conservés.',
-  eventClip: 'Les extraits rattachés à une détection — ceux que vous retrouvez dans l’historique.',
+  eventClip:
+    'Combien de temps vos détections restent consultables — aperçu et vidéo compris. C’est la profondeur de la page Historique.',
 }
 
 // Se dit dans l'aide de chaque duree : hors de la ligne, c'etait du texte courant, proscrit (ADR-43).

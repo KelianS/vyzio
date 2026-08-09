@@ -419,6 +419,22 @@ public class FrigateConfigApplierTests : IDisposable
         Assert.Equal(1, CountOccurrences(yaml, "days: 7"));
     }
 
+    [Fact]
+    public async Task Snapshots_are_kept_as_long_as_the_clips_they_illustrate()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.EventClipDaysOverride = 3;
+
+        var yaml = await ApplyAndReadYamlAsync(
+            [camera],
+            recordingSettings: new RecordingSettings { EventClipDays = 30 });
+
+        // An image outliving its clip would make the history lie about its own depth.
+        var snapshotsIndex = yaml.IndexOf("snapshots:", StringComparison.OrdinalIgnoreCase);
+        Assert.True(snapshotsIndex >= 0);
+        Assert.Contains("default: 3", yaml[snapshotsIndex..], StringComparison.OrdinalIgnoreCase);
+    }
+
     // ADR-48: a camera that keeps nothing no longer exists — an enabled camera keeps at least a day
     // of event clips, and not wanting its video is said by disabling the camera itself.
     [Fact]

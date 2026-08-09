@@ -187,7 +187,12 @@ public sealed class FrigateConfigApplier(
                         {
                             Enabled = true,
                             BoundingBox = true,
-                            Retain = new FrigateRetainConfig { Default = 30 },
+                            // An image outliving its clip, or dying before it, would make the history
+                            // lie about its own depth: one duration answers for both (ADR-48).
+                            Retain = new FrigateRetainConfig
+                            {
+                                Default = RetentionPolicy.Resolve(installation, camera).EventClipDays,
+                            },
                         },
                         Record = BuildCameraRecord(installation, camera),
                     };

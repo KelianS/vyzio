@@ -11,12 +11,11 @@ Vyzio conserve trois choses différentes, et vous décidez combien de temps chac
 | --- | --- | --- |
 | **Vidéo complète** | Tout, en continu, même quand il ne se passe rien | 0 jour (rien) |
 | **Séquences de mouvement** | Seulement les moments où l'image bouge | 7 jours |
-| **Clips d'alerte** | Les extraits rattachés à une détection, ceux de l'historique | 14 jours |
+| **Historique de détection** | Vos détections, aperçu et vidéo compris | 14 jours |
 
 Mettre **0** signifie que rien n'est conservé de cette nature — pour les deux premières seulement.
-Les **clips d'alerte gardent au moins un jour** : c'est eux que votre historique montre, et une
-durée nulle ne le raccourcirait pas, elle le viderait. Ne rien vouloir d'une caméra se dit en
-désactivant la caméra, ce qui arrête aussi sa détection.
+L'**historique de détection garde au moins un jour** : une durée nulle ne le raccourcirait pas, elle
+le viderait. Ne rien vouloir d'une caméra se dit en la désactivant, ce qui arrête aussi sa détection.
 
 ## Le réglage vaut pour toutes les caméras, sauf si l'une en décide autrement
 
@@ -90,5 +89,5 @@ Deux conséquences à connaître :
 
 - [Image analysée](ANALYSED_IMAGE.md) — quelle image Vyzio analyse ; le choix ne change jamais la
   qualité de vos enregistrements.
-- [Sensibilité de détection](DETECTION_SENSITIVITY.md) — ce qui déclenche une alerte, donc ce qui
-  finit en clip d'alerte.
+- [Sensibilité de détection](DETECTION_SENSITIVITY.md) — ce qui déclenche une détection, donc ce qui
+  finit dans l'historique.
