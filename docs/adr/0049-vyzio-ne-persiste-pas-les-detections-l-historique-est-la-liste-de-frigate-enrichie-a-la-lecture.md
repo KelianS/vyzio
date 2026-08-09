@@ -117,6 +117,12 @@ il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline
 - **`observed_events` disparaît**, avec la réconciliation, la règle de suppression et le cas « Frigate
   a jeté ce que Vyzio garde ». Aucune reprise de données : les lignes existantes n'étaient affichables
   qu'à moitié, et rien n'en dépend.
+- **Le frontend ne gagne aucun accès direct à Frigate.** Ce qui change est d'où le backend tient sa
+  donnée, jamais à qui l'écran s'adresse : la surface d'API est inchangée, les médias restent servis
+  en proxy ([ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md)), et
+  `hasClip` / `hasSnapshot` gardent leur forme en changeant seulement de véracité — ils cessent
+  d'être une copie pour devenir ce que Frigate vient de répondre. C'est ce qui rend la bascule
+  invisible côté écran, et ce qui garde Frigate remplaçable.
 - **La pagination de l'historique passe au curseur temporel.** `page=` ne fonctionne pas côté
   Frigate ; une liste chronologique se pagine par date, ce que le frontend doit suivre.
 - **La rétention des aperçus s'aligne sur celle des clips.** Le 30 jours en dur de la génération de
