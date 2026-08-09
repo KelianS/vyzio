@@ -32,7 +32,11 @@ var appTimeZone = string.IsNullOrWhiteSpace(runtimeSettings.TimeZone)
     ? TimeZoneInfo.Local
     : TimeZoneInfo.FindSystemTimeZoneById(runtimeSettings.TimeZone);
 builder.Services.AddVyzioApplication(runtimeSettings.Frigate.RetainedLabels, appTimeZone);
-builder.Services.AddHttpClient<IFrigateRestClient, FrigateRestClient>(client =>
+builder.Services.AddHttpClient<IFrigateEventReader, FrigateEventReader>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
+builder.Services.AddHttpClient<IFrigateLiveFrameProvider, FrigateLiveFrameProvider>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
@@ -53,7 +57,6 @@ builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(cl
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
 builder.Services.AddHttpClient<ITelegramNotificationSender, TelegramNotificationSender>();
-builder.Services.AddScoped<FrigateAdapter>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
 builder.Services.AddHostedService<PrivacySchedulerService>();
 

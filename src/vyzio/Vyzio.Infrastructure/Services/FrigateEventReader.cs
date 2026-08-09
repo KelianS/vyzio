@@ -1,17 +1,11 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Vyzio.Core.Interfaces;
 
-namespace Vyzio.Api.Integration.Frigate;
+namespace Vyzio.Infrastructure.Services;
 
-public interface IFrigateRestClient
-{
-    Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default);
-    Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default);
-    Task<Stream?> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default);
-}
-
-public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClient
+public sealed class FrigateEventReader(HttpClient httpClient) : IFrigateEventReader
 {
     public async Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default)
     {
@@ -19,16 +13,7 @@ public sealed class FrigateRestClient(HttpClient httpClient) : IFrigateRestClien
         return ResolveSubLabel(details?.SubLabel);
     }
 
-    public Task<HttpResponseMessage> GetLatestFrameAsync(string cameraSlug, CancellationToken ct = default)
-        => httpClient.GetAsync($"api/{cameraSlug}/latest.jpg", HttpCompletionOption.ResponseHeadersRead, ct);
-
-    public async Task<Stream?> GetClipStreamAsync(string frigateEventId, CancellationToken ct = default)
-    {
-        var response = await httpClient.GetAsync($"api/events/{frigateEventId}/clip.mp4", HttpCompletionOption.ResponseHeadersRead, ct);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadAsStreamAsync(ct);
-    }
-
+    // Frigate answers sub_label as a string on some versions and as an array on others.
     private static string? ResolveSubLabel(JsonElement? subLabel)
     {
         if (subLabel is null)

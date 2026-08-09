@@ -66,6 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<Services.MotionSensitivityTunerService>();
 
         // Detection event use cases
+        services.AddScoped<IngestFrigateEventUseCase>();
         services.AddScoped<GetRecentDetectionEventsUseCase>();
         services.AddScoped<GetProfileDetectionEventsUseCase>();
         services.AddScoped<GetDetectionHistoryUseCase>();

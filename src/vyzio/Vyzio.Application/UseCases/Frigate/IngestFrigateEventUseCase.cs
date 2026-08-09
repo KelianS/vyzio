@@ -1,22 +1,21 @@
 using Microsoft.Extensions.Logging;
 using Vyzio.Application.DTOs.Frigate;
-using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
-namespace Vyzio.Api.Integration.Frigate;
+namespace Vyzio.Application.UseCases.Frigate;
 
-public sealed class FrigateAdapter(
+public sealed class IngestFrigateEventUseCase(
     FrigateEventContractAdapter contractAdapter,
     IDetectionEventRepository detectionEvents,
     IDetectionNotificationDispatcher detectionNotifications,
-    IFrigateRestClient restClient,
+    IFrigateEventReader eventReader,
     IProfileRepository profileRepository,
     IProfileCameraLinkRepository profileCameraLinks,
-    ILogger<FrigateAdapter> logger)
+    ILogger<IngestFrigateEventUseCase> logger)
 {
-    public async Task<bool> ProcessMessageAsync(string topic, string payload, CancellationToken ct = default)
+    public async Task<bool> ExecuteAsync(string topic, string payload, CancellationToken ct = default)
     {
         if (!contractAdapter.TryParseRelevantEvent(payload, out var consumedEvent) || consumedEvent is null)
         {
@@ -63,7 +62,7 @@ public sealed class FrigateAdapter(
 
         try
         {
-            return await restClient.TryGetIdentityAsync(consumedEvent.FrigateEventId, ct) ?? currentIdentity;
+            return await eventReader.TryGetIdentityAsync(consumedEvent.FrigateEventId, ct) ?? currentIdentity;
         }
         catch (Exception ex)
         {

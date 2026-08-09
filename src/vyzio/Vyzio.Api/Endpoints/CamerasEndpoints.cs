@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.StaticFiles;
-using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -113,19 +112,17 @@ public static class CamerasEndpoints
         });
 
         // Live feed — latest frame proxy (ADR-16)
-        group.MapGet("/{id}/live/latest.jpg", async (string id, GetCamerasUseCase getCameras, IFrigateRestClient frigateClient, CancellationToken ct) =>
+        group.MapGet("/{id}/live/latest.jpg", async (string id, GetCamerasUseCase getCameras, IFrigateLiveFrameProvider frames, CancellationToken ct) =>
         {
             var cameras = await getCameras.ExecuteAsync(ct);
             var camera = cameras.FirstOrDefault(c => c.Id == id);
             if (camera is null) return Results.NotFound();
 
             var frigateCamera = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
-            var response = await frigateClient.GetLatestFrameAsync(frigateCamera, ct);
-            if (!response.IsSuccessStatusCode)
-                return Results.StatusCode((int)response.StatusCode);
+            var frame = await frames.TryGetLatestFrameAsync(frigateCamera, ct);
+            if (frame is null) return Results.NotFound();
 
-            var stream = await response.Content.ReadAsStreamAsync(ct);
-            return Results.Stream(stream, "image/jpeg");
+            return Results.File(frame, "image/jpeg");
         });
 
         // Privacy mode — toggle unitaire
@@ -340,7 +337,7 @@ public static class CamerasEndpoints
         group.MapPost("/{id}/ptz/presets/{presetId}/snapshot", async (
             string id, int presetId,
             GetCamerasUseCase getCameras,
-            IFrigateRestClient frigateClient,
+            IFrigateLiveFrameProvider frames,
             IPtzThumbnailStore thumbnailStore,
             CancellationToken ct) =>
         {
@@ -349,11 +346,10 @@ public static class CamerasEndpoints
             if (camera is null) return Results.NotFound();
 
             var slug = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
-            var response = await frigateClient.GetLatestFrameAsync(slug, ct);
-            if (!response.IsSuccessStatusCode)
+            var bytes = await frames.TryGetLatestFrameAsync(slug, ct);
+            if (bytes is null)
                 return Results.Problem("Could not retrieve frame from Frigate");
 
-            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
             await thumbnailStore.SaveAsync(id, presetId, bytes, ct);
             return Results.NoContent();
         });

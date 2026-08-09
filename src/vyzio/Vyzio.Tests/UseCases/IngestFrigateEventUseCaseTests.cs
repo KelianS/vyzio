@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Vyzio.Api.Integration.Frigate;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -8,23 +7,23 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-public class FrigateAdapterTests
+public class IngestFrigateEventUseCaseTests
 {
     private readonly IDetectionEventRepository _detectionEvents = Substitute.For<IDetectionEventRepository>();
     private readonly IDetectionNotificationDispatcher _notifications = Substitute.For<IDetectionNotificationDispatcher>();
-    private readonly IFrigateRestClient _restClient = Substitute.For<IFrigateRestClient>();
+    private readonly IFrigateEventReader _eventReader = Substitute.For<IFrigateEventReader>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly IProfileCameraLinkRepository _profileCameraLinks = Substitute.For<IProfileCameraLinkRepository>();
-    private readonly ILogger<FrigateAdapter> _logger = Substitute.For<ILogger<FrigateAdapter>>();
+    private readonly ILogger<IngestFrigateEventUseCase> _logger = Substitute.For<ILogger<IngestFrigateEventUseCase>>();
 
     [Fact]
-    public async Task ProcessMessageAsync_adds_relevant_frigate_event_and_enriches_identity()
+    public async Task ExecuteAsync_adds_relevant_frigate_event_and_enriches_identity()
     {
         var sut = CreateSut(["person"]);
-        _restClient.TryGetIdentityAsync("frigate-evt-101", Arg.Any<CancellationToken>())
+        _eventReader.TryGetIdentityAsync("frigate-evt-101", Arg.Any<CancellationToken>())
             .Returns("Alice");
 
-        var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-101", "person"));
+        var processed = await sut.ExecuteAsync("frigate/events", RelevantPayload("frigate-evt-101", "person"));
 
         Assert.True(processed);
         await _detectionEvents.Received(1).AddAsync(
@@ -43,7 +42,7 @@ public class FrigateAdapterTests
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_updates_existing_event_without_creating_duplicate()
+    public async Task ExecuteAsync_updates_existing_event_without_creating_duplicate()
     {
         var sut = CreateSut(["person"]);
         var existing = new DetectionEvent
@@ -56,10 +55,10 @@ public class FrigateAdapterTests
 
         _detectionEvents.GetByFrigateEventIdAsync("frigate-evt-102", Arg.Any<CancellationToken>())
             .Returns(existing);
-        _restClient.TryGetIdentityAsync("frigate-evt-102", Arg.Any<CancellationToken>())
+        _eventReader.TryGetIdentityAsync("frigate-evt-102", Arg.Any<CancellationToken>())
             .Returns("Bob");
 
-        var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-102", "person", lifecycle: "update", hasClip: false));
+        var processed = await sut.ExecuteAsync("frigate/events", RelevantPayload("frigate-evt-102", "person", lifecycle: "update", hasClip: false));
 
         Assert.True(processed);
         await _detectionEvents.Received(1).UpdateAsync(
@@ -77,11 +76,11 @@ public class FrigateAdapterTests
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_ignores_filtered_labels()
+    public async Task ExecuteAsync_ignores_filtered_labels()
     {
         var sut = CreateSut(["person"]);
 
-        var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-103", "cat"));
+        var processed = await sut.ExecuteAsync("frigate/events", RelevantPayload("frigate-evt-103", "cat"));
 
         Assert.False(processed);
         await _detectionEvents.DidNotReceive().GetByFrigateEventIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
@@ -90,13 +89,13 @@ public class FrigateAdapterTests
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_keeps_mqtt_payload_when_rest_enrichment_fails()
+    public async Task ExecuteAsync_keeps_mqtt_payload_when_rest_enrichment_fails()
     {
         var sut = CreateSut(["person"]);
-        _restClient.TryGetIdentityAsync("frigate-evt-104", Arg.Any<CancellationToken>())
+        _eventReader.TryGetIdentityAsync("frigate-evt-104", Arg.Any<CancellationToken>())
             .Returns(Task.FromException<string?>(new HttpRequestException("Frigate unavailable")));
 
-        var processed = await sut.ProcessMessageAsync("frigate/events", RelevantPayload("frigate-evt-104", "person"));
+        var processed = await sut.ExecuteAsync("frigate/events", RelevantPayload("frigate-evt-104", "person"));
 
         Assert.True(processed);
         await _detectionEvents.Received(1).AddAsync(
@@ -107,12 +106,12 @@ public class FrigateAdapterTests
             Arg.Any<CancellationToken>());
     }
 
-    private FrigateAdapter CreateSut(IEnumerable<string> retainedLabels)
+    private IngestFrigateEventUseCase CreateSut(IEnumerable<string> retainedLabels)
         => new(
             new FrigateEventContractAdapter(new FrigateLabelFilter(retainedLabels)),
             _detectionEvents,
             _notifications,
-            _restClient,
+            _eventReader,
             _profiles,
             _profileCameraLinks,
             _logger);
