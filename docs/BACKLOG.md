@@ -54,64 +54,6 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 Chaque theme a un tag stable (pas d'ordre impose entre thematiques). Un theme termine disparait simplement, sans decaler les autres.
 
-### `detection-pipeline` — Vyzio ne persiste plus les détections
-
-Relevé à l'usage : **une ligne d'historique sur deux pointe vers un média qui n'existe plus.** Les
-mesures, les vérifications faites sur l'instance et la décision sont dans
-[ADR-49](adr/0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) :
-l'historique devient la liste de Frigate, enrichie à la lecture. La rétention plancher qui la
-garantit est
-[ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md).
-
-Ce chantier **supprime** plus qu'il n'ajoute : `observed_events`, ses drapeaux de média, et le
-délai forfaitaire du handler MQTT.
-
-#### Ordre d'exécution
-
-1. **Remonter le port Frigate dans `Core`**, et l'ingestion en use case d'`Application`. Prérequis
-   de tout le reste, sans changement de comportement : tant que le port vit dans `Api`, aucun use
-   case ne peut interroger Frigate.
-
-2. **Lire l'historique depuis Frigate.** Un use case de lecture : filtres caméra / label / identité /
-   période, **pagination au curseur temporel** (`page=` est inerte, mesuré), enrichissement profil et
-   nom de caméra à la lecture. L'écran cesse de lire `observed_events`.
-
-3. **Corriger une identité écrit dans Frigate** (`POST /api/events/{id}/sub_label`). Propagation
-   asynchrone ~5 s : l'interface affiche la correction sans attendre la relecture. Ferme au passage
-   le constat « corriger une identité n'apprend rien ».
-
-4. **Supprimer `observed_events`** et tout ce qui en dépend. La déduplication des notifications
-   se réancre sur l'identifiant d'événement Frigate — aujourd'hui `HasSentAsync` reçoit l'identifiant
-   de la ligne Vyzio, qui n'existera plus.
-
-5. **L'ingestion ne notifie plus en ligne.** Le handler MQTT rend la main immédiatement ; le délai
-   forfaitaire de dix secondes devient une récupération de média avec reprise, portée par la
-   récupération elle-même.
-
-6. **Deux images nommées, pas une URL fabriquée deux fois.** La liste télécharge aujourd'hui 123 Ko
-   de plan large pour une tuile de 56 px, quand Frigate a déjà écrit l'image recadrée sur l'objet en
-   8 Ko (`thumbnail.jpg`, 175x175). Telegram veut l'inverse, le plan large — le contexte est ce qui
-   rend la notification utile. Mesuré : `?crop=`/`?height=` sont inertes sur un événement terminé.
-
-7. **Rétention minimale d'un jour**
-   ([ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md)) :
-   plancher au foyer de résolution, `KeepsAnything` et `record.enabled: false` disparaissent,
-   l'interface refuse zéro avant la saisie. L'enregistrement continu reste optionnel.
-
-8. **Renommer le réglage** : « conservation des clips d'alerte » devient la **conservation de
-   l'historique de détection**, qui est son effet observable. Aligner au passage la rétention des
-   aperçus sur celle des clips — supprimer le 30 en dur, qui fabriquait une seconde durée invisible.
-
-9. **Dire ce qui manque, côté écran seulement.** Un média expiré est une conséquence du réglage de
-   conservation, pas une panne, et Frigate injoignable n'est pas une expiration : deux causes, deux
-   phrases (principe #4). **Rien de cette logique n'atteint le chemin de notification** — une
-   notification part quelques secondes après la détection, très loin de toute expiration.
-
-10. **Documenter la profondeur de l'historique** dans [`user/`](user/) : elle vaut désormais la durée
-    de conservation, et c'est une promesse tenue là où la précédente était fausse.
-
----
-
 ### `onboarding` — Onboarding & capacités
 
 Itérations courtes, buildables indépendamment. Priorité décroissante.
