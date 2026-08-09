@@ -28,7 +28,7 @@ export interface FakeCamera {
   verifiedCapabilities: string[]
 }
 
-/** Une detection telle que les ecrans la lisent : l'identifiant est celui de Frigate (ADR-49). */
+/** A detection as the screens read it: the id is Frigate's, Vyzio holds none of its own (ADR-49). */
 export interface FakeDetectionEvent {
   eventId: string
   camera: string
@@ -607,7 +607,7 @@ export async function installFakeBackend(
       const profileId = url.searchParams.get('profileId')
       const from = url.searchParams.get('from')
       const to = url.searchParams.get('to')
-      // Le curseur est la date de la derniere detection rendue, en millisecondes (ADR-49).
+      // The cursor is the last returned detection's date, in milliseconds (ADR-49).
       const cursor = url.searchParams.get('cursor')
 
       const matching = state.detectionHistory
@@ -622,7 +622,7 @@ export async function installFakeBackend(
       const items = matching.slice(0, limit)
       return json(route, {
         items,
-        // Une page pleine laisse croire qu'il en reste ; une page courte est la plus ancienne.
+        // A full page may hide more; a short one means the oldest detection was reached.
         nextCursor:
           items.length === limit ? String(Date.parse(items[items.length - 1].occurredAt)) : null,
       })

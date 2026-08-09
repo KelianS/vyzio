@@ -23,7 +23,7 @@ test.describe('Historique — filtres', () => {
       }),
     )
     await page.goto('/history')
-    // Les filtres sont une option qu'on ouvre (voir `ui-defauts.e2e.ts`), pas le haut de l'ecran.
+    // Filters are an option you open (see `ui-defauts.e2e.ts`), not the top of the screen.
     await page.getByRole('button', { name: 'Filtrer' }).click()
   })
 
@@ -49,7 +49,7 @@ test.describe('Historique — filtres', () => {
   test('user_When a filter is active_Should be offered a way back to everything', async ({
     page,
   }) => {
-    // Rien a reinitialiser tant que rien n'est filtre.
+    // Nothing to reset as long as nothing is filtered.
     await expect(page.getByRole('button', { name: 'Tout afficher' })).toHaveCount(0)
 
     await page.getByRole('combobox').filter({ hasText: 'Tous' }).click()

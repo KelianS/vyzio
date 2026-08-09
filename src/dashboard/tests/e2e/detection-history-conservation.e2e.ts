@@ -6,9 +6,8 @@ import {
 } from './fixtures/fakeBackend'
 
 /**
- * Ce que l'historique devient une fois qu'il n'est plus qu'une lecture des detections conservees
- * (ADR-49) : au-dela de la duree de conservation le media n'existe plus (ADR-48), et une page
- * suivante se demande par curseur, sans numero.
+ * What history becomes once it is only a read of the kept detections (ADR-49): past the retention
+ * the media is gone (ADR-48), and the next page is asked for by cursor, never by number.
  */
 
 const anHourBefore = (moment: Date, hours: number) =>
@@ -34,7 +33,7 @@ test.describe('Historique — conservation', () => {
     await page.goto('/history')
 
     await expect(page.getByText(/Aperçu et vidéo effacés/)).toBeVisible()
-    // Un media efface n'est pas une panne : il n'y a rien a retenter, donc rien a cliquer.
+    // An erased media is not a failure: nothing to retry, so nothing to click.
     await expect(page.getByRole('button', { name: /Voir l’aperçu/ })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Vidéo' })).toHaveCount(0)
   })
@@ -61,7 +60,7 @@ test.describe('Historique — remonter le temps', () => {
     page,
   }) => {
     const now = new Date()
-    // Une page pleine (la limite de l'ecran est 20) laisse croire qu'il en reste, une de plus suit.
+    // A full page (the screen asks for 20) suggests more remain, and one more does.
     const history = Array.from({ length: 21 }, (_, index) =>
       makeFakeDetectionEvent({
         eventId: `event-${index}`,
@@ -77,10 +76,10 @@ test.describe('Historique — remonter le temps', () => {
 
     await page.getByRole('button', { name: 'Voir plus ancien' }).click()
 
-    // La suite s'ajoute a ce qui est deja lu, elle ne le remplace pas.
+    // The next slice adds to what was already read, it does not replace it.
     await expect(page.getByText(/camera 20 · /)).toBeVisible()
     await expect(page.getByText(/camera 0 · /)).toBeVisible()
-    // Plus rien de plus ancien : le bouton n'a plus de raison d'etre.
+    // Nothing older left: the button has no reason to exist any more.
     await expect(page.getByRole('button', { name: 'Voir plus ancien' })).toHaveCount(0)
   })
 
