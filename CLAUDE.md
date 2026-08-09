@@ -40,6 +40,8 @@ un fichier de ces dossiers.
 
 - **Privacy first** : jamais transmettre d'images sans consentement explicite.
 - Code (noms, commentaires) en anglais ; vision et docs de cadrage en français.
+- **Commits et PR** (titre et description) : en anglais, format Conventional Commits — règle et
+  gabarit dans [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git.
 - **Commentaire de code** : une ligne, jamais un paragraphe. Le *pourquoi* non déductible, avec une
   référence d'ADR si besoin (`(ADR-44)`) — jamais le récit de la décision, qui vieillit en silence et
   duplique l'ADR (règle suprême ci-dessus). Si l'explication ne tient pas en une ligne, elle
