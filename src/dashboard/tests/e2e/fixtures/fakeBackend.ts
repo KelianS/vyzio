@@ -28,6 +28,40 @@ export interface FakeCamera {
   verifiedCapabilities: string[]
 }
 
+/** Une detection telle que les ecrans la lisent : l'identifiant est celui de Frigate (ADR-49). */
+export interface FakeDetectionEvent {
+  eventId: string
+  camera: string
+  cameraName: string
+  label: string
+  identity: string | null
+  profileId: string | null
+  confidence: number | null
+  occurredAt: string
+  hasClip: boolean
+  hasSnapshot: boolean
+  mediaExpired: boolean
+}
+
+export function makeFakeDetectionEvent(
+  overrides: Partial<FakeDetectionEvent> = {},
+): FakeDetectionEvent {
+  return {
+    eventId: 'event-1',
+    camera: 'front_door',
+    cameraName: 'front door',
+    label: 'person',
+    identity: null,
+    profileId: null,
+    confidence: 0.92,
+    occurredAt: new Date().toISOString(),
+    hasClip: false,
+    hasSnapshot: true,
+    mediaExpired: false,
+    ...overrides,
+  }
+}
+
 export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera {
   return {
     id: 'camera-1',
@@ -92,19 +126,7 @@ export interface FakeBackendState {
       lastTestError: string | null
     }
   >
-  detectionHistory: {
-    eventId: string
-    frigateEventId: string
-    lifecycle: string
-    camera: string
-    label: string
-    identity: string | null
-    profileId: string | null
-    confidence: number | null
-    occurredAt: string
-    hasClip: boolean
-    hasSnapshot: boolean
-  }[]
+  detectionHistory: FakeDetectionEvent[]
   detectionConfig: {
     labels: string[]
     motionSensitivity: 'high' | 'medium' | 'low'
@@ -581,15 +603,28 @@ export async function installFakeBackend(
     if (path === '/api/detection-events/history' && method === 'GET') {
       const limit = Number(url.searchParams.get('limit') ?? '20')
       const label = url.searchParams.get('label')
-      const items = label
-        ? state.detectionHistory.filter((e) => e.label === label)
-        : state.detectionHistory
+      const camera = url.searchParams.get('camera')
+      const profileId = url.searchParams.get('profileId')
+      const from = url.searchParams.get('from')
+      const to = url.searchParams.get('to')
+      // Le curseur est la date de la derniere detection rendue, en millisecondes (ADR-49).
+      const cursor = url.searchParams.get('cursor')
+
+      const matching = state.detectionHistory
+        .filter((event) => !label || event.label === label)
+        .filter((event) => !camera || event.camera.includes(camera))
+        .filter((event) => !profileId || event.profileId === profileId)
+        .filter((event) => !from || Date.parse(event.occurredAt) >= Date.parse(from))
+        .filter((event) => !to || Date.parse(event.occurredAt) <= Date.parse(to))
+        .filter((event) => !cursor || Date.parse(event.occurredAt) < Number(cursor))
+        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+
+      const items = matching.slice(0, limit)
       return json(route, {
-        items: items.slice(0, limit),
-        total: items.length,
-        page: Number(url.searchParams.get('page') ?? '1'),
-        limit,
-        totalPages: Math.max(1, Math.ceil(items.length / limit)),
+        items,
+        // Une page pleine laisse croire qu'il en reste ; une page courte est la plus ancienne.
+        nextCursor:
+          items.length === limit ? String(Date.parse(items[items.length - 1].occurredAt)) : null,
       })
     }
     if (path.match(/^\/api\/detection-events\/[^/]+\/identity$/) && method === 'PATCH') {
