@@ -2,7 +2,6 @@ using Vyzio.Application.DTOs.DetectionEvents;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
-using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.DetectionEvents;
 

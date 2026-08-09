@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -78,7 +77,6 @@ public class FrigateConfigApplierTests : IDisposable
             new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount, hwAccel));
         var applier = new FrigateConfigApplier(
             settings,
-            NullLogger<FrigateConfigApplier>.Instance,
             new FrigateRestartTracker(),
             planner,
             new NoopModelAssetInstaller(),
@@ -92,7 +90,6 @@ public class FrigateConfigApplierTests : IDisposable
         var settings = Settings;
         return new FrigateConfigApplier(
             settings,
-            NullLogger<FrigateConfigApplier>.Instance,
             new FrigateRestartTracker(),
             new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(FrigateDetectorKind.Cpu)),
             new NoopModelAssetInstaller(),

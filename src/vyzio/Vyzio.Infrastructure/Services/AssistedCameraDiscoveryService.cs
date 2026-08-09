@@ -209,7 +209,8 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
             : signals
                 .Select(signal => signal.StreamPath)
                 .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => path!)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Order(StringComparer.OrdinalIgnoreCase)
-                .ToArray()!;
+                .ToArray();
 }

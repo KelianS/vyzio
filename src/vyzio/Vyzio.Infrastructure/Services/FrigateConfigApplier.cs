@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Vyzio.Core.Entities;
@@ -11,7 +10,6 @@ namespace Vyzio.Infrastructure.Services;
 
 public sealed class FrigateConfigApplier(
     VyzioRuntimeSettings settings,
-    ILogger<FrigateConfigApplier> logger,
     IFrigateRestartTracker restartTracker,
     IFrigateDetectorPlanner detectorPlanner,
     IFrigateModelAssetInstaller modelAssetInstaller,
