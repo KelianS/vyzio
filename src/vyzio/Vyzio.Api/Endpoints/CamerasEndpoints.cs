@@ -118,7 +118,7 @@ public static class CamerasEndpoints
             var camera = cameras.FirstOrDefault(c => c.Id == id);
             if (camera is null) return Results.NotFound();
 
-            var frigateCamera = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var frigateCamera = camera.FrigateName;
             var frame = await frames.TryGetLatestFrameAsync(frigateCamera, ct);
             if (frame is null) return Results.NotFound();
 
@@ -345,7 +345,7 @@ public static class CamerasEndpoints
             var camera = cameras.FirstOrDefault(c => c.Id == id);
             if (camera is null) return Results.NotFound();
 
-            var slug = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var slug = camera.FrigateName;
             var bytes = await frames.TryGetLatestFrameAsync(slug, ct);
             if (bytes is null)
                 return Results.Problem("Could not retrieve frame from Frigate");

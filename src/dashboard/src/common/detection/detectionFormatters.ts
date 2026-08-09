@@ -46,7 +46,7 @@ export function formatEventTitle(event: DetectionEvent): string {
 /** Ou, quand, et avec quelle certitude — la certitude ne se lit que si le moteur en a donne une. */
 export function formatEventDetail(event: DetectionEvent): string {
   return [
-    event.camera.replaceAll('_', ' '),
+    event.cameraName,
     formatEventTime(event.occurredAt),
     event.confidence !== null ? `${Math.round(event.confidence * 100)} % de certitude` : null,
   ]

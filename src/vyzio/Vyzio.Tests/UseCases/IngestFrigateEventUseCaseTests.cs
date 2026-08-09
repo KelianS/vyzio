@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -12,6 +14,7 @@ public class IngestFrigateEventUseCaseTests
     private readonly IDetectionEventRepository _detectionEvents = Substitute.For<IDetectionEventRepository>();
     private readonly IDetectionNotificationDispatcher _notifications = Substitute.For<IDetectionNotificationDispatcher>();
     private readonly IFrigateEventReader _eventReader = Substitute.For<IFrigateEventReader>();
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly IProfileCameraLinkRepository _profileCameraLinks = Substitute.For<IProfileCameraLinkRepository>();
     private readonly ILogger<IngestFrigateEventUseCase> _logger = Substitute.For<ILogger<IngestFrigateEventUseCase>>();
@@ -112,8 +115,8 @@ public class IngestFrigateEventUseCaseTests
             _detectionEvents,
             _notifications,
             _eventReader,
-            _profiles,
-            _profileCameraLinks,
+            new CameraDirectory(_cameras),
+            new DetectionProfileResolver(_profiles, _profileCameraLinks),
             _logger);
 
     private static string RelevantPayload(

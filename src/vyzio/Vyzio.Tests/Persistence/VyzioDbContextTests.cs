@@ -103,35 +103,4 @@ public class VyzioDbContextTests : IDisposable
         Assert.Throws<DbUpdateException>(() => _db.SaveChanges());
     }
 
-    [Fact]
-    public async Task DetectionEventRepository_orders_recent_events_by_occurred_at_on_sqlite()
-    {
-        _db.DetectionEvents.AddRange(
-            new DetectionEvent
-            {
-                FrigateEventId = "ordered-001",
-                Lifecycle = "new",
-                Camera = "front_door",
-                Label = "person",
-                OccurredAt = DateTimeOffset.Parse("2026-05-12T08:30:00+00:00")
-            },
-            new DetectionEvent
-            {
-                FrigateEventId = "ordered-002",
-                Lifecycle = "new",
-                Camera = "garage",
-                Label = "car",
-                OccurredAt = DateTimeOffset.Parse("2026-05-12T09:45:00+00:00")
-            });
-        await _db.SaveChangesAsync();
-
-        var repository = new DetectionEventRepository(_db);
-
-        var results = await repository.GetRecentAsync(10);
-
-        Assert.Collection(
-            results,
-            first => Assert.Equal("ordered-002", first.FrigateEventId),
-            second => Assert.Equal("ordered-001", second.FrigateEventId));
-    }
 }

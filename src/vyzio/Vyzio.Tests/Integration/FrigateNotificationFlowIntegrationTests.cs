@@ -2,6 +2,8 @@ using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -67,8 +69,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _detectionEvents,
             dispatcher,
             _eventReader,
-            Substitute.For<IProfileRepository>(),
-            Substitute.For<IProfileCameraLinkRepository>(),
+            new CameraDirectory(Substitute.For<ICameraRepository>()),
+            new DetectionProfileResolver(Substitute.For<IProfileRepository>(), Substitute.For<IProfileCameraLinkRepository>()),
             NullLogger<IngestFrigateEventUseCase>.Instance);
     }
 
@@ -200,6 +202,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         public Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default)
             => Task.FromResult(Identity);
+
+        public Task<IReadOnlyList<FrigateDetection>> QueryAsync(FrigateDetectionQuery query, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<FrigateDetection>>([]);
     }
 
     private sealed class StubClipProvider : IFrigateClipProvider

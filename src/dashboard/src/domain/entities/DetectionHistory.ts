@@ -2,10 +2,8 @@ import type { DetectionEvent } from './DetectionEvent'
 
 export interface DetectionHistoryPage {
   items: DetectionEvent[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
+  /** Null quand la plus ancienne detection est atteinte : l'historique se pagine par date (ADR-49). */
+  nextCursor: string | null
 }
 
 export interface DetectionHistoryQuery {
@@ -14,6 +12,6 @@ export interface DetectionHistoryQuery {
   profileId?: string
   from?: string
   to?: string
-  page?: number
+  cursor?: string
   limit?: number
 }

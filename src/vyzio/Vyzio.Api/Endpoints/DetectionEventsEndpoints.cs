@@ -23,7 +23,7 @@ public static class DetectionEventsEndpoints
             string? profileId,
             DateTimeOffset? from,
             DateTimeOffset? to,
-            int? page,
+            string? cursor,
             int? limit,
             GetDetectionHistoryUseCase useCase,
             CancellationToken ct) =>
@@ -34,30 +34,23 @@ public static class DetectionEventsEndpoints
                 ProfileId: profileId,
                 From: from,
                 To: to,
-                Page: page ?? 1,
+                Cursor: cursor,
                 Limit: limit ?? 20);
             return Results.Ok(await useCase.ExecuteAsync(query, ct));
         });
 
         // Clip proxy — streams MP4 from Frigate with Range support (ADR-17)
-        group.MapGet("/{id}/clip", async (string id, IDetectionEventRepository detectionEvents, IFrigateClipProvider clips, CancellationToken ct) =>
+        group.MapGet("/{id}/clip", async (string id, IFrigateClipProvider clips, CancellationToken ct) =>
         {
-            var evt = await detectionEvents.GetByIdAsync(id, ct);
-            if (evt is null) return Results.NotFound();
-            if (!evt.HasClip) return Results.NotFound();
-
-            var stream = await clips.TryGetClipAsync(evt.FrigateEventId, ct);
+            var stream = await clips.TryGetClipAsync(id, ct);
             if (stream is null) return Results.NotFound();
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });
 
         // Snapshot proxy — serves JPEG from Frigate (ADR-17), avoids CORS from browser direct access
-        group.MapGet("/{id}/snapshot", async (string id, IDetectionEventRepository detectionEvents, IFrigateSnapshotProvider snapshots, CancellationToken ct) =>
+        group.MapGet("/{id}/snapshot", async (string id, IFrigateSnapshotProvider snapshots, CancellationToken ct) =>
         {
-            var evt = await detectionEvents.GetByIdAsync(id, ct);
-            if (evt is null) return Results.NotFound();
-
-            var stream = await snapshots.TryGetSnapshotAsync(evt.FrigateEventId, ct);
+            var stream = await snapshots.TryGetSnapshotAsync(id, ct);
             if (stream is null) return Results.NotFound();
 
             return Results.Stream(stream, "image/jpeg");

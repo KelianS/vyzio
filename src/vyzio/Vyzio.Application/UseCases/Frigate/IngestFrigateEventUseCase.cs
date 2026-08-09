@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Vyzio.Application.DTOs.Frigate;
+using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -11,8 +13,8 @@ public sealed class IngestFrigateEventUseCase(
     IDetectionEventRepository detectionEvents,
     IDetectionNotificationDispatcher detectionNotifications,
     IFrigateEventReader eventReader,
-    IProfileRepository profileRepository,
-    IProfileCameraLinkRepository profileCameraLinks,
+    CameraDirectory cameras,
+    DetectionProfileResolver profileResolver,
     ILogger<IngestFrigateEventUseCase> logger)
 {
     public async Task<bool> ExecuteAsync(string topic, string payload, CancellationToken ct = default)
@@ -73,31 +75,10 @@ public sealed class IngestFrigateEventUseCase(
         }
     }
 
-    // Resolves a Frigate sub_label to a Vyzio profile, respecting profile-camera link restrictions (ADR-15).
-    // Returns null if no matching profile exists or if the profile is not linked to this camera.
-    private async Task<string?> ResolveProfileIdAsync(string? identity, string camera, CancellationToken ct)
+    private async Task<string?> ResolveProfileIdAsync(string? identity, string frigateCamera, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(identity))
-            return null;
-
-        var allProfiles = await profileRepository.GetAllAsync(ct);
-        var profile = allProfiles.FirstOrDefault(p =>
-            string.Equals(p.Name, identity, StringComparison.OrdinalIgnoreCase));
-
-        if (profile is null)
-            return null;
-
-        // If the profile has camera links defined, only recognize on linked cameras.
-        var links = await profileCameraLinks.GetByProfileIdAsync(profile.Id, ct);
-        var activeLinks = links.Where(l => l.Enabled).ToList();
-
-        if (activeLinks.Count > 0 && !activeLinks.Any(l => string.Equals(l.CameraId, camera, StringComparison.Ordinal)))
-        {
-            // Profile exists but not linked to this camera
-            return null;
-        }
-
-        return profile.Id;
+        var camera = await cameras.FindByFrigateNameAsync(frigateCamera, ct);
+        return await profileResolver.ResolveProfileIdAsync(identity, camera?.Id ?? frigateCamera, ct);
     }
 
     private static DetectionEvent ToDetectionEvent(FrigateConsumedEvent consumedEvent, string? identity, string? profileId)

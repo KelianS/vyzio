@@ -21,7 +21,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(tz);
         services.AddSingleton(new FrigateLabelFilter(retainedFrigateLabels));
         services.AddSingleton<FrigateEventContractAdapter>();
-        services.AddSingleton<DetectionEventContractProjector>();
+        services.AddScoped<DetectionEventContractProjector>();
+        services.AddScoped<DetectionProfileResolver>();
+        services.AddScoped<CameraDirectory>();
         services.AddSingleton(new DetectionTelegramMessageFormatter(tz));
 
         // Camera use cases

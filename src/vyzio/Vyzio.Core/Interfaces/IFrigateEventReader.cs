@@ -1,3 +1,5 @@
+using Vyzio.Core.Entities;
+
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
@@ -9,4 +11,9 @@ public interface IFrigateEventReader
     /// Returns the identity Frigate attributes to an event, or null when it recognized nobody.
     /// </summary>
     Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns detections newest first, at most <see cref="FrigateDetectionQuery.Limit"/> of them.
+    /// </summary>
+    Task<IReadOnlyList<FrigateDetection>> QueryAsync(FrigateDetectionQuery query, CancellationToken ct = default);
 }

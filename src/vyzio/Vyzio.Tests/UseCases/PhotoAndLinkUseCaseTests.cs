@@ -205,7 +205,7 @@ public class CorrectDetectionIdentityUseCaseTests
     [Fact]
     public async Task ExecuteAsync_returns_false_when_event_not_found()
     {
-        _events.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((DetectionEvent?)null);
+        _events.GetByFrigateEventIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((DetectionEvent?)null);
 
         var result = await _sut.ExecuteAsync("missing", new CorrectDetectionIdentityRequest("pid"));
 
@@ -216,9 +216,9 @@ public class CorrectDetectionIdentityUseCaseTests
     public async Task ExecuteAsync_clears_identity_when_profileId_is_null()
     {
         var evt = new DetectionEvent { FrigateEventId = "x", Lifecycle = "end", Camera = "c", Label = "person" };
-        _events.GetByIdAsync(evt.Id, Arg.Any<CancellationToken>()).Returns(evt);
+        _events.GetByFrigateEventIdAsync(evt.FrigateEventId, Arg.Any<CancellationToken>()).Returns(evt);
 
-        var result = await _sut.ExecuteAsync(evt.Id, new CorrectDetectionIdentityRequest(null));
+        var result = await _sut.ExecuteAsync(evt.FrigateEventId, new CorrectDetectionIdentityRequest(null));
 
         Assert.True(result);
         await _events.Received(1).UpdateIdentityAsync(evt.Id, null, null, Arg.Any<CancellationToken>());
@@ -229,10 +229,10 @@ public class CorrectDetectionIdentityUseCaseTests
     {
         var evt = new DetectionEvent { FrigateEventId = "x", Lifecycle = "end", Camera = "c", Label = "person" };
         var profile = new Profile { Name = "Alice" };
-        _events.GetByIdAsync(evt.Id, Arg.Any<CancellationToken>()).Returns(evt);
+        _events.GetByFrigateEventIdAsync(evt.FrigateEventId, Arg.Any<CancellationToken>()).Returns(evt);
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.ExecuteAsync(evt.Id, new CorrectDetectionIdentityRequest(profile.Id));
+        var result = await _sut.ExecuteAsync(evt.FrigateEventId, new CorrectDetectionIdentityRequest(profile.Id));
 
         Assert.True(result);
         await _events.Received(1).UpdateIdentityAsync(evt.Id, "Alice", profile.Id, Arg.Any<CancellationToken>());
@@ -242,10 +242,10 @@ public class CorrectDetectionIdentityUseCaseTests
     public async Task ExecuteAsync_returns_false_when_profile_not_found()
     {
         var evt = new DetectionEvent { FrigateEventId = "x", Lifecycle = "end", Camera = "c", Label = "person" };
-        _events.GetByIdAsync(evt.Id, Arg.Any<CancellationToken>()).Returns(evt);
+        _events.GetByFrigateEventIdAsync(evt.FrigateEventId, Arg.Any<CancellationToken>()).Returns(evt);
         _profiles.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
-        var result = await _sut.ExecuteAsync(evt.Id, new CorrectDetectionIdentityRequest("bad-pid"));
+        var result = await _sut.ExecuteAsync(evt.FrigateEventId, new CorrectDetectionIdentityRequest("bad-pid"));
 
         Assert.False(result);
     }

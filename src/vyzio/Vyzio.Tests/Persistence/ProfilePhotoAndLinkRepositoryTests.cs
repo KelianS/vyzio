@@ -199,13 +199,13 @@ public class ProfileCameraLinkRepositoryTests : IDisposable
     }
 }
 
-public class DetectionEventRepositoryPaginationTests : IDisposable
+public class DetectionEventRepositoryIdentityTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;
     private readonly DetectionEventRepository _sut;
 
-    public DetectionEventRepositoryPaginationTests()
+    public DetectionEventRepositoryIdentityTests()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
         _connection.Open();
@@ -217,68 +217,6 @@ public class DetectionEventRepositoryPaginationTests : IDisposable
     }
 
     public void Dispose() { _db.Dispose(); _connection.Dispose(); }
-
-    private void SeedEvents(int count)
-    {
-        for (var i = 0; i < count; i++)
-        {
-            _db.DetectionEvents.Add(new DetectionEvent
-            {
-                FrigateEventId = $"evt-{i:000}",
-                Lifecycle = "end",
-                Camera = i % 2 == 0 ? "front_door" : "garage",
-                Label = i % 3 == 0 ? "car" : "person",
-                OccurredAt = DateTimeOffset.UtcNow.AddMinutes(-i),
-            });
-        }
-        _db.SaveChanges();
-    }
-
-    [Fact]
-    public async Task GetPagedAsync_returns_correct_total_and_page()
-    {
-        SeedEvents(25);
-
-        var (items, total) = await _sut.GetPagedAsync(new DetectionHistoryQuery(Page: 1, Limit: 10));
-
-        Assert.Equal(25, total);
-        Assert.Equal(10, items.Count);
-    }
-
-    [Fact]
-    public async Task GetPagedAsync_filters_by_camera()
-    {
-        SeedEvents(10);
-
-        var (items, total) = await _sut.GetPagedAsync(new DetectionHistoryQuery(Camera: "front_door"));
-
-        Assert.All(items, e => Assert.Equal("front_door", e.Camera));
-        Assert.Equal(5, total);
-    }
-
-    [Fact]
-    public async Task GetPagedAsync_filters_by_label()
-    {
-        SeedEvents(9);
-
-        var (items, total) = await _sut.GetPagedAsync(new DetectionHistoryQuery(Label: "car", Limit: 100));
-
-        Assert.All(items, e => Assert.Equal("car", e.Label));
-        Assert.Equal(3, total);
-    }
-
-    [Fact]
-    public async Task GetPagedAsync_second_page_has_offset_items()
-    {
-        SeedEvents(25);
-
-        var (page1, _) = await _sut.GetPagedAsync(new DetectionHistoryQuery(Page: 1, Limit: 10));
-        var (page2, _) = await _sut.GetPagedAsync(new DetectionHistoryQuery(Page: 2, Limit: 10));
-
-        Assert.Equal(10, page1.Count);
-        Assert.Equal(10, page2.Count);
-        Assert.DoesNotContain(page2, e => page1.Any(p => p.FrigateEventId == e.FrigateEventId));
-    }
 
     [Fact]
     public async Task UpdateIdentityAsync_sets_identity_and_profileId()
@@ -301,7 +239,7 @@ public class DetectionEventRepositoryPaginationTests : IDisposable
         await _sut.UpdateIdentityAsync(evt.Id, "Alice", profile.Id);
 
         _db.ChangeTracker.Clear();
-        var updated = await _sut.GetByIdAsync(evt.Id);
+        var updated = await _db.DetectionEvents.FirstOrDefaultAsync(e => e.Id == evt.Id);
         Assert.NotNull(updated);
         Assert.Equal("Alice", updated.Identity);
         Assert.Equal(profile.Id, updated.ProfileId);
@@ -328,7 +266,7 @@ public class DetectionEventRepositoryPaginationTests : IDisposable
         await _sut.UpdateIdentityAsync(evt.Id, null, null);
 
         _db.ChangeTracker.Clear();
-        var updated = await _sut.GetByIdAsync(evt.Id);
+        var updated = await _db.DetectionEvents.FirstOrDefaultAsync(e => e.Id == evt.Id);
         Assert.NotNull(updated);
         Assert.Null(updated.Identity);
         Assert.Null(updated.ProfileId);

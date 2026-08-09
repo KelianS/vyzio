@@ -84,6 +84,9 @@ public class Camera
     [MaxLength(200)]
     public string? FrigateCameraName { get; set; }
 
+    [NotMapped]
+    public string FrigateName => CameraNaming.ToFrigateName(FrigateCameraName, Slug);
+
     [Required, MaxLength(50)]
     public string ValidationState { get; set; } = "draft";
 

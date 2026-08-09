@@ -147,10 +147,10 @@ public sealed class FrigateConfigApplier(
 
         var activeCameras = validatedCameras
             .ToDictionary(
-                camera => camera.FrigateCameraName ?? camera.Slug.Replace('-', '_'),
+                camera => camera.FrigateName,
                 camera =>
                 {
-                    var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+                    var frigateKey = camera.FrigateName;
                     var labels = camera.GetDetectionLabels();
                     // face must be tracked whenever person is — Frigate needs it for face recognition.
                     var frigateLabels = labels.Contains("person")
@@ -224,7 +224,7 @@ public sealed class FrigateConfigApplier(
         var dvripStreams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var camera in validatedCameras.Where(c => c.StreamProtocol == StreamProtocol.Dvrip))
         {
-            var frigateKey = camera.FrigateCameraName ?? camera.Slug.Replace('-', '_');
+            var frigateKey = camera.FrigateName;
             foreach (var stream in DistinctRoleStreams(camera))
             {
                 dvripStreams[Go2rtcStreamName(frigateKey, stream)] = [BuildDvripUrl(camera, stream)];
