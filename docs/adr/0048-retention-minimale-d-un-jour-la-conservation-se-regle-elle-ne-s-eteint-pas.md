@@ -16,11 +16,10 @@ choix courant, et c'est même la valeur livrée. Mais la troisième durée, cell
 **porte l'historique** — la page la plus consultée du produit. Zéro y signifie « détecter, notifier,
 et ne rien pouvoir montrer ensuite ».
 
-[ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md)
-rend le coût de ce zéro visible. Si l'historique se réconcilie sur Frigate et ne garde pas ce que
-Frigate a jeté, alors une durée à zéro produit un historique structurellement vide : chaque ligne
-naît et disparaît à la réconciliation suivante. Il faudrait donc porter partout — réconciliation,
-suppression, affichage, notification — un cas particulier dont le seul résultat utile est un écran
+[ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md)
+rend le coût de ce zéro visible. Si l'historique **est** la liste de Frigate, alors une durée à zéro
+ne produit pas un historique court : elle produit un historique qui n'existe pas. Le cas particulier
+devrait être porté partout — lecture, affichage, notification — pour un seul résultat utile, un écran
 vide que rien n'explique.
 
 `KeepsAnything` est l'autre face du problème : un fait métier calculé sur trois compteurs, consulté à

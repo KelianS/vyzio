@@ -1,6 +1,10 @@
 # ADR-47 — L'historique des détections : un index réconcilié sur Frigate, pas une mémoire autonome
 
-> Statut : Accepté
+> Statut : Remplacé par [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md)
+>
+> Le constat et l'appartenance des faits restent valides ; la décision ne l'est pas. Une fois établi
+> que Vyzio ne détient aucun fait durable sur une détection, la table qu'il s'agissait de réconcilier
+> n'avait plus de raison d'exister.
 
 ## Contexte
 

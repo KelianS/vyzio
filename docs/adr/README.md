@@ -53,5 +53,6 @@ référence ces ADR sans les recopier.
 | [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md) | Redémarrage de la surveillance : un acte explicite de l'utilisateur, groupé et différé | Accepté |
 | [ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) | Positions PTZ configurées depuis la vue live, jamais depuis les réglages | Accepté (calibration et geste de création rétractés par ADR-46) |
 | [ADR-46](0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md) | Tout le pilotage PTZ dans la vue live, calibration comprise | Accepté |
-| [ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md) | L'historique des détections : un index réconcilié sur Frigate, pas une mémoire autonome | Accepté |
+| [ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md) | L'historique des détections : un index réconcilié sur Frigate, pas une mémoire autonome | Remplacé par ADR-49 |
 | [ADR-48](0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md) | Rétention minimale d'un jour : la conservation se règle, elle ne s'éteint pas | Accepté |
+| [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) | Vyzio ne persiste pas les détections : l'historique est la liste de Frigate, enrichie à la lecture | Accepté |

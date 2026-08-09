@@ -43,8 +43,8 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Benchmarker `yolox_s` (retenu pour le palier Intel GPU dans [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md)) sur du matériel varié et évaluer une variante plus précise (`yolox_m`/`l`) si le terrain le justifie — pas de mesure exhaustive à ce stade. Le palier CPU seul reste sur le détecteur natif `cpu` (YOLOX, même la plus petite variante, a produit des pics CPU ~800% et des détections dégradées en test terrain — pas un gain sur ce palier). YOLOv9 écarté (licence GPL-3.0, test exploratoire erratique : voir [investigation](investigations/yolov9_frigate_openvino.md)) ; YOLO-NAS écarté (poids non-commerciaux).
 - Le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est — il faudrait une page de plus. Constat de la passe de coherence du chantier `config-ui`, non corrigeable sans trancher le rangement.
 - La marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
-- Corriger une identite n'apprend rien : `CorrectDetectionIdentityUseCase` reecrit la ligne d'historique, rien de plus — la photo ne rejoint pas la bibliotheque du profil, le moteur ne reapprend pas. SPECS §3.1 demande pourtant « afin d'ameliorer la qualite du systeme dans le temps », et le mecanisme existe deja (`/api/profiles/resync-face-library`). A trancher : cabler la boucle, ou renommer honnetement ce que le bouton fait.
-- Trier l'historique sur le modèle *review* de Frigate (sévérité `alert` / `detection`, regroupement des objets d'un même passage), que Vyzio ignore aujourd'hui — hors périmètre d'[ADR-47](adr/0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md), qui en pose le constat. Chantier produit distinct : il change ce que l'historique montre, pas d'où il tient sa vérité.
+- **La reconnaissance faciale n'etiquette rien.** Mesure sur l'instance de developpement le 2026-08-09 : les 203 evenements Frigate ont tous `sub_label: null`. L'identite que Vyzio lit est donc toujours vide, et tout l'historique est « personne inconnue » — les profils, leurs photos et leurs liens caméra n'ont aucun effet observable. A investiguer avant tout travail sur l'identite : bibliotheque de visages vide, `face_recognition` inactif, ou visages jamais assez nets pour le seuil.
+- Trier l'historique sur le modèle *review* de Frigate (sévérité `alert` / `detection`, regroupement des objets d'un même passage), que Vyzio ignore aujourd'hui — hors périmètre d'[ADR-49](adr/0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md), qui en pose le constat. Chantier produit distinct : il change ce que l'historique montre, pas d'où il tient sa vérité.
 - Enregistrer le codec du flux par caméra (relevé à la vérification de la caméra), ce qui ouvrirait deux choses : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur Intel gen13+/Arc — écarté d'[ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) faute de ce prérequis, les presets QuickSync n'existant qu'en variantes codec-spécifiques — et signaler qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
 
 ---
@@ -53,63 +53,61 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 
 Chaque theme a un tag stable (pas d'ordre impose entre thematiques). Un theme termine disparait simplement, sans decaler les autres.
 
-### `detection-pipeline` — Une seule source de vérité sur une détection
+### `detection-pipeline` — Vyzio ne persiste plus les détections
 
 Relevé à l'usage : **une ligne d'historique sur deux pointe vers un média qui n'existe plus.** Les
-mesures, les trois causes et l'audit d'architecture qui les accompagne sont dans
-[ADR-47](adr/0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md),
-qui tranche : la base cesse d'être la mémoire autonome des détections pour devenir un index
-réconcilié sur Frigate. La rétention minimale qui en découle est
+mesures, les vérifications faites sur l'instance et la décision sont dans
+[ADR-49](adr/0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) :
+l'historique devient la liste de Frigate, enrichie à la lecture. La rétention plancher qui la
+garantit est
 [ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md).
 
-Le code est bon, il est au mauvais étage : c'est un déplacement, pas une refonte.
+Ce chantier **supprime** plus qu'il n'ajoute : `observed_events`, ses drapeaux de média, et le
+délai forfaitaire du handler MQTT.
 
 #### Ordre d'exécution
 
-1. **Remonter le port et le use case.** `IFrigateRestClient` rejoint `Core/Interfaces` ;
-   `FrigateAdapter` devient un use case d'`Application`. Prérequis de tout le reste, sans changement
-   de comportement.
+1. **Remonter le port Frigate dans `Core`**, et l'ingestion en use case d'`Application`. Prérequis
+   de tout le reste, sans changement de comportement : tant que le port vit dans `Api`, aucun use
+   case ne peut interroger Frigate.
 
-2. **Découpler ingestion et utilisation.** L'ingestion enregistre le fait et rend la main ;
-   la notification est déclenchée par ce fait, pas appelée dedans. Ce qui suit repose sur ce
-   découplage : c'est ce qui permet à la vérification du média d'avoir lieu sans bloquer l'ingestion.
+2. **Lire l'historique depuis Frigate.** Un use case de lecture : filtres caméra / label / identité /
+   période, **pagination au curseur temporel** (`page=` est inerte, mesuré), enrichissement profil et
+   nom de caméra à la lecture. L'écran cesse de lire `observed_events`.
 
-3. **Un seul foyer pour « quel média a cet événement ».** On demande, on ne croit pas. Le repli de la
-   notification devient la règle commune, et les trois politiques actuelles disparaissent.
+3. **Corriger une identité écrit dans Frigate** (`POST /api/events/{id}/sub_label`). Propagation
+   asynchrone ~5 s : l'interface affiche la correction sans attendre la relecture. Ferme au passage
+   le constat « corriger une identité n'apprend rien ».
 
-4. **La stabilisation écrit ce qu'elle découvre.** L'attente de finalisation établit déjà la vérité
-   sur le média et la jette ; elle doit la consigner. Ne couvre que les événements notifiés
-   (`person_known` / `person_unknown` par défaut, seuil, plage horaire, cooldown) — donc premier
-   filet, pas le seul.
+4. **Supprimer `observed_events`** et tout ce qui en dépend. La déduplication des notifications
+   se réancre sur l'identifiant d'événement Frigate — aujourd'hui `HasSentAsync` reçoit l'identifiant
+   de la ligne Vyzio, qui n'existera plus.
 
-5. **Réconciliation par lot à la lecture**, pour tout ce que l'étape 4 ne couvre pas : une requête
-   par page d'historique. Seule étape **rétroactive** — elle répare les lignes déjà cassées sans
-   migration.
+5. **L'ingestion ne notifie plus en ligne.** Le handler MQTT rend la main immédiatement ; le délai
+   forfaitaire de dix secondes devient une récupération de média avec reprise, portée par la
+   récupération elle-même.
 
-6. **Ne pas garder ce que Frigate jette** — après stabilisation, jamais au message `end` :
-   `Notification.EventId` n'est pas une clé étrangère, mais supprimer une ligne qu'une notification
-   vient de référencer ferait perdre son ancre à la déduplication `HasSentAsync`.
+6. **Deux images nommées, pas une URL fabriquée deux fois.** La liste télécharge aujourd'hui 123 Ko
+   de plan large pour une tuile de 56 px, quand Frigate a déjà écrit l'image recadrée sur l'objet en
+   8 Ko (`thumbnail.jpg`, 175x175). Telegram veut l'inverse, le plan large — le contexte est ce qui
+   rend la notification utile. Mesuré : `?crop=`/`?height=` sont inertes sur un événement terminé.
 
-7. **Deux images nommées, pas une URL fabriquée deux fois.** L'aperçu de liste et l'image pleine sont
-   deux besoins distincts : la liste télécharge aujourd'hui 123 Ko de plan large pour une tuile de
-   56 px, quand Frigate a déjà écrit la même image recadrée sur l'objet détecté en 8 Ko
-   (`thumbnail.jpg`, 175x175). Telegram, lui, veut le plan large — le contexte est ce qui rend la
-   notification utile. Mesuré : les paramètres `?crop=`/`?height=` sont inertes sur un événement
-   terminé, seule la route dédiée répond.
-
-8. **Rétention minimale d'un jour** sur la durée qui porte l'historique
+7. **Rétention minimale d'un jour**
    ([ADR-48](adr/0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md)) :
-   plancher posé au foyer de résolution, `KeepsAnything` et `record.enabled: false` disparaissent,
-   et l'interface refuse zéro sur cette durée avant la saisie. L'enregistrement continu reste
-   optionnel.
+   plancher au foyer de résolution, `KeepsAnything` et `record.enabled: false` disparaissent,
+   l'interface refuse zéro avant la saisie. L'enregistrement continu reste optionnel.
 
-9. **Aligner la rétention des aperçus sur celle des clips** — supprimer le 30 en dur.
+8. **Renommer le réglage** : « conservation des clips d'alerte » devient la **conservation de
+   l'historique de détection**, qui est son effet observable. Aligner au passage la rétention des
+   aperçus sur celle des clips — supprimer le 30 en dur, qui fabriquait une seconde durée invisible.
 
-10. **Dire l'expiration, côté écran seulement.** Un média expiré est une conséquence du réglage de
-    conservation, pas une panne : l'historique l'écrit (principe #4). **Cette information ne remonte
-    jamais dans le chemin de notification** — une notification part quelques secondes après la
-    détection, très loin de toute expiration, et rien de cette logique ne doit l'atteindre par effet
-    de bord.
+9. **Dire ce qui manque, côté écran seulement.** Un média expiré est une conséquence du réglage de
+   conservation, pas une panne, et Frigate injoignable n'est pas une expiration : deux causes, deux
+   phrases (principe #4). **Rien de cette logique n'atteint le chemin de notification** — une
+   notification part quelques secondes après la détection, très loin de toute expiration.
+
+10. **Documenter la profondeur de l'historique** dans [`user/`](user/) : elle vaut désormais la durée
+    de conservation, et c'est une promesse tenue là où la précédente était fausse.
 
 ---
 
