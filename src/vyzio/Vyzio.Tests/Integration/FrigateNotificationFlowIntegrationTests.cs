@@ -2,8 +2,6 @@ using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using Vyzio.Application.UseCases.Cameras;
-using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -17,7 +15,6 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;
-    private readonly DetectionEventRepository _detectionEvents;
     private readonly NotificationRepository _notifications;
     private readonly RecordingTelegramSender _telegramSender;
     private readonly StubFrigateEventReader _eventReader;
@@ -37,7 +34,6 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         _db = new VyzioDbContext(options);
         _db.Database.EnsureCreated();
 
-        _detectionEvents = new DetectionEventRepository(_db);
         _notifications = new NotificationRepository(_db);
         _telegramSender = new RecordingTelegramSender();
         _eventReader = new StubFrigateEventReader();
@@ -66,11 +62,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         _sut = new IngestFrigateEventUseCase(
             new FrigateEventContractAdapter(new FrigateLabelFilter(["person"])),
-            _detectionEvents,
             dispatcher,
             _eventReader,
-            new CameraDirectory(Substitute.For<ICameraRepository>()),
-            new DetectionProfileResolver(Substitute.For<IProfileRepository>(), Substitute.For<IProfileCameraLinkRepository>()),
             NullLogger<IngestFrigateEventUseCase>.Instance);
     }
 
@@ -81,20 +74,14 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_persists_detection_on_new_event_without_notifying()
+    public async Task ExecuteAsync_ignores_an_event_still_in_progress()
     {
         _eventReader.Identity = "Alice";
 
         var processed = await _sut.ExecuteAsync("frigate/events", Payload("frigate-ti-001", lifecycle: "new", topScore: 0.97f));
 
-        Assert.True(processed);
-
-        var detection = await _db.DetectionEvents.SingleAsync();
-        Assert.Equal("frigate-ti-001", detection.FrigateEventId);
-        Assert.Equal("Alice", detection.Identity);
-        Assert.Equal("new", detection.Lifecycle);
-
-        // No notification yet — we wait for lifecycle=end.
+        // Nothing to keep, nothing to send: only the end of an event matters (ADR-49).
+        Assert.False(processed);
         Assert.Equal(0, await _db.Notifications.CountAsync());
         Assert.Empty(_telegramSender.Messages);
     }
@@ -105,10 +92,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         _eventReader.Identity = "Alice";
         _clipProvider.Clip = new MemoryStream(new byte[] { 1, 2, 3 });
 
-        await _sut.ExecuteAsync("frigate/events", Payload("frigate-ti-002", lifecycle: "new", topScore: 0.97f, hasClip: false));
         await _sut.ExecuteAsync("frigate/events", Payload("frigate-ti-002", lifecycle: "end", topScore: 0.97f, hasClip: true));
 
-        Assert.Equal(1, await _db.DetectionEvents.CountAsync());
         Assert.Equal(1, await _db.Notifications.CountAsync());
         // Snapshot provider returns null → media group not possible → video-only fallback
         Assert.Single(_telegramSender.Videos);
@@ -117,6 +102,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         var notification = await _db.Notifications.SingleAsync();
         Assert.Equal("sent", notification.Status);
+        Assert.Equal("frigate-ti-002", notification.FrigateEventId);
+        Assert.Equal("front_door", notification.Camera);
+        Assert.Equal("person", notification.Label);
     }
 
     [Fact]
@@ -132,12 +120,11 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_ignores_filtered_labels_without_persisting_or_notifying()
+    public async Task ExecuteAsync_ignores_filtered_labels_without_notifying()
     {
-        var processed = await _sut.ExecuteAsync("frigate/events", Payload("frigate-ti-004", label: "cat", lifecycle: "new", topScore: 0.91f));
+        var processed = await _sut.ExecuteAsync("frigate/events", Payload("frigate-ti-004", label: "cat", lifecycle: "end", topScore: 0.91f));
 
         Assert.False(processed);
-        Assert.Equal(0, await _db.DetectionEvents.CountAsync());
         Assert.Equal(0, await _db.Notifications.CountAsync());
         Assert.Empty(_telegramSender.Messages);
     }

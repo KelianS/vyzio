@@ -57,50 +57,5 @@ public class VyzioDbContextTests : IDisposable
         Assert.NotEmpty(loaded.Id);
     }
 
-    [Fact]
-    public void DetectionEvent_cascade_deletes_with_profile()
-    {
-        var profile = new Profile { Name = "Bob" };
-        _db.Profiles.Add(profile);
-        _db.SaveChanges();
-
-        _db.DetectionEvents.Add(new DetectionEvent
-        {
-            FrigateEventId = "frigate-001",
-            Lifecycle = "new",
-            Camera = "front_door",
-            Label = "person",
-            ProfileId = profile.Id
-        });
-        _db.SaveChanges();
-
-        _db.Profiles.Remove(profile);
-        _db.SaveChanges();
-
-        Assert.Equal(0, _db.DetectionEvents.Count());
-    }
-
-    [Fact]
-    public void FrigateEventId_unique_index_prevents_duplicates()
-    {
-        _db.DetectionEvents.Add(new DetectionEvent
-        {
-            FrigateEventId = "dup-001",
-            Lifecycle = "new",
-            Camera = "front_door",
-            Label = "dog"
-        });
-        _db.SaveChanges();
-
-        _db.DetectionEvents.Add(new DetectionEvent
-        {
-            FrigateEventId = "dup-001",
-            Lifecycle = "update",
-            Camera = "front_door",
-            Label = "dog"
-        });
-
-        Assert.Throws<DbUpdateException>(() => _db.SaveChanges());
-    }
 
 }

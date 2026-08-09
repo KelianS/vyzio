@@ -264,7 +264,7 @@ Vyzio gère uniquement ses propres données (profils, caméras, réglages, notif
 
 | Entité | Rôle | Relations clés |
 |---|---|---|
-| `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink`, `DetectionEvent` |
+| `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink` |
 | `ProfilePhoto` | Photo de référence synchronisée vers Frigate (ADR-13) | → `Profile` |
 | `ProfileCameraLink` | Filtrage reconnaissance profil ↔ caméra (ADR-15) | → `Profile`, `Camera` |
 | `Camera` | Caméra : **une scène**, connexion, statut, privacy mode, protocoles détectés (ADR-38) | ← `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |

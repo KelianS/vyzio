@@ -28,7 +28,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IProfilePhotoRepository, ProfilePhotoRepository>();
         services.AddScoped<IProfileCameraLinkRepository, ProfileCameraLinkRepository>();
-        services.AddScoped<IDetectionEventRepository, DetectionEventRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationChannelConfigRepository, NotificationChannelConfigRepository>();
         services.AddScoped<IRecordingSettingsRepository, RecordingSettingsRepository>();
