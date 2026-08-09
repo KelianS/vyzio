@@ -2,7 +2,11 @@ import type { DetectionHistoryAction } from './DetectionHistory.Actions'
 import type { DetectionHistoryUido } from './DetectionHistory.Uido'
 
 /** Changer un filtre relit depuis le debut : un curseur ne survit pas au critere qui l'a produit. */
-const REFILTERED = { items: [], nextCursor: null, loaded: false } as const
+const REFILTERED: Pick<DetectionHistoryUido, 'items' | 'nextCursor' | 'loaded'> = {
+  items: [],
+  nextCursor: null,
+  loaded: false,
+}
 
 export function detectionHistoryReducer(
   state: DetectionHistoryUido,
