@@ -55,7 +55,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _notifications,
             _telegramSender,
             channelConfigs,
-            Substitute.For<IFrigateSnapshotProvider>(),
+            Substitute.For<IFrigateEventImageProvider>(),
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
             TimeZoneInfo.Local,

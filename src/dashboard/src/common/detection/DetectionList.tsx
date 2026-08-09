@@ -3,7 +3,7 @@ import { Play } from 'lucide-react'
 import { Button } from '../ui/button'
 import { DetectionThumbnail } from '../components/DetectionThumbnail'
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
-import { formatEventDetail, formatEventTitle, snapshotUrl } from './detectionFormatters'
+import { formatEventDetail, formatEventTitle, snapshotUrl, thumbnailUrl } from './detectionFormatters'
 
 interface DetectionListProps {
   events: DetectionEvent[]
@@ -32,9 +32,10 @@ export function DetectionList({
               type="button"
               aria-label={`Voir l’aperçu — ${formatEventTitle(event)}`}
               className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              // La tuile montre le recadrage, l'ouverture montre le plan large : deux images, pas deux tailles.
               onClick={() => onOpenMedia('image', snapshotUrl(apiBaseUrl, event.eventId))}
             >
-              <DetectionThumbnail src={snapshotUrl(apiBaseUrl, event.eventId)} />
+              <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />
             </button>
           )}
 

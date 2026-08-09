@@ -44,7 +44,7 @@ builder.Services.AddHttpClient<IFrigateIdentityWriter, FrigateIdentityWriter>(cl
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
-builder.Services.AddHttpClient<IFrigateSnapshotProvider, FrigateSnapshotProvider>(client =>
+builder.Services.AddHttpClient<IFrigateEventImageProvider, FrigateEventImageProvider>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });

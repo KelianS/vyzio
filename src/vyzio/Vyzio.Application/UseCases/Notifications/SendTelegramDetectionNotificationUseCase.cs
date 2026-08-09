@@ -14,7 +14,7 @@ public sealed class SendTelegramDetectionNotificationUseCase(
     INotificationRepository notifications,
     ITelegramNotificationSender telegramSender,
     INotificationChannelConfigRepository channelConfigs,
-    IFrigateSnapshotProvider snapshotProvider,
+    IFrigateEventImageProvider imageProvider,
     IFrigateClipProvider clipProvider,
     DetectionTelegramMessageFormatter formatter,
     TimeZoneInfo timeZone,
@@ -104,7 +104,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
                 if (clip is not null)
                 {
                     // The clip being written proves Frigate finalized the event: no window left to grant.
-                    var snapshot = await snapshotProvider.TryGetSnapshotAsync(detection.EventId, ct: ct);
+                    var snapshot = await imageProvider.TryGetImageAsync(
+                        detection.EventId, FrigateEventImage.Snapshot, ct: ct);
                     if (snapshot is not null)
                     {
                         logger.LogInformation("Sending Telegram media group for event {EventId}", detection.EventId);
@@ -139,7 +140,8 @@ public sealed class SendTelegramDetectionNotificationUseCase(
             // Photo: send snapshot when mode allows it.
             if (mediaMode is "clip_or_photo" or "photo" && enabledFields.Contains(MessageField.Snapshot))
             {
-                var snapshot = await snapshotProvider.TryGetSnapshotAsync(detection.EventId, mediaWindow, ct);
+                var snapshot = await imageProvider.TryGetImageAsync(
+                    detection.EventId, FrigateEventImage.Snapshot, mediaWindow, ct);
                 if (snapshot is not null)
                 {
                     logger.LogInformation("Sending Telegram photo for event {EventId}", detection.EventId);

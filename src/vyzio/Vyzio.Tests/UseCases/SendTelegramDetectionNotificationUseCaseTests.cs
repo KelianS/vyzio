@@ -11,7 +11,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly ITelegramNotificationSender _telegramSender = Substitute.For<ITelegramNotificationSender>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
-    private readonly IFrigateSnapshotProvider _snapshotProvider = Substitute.For<IFrigateSnapshotProvider>();
+    private readonly IFrigateEventImageProvider _imageProvider = Substitute.For<IFrigateEventImageProvider>();
     private readonly IFrigateClipProvider _clipProvider = Substitute.For<IFrigateClipProvider>();
     private readonly SendTelegramDetectionNotificationUseCase _sut;
 
@@ -33,7 +33,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
             _notifications,
             _telegramSender,
             _channelConfigs,
-            _snapshotProvider,
+            _imageProvider,
             _clipProvider,
             new DetectionTelegramMessageFormatter(),
             TimeZoneInfo.Local,
@@ -48,7 +48,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
         var snapshotStream = new MemoryStream(new byte[] { 4, 5, 6 });
         _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clipStream);
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _imageProvider.TryGetImageAsync("frigate-evt-900", FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
         var sent = await _sut.ExecuteAsync(detection);
 
@@ -72,7 +72,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var detection = CreateDetection(hasClip: true, hasSnapshot: false);
         var clipStream = new MemoryStream(new byte[] { 1, 2, 3 });
         _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clipStream);
-        _snapshotProvider.TryGetSnapshotAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        _imageProvider.TryGetImageAsync(Arg.Any<string>(), FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
 
         var sent = await _sut.ExecuteAsync(detection);
 
@@ -94,7 +94,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var detection = CreateDetection(hasClip: true, hasSnapshot: true);
         _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _imageProvider.TryGetImageAsync("frigate-evt-900", FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
         var sent = await _sut.ExecuteAsync(detection);
 
@@ -114,7 +114,7 @@ public class SendTelegramDetectionNotificationUseCaseTests
         var detection = CreateDetection(hasClip: false, hasSnapshot: true);
         _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshotStream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _snapshotProvider.TryGetSnapshotAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
+        _imageProvider.TryGetImageAsync("frigate-evt-900", FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(snapshotStream);
 
         var sent = await _sut.ExecuteAsync(detection);
 

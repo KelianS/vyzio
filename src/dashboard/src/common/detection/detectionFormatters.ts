@@ -8,8 +8,14 @@ export function carriesIdentity(event: DetectionEvent): boolean {
   return IDENTITY_LABELS.has(event.label.toLowerCase())
 }
 
+/** L'image plein cadre : ce qu'on ouvre, jamais ce qu'on affiche dans une tuile de 56 px. */
 export function snapshotUrl(apiBaseUrl: string, eventId: string): string {
   return `${apiBaseUrl}/api/detection-events/${eventId}/snapshot`
+}
+
+/** Le recadrage sur l'objet deja ecrit par Frigate : 175x175, quinze fois plus leger. */
+export function thumbnailUrl(apiBaseUrl: string, eventId: string): string {
+  return `${apiBaseUrl}/api/detection-events/${eventId}/thumbnail`
 }
 
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {

@@ -47,14 +47,13 @@ public static class DetectionEventsEndpoints
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });
 
-        // Snapshot proxy — serves JPEG from Frigate (ADR-17), avoids CORS from browser direct access
-        group.MapGet("/{id}/snapshot", async (string id, IFrigateSnapshotProvider snapshots, CancellationToken ct) =>
-        {
-            var stream = await snapshots.TryGetSnapshotAsync(id, ct: ct);
-            if (stream is null) return Results.NotFound();
+        // Image proxies — serve JPEG from Frigate (ADR-17), avoid CORS from browser direct access.
+        // Two routes because they are two images: the full frame situates, the thumbnail is the crop.
+        group.MapGet("/{id}/snapshot", (string id, IFrigateEventImageProvider images, CancellationToken ct) =>
+            StreamImageAsync(id, FrigateEventImage.Snapshot, images, ct));
 
-            return Results.Stream(stream, "image/jpeg");
-        });
+        group.MapGet("/{id}/thumbnail", (string id, IFrigateEventImageProvider images, CancellationToken ct) =>
+            StreamImageAsync(id, FrigateEventImage.Thumbnail, images, ct));
 
         group.MapPatch("/{id}/identity", async (
             string id,
@@ -67,5 +66,12 @@ public static class DetectionEventsEndpoints
         });
 
         return app;
+    }
+
+    private static async Task<IResult> StreamImageAsync(
+        string id, FrigateEventImage image, IFrigateEventImageProvider images, CancellationToken ct)
+    {
+        var stream = await images.TryGetImageAsync(id, image, ct: ct);
+        return stream is null ? Results.NotFound() : Results.Stream(stream, "image/jpeg");
     }
 }
