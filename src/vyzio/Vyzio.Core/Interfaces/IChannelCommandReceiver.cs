@@ -16,8 +16,8 @@ public interface IChannelCommandReceiver
         ChannelCredentials credentials,
         CancellationToken ct = default);
 
-    /// <summary>Waits for what is addressed to Vyzio, and returns only what the given declarations cover.</summary>
-    Task<IReadOnlyList<IncomingCommand>> ReceiveAsync(
+    /// <summary>Waits for what is addressed to Vyzio, matched against the given declarations.</summary>
+    Task<IReadOnlyList<IncomingMessage>> ReceiveAsync(
         IReadOnlyList<RemoteCommandDescriptor> commands,
         ChannelCredentials credentials,
         CancellationToken ct = default);

@@ -38,7 +38,7 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
         {
             commands = commands.Select(command => new
             {
-                command = SnakeCaseEnum.ToSnakeCase(command.Name),
+                command = command.Verb,
                 description = command.Description.Length > DescriptionLimit
                     ? command.Description[..DescriptionLimit]
                     : command.Description
@@ -52,7 +52,7 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<IReadOnlyList<IncomingCommand>> ReceiveAsync(
+    public async Task<IReadOnlyList<IncomingMessage>> ReceiveAsync(
         IReadOnlyList<RemoteCommandDescriptor> commands,
         ChannelCredentials credentials,
         CancellationToken ct = default)
@@ -71,7 +71,7 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
 
         if (!document.RootElement.TryGetProperty("result", out var updates)) return [];
 
-        var received = new List<IncomingCommand>();
+        var received = new List<IncomingMessage>();
         foreach (var update in updates.EnumerateArray())
         {
             // Acknowledged whether it is understood or not, so an unreadable message cannot block the loop.
@@ -130,8 +130,11 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
         return await Client().PostAsync(TelegramApi.Endpoint(botToken, "sendPhoto"), content, ct);
     }
 
-    /// <summary>Anything that is not a declared command is dropped here, before Vyzio ever looks at it.</summary>
-    private static IncomingCommand? Parse(JsonElement update, IReadOnlyList<RemoteCommandDescriptor> commands)
+    /// <summary>
+    /// Matches what arrived against the declarations. What was written stays here: only the fact that
+    /// this conversation said something Vyzio does not know goes further (ADR-52).
+    /// </summary>
+    private static IncomingMessage? Parse(JsonElement update, IReadOnlyList<RemoteCommandDescriptor> commands)
     {
         if (!update.TryGetProperty("message", out var message)) return null;
         if (!message.TryGetProperty("text", out var textElement)) return null;
@@ -139,27 +142,28 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
         if (!chat.TryGetProperty("id", out var chatId)) return null;
 
         var text = textElement.GetString();
-        if (string.IsNullOrWhiteSpace(text) || text[0] != '/') return null;
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        var origin = new CommandOrigin(
+            NotificationChannel.Telegram,
+            chatId.GetInt64().ToString(CultureInfo.InvariantCulture));
+
+        if (text[0] != '/') return new IncomingMessage(origin, Command: null);
 
         var tokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        // In a group Telegram appends the bot name to the command: /system_state@vyzio_bot
-        var name = tokens[0][1..].Split('@')[0];
-        if (!SnakeCaseEnum.TryFromSnakeCase<RemoteCommandName>(name, out var command)) return null;
+        // In a group Telegram appends the bot name to the command: /maison@vyzio_bot
+        var verb = tokens[0][1..].Split('@')[0];
 
-        var descriptor = commands.FirstOrDefault(candidate => candidate.Name == command);
-        if (descriptor is null) return null;
+        var descriptor = commands.FirstOrDefault(candidate => candidate.Answers(verb));
+        if (descriptor is null) return new IncomingMessage(origin, Command: null);
 
         // Telegram has no typed arguments: what follows the command fills the declared parameters in order.
         var arguments = new Dictionary<string, string>();
         for (var index = 0; index < descriptor.Parameters.Count && index + 1 < tokens.Length; index++)
             arguments[descriptor.Parameters[index].Name] = tokens[index + 1];
 
-        var origin = new CommandOrigin(
-            NotificationChannel.Telegram,
-            chatId.GetInt64().ToString(CultureInfo.InvariantCulture));
-
-        return new IncomingCommand(origin, command, arguments);
+        return new IncomingMessage(origin, descriptor.Name, arguments);
     }
 
     private HttpClient Client() => httpClientFactory.CreateClient(HttpClientName);

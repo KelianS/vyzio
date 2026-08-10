@@ -4,7 +4,9 @@ namespace Vyzio.Core.Entities;
 public enum RemoteCommandName
 {
     SystemState,
-    Pair
+    Pair,
+    Help,
+    Snapshot
 }
 
 /// <summary>The shape of a parameter, so the channel can validate it before Vyzio ever sees it (ADR-52).</summary>
@@ -35,12 +37,19 @@ public sealed record RemoteCommandParameter(
     string Description);
 
 /// <summary>Everything a channel needs to publish and route a command without knowing what it does.</summary>
+/// <param name="Verb">
+/// The word one types in the conversation. Product vocabulary, in the user's language — never the
+/// internal name, which would put jargon in front of someone who never asked for it (principe #1).
+/// </param>
 public sealed record RemoteCommandDescriptor(
     RemoteCommandName Name,
+    string Verb,
     string Description,
     CommandAuthorization Authorization,
     IReadOnlyList<RemoteCommandParameter> Parameters)
 {
-    public static RemoteCommandDescriptor Consultation(RemoteCommandName name, string description)
-        => new(name, description, CommandAuthorization.Paired, []);
+    public static RemoteCommandDescriptor Consultation(RemoteCommandName name, string verb, string description)
+        => new(name, verb, description, CommandAuthorization.Paired, []);
+
+    public bool Answers(string verb) => string.Equals(Verb, verb, StringComparison.OrdinalIgnoreCase);
 }

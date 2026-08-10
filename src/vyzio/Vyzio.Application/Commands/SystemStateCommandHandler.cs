@@ -12,6 +12,7 @@ public sealed class SystemStateCommandHandler(GetHubOverviewUseCase overview, Ti
 {
     public RemoteCommandDescriptor Descriptor { get; } = RemoteCommandDescriptor.Consultation(
         RemoteCommandName.SystemState,
+        "maison",
         "Ce qui se passe chez vous en ce moment");
 
     public async Task<CommandResult> ExecuteAsync(CommandInvocation invocation, CancellationToken ct = default)
@@ -28,7 +29,7 @@ public sealed class SystemStateCommandHandler(GetHubOverviewUseCase overview, Ti
 
         details.AddRange(home.Warnings);
 
-        return CommandResult.Text(
+        return CommandResult.List(
             home.Warnings.Count == 0 ? "🏠 Tout va bien chez vous" : "⚠️ Quelque chose demande votre attention",
             details);
     }

@@ -36,17 +36,24 @@ public sealed record CommandResult(
     public static CommandResult Text(string headline, IReadOnlyList<string> details)
         => new(new ChannelMessage(headline, details));
 
+    public static CommandResult List(string headline, IReadOnlyList<string> items)
+        => new(ChannelMessage.List(headline, items));
+
     /// <summary>An origin that has not proven itself learns nothing — not even that Vyzio is listening (ADR-50).</summary>
     public static CommandResult Silence { get; } = new(ChannelMessage.Plain(string.Empty), Silent: true);
 }
 
-/// <summary>A command as a channel handed it over, already matched against the registry (ADR-52).</summary>
-public sealed record IncomingCommand(
+/// <summary>
+/// What a conversation addressed to Vyzio, matched against the registry by the channel (ADR-52). A null
+/// command means it said something Vyzio does not know — the wording itself never leaves the adapter.
+/// </summary>
+public sealed record IncomingMessage(
     CommandOrigin Origin,
-    RemoteCommandName Command,
+    RemoteCommandName? Command,
     IReadOnlyDictionary<string, string>? Arguments = null)
 {
-    public CommandInvocation ToInvocation() => new(Command, Origin, Arguments);
+    public CommandInvocation ToInvocation()
+        => new(Command ?? throw new InvalidOperationException("No command to invoke."), Origin, Arguments);
 }
 
 /// <summary>How a received command ended. Kept even when nothing was answered (ADR-50).</summary>

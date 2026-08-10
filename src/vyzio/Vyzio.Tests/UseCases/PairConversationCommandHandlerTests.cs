@@ -14,6 +14,9 @@ public class PairConversationCommandHandlerTests
                new CommandOrigin(NotificationChannel.Telegram, conversationId),
                new Dictionary<string, string> { [PairConversationCommandHandler.CodeParameter] = code });
 
+    private PairConversationCommandHandler Sut()
+        => new(_pairings, () => new RemoteCommandRegistry([]));
+
     private void Stored(ChannelPairing? pairing)
         => _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(pairing);
 
@@ -28,7 +31,7 @@ public class PairConversationCommandHandlerTests
         };
         Stored(pairing);
 
-        var result = await new PairConversationCommandHandler(_pairings).ExecuteAsync(Pair("123456"));
+        var result = await Sut().ExecuteAsync(Pair("123456"));
 
         Assert.False(result.Silent);
         Assert.Equal("conversation-1", pairing.ConversationId);
@@ -46,7 +49,7 @@ public class PairConversationCommandHandlerTests
             CodeExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
         });
 
-        var result = await new PairConversationCommandHandler(_pairings).ExecuteAsync(Pair("999999"));
+        var result = await Sut().ExecuteAsync(Pair("999999"));
 
         Assert.True(result.Silent);
         await _pairings.DidNotReceive().UpsertAsync(Arg.Any<ChannelPairing>(), Arg.Any<CancellationToken>());
@@ -62,7 +65,7 @@ public class PairConversationCommandHandlerTests
             CodeExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1)
         });
 
-        var result = await new PairConversationCommandHandler(_pairings).ExecuteAsync(Pair("123456"));
+        var result = await Sut().ExecuteAsync(Pair("123456"));
 
         Assert.True(result.Silent);
     }
@@ -72,7 +75,7 @@ public class PairConversationCommandHandlerTests
     {
         Stored(null);
 
-        Assert.True((await new PairConversationCommandHandler(_pairings).ExecuteAsync(Pair("123456"))).Silent);
+        Assert.True((await Sut().ExecuteAsync(Pair("123456"))).Silent);
     }
 
     [Fact]
@@ -85,7 +88,7 @@ public class PairConversationCommandHandlerTests
             PairedAt = DateTimeOffset.UtcNow
         });
 
-        var result = await new PairConversationCommandHandler(_pairings).ExecuteAsync(Pair("whatever"));
+        var result = await Sut().ExecuteAsync(Pair("whatever"));
 
         Assert.False(result.Silent);
         await _pairings.DidNotReceive().UpsertAsync(Arg.Any<ChannelPairing>(), Arg.Any<CancellationToken>());
@@ -94,7 +97,7 @@ public class PairConversationCommandHandlerTests
     [Fact]
     public void Is_the_one_command_an_unpaired_conversation_may_run()
     {
-        var descriptor = new PairConversationCommandHandler(_pairings).Descriptor;
+        var descriptor = Sut().Descriptor;
 
         Assert.Equal(CommandAuthorization.Pairing, descriptor.Authorization);
         Assert.Equal(CommandParameterKind.Text, Assert.Single(descriptor.Parameters).Kind);

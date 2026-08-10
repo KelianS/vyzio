@@ -130,7 +130,7 @@ internal sealed class RemoteCommandListenerService(
 
     private async Task HandleAsync(
         IChannelCommandReceiver receiver,
-        IncomingCommand incoming,
+        IncomingMessage incoming,
         ChannelCredentials credentials,
         CancellationToken ct)
     {

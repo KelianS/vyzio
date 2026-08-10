@@ -1,3 +1,4 @@
+using Vyzio.Application.Commands;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -13,15 +14,20 @@ public sealed class HandleIncomingCommandUseCase(
     ICommandJournalRepository journal,
     ExecuteRemoteCommandUseCase execute)
 {
-    public async Task<CommandResult> ExecuteAsync(IncomingCommand incoming, CancellationToken ct = default)
+    public async Task<CommandResult> ExecuteAsync(IncomingMessage incoming, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(incoming);
 
-        var descriptor = registry.HandlerFor(incoming.Command)?.Descriptor;
-        if (descriptor is null) return CommandResult.Silence;
-
         var pairing = await pairings.GetByChannelAsync(incoming.Origin.Channel, ct);
         var isPaired = pairing?.Accepts(incoming.Origin.ConversationId) == true;
+
+        var descriptor = incoming.Command is { } command ? registry.HandlerFor(command)?.Descriptor : null;
+        if (descriptor is null)
+            // Not understood: the paired conversation is told what it may ask, a stranger still hears nothing.
+            return isPaired
+                ? new CommandResult(CommandCatalogue.Describe(
+                    registry, "Je n'ai pas compris — voici ce que vous pouvez me demander"))
+                : CommandResult.Silence;
 
         if (!isPaired && descriptor.Authorization != CommandAuthorization.Pairing)
         {
@@ -29,7 +35,7 @@ public sealed class HandleIncomingCommandUseCase(
             {
                 Channel = incoming.Origin.Channel,
                 ConversationId = incoming.Origin.ConversationId,
-                Command = incoming.Command,
+                Command = descriptor.Name,
                 Outcome = CommandOutcome.Rejected
             }, ct);
 

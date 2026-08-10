@@ -45,13 +45,14 @@ public sealed class DiscordNotificationSender(HttpClient httpClient) : INotifica
         response.EnsureSuccessStatusCode();
     }
 
-    /// <summary>Discord renders Markdown: bold headline, details on the line below.</summary>
+    /// <summary>Discord renders Markdown: bold headline, details below, laid out as asked.</summary>
     private static string Render(ChannelMessage message)
     {
         var text = $"**{Escape(message.Headline)}**";
-        if (message.Details.Count > 0)
-            text += $"\n{string.Join("  ·  ", message.Details.Select(Escape))}";
-        return text;
+        if (message.Details.Count == 0) return text;
+
+        var separator = message.Layout == ChannelMessageLayout.OnePerLine ? "\n" : "  ·  ";
+        return text + $"\n{string.Join(separator, message.Details.Select(Escape))}";
     }
 
     // A camera named "salon_*_2" would otherwise turn half the message into italics.

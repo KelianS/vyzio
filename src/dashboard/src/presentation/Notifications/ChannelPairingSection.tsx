@@ -116,7 +116,7 @@ function AwaitingConversation({
         Dans {displayName}, ouvrez la conversation qui doit commander votre installation et
         envoyez-lui&nbsp;:
       </p>
-      <p className="font-mono text-2xl tracking-widest">/pair {pairing.code}</p>
+      <p className="font-mono text-2xl tracking-widest">{pairing.instruction}</p>
       {pairing.codeExpiresAt && (
         <p className="text-sm text-muted-foreground">
           Ce code est valable jusqu’à {formatTime.format(new Date(pairing.codeExpiresAt))}. Passé ce

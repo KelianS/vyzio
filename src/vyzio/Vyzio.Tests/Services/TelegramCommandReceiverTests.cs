@@ -13,8 +13,8 @@ public class TelegramCommandReceiverTests
 
     private static readonly IReadOnlyList<RemoteCommandDescriptor> Commands =
     [
-        RemoteCommandDescriptor.Consultation(RemoteCommandName.SystemState, "Ce qui se passe chez vous"),
-        new RemoteCommandDescriptor(RemoteCommandName.Pair, "Relier cette conversation",
+        RemoteCommandDescriptor.Consultation(RemoteCommandName.SystemState, "maison", "Ce qui se passe chez vous"),
+        new RemoteCommandDescriptor(RemoteCommandName.Pair, "relier", "Relier cette conversation",
             CommandAuthorization.Pairing,
             [new RemoteCommandParameter("code", CommandParameterKind.Text, Required: true, "Le code")])
     ];
@@ -28,7 +28,7 @@ public class TelegramCommandReceiverTests
     [Fact]
     public async Task Reads_a_command_its_argument_and_the_conversation_it_came_from()
     {
-        var handler = new RecordingHandler(Updates(Message(1, 4242, "/pair 123456")));
+        var handler = new RecordingHandler(Updates(Message(1, 4242, "/relier 123456")));
 
         var received = await new TelegramCommandReceiver(handler.AsFactory())
             .ReceiveAsync(Commands, Credentials);
@@ -43,7 +43,7 @@ public class TelegramCommandReceiverTests
     [Fact]
     public async Task Reads_a_command_addressed_to_the_bot_by_name_in_a_group()
     {
-        var handler = new RecordingHandler(Updates(Message(1, 7, "/system_state@vyzio_bot")));
+        var handler = new RecordingHandler(Updates(Message(1, 7, "/maison@vyzio_bot")));
 
         var received = await new TelegramCommandReceiver(handler.AsFactory())
             .ReceiveAsync(Commands, Credentials);
@@ -52,7 +52,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Drops_ordinary_conversation_and_commands_nobody_declares()
+    public async Task Reports_ordinary_conversation_and_undeclared_commands_as_understood_by_nobody()
     {
         var handler = new RecordingHandler(Updates(
             Message(1, 7, "bonjour"),
@@ -61,7 +61,9 @@ public class TelegramCommandReceiverTests
         var received = await new TelegramCommandReceiver(handler.AsFactory())
             .ReceiveAsync(Commands, Credentials);
 
-        Assert.Empty(received);
+        // The wording stays in the adapter; only "this conversation said something unknown" travels.
+        Assert.Equal(2, received.Count);
+        Assert.All(received, message => Assert.Null(message.Command));
     }
 
     [Fact]
@@ -87,8 +89,8 @@ public class TelegramCommandReceiverTests
         await new TelegramCommandReceiver(handler.AsFactory()).PublishCommandsAsync(Commands, Credentials);
 
         Assert.Contains("setMyCommands", handler.Requests[0]);
-        Assert.Contains("\"command\":\"system_state\"", handler.Bodies[0]);
-        Assert.Contains("\"command\":\"pair\"", handler.Bodies[0]);
+        Assert.Contains("\"command\":\"maison\"", handler.Bodies[0]);
+        Assert.Contains("\"command\":\"relier\"", handler.Bodies[0]);
     }
 
     [Fact]

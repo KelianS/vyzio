@@ -9,12 +9,13 @@ internal static class TelegramApi
     public static string Endpoint(string botToken, string method)
         => $"https://api.telegram.org/bot{botToken}/{method}";
 
-    /// <summary>Telegram renders HTML: emphasis on the headline, details on the line below.</summary>
+    /// <summary>Telegram renders HTML: emphasis on the headline, details below, laid out as asked.</summary>
     public static string Html(ChannelMessage message)
     {
         var text = $"<b>{WebUtility.HtmlEncode(message.Headline)}</b>";
-        if (message.Details.Count > 0)
-            text += $"\n{string.Join("  ·  ", message.Details.Select(WebUtility.HtmlEncode))}";
-        return text;
+        if (message.Details.Count == 0) return text;
+
+        var separator = message.Layout == ChannelMessageLayout.OnePerLine ? "\n" : "  ·  ";
+        return text + $"\n{string.Join(separator, message.Details.Select(WebUtility.HtmlEncode))}";
     }
 }

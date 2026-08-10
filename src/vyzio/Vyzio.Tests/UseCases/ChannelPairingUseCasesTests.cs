@@ -1,4 +1,5 @@
 using NSubstitute;
+using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -9,6 +10,10 @@ namespace Vyzio.Tests.UseCases;
 public class ChannelPairingUseCasesTests
 {
     private readonly IChannelPairingRepository _pairings = Substitute.For<IChannelPairingRepository>();
+
+    private static IRemoteCommandRegistry Registry()
+        => new RemoteCommandRegistry([new PairConversationCommandHandler(
+            Substitute.For<IChannelPairingRepository>(), () => new RemoteCommandRegistry([]))]);
 
     private static INotificationChannelCatalog Catalog()
     {
@@ -33,12 +38,14 @@ public class ChannelPairingUseCasesTests
     [Fact]
     public async Task Starting_a_pairing_issues_a_code_that_expires()
     {
-        var dto = await new StartChannelPairingUseCase(Catalog(), _pairings)
+        var dto = await new StartChannelPairingUseCase(Catalog(), _pairings, Registry())
             .ExecuteAsync(NotificationChannel.Telegram);
 
         Assert.NotNull(dto);
         Assert.Equal("awaiting_conversation", dto.Status);
         Assert.Equal(6, dto.Code!.Length);
+        // What to type comes from the registry: the screen must never spell a command name itself.
+        Assert.Equal($"/relier {dto.Code}", dto.Instruction);
         Assert.True(dto.CodeExpiresAt > DateTimeOffset.UtcNow);
         await _pairings.Received(1).UpsertAsync(Arg.Any<ChannelPairing>(), Arg.Any<CancellationToken>());
     }
@@ -54,7 +61,7 @@ public class ChannelPairingUseCasesTests
         };
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(existing);
 
-        await new StartChannelPairingUseCase(Catalog(), _pairings).ExecuteAsync(NotificationChannel.Telegram);
+        await new StartChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Telegram);
 
         Assert.Null(existing.ConversationId);
         Assert.Null(existing.PairedAt);
@@ -63,8 +70,8 @@ public class ChannelPairingUseCasesTests
     [Fact]
     public async Task A_channel_that_cannot_listen_has_no_pairing_to_offer()
     {
-        Assert.Null(await new StartChannelPairingUseCase(Catalog(), _pairings).ExecuteAsync(NotificationChannel.Discord));
-        Assert.Null(await new GetChannelPairingUseCase(Catalog(), _pairings).ExecuteAsync(NotificationChannel.Discord));
+        Assert.Null(await new StartChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Discord));
+        Assert.Null(await new GetChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Discord));
     }
 
     [Fact]
@@ -73,7 +80,7 @@ public class ChannelPairingUseCasesTests
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>())
                  .Returns((ChannelPairing?)null);
 
-        var dto = await new GetChannelPairingUseCase(Catalog(), _pairings).ExecuteAsync(NotificationChannel.Telegram);
+        var dto = await new GetChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Telegram);
 
         Assert.Equal("not_paired", dto!.Status);
         Assert.Null(dto.Code);
@@ -90,7 +97,7 @@ public class ChannelPairingUseCasesTests
                 PairedAt = DateTimeOffset.UtcNow
             });
 
-        var dto = await new GetChannelPairingUseCase(Catalog(), _pairings).ExecuteAsync(NotificationChannel.Telegram);
+        var dto = await new GetChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Telegram);
 
         Assert.Equal("paired", dto!.Status);
         Assert.Null(dto.Code);

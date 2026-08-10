@@ -92,7 +92,13 @@ public static class ServiceCollectionExtensions
 
         // Remote commands — one registration per command, nothing else to edit (ADR-50)
         services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();
-        services.AddScoped<IRemoteCommandHandler, Commands.PairConversationCommandHandler>();
+        services.AddScoped<IRemoteCommandHandler, Commands.SnapshotCommandHandler>();
+        // Resolved on execution, not on construction: these two read the registry they are part of.
+        services.AddScoped<IRemoteCommandHandler>(sp => new Commands.PairConversationCommandHandler(
+            sp.GetRequiredService<IChannelPairingRepository>(),
+            sp.GetRequiredService<IRemoteCommandRegistry>));
+        services.AddScoped<IRemoteCommandHandler>(sp => new Commands.HelpCommandHandler(
+            sp.GetRequiredService<IRemoteCommandRegistry>));
         services.AddScoped<IRemoteCommandRegistry, Commands.RemoteCommandRegistry>();
         services.AddScoped<ExecuteRemoteCommandUseCase>();
         services.AddScoped<HandleIncomingCommandUseCase>();

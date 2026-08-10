@@ -12,9 +12,9 @@ public class HandleIncomingCommandUseCaseTests
     private readonly ICommandJournalRepository _journal = Substitute.For<ICommandJournalRepository>();
     private readonly IChannelPairingRepository _pairings = Substitute.For<IChannelPairingRepository>();
     private readonly IRemoteCommandHandler _systemState = Handler(
-        RemoteCommandDescriptor.Consultation(RemoteCommandName.SystemState, "Ce qui se passe chez vous"));
+        RemoteCommandDescriptor.Consultation(RemoteCommandName.SystemState, "maison", "Ce qui se passe chez vous"));
 
-    private static IncomingCommand From(string conversationId, RemoteCommandName command = RemoteCommandName.SystemState)
+    private static IncomingMessage From(string conversationId, RemoteCommandName command = RemoteCommandName.SystemState)
         => new(new CommandOrigin(NotificationChannel.Telegram, conversationId), command);
 
     private static IRemoteCommandHandler Handler(RemoteCommandDescriptor descriptor)
@@ -93,7 +93,7 @@ public class HandleIncomingCommandUseCaseTests
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>())
                  .Returns((ChannelPairing?)null);
         var pair = Handler(new RemoteCommandDescriptor(
-            RemoteCommandName.Pair, "Relier cette conversation", CommandAuthorization.Pairing, []));
+            RemoteCommandName.Pair, "relier", "Relier cette conversation", CommandAuthorization.Pairing, []));
 
         await Build(_systemState, pair).ExecuteAsync(From("conversation-1", RemoteCommandName.Pair));
 
@@ -101,11 +101,28 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Ignores_a_command_no_handler_declares_without_journaling_anything()
+    public async Task Tells_the_paired_conversation_what_it_may_ask_when_it_says_something_else()
     {
         Paired("conversation-1");
 
-        Assert.True((await Build().ExecuteAsync(From("conversation-1"))).Silent);
+        var result = await Build(_systemState).ExecuteAsync(
+            new IncomingMessage(new CommandOrigin(NotificationChannel.Telegram, "conversation-1"), Command: null));
+
+        Assert.False(result.Silent);
+        Assert.Contains("/maison", Assert.Single(result.Message.Details));
+        // Not a command: there is nothing to journal, and a chatty conversation must not fill the journal.
+        Assert.Empty(_journal.ReceivedCalls());
+    }
+
+    [Fact]
+    public async Task Says_nothing_to_a_stranger_who_says_something_it_does_not_understand()
+    {
+        Paired("conversation-1");
+
+        var result = await Build(_systemState).ExecuteAsync(
+            new IncomingMessage(new CommandOrigin(NotificationChannel.Telegram, "conversation-999"), Command: null));
+
+        Assert.True(result.Silent);
         Assert.Empty(_journal.ReceivedCalls());
     }
 }

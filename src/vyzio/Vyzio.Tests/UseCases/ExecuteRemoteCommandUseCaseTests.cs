@@ -22,7 +22,7 @@ public class ExecuteRemoteCommandUseCaseTests
     {
         var handler = Substitute.For<IRemoteCommandHandler>();
         handler.Descriptor.Returns(RemoteCommandDescriptor.Consultation(
-            RemoteCommandName.SystemState, "Ce qui se passe chez vous"));
+            RemoteCommandName.SystemState, "maison", "Ce qui se passe chez vous"));
         handler.ExecuteAsync(Arg.Any<CommandInvocation>(), Arg.Any<CancellationToken>())
                .Returns(_ => execute());
         return handler;

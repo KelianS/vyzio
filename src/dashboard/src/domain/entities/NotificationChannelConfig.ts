@@ -48,6 +48,8 @@ export interface ChannelPairing {
   channel: NotificationChannelName
   status: ChannelPairingStatus
   code: string | null
+  /** Exactly what to type in the conversation; the screen never composes a command name itself. */
+  instruction: string | null
   codeExpiresAt: string | null
   pairedAt: string | null
 }

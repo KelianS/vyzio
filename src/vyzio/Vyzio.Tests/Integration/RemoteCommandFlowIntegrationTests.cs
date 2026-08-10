@@ -32,6 +32,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     private readonly CommandJournalRepository _journal;
     private readonly FakeTelegram _telegram = new();
     private readonly TelegramCommandReceiver _receiver;
+    private readonly RemoteCommandRegistry _registry;
     private readonly HandleIncomingCommandUseCase _sut;
 
     private static readonly ChannelCredentials Credentials = new(new Dictionary<ChannelCredential, string>
@@ -54,10 +55,12 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
         _journal = new CommandJournalRepository(_db);
         _receiver = new TelegramCommandReceiver(_telegram);
 
-        var registry = new RemoteCommandRegistry(
+        RemoteCommandRegistry? registry = null;
+        _registry = registry = new RemoteCommandRegistry(
         [
             new SystemStateCommandHandler(HubOverview(), TimeZoneInfo.Utc),
-            new PairConversationCommandHandler(_pairings)
+            new PairConversationCommandHandler(_pairings, () => registry!),
+            new HelpCommandHandler(() => registry!)
         ]);
 
         _sut = new HandleIncomingCommandUseCase(
@@ -106,16 +109,10 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     /// <summary>One turn of the loop: what the conversation typed goes in, what it reads comes back.</summary>
     private async Task<IReadOnlyList<string>> SayAsync(string chatId, string text)
     {
-        var commands = new List<RemoteCommandDescriptor>
-        {
-            RemoteCommandDescriptor.Consultation(RemoteCommandName.SystemState, "Ce qui se passe chez vous"),
-            new PairConversationCommandHandler(_pairings).Descriptor
-        };
-
         _telegram.Incoming(chatId, text);
         _telegram.Answers.Clear();
 
-        foreach (var incoming in await _receiver.ReceiveAsync(commands, Credentials))
+        foreach (var incoming in await _receiver.ReceiveAsync(_registry.Descriptors, Credentials))
         {
             var result = await _sut.ExecuteAsync(incoming);
             await _receiver.RespondAsync(incoming.Origin, result, Credentials);
@@ -127,7 +124,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     private async Task<string> StartPairingAsync()
     {
         var catalog = new NotificationChannelCatalog([Sender()]);
-        var dto = await new StartChannelPairingUseCase(catalog, _pairings)
+        var dto = await new StartChannelPairingUseCase(catalog, _pairings, _registry)
             .ExecuteAsync(NotificationChannel.Telegram);
         return dto!.Code!;
     }
@@ -149,13 +146,13 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     {
         var code = await StartPairingAsync();
 
-        Assert.Single(await SayAsync(OwnerChat, $"/pair {code}"));
+        Assert.Single(await SayAsync(OwnerChat, $"/relier {code}"));
 
         // What the answer says is the handler's business; here, that it reaches that conversation is.
-        var answered = await SayAsync(OwnerChat, "/system_state");
+        var answered = await SayAsync(OwnerChat, "/maison");
         Assert.Contains($"chat_id={OwnerChat}", Assert.Single(answered));
 
-        Assert.Empty(await SayAsync(StrangerChat, "/system_state"));
+        Assert.Empty(await SayAsync(StrangerChat, "/maison"));
 
         var entries = await _journal.GetRecentAsync(10);
         Assert.Equal(CommandOutcome.Rejected, entries[0].Outcome);
@@ -167,19 +164,31 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     {
         await StartPairingAsync();
 
-        Assert.Empty(await SayAsync(StrangerChat, "/pair 000000"));
+        Assert.Empty(await SayAsync(StrangerChat, "/relier 000000"));
         Assert.Null((await _pairings.GetByChannelAsync(NotificationChannel.Telegram))!.ConversationId);
+    }
+
+    [Fact]
+    public async Task An_ordinary_message_is_answered_with_the_catalogue_once_paired_and_never_before()
+    {
+        var code = await StartPairingAsync();
+
+        Assert.Empty(await SayAsync(OwnerChat, "bonjour"));
+
+        await SayAsync(OwnerChat, $"/relier {code}");
+        // The body is url-encoded on the wire; the verb is what matters, not the slash before it.
+        Assert.Contains("maison", Assert.Single(await SayAsync(OwnerChat, "bonjour")));
     }
 
     [Fact]
     public async Task Revoking_the_pairing_puts_the_conversation_back_among_the_strangers()
     {
         var code = await StartPairingAsync();
-        await SayAsync(OwnerChat, $"/pair {code}");
+        await SayAsync(OwnerChat, $"/relier {code}");
 
         await new RevokeChannelPairingUseCase(_pairings).ExecuteAsync(NotificationChannel.Telegram);
 
-        Assert.Empty(await SayAsync(OwnerChat, "/system_state"));
+        Assert.Empty(await SayAsync(OwnerChat, "/maison"));
     }
 
     public void Dispose()
