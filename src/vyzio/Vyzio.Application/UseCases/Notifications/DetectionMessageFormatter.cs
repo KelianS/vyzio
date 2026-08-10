@@ -10,7 +10,7 @@ public sealed class DetectionMessageFormatter(TimeZoneInfo timeZone)
 {
     public DetectionMessageFormatter() : this(TimeZoneInfo.Local) { }
 
-    public NotificationMessage Format(FrigateDetection detection, IReadOnlySet<MessageField>? enabledFields = null)
+    public ChannelMessage Format(FrigateDetection detection, IReadOnlySet<MessageField>? enabledFields = null)
     {
         ArgumentNullException.ThrowIfNull(detection);
         enabledFields ??= MessageFields.All;
@@ -32,7 +32,7 @@ public sealed class DetectionMessageFormatter(TimeZoneInfo timeZone)
         if (enabledFields.Contains(MessageField.Confidence) && detection.Confidence.HasValue)
             details.Add($"{(int)Math.Round(detection.Confidence.Value * 100)} %");
 
-        return new NotificationMessage($"{emoji} {subject}", details);
+        return new ChannelMessage($"{emoji} {subject}", details);
     }
 
     private static string LabelEmoji(string label) => label.ToLowerInvariant() switch

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.Commands;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Hub;
@@ -7,6 +8,7 @@ using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Application.UseCases.Profiles;
 using Vyzio.Application.UseCases.Monitoring;
 using Vyzio.Application.UseCases.Settings;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.DependencyInjection;
 
@@ -87,6 +89,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
         services.AddScoped<TestNotificationChannelUseCase>();
         services.AddScoped<GetNotificationLogUseCase>();
+
+        // Remote commands — one registration per command, nothing else to edit (ADR-50)
+        services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();
+        services.AddScoped<IRemoteCommandRegistry, Commands.RemoteCommandRegistry>();
+        services.AddScoped<ExecuteRemoteCommandUseCase>();
 
         // System
         services.AddScoped<GetSystemStatsUseCase>();

@@ -157,7 +157,7 @@ public sealed class TestNotificationChannelUseCase(
         try
         {
             await sender.SendAsync(
-                new OutgoingNotification(NotificationMessage.Plain(
+                new OutgoingNotification(ChannelMessage.Plain(
                     "Test Vyzio — votre canal de notification est operationnel.")),
                 config.Credentials,
                 ct);

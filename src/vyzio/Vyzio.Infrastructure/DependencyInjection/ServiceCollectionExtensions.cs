@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationChannelConfigRepository, NotificationChannelConfigRepository>();
         services.AddScoped<IRecordingSettingsRepository, RecordingSettingsRepository>();
+        services.AddScoped<ICommandJournalRepository, CommandJournalRepository>();
         services.AddScoped<ICameraDiscoveryService, AssistedCameraDiscoveryService>();
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();

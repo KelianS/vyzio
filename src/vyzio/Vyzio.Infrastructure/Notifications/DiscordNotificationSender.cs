@@ -45,7 +45,7 @@ public sealed class DiscordNotificationSender(HttpClient httpClient) : INotifica
     }
 
     /// <summary>Discord renders Markdown: bold headline, details on the line below.</summary>
-    private static string Render(NotificationMessage message)
+    private static string Render(ChannelMessage message)
     {
         var text = $"**{Escape(message.Headline)}**";
         if (message.Details.Count > 0)

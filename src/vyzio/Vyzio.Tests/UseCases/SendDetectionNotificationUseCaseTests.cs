@@ -351,7 +351,7 @@ public class DetectionMessageFormatterTests
             HasClip: false,
             HasSnapshot: true);
 
-    private static string Flatten(NotificationMessage message)
+    private static string Flatten(ChannelMessage message)
         => $"{message.Headline} {string.Join(" ", message.Details)}";
 
     [Fact]

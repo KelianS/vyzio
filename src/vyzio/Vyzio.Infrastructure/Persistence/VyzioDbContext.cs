@@ -19,6 +19,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<NotificationChannelConfig> NotificationChannelConfigs => Set<NotificationChannelConfig>();
     public DbSet<RecordingSettings> RecordingSettings => Set<RecordingSettings>();
+    public DbSet<CommandJournal> CommandJournal => Set<CommandJournal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -150,6 +151,20 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             // The cooldown looks up the last send for a camera/label pair, now held by the journal itself (ADR-49).
             notification.HasIndex(n => new { n.Channel, n.Camera, n.Label, n.SentAt })
                         .HasDatabaseName("idx_notifications_cooldown");
+        });
+
+        modelBuilder.Entity<CommandJournal>(entry =>
+        {
+            entry.Property(e => e.Channel).HasConversion<SnakeCaseEnumConverter<NotificationChannel>>();
+            entry.Property(e => e.Command).HasConversion<SnakeCaseEnumConverter<RemoteCommandName>>();
+            entry.Property(e => e.Outcome).HasConversion<SnakeCaseEnumConverter<CommandOutcome>>();
+
+            // The journal is read newest first, and by conversation when a pairing is under suspicion (ADR-50).
+            entry.HasIndex(e => e.ReceivedAt)
+                 .HasDatabaseName("idx_command_journal_received");
+
+            entry.HasIndex(e => new { e.Channel, e.ConversationId, e.ReceivedAt })
+                 .HasDatabaseName("idx_command_journal_origin");
         });
     }
 

@@ -40,7 +40,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
     }
 
     /// <summary>Telegram renders HTML: emphasis on the headline, details on the line below.</summary>
-    private static string Render(NotificationMessage message)
+    private static string Render(ChannelMessage message)
     {
         var text = $"<b>{WebUtility.HtmlEncode(message.Headline)}</b>";
         if (message.Details.Count > 0)

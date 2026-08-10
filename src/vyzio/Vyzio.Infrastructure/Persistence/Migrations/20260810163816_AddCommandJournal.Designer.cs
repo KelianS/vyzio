@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vyzio.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    partial class VyzioDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260810163816_AddCommandJournal")]
+    partial class AddCommandJournal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
