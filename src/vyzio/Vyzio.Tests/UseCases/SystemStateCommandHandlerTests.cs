@@ -35,7 +35,7 @@ public class SystemStateCommandHandlerTests
             NotificationChannel.Telegram,
             "Telegram",
             new ChannelCapabilities(true, true, true, false, 1024),
-            [new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true)]));
+            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true)])));
 
         var overview = new GetHubOverviewUseCase(
             new GetRecentDetectionEventsUseCase(

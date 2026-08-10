@@ -31,7 +31,7 @@ public class GetHubOverviewUseCaseTests
             NotificationChannel.Telegram,
             "Telegram",
             new ChannelCapabilities(true, true, true, false, 1024),
-            [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]));
+            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)])));
         return new NotificationChannelCatalog([sender]);
     }
 

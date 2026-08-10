@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text.Json;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -12,8 +11,11 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
         "Telegram",
         // Caption limit is 1024 characters; a longer text is silently cut by Telegram.
         new ChannelCapabilities(Photo: true, Video: true, GroupedMedia: true, Buttons: true, UsefulTextLength: 1024),
-        [new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true),
-         new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: false)]);
+        new ChannelTransport(
+            [new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true),
+             new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: false)]),
+        // Listening costs nothing more than sending here: the same bot token opens both directions (ADR-52).
+        new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true)]));
 
     public async Task SendAsync(OutgoingNotification notification, ChannelCredentials credentials, CancellationToken ct = default)
     {
@@ -25,7 +27,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
         var chatId = credentials[ChannelCredential.ChatId]
             ?? throw new InvalidOperationException("Telegram chat id missing.");
 
-        var caption = Render(notification.Message);
+        var caption = TelegramApi.Html(notification.Message);
 
         var response = (notification.Photo, notification.Video) switch
         {
@@ -39,15 +41,6 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
             response.EnsureSuccessStatusCode();
     }
 
-    /// <summary>Telegram renders HTML: emphasis on the headline, details on the line below.</summary>
-    private static string Render(ChannelMessage message)
-    {
-        var text = $"<b>{WebUtility.HtmlEncode(message.Headline)}</b>";
-        if (message.Details.Count > 0)
-            text += $"\n{string.Join("  ·  ", message.Details.Select(WebUtility.HtmlEncode))}";
-        return text;
-    }
-
     private async Task<HttpResponseMessage> SendTextAsync(string text, string botToken, string chatId, CancellationToken ct)
     {
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -57,7 +50,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
             ["parse_mode"] = "HTML"
         });
 
-        return await httpClient.PostAsync(Endpoint(botToken, "sendMessage"), content, ct);
+        return await httpClient.PostAsync(TelegramApi.Endpoint(botToken, "sendMessage"), content, ct);
     }
 
     private async Task<HttpResponseMessage> SendPhotoAsync(Stream photo, string caption, string botToken, string chatId, CancellationToken ct)
@@ -70,7 +63,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
             { new StreamContent(photo), "photo", "snapshot.jpg" }
         };
 
-        return await httpClient.PostAsync(Endpoint(botToken, "sendPhoto"), content, ct);
+        return await httpClient.PostAsync(TelegramApi.Endpoint(botToken, "sendPhoto"), content, ct);
     }
 
     private async Task<HttpResponseMessage> SendVideoAsync(Stream video, string caption, string botToken, string chatId, CancellationToken ct)
@@ -83,7 +76,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
             { new StreamContent(video), "video", "clip.mp4" }
         };
 
-        return await httpClient.PostAsync(Endpoint(botToken, "sendVideo"), content, ct);
+        return await httpClient.PostAsync(TelegramApi.Endpoint(botToken, "sendVideo"), content, ct);
     }
 
     private async Task<HttpResponseMessage> SendMediaGroupAsync(Stream photo, Stream video, string caption, string botToken, string chatId, CancellationToken ct)
@@ -102,9 +95,6 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
             { new StreamContent(video), "video", "clip.mp4" }
         };
 
-        return await httpClient.PostAsync(Endpoint(botToken, "sendMediaGroup"), content, ct);
+        return await httpClient.PostAsync(TelegramApi.Endpoint(botToken, "sendMediaGroup"), content, ct);
     }
-
-    private static string Endpoint(string botToken, string method)
-        => $"https://api.telegram.org/bot{botToken}/{method}";
 }

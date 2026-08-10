@@ -37,6 +37,19 @@ export interface NotificationChannelSummary {
   displayName: string
   isConfigured: boolean
   isEnabled: boolean
+  /** A channel that cannot receive stays an alert channel; the screen says so before activation (ADR-52). */
+  acceptsCommands: boolean
+}
+
+export type ChannelPairingStatus = 'not_paired' | 'awaiting_conversation' | 'expired' | 'paired'
+
+/** Which conversation may command Vyzio on a channel — never the conversation itself, only its state. */
+export interface ChannelPairing {
+  channel: NotificationChannelName
+  status: ChannelPairingStatus
+  code: string | null
+  codeExpiresAt: string | null
+  pairedAt: string | null
 }
 
 export interface NotificationChannelConfig {
@@ -46,6 +59,7 @@ export interface NotificationChannelConfig {
   isConfigured: boolean
   credentials: ChannelCredential[]
   capabilities: ChannelCapabilities
+  acceptsCommands: boolean
   minimumConfidence: number
   allowedLabels: string[]
   activeFromHour: number | null

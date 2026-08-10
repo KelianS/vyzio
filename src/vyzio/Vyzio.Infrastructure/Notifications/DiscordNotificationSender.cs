@@ -16,7 +16,8 @@ public sealed class DiscordNotificationSender(HttpClient httpClient) : INotifica
         "Discord",
         // A webhook message carries 2000 characters and several files, but no interactive component.
         new ChannelCapabilities(Photo: true, Video: true, GroupedMedia: true, Buttons: false, UsefulTextLength: 2000),
-        [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]);
+        // A webhook is a write-only address: no route back, hence no inbound transport until the bot lands (ADR-52).
+        new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]));
 
     public async Task SendAsync(OutgoingNotification notification, ChannelCredentials credentials, CancellationToken ct = default)
     {

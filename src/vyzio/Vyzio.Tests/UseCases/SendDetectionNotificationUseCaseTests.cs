@@ -48,9 +48,9 @@ public class SendDetectionNotificationUseCaseTests
             channel.ToString(),
             new ChannelCapabilities(photo, video, GroupedMedia: true, Buttons: false, UsefulTextLength: 1024),
             channel == NotificationChannel.Telegram
-                ? [new ChannelCredentialSpec(ChannelCredential.BotToken, true),
-                   new ChannelCredentialSpec(ChannelCredential.ChatId, false)]
-                : [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, true)]));
+                ? new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.BotToken, true),
+                                        new ChannelCredentialSpec(ChannelCredential.ChatId, false)])
+                : new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, true)])));
         return sender;
     }
 

@@ -20,6 +20,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<NotificationChannelConfig> NotificationChannelConfigs => Set<NotificationChannelConfig>();
     public DbSet<RecordingSettings> RecordingSettings => Set<RecordingSettings>();
     public DbSet<CommandJournal> CommandJournal => Set<CommandJournal>();
+    public DbSet<ChannelPairing> ChannelPairings => Set<ChannelPairing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -165,6 +166,16 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             entry.HasIndex(e => new { e.Channel, e.ConversationId, e.ReceivedAt })
                  .HasDatabaseName("idx_command_journal_origin");
+        });
+
+        modelBuilder.Entity<ChannelPairing>(pairing =>
+        {
+            pairing.Property(p => p.Channel).HasConversion<SnakeCaseEnumConverter<NotificationChannel>>();
+
+            // One paired conversation per channel, enforced by the database rather than by good intentions (ADR-50).
+            pairing.HasIndex(p => p.Channel)
+                   .IsUnique()
+                   .HasDatabaseName("idx_channel_pairings_channel");
         });
     }
 

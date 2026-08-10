@@ -26,7 +26,8 @@ public sealed class ListNotificationChannelsUseCase(
                     Channel: SnakeCaseEnum.ToSnakeCase(descriptor.Channel),
                     DisplayName: descriptor.DisplayName,
                     IsConfigured: descriptor.IsSatisfiedBy(credentials),
-                    IsEnabled: config?.IsEnabled ?? false);
+                    IsEnabled: config?.IsEnabled ?? false,
+                    AcceptsCommands: descriptor.AcceptsCommands);
             })
         ];
     }

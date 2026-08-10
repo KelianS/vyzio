@@ -20,6 +20,7 @@ import {
   type NotificationChannelConfig,
 } from '../../domain/entities/NotificationChannelConfig'
 import { NotificationLog } from './NotificationLog'
+import { ChannelPairingSection } from './ChannelPairingSection'
 import { ChannelSetupSteps } from './ChannelSetupSteps'
 import { channelSetupLede } from './channelSetup'
 import {
@@ -345,6 +346,15 @@ function ChannelForm({
           <SettingsSection title="Contenu du message">
             <SettingsList settings={message} />
           </SettingsSection>
+
+          {config.acceptsCommands && (
+            <SettingsSection
+              title="Commander depuis la conversation"
+              lede="Reliez une conversation à votre installation pour lui demander, depuis votre téléphone, ce qui se passe chez vous."
+            >
+              <ChannelPairingSection channel={config.channel} displayName={config.displayName} />
+            </SettingsSection>
+          )}
 
           <SettingsSection title="Derniers envois">
             <NotificationLog channel={config.channel} />

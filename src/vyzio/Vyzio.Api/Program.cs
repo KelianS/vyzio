@@ -66,6 +66,9 @@ builder.Services.AddHttpClient<DiscordNotificationSender>();
 builder.Services.AddTransient<INotificationChannelSender>(sp => sp.GetRequiredService<TelegramNotificationSender>());
 builder.Services.AddTransient<INotificationChannelSender>(sp => sp.GetRequiredService<DiscordNotificationSender>());
 builder.Services.AddScoped<INotificationChannelCatalog, NotificationChannelCatalog>();
+// Singleton: the receiver carries the acknowledged position of the channel across polls (ADR-52).
+builder.Services.AddSingleton<IChannelCommandReceiver, TelegramCommandReceiver>();
+builder.Services.AddSingleton<IChannelCommandReceiverCatalog, ChannelCommandReceiverCatalog>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();

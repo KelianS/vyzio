@@ -27,7 +27,12 @@ public sealed class ExecuteRemoteCommandUseCase(
         try
         {
             var result = await handler.ExecuteAsync(invocation, ct);
-            await JournalAsync(invocation, CommandOutcome.Succeeded, error: null, ct);
+            // Answering nothing is a refusal, and a refusal is exactly what the journal exists to keep (ADR-50).
+            await JournalAsync(
+                invocation,
+                result.Silent ? CommandOutcome.Rejected : CommandOutcome.Succeeded,
+                error: null,
+                ct);
             return result;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
