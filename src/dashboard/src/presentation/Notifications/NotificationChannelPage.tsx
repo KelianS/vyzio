@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
@@ -12,22 +14,22 @@ import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { Button } from '../../common/ui/button'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
-import type {
-  MediaMode,
-  NotificationChannelConfig,
+import {
+  parseNotificationChannelName,
+  type MediaMode,
+  type NotificationChannelConfig,
 } from '../../domain/entities/NotificationChannelConfig'
 import { NotificationLog } from './NotificationLog'
-import { TelegramSetupSteps } from './TelegramSetupSteps'
+import { ChannelSetupSteps } from './ChannelSetupSteps'
+import { channelSetupLede } from './channelSetup'
 import {
+  CREDENTIAL_COPY,
   DEFAULT_NOTIFICATION_VALUES,
   NOTIFICATION_DRAFT_LABELS,
   toNotificationValues,
   toSaveRequest,
   type NotificationValues,
 } from './notificationSettings'
-
-/** Only channel for now — a channel list for one item would be overkill. */
-const CHANNEL = 'telegram'
 
 const MEDIA_MODE_OPTIONS: readonly { value: MediaMode; label: string }[] = [
   { value: 'clip_or_photo', label: 'Photo et vidéo' },
@@ -48,39 +50,65 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
   label: `${String(hour).padStart(2, '0')}:00`,
 }))
 
-export function NotificationsPage() {
+/** Second level of the Notifications rubric: one channel, whichever it is (ADR-40, ADR-50). */
+export function NotificationChannelPage() {
+  const { channel: slug } = useParams()
+  const channel = parseNotificationChannelName(slug)
   const { notifications: container } = useAppContainer()
 
-  const config = useAsync(() => container.getNotificationChannelConfig.execute(CHANNEL), [])
+  const config = useAsync(
+    async () => (channel ? container.getNotificationChannelConfig.execute(channel) : null),
+    [channel],
+  )
   const labels = useAsync(() => container.getNotificationLabels.execute(), [])
 
-  if (config.loading || labels.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (!channel || (!config.loading && !config.data)) {
+    return (
+      // Cette route annonce porter son propre en-tete : sans canal a nommer,
+      // c'est a l'echec de le faire, sinon la page resterait anonyme.
+      <SettingsPage>
+        <h1 className="font-serif text-3xl">Canal introuvable</h1>
+        <Link
+          to="/settings/notifications"
+          className="mt-3 inline-block underline underline-offset-2"
+        >
+          Revenir aux notifications
+        </Link>
+      </SettingsPage>
+    )
+  }
+
+  if (config.loading || labels.loading || !config.data) {
+    return <SettingsPage>Chargement…</SettingsPage>
+  }
 
   return (
-    <NotificationsForm
-      config={config.data ?? null}
+    <ChannelForm
+      key={channel}
+      config={config.data}
       labels={labels.data ?? []}
       reload={config.reload}
     />
   )
 }
 
-function NotificationsForm({
+function ChannelForm({
   config,
   labels,
   reload,
 }: {
-  config: NotificationChannelConfig | null
+  config: NotificationChannelConfig
   labels: DetectionLabel[]
   reload: () => void
 }) {
   const { notifications: container } = useAppContainer()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [confirmEnable, setConfirmEnable] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   const draft = useSettingsDraft<NotificationValues>({
-    saved: config ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
+    saved: config.isConfigured ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
     labels: NOTIFICATION_DRAFT_LABELS,
   })
 
@@ -88,7 +116,10 @@ function NotificationsForm({
 
   const saving = useAsyncAction(
     async () =>
-      container.saveNotificationChannelConfig.execute(CHANNEL, toSaveRequest(draft.values)),
+      container.saveNotificationChannelConfig.execute(
+        config.channel,
+        toSaveRequest(draft.values, config.credentials),
+      ),
     {
       onSuccess: () => {
         draft.accept()
@@ -98,70 +129,70 @@ function NotificationsForm({
     },
   )
 
-  const testing = useAsyncAction(async () => container.testNotificationChannel.execute(CHANNEL), {
-    onSuccess: (result) => {
-      toast(
-        result?.success
-          ? 'Message envoyé : le canal fonctionne.'
-          : `Échec de l’envoi — ${result?.errorMessage ?? 'raison inconnue'}.`,
-        result?.success ? 'success' : 'error',
-      )
-      reload()
+  const testing = useAsyncAction(
+    async () => container.testNotificationChannel.execute(config.channel),
+    {
+      onSuccess: (result) => {
+        toast(
+          result?.success
+            ? 'Message envoyé : le canal fonctionne.'
+            : `Échec de l’envoi — ${result?.errorMessage ?? 'raison inconnue'}.`,
+          result?.success ? 'success' : 'error',
+        )
+        reload()
+      },
     },
-  })
+  )
 
   const removing = useAsyncAction(
-    async () => container.deleteNotificationChannel.execute(CHANNEL),
+    async () => container.deleteNotificationChannel.execute(config.channel),
     {
       onSuccess: () => {
         toast('Canal supprimé.', 'info')
         draft.discard()
-        reload()
+        void navigate('/settings/notifications')
       },
     },
   )
 
   // Enabling ships images off the local network: asked once, at save, never on the toggle itself.
   function save() {
-    if (draft.values.enabled && !config?.isEnabled) {
+    if (draft.values.enabled && !config.isEnabled) {
       setConfirmEnable(true)
       return
     }
     void saving.run()
   }
 
-  const channel: SettingDeclaration[] = [
+  const channelSettings: SettingDeclaration[] = [
     {
-      id: 'telegram-enabled',
-      label: 'Alertes Telegram',
+      id: 'channel-enabled',
+      label: `Alertes ${config.displayName}`,
       nature: { kind: 'toggle' },
-      consequence:
-        'Photos, vidéos et noms de caméras transitent par les serveurs de Telegram : ces images quittent votre réseau.',
+      consequence: `Photos, vidéos et noms de caméras transitent par les serveurs de ${config.displayName} : ces images quittent votre réseau.`,
       value: draft.values.enabled,
       onChange: (value) => draft.set('enabled', value as boolean),
     },
-    {
-      id: 'telegram-token',
-      label: 'Clé du bot',
-      nature: { kind: 'secret', placeholder: config?.hasToken ? 'Inchangée' : '123456:ABC…' },
-      help: 'Donnée par @BotFather à la création du bot. Laissez vide pour conserver celle déjà enregistrée.',
-      value: draft.values.botToken,
-      onChange: (value) => draft.set('botToken', value as string),
-    },
-    {
-      id: 'telegram-chat',
-      label: 'Identifiant de conversation',
-      nature: { kind: 'text', placeholder: '123456789' },
-      help: 'Le numéro de la conversation qui recevra les alertes. @userinfobot vous le donne.',
-      value: draft.values.chatId,
-      onChange: (value) => draft.set('chatId', value as string),
-    },
+    // Ce que le canal demande, il le declare : l'ecran ne connait aucun canal en propre.
+    ...config.credentials.map((credential): SettingDeclaration => {
+      const copy = CREDENTIAL_COPY[credential.field]
+      return {
+        id: `channel-${credential.field}`,
+        label: copy.label,
+        nature: credential.secret
+          ? { kind: 'secret', placeholder: credential.isSet ? 'Inchangée' : copy.placeholder }
+          : { kind: 'text', placeholder: copy.placeholder },
+        help: copy.help,
+        value: draft.values[credential.field],
+        onChange: (value) => draft.set(credential.field, value as string),
+      }
+    }),
   ]
 
   // Meme ordre que la detection : ce qui est concerne d'abord, le seuil ensuite.
   const when: SettingDeclaration[] = [
     {
-      id: 'telegram-labels',
+      id: 'channel-labels',
       label: 'Ce qui déclenche une alerte',
       nature: {
         kind: 'multiChoice',
@@ -175,7 +206,7 @@ function NotificationsForm({
       onChange: (value) => draft.set('allowedLabels', value as string[]),
     },
     {
-      id: 'telegram-confidence',
+      id: 'channel-confidence',
       label: 'Certitude minimale',
       nature: { kind: 'range', unit: '%', min: 50, max: 99 },
       help: 'En dessous, la détection n’est pas notifiée. Trop bas, vous recevrez des fausses alertes ; trop haut, des détections réelles passeront sous silence.',
@@ -183,7 +214,7 @@ function NotificationsForm({
       onChange: (value) => draft.set('minimumConfidence', value as number),
     },
     {
-      id: 'telegram-hours',
+      id: 'channel-hours',
       label: 'Seulement à certaines heures',
       nature: { kind: 'toggle' },
       value: draft.values.restrictHours,
@@ -194,14 +225,14 @@ function NotificationsForm({
   if (draft.values.restrictHours) {
     when.push(
       {
-        id: 'telegram-from',
+        id: 'channel-from',
         label: 'À partir de',
         nature: { kind: 'choice', options: HOUR_OPTIONS },
         value: String(draft.values.fromHour),
         onChange: (value) => draft.set('fromHour', Number(value)),
       },
       {
-        id: 'telegram-to',
+        id: 'channel-to',
         label: 'Jusqu’à',
         nature: { kind: 'choice', options: HOUR_OPTIONS },
         // A range ending before it starts crosses midnight — the common case, worth stating.
@@ -216,7 +247,7 @@ function NotificationsForm({
   }
 
   when.push({
-    id: 'telegram-cooldown-on',
+    id: 'channel-cooldown-on',
     label: 'Espacer les alertes répétées',
     nature: { kind: 'toggle' },
     help: 'Sans cela, une personne qui reste dans le champ peut déclencher plusieurs alertes de suite.',
@@ -226,7 +257,7 @@ function NotificationsForm({
 
   if (draft.values.limitRepeats) {
     when.push({
-      id: 'telegram-cooldown',
+      id: 'channel-cooldown',
       label: 'Silence après une alerte',
       nature: { kind: 'number', unit: 'minutes', min: 1, max: 60 },
       value: draft.values.cooldownMinutes,
@@ -236,15 +267,23 @@ function NotificationsForm({
 
   const message: SettingDeclaration[] = [
     {
-      id: 'telegram-media',
+      id: 'channel-media',
       label: 'Ce qui est envoyé',
-      nature: { kind: 'choice', options: MEDIA_MODE_OPTIONS },
-      help: 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine.',
+      // Un canal qui ne sait pas porter de video ne l'offre pas : la capacite decide (ADR-50).
+      nature: {
+        kind: 'choice',
+        options: MEDIA_MODE_OPTIONS.filter(
+          (option) => option.value !== 'clip_or_photo' || config.capabilities.video,
+        ),
+      },
+      help: config.capabilities.video
+        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine.'
+        : undefined,
       value: draft.values.mediaMode,
       onChange: (value) => draft.set('mediaMode', value as MediaMode),
     },
     {
-      id: 'telegram-fields',
+      id: 'channel-fields',
       label: 'Détails du message',
       nature: { kind: 'multiChoice', options: [...MESSAGE_FIELD_OPTIONS] },
       value: draft.values.messageFields,
@@ -252,53 +291,66 @@ function NotificationsForm({
     },
   ]
 
-  const configured = Boolean(config?.hasToken && config?.chatId)
+  const testable = config.isConfigured && !draft.dirty
 
   return (
     <>
-      <SettingsPage lede="Comment Vyzio vous prévient quand il détecte quelque chose.">
-        <SettingsSection title="Telegram" lede={describeChannel(config)}>
-          <SettingsList settings={channel} />
-
-          {/* Tester et supprimer agissent tout de suite : ils n'ont rien a faire
-              dans le brouillon. */}
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={testing.loading || !configured}
-              title={configured ? undefined : 'Enregistrez la clé et l’identifiant avant de tester'}
-              onClick={() => void testing.run()}
-            >
-              {testing.loading ? 'Envoi…' : 'Envoyer un message de test'}
-            </Button>
-            {config?.hasToken && (
-              <Button type="button" variant="destructive" onClick={() => setConfirmRemove(true)}>
-                Supprimer le canal
-              </Button>
-            )}
+      <div className="flex flex-col gap-4">
+        <div>
+          <Link
+            to="/settings/notifications"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="size-4" aria-hidden="true" />
+            Notifications
+          </Link>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="font-serif text-3xl">{config.displayName}</h1>
+            <span className="text-sm text-muted-foreground">{describeChannel(config)}</span>
           </div>
-        </SettingsSection>
+        </div>
 
-        <SettingsSection
-          title="Obtenir ces informations"
-          lede="Quatre étapes dans Telegram, une seule fois."
-        >
-          <TelegramSetupSteps />
-        </SettingsSection>
+        <SettingsPage>
+          <SettingsSection title="Connexion">
+            <SettingsList settings={channelSettings} />
 
-        <SettingsSection title="Quand prévenir">
-          <SettingsList settings={when} />
-        </SettingsSection>
+            {/* Tester et supprimer agissent tout de suite : ils n'ont rien a faire
+                dans le brouillon. */}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={testing.loading || !testable}
+                title={testable ? undefined : 'Enregistrez la configuration avant de tester'}
+                onClick={() => void testing.run()}
+              >
+                {testing.loading ? 'Envoi…' : 'Envoyer un message de test'}
+              </Button>
+              {config.isConfigured && (
+                <Button type="button" variant="destructive" onClick={() => setConfirmRemove(true)}>
+                  Supprimer le canal
+                </Button>
+              )}
+            </div>
+          </SettingsSection>
 
-        <SettingsSection title="Contenu du message">
-          <SettingsList settings={message} />
-        </SettingsSection>
+          <SettingsSection title="Obtenir ces informations" lede={channelSetupLede(config.channel)}>
+            <ChannelSetupSteps channel={config.channel} />
+          </SettingsSection>
 
-        <SettingsSection title="Derniers envois">
-          <NotificationLog channel={CHANNEL} />
-        </SettingsSection>
-      </SettingsPage>
+          <SettingsSection title="Quand prévenir">
+            <SettingsList settings={when} />
+          </SettingsSection>
+
+          <SettingsSection title="Contenu du message">
+            <SettingsList settings={message} />
+          </SettingsSection>
+
+          <SettingsSection title="Derniers envois">
+            <NotificationLog channel={config.channel} />
+          </SettingsSection>
+        </SettingsPage>
+      </div>
 
       <SettingsDraftBar
         changes={draft.changes}
@@ -309,8 +361,8 @@ function NotificationsForm({
 
       {confirmEnable && (
         <ConfirmModal
-          title="Envoyer les alertes par Telegram ?"
-          body="Les photos, vidéos et noms de caméras seront transmis aux serveurs de Telegram, qui en aura connaissance. Vos données ne resteront plus strictement chez vous."
+          title={`Envoyer les alertes par ${config.displayName} ?`}
+          body={`Les photos, vidéos et noms de caméras seront transmis aux serveurs de ${config.displayName}, qui en aura connaissance. Vos données ne resteront plus strictement chez vous.`}
           confirmLabel="Activer"
           cancelLabel="Annuler"
           tone="warn"
@@ -325,8 +377,8 @@ function NotificationsForm({
 
       {confirmRemove && (
         <ConfirmModal
-          title="Supprimer le canal Telegram ?"
-          body="La clé et l’identifiant seront effacés. Vous ne recevrez plus d’alertes tant que le canal n’est pas reconfiguré."
+          title={`Supprimer le canal ${config.displayName} ?`}
+          body="Les informations de connexion seront effacées. Vous ne recevrez plus d’alertes par ce canal tant qu’il n’est pas reconfiguré."
           confirmLabel="Supprimer"
           tone="danger"
           loading={removing.loading}
@@ -342,8 +394,8 @@ function NotificationsForm({
 }
 
 /** Channel status in one sentence, right where it's configured. */
-function describeChannel(config: NotificationChannelConfig | null): string {
-  if (!config?.hasToken || !config.chatId) return 'Pas encore configuré.'
+function describeChannel(config: NotificationChannelConfig): string {
+  if (!config.isConfigured) return 'Pas encore configuré.'
   if (!config.isEnabled) return 'Configuré, mais aucune alerte n’est envoyée.'
   return 'Les alertes sont envoyées.'
 }

@@ -9,7 +9,7 @@ describe('GetHubOverview', () => {
       recentEvents: [],
       profiles: [],
       notifications: {
-        telegramConfigured: true,
+        activeChannels: 1,
         sentCount: 2,
         lastSentAt: null,
       },

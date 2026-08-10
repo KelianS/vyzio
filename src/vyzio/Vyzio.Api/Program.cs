@@ -60,7 +60,12 @@ builder.Services.AddHttpClient<IFrigateFaceLibrary, FrigateFaceLibraryClient>(cl
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
-builder.Services.AddHttpClient<ITelegramNotificationSender, TelegramNotificationSender>();
+// One typed client per channel adapter, then the catalog over all of them (ADR-50).
+builder.Services.AddHttpClient<TelegramNotificationSender>();
+builder.Services.AddHttpClient<DiscordNotificationSender>();
+builder.Services.AddTransient<INotificationChannelSender>(sp => sp.GetRequiredService<TelegramNotificationSender>());
+builder.Services.AddTransient<INotificationChannelSender>(sp => sp.GetRequiredService<DiscordNotificationSender>());
+builder.Services.AddScoped<INotificationChannelCatalog, NotificationChannelCatalog>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();

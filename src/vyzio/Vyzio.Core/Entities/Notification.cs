@@ -12,8 +12,8 @@ public class Notification
     [Required, MaxLength(100)]
     public required string FrigateEventId { get; set; }
 
-    [Required, MaxLength(50)]
-    public required string Channel { get; set; }
+    [Required]
+    public required NotificationChannel Channel { get; set; }
 
     [Required, MaxLength(200)]
     public required string Camera { get; set; }
@@ -21,8 +21,8 @@ public class Notification
     [Required, MaxLength(50)]
     public required string Label { get; set; }
 
-    [Required, MaxLength(50)]
-    public required string Status { get; set; }  // sent|failed
+    [Required]
+    public required NotificationStatus Status { get; set; }
 
     public DateTimeOffset SentAt { get; set; } = DateTimeOffset.UtcNow;
 

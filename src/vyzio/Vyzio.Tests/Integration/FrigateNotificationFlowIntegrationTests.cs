@@ -6,6 +6,7 @@ using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.Notifications;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
 
@@ -16,7 +17,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;
     private readonly NotificationRepository _notifications;
-    private readonly RecordingTelegramSender _telegramSender;
+    private readonly RecordingChannelSender _telegram = new(NotificationChannel.Telegram);
+    private readonly RecordingChannelSender _discord = new(NotificationChannel.Discord);
     private readonly StubFrigateEventReader _eventReader;
     private readonly StubClipProvider _clipProvider;
     private readonly TestDetectionQueue _queue;
@@ -37,29 +39,30 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         _db.Database.EnsureCreated();
 
         _notifications = new NotificationRepository(_db);
-        _telegramSender = new RecordingTelegramSender();
         _eventReader = new StubFrigateEventReader();
         _clipProvider = new StubClipProvider();
 
         var channelConfigs = new NotificationChannelConfigRepository(_db);
-        channelConfigs.UpsertAsync(new NotificationChannelConfig
+        foreach (var sender in new[] { _telegram, _discord })
         {
-            Channel = "telegram",
-            IsEnabled = true,
-            BotToken = "test-bot-token",
-            ChatId = "test-chat-id",
-            MinimumConfidence = 0.75f
-        }).GetAwaiter().GetResult();
+            channelConfigs.UpsertAsync(new NotificationChannelConfig
+            {
+                Channel = sender.Descriptor.Channel,
+                IsEnabled = true,
+                Credentials = sender.WorkingCredentials,
+                MinimumConfidence = 0.75f
+            }).GetAwaiter().GetResult();
+        }
 
-        var dispatcher = new SendTelegramDetectionNotificationUseCase(
+        var dispatcher = new SendDetectionNotificationUseCase(
             _notifications,
-            _telegramSender,
+            new NotificationChannelCatalog([_telegram, _discord]),
             channelConfigs,
             Substitute.For<IFrigateEventImageProvider>(),
             _clipProvider,
-            new DetectionTelegramMessageFormatter(),
+            new DetectionMessageFormatter(),
             TimeZoneInfo.Local,
-            NullLogger<SendTelegramDetectionNotificationUseCase>.Instance,
+            NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
 
         _queue = new TestDetectionQueue();
@@ -101,7 +104,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         // Nothing to keep, nothing to send: only the end of an event matters (ADR-49).
         Assert.False(processed);
         Assert.Equal(0, await _db.Notifications.CountAsync());
-        Assert.Empty(_telegramSender.Messages);
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
     }
 
     [Fact]
@@ -112,14 +116,13 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         await IngestAndNotifyAsync(Payload("frigate-ti-002", lifecycle: "end", topScore: 0.97f, hasClip: true));
 
-        Assert.Equal(1, await _db.Notifications.CountAsync());
-        // Snapshot provider returns null → media group not possible → video-only fallback
-        Assert.Single(_telegramSender.Videos);
-        Assert.Empty(_telegramSender.MediaGroups);
-        Assert.Empty(_telegramSender.Messages);
+        // One detection, both channels, and one journal entry each.
+        Assert.Equal(2, await _db.Notifications.CountAsync());
+        Assert.Single(_telegram.WithVideo);
+        Assert.Single(_discord.WithVideo);
 
-        var notification = await _db.Notifications.SingleAsync();
-        Assert.Equal("sent", notification.Status);
+        var notification = await _db.Notifications.FirstAsync(n => n.Channel == NotificationChannel.Discord);
+        Assert.Equal(NotificationStatus.Sent, notification.Status);
         Assert.Equal("frigate-ti-002", notification.FrigateEventId);
         Assert.Equal("front_door", notification.Camera);
         Assert.Equal("person", notification.Label);
@@ -133,8 +136,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         await IngestAndNotifyAsync(Payload("frigate-ti-003", lifecycle: "end", hasClip: false));
         await IngestAndNotifyAsync(Payload("frigate-ti-003", lifecycle: "end", hasClip: false));
 
-        Assert.Equal(1, await _db.Notifications.CountAsync());
-        Assert.Single(_telegramSender.Messages);
+        Assert.Equal(2, await _db.Notifications.CountAsync());
+        Assert.Single(_telegram.TextOnly);
+        Assert.Single(_discord.TextOnly);
     }
 
     [Fact]
@@ -144,7 +148,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         Assert.False(processed);
         Assert.Equal(0, await _db.Notifications.CountAsync());
-        Assert.Empty(_telegramSender.Messages);
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
     }
 
     private static string Payload(
@@ -170,33 +175,29 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         }
         """;
 
-    private sealed class RecordingTelegramSender : ITelegramNotificationSender
+    /// <summary>Stands in for a real channel: records what it was handed, never how it would render it.</summary>
+    private sealed class RecordingChannelSender(NotificationChannel channel) : INotificationChannelSender
     {
-        public List<string> Messages { get; } = [];
-        public List<string> Videos { get; } = [];
-        public List<string> MediaGroups { get; } = [];
+        public List<OutgoingNotification> Sent { get; } = [];
 
-        public Task SendAsync(string message, string botToken, string chatId, CancellationToken ct = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
+        public List<OutgoingNotification> WithVideo => [.. Sent.Where(n => n.Video is not null)];
 
-        public Task SendPhotoAsync(Stream photo, string caption, string botToken, string chatId, CancellationToken ct = default)
-        {
-            Messages.Add(caption);
-            return Task.CompletedTask;
-        }
+        public List<OutgoingNotification> TextOnly => [.. Sent.Where(n => n.Video is null && n.Photo is null)];
 
-        public Task SendVideoAsync(Stream video, Stream? thumbnail, string caption, string botToken, string chatId, CancellationToken ct = default)
-        {
-            Videos.Add(caption);
-            return Task.CompletedTask;
-        }
+        public NotificationChannelDescriptor Descriptor { get; } = new(
+            channel,
+            channel.ToString(),
+            new ChannelCapabilities(Photo: true, Video: true, GroupedMedia: true, Buttons: false, UsefulTextLength: 1024),
+            [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]);
 
-        public Task SendMediaGroupAsync(Stream photo, Stream video, string caption, string botToken, string chatId, CancellationToken ct = default)
+        public ChannelCredentials WorkingCredentials { get; } = new(new Dictionary<ChannelCredential, string>
         {
-            MediaGroups.Add(caption);
+            [ChannelCredential.WebhookUrl] = "https://channel.test/hook"
+        });
+
+        public Task SendAsync(OutgoingNotification notification, ChannelCredentials credentials, CancellationToken ct = default)
+        {
+            Sent.Add(notification);
             return Task.CompletedTask;
         }
     }

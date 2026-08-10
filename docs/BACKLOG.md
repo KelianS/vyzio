@@ -31,17 +31,16 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir [ADR-27](adr/0027-reglages-image-avances-capacite-imagesettings-onvif.md)/[ADR-29](adr/0029-dvrip-dvripclient-partage-reglages-image-avenc.md).
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
-- Canal Discord pour les notifications (webhook).
-- Canal WhatsApp pour notifications et commandes rapides (API Cloud Meta ou Baileys/WWebJS).
-- Commandes chatbot (Discord ou autre) pour actions rapides : activer/désactiver le mode vie privée, statut des caméras, snapshot — bidirectionnel avec le canal de notifications.
-- Accès à Vyzio depuis l'extérieur — pistes à comparer : tunnel réseau (Netbird), commandes via chatbot, relais SaaS façon app constructeur.
+- Canal WhatsApp — **notifications seulement, jamais de commandes** : l'API Cloud de Meta ne délivre les messages entrants que par webhook, et n'expose aucune route de récupération ; un hub sans adresse publique ne peut donc pas les recevoir. Les bibliothèques non officielles (Baileys, WWebJS) tiennent une connexion sortante mais contreviennent aux conditions de Meta et exposent au blocage du numéro — pas une base pour un produit vendu.
+- Application Android mince encapsulant le client de réseau overlay et la vue web, pour revenir à un geste unique hors du domicile — horizon évoqué par [ADR-51](adr/0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md), non décidé.
+- Relais d'accès distant opéré par Vyzio (modèle Nabu Casa) — meilleure expérience possible, écartée pour l'instant faute de base installée ; à rouvrir quand elle existe ([ADR-51](adr/0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md) option 3).
 - Intégration Home Assistant (capteurs d'ouverture, détection de mouvement, présence, scénarios d'automatisation).
 - Tests end-to-end Playwright pour chaque user story des SPECS.
 - Distinguer détection de présence (« person ») et reconnaissance faciale (identification) — aujourd'hui les deux sont couplées sans option pour les découpler : `FrigateConfigApplier` active `face_recognition` globalement dès qu'une caméra est activée, et toute caméra qui suit le label `person` se voit automatiquement ajouter `face` (voir commentaire « face must be tracked whenever person is »). Une caméra qui ne veut que savoir « quelqu'un est présent » paie donc quand même le coût du pipeline d'identification faciale (embeddings, un process séparé de la détection d'objets). À investiguer : impact réel sur les perfs d'inférence, et si un découplage par caméra (suivre `person` sans `face`) est pertinent.
 - Support Nvidia (tensorrt) et AMD (rocm) pour le détecteur Frigate — nécessite de recréer le conteneur sur le variant d'image adapté (`-tensorrt`/`-rocm`), pas seulement de changer `config.yml` ; écarté de [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) faute de besoin terrain confirmé. Coral USB (en plus du PCIe déjà supporté) également hors scope actuel.
 - Benchmarker `yolox_s` (retenu pour le palier Intel GPU dans [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md)) sur du matériel varié et évaluer une variante plus précise (`yolox_m`/`l`) si le terrain le justifie — pas de mesure exhaustive à ce stade. Le palier CPU seul reste sur le détecteur natif `cpu` (YOLOX, même la plus petite variante, a produit des pics CPU ~800% et des détections dégradées en test terrain — pas un gain sur ce palier). YOLOv9 écarté (licence GPL-3.0, test exploratoire erratique : voir [investigation](investigations/yolov9_frigate_openvino.md)) ; YOLO-NAS écarté (poids non-commerciaux).
 - Le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est — il faudrait une page de plus. Constat de la passe de coherence du chantier `config-ui`, non corrigeable sans trancher le rangement.
-- La marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
+- La marche a suivre d'un canal de notification est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
 - **L'ecran Expert ne peut pas fonctionner depuis un telephone.** Il integre l'UI de Frigate en iframe directement depuis le navigateur ([ADR-11](adr/0011-strategie-ux-non-tech-hub-vyzio-simplifie-frigate.md)), sur `http://<hote>:5000` — mais le conteneur publie ce port sur `127.0.0.1` seulement. Depuis un appareil du reseau local, l'ecran affiche « Frigate inaccessible » sans que rien ne soit en panne. Deux issues : exposer Frigate sur le reseau (port sans authentification, contre « Frigate invisible »), ou le servir en proxy authentifie comme tout le reste. Seul endroit ou le navigateur parle a Frigate sans passer par Vyzio.
 - Trier l'historique sur le modèle *review* de Frigate (sévérité `alert` / `detection`, regroupement des objets d'un même passage), que Vyzio ignore aujourd'hui — hors périmètre d'[ADR-49](adr/0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md), qui en pose le constat. Chantier produit distinct : il change ce que l'historique montre, pas d'où il tient sa vérité.
 - Enregistrer le codec du flux par caméra (relevé à la vérification de la caméra), ce qui ouvrirait deux choses : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur Intel gen13+/Arc — écarté d'[ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) faute de ce prérequis, les presets QuickSync n'existant qu'en variantes codec-spécifiques — et signaler qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
@@ -61,6 +60,65 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 2. **`GET /api/cameras` — capacités vérifiées dans la réponse liste** — intégrer les bindings `Verified = true` dans la réponse pour éviter un second appel au chargement du hub. Actuellement : `Camera.PtzSupported` booléen legacy reste la seule indication côté liste.
 
 3. **Boîtiers à plusieurs objectifs** — voir issue [#18](https://github.com/KelianS/vyzio/issues/18). Le modèle est en place ([ADR-38](adr/0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md) : un objectif = une caméra, groupées par `Camera.DeviceId`) et l'énumération ONVIF distingue déjà les objectifs par leur `SourceToken`. Reste l'onboarding : proposer la création des N caméras d'un même appareil, les nommer, et signaler dans l'UI que couper la vie privée matérielle de l'une coupe ses sœurs.
+
+---
+
+### `remote-access` — Usage hors du domicile
+
+Direction tranchée : [ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)
+(commandes) et [ADR-51](adr/0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md)
+(accès réseau) ; attendus produit en [SPECS](SPECS.md) §5.4 et §7.2. Comparaison des solutions et
+critères d'arbitrage : [étude](investigations/acces-a-distance.md).
+
+La généralisation du canal sortant et le canal Discord sont livrés : le registre de commandes a
+désormais où se brancher. Restent deux étapes, chacune livrable et démontrable seule. **2 ne dépend
+pas de 1** — mais elle est bloquée par son propre prérequis, le transport chiffré, et elle n'a
+d'intérêt qu'après 1, qui la rend facultative.
+
+#### 1. Rendre le canal bidirectionnel : les commandes
+
+Périmètre produit : [SPECS §5.4](SPECS.md). C'est l'étape qui rend l'étape 2 optionnelle — donc celle
+qui compte le plus pour l'usage réel.
+
+- **registre de commandes déclaratif** : nom, paramètres typés, autorisation, résultat structuré
+  (texte, média, suites proposées) ; le canal rend selon ses capacités et ne décide de rien ;
+- **exécution par les use cases existants**, jamais un chemin métier parallèle : l'ajout est un
+  adaptateur d'entrée, au même titre que les endpoints HTTP ;
+- **appairage d'une conversation** depuis l'interface, révocable ; toute autre origine ignorée sans
+  réponse ; l'état d'appairage visible dans les réglages du canal ;
+- **récupération sortante** des messages entrants (long polling Telegram, passerelle Discord) —
+  aucun webhook, le hub n'a pas d'adresse publique et n'en aura pas ;
+- **jeu de commandes courantes** : état du système, aperçu d'une caméra, dernières détections, mode
+  vie privée, positions PTZ, interruption et reprise de la surveillance. Aucune commande de
+  configuration ;
+- **confirmation explicite** des actions conséquentes ; **journal des commandes** (origine, commande,
+  issue, horodatage), consultable ;
+- doc utilisateur : ce qu'on peut demander, et comment appairer.
+
+**Fait quand** le même jeu de commandes fonctionne sur Telegram et Discord sans code spécifique, et
+qu'un message d'un inconnu ne produit rien du tout.
+
+#### 2. Accès distant à l'interface (NetBird)
+
+- **prérequis bloquant — le transport chiffré.** Le produit est servi en clair aujourd'hui
+  (SAD §8.1) : chiffrer le trajet jusqu'à la maison pour livrer l'interface en HTTP à l'arrivée
+  n'aurait aucun sens, et l'identifiant de session circulerait avec. À livrer avant, pas en parallèle.
+- **à vérifier avant de s'engager** : le parcours réel sur Android et iOS en 4G, chez au moins deux
+  opérateurs.
+- **réglage d'installation** : parcours guidé de création du compte NetBird, saisie de la clé
+  d'appairage (chiffrée comme les identifiants caméra), état de la connexion, adresse d'accès à
+  copier, retrait sans effet de bord ;
+- **le pair est un conteneur que Vyzio démarre lui-même** par le socket Docker déjà monté, dans
+  l'espace de noms réseau du conteneur qui sert l'interface — rien d'autre n'y est joignable
+  ([ADR-51](adr/0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md)).
+  Le mode réseau *host* n'est qu'un repli documenté ;
+- **cycle de vie et pannes** : « le pair ne monte pas » doit se lire dans l'interface, sinon
+  l'utilisateur conclura que Vyzio est en panne ;
+- l'interface dit explicitement que la disponibilité dépend d'un service tiers, pas de Vyzio ;
+- doc utilisateur : le parcours complet, compte compris, et comment s'en passer.
+
+**Fait quand** le hub est joignable depuis un téléphone en 4G, que rien d'autre que l'interface ne
+l'est, et que retirer la clé rend l'installation purement locale.
 
 ---
 

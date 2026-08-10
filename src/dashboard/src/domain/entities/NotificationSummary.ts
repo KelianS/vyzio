@@ -1,5 +1,5 @@
 export interface NotificationSummary {
-  telegramConfigured: boolean
+  activeChannels: number
   sentCount: number
   lastSentAt: string | null
 }

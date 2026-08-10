@@ -355,7 +355,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Channel")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("channel");
 
@@ -381,7 +380,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("status");
 
@@ -412,25 +410,13 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnName("active_to_hour");
 
                     b.Property<string>("AllowedLabelsJson")
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT")
                         .HasColumnName("allowed_labels_json");
 
-                    b.Property<string>("BotToken")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("bot_token");
-
                     b.Property<string>("Channel")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("channel");
-
-                    b.Property<string>("ChatId")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("chat_id");
 
                     b.Property<DateTime?>("ConfiguredAt")
                         .HasColumnType("TEXT")
@@ -440,6 +426,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("cooldown_minutes");
 
+                    b.Property<string>("CredentialsJson")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("credentials_json");
+
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_enabled");
@@ -448,22 +438,20 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("last_test_error");
 
-                    b.Property<string>("LastTestStatus")
-                        .HasMaxLength(50)
+                    b.Property<string>("LastTestOutcome")
                         .HasColumnType("TEXT")
-                        .HasColumnName("last_test_status");
+                        .HasColumnName("last_test_outcome");
 
                     b.Property<DateTime?>("LastTestedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_tested_at");
 
                     b.Property<string>("MediaMode")
-                        .HasMaxLength(20)
+                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("media_mode");
 
                     b.Property<string>("MessageFieldsJson")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT")
                         .HasColumnName("message_fields_json");
 
@@ -473,6 +461,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_notification_channel_configs");
+
+                    b.HasIndex("Channel")
+                        .IsUnique()
+                        .HasDatabaseName("ux_notification_channel");
 
                     b.ToTable("notification_channel_configs", (string)null);
                 });

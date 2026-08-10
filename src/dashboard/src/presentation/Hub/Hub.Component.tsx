@@ -334,7 +334,7 @@ function HubOperational({
           <Card>
             <h2 className="font-medium">Alertes</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {data.notifications.telegramConfigured
+              {data.notifications.activeChannels > 0
                 ? `${data.notifications.sentCount} envoyée${data.notifications.sentCount > 1 ? 's' : ''}${
                     data.notifications.lastSentAt
                       ? ` · dernière à ${formatEventTime(data.notifications.lastSentAt)}`
