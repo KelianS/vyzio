@@ -30,5 +30,5 @@ export function formatLastNotification(value: string | null): string {
 }
 
 export function formatNotificationStatus(summary: NotificationSummary): string {
-  return summary.telegramConfigured ? 'Telegram actif' : 'Telegram a configurer'
+  return summary.activeChannels > 0 ? 'Alertes actives' : 'Aucun canal d’alerte'
 }

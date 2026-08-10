@@ -2,12 +2,14 @@ import { DeleteNotificationChannel } from '../../domain/usecases/DeleteNotificat
 import { GetDetectionLabels } from '../../domain/usecases/GetDetectionLabels'
 import { GetNotificationChannelConfig } from '../../domain/usecases/GetNotificationChannelConfig'
 import { GetNotificationLog } from '../../domain/usecases/GetNotificationLog'
+import { ListNotificationChannels } from '../../domain/usecases/ListNotificationChannels'
 import { SaveNotificationChannelConfig } from '../../domain/usecases/SaveNotificationChannelConfig'
 import { TestNotificationChannel } from '../../domain/usecases/TestNotificationChannel'
 import type { NotificationSettingsRepository } from '../../domain/ports/NotificationSettingsRepository'
 import type { DetectionLabelsRepository } from '../../domain/usecases/GetDetectionLabels'
 
 export interface NotificationsContainer {
+  listNotificationChannels: ListNotificationChannels
   getNotificationChannelConfig: GetNotificationChannelConfig
   saveNotificationChannelConfig: SaveNotificationChannelConfig
   testNotificationChannel: TestNotificationChannel
@@ -21,6 +23,7 @@ export function makeNotificationsContainer(
   notificationLabelsRepository: DetectionLabelsRepository,
 ): NotificationsContainer {
   return {
+    listNotificationChannels: new ListNotificationChannels(notificationSettingsRepository),
     getNotificationChannelConfig: new GetNotificationChannelConfig(notificationSettingsRepository),
     saveNotificationChannelConfig: new SaveNotificationChannelConfig(
       notificationSettingsRepository,

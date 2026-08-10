@@ -5,17 +5,9 @@ test.describe('Navigation', () => {
   test('user_When visiting the app_Should reach every screen from the header without errors', async ({
     page,
   }) => {
-    // A missing notification channel config is a normal "not configured yet" signal the app
-    // handles via a caught 404 (HttpNotificationSettingsRepository.getChannelConfig) — not a bug,
-    // just a browser-level network log we don't want polluting this assertion.
-    const isExpectedNoise = (text: string) => text.includes('/api/notifications/settings/telegram')
-
     const consoleErrors: string[] = []
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        const entry = `${msg.text()} @ ${msg.location().url}`
-        if (!isExpectedNoise(entry)) consoleErrors.push(entry)
-      }
+      if (msg.type() === 'error') consoleErrors.push(`${msg.text()} @ ${msg.location().url}`)
     })
     page.on('pageerror', (err) => consoleErrors.push(err.message))
 

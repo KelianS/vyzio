@@ -17,7 +17,9 @@ const SETTINGS_ROUTES: [string, string][] = [
   ['/settings/cameras/camera-1/image', 'Camera — image'],
   ['/settings/cameras/camera-1/connexion', 'Camera — connexion'],
   ['/settings/conservation', 'Conservation (installation)'],
-  ['/settings/notifications', 'Notifications'],
+  // Les reglages sont dans le canal, pas dans la liste qui y mene.
+  ['/settings/notifications/telegram', 'Notifications — Telegram'],
+  ['/settings/notifications/discord', 'Notifications — Discord'],
   ['/settings/detection/personnes/profile-1/identite', 'Personne — identite'],
 ]
 
