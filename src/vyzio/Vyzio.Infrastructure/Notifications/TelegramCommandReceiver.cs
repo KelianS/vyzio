@@ -59,9 +59,10 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
     {
         ArgumentNullException.ThrowIfNull(commands);
 
-        // Only messages are asked for: Vyzio has no use for the rest of what happens in the conversation.
+        // Messages and button taps only: Vyzio has no use for the rest of what happens in the conversation.
         var url = TelegramApi.Endpoint(BotToken(credentials), "getUpdates")
-                  + $"?offset={_offset}&timeout={LongPollSeconds}&allowed_updates=%5B%22message%22%5D";
+                  + $"?offset={_offset}&timeout={LongPollSeconds}"
+                  + "&allowed_updates=%5B%22message%22%2C%22callback_query%22%5D";
 
         using var response = await Client().GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
@@ -78,6 +79,14 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
             if (update.TryGetProperty("update_id", out var updateId))
                 _offset = updateId.GetInt64() + 1;
 
+            if (update.TryGetProperty("callback_query", out var callback))
+            {
+                // Acknowledged first: an unanswered tap spins in the conversation until Telegram gives up.
+                await AcknowledgeAsync(callback, credentials, ct);
+                if (ParseCallback(callback, commands) is { } tapped) received.Add(tapped);
+                continue;
+            }
+
             if (Parse(update, commands) is { } incoming) received.Add(incoming);
         }
 
@@ -87,37 +96,67 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
     public async Task RespondAsync(
         CommandOrigin origin,
         CommandResult result,
+        IReadOnlyList<RemoteCommandDescriptor> commands,
         ChannelCredentials credentials,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(commands);
 
         if (result.Silent) return;
 
         var botToken = BotToken(credentials);
         var text = TelegramApi.Html(result.Message);
+        var keyboard = Keyboard(result.FollowUps, commands);
 
         using var response = result.Photo is { } photo
-            ? await SendPhotoAsync(photo, text, botToken, origin.ConversationId, ct)
-            : await SendTextAsync(text, botToken, origin.ConversationId, ct);
+            ? await SendPhotoAsync(photo, text, keyboard, botToken, origin.ConversationId, ct)
+            : await SendTextAsync(text, keyboard, botToken, origin.ConversationId, ct);
 
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<HttpResponseMessage> SendTextAsync(string text, string botToken, string chatId, CancellationToken ct)
+    /// <summary>One button per proposed follow-up, stacked so a long label stays readable on a phone.</summary>
+    private static string? Keyboard(
+        IReadOnlyList<CommandFollowUp>? followUps,
+        IReadOnlyList<RemoteCommandDescriptor> commands)
     {
-        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        if (followUps is null || followUps.Count == 0) return null;
+
+        var rows = followUps
+            .Select(followUp => (followUp, descriptor: commands.FirstOrDefault(c => c.Name == followUp.Command)))
+            .Where(pair => pair.descriptor is not null)
+            .Select(pair => new[]
+            {
+                new
+                {
+                    text = pair.followUp.Label,
+                    callback_data = TelegramCallbackData.Write(pair.descriptor!, pair.followUp)
+                }
+            })
+            .ToList();
+
+        return rows.Count == 0 ? null : JsonSerializer.Serialize(new { inline_keyboard = rows });
+    }
+
+    private async Task<HttpResponseMessage> SendTextAsync(
+        string text, string? keyboard, string botToken, string chatId, CancellationToken ct)
+    {
+        var fields = new Dictionary<string, string>
         {
             ["chat_id"] = chatId,
             ["text"] = text,
             ["parse_mode"] = "HTML"
-        });
+        };
+        if (keyboard is not null) fields["reply_markup"] = keyboard;
 
+        using var content = new FormUrlEncodedContent(fields);
         return await Client().PostAsync(TelegramApi.Endpoint(botToken, "sendMessage"), content, ct);
     }
 
-    private async Task<HttpResponseMessage> SendPhotoAsync(Stream photo, string caption, string botToken, string chatId, CancellationToken ct)
+    private async Task<HttpResponseMessage> SendPhotoAsync(
+        Stream photo, string caption, string? keyboard, string botToken, string chatId, CancellationToken ct)
     {
         using var content = new MultipartFormDataContent
         {
@@ -126,8 +165,41 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
             { new StringContent("HTML"), "parse_mode" },
             { new StreamContent(photo), "photo", "snapshot.jpg" }
         };
+        if (keyboard is not null) content.Add(new StringContent(keyboard), "reply_markup");
 
         return await Client().PostAsync(TelegramApi.Endpoint(botToken, "sendPhoto"), content, ct);
+    }
+
+    private async Task AcknowledgeAsync(JsonElement callback, ChannelCredentials credentials, CancellationToken ct)
+    {
+        if (!callback.TryGetProperty("id", out var id)) return;
+
+        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["callback_query_id"] = id.GetString() ?? string.Empty
+        });
+
+        using var response = await Client().PostAsync(
+            TelegramApi.Endpoint(BotToken(credentials), "answerCallbackQuery"), content, ct);
+    }
+
+    /// <summary>A tap is the same thing as typing the command, plus the fact that it was proposed.</summary>
+    private static IncomingMessage? ParseCallback(
+        JsonElement callback,
+        IReadOnlyList<RemoteCommandDescriptor> commands)
+    {
+        if (!callback.TryGetProperty("message", out var message)) return null;
+        if (!message.TryGetProperty("chat", out var chat)) return null;
+        if (!chat.TryGetProperty("id", out var chatId)) return null;
+
+        var origin = new CommandOrigin(
+            NotificationChannel.Telegram,
+            chatId.GetInt64().ToString(CultureInfo.InvariantCulture));
+
+        return TelegramCallbackData.Read(
+            callback.TryGetProperty("data", out var data) ? data.GetString() : null,
+            origin,
+            commands);
     }
 
     /// <summary>

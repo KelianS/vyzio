@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { SettingsList } from '../../common/settings/SettingsList'
+import { AdvancedFold } from '../../common/settings/AdvancedFold'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
@@ -335,17 +336,12 @@ function ChannelForm({
             </div>
           </SettingsSection>
 
-          <SettingsSection title="Obtenir ces informations" lede={channelSetupLede(config.channel)}>
-            <ChannelSetupSteps channel={config.channel} />
-          </SettingsSection>
-
-          <SettingsSection title="Quand prévenir">
-            <SettingsList settings={when} />
-          </SettingsSection>
-
-          <SettingsSection title="Contenu du message">
-            <SettingsList settings={message} />
-          </SettingsSection>
+          {/* Le mode d'emploi s'efface une fois le canal en place : il n'a plus rien a apprendre a personne. */}
+          {!config.isConfigured && (
+            <SettingsSection title="Obtenir ces informations" lede={channelSetupLede(config.channel)}>
+              <ChannelSetupSteps channel={config.channel} />
+            </SettingsSection>
+          )}
 
           {config.acceptsCommands && (
             <SettingsSection
@@ -356,9 +352,19 @@ function ChannelForm({
             </SettingsSection>
           )}
 
-          <SettingsSection title="Derniers envois">
-            <NotificationLog channel={config.channel} />
+          <SettingsSection title="Quand prévenir">
+            <SettingsList settings={when} />
           </SettingsSection>
+
+          <AdvancedFold>
+            <SettingsSection title="Contenu du message">
+              <SettingsList settings={message} />
+            </SettingsSection>
+
+            <SettingsSection title="Derniers envois">
+              <NotificationLog channel={config.channel} />
+            </SettingsSection>
+          </AdvancedFold>
         </SettingsPage>
       </div>
 

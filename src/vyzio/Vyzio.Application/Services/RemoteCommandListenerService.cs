@@ -140,7 +140,7 @@ internal sealed class RemoteCommandListenerService(
         var result = await handle.ExecuteAsync(incoming, ct);
         try
         {
-            await receiver.RespondAsync(incoming.Origin, result, credentials, ct);
+            await receiver.RespondAsync(incoming.Origin, result, Descriptors(), credentials, ct);
         }
         finally
         {

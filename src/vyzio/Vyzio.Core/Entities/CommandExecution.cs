@@ -7,20 +7,27 @@ namespace Vyzio.Core.Entities;
 public sealed record CommandOrigin(NotificationChannel Channel, string ConversationId);
 
 /// <summary>A command as received, before anything has been decided about it.</summary>
+/// <param name="Confirmed">
+/// The user answered a question Vyzio asked, rather than typing this out of the blue. A command
+/// declared <see cref="CommandAuthorization.PairedAndConfirmed"/> must do nothing without it (ADR-50).
+/// </param>
 public sealed record CommandInvocation(
     RemoteCommandName Command,
     CommandOrigin Origin,
-    IReadOnlyDictionary<string, string>? Arguments = null)
+    IReadOnlyDictionary<string, string>? Arguments = null,
+    bool Confirmed = false)
 {
     public string? Argument(string name)
         => Arguments is not null && Arguments.TryGetValue(name, out var value) ? value : null;
 }
 
 /// <summary>A command the answer proposes next; the channel turns it into a button or into text.</summary>
+/// <param name="Confirms">Choosing it is the explicit confirmation a consequential action waits for.</param>
 public sealed record CommandFollowUp(
     string Label,
     RemoteCommandName Command,
-    IReadOnlyDictionary<string, string>? Arguments = null);
+    IReadOnlyDictionary<string, string>? Arguments = null,
+    bool Confirms = false);
 
 /// <summary>
 /// The answer to a command, in the same rendering-free form as an outgoing alert. The photo stream is
@@ -50,10 +57,12 @@ public sealed record CommandResult(
 public sealed record IncomingMessage(
     CommandOrigin Origin,
     RemoteCommandName? Command,
-    IReadOnlyDictionary<string, string>? Arguments = null)
+    IReadOnlyDictionary<string, string>? Arguments = null,
+    bool Confirmed = false)
 {
     public CommandInvocation ToInvocation()
-        => new(Command ?? throw new InvalidOperationException("No command to invoke."), Origin, Arguments);
+        => new(Command ?? throw new InvalidOperationException("No command to invoke."),
+               Origin, Arguments, Confirmed);
 }
 
 /// <summary>How a received command ended. Kept even when nothing was answered (ADR-50).</summary>

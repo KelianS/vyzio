@@ -115,7 +115,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
         foreach (var incoming in await _receiver.ReceiveAsync(_registry.Descriptors, Credentials))
         {
             var result = await _sut.ExecuteAsync(incoming);
-            await _receiver.RespondAsync(incoming.Origin, result, Credentials);
+            await _receiver.RespondAsync(incoming.Origin, result, _registry.Descriptors, Credentials);
         }
 
         return _telegram.Answers;

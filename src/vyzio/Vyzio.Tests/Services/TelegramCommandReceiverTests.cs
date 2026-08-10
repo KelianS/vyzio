@@ -99,7 +99,7 @@ public class TelegramCommandReceiverTests
         var handler = new RecordingHandler();
 
         await new TelegramCommandReceiver(handler.AsFactory()).RespondAsync(
-            new CommandOrigin(NotificationChannel.Telegram, "7"), CommandResult.Silence, Credentials);
+            new CommandOrigin(NotificationChannel.Telegram, "7"), CommandResult.Silence, Commands, Credentials);
 
         Assert.Empty(handler.Requests);
     }
@@ -112,10 +112,51 @@ public class TelegramCommandReceiverTests
         await new TelegramCommandReceiver(handler.AsFactory()).RespondAsync(
             new CommandOrigin(NotificationChannel.Telegram, "4242"),
             CommandResult.Text("Tout va bien chez vous", ["Aucune detection recente"]),
+            Commands,
             Credentials);
 
         Assert.Contains("sendMessage", handler.Requests[0]);
         Assert.Contains("chat_id=4242", handler.Bodies[0]);
+    }
+
+    [Fact]
+    public async Task Turns_a_proposed_follow_up_into_a_button_that_carries_the_command()
+    {
+        var handler = new RecordingHandler("""{"ok":true}""");
+
+        await new TelegramCommandReceiver(handler.AsFactory()).RespondAsync(
+            new CommandOrigin(NotificationChannel.Telegram, "7"),
+            new CommandResult(
+                ChannelMessage.Plain("Relier cette conversation ?"),
+                FollowUps:
+                [
+                    new CommandFollowUp("Oui", RemoteCommandName.Pair,
+                        new Dictionary<string, string> { ["code"] = "123456" }, Confirms: true)
+                ]),
+            Commands,
+            Credentials);
+
+        Assert.Contains("reply_markup", handler.Bodies[0]);
+        Assert.Contains("relier%7C1%7C123456", handler.Bodies[0]);
+    }
+
+    [Fact]
+    public async Task Reads_a_button_tap_as_the_command_it_carried_and_as_a_confirmation()
+    {
+        var handler = new RecordingHandler(
+            """{"ok":true,"result":[{"update_id":3,"callback_query":{"id":"c1","data":"relier|1|123456","message":{"chat":{"id":4242}}}}]}""");
+
+        var received = await new TelegramCommandReceiver(handler.AsFactory())
+            .ReceiveAsync(Commands, Credentials);
+
+        var incoming = Assert.Single(received);
+        Assert.Equal(RemoteCommandName.Pair, incoming.Command);
+        Assert.Equal("123456", incoming.Arguments!["code"]);
+        Assert.True(incoming.Confirmed);
+        Assert.Equal("4242", incoming.Origin.ConversationId);
+
+        // Left unanswered, the tap keeps spinning in the conversation.
+        Assert.Contains(handler.Requests, request => request.Contains("answerCallbackQuery"));
     }
 
     private sealed class RecordingHandler(params string[] responses) : HttpMessageHandler

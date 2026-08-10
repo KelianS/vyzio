@@ -72,8 +72,8 @@ public class SnapshotCommandHandlerTests
             .ExecuteAsync(Ask());
 
         Assert.Null(result.Photo);
-        Assert.Equal(2, result.Message.Details.Count);
-        Assert.Contains(result.Message.Details, detail => detail.Contains("/apercu jardin"));
+        Assert.Equal(2, result.FollowUps!.Count);
+        Assert.Contains(result.FollowUps, followUp => followUp.Label == "Jardin");
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class SnapshotCommandHandlerTests
 
         Assert.Null(result.Photo);
         Assert.Contains("garage", result.Message.Headline);
-        Assert.Contains(result.Message.Details, detail => detail.Contains("Entrée"));
+        Assert.Contains(result.FollowUps!, followUp => followUp.Label == "Entrée");
     }
 
     [Fact]

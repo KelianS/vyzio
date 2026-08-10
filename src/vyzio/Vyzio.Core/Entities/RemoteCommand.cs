@@ -6,7 +6,10 @@ public enum RemoteCommandName
     SystemState,
     Pair,
     Help,
-    Snapshot
+    Snapshot,
+    RecentDetections,
+    PrivacyMode,
+    PtzPosition
 }
 
 /// <summary>The shape of a parameter, so the channel can validate it before Vyzio ever sees it (ADR-52).</summary>

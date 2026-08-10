@@ -22,9 +22,11 @@ public interface IChannelCommandReceiver
         ChannelCredentials credentials,
         CancellationToken ct = default);
 
+    /// <param name="commands">Needed to name in the channel's grammar the follow-ups the answer proposes.</param>
     Task RespondAsync(
         CommandOrigin origin,
         CommandResult result,
+        IReadOnlyList<RemoteCommandDescriptor> commands,
         ChannelCredentials credentials,
         CancellationToken ct = default);
 }

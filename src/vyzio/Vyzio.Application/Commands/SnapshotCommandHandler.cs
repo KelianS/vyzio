@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -32,12 +29,17 @@ public sealed class SnapshotCommandHandler(GetCamerasUseCase cameras, IFrigateLi
             return CommandResult.Text("Aucune camera n'est installee", []);
 
         var asked = invocation.Argument(CameraParameter);
-        var camera = Resolve(known, asked);
+        var camera = CommandCameraLookup.Resolve(known, asked);
 
         if (camera is null)
-            return CommandResult.List(
-                asked is null ? "De quelle camera ?" : $"Je ne connais pas de camera « {asked} »",
-                [.. known.Select(candidate => $"/apercu {Simplify(candidate.DisplayName)} — {candidate.DisplayName}")]);
+            return new CommandResult(
+                ChannelMessage.Plain(asked is null
+                    ? "De quelle camera ?"
+                    : $"Je ne connais pas de camera « {asked} »"),
+                FollowUps: [.. known.Select(candidate => new CommandFollowUp(
+                    candidate.DisplayName,
+                    RemoteCommandName.Snapshot,
+                    new Dictionary<string, string> { [CameraParameter] = candidate.Slug }))]);
 
         // A camera whose privacy mode is on is not blinded by accident: saying so beats sending a black frame.
         if (camera.PrivacyModeActive)
@@ -52,27 +54,5 @@ public sealed class SnapshotCommandHandler(GetCamerasUseCase cameras, IFrigateLi
         return new CommandResult(
             ChannelMessage.Plain($"📷 {camera.DisplayName} — a l'instant"),
             new MemoryStream(frame));
-    }
-
-    /// <summary>Matches what was typed against what the cameras are called, accents and case aside.</summary>
-    private static CameraDto? Resolve(IReadOnlyList<CameraDto> cameras, string? asked)
-    {
-        if (asked is null) return cameras.Count == 1 ? cameras[0] : null;
-
-        var wanted = Simplify(asked);
-        return cameras.FirstOrDefault(camera => Simplify(camera.DisplayName) == wanted)
-               ?? cameras.FirstOrDefault(camera => Simplify(camera.Slug) == wanted)
-               ?? cameras.FirstOrDefault(camera => Simplify(camera.DisplayName).StartsWith(wanted, StringComparison.Ordinal));
-    }
-
-    private static string Simplify(string value)
-    {
-        var stripped = new StringBuilder(value.Length);
-        foreach (var character in value.Normalize(NormalizationForm.FormD))
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark) continue;
-            if (char.IsLetterOrDigit(character)) stripped.Append(char.ToLowerInvariant(character));
-        }
-        return stripped.ToString();
     }
 }
