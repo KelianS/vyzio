@@ -233,8 +233,9 @@ Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et 
        appartient à la lecture de l'historique (ADR-15)
    └─► Récupère le média avec reprise (Frigate le finalise quelques secondes après la fin),
        et retombe sur le texte si rien ne vient
-   └─► Telegram sendPhoto : "Alice est arrivée • Porte d'entrée • 09:32" + photo
-   └─► Journalise l'envoi, ancré sur l'identifiant d'événement Frigate — seul fait persisté
+   └─► Remet le message et son média à chaque canal actif, qui le rend à sa façon :
+       "Alice est arrivée • Porte d'entrée • 09:32" + photo
+   └─► Journalise l'envoi, par canal, ancré sur l'identifiant d'événement Frigate — seul fait persisté
    └─► SignalR : push vers dashboard ouvert
 
 4bis. Consultation de l'historique (indépendante du flux ci-dessus)
@@ -422,8 +423,8 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence 
 | Dashboard | **React 19 + TypeScript** | SvelteKit | Pool contributeurs, écosystème UI |
 | UI components | **Shadcn/ui + Tailwind** | Material UI | Accessibilité, personnalisable sans designer |
 | Canvas zones | **React-Konva** | Fabric.js | Intégration React native |
-| Notification principale | **Telegram Bot** | FCM | Image native hors réseau, setup 30s |
-| Notification alternative | **Discord / FCM / ntfy / Email** | WhatsApp (écarté) | Selon préférence utilisateur |
+| Canaux de notification | **Telegram, Discord** — adaptateurs derrière un port unique | FCM | Image native hors réseau, aucun canal privilégié (ADR-50) |
+| Canaux envisagés | ntfy, e-mail, webhook | WhatsApp (sortant seulement) | Selon préférence utilisateur |
 | Auth | **JWT + bcrypt + refresh tokens** | OAuth2/Keycloak | Local-first |
 | TLS | **Certificat auto-signé** (cible, non livrée — §8.1) | Let's Encrypt | Fonctionne hors-ligne, sans dépendre d'un domaine public |
 | Accès distant à l'interface | **Réseau overlay NetBird**, opt-in, opéré par l'utilisateur | Tunnel de publication web, redirection de port, relais Vyzio | ADR-51 |

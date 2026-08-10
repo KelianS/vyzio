@@ -179,7 +179,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux configurer mes destinations de notification depuis l'interface, afin de ne jamais modifier un fichier a la main.
 
-> **En tant qu'utilisateur**, je veux etre guide pour configurer Telegram, tester l'envoi et comprendre les compromis du canal choisi.
+> **En tant qu'utilisateur**, je veux etre guide pour configurer un canal, tester l'envoi et comprendre les compromis du canal choisi.
 
 > **En tant qu'utilisateur**, je veux choisir quelles categories d'evenements meritent une alerte et quel niveau de bruit appliquer selon le contexte.
 
@@ -197,7 +197,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - l'utilisateur doit pouvoir regler des plages horaires et un niveau minimal d'alerte ;
 - si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
 - la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;
-- le premier parcours guide doit couvrir Telegram de bout en bout : saisie des identifiants, verification, etat configure / non configure, test d'envoi ;
+- chaque canal propose doit etre couvert de bout en bout : saisie de ce qu'il demande, verification, etat configure / non configure, test d'envoi ;
+- ajouter un canal ne doit pas ajouter un ecran : les canaux se reglent avec la meme grammaire, seule la facon de s'y connecter change ;
 - le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, le niveau minimal d'alerte et les plages horaires associees ;
 - le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise ;
 - les reglages doivent etre persistants cote Vyzio et ne pas dependre d'une edition manuelle du runtime ;

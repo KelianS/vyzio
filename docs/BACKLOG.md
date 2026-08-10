@@ -40,7 +40,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Support Nvidia (tensorrt) et AMD (rocm) pour le détecteur Frigate — nécessite de recréer le conteneur sur le variant d'image adapté (`-tensorrt`/`-rocm`), pas seulement de changer `config.yml` ; écarté de [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md) faute de besoin terrain confirmé. Coral USB (en plus du PCIe déjà supporté) également hors scope actuel.
 - Benchmarker `yolox_s` (retenu pour le palier Intel GPU dans [ADR-34](adr/0034-adaptation-materielle-automatique-du-detecteur-frigate.md)) sur du matériel varié et évaluer une variante plus précise (`yolox_m`/`l`) si le terrain le justifie — pas de mesure exhaustive à ce stade. Le palier CPU seul reste sur le détecteur natif `cpu` (YOLOX, même la plus petite variante, a produit des pics CPU ~800% et des détections dégradées en test terrain — pas un gain sur ce palier). YOLOv9 écarté (licence GPL-3.0, test exploratoire erratique : voir [investigation](investigations/yolov9_frigate_openvino.md)) ; YOLO-NAS écarté (poids non-commerciaux).
 - Le nom d'une camera se regle sous « Connexion », qui n'est pas ce qu'il est — il faudrait une page de plus. Constat de la passe de coherence du chantier `config-ui`, non corrigeable sans trancher le rangement.
-- La marche a suivre Telegram est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
+- La marche a suivre d'un canal de notification est un mode d'emploi affiche dans un ecran de reglages, ce qu'[ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) renvoie a [`user/`](user/) — mais rien dans l'application ne mene encore a cette documentation. Meme origine que le constat ci-dessus.
 - **L'ecran Expert ne peut pas fonctionner depuis un telephone.** Il integre l'UI de Frigate en iframe directement depuis le navigateur ([ADR-11](adr/0011-strategie-ux-non-tech-hub-vyzio-simplifie-frigate.md)), sur `http://<hote>:5000` — mais le conteneur publie ce port sur `127.0.0.1` seulement. Depuis un appareil du reseau local, l'ecran affiche « Frigate inaccessible » sans que rien ne soit en panne. Deux issues : exposer Frigate sur le reseau (port sans authentification, contre « Frigate invisible »), ou le servir en proxy authentifie comme tout le reste. Seul endroit ou le navigateur parle a Frigate sans passer par Vyzio.
 - Trier l'historique sur le modèle *review* de Frigate (sévérité `alert` / `detection`, regroupement des objets d'un même passage), que Vyzio ignore aujourd'hui — hors périmètre d'[ADR-49](adr/0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md), qui en pose le constat. Chantier produit distinct : il change ce que l'historique montre, pas d'où il tient sa vérité.
 - Enregistrer le codec du flux par caméra (relevé à la vérification de la caméra), ce qui ouvrirait deux choses : choisir `preset-intel-qsv-h264/h265` plutôt que `preset-vaapi` sur Intel gen13+/Arc — écarté d'[ADR-37](adr/0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) faute de ce prérequis, les presets QuickSync n'existant qu'en variantes codec-spécifiques — et signaler qu'une caméra en H.265 coûte nettement plus cher à décoder qu'en H.264.
@@ -70,37 +70,14 @@ Direction tranchée : [ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirecti
 (accès réseau) ; attendus produit en [SPECS](SPECS.md) §5.4 et §7.2. Comparaison des solutions et
 critères d'arbitrage : [étude](investigations/acces-a-distance.md).
 
-Trois étapes, chacune livrable et démontrable seule. **1 précède 2** (le registre de commandes n'a
-pas de canal générique où se brancher sans elle). **3 ne dépend d'aucune des deux** — mais elle est
-bloquée par son propre prérequis, le transport chiffré, et elle n'a d'intérêt qu'après 2, qui la rend
-facultative.
+La généralisation du canal sortant et le canal Discord sont livrés : le registre de commandes a
+désormais où se brancher. Restent deux étapes, chacune livrable et démontrable seule. **2 ne dépend
+pas de 1** — mais elle est bloquée par son propre prérequis, le transport chiffré, et elle n'a
+d'intérêt qu'après 1, qui la rend facultative.
 
-#### 1. Généraliser le canal de communication, et livrer Discord
+#### 1. Rendre le canal bidirectionnel : les commandes
 
-Aujourd'hui rien n'est générique **même dans le sens sortant** : le port du domaine s'appelle
-`ITelegramNotificationSender`, le use case `SendTelegramDetectionNotificationUseCase`, et
-`NotificationChannelConfig` porte `BotToken` / `ChatId` — des colonnes Telegram sur une entité au nom
-générique — avec un `Channel` en chaîne libre. Discord est ici le **juge de paix** : c'est lui qui
-prouve que la généralisation en est une, et pas un renommage.
-
-- port de canal remplaçant `ITelegramNotificationSender` ; Telegram devient un adaptateur parmi
-  d'autres, sans statut particulier dans le domaine ;
-- `NotificationChannelConfig` scindée : le commun (activation, plages, seuil, format, anti-spam) d'un
-  côté, ce qui appartient au canal (jeton, destinataire) de l'autre ; `Channel` en enum
-  (règle des comparaisons type-safe) ; migrations repartant de zéro, aucune reprise de données ;
-- **capacités déclarées par canal** (image, vidéo, boutons, longueur utile) : c'est le mécanisme qui
-  évitera un `if (canal == …)` à chaque nouveau canal, et il sert dès l'étape 2 ;
-- **canal Discord** livré de bout en bout : configuration, test d'envoi, état configuré / non
-  configuré, au même niveau que Telegram — et l'interface de réglages qui cesse d'être écrite pour un
-  canal unique ;
-- doc utilisateur du canal Discord ([`user/`](user/)).
-
-**Fait quand** une notification part sur les deux canaux sans qu'aucun code métier ne nomme l'un
-d'eux, et que l'écran de réglages traite les deux avec le même composant.
-
-#### 2. Rendre le canal bidirectionnel : les commandes
-
-Périmètre produit : [SPECS §5.4](SPECS.md). C'est l'étape qui rend l'étape 3 optionnelle — donc celle
+Périmètre produit : [SPECS §5.4](SPECS.md). C'est l'étape qui rend l'étape 2 optionnelle — donc celle
 qui compte le plus pour l'usage réel.
 
 - **registre de commandes déclaratif** : nom, paramètres typés, autorisation, résultat structuré
@@ -121,7 +98,7 @@ qui compte le plus pour l'usage réel.
 **Fait quand** le même jeu de commandes fonctionne sur Telegram et Discord sans code spécifique, et
 qu'un message d'un inconnu ne produit rien du tout.
 
-#### 3. Accès distant à l'interface (NetBird)
+#### 2. Accès distant à l'interface (NetBird)
 
 - **prérequis bloquant — le transport chiffré.** Le produit est servi en clair aujourd'hui
   (SAD §8.1) : chiffrer le trajet jusqu'à la maison pour livrer l'interface en HTTP à l'arrivée
