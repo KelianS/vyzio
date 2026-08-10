@@ -71,10 +71,9 @@ Direction tranchée : [ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirecti
 (accès réseau) ; attendus produit en [SPECS](SPECS.md) §5.4 et §7.2. Comparaison des solutions et
 critères d'arbitrage : [étude](investigations/acces-a-distance.md).
 
-La généralisation du canal sortant et le canal Discord sont livrés : le registre de commandes a
-désormais où se brancher. Restent deux étapes, chacune livrable et démontrable seule. **2 ne dépend
-pas de 1** — mais elle est bloquée par son propre prérequis, le transport chiffré, et elle n'a
-d'intérêt qu'après 1, qui la rend facultative.
+Restent deux étapes, chacune livrable et démontrable seule. **2 ne dépend pas de 1** — mais elle est
+bloquée par son propre prérequis, le transport chiffré, et elle n'a d'intérêt qu'après 1, qui la rend
+facultative.
 
 #### 1. Rendre le canal bidirectionnel : les commandes
 
@@ -82,41 +81,22 @@ Périmètre produit : [SPECS §5.4](SPECS.md). C'est l'étape qui rend l'étape 
 qui compte le plus pour l'usage réel. Elle n'ajoute **aucun comportement métier** : toute commande
 s'exécute par un use case déjà livré, le canal entrant n'est qu'un adaptateur d'entrée de plus.
 
-Six itérations, dans cet ordre. Chacune se construit et se démontre seule ; l'ordre place la preuve
-la plus tôt possible — un aller-retour réel en 1.2, avant d'élargir le jeu de commandes.
+Livré : le registre de commandes et leur journal (1.1), Telegram bout en bout avec appairage
+révocable (1.2), le jeu de commandes courant et ses confirmations (1.3), et le canal Discord passé du
+webhook au bot (1.4) — le même jeu de commandes tourne sur les deux canaux sans une ligne de code
+spécifique. Restent deux itérations.
 
-**1.1 — Le registre et l'exécution, sans aucun canal.** Une commande déclare son nom, ses paramètres
-typés, son autorisation et un résultat structuré (texte, média optionnel, suites proposées). Une
-seule commande pour commencer — l'état du système, qui ne prend aucun paramètre et ne modifie rien.
-Le journal des commandes (origine, commande, issue, horodatage) est écrit ici, pas après coup : c'est
-la seule trace exploitable si un appairage fuit. *Fait quand* une commande s'exécute et se journalise
-en test, sans qu'aucun canal existe.
-
-**1.2 — Telegram bout en bout, appairage compris.** Boucle de récupération sortante (long polling)
-démarrée avec la configuration du canal ; appairage d'une conversation initié depuis les réglages et
-révocable ; **toute autre origine ignorée sans réponse** ; rendu du résultat selon les capacités déjà
-déclarées par le canal ; publication des commandes via `setMyCommands`. *Fait quand* on demande
-l'état de chez soi depuis son téléphone et qu'on l'obtient, et qu'un inconnu n'obtient rien du tout.
-
-**1.3 — Le jeu de commandes courant.** Aperçu d'une caméra, dernières détections, mode vie privée,
-positions PTZ, interruption et reprise de la surveillance. Confirmation explicite avant toute action
-conséquente. Aucune commande de configuration — la grammaire des réglages
-([ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)) ne passe pas
-dans un fil. *Fait quand* chaque commande retombe sur son use case existant, sans branche parallèle.
-
-**1.4 — Le canal Discord bascule du webhook au bot** ([ADR-52](adr/0052-le-sens-entrant-passe-par-le-bot-natif-du-canal-identifiants-declares-par-sens.md)) :
-identifiants déclarés par sens, connexion passerelle, commandes publiées comme commandes
-d'application, sans l'intention *message content*. La configuration existante est effacée, pas
-reprise. *Fait quand* le jeu de commandes de 1.3 fonctionne sur Discord **sans une ligne de code
-spécifique au canal** — c'est le juge de paix de toute l'étape.
+Une réserve assumée : **l'interruption et la reprise de la surveillance** ne sont pas des commandes,
+écartées à l'arbitrage de 1.3 ; à rouvrir si l'usage les réclame.
 
 **1.5 — Ce que l'utilisateur voit.** État de l'appairage et santé de la boucle de récupération dans
 les réglages du canal — « le canal n'écoute plus » doit se lire, sinon Vyzio passera pour en panne ;
 journal des commandes consultable. *Fait quand* débrancher le réseau se voit dans les réglages.
 
-**1.6 — Doc utilisateur** : ce qu'on peut demander, comment appairer, comment révoquer. Le guide
-d'installation Discord est réécrit de bout en bout (créer l'application, inviter le bot, copier le
-salon) — personne n'ira lire la documentation de Discord.
+**1.6 — Doc utilisateur** : ce qu'on peut demander, comment appairer, comment révoquer — rien de tout
+cela n'est écrit dans [`user/NOTIFICATION_CHANNELS.md`](user/NOTIFICATION_CHANNELS.md), qui ne parle
+que des alertes. Les parcours d'installation y sont recopiés du mode d'emploi affiché dans l'écran du
+canal : à trancher, un seul foyer.
 
 **Fait quand** le même jeu de commandes fonctionne sur Telegram et Discord sans code spécifique, et
 qu'un message d'un inconnu ne produit rien du tout.

@@ -26,20 +26,16 @@ export const CREDENTIAL_COPY: Record<
   ChannelCredentialField,
   { label: string; help: string; placeholder: string }
 > = {
+  // Où trouver l'un et l'autre dépend du canal : c'est le mode d'emploi (channelSetup) qui le dit.
   bot_token: {
     label: 'Clé du bot',
-    help: 'Donnée par @BotFather à la création du bot. Laissez vide pour conserver celle déjà enregistrée.',
-    placeholder: '123456:ABC…',
+    help: 'Donnée à la création du bot. Laissez vide pour conserver celle déjà enregistrée.',
+    placeholder: '',
   },
   chat_id: {
     label: 'Identifiant de conversation',
-    help: 'Le numéro de la conversation qui recevra les alertes. @userinfobot vous le donne.',
+    help: 'Le numéro de la conversation qui recevra les alertes et répondra à vos commandes.',
     placeholder: '123456789',
-  },
-  webhook_url: {
-    label: 'Adresse du salon',
-    help: 'Donnée par Discord dans Paramètres du salon › Intégrations › Webhooks. Laissez vide pour conserver celle déjà enregistrée.',
-    placeholder: 'https://discord.com/api/webhooks/…',
   },
 }
 
@@ -47,7 +43,6 @@ export const NOTIFICATION_DRAFT_LABELS: Record<keyof NotificationValues, string>
   enabled: 'Envoi des alertes',
   bot_token: CREDENTIAL_COPY.bot_token.label,
   chat_id: CREDENTIAL_COPY.chat_id.label,
-  webhook_url: CREDENTIAL_COPY.webhook_url.label,
   minimumConfidence: 'Certitude minimale',
   allowedLabels: 'Ce qui déclenche une alerte',
   restrictHours: 'Plage horaire',
@@ -65,7 +60,6 @@ const DEFAULT_FIELDS = ['camera', 'time', 'label', 'confidence', 'snapshot']
 const EMPTY_CREDENTIALS: Record<ChannelCredentialField, string> = {
   bot_token: '',
   chat_id: '',
-  webhook_url: '',
 }
 
 export const DEFAULT_NOTIFICATION_VALUES: NotificationValues = {

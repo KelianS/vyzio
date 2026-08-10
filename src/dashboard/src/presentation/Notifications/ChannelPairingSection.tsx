@@ -71,7 +71,9 @@ export function ChannelPairingSection({
               disabled={starting.loading}
               onClick={() => void starting.run()}
             >
-              {status === 'awaiting_conversation' ? 'Générer un autre code' : 'Relier une conversation'}
+              {status === 'awaiting_conversation'
+                ? 'Générer un autre code'
+                : 'Relier une conversation'}
             </Button>
           )}
 

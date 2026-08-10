@@ -26,11 +26,14 @@ Telegram demande une **clé de bot** et un **identifiant de conversation**.
 
 ### Discord
 
-Discord ne demande qu'une **adresse de salon** (un webhook).
+Discord demande une **clé de bot** et l'**identifiant du salon**.
 
-1. Choisissez le salon qui recevra les alertes. Tous ceux qui y ont accès verront les images.
-2. Menu du salon › *Modifier le salon* › *Intégrations* › *Webhooks* › *Nouveau webhook*.
-3. **Copier l'URL du webhook** et collez-la dans Vyzio.
+1. Sur le [portail développeur de Discord](https://discord.com/developers/applications), *New
+   Application*, puis onglet *Bot* › *Reset Token* : la clé obtenue est celle que Vyzio demande.
+2. Onglet *OAuth2* › *URL Generator* : cochez `bot` et `applications.commands`, puis *Send Messages*.
+   Ouvrez l'adresse produite en bas de la page et choisissez votre serveur.
+3. Activez *Paramètres* › *Avancés* › *Mode développeur*, puis clic droit sur le salon qui recevra les
+   alertes › *Copier l'identifiant*. Tous ceux qui y ont accès verront les images.
 
 ---
 
@@ -71,8 +74,8 @@ elle n'est pas prête, Vyzio envoie la photo ; si la photo manque à son tour, l
 
 ## Vérifier et dépanner
 
-- **Derniers envois**, en bas de la page du canal, liste ce qui est réellement parti et l'erreur en
-  cas d'échec. C'est la seule preuve que le canal fonctionne hors d'un test manuel.
+- **Derniers envois**, dans le repli *Avancé* de la page du canal, liste ce qui est réellement parti
+  et l'erreur en cas d'échec. C'est la seule preuve que le canal fonctionne hors d'un test manuel.
 - **Envoyer un message de test** n'est disponible qu'une fois la configuration enregistrée.
 - **Supprimer le canal** efface ses informations de connexion. Les autres canaux ne sont pas touchés.
 - Les notifications ont besoin d'Internet. Sans connexion, Vyzio continue de détecter et

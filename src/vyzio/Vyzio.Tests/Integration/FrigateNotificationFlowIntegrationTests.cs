@@ -188,11 +188,11 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             channel,
             channel.ToString(),
             new ChannelCapabilities(Photo: true, Video: true, GroupedMedia: true, Buttons: false, UsefulTextLength: 1024),
-            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]));
+            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: true)]));
 
         public ChannelCredentials WorkingCredentials { get; } = new(new Dictionary<ChannelCredential, string>
         {
-            [ChannelCredential.WebhookUrl] = "https://channel.test/hook"
+            [ChannelCredential.ChatId] = "4242"
         });
 
         public Task SendAsync(OutgoingNotification notification, ChannelCredentials credentials, CancellationToken ct = default)

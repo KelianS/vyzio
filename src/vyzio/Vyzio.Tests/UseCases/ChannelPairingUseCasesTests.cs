@@ -30,7 +30,7 @@ public class ChannelPairingUseCasesTests
             NotificationChannel.Discord,
             "Discord",
             new ChannelCapabilities(true, true, true, false, 2000),
-            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)])));
+            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: true)])));
 
         return new NotificationChannelCatalog([listening, deaf]);
     }

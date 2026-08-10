@@ -1,7 +1,4 @@
-import type {
-  ChannelPairing,
-  NotificationChannelName,
-} from '../entities/NotificationChannelConfig'
+import type { ChannelPairing, NotificationChannelName } from '../entities/NotificationChannelConfig'
 import type { NotificationSettingsRepository } from '../ports/NotificationSettingsRepository'
 
 export class GetChannelPairing {

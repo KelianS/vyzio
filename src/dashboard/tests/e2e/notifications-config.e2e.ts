@@ -31,9 +31,9 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
   })
 
-  // La barre de l'etape : un second canal se configure avec le meme ecran, et
-  // ne demande que ce qu'il a declare (ADR-50).
-  test('user_When adding a second channel_Should get the same screen asking only what it needs', async ({
+  // La barre de l'etape : un second canal se configure avec le meme ecran, monte
+  // sur ce qu'il declare, et avec son propre mode d'emploi (ADR-50, ADR-52).
+  test('user_When adding a second channel_Should get the same screen with that channel instructions', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())
@@ -41,12 +41,10 @@ test.describe('Notifications — les canaux', () => {
     await page.goto('/settings/notifications/discord')
 
     await expect(page.getByRole('heading', { name: 'Discord' })).toBeVisible()
-    await expect(page.getByRole('textbox', { name: 'Adresse du salon' })).toBeVisible()
-    await expect(page.getByRole('textbox', { name: 'Clé du bot' })).toHaveCount(0)
+    await expect(page.getByText('Invitez-le sur votre serveur')).toBeVisible()
 
-    await page
-      .getByRole('textbox', { name: 'Adresse du salon' })
-      .fill('https://discord.com/api/webhooks/1/abc')
+    await page.getByRole('textbox', { name: 'Clé du bot' }).fill('discord-bot-token')
+    await page.getByRole('textbox', { name: 'Identifiant de conversation' }).fill('4242')
     await page.getByRole('switch', { name: 'Alertes Discord' }).click()
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()

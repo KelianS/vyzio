@@ -13,7 +13,7 @@ export function parseNotificationChannelName(
 }
 
 /** A secret or address a channel asks for; which ones apply is declared by the channel. */
-export type ChannelCredentialField = 'bot_token' | 'chat_id' | 'webhook_url'
+export type ChannelCredentialField = 'bot_token' | 'chat_id'
 
 export interface ChannelCredential {
   field: ChannelCredentialField

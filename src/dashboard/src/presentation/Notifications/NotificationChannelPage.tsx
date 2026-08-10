@@ -338,7 +338,10 @@ function ChannelForm({
 
           {/* Le mode d'emploi s'efface une fois le canal en place : il n'a plus rien a apprendre a personne. */}
           {!config.isConfigured && (
-            <SettingsSection title="Obtenir ces informations" lede={channelSetupLede(config.channel)}>
+            <SettingsSection
+              title="Obtenir ces informations"
+              lede={channelSetupLede(config.channel)}
+            >
               <ChannelSetupSteps channel={config.channel} />
             </SettingsSection>
           )}

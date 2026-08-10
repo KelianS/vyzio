@@ -21,7 +21,7 @@ public class GetHubOverviewUseCaseTests
 
     private static readonly ChannelCredentials WorkingCredentials = new(new Dictionary<ChannelCredential, string>
     {
-        [ChannelCredential.WebhookUrl] = "https://channel.test/hook"
+        [ChannelCredential.ChatId] = "4242"
     });
 
     private static INotificationChannelCatalog Catalog()
@@ -31,7 +31,7 @@ public class GetHubOverviewUseCaseTests
             NotificationChannel.Telegram,
             "Telegram",
             new ChannelCapabilities(true, true, true, false, 1024),
-            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)])));
+            new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: true)])));
         return new NotificationChannelCatalog([sender]);
     }
 

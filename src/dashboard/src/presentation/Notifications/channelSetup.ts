@@ -39,15 +39,19 @@ export const CHANNEL_SETUP: Record<NotificationChannelName, ChannelSetup> = {
     ],
   },
   discord: {
-    lede: 'Trois étapes dans Discord, une seule fois.',
+    lede: 'Quatre étapes dans Discord, une seule fois.',
     steps: [
       {
-        title: 'Choisissez le salon',
-        body: 'Dans votre serveur, ouvrez le salon qui recevra les alertes. Tous ceux qui y ont accès verront les images.',
+        title: 'Créez un bot',
+        body: 'Sur le [portail développeur de Discord](https://discord.com/developers/applications), `New Application`, puis onglet `Bot` › `Reset Token` : la clé obtenue se recopie ci-dessus.',
       },
       {
-        title: 'Créez un webhook',
-        body: 'Menu du salon › `Modifier le salon` › `Intégrations` › `Webhooks` › `Nouveau webhook`, puis `Copier l’URL du webhook` et recopiez-la ci-dessus.',
+        title: 'Invitez-le sur votre serveur',
+        body: 'Onglet `OAuth2` › `URL Generator` : cochez `bot` et `applications.commands`, puis `Send Messages`. Ouvrez l’adresse produite en bas et choisissez votre serveur.',
+      },
+      {
+        title: 'Relevez l’identifiant du salon',
+        body: 'Activez `Paramètres` › `Avancés` › `Mode développeur`, puis clic droit sur le salon qui recevra les alertes › `Copier l’identifiant`. Tous ceux qui y ont accès verront les images.',
       },
       {
         title: 'Vérifiez',

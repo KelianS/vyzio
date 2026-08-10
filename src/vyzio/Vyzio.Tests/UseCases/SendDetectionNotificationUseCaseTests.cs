@@ -34,7 +34,7 @@ public class SendDetectionNotificationUseCaseTests
             })
             : new ChannelCredentials(new Dictionary<ChannelCredential, string>
             {
-                [ChannelCredential.WebhookUrl] = "https://discord.test/hook"
+                [ChannelCredential.ChatId] = "4242"
             });
 
     private static INotificationChannelSender FakeSender(
@@ -50,7 +50,7 @@ public class SendDetectionNotificationUseCaseTests
             channel == NotificationChannel.Telegram
                 ? new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.BotToken, true),
                                         new ChannelCredentialSpec(ChannelCredential.ChatId, false)])
-                : new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.WebhookUrl, true)])));
+                : new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.ChatId, true)])));
         return sender;
     }
 

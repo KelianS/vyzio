@@ -1,7 +1,4 @@
-import type {
-  ChannelPairing,
-  NotificationChannelName,
-} from '../entities/NotificationChannelConfig'
+import type { ChannelPairing, NotificationChannelName } from '../entities/NotificationChannelConfig'
 import type { NotificationSettingsRepository } from '../ports/NotificationSettingsRepository'
 
 /** Issues the code the user carries over to the conversation; pairing always starts here (ADR-50). */

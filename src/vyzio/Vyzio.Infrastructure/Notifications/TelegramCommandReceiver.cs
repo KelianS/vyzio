@@ -132,7 +132,7 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
                 new
                 {
                     text = pair.followUp.Label,
-                    callback_data = TelegramCallbackData.Write(pair.descriptor!, pair.followUp)
+                    callback_data = CommandCallbackData.Write(pair.descriptor!, pair.followUp)
                 }
             })
             .ToList();
@@ -196,7 +196,7 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
             NotificationChannel.Telegram,
             chatId.GetInt64().ToString(CultureInfo.InvariantCulture));
 
-        return TelegramCallbackData.Read(
+        return CommandCallbackData.Read(
             callback.TryGetProperty("data", out var data) ? data.GetString() : null,
             origin,
             commands);

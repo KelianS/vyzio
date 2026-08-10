@@ -51,6 +51,7 @@ public static class ServiceCollectionExtensions
         // A long poll holds the request open on purpose: the client must not call that a timeout (ADR-50).
         services.AddHttpClient(Notifications.TelegramCommandReceiver.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddHttpClient(Notifications.DiscordApi.HttpClientName);
         services.AddSingleton<OnvifClient>();
         services.AddSingleton<DvripClient>();
         services.AddSingleton<V380Client>();
