@@ -58,3 +58,4 @@ référence ces ADR sans les recopier.
 | [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) | Vyzio ne persiste pas les détections : l'historique est la liste de Frigate, enrichie à la lecture | Accepté |
 | [ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md) | Le canal de messagerie devient bidirectionnel : une couche de commandes agnostique du canal | Accepté |
 | [ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md) | Accès distant à l'interface : réseau overlay NetBird, guidé par Vyzio mais opéré par l'utilisateur | Accepté |
+| [ADR-52](0052-le-sens-entrant-passe-par-le-bot-natif-du-canal-identifiants-declares-par-sens.md) | Le sens entrant passe par le bot natif du canal : identifiants déclarés par sens | Accepté |
