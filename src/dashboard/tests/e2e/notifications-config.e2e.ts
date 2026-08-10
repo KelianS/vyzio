@@ -1,13 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState } from './fixtures/fakeBackend'
 
-test.describe('Notifications — canal Telegram', () => {
-  test('user_When configuring and enabling the channel_Should be warned before data leaves', async ({
+test.describe('Notifications — les canaux', () => {
+  test('user_When configuring and enabling a channel_Should be warned before data leaves', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())
 
     await page.goto('/settings/notifications')
+    await page.getByRole('link', { name: 'Ajouter un canal' }).click()
+    await page.getByRole('link', { name: 'Telegram' }).click()
+
     await expect(page.getByText('Pas encore configuré.')).toBeVisible()
 
     await page.getByRole('textbox', { name: 'Clé du bot' }).fill('123456:ABCDEF')
@@ -28,9 +31,33 @@ test.describe('Notifications — canal Telegram', () => {
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
   })
 
+  // La barre de l'etape : un second canal se configure avec le meme ecran, et
+  // ne demande que ce qu'il a declare (ADR-50).
+  test('user_When adding a second channel_Should get the same screen asking only what it needs', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState())
+
+    await page.goto('/settings/notifications/discord')
+
+    await expect(page.getByRole('heading', { name: 'Discord' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Adresse du salon' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Clé du bot' })).toHaveCount(0)
+
+    await page
+      .getByRole('textbox', { name: 'Adresse du salon' })
+      .fill('https://discord.com/api/webhooks/1/abc')
+    await page.getByRole('switch', { name: 'Alertes Discord' }).click()
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()
+
+    await page.goto('/settings/notifications')
+    await expect(page.getByRole('link', { name: /Discord/ })).toBeVisible()
+  })
+
   test('user_When nothing is configured_Should not be able to send a test', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/notifications')
+    await page.goto('/settings/notifications/telegram')
 
     // Tester sans canal enverrait vers nulle part : le bouton le dit au lieu
     // de laisser essayer.
@@ -39,7 +66,7 @@ test.describe('Notifications — canal Telegram', () => {
 
   test('user_When restricting hours_Should only then be asked which ones', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/notifications')
+    await page.goto('/settings/notifications/telegram')
 
     // Les heures n'existent que si la plage est demandee : les montrer grisees
     // ferait deux reglages la ou l'utilisateur n'en decide qu'un.

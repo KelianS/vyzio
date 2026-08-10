@@ -1,32 +1,69 @@
 using System.Text.Json;
 using Vyzio.Application.DTOs.Notifications;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Notifications;
 
-public sealed class GetNotificationChannelConfigUseCase(INotificationChannelConfigRepository repository)
+/// <summary>Every channel Vyzio knows how to talk through, configured or not — the list screen.</summary>
+public sealed class ListNotificationChannelsUseCase(
+    INotificationChannelCatalog catalog,
+    INotificationChannelConfigRepository repository)
 {
-    public async Task<NotificationChannelConfigDto?> ExecuteAsync(string channel, CancellationToken ct = default)
+    public async Task<IReadOnlyList<NotificationChannelSummaryDto>> ExecuteAsync(CancellationToken ct = default)
     {
-        var config = await repository.GetByChannelAsync(channel, ct);
-        return config is null ? null : NotificationChannelConfigDto.From(config);
+        var configs = (await repository.GetAllAsync(ct)).ToDictionary(config => config.Channel);
+
+        return
+        [
+            .. catalog.Descriptors.Select(descriptor =>
+            {
+                configs.TryGetValue(descriptor.Channel, out var config);
+                var credentials = config?.Credentials ?? ChannelCredentials.Empty;
+
+                return new NotificationChannelSummaryDto(
+                    Channel: SnakeCaseEnum.ToSnakeCase(descriptor.Channel),
+                    DisplayName: descriptor.DisplayName,
+                    IsConfigured: descriptor.IsSatisfiedBy(credentials),
+                    IsEnabled: config?.IsEnabled ?? false);
+            })
+        ];
     }
 }
 
-public sealed class SaveNotificationChannelConfigUseCase(INotificationChannelConfigRepository repository)
+public sealed class GetNotificationChannelConfigUseCase(
+    INotificationChannelCatalog catalog,
+    INotificationChannelConfigRepository repository)
 {
-    public async Task<NotificationChannelConfigDto> ExecuteAsync(
-        string channel,
+    public async Task<NotificationChannelConfigDto?> ExecuteAsync(NotificationChannel channel, CancellationToken ct = default)
+    {
+        var descriptor = catalog.Describe(channel);
+        if (descriptor is null) return null;
+
+        var config = await repository.GetByChannelAsync(channel, ct);
+        return config is null
+            ? NotificationChannelConfigDto.Unconfigured(descriptor)
+            : NotificationChannelConfigDto.From(descriptor, config);
+    }
+}
+
+public sealed class SaveNotificationChannelConfigUseCase(
+    INotificationChannelCatalog catalog,
+    INotificationChannelConfigRepository repository)
+{
+    public async Task<NotificationChannelConfigDto?> ExecuteAsync(
+        NotificationChannel channel,
         SaveNotificationChannelConfigRequest request,
         CancellationToken ct = default)
     {
-        var existing = await repository.GetByChannelAsync(channel, ct);
+        var descriptor = catalog.Describe(channel);
+        if (descriptor is null) return null;
 
-        var config = existing ?? new NotificationChannelConfig { Channel = channel };
+        var config = await repository.GetByChannelAsync(channel, ct)
+                     ?? new NotificationChannelConfig { Channel = channel };
 
         config.IsEnabled = request.IsEnabled;
-        config.ChatId = request.ChatId?.Trim();
         config.MinimumConfidence = request.MinimumConfidence is >= 0f and <= 1f
             ? request.MinimumConfidence.Value
             : config.MinimumConfidence;
@@ -39,42 +76,65 @@ public sealed class SaveNotificationChannelConfigUseCase(INotificationChannelCon
         config.ActiveToHour = request.ActiveToHour is >= 0 and <= 23 ? request.ActiveToHour : null;
 
         if (request.MessageFields is { Length: > 0 })
-            config.MessageFieldsJson = JsonSerializer.Serialize(request.MessageFields);
+            config.MessageFieldsJson = MessageFields.Serialize(ParseFields(request.MessageFields));
         else if (request.MessageFields is { Length: 0 })
             config.MessageFieldsJson = null; // empty array → reset to all fields
 
-        if (request.MediaMode is "clip_or_photo" or "photo" or "text")
-            config.MediaMode = request.MediaMode;
+        if (SnakeCaseEnum.TryFromSnakeCase<MediaMode>(request.MediaMode, out var mediaMode))
+            config.MediaMode = mediaMode;
         else if (request.MediaMode is not null)
-            config.MediaMode = null; // unknown value → reset to default
+            config.MediaMode = MediaMode.ClipOrPhoto; // unknown value → reset to default
 
         if (request.ClearCooldown)
             config.CooldownMinutes = null;
         else if (request.CooldownMinutes is > 0)
             config.CooldownMinutes = request.CooldownMinutes;
 
-        // Only update token when a non-empty value is explicitly provided
-        if (!string.IsNullOrWhiteSpace(request.BotToken))
+        var updates = ParseCredentials(descriptor, request.Credentials);
+        if (updates.Count > 0)
         {
-            config.BotToken = request.BotToken.Trim();
+            config.Credentials = config.Credentials.With(updates);
             config.ConfiguredAt = DateTimeOffset.UtcNow;
         }
 
         await repository.UpsertAsync(config, ct);
-        return NotificationChannelConfigDto.From(config);
+        return NotificationChannelConfigDto.From(descriptor, config);
     }
+
+    /// <summary>Keeps only the fields this channel declares, so a stray key can never land in storage.</summary>
+    private static Dictionary<ChannelCredential, string?> ParseCredentials(
+        NotificationChannelDescriptor descriptor,
+        Dictionary<string, string?>? submitted)
+    {
+        var updates = new Dictionary<ChannelCredential, string?>();
+        if (submitted is null) return updates;
+
+        foreach (var spec in descriptor.RequiredCredentials)
+        {
+            var key = SnakeCaseEnum.ToSnakeCase(spec.Field);
+            if (submitted.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
+                updates[spec.Field] = value;
+        }
+
+        return updates;
+    }
+
+    private static List<MessageField> ParseFields(IEnumerable<string> submitted)
+        => [.. submitted
+            .Select(value => SnakeCaseEnum.TryFromSnakeCase<MessageField>(value, out var field) ? (MessageField?)field : null)
+            .OfType<MessageField>()];
 }
 
 public sealed class DeleteNotificationChannelConfigUseCase(INotificationChannelConfigRepository repository)
 {
-    public async Task<bool> ExecuteAsync(string channel, CancellationToken ct = default)
+    public async Task<bool> ExecuteAsync(NotificationChannel channel, CancellationToken ct = default)
         => await repository.DeleteByChannelAsync(channel, ct);
 }
 
 public sealed class GetNotificationLogUseCase(INotificationRepository notifications)
 {
     public async Task<IReadOnlyList<NotificationLogEntryDto>> ExecuteAsync(
-        string channel,
+        NotificationChannel channel,
         int limit = 20,
         CancellationToken ct = default)
     {
@@ -84,36 +144,40 @@ public sealed class GetNotificationLogUseCase(INotificationRepository notificati
 }
 
 public sealed class TestNotificationChannelUseCase(
-    INotificationChannelConfigRepository repository,
-    ITelegramNotificationSender telegramSender)
+    INotificationChannelCatalog catalog,
+    INotificationChannelConfigRepository repository)
 {
-    public async Task<TestNotificationChannelResult> ExecuteAsync(string channel, CancellationToken ct = default)
+    public async Task<TestNotificationChannelResult> ExecuteAsync(NotificationChannel channel, CancellationToken ct = default)
     {
+        var sender = catalog.SenderFor(channel);
         var config = await repository.GetByChannelAsync(channel, ct);
-        if (config is null || !config.HasCredentials)
+        if (sender is null || config is null || !sender.Descriptor.IsSatisfiedBy(config.Credentials))
             return new TestNotificationChannelResult(false, "Canal non configure.");
 
         try
         {
-            await telegramSender.SendAsync(
-                "Test Vyzio — votre canal de notification est operationnel.",
-                config.BotToken!,
-                config.ChatId!,
+            await sender.SendAsync(
+                new OutgoingNotification(NotificationMessage.Plain(
+                    "Test Vyzio — votre canal de notification est operationnel.")),
+                config.Credentials,
                 ct);
 
-            config.LastTestedAt = DateTimeOffset.UtcNow;
-            config.LastTestStatus = "success";
-            config.LastTestError = null;
-            await repository.UpsertAsync(config, ct);
-            return new TestNotificationChannelResult(true, null);
+            return await RecordAsync(config, ChannelTestOutcome.Success, null, ct);
         }
         catch (Exception ex)
         {
-            config.LastTestedAt = DateTimeOffset.UtcNow;
-            config.LastTestStatus = "failure";
-            config.LastTestError = ex.Message;
-            await repository.UpsertAsync(config, ct);
+            await RecordAsync(config, ChannelTestOutcome.Failure, ex.Message, ct);
             return new TestNotificationChannelResult(false, ex.Message);
         }
+    }
+
+    private async Task<TestNotificationChannelResult> RecordAsync(
+        NotificationChannelConfig config, ChannelTestOutcome outcome, string? error, CancellationToken ct)
+    {
+        config.LastTestedAt = DateTimeOffset.UtcNow;
+        config.LastTestOutcome = outcome;
+        config.LastTestError = error;
+        await repository.UpsertAsync(config, ct);
+        return new TestNotificationChannelResult(outcome == ChannelTestOutcome.Success, error);
     }
 }

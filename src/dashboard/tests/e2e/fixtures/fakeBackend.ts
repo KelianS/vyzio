@@ -93,6 +93,82 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
   }
 }
 
+/** Mirrors the backend channel catalogue: a channel declares what it needs and what it can render. */
+export interface FakeChannelConfig {
+  channel: string
+  displayName: string
+  isEnabled: boolean
+  isConfigured: boolean
+  credentials: { field: string; secret: boolean; isSet: boolean; value: string | null }[]
+  capabilities: {
+    photo: boolean
+    video: boolean
+    groupedMedia: boolean
+    buttons: boolean
+    usefulTextLength: number
+  }
+  minimumConfidence: number
+  allowedLabels: string[]
+  activeFromHour: number | null
+  activeToHour: number | null
+  messageFields: string[]
+  mediaMode: string
+  cooldownMinutes: number | null
+  configuredAt: string | null
+  lastTestedAt: string | null
+  lastTestStatus: 'success' | 'failure' | null
+  lastTestError: string | null
+}
+
+const CHANNEL_CATALOGUE: Record<
+  string,
+  { displayName: string; credentials: { field: string; secret: boolean }[] }
+> = {
+  telegram: {
+    displayName: 'Telegram',
+    credentials: [
+      { field: 'bot_token', secret: true },
+      { field: 'chat_id', secret: false },
+    ],
+  },
+  discord: {
+    displayName: 'Discord',
+    credentials: [{ field: 'webhook_url', secret: true }],
+  },
+}
+
+function unconfiguredChannel(channel: string): FakeChannelConfig {
+  return {
+    channel,
+    displayName: CHANNEL_CATALOGUE[channel].displayName,
+    isEnabled: false,
+    isConfigured: false,
+    credentials: CHANNEL_CATALOGUE[channel].credentials.map((credential) => ({
+      ...credential,
+      isSet: false,
+      value: null,
+    })),
+    capabilities: {
+      photo: true,
+      video: true,
+      groupedMedia: true,
+      buttons: channel === 'telegram',
+      usefulTextLength: 1024,
+    },
+    minimumConfidence: 0.75,
+    allowedLabels: ['person_unknown', 'person_known'],
+    activeFromHour: null,
+    activeToHour: null,
+    messageFields: ['camera', 'time', 'label', 'confidence', 'snapshot'],
+    mediaMode: 'clip_or_photo',
+    cooldownMinutes: null,
+    configuredAt: null,
+    lastTestedAt: null,
+    lastTestStatus: null,
+    lastTestError: null,
+  }
+}
+
 export interface FakeBackendState {
   cameras: FakeCamera[]
   /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
@@ -106,26 +182,7 @@ export interface FakeBackendState {
     lastSeenAt: string | null
     createdAt: string
   }[]
-  notificationChannels: Record<
-    string,
-    {
-      channel: string
-      isEnabled: boolean
-      hasToken: boolean
-      chatId: string | null
-      minimumConfidence: number
-      allowedLabels: string[]
-      activeFromHour: number | null
-      activeToHour: number | null
-      messageFields: string[]
-      mediaMode: string
-      cooldownMinutes: number | null
-      configuredAt: string | null
-      lastTestedAt: string | null
-      lastTestStatus: 'success' | 'failure' | null
-      lastTestError: string | null
-    }
-  >
+  notificationChannels: Record<string, FakeChannelConfig>
   detectionHistory: FakeDetectionEvent[]
   detectionConfig: {
     labels: string[]
@@ -225,7 +282,7 @@ export async function installFakeBackend(
         systemHealthy: true,
         recentEvents: state.detectionHistory.slice(0, 5),
         profiles: state.profiles,
-        notifications: { telegramConfigured: false, sentCount: 0, lastSentAt: null },
+        notifications: { activeChannels: 0, sentCount: 0, lastSentAt: null },
         warnings: [],
       })
     }
@@ -555,37 +612,54 @@ export async function installFakeBackend(
     }
 
     // --- Notifications ---
+    if (path === '/api/notifications/channels' && method === 'GET') {
+      return json(
+        route,
+        Object.keys(CHANNEL_CATALOGUE).map((channel) => {
+          const config = state.notificationChannels[channel]
+          return {
+            channel,
+            displayName: CHANNEL_CATALOGUE[channel].displayName,
+            isConfigured: config?.isConfigured ?? false,
+            isEnabled: config?.isEnabled ?? false,
+          }
+        }),
+      )
+    }
     const notifConfigMatch = path.match(/^\/api\/notifications\/settings\/([^/]+)(\/test)?$/)
     if (notifConfigMatch) {
       const [, channel, isTest] = notifConfigMatch
+      if (!CHANNEL_CATALOGUE[channel]) {
+        return json(route, { detail: `Canal de notification inconnu : ${channel}.` }, 400)
+      }
       if (isTest && method === 'POST') {
         return json(route, { success: true, errorMessage: null })
       }
       if (method === 'GET') {
-        const config = state.notificationChannels[channel]
-        return config ? json(route, config) : json(route, { message: 'not found' }, 404)
+        // Un canal jamais configure a quand meme une forme : c'est l'ecran d'ajout.
+        return json(route, state.notificationChannels[channel] ?? unconfiguredChannel(channel))
       }
       if (method === 'PUT') {
-        const existing = state.notificationChannels[channel]
-        const config = {
-          channel,
+        const existing = state.notificationChannels[channel] ?? unconfiguredChannel(channel)
+        const submitted = (postData?.credentials ?? {}) as Record<string, string>
+        const credentials = existing.credentials.map((credential) => {
+          const value = submitted[credential.field]?.trim()
+          if (!value) return credential
+          return { ...credential, isSet: true, value: credential.secret ? null : value }
+        })
+        const config: FakeChannelConfig = {
+          ...existing,
           isEnabled: Boolean(postData?.isEnabled),
-          hasToken: Boolean(postData?.botToken) || Boolean(existing?.hasToken),
-          chatId: (postData?.chatId as string) ?? existing?.chatId ?? null,
-          minimumConfidence: (postData?.minimumConfidence as number) ?? 0.75,
-          allowedLabels: (postData?.allowedLabels as string[]) ?? [
-            'person_unknown',
-            'person_known',
-          ],
+          credentials,
+          isConfigured: credentials.every((credential) => credential.isSet),
+          minimumConfidence: (postData?.minimumConfidence as number) ?? existing.minimumConfidence,
+          allowedLabels: (postData?.allowedLabels as string[]) ?? existing.allowedLabels,
           activeFromHour: (postData?.activeFromHour as number | null) ?? null,
           activeToHour: (postData?.activeToHour as number | null) ?? null,
-          messageFields: (postData?.messageFields as string[]) ?? ['camera', 'time', 'label'],
-          mediaMode: (postData?.mediaMode as string) ?? 'clip_or_photo',
+          messageFields: (postData?.messageFields as string[]) ?? existing.messageFields,
+          mediaMode: (postData?.mediaMode as string) ?? existing.mediaMode,
           cooldownMinutes: (postData?.cooldownMinutes as number | null) ?? null,
           configuredAt: new Date().toISOString(),
-          lastTestedAt: existing?.lastTestedAt ?? null,
-          lastTestStatus: existing?.lastTestStatus ?? null,
-          lastTestError: existing?.lastTestError ?? null,
         }
         state.notificationChannels[channel] = config
         return json(route, config)

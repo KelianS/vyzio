@@ -1,17 +1,20 @@
 import type {
   NotificationChannelConfig,
+  NotificationChannelName,
+  NotificationChannelSummary,
   NotificationLogEntry,
   SaveNotificationChannelConfigRequest,
   TestNotificationChannelResult,
 } from '../entities/NotificationChannelConfig'
 
 export interface NotificationSettingsRepository {
-  getChannelConfig(channel: string): Promise<NotificationChannelConfig | null>
+  listChannels(): Promise<NotificationChannelSummary[]>
+  getChannelConfig(channel: NotificationChannelName): Promise<NotificationChannelConfig | null>
   saveChannelConfig(
-    channel: string,
+    channel: NotificationChannelName,
     request: SaveNotificationChannelConfigRequest,
   ): Promise<NotificationChannelConfig>
-  testChannel(channel: string): Promise<TestNotificationChannelResult>
-  deleteChannel(channel: string): Promise<boolean>
-  getNotificationLog(channel: string): Promise<NotificationLogEntry[]>
+  testChannel(channel: NotificationChannelName): Promise<TestNotificationChannelResult>
+  deleteChannel(channel: NotificationChannelName): Promise<boolean>
+  getNotificationLog(channel: NotificationChannelName): Promise<NotificationLogEntry[]>
 }

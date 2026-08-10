@@ -179,11 +179,15 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux configurer mes destinations de notification depuis l'interface, afin de ne jamais modifier un fichier a la main.
 
-> **En tant qu'utilisateur**, je veux etre guide pour configurer Telegram, tester l'envoi et comprendre les compromis du canal choisi.
+> **En tant qu'utilisateur**, je veux etre guide pour configurer un canal, tester l'envoi et comprendre les compromis du canal choisi.
 
 > **En tant qu'utilisateur**, je veux choisir quelles categories d'evenements meritent une alerte et quel niveau de bruit appliquer selon le contexte.
 
 > **En tant qu'utilisateur**, je veux choisir les informations affichees dans le message, afin de recevoir un contenu utile sans surcharge.
+
+> **En tant qu'utilisateur hors de chez moi**, je veux repondre a une alerte par une action — voir la camera, couper la surveillance, verifier l'etat — sans avoir a joindre l'interface.
+
+> **En tant qu'utilisateur**, je veux retrouver les memes commandes quel que soit le canal de messagerie que j'utilise, afin de ne pas reapprendre le produit en changeant de canal.
 
 ### 5.2 Attendus fonctionnels
 
@@ -193,7 +197,8 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - l'utilisateur doit pouvoir regler des plages horaires et un niveau minimal d'alerte ;
 - si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
 - la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;
-- le premier parcours guide doit couvrir Telegram de bout en bout : saisie des identifiants, verification, etat configure / non configure, test d'envoi ;
+- chaque canal propose doit etre couvert de bout en bout : saisie de ce qu'il demande, verification, etat configure / non configure, test d'envoi ;
+- ajouter un canal ne doit pas ajouter un ecran : les canaux se reglent avec la meme grammaire, seule la facon de s'y connecter change ;
 - le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, le niveau minimal d'alerte et les plages horaires associees ;
 - le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise ;
 - les reglages doivent etre persistants cote Vyzio et ne pas dependre d'une edition manuelle du runtime ;
@@ -204,6 +209,17 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - la surveillance locale doit continuer sans Internet ;
 - une indisponibilite reseau ne doit pas empecher l'enregistrement local des evenements ;
 - lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales d'alertes inutiles.
+
+### 5.4 Commandes depuis le canal de messagerie
+
+- le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des alertes, et accepter des commandes ;
+- les commandes doivent couvrir l'usage courant a distance — etat du systeme, apercu d'une camera, dernieres detections, mode vie privee, positions PTZ, interruption et reprise de la surveillance — de sorte qu'un acces reseau au produit reste **optionnel** ;
+- une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
+- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface ;
+- seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
+- une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
+- un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
+- l'utilisateur doit pouvoir consulter la trace des commandes recues et de leur issue.
 
 ---
 
@@ -250,6 +266,10 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux choisir moi-meme le moment ou ma surveillance s'interrompt.
 
+> **En tant qu'utilisateur en deplacement**, je veux acceder a l'interface complete depuis l'exterieur de chez moi, sans configurer ma box ni exposer mes cameras sur Internet.
+
+> **En tant qu'utilisateur soucieux de ma vie privee**, je veux que mes images ne transitent jamais en clair chez un tiers pour que je puisse les consulter a distance.
+
 ### 7.2 Attendus fonctionnels
 
 - l'accueil doit rendre visible l'etat global du systeme et les alertes recentes ;
@@ -270,6 +290,12 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - **deux reglages de meme nature doivent se presenter de la meme facon** partout dans le produit : meme type de controle, meme alignement, meme place — pour que l'utilisateur apprenne l'interface une fois et non ecran par ecran ;
 - l'aide et les explications doivent rester **disponibles sans occuper la place** des noms et des valeurs de reglages, et rester atteignables au doigt ; en revanche, ce qui annonce un **cout** ou une **consequence irreversible** reste visible sans geste supplementaire ;
 - l'etat du moteur de detection interne doit etre visible sur trois paliers — actif, redemarrage en cours, indisponible — sans jamais nommer le composant technique sous-jacent ; le palier "redemarrage en cours" s'affiche pendant l'application d'une nouvelle configuration (ex. changement de reglages, activation du mode vie privee) et se resout automatiquement des que le moteur redevient joignable, sans action de l'utilisateur ;
+- l'acces depuis l'exterieur du domicile doit exister sans exiger de configuration du routeur, et doit fonctionner meme lorsque l'operateur ne fournit pas d'adresse publique dediee ;
+- **aucun tiers ne doit pouvoir lire les images en transit** : un acces distant qui ferait dechiffrer le flux par un intermediaire est exclu, quel que soit son confort d'usage ;
+- l'acces distant ne doit rendre joignable **que le produit** : les cameras et les composants internes ne doivent jamais devenir atteignables depuis l'exterieur ;
+- l'acces distant doit rester **optionnel, gratuit dans son parcours nominal et retirable** ; le produit doit rester entier sans lui, et l'usage local ne doit jamais dependre de sa disponibilite ;
+- si l'acces distant repose sur un service tiers, l'interface doit guider l'utilisateur pas a pas, l'annoncer explicitement, et indiquer que sa disponibilite ne depend pas de Vyzio ;
+- l'acces distant doit se presenter comme un reglage d'installation ordinaire : etat visible, activation et retrait depuis l'interface, sans manipulation de fichier ;
 - le moteur de detection interne doit s'adapter automatiquement au materiel disponible (accelerateur dedie, puis carte graphique, puis processeur en dernier recours), sans configuration manuelle ; en l'absence d'accelerateur dedie ou de carte graphique, la frequence d'analyse est reduite automatiquement selon le nombre de cameras actives, dans une plage bornee garantissant une detection utile sans saturer le processeur.
 
 ---

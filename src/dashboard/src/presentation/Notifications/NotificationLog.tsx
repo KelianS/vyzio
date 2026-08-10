@@ -3,6 +3,7 @@ import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
+import type { NotificationChannelName } from '../../domain/entities/NotificationChannelConfig'
 
 const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -10,7 +11,7 @@ const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
 })
 
 /** What Vyzio actually sent — the only proof the channel works outside of a manual test. */
-export function NotificationLog({ channel }: { channel: string }) {
+export function NotificationLog({ channel }: { channel: NotificationChannelName }) {
   const { notifications: container } = useAppContainer()
   const log = useAsync(() => container.getNotificationLog.execute(channel), [channel])
 

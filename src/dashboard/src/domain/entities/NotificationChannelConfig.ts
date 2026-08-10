@@ -1,10 +1,51 @@
 export type MediaMode = 'clip_or_photo' | 'photo' | 'text'
 
-export interface NotificationChannelConfig {
-  channel: string
+/** Channels Vyzio knows how to talk through — the backend catalogue, mirrored (ADR-50). */
+export type NotificationChannelName = 'telegram' | 'discord'
+
+const CHANNEL_NAMES: readonly NotificationChannelName[] = ['telegram', 'discord']
+
+/** Parses an address segment: an unknown channel is a wrong URL, not a broken channel. */
+export function parseNotificationChannelName(
+  value: string | undefined,
+): NotificationChannelName | null {
+  return CHANNEL_NAMES.find((name) => name === value) ?? null
+}
+
+/** A secret or address a channel asks for; which ones apply is declared by the channel. */
+export type ChannelCredentialField = 'bot_token' | 'chat_id' | 'webhook_url'
+
+export interface ChannelCredential {
+  field: ChannelCredentialField
+  /** A secret is never handed back: only the fact that it is stored. */
+  secret: boolean
+  isSet: boolean
+  value: string | null
+}
+
+export interface ChannelCapabilities {
+  photo: boolean
+  video: boolean
+  groupedMedia: boolean
+  buttons: boolean
+  usefulTextLength: number
+}
+
+/** A channel as the list screen sees it. */
+export interface NotificationChannelSummary {
+  channel: NotificationChannelName
+  displayName: string
+  isConfigured: boolean
   isEnabled: boolean
-  hasToken: boolean
-  chatId: string | null
+}
+
+export interface NotificationChannelConfig {
+  channel: NotificationChannelName
+  displayName: string
+  isEnabled: boolean
+  isConfigured: boolean
+  credentials: ChannelCredential[]
+  capabilities: ChannelCapabilities
   minimumConfidence: number
   allowedLabels: string[]
   activeFromHour: number | null
@@ -20,8 +61,8 @@ export interface NotificationChannelConfig {
 
 export interface SaveNotificationChannelConfigRequest {
   isEnabled: boolean
-  botToken?: string
-  chatId?: string
+  /** A field left out keeps the value already stored. */
+  credentials?: Partial<Record<ChannelCredentialField, string>>
   minimumConfidence?: number
   allowedLabels?: string[]
   activeFromHour?: number | null

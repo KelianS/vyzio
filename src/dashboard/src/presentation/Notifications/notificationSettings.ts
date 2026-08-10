@@ -1,15 +1,14 @@
 import type {
+  ChannelCredential,
+  ChannelCredentialField,
   MediaMode,
   NotificationChannelConfig,
   SaveNotificationChannelConfigRequest,
 } from '../../domain/entities/NotificationChannelConfig'
 
 /** Screen-facing values and their API translation — one place for every fractional/null quirk. */
-export interface NotificationValues {
+export type NotificationValues = {
   enabled: boolean
-  /** Empty means keep the stored key; the API never returns it. */
-  botToken: string
-  chatId: string
   minimumConfidence: number
   allowedLabels: string[]
   restrictHours: boolean
@@ -19,12 +18,36 @@ export interface NotificationValues {
   cooldownMinutes: number
   mediaMode: MediaMode
   messageFields: string[]
+  /** Empty means keep the stored credential; the API never returns a secret. */
+} & Record<ChannelCredentialField, string>
+
+/** How each credential is asked for. A channel declares which ones it needs, never how they look. */
+export const CREDENTIAL_COPY: Record<
+  ChannelCredentialField,
+  { label: string; help: string; placeholder: string }
+> = {
+  bot_token: {
+    label: 'Clé du bot',
+    help: 'Donnée par @BotFather à la création du bot. Laissez vide pour conserver celle déjà enregistrée.',
+    placeholder: '123456:ABC…',
+  },
+  chat_id: {
+    label: 'Identifiant de conversation',
+    help: 'Le numéro de la conversation qui recevra les alertes. @userinfobot vous le donne.',
+    placeholder: '123456789',
+  },
+  webhook_url: {
+    label: 'Adresse du salon',
+    help: 'Donnée par Discord dans Paramètres du salon › Intégrations › Webhooks. Laissez vide pour conserver celle déjà enregistrée.',
+    placeholder: 'https://discord.com/api/webhooks/…',
+  },
 }
 
 export const NOTIFICATION_DRAFT_LABELS: Record<keyof NotificationValues, string> = {
-  enabled: 'Alertes Telegram',
-  botToken: 'Clé du bot',
-  chatId: 'Identifiant de conversation',
+  enabled: 'Envoi des alertes',
+  bot_token: CREDENTIAL_COPY.bot_token.label,
+  chat_id: CREDENTIAL_COPY.chat_id.label,
+  webhook_url: CREDENTIAL_COPY.webhook_url.label,
   minimumConfidence: 'Certitude minimale',
   allowedLabels: 'Ce qui déclenche une alerte',
   restrictHours: 'Plage horaire',
@@ -39,10 +62,15 @@ export const NOTIFICATION_DRAFT_LABELS: Record<keyof NotificationValues, string>
 const DEFAULT_LABELS = ['person_unknown', 'person_known']
 const DEFAULT_FIELDS = ['camera', 'time', 'label', 'confidence', 'snapshot']
 
+const EMPTY_CREDENTIALS: Record<ChannelCredentialField, string> = {
+  bot_token: '',
+  chat_id: '',
+  webhook_url: '',
+}
+
 export const DEFAULT_NOTIFICATION_VALUES: NotificationValues = {
+  ...EMPTY_CREDENTIALS,
   enabled: false,
-  botToken: '',
-  chatId: '',
   minimumConfidence: 75,
   allowedLabels: DEFAULT_LABELS,
   restrictHours: false,
@@ -58,9 +86,12 @@ export function toNotificationValues(config: NotificationChannelConfig): Notific
   const restrictHours = config.activeFromHour !== null && config.activeToHour !== null
 
   return {
+    ...EMPTY_CREDENTIALS,
+    // A credential the API hands back (never a secret) is shown as it is stored.
+    ...Object.fromEntries(
+      config.credentials.map((credential) => [credential.field, credential.value ?? '']),
+    ),
     enabled: config.isEnabled,
-    botToken: '',
-    chatId: config.chatId ?? '',
     minimumConfidence: Math.round(config.minimumConfidence * 100),
     allowedLabels: config.allowedLabels.length > 0 ? config.allowedLabels : DEFAULT_LABELS,
     restrictHours,
@@ -74,11 +105,18 @@ export function toNotificationValues(config: NotificationChannelConfig): Notific
   }
 }
 
-export function toSaveRequest(values: NotificationValues): SaveNotificationChannelConfigRequest {
+export function toSaveRequest(
+  values: NotificationValues,
+  credentials: readonly ChannelCredential[],
+): SaveNotificationChannelConfigRequest {
   return {
     isEnabled: values.enabled,
-    botToken: values.botToken.trim() || undefined,
-    chatId: values.chatId.trim() || undefined,
+    // Only the fields this channel declared, and only those actually filled in.
+    credentials: Object.fromEntries(
+      credentials
+        .map((credential) => [credential.field, values[credential.field].trim()] as const)
+        .filter(([, value]) => value.length > 0),
+    ),
     minimumConfidence: values.minimumConfidence / 100,
     allowedLabels: values.allowedLabels,
     activeFromHour: values.restrictHours ? values.fromHour : null,

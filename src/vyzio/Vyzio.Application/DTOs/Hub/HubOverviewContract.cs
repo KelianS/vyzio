@@ -4,7 +4,7 @@ using Vyzio.Application.DTOs.Profiles;
 namespace Vyzio.Application.DTOs.Hub;
 
 public sealed record NotificationChannelSummaryContract(
-    bool TelegramConfigured,
+    int ActiveChannels,
     int SentCount,
     DateTimeOffset? LastSentAt);
 

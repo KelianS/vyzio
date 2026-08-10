@@ -6,30 +6,29 @@ namespace Vyzio.Infrastructure.Persistence.Repositories;
 
 public sealed class NotificationRepository(VyzioDbContext db) : INotificationRepository
 {
-    public Task<bool> HasSentAsync(string frigateEventId, string channel, CancellationToken ct = default)
+    public Task<bool> HasSentAsync(string frigateEventId, NotificationChannel channel, CancellationToken ct = default)
         => db.Notifications.AnyAsync(
             notification => notification.FrigateEventId == frigateEventId
                 && notification.Channel == channel
-                && notification.Status == "sent",
+                && notification.Status == NotificationStatus.Sent,
             ct);
 
-    public Task<int> CountSentAsync(string channel, CancellationToken ct = default)
-        => db.Notifications.CountAsync(
-            notification => notification.Channel == channel && notification.Status == "sent",
-            ct);
+    // Counted across channels: the hub reports what the household was told, not by which route.
+    public Task<int> CountSentAsync(CancellationToken ct = default)
+        => db.Notifications.CountAsync(notification => notification.Status == NotificationStatus.Sent, ct);
 
-    public async Task<DateTimeOffset?> GetLastSentAtAsync(string channel, CancellationToken ct = default)
+    public async Task<DateTimeOffset?> GetLastSentAtAsync(CancellationToken ct = default)
         => await db.Notifications
-            .Where(notification => notification.Channel == channel && notification.Status == "sent")
+            .Where(notification => notification.Status == NotificationStatus.Sent)
             .OrderByDescending(notification => notification.SentAt)
             .Select(notification => (DateTimeOffset?)notification.SentAt)
             .FirstOrDefaultAsync(ct);
 
     public async Task<DateTimeOffset?> GetLastSentAtForAsync(
-        string channel, string camera, string label, CancellationToken ct = default)
+        NotificationChannel channel, string camera, string label, CancellationToken ct = default)
         => await db.Notifications
             .Where(n => n.Channel == channel
-                     && n.Status == "sent"
+                     && n.Status == NotificationStatus.Sent
                      && n.Camera == camera
                      && n.Label == label)
             .OrderByDescending(n => n.SentAt)
@@ -42,7 +41,8 @@ public sealed class NotificationRepository(VyzioDbContext db) : INotificationRep
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Notification>> GetRecentAsync(string channel, int limit, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Notification>> GetRecentAsync(
+        NotificationChannel channel, int limit, CancellationToken ct = default)
         => await db.Notifications
             .Where(n => n.Channel == channel)
             .OrderByDescending(n => n.SentAt)

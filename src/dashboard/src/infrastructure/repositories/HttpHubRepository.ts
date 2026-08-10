@@ -29,7 +29,7 @@ interface ProfileDto {
 }
 
 interface NotificationSummaryDto {
-  telegramConfigured: boolean
+  activeChannels: number
   sentCount: number
   lastSentAt: string | null
 }
@@ -85,7 +85,7 @@ function mapProfile(profile: ProfileDto): Profile {
 
 function mapNotificationSummary(summary: NotificationSummaryDto): NotificationSummary {
   return {
-    telegramConfigured: summary.telegramConfigured,
+    activeChannels: summary.activeChannels,
     sentCount: summary.sentCount,
     lastSentAt: summary.lastSentAt,
   }

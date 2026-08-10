@@ -77,9 +77,19 @@ const PersonCamerasPage = lazy(() =>
     default: m.PersonCamerasPage,
   })),
 )
-const NotificationsPage = lazy(() =>
-  import('./presentation/Notifications/NotificationsPage').then((m) => ({
-    default: m.NotificationsPage,
+const NotificationChannelListPage = lazy(() =>
+  import('./presentation/Notifications/NotificationChannelListPage').then((m) => ({
+    default: m.NotificationChannelListPage,
+  })),
+)
+const AddNotificationChannelPage = lazy(() =>
+  import('./presentation/Notifications/AddNotificationChannelPage').then((m) => ({
+    default: m.AddNotificationChannelPage,
+  })),
+)
+const NotificationChannelPage = lazy(() =>
+  import('./presentation/Notifications/NotificationChannelPage').then((m) => ({
+    default: m.NotificationChannelPage,
   })),
 )
 const ConservationPage = lazy(() =>
@@ -179,7 +189,19 @@ const router = createBrowserRouter([
             ],
           },
           { path: 'conservation', element: <ConservationPage /> },
-          { path: 'notifications', element: <NotificationsPage /> },
+          { path: 'notifications', element: <NotificationChannelListPage /> },
+          // Nomme la tache, pas la rubrique.
+          {
+            path: 'notifications/ajout',
+            element: <AddNotificationChannelPage />,
+            handle: OWN_HEADER,
+          },
+          // Porte le nom du canal ouvert.
+          {
+            path: 'notifications/:channel',
+            element: <NotificationChannelPage />,
+            handle: OWN_HEADER,
+          },
           { path: 'systeme', element: <SystemPage /> },
           { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
         ],

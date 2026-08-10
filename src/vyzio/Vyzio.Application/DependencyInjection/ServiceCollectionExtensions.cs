@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DetectionEventContractProjector>();
         services.AddScoped<DetectionProfileResolver>();
         services.AddScoped<CameraDirectory>();
-        services.AddSingleton(new DetectionTelegramMessageFormatter(tz));
+        services.AddSingleton(new DetectionMessageFormatter(tz));
 
         // Camera use cases
         services.AddScoped<DiscoverCamerasUseCase>();
@@ -76,11 +76,12 @@ public static class ServiceCollectionExtensions
 
         // Hub
         services.AddScoped<GetHubOverviewUseCase>();
-        services.AddScoped<IDetectionNotificationDispatcher, SendTelegramDetectionNotificationUseCase>();
+        services.AddScoped<IDetectionNotificationDispatcher, SendDetectionNotificationUseCase>();
 
         // Notification use cases
         services.AddScoped<NotifyDetectionUseCase>();
         services.AddHostedService<Services.DetectionNotificationWorker>();
+        services.AddScoped<ListNotificationChannelsUseCase>();
         services.AddScoped<GetNotificationChannelConfigUseCase>();
         services.AddScoped<SaveNotificationChannelConfigUseCase>();
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();

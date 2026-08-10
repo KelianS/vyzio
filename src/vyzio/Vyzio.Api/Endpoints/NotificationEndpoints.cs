@@ -1,5 +1,7 @@
 using Vyzio.Application.DTOs.Notifications;
 using Vyzio.Application.UseCases.Notifications;
+using Vyzio.Core.Common;
+using Vyzio.Core.Entities;
 
 namespace Vyzio.Api.Endpoints;
 
@@ -7,6 +9,9 @@ public static class NotificationEndpoints
 {
     public static IEndpointRouteBuilder MapNotifications(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/notifications/channels", ListChannels)
+            .WithName("ListNotificationChannels");
+
         app.MapGet("/api/notifications/settings/{channel}", GetChannelConfig)
             .WithName("GetNotificationChannelConfig");
 
@@ -25,13 +30,18 @@ public static class NotificationEndpoints
         return app;
     }
 
+    private static async Task<IResult> ListChannels(ListNotificationChannelsUseCase useCase, CancellationToken ct)
+        => Results.Ok(await useCase.ExecuteAsync(ct));
+
     private static async Task<IResult> GetChannelConfig(
         string channel,
         GetNotificationChannelConfigUseCase useCase,
         CancellationToken ct)
     {
-        var dto = await useCase.ExecuteAsync(channel, ct);
-        return dto is null ? Results.NotFound() : Results.Ok(dto);
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        var dto = await useCase.ExecuteAsync(parsed, ct);
+        return dto is null ? UnknownChannel(channel) : Results.Ok(dto);
     }
 
     private static async Task<IResult> SaveChannelConfig(
@@ -40,8 +50,10 @@ public static class NotificationEndpoints
         SaveNotificationChannelConfigUseCase useCase,
         CancellationToken ct)
     {
-        var dto = await useCase.ExecuteAsync(channel, request, ct);
-        return Results.Ok(dto);
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        var dto = await useCase.ExecuteAsync(parsed, request, ct);
+        return dto is null ? UnknownChannel(channel) : Results.Ok(dto);
     }
 
     private static async Task<IResult> TestChannel(
@@ -49,8 +61,9 @@ public static class NotificationEndpoints
         TestNotificationChannelUseCase useCase,
         CancellationToken ct)
     {
-        var result = await useCase.ExecuteAsync(channel, ct);
-        return Results.Ok(result);
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        return Results.Ok(await useCase.ExecuteAsync(parsed, ct));
     }
 
     private static async Task<IResult> DeleteChannelConfig(
@@ -58,8 +71,9 @@ public static class NotificationEndpoints
         DeleteNotificationChannelConfigUseCase useCase,
         CancellationToken ct)
     {
-        var deleted = await useCase.ExecuteAsync(channel, ct);
-        return deleted ? Results.NoContent() : Results.NotFound();
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        return await useCase.ExecuteAsync(parsed, ct) ? Results.NoContent() : Results.NotFound();
     }
 
     private static async Task<IResult> GetNotificationLog(
@@ -67,7 +81,14 @@ public static class NotificationEndpoints
         GetNotificationLogUseCase useCase,
         CancellationToken ct)
     {
-        var entries = await useCase.ExecuteAsync(channel, ct: ct);
-        return Results.Ok(entries);
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        return Results.Ok(await useCase.ExecuteAsync(parsed, ct: ct));
     }
+
+    private static bool TryParseChannel(string channel, out NotificationChannel parsed)
+        => SnakeCaseEnum.TryFromSnakeCase(channel, out parsed);
+
+    private static IResult UnknownChannel(string channel)
+        => Results.Problem($"Canal de notification inconnu : {channel}.", statusCode: StatusCodes.Status400BadRequest);
 }
