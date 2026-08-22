@@ -179,8 +179,9 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
             ["callback_query_id"] = id.GetString() ?? string.Empty
         });
 
-        using var response = await Client().PostAsync(
-            TelegramApi.Endpoint(BotToken(credentials), "answerCallbackQuery"), content, ct);
+        // Best effort: the tap has to stop spinning, and nothing below depends on Telegram saying it did.
+        (await Client().PostAsync(
+            TelegramApi.Endpoint(BotToken(credentials), "answerCallbackQuery"), content, ct)).Dispose();
     }
 
     /// <summary>A tap is the same thing as typing the command, plus the fact that it was proposed.</summary>

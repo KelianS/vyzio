@@ -35,8 +35,8 @@ public sealed class DiscordCommandReceiver : IChannelCommandReceiver
     private readonly IDiscordGatewaySocketFactory _sockets;
     private readonly ILogger<DiscordCommandReceiver> _logger;
 
-    /// <summary>The interaction each conversation is waiting on: the only route back Discord offers.</summary>
-    private readonly Dictionary<string, PendingAnswer> _pending = [];
+    /// <summary>The interactions a conversation is waiting on, oldest first: the only route back Discord offers.</summary>
+    private readonly Dictionary<string, Queue<PendingAnswer>> _pending = [];
 
     private DiscordGateway? _gateway;
     private Task? _connection;
@@ -140,12 +140,15 @@ public sealed class DiscordCommandReceiver : IChannelCommandReceiver
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(commands);
 
-        if (!_pending.Remove(origin.ConversationId, out var pending))
+        // Answered in the order received: two interactions may well be open in the same room at once.
+        if (!_pending.TryGetValue(origin.ConversationId, out var waiting) || !waiting.TryDequeue(out var pending))
         {
             // Discord offers no other route back: an interaction lost to a restart cannot be answered.
             _logger.LogWarning("No Discord interaction left to answer in conversation {Conversation}.", origin.ConversationId);
             return;
         }
+
+        if (waiting.Count == 0) _pending.Remove(origin.ConversationId);
 
         var botToken = DiscordApi.BotToken(credentials);
         var applicationId = await ApplicationIdAsync(botToken, ct);
@@ -244,7 +247,9 @@ public sealed class DiscordCommandReceiver : IChannelCommandReceiver
         response.EnsureSuccessStatusCode();
 
         var conversation = room.GetString()!;
-        _pending[conversation] = new PendingAnswer(token.GetString()!, showsThinking);
+        if (!_pending.TryGetValue(conversation, out var waiting))
+            _pending[conversation] = waiting = new Queue<PendingAnswer>();
+        waiting.Enqueue(new PendingAnswer(token.GetString()!, showsThinking));
 
         var origin = new CommandOrigin(NotificationChannel.Discord, conversation);
         return Parse(interaction, origin, commands, type);

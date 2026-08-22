@@ -26,6 +26,9 @@ public class DiscordCommandReceiverTests
     private const string SlashCommand =
         """{"id":"i1","token":"tok-1","type":2,"channel_id":"4242","data":{"name":"relier","options":[{"name":"code","value":"123456","type":3}]}}""";
 
+    private const string SecondSlashCommand =
+        """{"id":"i3","token":"tok-3","type":2,"channel_id":"4242","data":{"name":"maison"}}""";
+
     private const string ButtonTap =
         """{"id":"i2","token":"tok-2","type":3,"channel_id":"4242","data":{"custom_id":"relier|1|123456"}}""";
 
@@ -113,6 +116,24 @@ public class DiscordCommandReceiverTests
         Assert.Equal(HttpMethod.Delete, handler.Methods[^1]);
         Assert.DoesNotContain(handler.Requests, request => request.Contains("/webhooks/app-1/tok-1", StringComparison.Ordinal)
                                                            && !request.EndsWith("@original", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Answers_each_interaction_of_a_room_on_its_own_thread_when_two_arrive_at_once()
+    {
+        var handler = new RecordingHandler();
+        var sut = CreateSut(handler, SlashCommand, SecondSlashCommand);
+
+        var received = await sut.ReceiveAsync(Commands, Credentials);
+        Assert.Equal(2, received.Count);
+
+        foreach (var incoming in received)
+            await sut.RespondAsync(incoming.Origin, new CommandResult(ChannelMessage.Plain("Voila")), Commands, Credentials);
+
+        // Both were acknowledged in the same room: answering the second on the first's token would
+        // leave a "Vyzio reflechit" hanging forever and lose an answer.
+        Assert.Contains(handler.Requests, request => request.Contains("/webhooks/app-1/tok-1/messages/@original"));
+        Assert.Contains(handler.Requests, request => request.Contains("/webhooks/app-1/tok-3/messages/@original"));
     }
 
     /// <summary>The gateway reduced to a script: what Discord says, said once, then silence.</summary>
