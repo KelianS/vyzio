@@ -41,13 +41,36 @@ public class ChannelPairing
 
     public DateTimeOffset? PairedAt { get; set; }
 
+    /// <summary>Wrong codes tried against the one in force; a new code starts the count over.</summary>
+    public int FailedAttempts { get; set; }
+
+    /// <summary>Wrong tries a code survives before being burnt.</summary>
+    public const int AllowedAttempts = 5;
+
     public ChannelPairingState StateAt(DateTimeOffset now)
         => ConversationId is not null ? ChannelPairingState.Paired
-         : CodeExpiresAt is { } expiry && expiry > now ? ChannelPairingState.AwaitingConversation
+         : CodeExpiresAt is not { } expiry ? ChannelPairingState.NotPaired
+         : expiry > now ? ChannelPairingState.AwaitingConversation
          : ChannelPairingState.Expired;
 
     public bool Accepts(string conversationId)
         => ConversationId is not null && ConversationId == conversationId;
+
+    /// <summary>
+    /// Burns the code once too many wrong ones have been tried: six digits fall well inside ten minutes
+    /// to whoever may guess forever. Tells whether anything changed, so a stale code costs no write.
+    /// </summary>
+    public bool RegisterWrongCode(DateTimeOffset now)
+    {
+        if (PairingCode is null || CodeExpiresAt is not { } expiry || expiry <= now) return false;
+
+        FailedAttempts++;
+        if (FailedAttempts < AllowedAttempts) return true;
+
+        PairingCode = null;
+        CodeExpiresAt = null;
+        return true;
+    }
 
     public bool CodeMatches(string? candidate, DateTimeOffset now)
         => PairingCode is not null

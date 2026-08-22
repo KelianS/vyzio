@@ -68,6 +68,29 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
+    public async Task Starting_over_gives_the_new_code_its_own_allowance_of_wrong_tries()
+    {
+        var existing = new ChannelPairing { Channel = NotificationChannel.Telegram, FailedAttempts = 4 };
+        _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(existing);
+
+        await new StartChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Telegram);
+
+        Assert.Equal(0, existing.FailedAttempts);
+    }
+
+    [Fact]
+    public async Task A_burnt_code_reads_as_nothing_linked_rather_than_as_a_code_to_wait_for()
+    {
+        _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(
+            new ChannelPairing { Channel = NotificationChannel.Telegram, FailedAttempts = ChannelPairing.AllowedAttempts });
+
+        var dto = await new GetChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Telegram);
+
+        Assert.Equal("not_paired", dto!.Status);
+        Assert.Null(dto.Instruction);
+    }
+
+    [Fact]
     public async Task A_channel_that_cannot_listen_has_no_pairing_to_offer()
     {
         Assert.Null(await new StartChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Discord));

@@ -33,11 +33,16 @@ public sealed class PairConversationCommandHandler(
             return new CommandResult(CommandCatalogue.Describe(
                 registry(), "✅ Cette conversation est deja reliee a votre installation"));
 
-        if (!pairing.CodeMatches(invocation.Argument(CodeParameter), DateTimeOffset.UtcNow))
+        var now = DateTimeOffset.UtcNow;
+        if (!pairing.CodeMatches(invocation.Argument(CodeParameter), now))
+        {
+            // A code one may guess forever is no protection at all: the wrong tries burn it.
+            if (pairing.RegisterWrongCode(now)) await pairings.UpsertAsync(pairing, ct);
             return CommandResult.Silence;
+        }
 
         pairing.ConversationId = invocation.Origin.ConversationId;
-        pairing.PairedAt = DateTimeOffset.UtcNow;
+        pairing.PairedAt = now;
         pairing.PairingCode = null;
         pairing.CodeExpiresAt = null;
         await pairings.UpsertAsync(pairing, ct);

@@ -41,6 +41,7 @@ public sealed class StartChannelPairingUseCase(
         // Starting over unpairs whatever was linked: two conversations must never be able to command at once.
         pairing.ConversationId = null;
         pairing.PairedAt = null;
+        pairing.FailedAttempts = 0;
         pairing.PairingCode = RandomNumberGenerator.GetInt32(100_000, 1_000_000).ToString();
         pairing.CodeExpiresAt = DateTimeOffset.UtcNow.Add(CodeLifetime);
 

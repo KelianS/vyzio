@@ -45,8 +45,9 @@ Un canal enregistré **envoie** les alertes ; il ne **répond** à personne tant
 ne lui est reliée. Une commande envoyée depuis une conversation non reliée reste sans réponse, et
 c'est voulu : c'est ce qui protège votre installation d'un inconnu qui aurait trouvé le bot.
 
-La section *Commandes* de la page du canal donne un code et la commande à envoyer au bot. Le lien se
-coupe depuis la même section, à tout moment.
+La section *Commandes* de la page du canal donne un code et la commande à envoyer au bot. Ce code ne
+vaut que quelques minutes, et cesse de valoir après plusieurs essais infructueux : dans les deux cas,
+la même section en génère un autre. Le lien se coupe depuis là aussi, à tout moment.
 
 ---
 

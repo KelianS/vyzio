@@ -40,19 +40,44 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_nothing_at_all_on_a_wrong_code()
+    public async Task Says_nothing_at_all_on_a_wrong_code_and_counts_the_try()
     {
-        Stored(new ChannelPairing
+        var pairing = new ChannelPairing
         {
             Channel = NotificationChannel.Telegram,
             PairingCode = "123456",
             CodeExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
-        });
+        };
+        Stored(pairing);
 
         var result = await Sut().ExecuteAsync(Pair("999999"));
 
         Assert.True(result.Silent);
-        await _pairings.DidNotReceive().UpsertAsync(Arg.Any<ChannelPairing>(), Arg.Any<CancellationToken>());
+        Assert.Null(pairing.ConversationId);
+        Assert.Equal(1, pairing.FailedAttempts);
+    }
+
+    [Fact]
+    public async Task Burns_the_code_once_it_has_been_guessed_at_too_many_times()
+    {
+        var pairing = new ChannelPairing
+        {
+            Channel = NotificationChannel.Telegram,
+            PairingCode = "123456",
+            CodeExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
+        };
+        Stored(pairing);
+        var sut = Sut();
+
+        for (var attempt = 0; attempt < ChannelPairing.AllowedAttempts; attempt++)
+            Assert.True((await sut.ExecuteAsync(Pair("999999"))).Silent);
+
+        // Six digits fall well inside ten minutes to whoever may guess forever: the right code no longer works.
+        Assert.Null(pairing.PairingCode);
+        Assert.True((await sut.ExecuteAsync(Pair("123456"))).Silent);
+        Assert.Null(pairing.ConversationId);
+        await _pairings.Received(ChannelPairing.AllowedAttempts)
+                       .UpsertAsync(pairing, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -68,6 +93,8 @@ public class PairConversationCommandHandlerTests
         var result = await Sut().ExecuteAsync(Pair("123456"));
 
         Assert.True(result.Silent);
+        // Nothing left to burn: a stale code costs no write, however many times it is tried.
+        await _pairings.DidNotReceive().UpsertAsync(Arg.Any<ChannelPairing>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
