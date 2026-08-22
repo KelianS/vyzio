@@ -27,7 +27,7 @@ Ordre, exceptions et gouvernance : [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 | Fonctionnement détaillé d'un composant (le *comment*) | [`docs/design/`](docs/design/) (catalogue [`README`](docs/design/README.md)) |
 | Ordre d'exécution, découpage, priorités | [`docs/BACKLOG.md`](docs/BACKLOG.md) |
 | UI du dashboard : boutons, pastilles, modales, tokens | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
-| Mode d'emploi d'une feature livrée | [`docs/user/`](docs/user/) |
+| Mode d'emploi d'une feature livrée | l'écran qui la porte — [ADR-53](docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) ; [`docs/user/`](docs/user/) est en extinction |
 | Processus, workflow, gouvernance des docs | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
 | Setup, docker, variables d'env, tâches | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Vision, positionnement | [`README.md`](README.md) |

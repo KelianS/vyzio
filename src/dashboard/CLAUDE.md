@@ -101,6 +101,10 @@ comparaisons `===`/`!==` répétées.
 Boutons, pastilles d'état, modales de validation, styles, tokens de rayon → suivre le guide
 [`../../docs/DESIGN SYSTEM.md`](../../docs/DESIGN%20SYSTEM.md).
 
+L'aide d'une feature s'écrit **ici**, dans l'écran, jamais dans un markdown à côté : visible / infobulle
+d'un réglage / panneau `En savoir plus` d'une section, une infobulle tenant en deux phrases
+([ADR-53](../../docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)).
+
 ## Outillage
 
 - **pnpm** obligatoire (jamais npm/yarn).
