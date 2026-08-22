@@ -3,6 +3,7 @@ import type {
   ChannelCredentialField,
   MediaMode,
   NotificationChannelConfig,
+  NotificationChannelName,
   SaveNotificationChannelConfigRequest,
 } from '../../domain/entities/NotificationChannelConfig'
 
@@ -21,37 +22,73 @@ export type NotificationValues = {
   /** Empty means keep the stored credential; the API never returns a secret. */
 } & Record<ChannelCredentialField, string>
 
-/** How each credential is asked for. A channel declares which ones it needs, never how they look. */
-export const CREDENTIAL_COPY: Record<
-  ChannelCredentialField,
-  { label: string; help: string; placeholder: string }
+/** How a credential is asked for. A channel declares which ones it needs, never how they look. */
+interface CredentialCopy {
+  label: string
+  help: string
+  placeholder: string
+}
+
+/**
+ * Le vocabulaire de chaque canal, mot pour mot : le champ porte le nom de ce que l'utilisateur vient
+ * de copier chez lui, sinon il ne sait pas qu'il tient la bonne chose. Où le trouver reste au mode
+ * d'emploi (channelSetup).
+ */
+const CREDENTIAL_COPY: Record<
+  NotificationChannelName,
+  Record<ChannelCredentialField, CredentialCopy>
 > = {
-  // Où trouver l'un et l'autre dépend du canal : c'est le mode d'emploi (channelSetup) qui le dit.
-  bot_token: {
-    label: 'Clé du bot',
-    help: 'Donnée à la création du bot. Laissez vide pour conserver celle déjà enregistrée.',
-    placeholder: '',
+  telegram: {
+    bot_token: {
+      label: 'Token du bot',
+      help: 'Le token donné par BotFather à la création du bot. Laissez vide pour conserver celui déjà enregistré.',
+      placeholder: '123456:ABC…',
+    },
+    chat_id: {
+      label: 'Identifiant de conversation',
+      help: 'Le numéro de la conversation qui recevra les alertes et répondra à vos commandes.',
+      placeholder: '123456789',
+    },
   },
-  chat_id: {
-    label: 'Identifiant de conversation',
-    help: 'Le numéro de la conversation qui recevra les alertes et répondra à vos commandes.',
-    placeholder: '123456789',
+  discord: {
+    bot_token: {
+      label: 'Token du bot',
+      help: 'Le token donné par l’onglet Bot de votre application Discord. Laissez vide pour conserver celui déjà enregistré.',
+      placeholder: 'MTIzNDU2…',
+    },
+    chat_id: {
+      label: 'Identifiant du salon',
+      help: 'Le numéro du salon qui recevra les alertes et répondra à vos commandes.',
+      placeholder: '123456789012345678',
+    },
   },
 }
 
-export const NOTIFICATION_DRAFT_LABELS: Record<keyof NotificationValues, string> = {
-  enabled: 'Envoi des alertes',
-  bot_token: CREDENTIAL_COPY.bot_token.label,
-  chat_id: CREDENTIAL_COPY.chat_id.label,
-  minimumConfidence: 'Certitude minimale',
-  allowedLabels: 'Ce qui déclenche une alerte',
-  restrictHours: 'Plage horaire',
-  fromHour: 'Plage horaire',
-  toHour: 'Plage horaire',
-  limitRepeats: 'Alertes répétées',
-  cooldownMinutes: 'Alertes répétées',
-  mediaMode: 'Ce qui est envoyé',
-  messageFields: 'Détails du message',
+export function credentialCopy(
+  channel: NotificationChannelName,
+  field: ChannelCredentialField,
+): CredentialCopy {
+  return CREDENTIAL_COPY[channel][field]
+}
+
+/** Ce qu'un brouillon non enregistré nomme, dans les mots du canal qu'il modifie. */
+export function notificationDraftLabels(
+  channel: NotificationChannelName,
+): Record<keyof NotificationValues, string> {
+  return {
+    enabled: 'Envoi des alertes',
+    bot_token: credentialCopy(channel, 'bot_token').label,
+    chat_id: credentialCopy(channel, 'chat_id').label,
+    minimumConfidence: 'Certitude minimale',
+    allowedLabels: 'Ce qui déclenche une alerte',
+    restrictHours: 'Plage horaire',
+    fromHour: 'Plage horaire',
+    toHour: 'Plage horaire',
+    limitRepeats: 'Alertes répétées',
+    cooldownMinutes: 'Alertes répétées',
+    mediaMode: 'Ce qui est envoyé',
+    messageFields: 'Détails du message',
+  }
 }
 
 const DEFAULT_LABELS = ['person_unknown', 'person_known']

@@ -13,7 +13,7 @@ test.describe('Notifications — les canaux', () => {
 
     await expect(page.getByText('Pas encore configuré.')).toBeVisible()
 
-    await page.getByRole('textbox', { name: 'Clé du bot' }).fill('123456:ABCDEF')
+    await page.getByRole('textbox', { name: 'Token du bot' }).fill('123456:ABCDEF')
     await page.getByRole('textbox', { name: 'Identifiant de conversation' }).fill('987654321')
     await page.getByRole('switch', { name: 'Alertes Telegram' }).click()
 
@@ -43,8 +43,8 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByRole('heading', { name: 'Discord' })).toBeVisible()
     await expect(page.getByText('Invitez-le sur votre serveur')).toBeVisible()
 
-    await page.getByRole('textbox', { name: 'Clé du bot' }).fill('discord-bot-token')
-    await page.getByRole('textbox', { name: 'Identifiant de conversation' }).fill('4242')
+    await page.getByRole('textbox', { name: 'Token du bot' }).fill('discord-bot-token')
+    await page.getByRole('textbox', { name: 'Identifiant du salon' }).fill('4242')
     await page.getByRole('switch', { name: 'Alertes Discord' }).click()
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()

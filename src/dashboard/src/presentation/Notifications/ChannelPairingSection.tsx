@@ -133,9 +133,10 @@ function AwaitingConversation({
 function describe(status: ChannelPairing['status'], pairing: ChannelPairing | null): string {
   switch (status) {
     case 'not_paired':
-      return 'Aucune conversation ne peut commander votre installation.'
+      // Sans cette phrase, le silence oppose a une commande passe pour une panne.
+      return 'Aucune conversation ne peut commander votre installation : tant qu’aucune n’est reliée, une commande envoyée au bot reste sans réponse. Reliez-en une pour lui parler.'
     case 'expired':
-      return 'Le code précédent a expiré sans être utilisé.'
+      return 'Le code précédent a expiré sans être utilisé : tant qu’aucune conversation n’est reliée, une commande reste sans réponse.'
     case 'paired':
       return pairing?.pairedAt
         ? `Une conversation est reliée depuis le ${formatDate.format(new Date(pairing.pairedAt))}.`

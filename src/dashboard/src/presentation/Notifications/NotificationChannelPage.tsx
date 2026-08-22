@@ -25,9 +25,9 @@ import { ChannelPairingSection } from './ChannelPairingSection'
 import { ChannelSetupSteps } from './ChannelSetupSteps'
 import { channelSetupLede } from './channelSetup'
 import {
-  CREDENTIAL_COPY,
+  credentialCopy,
   DEFAULT_NOTIFICATION_VALUES,
-  NOTIFICATION_DRAFT_LABELS,
+  notificationDraftLabels,
   toNotificationValues,
   toSaveRequest,
   type NotificationValues,
@@ -111,7 +111,7 @@ function ChannelForm({
 
   const draft = useSettingsDraft<NotificationValues>({
     saved: config.isConfigured ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
-    labels: NOTIFICATION_DRAFT_LABELS,
+    labels: notificationDraftLabels(config.channel),
   })
 
   useUnsavedChanges(draft.dirty)
@@ -177,7 +177,7 @@ function ChannelForm({
     },
     // Ce que le canal demande, il le declare : l'ecran ne connait aucun canal en propre.
     ...config.credentials.map((credential): SettingDeclaration => {
-      const copy = CREDENTIAL_COPY[credential.field]
+      const copy = credentialCopy(config.channel, credential.field)
       return {
         id: `channel-${credential.field}`,
         label: copy.label,

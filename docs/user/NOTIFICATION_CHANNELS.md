@@ -17,23 +17,36 @@ Discord, ou les deux à la fois. Chaque canal a ses propres réglages, et le mê
 
 ### Telegram
 
-Telegram demande une **clé de bot** et un **identifiant de conversation**.
+Telegram demande un **token de bot** et un **identifiant de conversation**.
 
-1. Écrivez à `@BotFather` et envoyez `/newbot`. Il répond avec une clé de la forme `123456:ABC…`.
+1. Écrivez à `@BotFather` et envoyez `/newbot`. Il répond avec un token de la forme `123456:ABC…`.
 2. Ouvrez la conversation avec votre nouveau bot et envoyez-lui `/start`. Sans ce premier message,
    Telegram lui interdit de vous écrire.
 3. Écrivez à `@userinfobot` : il répond aussitôt avec votre identifiant de conversation.
 
 ### Discord
 
-Discord demande une **clé de bot** et l'**identifiant du salon**.
+Discord demande un **token de bot** et l'**identifiant du salon**.
 
-1. Sur le [portail développeur de Discord](https://discord.com/developers/applications), *New
-   Application*, puis onglet *Bot* › *Reset Token* : la clé obtenue est celle que Vyzio demande.
-2. Onglet *OAuth2* › *URL Generator* : cochez `bot` et `applications.commands`, puis *Send Messages*.
-   Ouvrez l'adresse produite en bas de la page et choisissez votre serveur.
-3. Activez *Paramètres* › *Avancés* › *Mode développeur*, puis clic droit sur le salon qui recevra les
-   alertes › *Copier l'identifiant*. Tous ceux qui y ont accès verront les images.
+1. Sur le [portail développeur de Discord](https://discord.com/developers/applications) :
+   *Nouvelle application*, donnez-lui un nom (`Vyzio`), puis onglet *Bot* › *Réinitialiser le token*
+   › *Copier*.
+2. Onglet *Installation* : *Type d'installation* › **Installation pour une guilde** (une guilde est
+   un serveur ; l'installation pour un utilisateur ne donnerait accès à aucun salon). Cochez les
+   portées `bot` et `applications.commands`, puis la permission *Envoyer des messages*. Ouvrez
+   l'adresse d'installation proposée et choisissez votre serveur.
+3. Dans Discord : *Paramètres utilisateur* › *Avancés* › activez *Mode développeur*. Puis, sur votre
+   serveur, clic droit sur le salon qui recevra les alertes › *Copier l'identifiant du salon*. Tous
+   ceux qui y ont accès verront les images.
+
+### Relier la conversation
+
+Un canal enregistré **envoie** les alertes ; il ne **répond** à personne tant qu'aucune conversation
+ne lui est reliée. Une commande envoyée depuis une conversation non reliée reste sans réponse, et
+c'est voulu : c'est ce qui protège votre installation d'un inconnu qui aurait trouvé le bot.
+
+La section *Commandes* de la page du canal donne un code et la commande à envoyer au bot. Le lien se
+coupe depuis la même section, à tout moment.
 
 ---
 
