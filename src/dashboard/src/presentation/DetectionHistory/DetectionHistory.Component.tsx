@@ -3,6 +3,7 @@ import { SlidersHorizontal, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
 import { useToast } from '../../common/components/Toast'
+import { HelpPanel } from '../../common/components/HelpPanel'
 import { Overlay } from '../../common/components/Overlay'
 import { DetectionList } from '../../common/detection/DetectionList'
 import { carriesIdentity } from '../../common/detection/detectionFormatters'
@@ -203,6 +204,24 @@ export function DetectionHistoryView() {
           </Button>
         </div>
       )}
+
+      <HelpPanel title="Jusqu’où cette page remonte-t-elle ?">
+        <p>
+          Exactement aussi loin que votre durée de conservation : passez l’historique de détection à
+          trente jours dans <em>Réglages › Conservation</em> et cette page en montrera trente, dès
+          que la surveillance a redémarré. Une caméra peut s’en écarter depuis sa propre fiche.
+        </p>
+        <p>
+          Raccourcir la durée fait sortir les détections plus anciennes, avec leur aperçu et leur
+          vidéo ; comptez jusqu’à une heure avant que le ménage soit passé. Elle ne peut pas valoir
+          zéro : ce serait vider l’historique, pas le raccourcir — pour ne rien conserver d’une
+          caméra, désactivez-la.
+        </p>
+        <p>
+          Un aperçu qui met quelques secondes à venir juste après une détection est normal : l’image
+          est encore en train d’être écrite, et Vyzio réessaie tout seul.
+        </p>
+      </HelpPanel>
 
       {uido.media && (
         <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>

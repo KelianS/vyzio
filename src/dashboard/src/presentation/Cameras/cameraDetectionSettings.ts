@@ -23,8 +23,9 @@ const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
   { value: 'low', label: 'Réduite' },
 ]
 
+// Deux phrases (ADR-53) : le detail des niveaux est deja dit par le libelle et la consequence.
 const SENSITIVITY_HELP =
-  'Automatique : Vyzio ajuste le niveau tout seul selon ce que voit la caméra, et c’est le cas courant. Élevée : la caméra réagit au moindre mouvement. Moyenne : les petits mouvements sont ignorés pour éviter les alertes inutiles. Réduite : seuls les mouvements francs sont analysés, pour une scène très animée.'
+  'Automatique : Vyzio ajuste le niveau tout seul selon l’agitation réelle de la caméra, et c’est le cas courant. Un niveau choisi s’applique aussitôt et cesse tout ajustement sur cette caméra.'
 
 const SENSITIVITY_CONSEQUENCE: Record<MotionSensitivity | typeof AUTO, string> = {
   auto: 'Vyzio suit ce que voit la caméra et corrige seul le niveau.',
@@ -34,7 +35,14 @@ const SENSITIVITY_CONSEQUENCE: Record<MotionSensitivity | typeof AUTO, string> =
 }
 
 const STREAM_HELP =
-  'Vyzio réduit de toute façon l’image avant de l’analyser : une image plus légère ne lui retire quasiment rien et libère des ressources. En contrepartie, les visages éloignés risquent de ne plus être reconnus et les images d’alerte seront moins nettes. Ce choix ne change jamais la qualité de vos enregistrements.'
+  'Vyzio réduit de toute façon l’image avant de l’analyser : une image plus légère ne lui retire quasiment rien et libère des ressources. Ce choix ne change jamais la qualité de vos enregistrements.'
+
+/** Le cout reste visible sans un geste (ADR-43) : il depend de l'image choisie, dans un sens ou dans l'autre. */
+function streamConsequence(stream: CameraStream | undefined, total: number): string | undefined {
+  if (stream === undefined) return undefined
+  if (stream.ordinal === 0 && total > 1) return 'Cette caméra occupera davantage le boîtier.'
+  return 'Les visages éloignés risquent de ne plus être reconnus, et les images d’alerte seront moins nettes.'
+}
 
 export const DETECTION_DRAFT_LABELS: Record<keyof DetectionUpdate, string> = {
   labels: 'Ce qui est détecté',
@@ -132,6 +140,12 @@ export function buildDetectionSettings({
         })),
       },
       help: STREAM_HELP,
+      consequence: streamConsequence(
+        config.streams.find(
+          (stream) => stream.id === (values.detectStreamId ?? config.streams[0].id),
+        ),
+        config.streams.length,
+      ),
       value: values.detectStreamId ?? config.streams[0].id,
       onChange: (value) => set('detectStreamId', value as string),
     })

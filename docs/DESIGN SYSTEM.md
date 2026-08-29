@@ -121,7 +121,7 @@ La limite qui les separe se verifie : **une infobulle tient en deux phrases**. C
 de la tache et non du champ — cela descend dans le panneau de la section, en laissant dans
 l'infobulle la phrase qui suffit. Un **cout** ne descend jamais : il reste visible sans un geste.
 
-Le panneau est le composant `common/settings/HelpPanel`, jamais un `<details>` reecrit. Son
+Le panneau est le composant `common/components/HelpPanel`, jamais un `<details>` reecrit. Son
 en-tete porte la **question** que le lecteur se pose (« Ou trouver ces informations ? ») plutot que
 les mots « En savoir plus », qui ne disent pas ce qu'on y trouvera ; il ne s'ouvre de lui-meme que
 la ou la tache qu'il explique n'est pas encore faite.

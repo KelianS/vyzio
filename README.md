@@ -140,5 +140,4 @@ Vyzio est un projet open source. Les contributions sont bienvenues sur :
 - [Architecture logicielle](docs/SAD.md)
 - [Backlog de reprise](docs/BACKLOG.md)
 - [Business Plan](docs/BUSINESS_PLAN.md)
-- [Modes d'emploi hérités](docs/user/) — l'aide vit désormais dans l'interface ([ADR-53](docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md))
 - [Design System](docs/DESIGN%20SYSTEM.md)
