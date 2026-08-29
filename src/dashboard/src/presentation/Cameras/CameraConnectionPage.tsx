@@ -14,6 +14,7 @@ import { useAppContainer } from '../../infrastructure/providers/AppContainerCont
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
+import { HelpPanel } from '../../common/components/HelpPanel'
 import { CapabilitySection } from './CapabilitySection'
 
 interface ConnectionValues {
@@ -189,6 +190,25 @@ function ConnectionForm({ camera }: { camera: Camera }) {
             ne rentre donc pas telle quelle dans le cycle de brouillon. */}
         <SettingsSection title="Capacités" lede="Ce que Vyzio a vérifié auprès de cette caméra.">
           <CapabilitySection camera={camera} />
+
+          <HelpPanel title="Le test échoue, que vérifier ?">
+            <p>
+              Que la caméra est joignable sur le réseau, et que le port du protocole choisi est
+              ouvert — <em>8899</em> pour ONVIF, <em>34567</em> pour DVRIP. Les identifiants sont
+              ceux saisis à l’ajout de la caméra : s’ils ont changé sur la caméra, corrigez-les
+              d’abord ci-dessus.
+            </p>
+            <p>
+              Beaucoup de caméras parlent plusieurs protocoles — une ICSee répond souvent en DVRIP
+              et en ONVIF. Si l’un échoue, essayez l’autre : une capacité dont le test échoue n’est
+              jamais proposée comme active, et le test se relance à tout moment.
+            </p>
+            <p>
+              Deux limites connues : sur les firmwares d’entrée de gamme, ONVIF répond parfois en
+              plusieurs secondes, ce qui rend le pilotage précis difficile ; et l’orientation à
+              l’écart, en vie privée, suppose que le PTZ soit déjà vérifié sur la même caméra.
+            </p>
+          </HelpPanel>
         </SettingsSection>
       </SettingsPage>
 
