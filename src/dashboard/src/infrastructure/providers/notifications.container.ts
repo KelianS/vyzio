@@ -1,5 +1,7 @@
 import { DeleteNotificationChannel } from '../../domain/usecases/DeleteNotificationChannel'
+import { GetChannelListening } from '../../domain/usecases/GetChannelListening'
 import { GetChannelPairing } from '../../domain/usecases/GetChannelPairing'
+import { GetCommandJournal } from '../../domain/usecases/GetCommandJournal'
 import { GetDetectionLabels } from '../../domain/usecases/GetDetectionLabels'
 import { GetNotificationChannelConfig } from '../../domain/usecases/GetNotificationChannelConfig'
 import { GetNotificationLog } from '../../domain/usecases/GetNotificationLog'
@@ -20,6 +22,8 @@ export interface NotificationsContainer {
   getNotificationLog: GetNotificationLog
   getNotificationLabels: GetDetectionLabels
   getChannelPairing: GetChannelPairing
+  getChannelListening: GetChannelListening
+  getCommandJournal: GetCommandJournal
   startChannelPairing: StartChannelPairing
   revokeChannelPairing: RevokeChannelPairing
 }
@@ -39,6 +43,8 @@ export function makeNotificationsContainer(
     getNotificationLog: new GetNotificationLog(notificationSettingsRepository),
     getNotificationLabels: new GetDetectionLabels(notificationLabelsRepository),
     getChannelPairing: new GetChannelPairing(notificationSettingsRepository),
+    getChannelListening: new GetChannelListening(notificationSettingsRepository),
+    getCommandJournal: new GetCommandJournal(notificationSettingsRepository),
     startChannelPairing: new StartChannelPairing(notificationSettingsRepository),
     revokeChannelPairing: new RevokeChannelPairing(notificationSettingsRepository),
   }

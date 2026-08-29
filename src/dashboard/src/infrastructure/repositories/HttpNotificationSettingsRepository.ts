@@ -1,5 +1,7 @@
 import type {
+  ChannelListening,
   ChannelPairing,
+  CommandJournalEntry,
   NotificationChannelConfig,
   NotificationChannelName,
   NotificationChannelSummary,
@@ -79,6 +81,20 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
     if (response.status === 404) return false
     if (!response.ok) throw new HttpError(response.status, url)
     return true
+  }
+
+  async getListening(channel: NotificationChannelName): Promise<ChannelListening | null> {
+    try {
+      return await fetchJson<ChannelListening>(`${this.settingsUrl(channel)}/listening`)
+    } catch (error) {
+      // Un canal qui n'ecoute pas n'a pas de boucle : rien a montrer, pas une panne.
+      if (error instanceof HttpError && error.status === 400) return null
+      throw error
+    }
+  }
+
+  async getCommandJournal(channel: NotificationChannelName): Promise<CommandJournalEntry[]> {
+    return fetchJson<CommandJournalEntry[]>(`${this.settingsUrl(channel)}/commands`)
   }
 
   private pairingUrl(channel: NotificationChannelName) {

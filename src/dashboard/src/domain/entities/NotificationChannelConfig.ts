@@ -54,6 +54,30 @@ export interface ChannelPairing {
   pairedAt: string | null
 }
 
+/**
+ * Whether the channel is still listening for commands. Nothing saved says it: the loop lives in the
+ * server's memory, and losing the network leaves the configuration intact (ADR-52).
+ */
+export interface ChannelListening {
+  channel: NotificationChannelName
+  listening: boolean
+  since: string | null
+  interruptedAt: string | null
+  /** In the words of whoever broke the loop: paraphrasing loses the only clue there is. */
+  reason: string | null
+}
+
+export type CommandOutcome = 'succeeded' | 'failed' | 'rejected'
+
+/** One received command and how it ended; the conversation is never named (ADR-50). */
+export interface CommandJournalEntry {
+  id: string
+  verb: string
+  outcome: CommandOutcome
+  receivedAt: string
+  errorMessage: string | null
+}
+
 export interface NotificationChannelConfig {
   channel: NotificationChannelName
   displayName: string

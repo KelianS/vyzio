@@ -6,5 +6,9 @@ public interface ICommandJournalRepository
 {
     Task AddAsync(CommandJournal entry, CancellationToken ct = default);
 
-    Task<IReadOnlyList<CommandJournal>> GetRecentAsync(int limit, CancellationToken ct = default);
+    /// <summary>Most recent first; a null channel takes them all.</summary>
+    Task<IReadOnlyList<CommandJournal>> GetRecentAsync(
+        NotificationChannel? channel,
+        int limit,
+        CancellationToken ct = default);
 }

@@ -1,4 +1,5 @@
 using Vyzio.Application.DTOs.Notifications;
+using Vyzio.Application.UseCases.Commands;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -35,6 +36,12 @@ public static class NotificationEndpoints
 
         app.MapDelete("/api/notifications/settings/{channel}/pairing", RevokePairing)
             .WithName("RevokeChannelPairing");
+
+        app.MapGet("/api/notifications/settings/{channel}/listening", GetListening)
+            .WithName("GetChannelListening");
+
+        app.MapGet("/api/notifications/settings/{channel}/commands", GetCommandJournal)
+            .WithName("GetChannelCommandJournal");
 
         return app;
     }
@@ -83,6 +90,24 @@ public static class NotificationEndpoints
         if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
 
         return await useCase.ExecuteAsync(parsed, ct) ? Results.NoContent() : Results.NotFound();
+    }
+
+    private static IResult GetListening(string channel, GetChannelListeningUseCase useCase)
+    {
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        var dto = useCase.Execute(parsed);
+        return dto is null ? UnknownChannel(channel) : Results.Ok(dto);
+    }
+
+    private static async Task<IResult> GetCommandJournal(
+        string channel,
+        GetCommandJournalUseCase useCase,
+        CancellationToken ct)
+    {
+        if (!TryParseChannel(channel, out var parsed)) return UnknownChannel(channel);
+
+        return Results.Ok(await useCase.ExecuteAsync(parsed, ct: ct));
     }
 
     private static async Task<IResult> GetNotificationLog(

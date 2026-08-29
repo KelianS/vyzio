@@ -12,8 +12,12 @@ public sealed class CommandJournalRepository(VyzioDbContext db) : ICommandJourna
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<CommandJournal>> GetRecentAsync(int limit, CancellationToken ct = default)
+    public async Task<IReadOnlyList<CommandJournal>> GetRecentAsync(
+        NotificationChannel? channel,
+        int limit,
+        CancellationToken ct = default)
         => await db.CommandJournal
+            .Where(entry => channel == null || entry.Channel == channel)
             .OrderByDescending(entry => entry.ReceivedAt)
             .Take(limit)
             .ToListAsync(ct);

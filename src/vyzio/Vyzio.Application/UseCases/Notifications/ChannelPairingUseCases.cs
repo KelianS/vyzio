@@ -55,3 +55,17 @@ public sealed class RevokeChannelPairingUseCase(IChannelPairingRepository pairin
     public Task<bool> ExecuteAsync(NotificationChannel channel, CancellationToken ct = default)
         => pairings.DeleteByChannelAsync(channel, ct);
 }
+
+/// <summary>
+/// Whether the channel is still listening. A pairing that holds says nothing about the loop: the link
+/// is saved, the loop is not, and only one of the two survives losing the network (ADR-52).
+/// </summary>
+public sealed class GetChannelListeningUseCase(
+    INotificationChannelCatalog catalog,
+    IChannelListenerHealth health)
+{
+    public ChannelListeningDto? Execute(NotificationChannel channel)
+        => catalog.Describe(channel) is { AcceptsCommands: true }
+            ? ChannelListeningDto.From(channel, health.StateOf(channel))
+            : null;
+}
