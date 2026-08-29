@@ -31,6 +31,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationChannelConfigRepository, NotificationChannelConfigRepository>();
         services.AddScoped<IRecordingSettingsRepository, RecordingSettingsRepository>();
+        services.AddScoped<ICommandJournalRepository, CommandJournalRepository>();
+        services.AddScoped<IChannelPairingRepository, ChannelPairingRepository>();
         services.AddScoped<ICameraDiscoveryService, AssistedCameraDiscoveryService>();
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
@@ -46,6 +48,10 @@ public static class ServiceCollectionExtensions
 
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
+        // A long poll holds the request open on purpose: the client must not call that a timeout (ADR-50).
+        services.AddHttpClient(Notifications.TelegramCommandReceiver.HttpClientName,
+            client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddHttpClient(Notifications.DiscordApi.HttpClientName);
         services.AddSingleton<OnvifClient>();
         services.AddSingleton<DvripClient>();
         services.AddSingleton<V380Client>();

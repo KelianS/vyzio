@@ -341,6 +341,96 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("camera_streams", (string)null);
                 });
 
+            modelBuilder.Entity("Vyzio.Core.Entities.ChannelPairing", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTime?>("CodeExpiresAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("code_expires_at");
+
+                    b.Property<string>("ConversationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<DateTime?>("PairedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("paired_at");
+
+                    b.Property<string>("PairingCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("pairing_code");
+
+                    b.HasKey("Id")
+                        .HasName("pk_channel_pairings");
+
+                    b.HasIndex("Channel")
+                        .IsUnique()
+                        .HasDatabaseName("idx_channel_pairings_channel");
+
+                    b.ToTable("channel_pairings", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CommandJournal", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("channel");
+
+                    b.Property<string>("Command")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("command");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("outcome");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("received_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_command_journal");
+
+                    b.HasIndex("ReceivedAt")
+                        .HasDatabaseName("idx_command_journal_received");
+
+                    b.HasIndex("Channel", "ConversationId", "ReceivedAt")
+                        .HasDatabaseName("idx_command_journal_origin");
+
+                    b.ToTable("command_journal", (string)null);
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Notification", b =>
                 {
                     b.Property<string>("Id")

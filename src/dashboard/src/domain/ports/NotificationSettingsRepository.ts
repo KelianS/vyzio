@@ -1,4 +1,5 @@
 import type {
+  ChannelPairing,
   NotificationChannelConfig,
   NotificationChannelName,
   NotificationChannelSummary,
@@ -17,4 +18,7 @@ export interface NotificationSettingsRepository {
   testChannel(channel: NotificationChannelName): Promise<TestNotificationChannelResult>
   deleteChannel(channel: NotificationChannelName): Promise<boolean>
   getNotificationLog(channel: NotificationChannelName): Promise<NotificationLogEntry[]>
+  getPairing(channel: NotificationChannelName): Promise<ChannelPairing | null>
+  startPairing(channel: NotificationChannelName): Promise<ChannelPairing | null>
+  revokePairing(channel: NotificationChannelName): Promise<boolean>
 }

@@ -133,7 +133,10 @@ const CHANNEL_CATALOGUE: Record<
   },
   discord: {
     displayName: 'Discord',
-    credentials: [{ field: 'webhook_url', secret: true }],
+    credentials: [
+      { field: 'bot_token', secret: true },
+      { field: 'chat_id', secret: false },
+    ],
   },
 }
 

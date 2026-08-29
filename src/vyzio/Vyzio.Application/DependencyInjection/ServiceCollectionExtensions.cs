@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.Commands;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Hub;
@@ -7,6 +8,7 @@ using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Application.UseCases.Profiles;
 using Vyzio.Application.UseCases.Monitoring;
 using Vyzio.Application.UseCases.Settings;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.DependencyInjection;
 
@@ -87,6 +89,26 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
         services.AddScoped<TestNotificationChannelUseCase>();
         services.AddScoped<GetNotificationLogUseCase>();
+
+        // Remote commands — one registration per command, nothing else to edit (ADR-50)
+        services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();
+        services.AddScoped<IRemoteCommandHandler, Commands.SnapshotCommandHandler>();
+        services.AddScoped<IRemoteCommandHandler, Commands.RecentDetectionsCommandHandler>();
+        services.AddScoped<IRemoteCommandHandler, Commands.PrivacyModeCommandHandler>();
+        services.AddScoped<IRemoteCommandHandler, Commands.PtzPositionCommandHandler>();
+        // Resolved on execution, not on construction: these two read the registry they are part of.
+        services.AddScoped<IRemoteCommandHandler>(sp => new Commands.PairConversationCommandHandler(
+            sp.GetRequiredService<IChannelPairingRepository>(),
+            sp.GetRequiredService<IRemoteCommandRegistry>));
+        services.AddScoped<IRemoteCommandHandler>(sp => new Commands.HelpCommandHandler(
+            sp.GetRequiredService<IRemoteCommandRegistry>));
+        services.AddScoped<IRemoteCommandRegistry, Commands.RemoteCommandRegistry>();
+        services.AddScoped<ExecuteRemoteCommandUseCase>();
+        services.AddScoped<HandleIncomingCommandUseCase>();
+        services.AddScoped<GetChannelPairingUseCase>();
+        services.AddScoped<StartChannelPairingUseCase>();
+        services.AddScoped<RevokeChannelPairingUseCase>();
+        services.AddHostedService<Services.RemoteCommandListenerService>();
 
         // System
         services.AddScoped<GetSystemStatsUseCase>();

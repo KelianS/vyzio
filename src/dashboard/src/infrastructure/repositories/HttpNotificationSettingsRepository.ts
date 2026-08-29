@@ -1,4 +1,5 @@
 import type {
+  ChannelPairing,
   NotificationChannelConfig,
   NotificationChannelName,
   NotificationChannelSummary,
@@ -51,6 +52,37 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
 
   async getNotificationLog(channel: NotificationChannelName): Promise<NotificationLogEntry[]> {
     return fetchJson<NotificationLogEntry[]>(`${this.apiBaseUrl}/api/notifications/log/${channel}`)
+  }
+
+  async getPairing(channel: NotificationChannelName): Promise<ChannelPairing | null> {
+    try {
+      return await fetchJson<ChannelPairing>(this.pairingUrl(channel))
+    } catch (error) {
+      // Un canal qui n'ecoute pas n'a pas d'appairage : ce n'est pas une panne, il n'y a rien a montrer.
+      if (error instanceof HttpError && error.status === 400) return null
+      throw error
+    }
+  }
+
+  async startPairing(channel: NotificationChannelName): Promise<ChannelPairing | null> {
+    try {
+      return await postJson<ChannelPairing>(this.pairingUrl(channel))
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 400) return null
+      throw error
+    }
+  }
+
+  async revokePairing(channel: NotificationChannelName): Promise<boolean> {
+    const url = this.pairingUrl(channel)
+    const response = await fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
+    if (response.status === 404) return false
+    if (!response.ok) throw new HttpError(response.status, url)
+    return true
+  }
+
+  private pairingUrl(channel: NotificationChannelName) {
+    return `${this.settingsUrl(channel)}/pairing`
   }
 
   private settingsUrl(channel: NotificationChannelName) {

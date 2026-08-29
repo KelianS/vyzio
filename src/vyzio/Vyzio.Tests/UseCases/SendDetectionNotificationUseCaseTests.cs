@@ -34,7 +34,7 @@ public class SendDetectionNotificationUseCaseTests
             })
             : new ChannelCredentials(new Dictionary<ChannelCredential, string>
             {
-                [ChannelCredential.WebhookUrl] = "https://discord.test/hook"
+                [ChannelCredential.ChatId] = "4242"
             });
 
     private static INotificationChannelSender FakeSender(
@@ -48,9 +48,9 @@ public class SendDetectionNotificationUseCaseTests
             channel.ToString(),
             new ChannelCapabilities(photo, video, GroupedMedia: true, Buttons: false, UsefulTextLength: 1024),
             channel == NotificationChannel.Telegram
-                ? [new ChannelCredentialSpec(ChannelCredential.BotToken, true),
-                   new ChannelCredentialSpec(ChannelCredential.ChatId, false)]
-                : [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, true)]));
+                ? new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.BotToken, true),
+                                        new ChannelCredentialSpec(ChannelCredential.ChatId, false)])
+                : new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.ChatId, true)])));
         return sender;
     }
 
@@ -351,7 +351,7 @@ public class DetectionMessageFormatterTests
             HasClip: false,
             HasSnapshot: true);
 
-    private static string Flatten(NotificationMessage message)
+    private static string Flatten(ChannelMessage message)
         => $"{message.Headline} {string.Join(" ", message.Details)}";
 
     [Fact]

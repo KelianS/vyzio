@@ -10,7 +10,9 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 3. **BACKLOG** ([`BACKLOG.md`](BACKLOG.md)) — ordre d'exécution, découpage, dépendances, gates de validation.
 4. **Implémentation** — code minimal, cohérent avec les documents validés.
 5. **Tests** — validation ciblée obligatoire du slice modifié.
-6. **Doc utilisateur** ([`user/`](user/)) — toute feature livrable est documentée pour l'usage réel.
+6. **Aide dans l'interface** — toute feature livrable est documentée **dans l'écran qui la porte**,
+   sur les trois niveaux d'[ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md).
+   Aucun mode d'emploi hors du produit.
 
 ## Règles pratiques
 
@@ -28,7 +30,7 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 | **ADR** | Une décision d'architecture = un fichier (Contexte → Options → Décision → Conséquences) | [`adr/`](adr/) — un `NNNN-slug.md` par décision, index [`adr/README.md`](adr/README.md) | figée une fois `accepté` |
 | **TAD** | *Comment* un sous-système fonctionne (détail trop spécifique pour le SAD) | [`design/`](design/) — un `.md` par composant, catalogue [`design/README.md`](design/README.md) | moyenne |
 | **Investigation** | Exploration, essais, reverse engineering, captures | [`investigations/`](investigations/) | jetable |
-| **Doc utilisateur** | Mode d'emploi d'une feature livrée | [`user/`](user/) | suit la feature |
+| **Aide utilisateur** | Mode d'emploi d'une feature livrée | l'écran qui la porte, en code (ADR-53) | suit la feature |
 
 Chaîne : le SAD pose les **frontières** → un ADR **tranche** une décision (et cite ses options
 écartées) → un TAD documente le **comment** d'un composant → le code **fait**. Chacun son foyer,
@@ -62,7 +64,7 @@ Chaque document a une **nature** ; la respecter évite qu'il gonfle et se périm
 ## Précédence (une info = un seul foyer)
 
 Vision → [`../README.md`](../README.md) · Besoin → `SPECS.md` · Solution technique → `SAD.md` ·
-Plan d'exécution → `BACKLOG.md` · Mode d'emploi → `user/`.
+Plan d'exécution → `BACKLOG.md` · Mode d'emploi → **l'écran lui-même** (ADR-53).
 
 Chaque document décrit son propre rôle dans son en-tête. En cas de doute, remonter au bon niveau :
 vision → besoin → architecture → exécution → usage. Ne jamais recopier une info d'un document à

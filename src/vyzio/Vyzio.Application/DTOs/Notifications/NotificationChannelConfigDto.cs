@@ -31,7 +31,8 @@ public sealed record NotificationChannelSummaryDto(
     string Channel,
     string DisplayName,
     bool IsConfigured,
-    bool IsEnabled);
+    bool IsEnabled,
+    bool AcceptsCommands);
 
 public sealed record NotificationChannelConfigDto(
     string Channel,
@@ -40,6 +41,7 @@ public sealed record NotificationChannelConfigDto(
     bool IsConfigured,
     ChannelCredentialDto[] Credentials,
     ChannelCapabilitiesDto Capabilities,
+    bool AcceptsCommands,
     float MinimumConfidence,
     string[] AllowedLabels,
     int? ActiveFromHour,
@@ -71,6 +73,7 @@ public sealed record NotificationChannelConfigDto(
             IsConfigured: descriptor.IsSatisfiedBy(credentials),
             Credentials: [.. descriptor.RequiredCredentials.Select(spec => ChannelCredentialDto.From(spec, credentials))],
             Capabilities: ChannelCapabilitiesDto.From(descriptor.Capabilities),
+            AcceptsCommands: descriptor.AcceptsCommands,
             MinimumConfidence: config.MinimumConfidence,
             AllowedLabels: ParseLabels(config.AllowedLabelsJson),
             ActiveFromHour: config.ActiveFromHour,
