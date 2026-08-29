@@ -9,6 +9,7 @@ import { useAppContainer } from '../../infrastructure/providers/AppContainerCont
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
+import { HelpPanel } from '../../common/components/HelpPanel'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
 import { buildPrivacySettings, type PrivacyStrategy } from './cameraPrivacySettings'
 
@@ -62,6 +63,23 @@ export function CameraPrivacyPage() {
             createSchedule={container.createCameraPrivacySchedule}
             deleteSchedule={container.deleteCameraPrivacySchedule}
           />
+
+          <HelpPanel title="Comment les plages et la coupure manuelle s’articulent-elles ?">
+            <p>
+              Une plage coupe la caméra à son entrée et la rétablit à sa sortie. Si vous avez coupé
+              la caméra vous-même, la plage ne la rétablira pas : ce que vous avez décidé à la main
+              ne se défait qu’à la main.
+            </p>
+            <p>
+              Une plage ne passe pas minuit : pour couvrir 22:00–02:00, créez-en deux, 22:00–23:59
+              puis 00:00–02:00.
+            </p>
+            <p>
+              Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle
+              quelle, et les plages sont réévaluées — si l’heure courante tombe dans l’une d’elles,
+              la caméra repart coupée.
+            </p>
+          </HelpPanel>
         </SettingsSection>
       </SettingsPage>
 

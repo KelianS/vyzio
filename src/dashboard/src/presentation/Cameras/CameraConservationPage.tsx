@@ -20,6 +20,7 @@ import {
   retentionMinDays,
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
+import { RetentionHelp } from '../../common/recording/RetentionHelp'
 
 type RetentionOverrides = Pick<
   DetectionConfigUpdate,
@@ -121,6 +122,8 @@ function ConservationForm({
     <>
       <SettingsPage lede="Cette caméra suit les durées d’ensemble tant qu’elle n’en fixe pas une à elle. Chaque durée est indépendante.">
         <SettingsList settings={declarations} />
+
+        <RetentionHelp />
       </SettingsPage>
 
       <SettingsDraftBar

@@ -23,6 +23,7 @@ import {
   type RetentionWindow,
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
+import { RetentionHelp } from '../../common/recording/RetentionHelp'
 
 // The save request is flat while reads are grouped by window; this bridges the two shapes.
 const FIELD_OF = {
@@ -117,6 +118,8 @@ function ConservationForm({
     <>
       <SettingsPage lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée.">
         <SettingsList settings={declarations} />
+
+        <RetentionHelp />
       </SettingsPage>
 
       <SettingsDraftBar
