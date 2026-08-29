@@ -37,8 +37,7 @@ interface FieldMeasure {
  * On ne mesure pas la cellule : la grille l'etire, elle serait alignee meme avec un
  * champ minuscule flottant dedans — c'est exactement le defaut qu'on cherche.
  *
- * Exclus, car leur largeur est celle de l'objet et non de la colonne : l'interrupteur
- * et les listes de cases a cocher.
+ * Exclu, car sa largeur est celle de l'objet et non de la colonne : l'interrupteur.
  */
 async function fieldMeasures(page: Page): Promise<FieldMeasure[]> {
   return page.$$eval('[data-setting-control]', (cells) =>
@@ -47,7 +46,6 @@ async function fieldMeasures(page: Page): Promise<FieldMeasure[]> {
         const root = cell.firstElementChild?.firstElementChild
         if (!root) return null
         if (root.matches('[role="switch"]') || root.querySelector('[role="switch"]')) return null
-        if (root.querySelector('[role="checkbox"]')) return null
 
         // Quand le controle est lui-meme l'element interactif, il occupe la colonne par
         // construction ; ses enfants sont sa doublure interne, jamais du vide.
