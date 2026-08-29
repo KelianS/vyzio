@@ -66,26 +66,46 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 ### `access` — Acces a l'interface
 
 Direction tranchee : [ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md).
-Attendus produit : [SPECS](SPECS.md) §8.3. **Prealable a toute release**, y compris privee : le port
-de l'interface est publie sur le reseau local et rien ne le garde.
+Attendus produit : [SPECS](SPECS.md) §8.3 et §5.4. **Prealable a toute release**, y compris privee :
+le port de l'interface est publie sur le reseau local et rien ne le garde.
 
-1. **La barriere** — compte proprietaire unique (mot de passe hache, jamais chiffre), session en base
-   referencee par un cookie `httpOnly`, tout `/api/` derriere, deux exceptions nommees (sonde de
-   sante, creation du compte tant qu'il n'existe pas), limitation de debit sur la seule route de
-   connexion. Une entite `Session` morte existe depuis le schema initial (`sessions`, un `UserId`
-   sans table d'utilisateurs, jamais lue) : elle est remplacee, pas etendue.
+Chaque etape est livrable seule ; l'ordre est contraint (rien ne sert de garder des routes avant de
+savoir ouvrir une session, et le front ne peut pas se brancher sur une barriere qui n'existe pas).
 
-2. **Les ecrans** — creation du mot de passe au premier demarrage, connexion, deconnexion, et
-   « deconnecter tous les appareils ». Une reponse « non authentifie » ramene a la connexion en le
-   disant. Ces ecrans portent leur aide sur place, faute d'ecran derriere lequel la replier
+1. **Le compte et la session, cote API.** Entites `Account` (mot de passe hache, role) et `Session`
+   (appareil, dernier usage, revocation) — l'entite `Session` heritee du schema initial (`sessions`,
+   un `UserId` sans table d'utilisateurs, jamais lue depuis mai) est **remplacee**, pas etendue.
+   Routes : etat de l'installation (compte cree ou non), creation du compte, connexion, deconnexion,
+   deconnexion de tous les appareils, session courante. Cookie `httpOnly` / `SameSite=Lax`, session
+   glissante de l'ordre du mois. Limitation de debit sur la seule route de connexion.
+   *Verifiable par* : tests d'integration sur le cycle complet, dont une session revoquee qui cesse
+   d'ouvrir et un mot de passe faux qui finit par etre refuse en rafale.
+
+2. **La barriere sur tout le reste.** Chaque route **declare** ce qu'elle exige, a l'endroit ou elle
+   est declaree — jamais un test disperse dans un service. Deux exceptions nommees : la sonde de
+   sante, et les routes de l'etape 1 qui doivent rester ouvertes. Les relais d'images, apercus et
+   clips passent la meme barriere que le reste.
+   *Verifiable par* : un test qui parcourt les routes exposees et echoue si l'une repond sans session
+   sans figurer dans la liste des exceptions — c'est ce test qui empeche la prochaine route d'oublier.
+
+3. **Les ecrans.** Creation du mot de passe au premier demarrage (avant toute autre chose), connexion,
+   deconnexion, et « deconnecter tous les appareils ». Une reponse « non authentifie » ramene a la
+   connexion **en le disant**, jamais sur un ecran vide ou une erreur technique. Ces ecrans portent
+   leur aide sur place, faute d'ecran derriere lequel la replier
    ([ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)).
+   *Verifiable par* : e2e — une installation vierge s'ouvre sur la creation du mot de passe, et une
+   session expiree ramene a la connexion.
 
-3. **La remise a zero du mot de passe depuis la machine hote**, et la note qui l'explique dans
+4. **Le harnais de test franchit la barriere.** Faux backend Playwright et tests e2e ouvrent une
+   session ; aucune dispense par environnement, qui finirait tot ou tard ailleurs.
+
+5. **La remise a zero du mot de passe depuis la machine hote**, et sa note dans
    [CONTRIBUTING](../CONTRIBUTING.md) — c'est de l'exploitation de l'installation, pas un mode
-   d'emploi produit.
+   d'emploi produit, donc hors interface (ADR-53).
 
-4. **Le harnais de test franchit la barriere** — faux backend Playwright et tests e2e ouvrent une
-   session ; aucune dispense par environnement.
+Le role est porte des l'etape 1 mais **n'est pas exerce** : un seul role existe. Ce qui suit n'est
+pas dans ce chantier et attend un besoin exprime — second compte, ecran d'invitation, liste des
+comptes, et l'attribution d'une coupure de vie privee a qui l'a posee.
 
 **Fait quand** une installation neuve s'ouvre sur la creation du mot de passe, qu'aucune adresse
 d'API ni d'apercu ne repond sans session, et qu'une session revoquee cesse d'ouvrir.

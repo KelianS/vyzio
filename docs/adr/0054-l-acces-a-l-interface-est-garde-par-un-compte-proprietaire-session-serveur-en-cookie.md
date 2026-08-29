@@ -42,14 +42,21 @@ chantier.
    moindre injection de script, là où un cookie `httpOnly` ne l'est pas ; et un jeton autonome **ne
    se révoque pas** — le jour où un téléphone est perdu, « déconnecter tous les appareils » est
    exactement la fonction qu'on cherche, et elle est impossible sans état côté serveur.
-6. **Comptes multiples avec rôles dès maintenant.** Écartée : un foyer, un propriétaire. Des rôles
-   sans besoin exprimé produiraient des écrans de gestion que personne n'ouvre.
-7. **Compte propriétaire créé au premier démarrage, session serveur dans un cookie `httpOnly`.**
+6. **Une matrice de permissions fines** (par écran, par caméra, par action). Écartée : c'est le point
+   où ce genre de modèle s'enlise. Home Assistant s'en tient à un drapeau *administrateur* et n'a
+   jamais sorti ses permissions par entité de l'expérimental ; Frigate a tranché *admin* / *viewer*.
+   Deux rôles suffisent à tout ce qu'un foyer exprime.
+7. **Livrer les comptes multiples tout de suite.** Écartée, mais seulement dans son calendrier :
+   l'écran d'invitation et la liste des comptes se rajoutent plus tard sans rien casser. Ce qui ne se
+   rattrape pas, en revanche, c'est la **forme** — une barrière écrite en booléen « connecté ou pas »
+   oblige à repasser sur chaque route et chaque écran le jour où un rôle apparaît. L'axe est donc
+   porté maintenant, la fonctionnalité non (voir la décision).
+8. **Compte propriétaire créé au premier démarrage, session serveur dans un cookie `httpOnly`.**
    Retenue.
 
 ## Décision
 
-**Option 7.** L'accès à l'interface devient une **frontière d'authentification** : une seule, tenue
+**Option 8.** L'accès à l'interface devient une **frontière d'authentification** : une seule, tenue
 par l'API, franchie par une session que le serveur peut révoquer.
 
 ### Le compte naît avec l'installation
@@ -61,9 +68,38 @@ un fichier de configuration, ni un mot de passe généré dans les journaux du c
 ne lira jamais.
 
 Le compte est **unique et sans identifiant à choisir** : il n'y a qu'un propriétaire, lui demander
-d'inventer un nom d'utilisateur serait une friction sans contrepartie. Le modèle de données porte
-néanmoins le compte comme une entité à part entière, pour qu'un second utilisateur soit un ajout et
-non une reprise de schéma.
+d'inventer un nom d'utilisateur serait une friction sans contrepartie.
+
+### Deux rôles, portés dès le premier jour ; le second compte, plus tard
+
+Le rôle est une propriété du compte **dès la première migration**, avec une seule valeur peuplée. Ce
+n'est pas de l'anticipation gratuite : ajouter un compte est bon marché à tout moment, alors que
+transformer une barrière binaire en barrière à rôles impose de rouvrir chaque route et chaque écran,
+et se paie en oublis qu'on découvre à l'usage.
+
+| Rôle | Peut |
+|---|---|
+| **Propriétaire** | tout, dont ce que la case du dessous exclut |
+| **Résident** | consulter le direct et l'historique, et **couper une caméra** (mode vie privée) |
+
+La ligne n'est pas « voir / ne pas voir » : un résident voit déjà toutes les images, donc un rôle qui
+lui en cacherait une partie ne protégerait rien. Elle est **utiliser / configurer**. Ce que le rôle
+protège, ce sont les **secrets et la configuration** — identifiants de caméra, jetons de bot,
+rétention, suppression de données, appairages — pas les images.
+
+Le mode vie privée fait exception à toute lecture naïve du modèle : c'est l'acte le plus puissant du
+produit, puisqu'il aveugle une caméra, et c'est pourtant celui qu'un résident doit pouvoir poser
+**sans demander la permission** — sinon la promesse du produit ne tient pas. Contrepartie assumée :
+un résident peut aveugler une caméra avant d'agir hors du champ. Dans un foyer, c'est la confiance
+qu'on accorde en confiant une clé ; si elle est trahie, la réponse est **d'attribuer les coupures**,
+jamais de retirer le droit.
+
+Deux conséquences de forme, qui sont le vrai contenu de cette décision :
+
+- **une route déclare ce qu'elle exige**, à l'endroit où elle est déclarée — jamais un test de rôle
+  dispersé dans un service ;
+- **l'interface interroge la session** sur ce qu'elle permet, via un point unique, au lieu de
+  présumer que tout est permis.
 
 ### La session est un état du serveur, pas un jeton du client
 
@@ -90,6 +126,13 @@ L'appairage d'une conversation ([ADR-50](0050-le-canal-de-messagerie-devient-bid
 reste une frontière **séparée**, avec sa propre révocation : une session web n'appaire pas une
 conversation, et une conversation appairée n'ouvre pas l'interface. Deux chemins d'entrée, deux
 serrures, aucun secret partagé.
+
+Une conversation est **plafonnée au rôle résident**, définitivement : aucune commande de
+configuration n'entre dans le catalogue, quel que soit le rôle de qui a appairé. Un fil de discussion
+est un canal qu'on ne maîtrise pas — un téléphone déverrouillé sur une table, un compte de messagerie
+compromis, un historique lisible par l'application du canal. On y consulte et on coupe une caméra ;
+on n'y règle rien, et surtout on n'y lit aucun secret. Ce plafond est une propriété du **catalogue de
+commandes**, pas un contrôle à l'exécution : ce qui n'existe pas ne se contourne pas.
 
 ### Le mot de passe oublié se récupère par le disque
 
@@ -119,3 +162,13 @@ dérobée sur le réseau.
   dispense en développement finirait tôt ou tard ailleurs.
 - **Le modèle de données gagne un compte et des sessions**, et l'installation existante crée son mot
   de passe au premier démarrage qui suit la mise à jour.
+- **Un rôle existe sans qu'aucun second compte n'existe.** État assumé le temps que le besoin
+  apparaisse : le coût est une colonne et une déclaration par route, le gain est de ne jamais avoir à
+  auditer l'ensemble des routes et des écrans après coup.
+- **Une coupure de vie privée devra dire qui l'a posée** le jour où un second compte existe. Le
+  produit sait déjà attribuer un acte venu d'une conversation
+  ([ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)) ;
+  c'est la même exigence, étendue à l'interface.
+- **Le catalogue de commandes est désormais borné par une règle**, et non plus seulement par
+  l'arbitrage cas par cas d'[ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md) :
+  une commande qui configure ou révèle un secret n'y entre pas.

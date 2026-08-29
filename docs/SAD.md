@@ -282,7 +282,7 @@ Vyzio gère uniquement ses propres données (profils, caméras, réglages, notif
 | `Notification` | Envoi par canal pour un événement, ancré sur l'identifiant Frigate. **Seul fait persisté d'une détection** : les détections elles-mêmes ne sont pas stockées (ADR-49) | — |
 | `ChannelPairing` | Conversation autorisée à commander sur un canal, révocable ; toute autre origine est ignorée (ADR-50) | → config du canal |
 | `CommandJournal` | Commande reçue : origine, commande, issue, horodatage. Fait que Vyzio seul détient, et seule trace si un appairage fuit (ADR-50) | → `ChannelPairing` |
-| `Account` | Le propriétaire de l'installation : mot de passe haché, rien d'autre. Unique aujourd'hui, entité à part entière pour qu'un second compte reste un ajout (ADR-54) | ← `Session` |
+| `Account` | Un accès humain à l'installation : mot de passe haché et **rôle**. Un seul compte et un seul rôle peuplés aujourd'hui ; l'axe existe dès la première migration parce qu'il ne se rattrape pas (ADR-54) | ← `Session` |
 | `Session` | Accès ouvert depuis un appareil, référencé par un cookie opaque ; révocable une à une ou toutes à la fois (ADR-54) | → `Account` |
 
 Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de

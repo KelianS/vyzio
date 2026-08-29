@@ -215,7 +215,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des alertes, et accepter des commandes ;
 - les commandes doivent couvrir l'usage courant a distance — etat du systeme, apercu d'une camera, dernieres detections, mode vie privee, positions PTZ, interruption et reprise de la surveillance — de sorte qu'un acces reseau au produit reste **optionnel** ;
 - une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
-- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface ;
+- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md)) ;
 - seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
 - le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien ;
 - une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
@@ -335,6 +335,8 @@ Comment cet acces est protege : [ADR-54](adr/0054-l-acces-a-l-interface-est-gard
 - une session terminee ramene a l'ecran de connexion en le disant, jamais sur un ecran vide ou une erreur technique ;
 - un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel ;
 - l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (§5.4).
+
+Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**. Le second, **resident**, est prevu : il consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images.
 
 ---
 
