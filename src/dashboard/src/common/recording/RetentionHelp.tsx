@@ -1,4 +1,4 @@
-import { HelpPanel } from '../settings/HelpPanel'
+import { HelpPanel } from '../components/HelpPanel'
 
 /**
  * The same two questions on both retention screens (ADR-53) -- installation-wide and per camera --

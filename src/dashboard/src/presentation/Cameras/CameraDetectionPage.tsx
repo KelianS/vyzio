@@ -11,7 +11,7 @@ import { useAppContainer } from '../../infrastructure/providers/AppContainerCont
 import type { DetectionConfig } from '../../domain/entities/DetectionConfig'
 import type { DetectionLabel } from '../../domain/entities/DetectionLabel'
 import { SettingsPage } from '../../common/settings/SettingsPage'
-import { HelpPanel } from '../../common/settings/HelpPanel'
+import { HelpPanel } from '../../common/components/HelpPanel'
 import {
   DETECTION_DRAFT_LABELS,
   buildDetectionSettings,
