@@ -110,8 +110,7 @@ une.
 | --- | --- | --- |
 | Booléen | Interrupteur | L'état est lisible sans lire le libellé. |
 | Choix exclusif | Liste déroulante, quel qu'en soit le nombre d'options | Largeur constante, donc colonne préservée. |
-| Choix multiple, jusqu'à 7 options | Cases à cocher visibles | L'utilisateur doit voir ce qu'il ne prend pas. |
-| Choix multiple, au-delà | Sélecteur avec recherche | Une liste longue se cherche, elle ne se parcourt pas. |
+| Choix multiple | Liste déroulante à cases cochables, résumée sur une ligne | Un réglage se lit au repos et tient sur une ligne, quel que soit le nombre d'options ; au-delà de sept, un filtre s'ajoute dans le panneau, car une liste longue se cherche. |
 | Nombre avec unité | Champ numérique, unité en suffixe du contrôle | L'unité appartient à la valeur, jamais au libellé. |
 | Nombre borné à sens continu | Curseur **et** valeur chiffrée | Un curseur seul empêche de viser et de relire. |
 | Texte libre | Champ texte | Rare : à justifier, c'est souvent un choix mal identifié. |
