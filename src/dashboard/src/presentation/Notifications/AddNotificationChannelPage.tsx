@@ -39,6 +39,12 @@ export function AddNotificationChannelPage() {
                     <span className="block text-sm text-muted-foreground">
                       {channelSetupLede(channel.channel)}
                     </span>
+                    {/* Dit avant l'activation, pour ne jamais laisser croire qu'on pourra lui parler (ADR-52). */}
+                    <span className="block text-sm text-muted-foreground">
+                      {channel.acceptsCommands
+                        ? 'Vous pourrez aussi lui demander ce qui se passe chez vous.'
+                        : 'Ce canal envoie des alertes, mais ne répond pas aux questions.'}
+                    </span>
                   </span>
                   <ChevronRight
                     className="size-4 shrink-0 text-muted-foreground"

@@ -6,27 +6,31 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Infrastructure.Notifications;
 
 /// <summary>
-/// Talks to a Discord incoming webhook: one address, no bot to keep online, and attachments in the
-/// same message as the text.
+/// Talks to a Discord room through the bot that also listens there: one identity for both directions
+/// (ADR-52), attachments in the same message as the text.
 /// </summary>
 public sealed class DiscordNotificationSender(HttpClient httpClient) : INotificationChannelSender
 {
+    private static readonly ChannelTransport Transport = new(
+    [
+        new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true),
+        new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: false)
+    ]);
+
     public NotificationChannelDescriptor Descriptor { get; } = new(
         NotificationChannel.Discord,
         "Discord",
-        // A webhook message carries 2000 characters and several files, but no interactive component.
-        new ChannelCapabilities(Photo: true, Video: true, GroupedMedia: true, Buttons: false, UsefulTextLength: 2000),
-        [new ChannelCredentialSpec(ChannelCredential.WebhookUrl, Secret: true)]);
+        // A bot message carries 2000 characters, several files, and interactive components.
+        new ChannelCapabilities(Photo: true, Video: true, GroupedMedia: true, Buttons: true, UsefulTextLength: 2000),
+        // The same bot reads and writes, so the same credentials answer for both directions.
+        Transport,
+        Transport);
 
     public async Task SendAsync(OutgoingNotification notification, ChannelCredentials credentials, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(notification);
-        ArgumentNullException.ThrowIfNull(credentials);
 
-        var webhookUrl = credentials[ChannelCredential.WebhookUrl]
-            ?? throw new InvalidOperationException("Discord webhook URL missing.");
-
-        var payload = JsonSerializer.Serialize(new { content = Render(notification.Message) });
+        var payload = JsonSerializer.Serialize(new { content = DiscordApi.Render(notification.Message) });
 
         using var content = new MultipartFormDataContent
         {
@@ -40,29 +44,13 @@ public sealed class DiscordNotificationSender(HttpClient httpClient) : INotifica
         if (notification.Video is { } video)
             content.Add(new StreamContent(video), $"files[{index}]", "clip.mp4");
 
-        using var response = await httpClient.PostAsync(webhookUrl, content, ct);
+        using var request = DiscordApi.Request(
+            HttpMethod.Post,
+            $"/channels/{DiscordApi.Room(credentials)}/messages",
+            DiscordApi.BotToken(credentials));
+        request.Content = content;
+
+        using var response = await httpClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
-    }
-
-    /// <summary>Discord renders Markdown: bold headline, details on the line below.</summary>
-    private static string Render(NotificationMessage message)
-    {
-        var text = $"**{Escape(message.Headline)}**";
-        if (message.Details.Count > 0)
-            text += $"\n{string.Join("  ·  ", message.Details.Select(Escape))}";
-        return text;
-    }
-
-    // A camera named "salon_*_2" would otherwise turn half the message into italics.
-    private static string Escape(string value)
-    {
-        var escaped = new StringBuilder(value.Length);
-        foreach (var character in value)
-        {
-            if (character is '*' or '_' or '~' or '`' or '>' or '|' or '\\')
-                escaped.Append('\\');
-            escaped.Append(character);
-        }
-        return escaped.ToString();
     }
 }

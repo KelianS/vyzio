@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { SettingsList } from '../../common/settings/SettingsList'
+import { AdvancedFold } from '../../common/settings/AdvancedFold'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
@@ -20,12 +21,13 @@ import {
   type NotificationChannelConfig,
 } from '../../domain/entities/NotificationChannelConfig'
 import { NotificationLog } from './NotificationLog'
+import { ChannelPairingSection } from './ChannelPairingSection'
 import { ChannelSetupSteps } from './ChannelSetupSteps'
 import { channelSetupLede } from './channelSetup'
 import {
-  CREDENTIAL_COPY,
+  credentialCopy,
   DEFAULT_NOTIFICATION_VALUES,
-  NOTIFICATION_DRAFT_LABELS,
+  notificationDraftLabels,
   toNotificationValues,
   toSaveRequest,
   type NotificationValues,
@@ -109,7 +111,7 @@ function ChannelForm({
 
   const draft = useSettingsDraft<NotificationValues>({
     saved: config.isConfigured ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
-    labels: NOTIFICATION_DRAFT_LABELS,
+    labels: notificationDraftLabels(config.channel),
   })
 
   useUnsavedChanges(draft.dirty)
@@ -175,7 +177,7 @@ function ChannelForm({
     },
     // Ce que le canal demande, il le declare : l'ecran ne connait aucun canal en propre.
     ...config.credentials.map((credential): SettingDeclaration => {
-      const copy = CREDENTIAL_COPY[credential.field]
+      const copy = credentialCopy(config.channel, credential.field)
       return {
         id: `channel-${credential.field}`,
         label: copy.label,
@@ -334,21 +336,38 @@ function ChannelForm({
             </div>
           </SettingsSection>
 
-          <SettingsSection title="Obtenir ces informations" lede={channelSetupLede(config.channel)}>
-            <ChannelSetupSteps channel={config.channel} />
-          </SettingsSection>
+          {/* Le mode d'emploi s'efface une fois le canal en place : il n'a plus rien a apprendre a personne. */}
+          {!config.isConfigured && (
+            <SettingsSection
+              title="Obtenir ces informations"
+              lede={channelSetupLede(config.channel)}
+            >
+              <ChannelSetupSteps channel={config.channel} />
+            </SettingsSection>
+          )}
+
+          {config.acceptsCommands && (
+            <SettingsSection
+              title="Commander depuis la conversation"
+              lede="Reliez une conversation à votre installation pour lui demander, depuis votre téléphone, ce qui se passe chez vous."
+            >
+              <ChannelPairingSection channel={config.channel} displayName={config.displayName} />
+            </SettingsSection>
+          )}
 
           <SettingsSection title="Quand prévenir">
             <SettingsList settings={when} />
           </SettingsSection>
 
-          <SettingsSection title="Contenu du message">
-            <SettingsList settings={message} />
-          </SettingsSection>
+          <AdvancedFold>
+            <SettingsSection title="Contenu du message">
+              <SettingsList settings={message} />
+            </SettingsSection>
 
-          <SettingsSection title="Derniers envois">
-            <NotificationLog channel={config.channel} />
-          </SettingsSection>
+            <SettingsSection title="Derniers envois">
+              <NotificationLog channel={config.channel} />
+            </SettingsSection>
+          </AdvancedFold>
         </SettingsPage>
       </div>
 

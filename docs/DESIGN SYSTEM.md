@@ -106,6 +106,21 @@ Concretement, `SettingsPage` est une surface **sans titre** ; `SettingsSection` 
 l'interieur d'une page que si celle-ci traite plusieurs sujets, et ce titre nomme alors autre chose
 que la page. Un titre de section qui repete celui de la page signale qu'il fallait une page de plus.
 
+### Aide : trois niveaux, pas un manuel
+
+Le mode d'emploi d'une feature vit **dans l'ecran qui la porte**, jamais dans un document a cote
+([ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md), foyer de la
+regle). Trois profondeurs : ce qui est **visible** (libelle et cout d'un reglage), l'**infobulle**
+d'un reglage, et le panneau repli **`En savoir plus`** d'une section.
+
+La limite qui les separe se verifie : **une infobulle tient en deux phrases**. Ce qui deborde parle
+de la tache et non du champ — cela descend dans le panneau de la section, en laissant dans
+l'infobulle la phrase qui suffit. Un **cout** ne descend jamais : il reste visible sans un geste.
+
+Un panneau `En savoir plus` n'est pas le repli `Avance`, qui est une position de fin de page pour
+les reglages rares ([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)) :
+l'aide s'ouvre a cote de ce qu'elle explique.
+
 ### Style et theme
 
 `App.css` (CSS global, classes nommees a la main) n'existe plus : un seul systeme de style, Tailwind
@@ -176,3 +191,5 @@ l'effet.** Le principe produit #2 interdit de prononcer le nom du moteur, pas de
 - Jamais `MQTT`, `broker`, `frigate events`, `sub_label`, `NVR`, ni le nom du moteur de detection,
   dans le parcours nominal (principe produit #2).
 - Jamais un etat opaque sans justification lisible (principe #4).
+- Jamais un mode d'emploi hors du produit, ni une aide qui paraphrase l'ecran : navigation, bouton
+  grise, option absente se lisent deja a l'ecran (ADR-53).

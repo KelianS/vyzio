@@ -13,7 +13,7 @@ export function parseNotificationChannelName(
 }
 
 /** A secret or address a channel asks for; which ones apply is declared by the channel. */
-export type ChannelCredentialField = 'bot_token' | 'chat_id' | 'webhook_url'
+export type ChannelCredentialField = 'bot_token' | 'chat_id'
 
 export interface ChannelCredential {
   field: ChannelCredentialField
@@ -37,6 +37,21 @@ export interface NotificationChannelSummary {
   displayName: string
   isConfigured: boolean
   isEnabled: boolean
+  /** A channel that cannot receive stays an alert channel; the screen says so before activation (ADR-52). */
+  acceptsCommands: boolean
+}
+
+export type ChannelPairingStatus = 'not_paired' | 'awaiting_conversation' | 'expired' | 'paired'
+
+/** Which conversation may command Vyzio on a channel — never the conversation itself, only its state. */
+export interface ChannelPairing {
+  channel: NotificationChannelName
+  status: ChannelPairingStatus
+  code: string | null
+  /** Exactly what to type in the conversation; the screen never composes a command name itself. */
+  instruction: string | null
+  codeExpiresAt: string | null
+  pairedAt: string | null
 }
 
 export interface NotificationChannelConfig {
@@ -46,6 +61,7 @@ export interface NotificationChannelConfig {
   isConfigured: boolean
   credentials: ChannelCredential[]
   capabilities: ChannelCapabilities
+  acceptsCommands: boolean
   minimumConfidence: number
   allowedLabels: string[]
   activeFromHour: number | null

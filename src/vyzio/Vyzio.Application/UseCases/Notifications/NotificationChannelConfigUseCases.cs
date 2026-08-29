@@ -26,7 +26,8 @@ public sealed class ListNotificationChannelsUseCase(
                     Channel: SnakeCaseEnum.ToSnakeCase(descriptor.Channel),
                     DisplayName: descriptor.DisplayName,
                     IsConfigured: descriptor.IsSatisfiedBy(credentials),
-                    IsEnabled: config?.IsEnabled ?? false);
+                    IsEnabled: config?.IsEnabled ?? false,
+                    AcceptsCommands: descriptor.AcceptsCommands);
             })
         ];
     }
@@ -157,7 +158,7 @@ public sealed class TestNotificationChannelUseCase(
         try
         {
             await sender.SendAsync(
-                new OutgoingNotification(NotificationMessage.Plain(
+                new OutgoingNotification(ChannelMessage.Plain(
                     "Test Vyzio — votre canal de notification est operationnel.")),
                 config.Credentials,
                 ct);

@@ -49,7 +49,7 @@ référence ces ADR sans les recopier.
 | [ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) | Architecture de l'information : séparer consulter et régler, arborescence de réglages à deux niveaux | Accepté |
 | [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) | Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer | Accepté (volet « enregistrer vaut appliquer » remplacé par ADR-44) |
 | [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) | Socle de composants d'interface : shadcn/ui sur Radix et Tailwind, tokens du design system en source unique | Accepté |
-| [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) | Grammaire des réglages : un réglage se déclare, il ne se dessine pas | Accepté |
+| [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) | Grammaire des réglages : un réglage se déclare, il ne se dessine pas | Accepté (renvoi de l'aide longue à `docs/user/` remplacé par ADR-53) |
 | [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md) | Redémarrage de la surveillance : un acte explicite de l'utilisateur, groupé et différé | Accepté |
 | [ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) | Positions PTZ configurées depuis la vue live, jamais depuis les réglages | Accepté (calibration et geste de création rétractés par ADR-46) |
 | [ADR-46](0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md) | Tout le pilotage PTZ dans la vue live, calibration comprise | Accepté |
@@ -58,3 +58,5 @@ référence ces ADR sans les recopier.
 | [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) | Vyzio ne persiste pas les détections : l'historique est la liste de Frigate, enrichie à la lecture | Accepté |
 | [ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md) | Le canal de messagerie devient bidirectionnel : une couche de commandes agnostique du canal | Accepté |
 | [ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md) | Accès distant à l'interface : réseau overlay NetBird, guidé par Vyzio mais opéré par l'utilisateur | Accepté |
+| [ADR-52](0052-le-sens-entrant-passe-par-le-bot-natif-du-canal-identifiants-declares-par-sens.md) | Le sens entrant passe par le bot natif du canal : identifiants déclarés par sens | Accepté |
+| [ADR-53](0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) | La documentation utilisateur vit dans l'interface : trois niveaux d'aide | Accepté |

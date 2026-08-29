@@ -1,9 +1,12 @@
 import { DeleteNotificationChannel } from '../../domain/usecases/DeleteNotificationChannel'
+import { GetChannelPairing } from '../../domain/usecases/GetChannelPairing'
 import { GetDetectionLabels } from '../../domain/usecases/GetDetectionLabels'
 import { GetNotificationChannelConfig } from '../../domain/usecases/GetNotificationChannelConfig'
 import { GetNotificationLog } from '../../domain/usecases/GetNotificationLog'
 import { ListNotificationChannels } from '../../domain/usecases/ListNotificationChannels'
+import { RevokeChannelPairing } from '../../domain/usecases/RevokeChannelPairing'
 import { SaveNotificationChannelConfig } from '../../domain/usecases/SaveNotificationChannelConfig'
+import { StartChannelPairing } from '../../domain/usecases/StartChannelPairing'
 import { TestNotificationChannel } from '../../domain/usecases/TestNotificationChannel'
 import type { NotificationSettingsRepository } from '../../domain/ports/NotificationSettingsRepository'
 import type { DetectionLabelsRepository } from '../../domain/usecases/GetDetectionLabels'
@@ -16,6 +19,9 @@ export interface NotificationsContainer {
   deleteNotificationChannel: DeleteNotificationChannel
   getNotificationLog: GetNotificationLog
   getNotificationLabels: GetDetectionLabels
+  getChannelPairing: GetChannelPairing
+  startChannelPairing: StartChannelPairing
+  revokeChannelPairing: RevokeChannelPairing
 }
 
 export function makeNotificationsContainer(
@@ -32,5 +38,8 @@ export function makeNotificationsContainer(
     deleteNotificationChannel: new DeleteNotificationChannel(notificationSettingsRepository),
     getNotificationLog: new GetNotificationLog(notificationSettingsRepository),
     getNotificationLabels: new GetDetectionLabels(notificationLabelsRepository),
+    getChannelPairing: new GetChannelPairing(notificationSettingsRepository),
+    startChannelPairing: new StartChannelPairing(notificationSettingsRepository),
+    revokeChannelPairing: new RevokeChannelPairing(notificationSettingsRepository),
   }
 }

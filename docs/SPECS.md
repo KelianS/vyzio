@@ -217,7 +217,9 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
 - **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface ;
 - seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
+- le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien ;
 - une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
+- un canal qui ne sait pas recevoir reste un canal d'alerte a part entiere ; l'interface doit le dire avant l'activation, et ne jamais laisser croire qu'on pourra lui parler ;
 - un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
 - l'utilisateur doit pouvoir consulter la trace des commandes recues et de leur issue.
 

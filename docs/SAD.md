@@ -202,7 +202,9 @@ Mosquitto Broker                  → Bus MQTT partagé entre Frigate et Vyzio
 FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer + REST client)
 FrigateRestClient (.NET)          → Appels REST Frigate : sub_label, upload photos faces, bibliothèque
 Profile & Rules Service (.NET)    → Profils produit, mapping sub_label → profil, filtre profil-caméra, règles d'alertes
-Notification Service (.NET)       → Règles + envoi FCM/webhook/email
+Notification Service (.NET)       → Règles d'alerte + remise à chaque canal actif derrière un port unique (ADR-50)
+Command Registry (.NET)           → Déclaration des commandes distantes : paramètres typés, autorisation, résultat structuré (ADR-50)
+Channel Ingress (.NET)            → Récupération sortante des messages d'un canal, appairage, exécution par les use cases existants (ADR-50/52)
 Storage Service (.NET)            → Persistance des données propres à Vyzio (EF Core) — jamais les détections (ADR-49)
 DetectionHistoryReader (.NET)     → Lecture des événements Frigate, filtrés et enrichis à la lecture (profil, nom de caméra, médias)
 FaceLibrarySyncService (.NET)     → Synchronisation des photos de profil Vyzio vers la bibliothèque Frigate
@@ -278,6 +280,8 @@ Vyzio gère uniquement ses propres données (profils, caméras, réglages, notif
 | `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
 | `RecordingSettings` | Durées de rétention de l'installation, surchargeables par caméra (ADR-39) | singleton |
 | `Notification` | Envoi par canal pour un événement, ancré sur l'identifiant Frigate. **Seul fait persisté d'une détection** : les détections elles-mêmes ne sont pas stockées (ADR-49) | — |
+| `ChannelPairing` | Conversation autorisée à commander sur un canal, révocable ; toute autre origine est ignorée (ADR-50) | → config du canal |
+| `CommandJournal` | Commande reçue : origine, commande, issue, horodatage. Fait que Vyzio seul détient, et seule trace si un appairage fuit (ADR-50) | → `ChannelPairing` |
 | `Session` | Refresh token | — |
 
 Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de
@@ -429,6 +433,7 @@ Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence 
 | TLS | **Certificat auto-signé** (cible, non livrée — §8.1) | Let's Encrypt | Fonctionne hors-ligne, sans dépendre d'un domaine public |
 | Accès distant à l'interface | **Réseau overlay NetBird**, opt-in, opéré par l'utilisateur | Tunnel de publication web, redirection de port, relais Vyzio | ADR-51 |
 | Usage courant à distance | **Canal de messagerie bidirectionnel** | Accès réseau obligatoire | ADR-50 — rend l'accès réseau optionnel |
+| Réception des commandes | **Bot natif du canal, récupération sortante** | Webhook entrant | Aucune adresse publique ; commandes publiées dans la grammaire du canal (ADR-52) |
 
 ---
 

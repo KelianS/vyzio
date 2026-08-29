@@ -11,8 +11,9 @@ public enum NotificationChannel
 public enum ChannelCredential
 {
     BotToken,
-    ChatId,
-    WebhookUrl
+
+    /// <summary>The conversation Vyzio writes into — a Telegram chat, a Discord room (ADR-52).</summary>
+    ChatId
 }
 
 /// <summary>What the user chose to receive, independently of what the channel can carry.</summary>
