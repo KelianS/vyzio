@@ -87,9 +87,5 @@ Deux conséquences à connaître :
 
 ## Voir aussi
 
-- [Image analysée](ANALYSED_IMAGE.md) — quelle image Vyzio analyse ; le choix ne change jamais la
-  qualité de vos enregistrements.
 - [Historique de détection](DETECTION_HISTORY.md) — la page dont la durée ci-dessus fixe la
   profondeur.
-- [Sensibilité de détection](DETECTION_SENSITIVITY.md) — ce qui déclenche une détection, donc ce qui
-  finit dans l'historique.
