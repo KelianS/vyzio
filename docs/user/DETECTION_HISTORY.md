@@ -9,8 +9,7 @@
 montre 14 jours ; si vous passez à 30, il en montre 30 dès que la surveillance a redémarré.
 
 C'est une seule et même durée, réglée à un seul endroit : **Réglages** → **Conservation** →
-**Historique de détection**, et sur la fiche d'une caméra si vous voulez qu'elle s'en écarte. Voir
-[Durées de conservation](RECORDING_RETENTION.md).
+**Historique de détection**, et sur la fiche d'une caméra si vous voulez qu'elle s'en écarte.
 
 Deux conséquences directes :
 
@@ -53,6 +52,5 @@ secondes à être prise en compte partout.
 
 ## Voir aussi
 
-- [Durées de conservation](RECORDING_RETENTION.md) — la durée qui fixe la profondeur de cette page.
 - Les canaux de notification — ce qui part au moment de la détection, sans attendre — se règlent et
   s'expliquent dans leur écran : *Réglages › Notifications*.
