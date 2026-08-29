@@ -114,6 +114,41 @@ test.describe('Coherence des ecrans de reglages', () => {
     }
   })
 
+  test('hierarchie_When a page groups its settings_Should set section titles apart from labels', async ({
+    page,
+  }) => {
+    // Titre de section et libelle de reglage rendus pareil, c'est une page ou
+    // tout est au meme niveau : les sections ne separent alors plus rien.
+    for (const [path, label] of SETTINGS_ROUTES) {
+      await page.goto(path)
+      await page.waitForLoadState('networkidle')
+
+      const typography = (selector: string) =>
+        page.$$eval(selector, (nodes) =>
+          nodes.map((node) => ({
+            text: node.textContent ?? '',
+            size: Number.parseFloat(getComputedStyle(node).fontSize),
+            serif: getComputedStyle(node).fontFamily.includes('Iowan'),
+          })),
+        )
+
+      const titles = await typography('section h2')
+      const labels = await typography('label[id$="-label"]')
+      if (titles.length === 0) continue
+
+      const biggestLabel = Math.max(...labels.map((entry) => entry.size))
+      for (const title of titles) {
+        expect(title.serif, `${label} : « ${title.text} » n'est pas dans le serif des titres`).toBe(
+          true,
+        )
+        expect(
+          title.size,
+          `${label} : « ${title.text} » a la taille d'un libelle de reglage`,
+        ).toBeGreaterThan(biggestLabel)
+      }
+    }
+  })
+
   const FOLD_ROUTES: [string, string][] = [
     ['/settings/systeme', 'Systeme'],
     ['/settings/detection/personnes/profile-1/photos', 'Personne — photos'],

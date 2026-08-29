@@ -106,6 +106,10 @@ Concretement, `SettingsPage` est une surface **sans titre** ; `SettingsSection` 
 l'interieur d'une page que si celle-ci traite plusieurs sujets, et ce titre nomme alors autre chose
 que la page. Un titre de section qui repete celui de la page signale qu'il fallait une page de plus.
 
+**Un titre de section est un titre, un libellé de réglage n'en est pas un.** Le premier est dans le
+serif des titres, le second dans la graisse du corps : rendus a la meme taille et a la meme police,
+ils donnent une page ou tout est au meme niveau et ou les sections ne separent plus rien.
+
 ### Aide : trois niveaux, pas un manuel
 
 Le mode d'emploi d'une feature vit **dans l'ecran qui la porte**, jamais dans un document a cote
