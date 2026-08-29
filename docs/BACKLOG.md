@@ -30,6 +30,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Rendre chaque détéction plus configurable en mode avancée, par exemple les min_threshold, min_score etc, par label. Et reprendre le systèle + override par caméra.
 - Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir [ADR-27](adr/0027-reglages-image-avances-capacite-imagesettings-onvif.md)/[ADR-29](adr/0029-dvrip-dvripclient-partage-reglages-image-avenc.md).
+- **Interrompre et reprendre la surveillance depuis une conversation** — écarté à l'arbitrage du jeu de commandes ([ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)), alors que [SPECS](SPECS.md) §5.4 le cite : couper la surveillance à distance engage trop pour un fil de discussion, et le mode vie privée couvre déjà le besoin courant. À rouvrir si l'usage le réclame.
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
 - Canal WhatsApp — **notifications seulement, jamais de commandes** : l'API Cloud de Meta ne délivre les messages entrants que par webhook, et n'expose aucune route de récupération ; un hub sans adresse publique ne peut donc pas les recevoir. Les bibliothèques non officielles (Baileys, WWebJS) tiennent une connexion sortante mais contreviennent aux conditions de Meta et exposent au blocage du numéro — pas une base pour un produit vendu.
 - Application Android mince encapsulant le client de réseau overlay et la vue web, pour revenir à un geste unique hors du domicile — horizon évoqué par [ADR-51](adr/0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md), non décidé.
@@ -70,31 +71,8 @@ Direction tranchée : [ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirecti
 (accès réseau) ; attendus produit en [SPECS](SPECS.md) §5.4 et §7.2. Comparaison des solutions et
 critères d'arbitrage : [étude](investigations/acces-a-distance.md).
 
-Restent deux étapes, chacune livrable et démontrable seule. **2 ne dépend pas de 1** — mais elle est
-bloquée par son propre prérequis, le transport chiffré, et elle n'a d'intérêt qu'après 1, qui la rend
-facultative.
-
-#### 1. Rendre le canal bidirectionnel : les commandes
-
-Périmètre produit : [SPECS §5.4](SPECS.md). C'est l'étape qui rend l'étape 2 optionnelle — donc celle
-qui compte le plus pour l'usage réel. Elle n'ajoute **aucun comportement métier** : toute commande
-s'exécute par un use case déjà livré, le canal entrant n'est qu'un adaptateur d'entrée de plus.
-
-Livré : le registre de commandes et leur journal (1.1), Telegram bout en bout avec appairage
-révocable (1.2), le jeu de commandes courant et ses confirmations (1.3), et le canal Discord passé du
-webhook au bot (1.4) — le même jeu de commandes tourne sur les deux canaux sans une ligne de code
-spécifique. Livré aussi : l'aide de l'écran des canaux, passée aux trois niveaux d'[ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md),
-son mode d'emploi hors produit supprimé (1.6). Reste une itération.
-
-Une réserve assumée : **l'interruption et la reprise de la surveillance** ne sont pas des commandes,
-écartées à l'arbitrage de 1.3 ; à rouvrir si l'usage les réclame.
-
-**1.5 — Ce que l'utilisateur voit.** État de l'appairage et santé de la boucle de récupération dans
-les réglages du canal — « le canal n'écoute plus » doit se lire, sinon Vyzio passera pour en panne ;
-journal des commandes consultable. *Fait quand* débrancher le réseau se voit dans les réglages.
-
-**Fait quand** le même jeu de commandes fonctionne sur Telegram et Discord sans code spécifique, et
-qu'un message d'un inconnu ne produit rien du tout.
+L'étape 1 est livrée : le canal de messagerie est bidirectionnel, ce qui rend l'accès réseau
+facultatif. Reste l'étape 2, bloquée par son propre prérequis, le transport chiffré.
 
 #### 2. Accès distant à l'interface (NetBird)
 

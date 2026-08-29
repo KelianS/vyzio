@@ -1,5 +1,7 @@
 import type {
+  ChannelListening,
   ChannelPairing,
+  CommandJournalEntry,
   NotificationChannelConfig,
   NotificationChannelName,
   NotificationChannelSummary,
@@ -21,4 +23,6 @@ export interface NotificationSettingsRepository {
   getPairing(channel: NotificationChannelName): Promise<ChannelPairing | null>
   startPairing(channel: NotificationChannelName): Promise<ChannelPairing | null>
   revokePairing(channel: NotificationChannelName): Promise<boolean>
+  getListening(channel: NotificationChannelName): Promise<ChannelListening | null>
+  getCommandJournal(channel: NotificationChannelName): Promise<CommandJournalEntry[]>
 }

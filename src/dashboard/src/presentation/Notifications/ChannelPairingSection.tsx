@@ -7,7 +7,9 @@ import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
+import { Badge } from '../../common/components/Badge'
 import type {
+  ChannelListening,
   ChannelPairing,
   NotificationChannelName,
 } from '../../domain/entities/NotificationChannelConfig'
@@ -31,6 +33,7 @@ export function ChannelPairingSection({
   const [confirmRevoke, setConfirmRevoke] = useState(false)
 
   const pairing = useAsync(() => container.getChannelPairing.execute(channel), [channel])
+  const listening = useAsync(() => container.getChannelListening.execute(channel), [channel])
 
   const starting = useAsyncAction(() => container.startChannelPairing.execute(channel), {
     onSuccess: () => pairing.reload(),
@@ -53,6 +56,8 @@ export function ChannelPairingSection({
   return (
     <>
       <div className="flex flex-col gap-4">
+        {listening.data && <ListeningStatus state={listening.data} />}
+
         {status === 'awaiting_conversation' ? (
           <AwaitingConversation pairing={pairing.data!} displayName={displayName} />
         ) : (
@@ -81,10 +86,16 @@ export function ChannelPairingSection({
             type="button"
             variant="outline"
             size="sm"
-            disabled={pairing.loading}
-            onClick={pairing.reload}
+            disabled={pairing.loading || listening.loading}
+            onClick={() => {
+              pairing.reload()
+              listening.reload()
+            }}
           >
-            <RotateCw className={cn(pairing.loading && 'animate-spin')} aria-hidden="true" />
+            <RotateCw
+              className={cn((pairing.loading || listening.loading) && 'animate-spin')}
+              aria-hidden="true"
+            />
             Actualiser
           </Button>
         </div>
@@ -102,6 +113,46 @@ export function ChannelPairingSection({
         />
       )}
     </>
+  )
+}
+
+/**
+ * L'etat de la boucle, la ou il se produit (principe #4) : une conversation reliee ne prouve rien,
+ * c'est l'ecoute qui tombe quand le reseau tombe (ADR-52).
+ */
+function ListeningStatus({ state }: { state: ChannelListening }) {
+  if (state.listening) {
+    return (
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <Badge tone="ok">À l’écoute</Badge>
+        {state.since && (
+          <span className="text-sm text-muted-foreground">
+            Depuis le {formatDate.format(new Date(state.since))} à{' '}
+            {formatTime.format(new Date(state.since))}.
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <Badge tone="danger">N’écoute plus</Badge>
+        {state.interruptedAt && (
+          <span className="text-sm text-muted-foreground">
+            Depuis le {formatDate.format(new Date(state.interruptedAt))} à{' '}
+            {formatTime.format(new Date(state.interruptedAt))}.
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {state.reason
+          ? // La panne est dite dans les mots du canal : la paraphraser perd le seul indice qu'on a.
+            `Vos commandes restent sans réponse jusqu’à ce qu’elle reprenne — Vyzio réessaie tout seul. Raison signalée : ${state.reason}`
+          : 'Le canal doit être activé et enregistré pour répondre à vos commandes.'}
+      </p>
+    </div>
   )
 }
 

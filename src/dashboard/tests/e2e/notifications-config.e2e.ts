@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState } from './fixtures/fakeBackend'
+import { installFakeBackend, createFakeBackendState, makeFakeChannel } from './fixtures/fakeBackend'
 
 test.describe('Notifications — les canaux', () => {
   test('user_When configuring and enabling a channel_Should be warned before data leaves', async ({
@@ -75,5 +75,67 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByRole('combobox', { name: 'À partir de' })).toHaveCount(0)
     await page.getByRole('switch', { name: 'Seulement à certaines heures' }).click()
     await expect(page.getByRole('combobox', { name: 'À partir de' })).toBeVisible()
+  })
+
+  // Le critere de l'etape : debrancher le reseau doit se voir dans les reglages,
+  // sinon Vyzio passe pour en panne alors qu'il attend (SPECS 5.4).
+  test('user_When the channel stopped listening_Should read it, and why, where commands are set up', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        notificationChannels: { telegram: makeFakeChannel('telegram') },
+        channelListening: {
+          telegram: {
+            listening: false,
+            since: null,
+            interruptedAt: new Date('2026-08-29T09:12:00Z').toISOString(),
+            reason: 'No such host is known.',
+          },
+        },
+        commandJournal: {
+          telegram: [
+            {
+              id: 'c1',
+              verb: 'maison',
+              outcome: 'rejected',
+              receivedAt: new Date('2026-08-29T09:10:00Z').toISOString(),
+              errorMessage: null,
+            },
+          ],
+        },
+      }),
+    )
+
+    await page.goto('/settings/notifications/telegram')
+
+    await expect(page.getByText('N’écoute plus')).toBeVisible()
+    await expect(page.getByText(/No such host is known/)).toBeVisible()
+
+    // La trace de ce qui a ete demande, y compris ce qui a ete ignore : c'est le
+    // seul signe qu'une autre conversation frappe a la porte (ADR-50).
+    await page.locator('summary').filter({ hasText: 'Avancé' }).click()
+    await expect(page.getByText('Ignoré — conversation non reliée')).toBeVisible()
+  })
+
+  test('user_When the channel is listening_Should be told so plainly', async ({ page }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        notificationChannels: { telegram: makeFakeChannel('telegram') },
+        channelListening: {
+          telegram: {
+            listening: true,
+            since: new Date('2026-08-29T08:00:00Z').toISOString(),
+            interruptedAt: null,
+            reason: null,
+          },
+        },
+      }),
+    )
+
+    await page.goto('/settings/notifications/telegram')
+    await expect(page.getByText('À l’écoute')).toBeVisible()
   })
 })

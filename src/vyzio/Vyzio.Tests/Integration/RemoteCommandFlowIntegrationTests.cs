@@ -154,7 +154,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
 
         Assert.Empty(await SayAsync(StrangerChat, "/maison"));
 
-        var entries = await _journal.GetRecentAsync(10);
+        var entries = await _journal.GetRecentAsync(null, 10);
         Assert.Equal(CommandOutcome.Rejected, entries[0].Outcome);
         Assert.Equal(StrangerChat, entries[0].ConversationId);
     }
