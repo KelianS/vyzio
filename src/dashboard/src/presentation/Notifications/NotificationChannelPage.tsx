@@ -22,6 +22,7 @@ import {
   type NotificationChannelConfig,
 } from '../../domain/entities/NotificationChannelConfig'
 import { NotificationLog } from './NotificationLog'
+import { CommandJournal } from './CommandJournal'
 import { ChannelPairingSection } from './ChannelPairingSection'
 import { ChannelSetupSteps } from './ChannelSetupSteps'
 import {
@@ -395,6 +396,12 @@ function ChannelForm({
             <SettingsSection title="Derniers envois">
               <NotificationLog channel={config.channel} />
             </SettingsSection>
+
+            {config.acceptsCommands && (
+              <SettingsSection title="Dernières commandes">
+                <CommandJournal channel={config.channel} />
+              </SettingsSection>
+            )}
           </AdvancedFold>
         </SettingsPage>
       </div>

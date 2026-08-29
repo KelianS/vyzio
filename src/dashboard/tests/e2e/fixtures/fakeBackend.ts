@@ -94,6 +94,21 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
 }
 
 /** Mirrors the backend channel catalogue: a channel declares what it needs and what it can render. */
+export interface FakeChannelListening {
+  listening: boolean
+  since: string | null
+  interruptedAt: string | null
+  reason: string | null
+}
+
+export interface FakeCommandJournalEntry {
+  id: string
+  verb: string
+  outcome: 'succeeded' | 'failed' | 'rejected'
+  receivedAt: string
+  errorMessage: string | null
+}
+
 export interface FakeChannelConfig {
   channel: string
   displayName: string
@@ -107,6 +122,7 @@ export interface FakeChannelConfig {
     buttons: boolean
     usefulTextLength: number
   }
+  acceptsCommands: boolean
   minimumConfidence: number
   allowedLabels: string[]
   activeFromHour: number | null
@@ -140,6 +156,22 @@ const CHANNEL_CATALOGUE: Record<
   },
 }
 
+/** Un canal deja en place, pour partir d'un ecran configure sans rejouer le parcours. */
+export function makeFakeChannel(
+  channel: string,
+  overrides: Partial<FakeChannelConfig> = {},
+): FakeChannelConfig {
+  const base = unconfiguredChannel(channel)
+  return {
+    ...base,
+    isEnabled: true,
+    isConfigured: true,
+    credentials: base.credentials.map((credential) => ({ ...credential, isSet: true })),
+    configuredAt: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
 function unconfiguredChannel(channel: string): FakeChannelConfig {
   return {
     channel,
@@ -158,6 +190,7 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
       buttons: channel === 'telegram',
       usefulTextLength: 1024,
     },
+    acceptsCommands: true,
     minimumConfidence: 0.75,
     allowedLabels: ['person_unknown', 'person_known'],
     activeFromHour: null,
@@ -186,6 +219,9 @@ export interface FakeBackendState {
     createdAt: string
   }[]
   notificationChannels: Record<string, FakeChannelConfig>
+  /** L'etat de la boucle entrante d'un canal, et la trace de ce qu'on lui a demande (ADR-52). */
+  channelListening: Record<string, FakeChannelListening>
+  commandJournal: Record<string, FakeCommandJournalEntry[]>
   detectionHistory: FakeDetectionEvent[]
   detectionConfig: {
     labels: string[]
@@ -233,6 +269,8 @@ export function createFakeBackendState(
     restartFails: false,
     profiles: [],
     notificationChannels: {},
+    channelListening: {},
+    commandJournal: {},
     detectionHistory: [],
     detectionConfig: {
       labels: ['person'],
@@ -625,6 +663,7 @@ export async function installFakeBackend(
             displayName: CHANNEL_CATALOGUE[channel].displayName,
             isConfigured: config?.isConfigured ?? false,
             isEnabled: config?.isEnabled ?? false,
+            acceptsCommands: true,
           }
         }),
       )
@@ -674,6 +713,38 @@ export async function installFakeBackend(
     }
     if (path.startsWith('/api/notifications/log/') && method === 'GET') {
       return json(route, [])
+    }
+    const commandsMatch = path.match(
+      /^\/api\/notifications\/settings\/([^/]+)\/(pairing|listening|commands)$/,
+    )
+    if (commandsMatch) {
+      const [, channel, subject] = commandsMatch
+      if (subject === 'listening' && method === 'GET') {
+        return json(route, {
+          channel,
+          ...(state.channelListening[channel] ?? {
+            listening: false,
+            since: null,
+            interruptedAt: null,
+            reason: null,
+          }),
+        })
+      }
+      if (subject === 'commands' && method === 'GET') {
+        return json(route, state.commandJournal[channel] ?? [])
+      }
+      if (subject === 'pairing') {
+        // Aucun appairage n'est simule : l'ecran doit tenir sur l'etat le plus nu.
+        if (method === 'DELETE') return json(route, true)
+        return json(route, {
+          channel,
+          status: 'not_paired',
+          code: null,
+          instruction: null,
+          codeExpiresAt: null,
+          pairedAt: null,
+        })
+      }
     }
 
     // --- Detection history ---

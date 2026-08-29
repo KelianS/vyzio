@@ -108,6 +108,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetChannelPairingUseCase>();
         services.AddScoped<StartChannelPairingUseCase>();
         services.AddScoped<RevokeChannelPairingUseCase>();
+        services.AddScoped<GetChannelListeningUseCase>();
+        services.AddScoped<GetCommandJournalUseCase>();
+        // Singleton: the loops it describes live as long as the process, and so must their state.
+        services.AddSingleton<IChannelListenerHealth, Services.ChannelListenerHealth>();
         services.AddHostedService<Services.RemoteCommandListenerService>();
 
         // System

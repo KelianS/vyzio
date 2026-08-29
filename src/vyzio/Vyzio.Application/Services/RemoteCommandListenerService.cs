@@ -14,6 +14,7 @@ namespace Vyzio.Application.Services;
 internal sealed class RemoteCommandListenerService(
     IChannelCommandReceiverCatalog receivers,
     IServiceScopeFactory scopeFactory,
+    IChannelListenerHealth health,
     ILogger<RemoteCommandListenerService> logger) : BackgroundService
 {
     private static readonly TimeSpan ReconciliationInterval = TimeSpan.FromSeconds(10);
@@ -72,6 +73,7 @@ internal sealed class RemoteCommandListenerService(
             await listener.Stop.CancelAsync();
             listener.Stop.Dispose();
             _listeners.Remove(channel);
+            health.Stopped(channel);
             logger.LogInformation("Stopped listening for commands on {Channel}.", channel);
         }
 
@@ -102,12 +104,17 @@ internal sealed class RemoteCommandListenerService(
             logger.LogWarning(exception, "Could not publish the commands on {Channel}.", receiver.Channel);
         }
 
+        health.Started(receiver.Channel);
+
         while (!ct.IsCancellationRequested)
         {
             try
             {
                 foreach (var incoming in await receiver.ReceiveAsync(commands, credentials, ct))
                     await HandleAsync(receiver, incoming, credentials, ct);
+
+                // A round that comes back is the proof the channel is still heard, and the only one.
+                health.Started(receiver.Channel);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -115,6 +122,7 @@ internal sealed class RemoteCommandListenerService(
             }
             catch (Exception exception)
             {
+                health.Interrupted(receiver.Channel, exception.Message);
                 logger.LogWarning(exception, "The command loop of {Channel} was interrupted.", receiver.Channel);
                 try
                 {
