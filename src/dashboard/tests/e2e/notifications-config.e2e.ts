@@ -49,6 +49,10 @@ test.describe('Notifications — les canaux', () => {
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()
 
+    // Le mode d'emploi ne disparait pas une fois le canal en place : il se
+    // replie (ADR-53), pour rester la le jour ou on doit refaire un token.
+    await expect(page.getByText('Où trouver ces informations dans Discord ?')).toBeVisible()
+
     await page.goto('/settings/notifications')
     await expect(page.getByRole('link', { name: /Discord/ })).toBeVisible()
   })

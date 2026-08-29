@@ -83,7 +83,8 @@ s'exécute par un use case déjà livré, le canal entrant n'est qu'un adaptateu
 Livré : le registre de commandes et leur journal (1.1), Telegram bout en bout avec appairage
 révocable (1.2), le jeu de commandes courant et ses confirmations (1.3), et le canal Discord passé du
 webhook au bot (1.4) — le même jeu de commandes tourne sur les deux canaux sans une ligne de code
-spécifique. Restent deux itérations.
+spécifique. Livré aussi : l'aide de l'écran des canaux, passée aux trois niveaux d'[ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md),
+son mode d'emploi hors produit supprimé (1.6). Reste une itération.
 
 Une réserve assumée : **l'interruption et la reprise de la surveillance** ne sont pas des commandes,
 écartées à l'arbitrage de 1.3 ; à rouvrir si l'usage les réclame.
@@ -91,13 +92,6 @@ Une réserve assumée : **l'interruption et la reprise de la surveillance** ne s
 **1.5 — Ce que l'utilisateur voit.** État de l'appairage et santé de la boucle de récupération dans
 les réglages du canal — « le canal n'écoute plus » doit se lire, sinon Vyzio passera pour en panne ;
 journal des commandes consultable. *Fait quand* débrancher le réseau se voit dans les réglages.
-
-**1.6 — L'aide passe dans l'écran.** Premier cas d'application d'[ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md),
-et le seul écran qui porte aujourd'hui les deux formes : le panneau `En savoir plus` de section, puis
-le repli de [`user/NOTIFICATION_CHANNELS.md`](user/NOTIFICATION_CHANNELS.md) — ce qu'on peut demander,
-comment relier, comment couper, pourquoi une alerte n'est pas partie — et sa suppression. Ce qui
-paraphrase l'écran est jeté, pas déménagé ; les infobulles qui dépassent deux phrases se coupent.
-*Fait quand* le fichier n'existe plus et que rien de ce qu'il portait ne manque à l'écran.
 
 **Fait quand** le même jeu de commandes fonctionne sur Telegram et Discord sans code spécifique, et
 qu'un message d'un inconnu ne produit rien du tout.
