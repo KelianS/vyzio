@@ -11,6 +11,7 @@ import {
 import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/Settings/settings.rubrics'
 import { RestartSurveillanceTrigger } from './presentation/Surveillance/RestartSurveillanceTrigger'
 import { NavigationGuard } from './presentation/Navigation/NavigationGuard'
+import { AccessGate } from './presentation/Access/AccessGate'
 
 const HubView = lazy(() =>
   import('./presentation/Hub/Hub.Component').then((m) => ({ default: m.HubView })),
@@ -95,6 +96,9 @@ const NotificationChannelPage = lazy(() =>
 const ConservationPage = lazy(() =>
   import('./presentation/Settings/ConservationPage').then((m) => ({ default: m.ConservationPage })),
 )
+const AccessPage = lazy(() =>
+  import('./presentation/Settings/AccessPage').then((m) => ({ default: m.AccessPage })),
+)
 const SystemPage = lazy(() =>
   import('./presentation/Settings/SystemPage').then((m) => ({ default: m.SystemPage })),
 )
@@ -129,7 +133,10 @@ function Root() {
   return (
     <AppContainerProvider>
       <ToastProvider>
-        <AppShell />
+        {/* Rien de l'application ne se monte avant d'etre entre (ADR-54). */}
+        <AccessGate>
+          <AppShell />
+        </AccessGate>
       </ToastProvider>
     </AppContainerProvider>
   )
@@ -202,6 +209,7 @@ const router = createBrowserRouter([
             element: <NotificationChannelPage />,
             handle: OWN_HEADER,
           },
+          { path: 'acces', element: <AccessPage /> },
           { path: 'systeme', element: <SystemPage /> },
           { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
         ],

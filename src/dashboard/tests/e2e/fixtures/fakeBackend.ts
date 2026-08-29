@@ -207,6 +207,8 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
 
 export interface FakeBackendState {
   cameras: FakeCamera[]
+  /** Ou en est l'installation vis-a-vis de son mot de passe, et ce navigateur vis-a-vis d'elle. */
+  access: { installed: boolean; signedIn: boolean }
   /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
@@ -265,6 +267,8 @@ export function createFakeBackendState(
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
+    // Installee et deverrouillee par defaut : chaque test franchirait sinon la meme porte (ADR-54).
+    access: { installed: true, signedIn: true },
     pendingChanges: false,
     restartFails: false,
     profiles: [],
@@ -293,6 +297,9 @@ export function createFakeBackendState(
   }
 }
 
+/** Le mot de passe de l'installation feinte : les tests le tapent, rien d'autre ne le connait. */
+export const FAKE_PASSWORD = 'mot-de-passe-de-test'
+
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
     status,
@@ -316,6 +323,44 @@ export async function installFakeBackend(
     const method = request.method()
     const path = url.pathname
     const postData = request.postDataJSON?.() as Record<string, unknown> | undefined
+
+    // --- Acces (ADR-54) ---
+    if (path === '/api/access/state' && method === 'GET') {
+      return json(route, { installed: state.access.installed, minimumPasswordLength: 8 })
+    }
+
+    if (path === '/api/access/session' && method === 'GET') {
+      return state.access.signedIn
+        ? json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+        : json(route, { error: 'unauthorized' }, 401)
+    }
+
+    if (path === '/api/access/account' && method === 'POST') {
+      state.access = { installed: true, signedIn: true }
+      return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+    }
+
+    if (path === '/api/access/session' && method === 'POST') {
+      const password = (postData?.password as string | undefined) ?? ''
+      if (password !== FAKE_PASSWORD) return json(route, { error: 'unauthorized' }, 401)
+
+      state.access = { ...state.access, signedIn: true }
+      return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+    }
+
+    if (path.startsWith('/api/access/session') && method === 'DELETE') {
+      state.access = { ...state.access, signedIn: false }
+      return json(route, null, 204)
+    }
+
+    if (path === '/api/access/sessions' && method === 'DELETE') {
+      state.access = { ...state.access, signedIn: false }
+      return json(route, { closed: 2 })
+    }
+
+    // Passe cette ligne, tout exige une session — comme l'API, sinon le harnais testerait
+    // une application que personne ne fait tourner (ADR-54).
+    if (!state.access.signedIn) return json(route, { error: 'unauthorized' }, 401)
 
     // --- Hub ---
     if (path === '/api/hub/overview' && method === 'GET') {
