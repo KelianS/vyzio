@@ -6,15 +6,20 @@ import { CHANNEL_SETUP } from './channelSetup'
 const MARKS = /(`[^`]+`|\[[^\]]+\]\([^)]+\))/g
 
 export function ChannelSetupSteps({ channel }: { channel: NotificationChannelName }) {
+  const setup = CHANNEL_SETUP[channel]
+
   return (
-    <ol className="list-decimal space-y-3 pl-5 text-sm">
-      {CHANNEL_SETUP[channel].steps.map((step) => (
-        <li key={step.title}>
-          <span className="font-medium">{step.title}</span>
-          <p className="text-muted-foreground">{render(step.body)}</p>
-        </li>
-      ))}
-    </ol>
+    <>
+      <p>{setup.lede}</p>
+      <ol className="list-decimal space-y-3 pl-5">
+        {setup.steps.map((step) => (
+          <li key={step.title}>
+            <span className="font-medium text-foreground">{step.title}</span>
+            <p>{render(step.body)}</p>
+          </li>
+        ))}
+      </ol>
+    </>
   )
 }
 

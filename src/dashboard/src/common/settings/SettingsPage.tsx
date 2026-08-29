@@ -26,7 +26,8 @@ export function SettingsPage({ lede, children }: { lede?: string; children: Reac
  *
  * Un titre de groupe se justifie s'il nomme autre chose que la page ; sinon
  * c'est la page qu'il faut ouvrir, pas un cadre qu'il faut ajouter. Il est rendu
- * plus discret qu'un titre de page pour que la hierarchie se lise a l'oeil.
+ * plus discret qu'un titre de page, mais dans le **serif des titres** : c'est ce
+ * qui l'empeche de ressembler au libelle d'un reglage, qui n'est jamais un titre.
  */
 export function SettingsSection({
   title,
@@ -39,7 +40,7 @@ export function SettingsSection({
 }) {
   return (
     <section className="mt-8 border-t border-border pt-6 first:mt-0 first:border-t-0 first:pt-0">
-      <h2 className="font-medium">{title}</h2>
+      <h2 className="font-serif text-2xl">{title}</h2>
       {lede && <p className="mt-1 mb-4 text-sm text-muted-foreground">{lede}</p>}
       <div className={lede ? undefined : 'mt-4'}>{children}</div>
     </section>

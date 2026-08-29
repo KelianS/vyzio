@@ -47,24 +47,47 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
     },
   )
 
-  it('multiChoice_When up to seven options_Should show checkboxes without a filter', () => {
+  it('multiChoice_When at rest_Should summarise the state on a single line', async () => {
+    // Un reglage se lit au repos : une liste de cases montre les options, jamais
+    // l'etat — et elle mange la hauteur de la page au passage.
     render(
       <SettingRow
-        setting={declare({ nature: { kind: 'multiChoice', options: options(7) }, value: ['v1'] })}
+        setting={declare({
+          nature: { kind: 'multiChoice', options: options(7) },
+          value: ['v1', 'v2', 'v3'],
+        })}
       />,
     )
-    expect(screen.getAllByRole('checkbox')).toHaveLength(7)
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    const trigger = screen.getByRole('combobox', { name: /un réglage/i })
+    expect(trigger).toHaveTextContent('Option 1, Option 2 +1')
+
+    await userEvent.click(trigger)
+    expect(await screen.findAllByRole('checkbox')).toHaveLength(7)
   })
 
-  it('multiChoice_When more than seven options_Should offer a filter, since a long list is searched', async () => {
+  it.each([
+    { value: [] as string[], summary: 'Aucune sélection' },
+    { value: options(3).map((option) => option.value), summary: 'Tout' },
+  ])('multiChoice_When $summary_Should say so rather than count', ({ value, summary }) => {
+    render(
+      <SettingRow
+        setting={declare({ nature: { kind: 'multiChoice', options: options(3) }, value })}
+      />,
+    )
+    expect(screen.getByRole('combobox')).toHaveTextContent(summary)
+  })
+
+  it('multiChoice_When more than seven options_Should offer a filter inside the panel', async () => {
     render(
       <SettingRow
         setting={declare({ nature: { kind: 'multiChoice', options: options(8) }, value: [] })}
       />,
     )
 
-    const filter = screen.getByRole('textbox', { name: /filtrer/i })
+    await userEvent.click(screen.getByRole('combobox'))
+    const filter = await screen.findByRole('textbox', { name: /filtrer/i })
     await userEvent.type(filter, 'Option 3')
     expect(screen.getAllByRole('checkbox')).toHaveLength(1)
   })

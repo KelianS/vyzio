@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { AdvancedFold } from '../../common/settings/AdvancedFold'
+import { HelpPanel } from '../../common/settings/HelpPanel'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
@@ -23,7 +24,6 @@ import {
 import { NotificationLog } from './NotificationLog'
 import { ChannelPairingSection } from './ChannelPairingSection'
 import { ChannelSetupSteps } from './ChannelSetupSteps'
-import { channelSetupLede } from './channelSetup'
 import {
   credentialCopy,
   DEFAULT_NOTIFICATION_VALUES,
@@ -279,7 +279,7 @@ function ChannelForm({
         ),
       },
       help: config.capabilities.video
-        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine.'
+        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine. Si elle n’est pas prête, la photo part seule ; si la photo manque aussi, le message part en texte.'
         : undefined,
       value: draft.values.mediaMode,
       onChange: (value) => draft.set('mediaMode', value as MediaMode),
@@ -334,17 +334,15 @@ function ChannelForm({
                 </Button>
               )}
             </div>
-          </SettingsSection>
 
-          {/* Le mode d'emploi s'efface une fois le canal en place : il n'a plus rien a apprendre a personne. */}
-          {!config.isConfigured && (
-            <SettingsSection
-              title="Obtenir ces informations"
-              lede={channelSetupLede(config.channel)}
+            {/* Unfolded while nothing is configured: the walkthrough is then the task, not a fallback. */}
+            <HelpPanel
+              title={`Où trouver ces informations dans ${config.displayName} ?`}
+              defaultOpen={!config.isConfigured}
             >
               <ChannelSetupSteps channel={config.channel} />
-            </SettingsSection>
-          )}
+            </HelpPanel>
+          </SettingsSection>
 
           {config.acceptsCommands && (
             <SettingsSection
@@ -352,11 +350,41 @@ function ChannelForm({
               lede="Reliez une conversation à votre installation pour lui demander, depuis votre téléphone, ce qui se passe chez vous."
             >
               <ChannelPairingSection channel={config.channel} displayName={config.displayName} />
+
+              <HelpPanel title="Que puis-je demander, une fois relié ?">
+                <p>
+                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-xs">/aide</code> dans
+                  la conversation reliée : le bot répond lui-même la liste de ce qu’il sait faire,
+                  toujours à jour.
+                </p>
+                <p>
+                  Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
+                  Un code cesse de valoir passé quelques minutes, ou après plusieurs essais
+                  infructueux — dans les deux cas, générez-en un autre ici.
+                </p>
+              </HelpPanel>
             </SettingsSection>
           )}
 
           <SettingsSection title="Quand prévenir">
             <SettingsList settings={when} />
+
+            <HelpPanel title="Pourquoi une alerte n’est-elle pas partie ?">
+              <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>le canal est activé et entièrement renseigné ;</li>
+                <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
+                <li>la certitude atteint le seuil ;</li>
+                <li>l’heure est dans la plage, s’il y en a une ;</li>
+                <li>aucun envoi récent ne le fait taire ;</li>
+                <li>l’événement ne lui a pas déjà été envoyé.</li>
+              </ul>
+              <p>
+                Les alertes ont besoin d’Internet : sans connexion, Vyzio continue de détecter et
+                d’enregistrer chez vous, mais rien ne part. <em>Derniers envois</em>, dans le repli{' '}
+                <em>Avancé</em>, montre ce qui est réellement parti et l’erreur en cas d’échec.
+              </p>
+            </HelpPanel>
           </SettingsSection>
 
           <AdvancedFold>

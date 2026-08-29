@@ -262,7 +262,7 @@ function HubOperational({
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-medium">En direct</h2>
+          <h2 className="font-serif text-2xl">En direct</h2>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -307,7 +307,7 @@ function HubOperational({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
         <Card>
-          <h2 className="font-medium">Dernières détections</h2>
+          <h2 className="font-serif text-2xl">Dernières détections</h2>
 
           {data.recentEvents.length > 0 ? (
             <div className="mt-3">
@@ -332,7 +332,7 @@ function HubOperational({
 
         <div className="flex flex-col gap-4">
           <Card>
-            <h2 className="font-medium">Alertes</h2>
+            <h2 className="font-serif text-2xl">Alertes</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {data.notifications.activeChannels > 0
                 ? `${data.notifications.sentCount} envoyée${data.notifications.sentCount > 1 ? 's' : ''}${
