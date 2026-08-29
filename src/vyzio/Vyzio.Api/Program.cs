@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
@@ -78,7 +79,12 @@ builder.Services.AddSingleton<IChannelCommandReceiverCatalog, ChannelCommandRece
 builder.Services
     .AddAuthentication(SessionAuthentication.Scheme)
     .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthentication.Scheme, null);
-builder.Services.AddAuthorization();
+// Guarded unless a route says otherwise: a barrier that must be remembered per route is one that gets
+// forgotten, and the route we forget is the one that leaks (ADR-54).
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder(SessionAuthentication.Scheme)
+        .RequireAuthenticatedUser()
+        .Build());
 
 // Only the doors that take a password: rate limiting the rest would throttle the interface itself.
 builder.Services.AddRateLimiter(options =>
@@ -113,8 +119,9 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" }));
+// The container probe: it must answer before anyone has installed anything.
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
+app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" })).AllowAnonymous();
 app.MapAccess();
 app.MapHub();
 app.MapDetectionLabels();

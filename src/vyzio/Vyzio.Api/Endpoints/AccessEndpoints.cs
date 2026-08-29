@@ -15,9 +15,10 @@ public static class AccessEndpoints
 
     public static IEndpointRouteBuilder MapAccess(this IEndpointRouteBuilder app)
     {
+        // Asked before anyone can be signed in: it is what tells a fresh install from a locked one.
         app.MapGet("/api/access/state", async (
             GetAccessStateUseCase useCase,
-            CancellationToken ct) => Results.Ok(await useCase.ExecuteAsync(ct)));
+            CancellationToken ct) => Results.Ok(await useCase.ExecuteAsync(ct))).AllowAnonymous();
 
         app.MapPost("/api/access/account", async (
             PasswordRequest request,
@@ -29,7 +30,7 @@ public static class AccessEndpoints
             // Not rate limited: this route sets the secret instead of guessing it, and it closes for
             // good once an owner exists. Throttling it would only lock someone out of their install.
             return Grant(context, outcome);
-        });
+        }).AllowAnonymous();
 
         app.MapPost("/api/access/session", async (
             PasswordRequest request,
@@ -39,7 +40,7 @@ public static class AccessEndpoints
         {
             var outcome = await useCase.ExecuteAsync(request?.Password, DeviceOf(context), ct);
             return Grant(context, outcome);
-        }).RequireRateLimiting(SignInRateLimitPolicy);
+        }).AllowAnonymous().RequireRateLimiting(SignInRateLimitPolicy);
 
         app.MapGet("/api/access/session", (HttpContext context) =>
             context.CurrentSession() is { } session
@@ -57,7 +58,8 @@ public static class AccessEndpoints
             // Signing out is never a failure: an already dead cookie leaves with the same answer.
             SessionAuthentication.ClearCookie(context.Response);
             return Results.NoContent();
-        });
+            // Anonymous on purpose: signing out with a cookie that already died must not be an error.
+        }).AllowAnonymous();
 
         app.MapDelete("/api/access/sessions", async (
             HttpContext context,

@@ -72,6 +72,7 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
             db.Database.Migrate();
+            SignedInTestClient.SeedOwnerSession(db);
 
             var profile = new Profile { Name = "Alice", Category = "household", AlertMode = "notify" };
             db.Profiles.Add(profile);
@@ -103,6 +104,12 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
                 new FrigateDetection("frigate-hub-001", "front_door", "person", "Alice", 0.92f,
                     DateTimeOffset.Parse("2026-05-12T09:00:00+00:00"), HasClip: true, HasSnapshot: true)
             ]);
+    }
+
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Add("Cookie", SignedInTestClient.Cookie);
     }
 
     protected override void Dispose(bool disposing)
