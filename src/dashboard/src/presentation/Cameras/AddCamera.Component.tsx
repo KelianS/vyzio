@@ -10,6 +10,7 @@ import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { useToast } from '../../common/components/Toast'
 import { usePresenter } from '../../common/presenter/usePresenter'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
+import { HelpPanel } from '../../common/components/HelpPanel'
 import { AdvancedFold } from '../../common/settings/AdvancedFold'
 import { SettingsList } from '../../common/settings/SettingsList'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
@@ -257,6 +258,21 @@ export function AddCameraView() {
               )}
             </div>
           )}
+
+          <HelpPanel title="La recherche ne trouve pas ma caméra ?">
+            <p>
+              C’est fréquent et ce n’est pas une panne : Vyzio interroge le réseau avec le protocole
+              ONVIF, que beaucoup de caméras n’annoncent pas, ou seulement une fois réveillées
+              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
+              adresse sur le réseau, son port, et le chemin du flux, que l’application de la caméra
+              ou sa notice indiquent.
+            </p>
+            <p>
+              Si la vérification échoue, ce sont presque toujours l’adresse, le port, le chemin ou
+              les identifiants : reprenez-les sur la caméra elle-même. Une caméra sur batterie doit
+              être réveillée avant de répondre.
+            </p>
+          </HelpPanel>
         </SettingsSection>
 
         {needsActivation && (
