@@ -282,7 +282,8 @@ Vyzio gère uniquement ses propres données (profils, caméras, réglages, notif
 | `Notification` | Envoi par canal pour un événement, ancré sur l'identifiant Frigate. **Seul fait persisté d'une détection** : les détections elles-mêmes ne sont pas stockées (ADR-49) | — |
 | `ChannelPairing` | Conversation autorisée à commander sur un canal, révocable ; toute autre origine est ignorée (ADR-50) | → config du canal |
 | `CommandJournal` | Commande reçue : origine, commande, issue, horodatage. Fait que Vyzio seul détient, et seule trace si un appairage fuit (ADR-50) | → `ChannelPairing` |
-| `Session` | Refresh token | — |
+| `Account` | Le propriétaire de l'installation : mot de passe haché, rien d'autre. Unique aujourd'hui, entité à part entière pour qu'un second compte reste un ajout (ADR-54) | ← `Session` |
+| `Session` | Accès ouvert depuis un appareil, référencé par un cookie opaque ; révocable une à une ou toutes à la fois (ADR-54) | → `Account` |
 
 Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de
 notification…) : voir le dossier des entités.
@@ -291,6 +292,8 @@ notification…) : voir le dossier des entités.
 - Vyzio ne stocke **aucun embedding ni frame** biométrique — uniquement des métadonnées métier et la
   référence Frigate (`frigate_event_id`) pour proxifier clips et thumbnails.
 - Credentials caméra **chiffrés au repos** (`Microsoft.AspNetCore.DataProtection`, §9.1).
+- Le mot de passe du propriétaire n'est **jamais stocké ni chiffré, seulement haché** : le chiffrement
+  se déchiffre, et rien dans le produit n'a besoin de relire un mot de passe (ADR-54).
 - Une capacité caméra n'est jamais activée sans un test réel réussi (`verified`, ADR-28).
 - Une `Camera` décrit **une seule scène** : ses `CameraStream` en sont des qualités, jamais des angles
   de vue différents. Un boîtier multi-objectifs donne N `Camera` groupées par appareil (ADR-38).
@@ -312,20 +315,22 @@ Quatre conteneurs sur un réseau Docker interne — fichier réel : [`docker-com
 - **frigate** — pipeline vidéo ; API liée à `127.0.0.1` (jamais exposée au réseau) ; accès matériel
   optionnel (VAAPI, Coral).
 
-Deux propriétés tiennent la sécurité de ce découpage : **un seul point d'entrée** pour l'utilisateur,
-et **Frigate jamais joignable directement** — tout transite par le proxy authentifié Vyzio
+Trois propriétés tiennent la sécurité de ce découpage : **un seul point d'entrée** pour
+l'utilisateur, **une seule frontière d'authentification** derrière laquelle tout se trouve
+(ADR-54), et **Frigate jamais joignable directement** — tout transite par le proxy Vyzio
 (ADR-07/16/17).
 
-> **Écart cible / réalité — le seul du document.** Le point d'entrée est aujourd'hui **en clair
-> (HTTP)** : il n'y a pas de TLS, ni certificat, ni redirection. La cible est un point d'entrée
-> chiffré (annexe A) ; tant qu'il ne l'est pas, l'identifiant de session circule en clair sur le
-> réseau local, et l'accès distant (ADR-51) ne peut pas être annoncé. Chantier suivi au
+> **Écart cible / réalité — le seul du document.** Le point d'entrée est **en clair (HTTP)** : ni
+> TLS, ni certificat, ni redirection. La cible est un point d'entrée chiffré (annexe A) ; tant qu'il
+> ne l'est pas, l'identifiant de session et le mot de passe circulent en clair sur le réseau local,
+> et l'accès distant (ADR-51) ne peut pas être annoncé. Chantier suivi au
 > [`BACKLOG`](BACKLOG.md) § `remote-access`.
 
 ### 8.2 Onboarding guidé (zéro fichier YAML pour l'utilisateur)
 
 ```
 Dashboard Vyzio — Assistant de configuration
+  Étape 0 : Création du mot de passe du propriétaire (ADR-54) — rien d'autre n'est accessible avant
   Étape 1 : Scan réseau → liste caméras ONVIF détectées
   Étape 2 : Sélection + test connexion + aperçu live
   Étape 3 : Nommage ("Porte d'entrée") + zones de détection (canvas)
@@ -343,7 +348,9 @@ Dashboard Vyzio — Assistant de configuration
 
 | Menace | Surface | Mitigation |
 |---|---|---|
-| Accès non autorisé au dashboard | Réseau local | JWT, rate limiting — **le chiffrement du transport reste à livrer**, cf. §8.1 |
+| Accès non autorisé au dashboard | Réseau local | Compte propriétaire, session serveur révocable en cookie `httpOnly`, limitation du débit de connexion (ADR-54) — **le chiffrement du transport reste à livrer**, cf. §8.1 |
+| Vol de la session par script injecté | Navigateur | Cookie `httpOnly` : la session n'est jamais lisible depuis la page (ADR-54) |
+| Appareil perdu conservant un accès | Session ouverte | Sessions en base, révocables une à une ou toutes à la fois (ADR-54) |
 | Accès direct API Frigate | Réseau local | Frigate lié à `127.0.0.1`, non routable hors Docker |
 | Exfiltration données biométriques Frigate | API Vyzio | Vyzio ne stocke pas d'embeddings ; seules des métadonnées métier sont exposées |
 | Interception d'images hors réseau | Canal de messagerie | HTTPS + aucun intermédiaire qui déchiffre le flux du produit (ADR-51) |
@@ -351,7 +358,7 @@ Dashboard Vyzio — Assistant de configuration
 | Commande non autorisée depuis un canal de messagerie | Canal entrant | Conversation appairée explicitement et révocable ; toute autre origine ignorée sans réponse (ADR-50) |
 | Injection via EF Core | API | Requêtes paramétrées uniquement, zéro SQL brut |
 | Credentials caméra en clair | SQLite | Chiffrement via `Microsoft.AspNetCore.DataProtection` |
-| Brute-force login | POST /api/auth/login | Rate limiting 5 req/15min/IP |
+| Brute-force du mot de passe | Route de connexion | Limitation du débit sur la seule route de connexion (ADR-54) |
 
 ### 9.2 Isolation réseau
 

@@ -311,6 +311,10 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux proteger l'acces a mon systeme, afin qu'un tiers local ne puisse pas consulter mes donnees.
 
+> **En tant qu'utilisateur**, je veux que mon telephone reste connecte, afin de ne pas ressaisir un mot de passe chaque fois que je jette un oeil a mes cameras.
+
+> **En tant qu'utilisateur**, je veux pouvoir deconnecter un appareil perdu, afin qu'il cesse d'acceder a mes images.
+
 > **En tant qu'utilisateur**, je veux pouvoir supprimer ou exporter mes donnees, afin de garder le controle.
 
 ### 8.2 Regles produit
@@ -320,6 +324,17 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - l'acces a l'interface et aux donnees doit etre protege ;
 - les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ;
 - l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible.
+
+### 8.3 Acces a l'interface
+
+Comment cet acces est protege : [ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md).
+
+- une installation neuve **s'ouvre sur la creation du mot de passe** du proprietaire : c'est la premiere etape, avant l'ajout d'une camera, et elle ne se saute pas ;
+- une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant plusieurs semaines ;
+- se deconnecter est possible depuis l'interface, et **deconnecter tous les appareils** l'est aussi — c'est le geste attendu quand un telephone est perdu ;
+- une session terminee ramene a l'ecran de connexion en le disant, jamais sur un ecran vide ou une erreur technique ;
+- un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel ;
+- l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (§5.4).
 
 ---
 
