@@ -91,7 +91,7 @@ facultatif. Reste l'étape 2, bloquée par son propre prérequis, le transport c
 - **cycle de vie et pannes** : « le pair ne monte pas » doit se lire dans l'interface, sinon
   l'utilisateur conclura que Vyzio est en panne ;
 - l'interface dit explicitement que la disponibilité dépend d'un service tiers, pas de Vyzio ;
-- doc utilisateur : le parcours complet, compte compris, et comment s'en passer.
+- l'aide vit dans l'écran du réglage ([ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)) : le parcours guidé porte les étapes, un panneau `En savoir plus` porte le reste — à quoi sert le compte, et comment s'en passer.
 
 **Fait quand** le hub est joignable depuis un téléphone en 4G, que rien d'autre que l'interface ne
 l'est, et que retirer la clé rend l'installation purement locale.
