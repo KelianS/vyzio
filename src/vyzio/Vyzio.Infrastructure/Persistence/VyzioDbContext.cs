@@ -21,6 +21,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<RecordingSettings> RecordingSettings => Set<RecordingSettings>();
     public DbSet<CommandJournal> CommandJournal => Set<CommandJournal>();
     public DbSet<ChannelPairing> ChannelPairings => Set<ChannelPairing>();
+    public DbSet<Account> Accounts => Set<Account>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -176,6 +177,27 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             pairing.HasIndex(p => p.Channel)
                    .IsUnique()
                    .HasDatabaseName("idx_channel_pairings_channel");
+        });
+
+        modelBuilder.Entity<Account>(account =>
+        {
+            account.Property(a => a.Role).HasConversion<SnakeCaseEnumConverter<AccountRole>>();
+        });
+
+        modelBuilder.Entity<Session>(session =>
+        {
+            session.HasOne<Account>()
+                   .WithMany()
+                   .HasForeignKey(s => s.AccountId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Every authenticated request looks a session up by this hash, and by nothing else (ADR-54).
+            session.HasIndex(s => s.TokenHash)
+                   .IsUnique()
+                   .HasDatabaseName("ux_sessions_token");
+
+            session.HasIndex(s => s.AccountId)
+                   .HasDatabaseName("idx_sessions_account");
         });
     }
 

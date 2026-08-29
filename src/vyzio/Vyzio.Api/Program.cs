@@ -1,7 +1,11 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.Options;
+using Vyzio.Api.Access;
 using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Interfaces;
@@ -70,6 +74,26 @@ builder.Services.AddScoped<INotificationChannelCatalog, NotificationChannelCatal
 builder.Services.AddSingleton<IChannelCommandReceiver, TelegramCommandReceiver>();
 builder.Services.AddSingleton<IChannelCommandReceiver, DiscordCommandReceiver>();
 builder.Services.AddSingleton<IChannelCommandReceiverCatalog, ChannelCommandReceiverCatalog>();
+// The barrier: one scheme, one cookie, sessions the server can revoke (ADR-54).
+builder.Services
+    .AddAuthentication(SessionAuthentication.Scheme)
+    .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthentication.Scheme, null);
+builder.Services.AddAuthorization();
+
+// Only the doors that take a password: rate limiting the rest would throttle the interface itself.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(AccessEndpoints.SignInRateLimitPolicy, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(5)
+            }));
+});
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
@@ -85,9 +109,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseExceptionHandler();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" }));
+app.MapAccess();
 app.MapHub();
 app.MapDetectionLabels();
 app.MapCameras();
