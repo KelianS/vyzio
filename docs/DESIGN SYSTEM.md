@@ -106,6 +106,10 @@ Concretement, `SettingsPage` est une surface **sans titre** ; `SettingsSection` 
 l'interieur d'une page que si celle-ci traite plusieurs sujets, et ce titre nomme alors autre chose
 que la page. Un titre de section qui repete celui de la page signale qu'il fallait une page de plus.
 
+**Un titre de section est un titre, un libellé de réglage n'en est pas un.** Le premier est dans le
+serif des titres, le second dans la graisse du corps : rendus a la meme taille et a la meme police,
+ils donnent une page ou tout est au meme niveau et ou les sections ne separent plus rien.
+
 ### Aide : trois niveaux, pas un manuel
 
 Le mode d'emploi d'une feature vit **dans l'ecran qui la porte**, jamais dans un document a cote
@@ -116,6 +120,11 @@ d'un reglage, et le panneau repli **`En savoir plus`** d'une section.
 La limite qui les separe se verifie : **une infobulle tient en deux phrases**. Ce qui deborde parle
 de la tache et non du champ — cela descend dans le panneau de la section, en laissant dans
 l'infobulle la phrase qui suffit. Un **cout** ne descend jamais : il reste visible sans un geste.
+
+Le panneau est le composant `common/settings/HelpPanel`, jamais un `<details>` reecrit. Son
+en-tete porte la **question** que le lecteur se pose (« Ou trouver ces informations ? ») plutot que
+les mots « En savoir plus », qui ne disent pas ce qu'on y trouvera ; il ne s'ouvre de lui-meme que
+la ou la tache qu'il explique n'est pas encore faite.
 
 Un panneau `En savoir plus` n'est pas le repli `Avance`, qui est une position de fin de page pour
 les reglages rares ([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)) :

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { ChevronDown, Eye, EyeOff } from 'lucide-react'
 import { Switch } from '../ui/switch'
 import { Input } from '../ui/input'
 import { Checkbox } from '../ui/checkbox'
 import { Slider } from '../ui/slider'
 import { Button } from '../ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { cn } from '../ui/utils'
 import {
   VISIBLE_CHOICES_MAX,
@@ -107,37 +108,76 @@ function MultiChoiceControl({
   }
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      {searchable && (
-        <Input
-          aria-label={`Filtrer ${setting.label.toLowerCase()}`}
-          placeholder="Filtrer…"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      )}
-      <div
-        role="group"
-        aria-labelledby={`${setting.id}-label`}
-        className={cn(
-          'flex flex-col gap-1.5',
-          searchable && 'max-h-56 overflow-y-auto rounded-lg border border-border p-2',
-        )}
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          id={setting.id}
+          type="button"
+          variant="outline"
+          role="combobox"
+          disabled={setting.disabled}
+          className={cn('w-full justify-between font-normal', followingClass(setting))}
+        >
+          {/* Un reglage se lit au repos : le controle dit son etat, pas la liste des options. */}
+          <span className="truncate">{summarise(nature.options, selected)}</span>
+          <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+
+      {/* Aucune validation propre : chaque case va au brouillon, que la barre enregistre (ADR-43). */}
+      <PopoverContent
+        align="start"
+        className="flex w-[var(--radix-popover-trigger-width)] flex-col gap-2 p-2"
       >
-        {visible.map((option) => (
-          <label key={option.value} className="flex cursor-pointer items-center gap-2 text-sm">
-            <Checkbox
-              checked={selected.includes(option.value)}
-              disabled={setting.disabled}
-              onCheckedChange={(checked) => toggle(option.value, checked === true)}
-            />
-            {option.label}
-          </label>
-        ))}
-        {visible.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat.</p>}
-      </div>
-    </div>
+        {searchable && (
+          <Input
+            aria-label={`Filtrer ${setting.label.toLowerCase()}`}
+            placeholder="Filtrer…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        )}
+        <div
+          role="group"
+          aria-labelledby={`${setting.id}-label`}
+          className="flex max-h-64 flex-col gap-1.5 overflow-y-auto"
+        >
+          {visible.map((option) => (
+            <label
+              key={option.value}
+              className="flex cursor-pointer items-center gap-2 rounded-inset px-1 py-1 text-sm hover:bg-muted"
+            >
+              <Checkbox
+                checked={selected.includes(option.value)}
+                disabled={setting.disabled}
+                onCheckedChange={(checked) => toggle(option.value, checked === true)}
+              />
+              {option.label}
+            </label>
+          ))}
+          {visible.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat.</p>}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
+}
+
+/** Au-dela, le resume varierait de largeur et la colonne de controle avec lui. */
+const SUMMARY_NAMES_MAX = 2
+
+/** L'etat d'un choix multiple en une ligne : deux noms au plus, puis le compte du reste. */
+function summarise(options: Narrow<'multiChoice'>['options'], selected: string[]): string {
+  const chosen = options.filter((option) => selected.includes(option.value))
+  if (chosen.length === 0) return 'Aucune sélection'
+  if (chosen.length === options.length) return 'Tout'
+
+  const named = chosen
+    .slice(0, SUMMARY_NAMES_MAX)
+    .map((option) => option.label)
+    .join(', ')
+
+  const rest = chosen.length - SUMMARY_NAMES_MAX
+  return rest > 0 ? `${named} +${rest}` : named
 }
 
 function NumberControl({

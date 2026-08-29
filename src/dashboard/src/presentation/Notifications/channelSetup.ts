@@ -39,7 +39,7 @@ export const CHANNEL_SETUP: Record<NotificationChannelName, ChannelSetup> = {
       },
       {
         title: 'Reliez la conversation',
-        body: 'Sans elle, le bot alerte mais ne répond à personne. La section `Commandes` de cette page donne un code et la commande à lui envoyer.',
+        body: 'Sans elle, le bot alerte mais ne répond à personne. La section `Commander depuis la conversation`, plus bas, donne un code et la commande à lui envoyer.',
       },
     ],
   },
@@ -64,7 +64,7 @@ export const CHANNEL_SETUP: Record<NotificationChannelName, ChannelSetup> = {
       },
       {
         title: 'Reliez le salon',
-        body: 'Sans lui, le bot alerte mais ne répond à personne. La section `Commandes` de cette page donne un code et la commande à lui envoyer.',
+        body: 'Sans lui, le bot alerte mais ne répond à personne. La section `Commander depuis la conversation`, plus bas, donne un code et la commande à lui envoyer.',
       },
     ],
   },

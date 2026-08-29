@@ -39,6 +39,8 @@ common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), 
   fixe la table des contrôles et l'anatomie de la ligne de réglage.
 - Le repli de fin de page `Avancé` est le composant `common/settings/AdvancedFold` — jamais un
   `<details>` réécrit ni une section qui ne replie rien (c'est une position, pas un mode, ADR-40).
+- L'aide longue d'une section est `common/settings/HelpPanel` — également jamais un `<details>`
+  réécrit ; son titre est la question posée, pas le nom d'un chapitre (ADR-53).
 - Une liste de détections est `common/detection/DetectionList`, à l'accueil comme dans l'historique
   (l'accueil n'en est que les dernières) — deux rendus séparés avaient divergé.
 - Un aperçu de détection passe par `common/components/DetectionThumbnail` : jamais un `<img>` nu,

@@ -13,4 +13,5 @@ paraphrase l'interface est supprimé, ce qui répond à une vraie question desce
 `En savoir plus` de la section concernée. Tant qu'un fichier est là, il reste la seule version de ce
 qu'il décrit — le corriger vaut mieux que le laisser mentir.
 
-Suivi du repli : [BACKLOG](../BACKLOG.md) — le premier cas est celui des canaux de notification.
+Suivi du repli : [BACKLOG](../BACKLOG.md). Les canaux de notification sont passés les premiers : leur
+mode d'emploi n'est plus ici, il vit dans l'écran du canal.

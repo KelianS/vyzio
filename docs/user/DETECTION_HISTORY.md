@@ -54,5 +54,5 @@ secondes à être prise en compte partout.
 ## Voir aussi
 
 - [Durées de conservation](RECORDING_RETENTION.md) — la durée qui fixe la profondeur de cette page.
-- [Canaux de notification](NOTIFICATION_CHANNELS.md) — ce qui part au moment de la détection, sans
-  attendre.
+- Les canaux de notification — ce qui part au moment de la détection, sans attendre — se règlent et
+  s'expliquent dans leur écran : *Réglages › Notifications*.

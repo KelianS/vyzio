@@ -26,7 +26,7 @@ export type SettingNature =
   | { readonly kind: 'toggle' }
   /** Choix exclusif → liste deroulante, quel qu'en soit le nombre d'options. */
   | { readonly kind: 'choice'; readonly options: readonly SettingOption[] }
-  /** Choix multiple → cases visibles jusqu'a 7 options, liste cherchable au-dela. */
+  /** Choix multiple → liste deroulante a cases cochables, resumee sur une ligne au repos. */
   | { readonly kind: 'multiChoice'; readonly options: readonly SettingOption[] }
   /** Nombre → champ numerique, unite en suffixe du controle quand il y en a une. */
   | {
@@ -48,7 +48,7 @@ export type SettingNature =
   /** Secret → champ masque, avec revelation : il faut pouvoir se relire. */
   | { readonly kind: 'secret'; readonly placeholder?: string }
 
-/** Au-dela, une liste se cherche, elle ne se parcourt pas. */
+/** Au-dela, un filtre s'ajoute dans le panneau : une liste longue se cherche, elle ne se parcourt pas. */
 export const VISIBLE_CHOICES_MAX = 7
 
 /**
