@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
 /**
- * What can only be judged by comparing screens with each other (BACKLOG `config-ui` 11).
+ * What can only be judged by comparing screens with each other.
  *
  * Every screen is compliant on its own: it is the comparison that reveals a control
  * column drifting, or an "Avance" fold that is not one. Both invariants are

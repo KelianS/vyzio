@@ -4,7 +4,7 @@
 > de décision et compare des propositions. Les choix retenus iront dans un ADR, et les attendus
 > produit correspondants dans [`SPECS.md`](../SPECS.md) §7.
 >
-> Déclencheur : item « Refondre le socle de configuration » du [`BACKLOG`](../BACKLOG.md), et son
+> Déclencheur : item « Refondre le socle de configuration », et son
 > voisin sur la bibliothèque de composants — les deux partagent la même cause.
 
 ---

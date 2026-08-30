@@ -7,8 +7,8 @@ import {
 } from './fixtures/fakeBackend'
 
 /**
- * The defects found in use after the `config-ui` batch (see `docs/BACKLOG.md`, batch
- * `ui-defauts`). Each one is reproduced here before being fixed.
+ * The defects found in use after the `config-ui` batch. Each one is reproduced here before
+ * being fixed.
  */
 
 test.describe('Mettre une caméra en pause', () => {

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How we work
+    url: https://github.com/KelianS/vyzio/blob/main/docs/WORKFLOW.md
+    about: Required order, documentation architecture, commit and pull request conventions.
+  - name: What the product must do
+    url: https://github.com/KelianS/vyzio/blob/main/docs/SPECS.md
+    about: Need, journeys, scope. An issue leans on it, it does not decide it again.
