@@ -104,11 +104,20 @@ jobs:
           name: frontend-coverage
           path: frontend-coverage
 
+      # dotnet buries its report under a run guid. Fixed names here, so nothing downstream
+      # has to glob, and the summary rows are labelled by side.
+      - name: Collect both reports
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          cp "$(find backend-coverage -name 'coverage.cobertura.xml' | head -1)" reports/backend.xml
+          cp frontend-coverage/cobertura-coverage.xml reports/frontend.xml
+
       # Both sides emit cobertura, so one action reads them both.
       - name: Summarise
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: 'backend-coverage/**/coverage.cobertura.xml,frontend-coverage/cobertura-coverage.xml'
+          filename: 'reports/backend.xml,reports/frontend.xml'
           format: markdown
           output: both
           badge: true
@@ -141,8 +150,8 @@ jobs:
             printf '{"schemaVersion":1,"label":"%s coverage","message":"%s%%","color":"%s"}' \
               "$2" "$pct" "$colour" > "$work/badge-coverage-$2.json"
           }
-          badge "$(find backend-coverage -name 'coverage.cobertura.xml' | head -1)" backend
-          badge frontend-coverage/cobertura-coverage.xml frontend
+          badge reports/backend.xml backend
+          badge reports/frontend.xml frontend
           git -C "$work" init -q
           git -C "$work" checkout -qb badges
           git -C "$work" add -A
