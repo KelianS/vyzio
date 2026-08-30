@@ -94,14 +94,14 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
 }
 
 /** Mirrors the backend channel catalogue: a channel declares what it needs and what it can render. */
-export interface FakeChannelListening {
+interface FakeChannelListening {
   listening: boolean
   since: string | null
   interruptedAt: string | null
   reason: string | null
 }
 
-export interface FakeCommandJournalEntry {
+interface FakeCommandJournalEntry {
   id: string
   verb: string
   outcome: 'succeeded' | 'failed' | 'rejected'
@@ -205,7 +205,7 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
   }
 }
 
-export interface FakeAccessState {
+interface FakeAccessState {
   installed: boolean
   signedIn: boolean
   /** The password was just removed from the host machine (ADR-54). */

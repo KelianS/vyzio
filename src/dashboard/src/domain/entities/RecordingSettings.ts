@@ -1,6 +1,6 @@
 // One installation-wide retention window (ADR-39). `default` is the value Vyzio ships with, which
 // is what lets the interface offer a way back to it and name it.
-export interface RetentionSetting {
+interface RetentionSetting {
   days: number
   default: number
 }

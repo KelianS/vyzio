@@ -143,5 +143,3 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
     },
   }
 }
-
-export type AddCameraPresenter = ReturnType<typeof buildAddCameraPresenter>

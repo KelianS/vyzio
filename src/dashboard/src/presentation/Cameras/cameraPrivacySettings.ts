@@ -49,7 +49,7 @@ const STRATEGIES: readonly StrategyDefinition[] = [
   },
 ]
 
-export function availableStrategies(camera: Camera): SettingOption<PrivacyStrategy>[] {
+function availableStrategies(camera: Camera): SettingOption<PrivacyStrategy>[] {
   // Only what this camera can actually do is offered: showing a greyed option
   // with no way to act on it would be one more opaque state.
   return STRATEGIES.filter((strategy) => strategy.available(camera)).map((strategy) => ({

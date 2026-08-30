@@ -31,7 +31,7 @@ export interface AppContainer {
   detectionHistory: DetectionHistoryContainer
 }
 
-export function makeAppContainer(): AppContainer {
+function makeAppContainer(): AppContainer {
   const runtime = getDashboardRuntime()
 
   const accessRepository = new HttpAccessRepository(runtime.apiBaseUrl)

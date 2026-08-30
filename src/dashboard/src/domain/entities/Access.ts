@@ -1,5 +1,5 @@
 /** What an account is allowed to do (ADR-54). */
-export type AccountRole = 'owner' | 'resident'
+type AccountRole = 'owner' | 'resident'
 
 /** Where the installation stands before anyone signs in: does it have an owner yet. */
 export interface AccessState {

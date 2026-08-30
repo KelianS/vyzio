@@ -1,16 +1,16 @@
 import type { SettingOption } from '../../common/settings/settingDeclaration'
 
 /** Vendor families Vyzio recognizes — single source, was duplicated across the add screen. */
-export const VENDOR_FAMILY_LABELS = {
+const VENDOR_FAMILY_LABELS = {
   v380_pro: 'V380 PRO',
   tplink_tapo: 'TP-Link Tapo',
   icsee: 'ICSee / XMEye',
 } as const
 
-export type VendorFamily = keyof typeof VENDOR_FAMILY_LABELS
+type VendorFamily = keyof typeof VENDOR_FAMILY_LABELS
 
 /** "No vendor" is a choice value, not an absence: a dropdown can't offer emptiness. */
-export const VENDOR_UNKNOWN = 'unknown'
+const VENDOR_UNKNOWN = 'unknown'
 
 export const VENDOR_FAMILY_OPTIONS: readonly SettingOption[] = [
   { value: VENDOR_UNKNOWN, label: 'Non reconnue' },

@@ -78,6 +78,12 @@ tasks:
     cmds:
       - pnpm lint
 
+  front:knip:
+    desc: Detecte le code mort du frontend (fichiers, exports et dependances inutilises)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm knip
+
   front:build:
     desc: Build le frontend (tsc + vite build)
     dir: '{{.DASHBOARD_DIR}}'

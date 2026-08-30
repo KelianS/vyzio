@@ -8,7 +8,8 @@ namespace Vyzio.Application.UseCases.Cameras;
 // Resolution is via CameraCapabilityBinding + ICapabilityProviderRegistry (ADR-22) — never
 // via VendorFamily/IVendorCameraAdapter. Hardware strategy requires Verified=true on the
 // HardwarePrivacy binding. PtzParking is inlined here: fetches the Ptz binding and calls
-// PtzGoToPresetAsync(1) — the parking position saved by ConfigurePtzParkingPositionUseCase.
+// PtzGoToPresetAsync(1): preset 1 is the parking position by convention (ADR-25), saved from
+// the live view like any other preset.
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,

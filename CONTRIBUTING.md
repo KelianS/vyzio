@@ -19,6 +19,7 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task front:dev` | Vite dev server |
 | `task front:test` / `task back:test` / `task test` | Run frontend / backend / both test suites |
 | `task front:lint` | ESLint |
+| `task front:knip` | Dead code detection (Knip) |
 | `task front:build` / `task back:build` / `task build` | Build frontend / backend / both |
 | `task back:run` | Run the API locally outside docker |
 | `task docs:capture` | Regenerate the README screenshots from the e2e fixtures |
@@ -28,6 +29,18 @@ Docker commands run via `wsl docker compose ...` under the hood, since Docker is
 ### Documentation screenshots
 
 `task docs:capture` drives the real production build against the e2e fake backend and writes the README images to `docs/assets`. Live tiles have nothing to show there: drop a `<camera-slug>.jpg` into `src/dashboard/tools/docs-capture/stills/` to fill them, which is git-ignored on purpose since those frames are footage of someone's home.
+
+### Dead code
+
+`task front:knip` reports every frontend file, export and dependency that nothing reaches, and CI
+fails on any of them. The repository was brought to zero findings when the check landed, so a
+failure is always something the branch introduced, never a pre-existing debt to argue about.
+
+Two rules keep it honest. An export used only inside its own file loses its `export` keyword rather
+than being declared an exception, and the vendored shadcn/ui primitives under `src/common/ui` are
+out of scope, for the same reason `.prettierignore` excludes them: they are copied from the registry
+and are not ours to prune (ADR-42). Everything else is either used or deleted. Knip covers the
+frontend only, the backend having no equivalent.
 
 ### Coverage
 

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+
+  // The capture scripts are entry points that no config file names: they are run by
+  // `playwright.capture.config.ts` through its own testMatch, which knip does not read.
+  "entry": ["tools/docs-capture/*.capture.ts"],
+  "project": ["src/**/*.{ts,tsx,css}", "tests/**/*.ts", "tools/**/*.ts"],
+
+  // Vendored shadcn/ui primitives (ADR-42), kept byte-identical to the registry. Pruning
+  // exports there would be pruning someone else's code, as `.prettierignore` already says.
+  "ignore": ["src/common/ui/**"],
+}

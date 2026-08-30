@@ -111,3 +111,7 @@ d'un réglage / panneau `En savoir plus` d'une section, une infobulle tenant en 
 
 - **pnpm** obligatoire (jamais npm/yarn).
 - Tests via Vitest (`task front:test`).
+- **Code mort** : `task front:knip` bloque la CI sur tout fichier, export ou dépendance que rien
+  n'atteint. Un export utilisé seulement dans son propre fichier perd son `export`, il ne devient
+  pas une exception. Portée et exclusions : [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)
+  § Dead code.
