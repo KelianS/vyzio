@@ -2,9 +2,8 @@ import { test, expect, type Locator } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
 /**
- * Rapport de contraste WCAG entre un element et le fond qu'il recouvre — la
- * seule facon de tenir « ca se lit », que la visibilite au sens de la mise en
- * page ne dit pas.
+ * The WCAG contrast ratio between an element and the background it covers - the only
+ * way to hold "it reads", which visibility in the layout sense does not say.
  */
 async function contrastOf(locator: Locator): Promise<number> {
   return locator.evaluate((el) => {
@@ -17,8 +16,8 @@ async function contrastOf(locator: Locator): Promise<number> {
       return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
     }
 
-    // Le fond de la pastille est semi-transparent : ce qui compte est ce que
-    // l'oeil voit, donc le resultat compose sur la surface qui la porte.
+    // The pill background is semi-transparent: what counts is what the eye sees,
+    // hence the result composed over the surface carrying it.
     const over = (front: number[], back: number[]) => {
       const alpha = front[3] ?? 1
       return [0, 1, 2].map((i) => front[i] * alpha + back[i] * (1 - alpha))
@@ -43,10 +42,10 @@ async function contrastOf(locator: Locator): Promise<number> {
 }
 
 /**
- * Le preflight Tailwind neutralise les styles par defaut des elements. Ce que
- * `index.css` rattrape ensuite — la police des titres, celle des controles, le
- * rayon des surfaces — se perdrait en silence : rien ne casse, tout se met a
- * ressembler a une page nue. Ce test le tient.
+ * The Tailwind preflight neutralises the default styles of elements. What `index.css`
+ * then puts back - the title font, the control font, the radius of surfaces - would be
+ * lost silently: nothing breaks, everything just starts looking like a bare page. This
+ * test holds it.
  */
 test.describe('Socle — typographie et surfaces', () => {
   test('socle_When Tailwind preflight is active_Should keep headings, controls and surfaces', async ({
@@ -71,8 +70,8 @@ test.describe('Socle — typographie et surfaces', () => {
       .evaluate((el) => getComputedStyle(el).fontFamily)
     expect(controlFont).toContain('Aptos')
 
-    // Les surfaces gardent leurs grands rayons : c'est ce qui distingue leur
-    // echelle de celle, plus serree, des elements cliquables.
+    // Surfaces keep their large radii: that is what tells their scale apart from the
+    // tighter one of clickable elements.
     const cardRadius = await page
       .locator('.rounded-card')
       .first()
@@ -81,9 +80,9 @@ test.describe('Socle — typographie et surfaces', () => {
 
     await page.screenshot({ path: 'test-results/socle-hub.png', fullPage: true })
 
-    // Une pastille d'etat doit se lire. Les anciennes peignaient leur texte en
-    // clair pour un panneau sombre : posees sur une surface claire, elles
-    // devenaient invisibles — et `toBeVisible()` n'en disait rien.
+    // A status pill has to read. The old ones painted their text light for a dark
+    // panel: laid on a light surface, they became invisible - and `toBeVisible()`
+    // said nothing about it.
     await page.goto('/settings/cameras')
     const badge = page.getByText('Connectee')
     await expect(badge).toBeVisible()

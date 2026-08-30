@@ -19,8 +19,8 @@ test.describe('Notifications — les canaux', () => {
 
     await page.getByRole('button', { name: 'Enregistrer' }).click()
 
-    // Invariant vie privee : les images quittent le reseau local, on le dit
-    // avant, pas apres.
+    // Privacy invariant: images leave the local network, and that is said
+    // beforehand, not after.
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('serveurs de Telegram')
     await dialog.getByRole('button', { name: 'Activer' }).click()
@@ -31,8 +31,8 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
   })
 
-  // La barre de l'etape : un second canal se configure avec le meme ecran, monte
-  // sur ce qu'il declare, et avec son propre mode d'emploi (ADR-50, ADR-52).
+  // The bar for this step: a second channel is configured with the same screen, built
+  // on what it declares, and with a how-to of its own (ADR-50, ADR-52).
   test('user_When adding a second channel_Should get the same screen with that channel instructions', async ({
     page,
   }) => {
@@ -49,8 +49,8 @@ test.describe('Notifications — les canaux', () => {
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()
 
-    // Le mode d'emploi ne disparait pas une fois le canal en place : il se
-    // replie (ADR-53), pour rester la le jour ou on doit refaire un token.
+    // The how-to does not disappear once the channel is in place: it folds
+    // (ADR-53), to still be there the day a token has to be made again.
     await expect(page.getByText('Où trouver ces informations dans Discord ?')).toBeVisible()
 
     await page.goto('/settings/notifications')
@@ -61,8 +61,8 @@ test.describe('Notifications — les canaux', () => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/notifications/telegram')
 
-    // Tester sans canal enverrait vers nulle part : le bouton le dit au lieu
-    // de laisser essayer.
+    // Testing with no channel would send nowhere: the button says so instead
+    // of letting one try.
     await expect(page.getByRole('button', { name: 'Envoyer un message de test' })).toBeDisabled()
   })
 
@@ -70,15 +70,15 @@ test.describe('Notifications — les canaux', () => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/notifications/telegram')
 
-    // Les heures n'existent que si la plage est demandee : les montrer grisees
-    // ferait deux reglages la ou l'utilisateur n'en decide qu'un.
+    // The hours only exist if the range is asked for: showing them greyed would
+    // make two settings where the user decides only one.
     await expect(page.getByRole('combobox', { name: 'À partir de' })).toHaveCount(0)
     await page.getByRole('switch', { name: 'Seulement à certaines heures' }).click()
     await expect(page.getByRole('combobox', { name: 'À partir de' })).toBeVisible()
   })
 
-  // Le critere de l'etape : debrancher le reseau doit se voir dans les reglages,
-  // sinon Vyzio passe pour en panne alors qu'il attend (SPECS 5.4).
+  // The criterion for this step: unplugging the network must show in the settings,
+  // or Vyzio looks broken when it is merely waiting (SPECS 5.4).
   test('user_When the channel stopped listening_Should read it, and why, where commands are set up', async ({
     page,
   }) => {
@@ -113,8 +113,8 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByText('N’écoute plus')).toBeVisible()
     await expect(page.getByText(/No such host is known/)).toBeVisible()
 
-    // La trace de ce qui a ete demande, y compris ce qui a ete ignore : c'est le
-    // seul signe qu'une autre conversation frappe a la porte (ADR-50).
+    // The trace of what was asked, including what was ignored: it is the only
+    // sign that another conversation is knocking at the door (ADR-50).
     await page.locator('summary').filter({ hasText: 'Avancé' }).click()
     await expect(page.getByText('Ignoré — conversation non reliée')).toBeVisible()
   })

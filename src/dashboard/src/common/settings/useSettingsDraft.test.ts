@@ -16,8 +16,8 @@ function setup(saved: Values = { continuousDays: 0, motionDays: 7 }) {
 }
 
 /**
- * Ces tests portent sur la decision d'ADR-41 : modifier n'a aucun effet, et le
- * brouillon doit dire **ce qui** a change.
+ * These tests cover the ADR-41 decision: editing has no effect, and the draft
+ * must say **what** changed.
  */
 describe('Brouillon de page', () => {
   it('draft_When nothing was touched_Should be clean', () => {
@@ -31,7 +31,7 @@ describe('Brouillon de page', () => {
 
     act(() => result.current.set('motionDays', 30))
 
-    // Ce qui s'applique a l'ecran a change ; ce qui est enregistre, non.
+    // What the screen applies has changed; what is saved has not.
     expect(result.current.values.motionDays).toBe(30)
     expect(result.current.saved.motionDays).toBe(7)
     expect(result.current.dirty).toBe(true)
@@ -55,7 +55,7 @@ describe('Brouillon de page', () => {
     act(() => result.current.set('motionDays', 30))
     act(() => result.current.set('motionDays', 7))
 
-    // Sans cela, la barre annoncerait une modification qui n'existe plus.
+    // Without that, the bar would announce a change that no longer exists.
     expect(result.current.dirty).toBe(false)
     expect(result.current.changes).toEqual([])
   })
@@ -73,8 +73,8 @@ describe('Brouillon de page', () => {
       result.current.set('pinned', true)
     })
 
-    // L'utilisateur n'a change qu'un reglage : lui en annoncer deux lui ferait
-    // douter de ce qu'il vient de faire.
+    // The user changed one setting only: announcing two would make them doubt
+    // what they just did.
     expect(result.current.changes).toEqual([{ key: 'level', label: 'Sensibilité' }])
   })
 
@@ -94,8 +94,8 @@ describe('Brouillon de page', () => {
     act(() => result.current.set('motionDays', 30))
     rerender({ current: { continuousDays: 3, motionDays: 7 } })
 
-    // Le champ modifie garde la saisie en cours, les autres suivent le serveur :
-    // c'est ce qu'un recouvrement donne et qu'une copie perdrait.
+    // The edited field keeps what is being typed, the others follow the server:
+    // that is what an overlay gives and a copy would lose.
     expect(result.current.values.motionDays).toBe(30)
     expect(result.current.values.continuousDays).toBe(3)
   })

@@ -10,13 +10,13 @@ test.describe('Accueil — couper la surveillance', () => {
 
     await page.goto('/')
 
-    // L'accueil dit d'abord ce qui est surveille — c'est ce qu'on vient verifier.
+    // Home says first what is being watched - that is what one comes to check.
     await expect(page.getByRole('heading', { name: '1 caméra sous surveillance' })).toBeVisible()
     await expect(page.getByText('Salon')).toBeVisible()
 
     await page.getByRole('button', { name: 'Tout couper' }).click()
 
-    // Le cout est dit avant : plus rien n'est enregistre ni signale.
+    // The cost is said beforehand: nothing more is recorded nor reported.
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Plus rien n’est enregistré ni signalé')
     await dialog.getByRole('button', { name: 'Tout couper' }).click()

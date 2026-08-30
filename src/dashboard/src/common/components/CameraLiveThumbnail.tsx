@@ -9,7 +9,7 @@ interface CameraLiveThumbnailProps {
   camera: Camera
   apiBaseUrl: string
   frigateStatus?: FrigateStatus
-  /** Une bascule vie privee est en cours sur cette camera : l'attente se voit ici, pas seulement dans la modale. */
+  /** A privacy toggle is under way on this camera: the wait shows here, not only in the modal. */
   busy?: boolean
   onExpand?: () => void
   onTogglePrivacy?: (camera: Camera, active: boolean) => void
@@ -63,7 +63,7 @@ export function CameraLiveThumbnail({
         className={cn('relative aspect-video bg-surface-inverse', expandable && 'cursor-pointer')}
         onClick={camera.privacyModeActive ? undefined : onExpand}
         role={expandable ? 'button' : undefined}
-        // Nomme le cadre lui-meme : l'image cachee pendant une coupure emportait son nom avec elle.
+        // Names the frame itself: the image, hidden during an outage, took its name along.
         aria-label={expandable ? camera.displayName : undefined}
         tabIndex={expandable ? 0 : undefined}
         onKeyDown={
@@ -97,8 +97,8 @@ export function CameraLiveThumbnail({
             <img
               src={imgSrc}
               alt={camera.displayName}
-              // Une image sans donnees affiche l'icone de rupture du navigateur : elle transparait
-              // sous le voile d'attente, alors on la cache tant qu'elle n'a rien a montrer.
+              // An image with no data shows the browser's broken icon: it shows through
+              // the waiting veil, so it stays hidden until it has something to show.
               className={cn('size-full object-cover', imageError && 'invisible')}
               onError={() => setImageError(true)}
               onLoad={() => setImageError(false)}

@@ -11,13 +11,12 @@ function isSettings(pathname: string) {
 }
 
 /**
- * Le seul garde de navigation de l'application.
+ * The only navigation guard in the application.
  *
- * react-router n'accepte **qu'un blocage a la fois** : deux `useBlocker`
- * concurrents ne se partagent pas le travail, le dernier enregistre gagne et
- * l'autre est ignore en silence. Les deux questions sont donc posees ici, dans
- * l'ordre ou elles se presentent — ce qui garantit aussi qu'elles ne s'empilent
- * jamais (ADR-41, ADR-44).
+ * react-router accepts **one block at a time**: two competing `useBlocker` do not
+ * share the work, the last one registered wins and the other is ignored silently.
+ * Both questions are therefore asked here, in the order they come up - which also
+ * guarantees they never stack (ADR-41, ADR-44).
  */
 export function NavigationGuard() {
   const unsaved = useRootStore((state) => state.unsavedChanges)
@@ -30,8 +29,8 @@ export function NavigationGuard() {
     return pending && isSettings(currentLocation.pathname) && !isSettings(nextLocation.pathname)
   })
 
-  // Le blocage survit a la disparition de sa cause — typiquement un enregistrement
-  // entre-temps — et laisserait une question sans objet a l'ecran.
+  // The block outlives its cause - typically a save in the meantime - and would
+  // leave a question with no object on screen.
   if (blocker.state === 'blocked' && !unsaved && !pending) {
     blocker.reset?.()
     return null
@@ -39,8 +38,8 @@ export function NavigationGuard() {
 
   if (blocker.state !== 'blocked') return null
 
-  // Perdre des modifications passe avant tout le reste : c'est la seule des deux
-  // questions dont la mauvaise reponse detruit quelque chose.
+  // Losing changes comes before everything else: it is the only one of the two
+  // questions whose wrong answer destroys something.
   if (unsaved) {
     return (
       <ConfirmModal

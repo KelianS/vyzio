@@ -23,7 +23,7 @@ import { hubReducer } from './Hub.Reducer'
 import { buildInitialHubUido } from './Hub.Uido'
 import { privacyWording, type PrivacyRequest } from './privacyRequest'
 
-/** L'accueil ne montre que les dernieres ; l'historique montre les memes, toutes. */
+/** Home shows only the latest ones; the history shows the same ones, all of them. */
 const RECENT_EVENTS_MAX = 5
 
 type ModalMedia =
@@ -231,8 +231,8 @@ function HubOperational({
 }: HubOperationalProps) {
   const frigateStatus = systemStats?.status ?? 'active'
   const allPrivate = cameras.every((camera) => camera.privacyModeActive)
-  // L'attente se montre sur la vignette concernee, pas seulement dans la modale : couper touche la
-  // camera elle-meme, et rien ne bouge a l'ecran avant qu'elle ait repondu.
+  // The wait shows on the thumbnail concerned, not only in the modal: cutting reaches the camera
+  // itself, and nothing moves on screen before it has answered.
   const privacyBusyIds = new Set(privacyLoading ? (privacyPending?.cameraIds ?? []) : [])
   const watched = cameras.filter((camera) => camera.isEnabled && !camera.privacyModeActive).length
 

@@ -26,8 +26,8 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
     try {
       return await fetchJson<NotificationChannelConfig>(this.settingsUrl(channel))
     } catch (error) {
-      // Une adresse qui nomme un canal inexistant n'est pas une panne : l'ecran le dit.
-      // Tout le reste en est une, et l'avaler ferait passer un serveur en vrac pour un canal vierge.
+      // An address naming a channel that does not exist is not a failure: the screen says so.
+      // Everything else is one, and swallowing it would make a broken server look like a blank channel.
       if (error instanceof HttpError && error.status === 400) return null
       throw error
     }
@@ -60,7 +60,7 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
     try {
       return await fetchJson<ChannelPairing>(this.pairingUrl(channel))
     } catch (error) {
-      // Un canal qui n'ecoute pas n'a pas d'appairage : ce n'est pas une panne, il n'y a rien a montrer.
+      // A channel that does not listen has no pairing: not a failure, there is nothing to show.
       if (error instanceof HttpError && error.status === 400) return null
       throw error
     }
@@ -87,7 +87,7 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
     try {
       return await fetchJson<ChannelListening>(`${this.settingsUrl(channel)}/listening`)
     } catch (error) {
-      // Un canal qui n'ecoute pas n'a pas de boucle : rien a montrer, pas une panne.
+      // A channel that does not listen has no loop: nothing to show, not a failure.
       if (error instanceof HttpError && error.status === 400) return null
       throw error
     }

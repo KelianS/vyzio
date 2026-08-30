@@ -2,12 +2,12 @@ import { test, expect, type Page } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
 /**
- * Ce qui ne se juge qu'en comparant les ecrans entre eux (BACKLOG `config-ui` 11).
+ * What can only be judged by comparing screens with each other (BACKLOG `config-ui` 11).
  *
- * Chaque ecran est conforme isolement : c'est la comparaison qui revele une
- * colonne de controle qui se decale, ou un repli « Avance » qui n'en est pas un.
- * Ces deux invariants sont geometriques et structurels, donc verifiables — a la
- * difference du vocabulaire, qui reste une relecture humaine.
+ * Every screen is compliant on its own: it is the comparison that reveals a control
+ * column drifting, or an "Avance" fold that is not one. Both invariants are
+ * geometric and structural, hence checkable - unlike the vocabulary, which stays a
+ * human read-through.
  */
 
 const SETTINGS_ROUTES: [string, string][] = [
@@ -17,7 +17,7 @@ const SETTINGS_ROUTES: [string, string][] = [
   ['/settings/cameras/camera-1/image', 'Camera — image'],
   ['/settings/cameras/camera-1/connexion', 'Camera — connexion'],
   ['/settings/conservation', 'Conservation (installation)'],
-  // Les reglages sont dans le canal, pas dans la liste qui y mene.
+  // The settings are in the channel, not in the list leading to it.
   ['/settings/notifications/telegram', 'Notifications — Telegram'],
   ['/settings/notifications/discord', 'Notifications — Discord'],
   ['/settings/detection/personnes/profile-1/identite', 'Personne — identite'],
@@ -25,19 +25,19 @@ const SETTINGS_ROUTES: [string, string][] = [
 
 interface FieldMeasure {
   id: string
-  /** Bord droit de la colonne reservee au controle. */
+  /** Right edge of the column reserved for the control. */
   column: number
-  /** Bord droit de ce que le controle **occupe reellement**. */
+  /** Right edge of what the control **actually fills**. */
   filled: number
 }
 
 /**
- * Ce que chaque controle en forme de champ laisse vide au bout de sa colonne.
+ * What each field-shaped control leaves empty at the end of its column.
  *
- * On ne mesure pas la cellule : la grille l'etire, elle serait alignee meme avec un
- * champ minuscule flottant dedans — c'est exactement le defaut qu'on cherche.
+ * The cell is not what is measured: the grid stretches it, it would be aligned even
+ * with a tiny field floating inside - which is exactly the defect being looked for.
  *
- * Exclu, car sa largeur est celle de l'objet et non de la colonne : l'interrupteur.
+ * Excluded, because its width is that of the object and not of the column: the switch.
  */
 async function fieldMeasures(page: Page): Promise<FieldMeasure[]> {
   return page.$$eval('[data-setting-control]', (cells) =>
@@ -47,8 +47,8 @@ async function fieldMeasures(page: Page): Promise<FieldMeasure[]> {
         if (!root) return null
         if (root.matches('[role="switch"]') || root.querySelector('[role="switch"]')) return null
 
-        // Quand le controle est lui-meme l'element interactif, il occupe la colonne par
-        // construction ; ses enfants sont sa doublure interne, jamais du vide.
+        // When the control is itself the interactive element, it fills the column by
+        // construction; its children are its inner lining, never empty space.
         const isWrapper = !root.matches('input, button, [role="combobox"]')
         const parts = isWrapper ? [...root.children] : [root]
         const filled = Math.max(...parts.map((node) => node.getBoundingClientRect().right))
@@ -99,8 +99,8 @@ test.describe('Coherence des ecrans de reglages', () => {
   test('colonne_When a field renders on any screen_Should fill its control column', async ({
     page,
   }) => {
-    // Un champ qui n'occupe pas sa colonne casse l'alignement vertical des valeurs,
-    // et la page cesse d'etre balayable — ce que l'anatomie fixe visait (ADR-43).
+    // A field that does not fill its column breaks the vertical alignment of the values,
+    // and the page stops being scannable - which is what the fixed anatomy aimed at (ADR-43).
     for (const [path, label] of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
@@ -108,7 +108,7 @@ test.describe('Coherence des ecrans de reglages', () => {
       const measures = await fieldMeasures(page)
       expect(measures.length, `${label} ne declare aucun reglage`).toBeGreaterThan(0)
 
-      // 2px de tolerance : arrondis de sous-pixel, pas de la place perdue.
+      // 2px of tolerance: sub-pixel rounding, not lost space.
       const short = measures.filter((field) => field.column - field.filled > 2)
       expect(short, `${label} : champs plus courts que leur colonne`).toEqual([])
     }
@@ -117,8 +117,8 @@ test.describe('Coherence des ecrans de reglages', () => {
   test('hierarchie_When a page groups its settings_Should set section titles apart from labels', async ({
     page,
   }) => {
-    // Titre de section et libelle de reglage rendus pareil, c'est une page ou
-    // tout est au meme niveau : les sections ne separent alors plus rien.
+    // A section title and a setting label rendered alike make a page where everything
+    // sits at the same level: the sections then separate nothing.
     for (const [path, label] of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
@@ -159,7 +159,7 @@ test.describe('Coherence des ecrans de reglages', () => {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 
-      // « Avance » est une position, pas un mode (ADR-40) : donc un repli, ferme au chargement.
+      // "Avance" is a position, not a mode (ADR-40): hence a fold, closed on load.
       const fold = page.locator('details', { has: page.getByText('Avancé', { exact: true }) })
       await expect(fold).toHaveCount(1)
       await expect(fold).not.toHaveAttribute('open', /.*/)

@@ -36,7 +36,7 @@ const DRAFT_LABELS: Record<keyof CameraImageSettings, string> = {
   irCutMode: 'Vision nocturne',
 }
 
-/** Seule page a porter deux sujets (image et pilotage) : les couper en deux cadres dupliquait le titre d'onglet. */
+/** The only page carrying two subjects (image and control): splitting them in two frames duplicated the tab title. */
 export function CameraImagePage() {
   const camera = useOutletContext<Camera>()
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
@@ -62,7 +62,7 @@ function ImageAdjustments({ camera, children }: { camera: Camera; children: Reac
   const settings = useAsync(() => container.getCameraImageSettings.execute(camera.id), [camera.id])
   const bindings = useAsync(() => container.getCameraCapabilities.execute(camera.id), [camera.id])
 
-  // Le pilotage ne depend pas de ces reglages : reste affiche pendant leur chargement, meme en echec.
+  // Control does not depend on these settings: it stays on screen while they load, failure included.
   if (settings.loading) return <SettingsPage>Chargement…{children}</SettingsPage>
   if (settings.error || !settings.data) return <SettingsPage>{children}</SettingsPage>
 
@@ -70,7 +70,7 @@ function ImageAdjustments({ camera, children }: { camera: Camera; children: Reac
     <ImageForm
       camera={camera}
       settings={settings.data}
-      // Nettete/vision nocturne pas confirmees inscriptibles en DVRIP (ADR-29) : ne pas l'offrir en silence.
+      // Sharpness/night vision not confirmed writable over DVRIP (ADR-29): do not offer them silently.
       writableBeyondBasics={
         bindings.data?.find((binding) => binding.capability === 'image_settings')?.protocol !==
         'dvrip'
@@ -118,8 +118,8 @@ function ImageForm({
   ).map((adjustment) => ({
     id: `image-${adjustment.key}`,
     label: adjustment.label,
-    // Valeur bornee a sens continu : curseur **et** valeur chiffree, pour
-    // pouvoir viser et se relire (ADR-43).
+    // A bounded value with a continuous meaning: a slider **and** a number, to be
+    // able to aim and to re-read oneself (ADR-43).
     nature: { kind: 'range', unit: '%', min: 0, max: 100 },
     value: draft.values[adjustment.key],
     onChange: (value) => draft.set(adjustment.key, value as number),

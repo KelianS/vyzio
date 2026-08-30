@@ -23,7 +23,7 @@ const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
   { value: 'low', label: 'Réduite' },
 ]
 
-// Deux phrases (ADR-53) : le detail des niveaux est deja dit par le libelle et la consequence.
+// Two sentences (ADR-53): the detail of the levels is already said by the label and the consequence.
 const SENSITIVITY_HELP =
   'Automatique : Vyzio ajuste le niveau tout seul selon l’agitation réelle de la caméra, et c’est le cas courant. Un niveau choisi s’applique aussitôt et cesse tout ajustement sur cette caméra.'
 
@@ -37,7 +37,7 @@ const SENSITIVITY_CONSEQUENCE: Record<MotionSensitivity | typeof AUTO, string> =
 const STREAM_HELP =
   'Vyzio réduit de toute façon l’image avant de l’analyser : une image plus légère ne lui retire quasiment rien et libère des ressources. Ce choix ne change jamais la qualité de vos enregistrements.'
 
-/** Le cout reste visible sans un geste (ADR-43) : il depend de l'image choisie, dans un sens ou dans l'autre. */
+/** The cost stays visible without a gesture (ADR-43): it depends on the chosen image, either way. */
 function streamConsequence(stream: CameraStream | undefined, total: number): string | undefined {
   if (stream === undefined) return undefined
   if (stream.ordinal === 0 && total > 1) return 'Cette caméra occupera davantage le boîtier.'

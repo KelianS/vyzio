@@ -1,7 +1,7 @@
 import type { SettingOption } from '../../common/settings/settingDeclaration'
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/Profile'
 
-/** Foyer unique des libelles : une table, pas une recherche dans un tableau d'options. */
+/** The single home of the labels: a table, not a lookup through an options array. */
 export const CATEGORY_LABELS: Record<ProfileCategory, string> = {
   family: 'Famille',
   friend: 'Ami',

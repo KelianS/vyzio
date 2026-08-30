@@ -1,7 +1,7 @@
-/** Categorie d'une personne connue. Fermee : l'API n'en accepte pas d'autre. */
+/** The category of a known person. Closed: the API accepts no other. */
 export type ProfileCategory = 'family' | 'friend' | 'staff' | 'other'
 
-/** Ce que Vyzio fait quand il reconnait cette personne. */
+/** What Vyzio does when it recognises this person. */
 export type ProfileAlertMode = 'always' | 'never'
 
 export interface Profile {

@@ -1,8 +1,8 @@
-/** Ce que l'utilisateur s'apprete a couper ou reprendre : une camera nommee, ou toutes. */
+/** What the user is about to cut or resume: one named camera, or all of them. */
 export interface PrivacyRequest {
   cameraIds: string[]
   active: boolean
-  /** Le nom de la camera visee ; `null` quand la demande porte sur toutes. */
+  /** The name of the camera aimed at; `null` when the request covers all of them. */
   cameraLabel: string | null
 }
 
@@ -13,8 +13,8 @@ interface PrivacyWording {
   done: string
 }
 
-// Couper touche la camera elle-meme : c'est long, et le resultat n'est pas visible tout de suite.
-// La demande se confirme et s'annonce donc de la meme facon, qu'elle vise une camera ou toutes.
+// Cutting reaches the camera itself: it takes time, and the result is not visible right away.
+// So the request is confirmed and announced the same way, whether it aims at one camera or all.
 export function privacyWording({ active, cameraLabel }: PrivacyRequest): PrivacyWording {
   const target = cameraLabel === null ? 'toutes les caméras' : `« ${cameraLabel} »`
 

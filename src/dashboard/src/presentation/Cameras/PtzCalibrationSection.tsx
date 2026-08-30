@@ -26,8 +26,8 @@ interface PtzCalibrationSectionProps {
 }
 
 /**
- * Tout le pilotage se fait dans la vue live (ADR-45), calibration comprise : on ne calibre pas
- * une camera sans la voir. Cet ecran dit ou elle en est, et ouvre la porte.
+ * All control happens in the live view (ADR-45), calibration included: one does not calibrate
+ * a camera without seeing it. This screen says where it stands, and opens the door.
  */
 export function PtzCalibrationSection({
   cameraId,
@@ -62,7 +62,7 @@ export function PtzCalibrationSection({
         if (!cancelled) setLoading(false)
       }
     })()
-    // La vue live peut avoir calibre ou deplace la camera : on relit en la refermant.
+    // The live view may have calibrated or moved the camera: read again when closing it.
     return () => {
       cancelled = true
     }

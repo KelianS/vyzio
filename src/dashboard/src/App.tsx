@@ -110,9 +110,9 @@ function AppShell() {
   const { hub, cameras } = useAppContainer()
   useSystemStatsPolling(hub.getSystemStats)
 
-  // Le catalogue de cameras est un etat partage entre ecrans : il se charge donc
-  // ici, et non dans l'ecran qui se trouvait en avoir besoin le premier. Sans
-  // cela, ouvrir directement la liste des cameras la montrerait vide.
+  // The camera catalogue is state shared between screens, so it loads here rather
+  // than in whichever screen happened to need it first. Without that, opening the
+  // camera list directly would show it empty.
   useEffect(() => {
     void useRootStore.getState().loadCameras(cameras.getCameras)
   }, [cameras.getCameras])
@@ -142,9 +142,8 @@ function Root() {
   )
 }
 
-// Routeur de donnees (et non `<BrowserRouter>`) : c'est ce qui donne acces a
-// `useBlocker`, seul moyen d'empecher une page modifiee d'etre quittee en
-// silence (ADR-41).
+// A data router (rather than `<BrowserRouter>`): it is what gives access to
+// `useBlocker`, the only way to stop an edited page from being left silently (ADR-41).
 const router = createBrowserRouter([
   {
     element: <Root />,
@@ -153,19 +152,19 @@ const router = createBrowserRouter([
       { path: '/', element: <HubView /> },
       { path: '/history', element: <DetectionHistoryView /> },
 
-      // Reglages — arborescence a deux niveaux (ADR-40). Le routage porte la
-      // selection : c'est lui, et non un etat d'ecran, qui dit ou l'on est.
+      // Settings - a two-level tree (ADR-40). The route carries the selection: it,
+      // and not a screen-held state, is what says where one is.
       {
         path: '/settings',
         element: <SettingsView />,
         children: [
           { path: 'cameras', element: <CameraListPage /> },
-          // Nomme la tache, pas la rubrique.
+          // Names the task, not the section.
           { path: 'cameras/ajout', element: <AddCameraView />, handle: OWN_HEADER },
           {
             path: 'cameras/:cameraId',
             element: <CameraShell />,
-            // Porte le nom de la camera ouverte, et ses onglets.
+            // Carries the name of the open camera, and its tabs.
             handle: OWN_HEADER,
             children: [
               { index: true, element: <Navigate to="detection" replace /> },
@@ -177,16 +176,16 @@ const router = createBrowserRouter([
             ],
           },
           { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
-          // Ecrans pas encore repris : ils portent deja un titre, jamais de
-          // retour. Le marqueur tombera avec leur reprise, pas avant — sans lui
-          // la page s'annoncerait deux fois.
+          // Screens not reworked yet: they already carry a title, never a back link.
+          // The marker goes away with their rework, not before - without it the page
+          // would announce itself twice.
           { path: 'detection/personnes', element: <PersonListPage /> },
-          // Nomme la tache, pas la rubrique.
+          // Names the task, not the section.
           { path: 'detection/personnes/ajout', element: <AddPersonPage />, handle: OWN_HEADER },
           {
             path: 'detection/personnes/:profileId',
             element: <PersonShell />,
-            // Porte le nom de la personne ouverte, et ses onglets.
+            // Carries the name of the open person, and their tabs.
             handle: OWN_HEADER,
             children: [
               { index: true, element: <Navigate to="identite" replace /> },
@@ -197,13 +196,13 @@ const router = createBrowserRouter([
           },
           { path: 'conservation', element: <ConservationPage /> },
           { path: 'notifications', element: <NotificationChannelListPage /> },
-          // Nomme la tache, pas la rubrique.
+          // Names the task, not the section.
           {
             path: 'notifications/ajout',
             element: <AddNotificationChannelPage />,
             handle: OWN_HEADER,
           },
-          // Porte le nom du canal ouvert.
+          // Carries the name of the open channel.
           {
             path: 'notifications/:channel',
             element: <NotificationChannelPage />,
@@ -215,8 +214,8 @@ const router = createBrowserRouter([
         ],
       },
 
-      // Anciennes adresses : un lien garde ou un favori ne doit pas tomber dans
-      // le vide parce que l'arborescence a change.
+      // Former addresses: a kept link or a bookmark must not fall into the void
+      // because the tree changed.
       { path: '/cameras', element: <Navigate to="/settings/cameras" replace /> },
       { path: '/profiles', element: <Navigate to="/settings/detection/personnes" replace /> },
       { path: '/notifications', element: <Navigate to="/settings/notifications" replace /> },

@@ -19,16 +19,16 @@ test.describe('Navigation', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
 
-    // La barre principale ne porte que la consultation, plus une entree de reglages.
+    // The main bar carries viewing only, plus one way into the settings.
     await mainNav.getByRole('link', { name: 'Historique', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
 
-    // Chaque rubrique de reglages est atteignable depuis le premier niveau.
+    // Every settings section is reachable from the first level.
     await mainNav.getByRole('link', { name: 'Réglages', exact: true }).click()
 
     await rubrics.getByRole('link', { name: /Caméras/ }).click()
-    // La rubrique s'ouvre sur la **liste** ; ajouter une camera est une tache
-    // distincte, avec sa propre page.
+    // The section opens on the **list**; adding a camera is a distinct task,
+    // with a page of its own.
     await expect(page.getByRole('heading', { name: 'Caméras' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Détection/ }).click()
@@ -43,8 +43,8 @@ test.describe('Navigation', () => {
     await rubrics.getByRole('link', { name: /Système/ }).click()
     await expect(page.getByRole('heading', { name: 'Système' })).toBeVisible()
 
-    // Le niche est mis en profondeur, pas cache : l'interface technique n'est
-    // atteignable qu'en depliant « Avance », et elle l'est toujours.
+    // The niche one is put deep, not hidden: the technical interface is only
+    // reachable by unfolding "Avance", and it always is.
     await expect(page.getByRole('link', { name: /interface technique/ })).toBeHidden()
     await page.getByRole('group').filter({ hasText: 'Avancé' }).getByText('Avancé').click()
     await page.getByRole('link', { name: /interface technique/ }).click()
@@ -69,8 +69,8 @@ test.describe('Navigation', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
 
-    // Un favori ou un lien garde ne doit pas tomber dans le vide parce que
-    // l'arborescence a change.
+    // A bookmark or a kept link must not fall into the void because the tree
+    // changed.
     for (const [old, expected] of [
       ['/cameras', '/settings/cameras'],
       ['/profiles', '/settings/detection/personnes'],

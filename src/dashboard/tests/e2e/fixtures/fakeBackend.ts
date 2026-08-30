@@ -156,7 +156,7 @@ const CHANNEL_CATALOGUE: Record<
   },
 }
 
-/** Un canal deja en place, pour partir d'un ecran configure sans rejouer le parcours. */
+/** A channel already in place, to start from a configured screen without replaying the journey. */
 export function makeFakeChannel(
   channel: string,
   overrides: Partial<FakeChannelConfig> = {},
@@ -218,7 +218,7 @@ export interface FakeBackendState {
   cameras: FakeCamera[]
   /** Where the installation stands on its password, and where this browser stands with it. */
   access: FakeAccessState
-  /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
+  /** Saved settings that surveillance has not picked up yet (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
   profiles: {
@@ -230,7 +230,7 @@ export interface FakeBackendState {
     createdAt: string
   }[]
   notificationChannels: Record<string, FakeChannelConfig>
-  /** L'etat de la boucle entrante d'un canal, et la trace de ce qu'on lui a demande (ADR-52). */
+  /** The state of a channel's incoming loop, and the trace of what was asked of it (ADR-52). */
   channelListening: Record<string, FakeChannelListening>
   commandJournal: Record<string, FakeCommandJournalEntry[]>
   detectionHistory: FakeDetectionEvent[]
@@ -249,7 +249,7 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
-  /** Le pilotage d'une camera : ses positions enregistrees, et si elle sait ou elle est (ADR-25). */
+  /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
   ptz: {
     presets: {
       presetId: number
@@ -294,7 +294,7 @@ export function createFakeBackendState(
       motionDaysOverride: null,
       eventClipDaysOverride: null,
     },
-    // Valeurs livrees par Vyzio (ADR-39).
+    // Values shipped by Vyzio (ADR-39).
     recordingSettings: {
       continuous: { days: 0, default: 0 },
       motion: { days: 7, default: 7 },
@@ -426,7 +426,7 @@ export async function installFakeBackend(
         status: 'online',
       })
       state.cameras.push(camera)
-      // Comme le vrai : le catalogue a change, la surveillance ne l'a pas repris.
+      // Like the real one: the catalogue changed, surveillance has not picked it up.
       state.pendingChanges = true
       return json(route, camera)
     }
@@ -475,7 +475,7 @@ export async function installFakeBackend(
       })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
-      // Comme le vrai : un redemarrage reussi vide l'attente, un echec la laisse.
+      // Like the real one: a successful restart clears the pending state, a failure leaves it.
       if (state.restartFails) {
         return json(route, {
           applied: false,
@@ -574,7 +574,7 @@ export async function installFakeBackend(
         return json(route, {})
       }
       if (rest === '/ptz/preset/save' && method === 'POST') {
-        // Comme le vrai : sans reference, la position courante est inconnue, rien ne s'enregistre.
+        // Like the real one: with no reference, the current position is unknown, nothing is saved.
         if (!state.ptz.calibrated) return json(route, { message: 'not_calibrated' }, 409)
         const presetId = Number(postData?.presetId)
         const position = state.ptz.currentPosition ?? { x: 0, y: 0 }
@@ -750,7 +750,7 @@ export async function installFakeBackend(
         return json(route, { success: true, errorMessage: null })
       }
       if (method === 'GET') {
-        // Un canal jamais configure a quand meme une forme : c'est l'ecran d'ajout.
+        // A channel never configured still has a shape: that is the add screen.
         return json(route, state.notificationChannels[channel] ?? unconfiguredChannel(channel))
       }
       if (method === 'PUT') {
@@ -806,7 +806,7 @@ export async function installFakeBackend(
         return json(route, state.commandJournal[channel] ?? [])
       }
       if (subject === 'pairing') {
-        // Aucun appairage n'est simule : l'ecran doit tenir sur l'etat le plus nu.
+        // No pairing is simulated: the screen must hold on the barest state.
         if (method === 'DELETE') return json(route, true)
         return json(route, {
           channel,

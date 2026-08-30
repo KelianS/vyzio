@@ -87,8 +87,8 @@ function DirButton({
 // Hold: once HOLD_THRESHOLD_MS has elapsed, chain repeated step calls until release.
 const HOLD_THRESHOLD_MS = 300
 
-// Sur une position deja definie, tap = y aller et appui long = la redefinir : meme debut de geste,
-// seule la duree les distingue. Une position vide n'a rien a distinguer, elle s'enregistre au tap.
+// On an already defined position, tap = go there and long press = redefine it: the gesture starts
+// the same, only its length tells them apart. An empty position has nothing to tell apart, a tap saves it.
 const LONG_PRESS_MS = 600
 
 function PresetTile({
@@ -156,7 +156,7 @@ function PresetTile({
         start()
       }}
       onTouchEnd={() => end(true)}
-      // L'appui long est notre geste : sans ca le navigateur mobile ouvre son menu par-dessus.
+      // The long press is our gesture: without this the mobile browser opens its menu over it.
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
         'relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted transition-colors select-none',
@@ -195,7 +195,7 @@ function PresetTile({
   )
 }
 
-/** La position ou se trouve la camera, quand elle correspond a une position enregistree. */
+/** Where the camera stands, when that matches one of the saved positions. */
 function matchPreset(
   presets: PtzPreset[],
   position: { x: number; y: number } | null,
@@ -257,7 +257,7 @@ export function PtzControlPanel({
       if (isPressedRef.current) return
       isPressedRef.current = true
       isHoldingRef.current = false
-      // Bouger, c'est quitter la position enregistree.
+      // Moving means leaving the saved position.
       setActivePresetId(null)
 
       // Fire the first step immediately (tap behavior).
@@ -343,7 +343,7 @@ export function PtzControlPanel({
       try {
         await ptzGoToPreset.execute(cameraId, presetId)
         setActivePresetId(presetId)
-        // Un deplacement dure : sans accuse, l'appui semble n'avoir rien fait.
+        // A move takes time: without an acknowledgement, the press looks like it did nothing.
         toast(`Caméra en position « ${presetLabel(presetId)} ».`, 'success')
         scheduleCapture(presetId)
       } catch (e) {
