@@ -1,0 +1,17 @@
+# Keeps the build context to sources only. Without this, a local checkout ships its own
+# node_modules and bin/obj into the image build, which both slows it down and breaks it: pnpm
+# refuses to purge a modules directory it did not create.
+.git
+.github
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/TestResults
+src/dashboard/playwright-report
+src/dashboard/test-results
+src/dashboard/tools/docs-capture/stills
+
+# Screenshots and framing docs, 1.3 MB that no image serves. src/vyzio/vendors/*.md is not here:
+# those sheets are copied into the API image and shown in the interface.
+docs
