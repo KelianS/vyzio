@@ -21,8 +21,13 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task front:lint` | ESLint |
 | `task front:build` / `task back:build` / `task build` | Build frontend / backend / both |
 | `task back:run` | Run the API locally outside docker |
+| `task docs:capture` | Regenerate the README screenshots from the e2e fixtures |
 
 Docker commands run via `wsl docker compose ...` under the hood, since Docker is only reachable through WSL on Windows dev machines.
+
+### Documentation screenshots
+
+`task docs:capture` drives the real production build against the e2e fake backend and writes the README images to `docs/assets`. Live tiles have nothing to show there: drop a `<camera-slug>.jpg` into `src/dashboard/tools/docs-capture/stills/` to fill them, which is git-ignored on purpose since those frames are footage of someone's home.
 
 ### Environment variables reference
 
