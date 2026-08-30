@@ -99,9 +99,17 @@ savoir ouvrir une session, et le front ne peut pas se brancher sur une barriere 
 4. **Le harnais de test franchit la barriere.** Faux backend Playwright et tests e2e ouvrent une
    session ; aucune dispense par environnement, qui finirait tot ou tard ailleurs.
 
-5. **La remise a zero du mot de passe depuis la machine hote**, et sa note dans
-   [CONTRIBUTING](../CONTRIBUTING.md) — c'est de l'exploitation de l'installation, pas un mode
-   d'emploi produit, donc hors interface (ADR-53).
+5. **La remise a zero du mot de passe depuis la machine hote**, et sa note dans le
+   [README](../README.md) — c'est de l'exploitation de sa propre installation, donc hors interface
+   (ADR-53) mais pas hors documentation utilisateur. La commande *retire* le mot de passe au lieu
+   d'en poser un, et ouvre une fenetre bornee pendant laquelle l'ecran de creation revient.
+   *Verifiable par* : une fenetre laissee expirer reverrouille l'installation, au lieu de rester
+   ouverte.
+
+6. **Changer un mot de passe connu, depuis l'interface.** Reglages > Acces, l'ancien redemande, et
+   toutes les autres sessions refermees au passage.
+   *Verifiable par* : apres le changement, l'ancien mot de passe n'ouvre plus et un appareil laisse
+   ouvert ailleurs cesse de repondre.
 
 Le role est porte des l'etape 1 mais **n'est pas exerce** : un seul role existe. Ce qui suit n'est
 pas dans ce chantier et attend un besoin exprime — second compte, ecran d'invitation, liste des

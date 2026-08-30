@@ -140,6 +140,28 @@ Ni question secrète, ni envoi de courriel : la remise à zéro se fait depuis l
 Vyzio. Qui a cet accès possède déjà les données ; c'est le seul secours qui n'ouvre pas une porte
 dérobée sur le réseau.
 
+La commande **retire** le mot de passe, elle n'en pose pas un nouveau. Trois raisons : un mot de
+passe tapé dans un terminal survit dans l'historique du shell et dans la liste des processus de
+l'hôte ; il faudrait redire là-bas les règles que l'écran de création connaît déjà ; et la commande
+n'a alors aucun succès partiel à gérer. Le compte lui-même n'est jamais supprimé — il perd son mot
+de passe, garde son identifiant, son rôle et ce qui s'y rattachera.
+
+L'installation redevient donc **prenable par quiconque atteint l'interface**, le temps que le nouveau
+mot de passe soit choisi. Cette fenêtre est bornée à trente minutes : la remise à zéro est un geste
+délibéré, mais rester ouvert toute la nuit parce que la personne a été interrompue n'en est pas un.
+Passé le délai sans mot de passe choisi, l'installation se reverrouille et refuse tout — il faut
+relancer la commande. C'est le seul état où Vyzio est verrouillé pour tout le monde, y compris son
+propriétaire, et c'est volontaire.
+
+### Changer un mot de passe connu se fait dans l'interface
+
+À ne pas confondre avec le précédent : la machine hôte est le recours de qui a **perdu** son mot de
+passe, pas le passage obligé de qui veut simplement en changer. L'ancien est redemandé — un appareil
+laissé déverrouillé n'est pas un consentement — et le changement **referme toutes les sessions**, y
+compris celles des autres appareils : sans cela, reprendre son accès à quelqu'un qui connaît le mot
+de passe ne lui reprendrait rien. L'appareil qui demande le changement reçoit une session neuve dans
+la même réponse, faute de quoi le geste enfermerait dehors celui qui le fait.
+
 ## Conséquences
 
 - **Le transport reste en clair, et le mot de passe circule donc en clair sur le réseau local.** Dit

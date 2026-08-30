@@ -81,7 +81,8 @@ curl -O https://raw.githubusercontent.com/KelianS/vyzio/main/docker-compose.yml
 docker compose up -d
 ```
 
-Ouvrir `http://<IP_SERVEUR>:8080` et configurer depuis l'interface.
+Ouvrir `http://<IP_SERVEUR>:8080`. Vyzio demande d'abord de choisir un mot de passe : il garde
+l'interface, et donc l'accès aux caméras. Tout le reste se configure ensuite depuis l'interface.
 
 ### Variables d'environnement
 
@@ -102,6 +103,27 @@ Liste complète dans [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 docker compose pull
 docker compose up -d
 ```
+
+### Mot de passe oublié
+
+Il n'y a ni courriel de récupération ni compte en ligne : personne d'autre que vous ne peut rouvrir
+l'installation. Le seul recours passe par la machine qui héberge Vyzio.
+
+```bash
+docker compose exec vyzio-api dotnet Vyzio.Api.dll reset-password
+```
+
+La commande **retire** le mot de passe et ferme toutes les sessions ouvertes ; elle n'en demande pas
+un nouveau, qui resterait sinon dans l'historique du shell. Vyzio rouvre alors sur l'écran de choix
+du mot de passe pendant **30 minutes** — les caméras, les réglages et l'historique sont intacts.
+Passé ce délai sans nouveau mot de passe, l'installation se reverrouille et il faut relancer la
+commande.
+
+> Pendant ces 30 minutes, quiconque atteint l'interface sur le réseau local peut choisir le mot de
+> passe. Lancez la commande au moment où vous êtes prêt à en saisir un.
+
+Pour simplement **changer** un mot de passe que vous connaissez encore, rien de tout cela : cela se
+fait dans l'interface, Réglages › Accès.
 
 ### Prérequis matériel recommandés
 

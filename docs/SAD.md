@@ -293,7 +293,9 @@ notification…) : voir le dossier des entités.
   référence Frigate (`frigate_event_id`) pour proxifier clips et thumbnails.
 - Credentials caméra **chiffrés au repos** (`Microsoft.AspNetCore.DataProtection`, §9.1).
 - Le mot de passe du propriétaire n'est **jamais stocké ni chiffré, seulement haché** : le chiffrement
-  se déchiffre, et rien dans le produit n'a besoin de relire un mot de passe (ADR-54).
+  se déchiffre, et rien dans le produit n'a besoin de relire un mot de passe (ADR-54). Sa colonne est
+  **nullable** : un compte sans mot de passe est un compte dont l'hôte vient de le retirer, et n'ouvre
+  rien tant qu'un nouveau n'est pas choisi.
 - Une capacité caméra n'est jamais activée sans un test réel réussi (`verified`, ADR-28).
 - Une `Camera` décrit **une seule scène** : ses `CameraStream` en sont des qualités, jamais des angles
   de vue différents. Un boîtier multi-objectifs donne N `Camera` groupées par appareil (ADR-38).
@@ -351,6 +353,8 @@ Dashboard Vyzio — Assistant de configuration
 | Accès non autorisé au dashboard | Réseau local | Compte propriétaire, session serveur révocable en cookie `httpOnly`, limitation du débit de connexion (ADR-54) — **le chiffrement du transport reste à livrer**, cf. §8.1 |
 | Vol de la session par script injecté | Navigateur | Cookie `httpOnly` : la session n'est jamais lisible depuis la page (ADR-54) |
 | Appareil perdu conservant un accès | Session ouverte | Sessions en base, révocables une à une ou toutes à la fois (ADR-54) |
+| Mot de passe connu d'un tiers | Session ouverte | Changement du mot de passe depuis l'interface, qui referme toutes les sessions au passage (ADR-54) |
+| Installation prise pendant une remise à zéro | Réseau local | Accepté et borné : la fenêtre dure 30 minutes, s'ouvre sur un geste délibéré depuis l'hôte, et se referme sur un verrouillage total (ADR-54) |
 | Accès direct API Frigate | Réseau local | Frigate lié à `127.0.0.1`, non routable hors Docker |
 | Exfiltration données biométriques Frigate | API Vyzio | Vyzio ne stocke pas d'embeddings ; seules des métadonnées métier sont exposées |
 | Interception d'images hors réseau | Canal de messagerie | HTTPS + aucun intermédiaire qui déchiffre le flux du produit (ADR-51) |

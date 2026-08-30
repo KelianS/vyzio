@@ -315,6 +315,10 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux pouvoir deconnecter un appareil perdu, afin qu'il cesse d'acceder a mes images.
 
+> **En tant qu'utilisateur**, je veux pouvoir changer mon mot de passe, afin de reprendre son acces a qui l'aurait appris.
+
+> **En tant qu'utilisateur**, je veux pouvoir revenir dans mon installation apres avoir oublie mon mot de passe, sans perdre mes cameras ni mon historique.
+
 > **En tant qu'utilisateur**, je veux pouvoir supprimer ou exporter mes donnees, afin de garder le controle.
 
 ### 8.2 Regles produit
@@ -333,7 +337,8 @@ Comment cet acces est protege : [ADR-54](adr/0054-l-acces-a-l-interface-est-gard
 - une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant plusieurs semaines ;
 - se deconnecter est possible depuis l'interface, et **deconnecter tous les appareils** l'est aussi — c'est le geste attendu quand un telephone est perdu ;
 - une session terminee ramene a l'ecran de connexion en le disant, jamais sur un ecran vide ou une erreur technique ;
-- un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel ;
+- **changer son mot de passe** se fait dans l'interface : l'ancien est redemande, et le changement referme toutes les sessions ouvertes ailleurs ;
+- un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel. La remise a zero *retire* le mot de passe : l'installation reouvre sur l'ecran de choix pendant une demi-heure, sans rien perdre de ses cameras ni de son historique, puis se reverrouille si personne n'en choisit un ;
 - l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (§5.4).
 
 Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**. Le second, **resident**, est prevu : il consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images.
