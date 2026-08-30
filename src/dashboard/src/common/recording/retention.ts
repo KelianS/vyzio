@@ -19,7 +19,7 @@ export const RETENTION_UPDATE_FIELD = {
 export const RETENTION_LABEL: Record<RetentionWindow, string> = {
   continuous: 'Vidéo complète',
   motion: 'Séquences de mouvement',
-  // Nommee par son effet observable, pas par le bucket Frigate qui la porte (ADR-49).
+  // Named after its observable effect, not after the Frigate bucket carrying it (ADR-49).
   eventClip: 'Historique de détection',
 }
 
@@ -31,17 +31,17 @@ export const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
     'Combien de temps vos détections restent consultables — aperçu et vidéo compris. C’est la profondeur de la page Historique.',
 }
 
-// Se dit dans l'aide de chaque duree : hors de la ligne, c'etait du texte courant, proscrit (ADR-43).
+// Said in the help of each duration: outside the row it was running text, which is banned (ADR-43).
 const RETENTION_ZERO_NOTE = 'Mettre 0 signifie que rien n’est conservé de cette nature.'
 const RETENTION_FLOOR_NOTE = 'Au moins un jour : c’est ce que votre historique peut remonter.'
 
-/** L'aide d'une duree, la meme a l'installation et sur une camera. */
+/** The help of a duration, the same at install time and on a camera. */
 export function retentionHelp(window: RetentionWindow): string {
   const note = window === 'eventClip' ? RETENTION_FLOOR_NOTE : RETENTION_ZERO_NOTE
   return `${RETENTION_EXPLANATION[window]} ${note}`
 }
 
-/** Le plancher d'une duree : seule celle qui porte l'historique en a un (ADR-48). */
+/** The floor of a duration: only the one carrying the history has one (ADR-48). */
 export function retentionMinDays(window: RetentionWindow, minEventClipDays: number): number {
   return window === 'eventClip' ? minEventClipDays : 0
 }

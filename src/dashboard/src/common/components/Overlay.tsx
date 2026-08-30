@@ -18,7 +18,7 @@ export function Overlay({
       role="dialog"
       aria-label={label}
       onClick={onClose}
-      // Au-dessus de l'en-tete colle en haut (`z-100`), qui recouvrait sinon la croix de fermeture.
+      // Above the header stuck to the top (`z-100`), which otherwise covered the close cross.
       className={cn(
         'fixed inset-0 z-200 flex items-center justify-center p-4',
         'bg-surface-inverse/85 backdrop-blur-sm',

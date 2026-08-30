@@ -5,19 +5,18 @@ import { Switch } from './switch'
 import { cn } from './utils'
 
 /**
- * Verifie que le socle est branche, pas que shadcn/ui fonctionne (ce n'est pas
- * notre code, ADR-42). Ce qui est teste ici est ce que nous avons decide :
- * les primitives consomment bien la couche semantique de tokens, elles exposent
- * les roles ARIA sur lesquels tous les tests d'ecran s'appuieront, et `cn`
- * arbitre les conflits de classes.
+ * Checks that the foundation is wired, not that shadcn/ui works (that is not our
+ * code, ADR-42). What is tested here is what we decided: the primitives really do
+ * consume the semantic token layer, they expose the ARIA roles every screen test
+ * will lean on, and `cn` arbitrates class conflicts.
  */
 describe('Socle de composants', () => {
   it('primitive_When rendered_Should expose an ARIA role and consume theme tokens', () => {
     render(<Button>Enregistrer</Button>)
 
     const button = screen.getByRole('button', { name: 'Enregistrer' })
-    // Les couleurs passent par les tokens semantiques, jamais par une valeur
-    // litterale : c'est ce qui garantit le theme sombre par construction.
+    // Colours go through the semantic tokens, never through a literal value:
+    // that is what guarantees the dark theme by construction.
     expect(button.className).toContain('bg-primary')
     expect(button.className).toContain('text-primary-foreground')
   })

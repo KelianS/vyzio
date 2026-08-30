@@ -1,7 +1,13 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.Options;
+using Vyzio.Api;
+using Vyzio.Api.Access;
 using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Interfaces;
@@ -11,7 +17,11 @@ using Vyzio.Infrastructure.DependencyInjection;
 using Vyzio.Infrastructure.Notifications;
 using Vyzio.Infrastructure.Persistence;
 
-var builder = WebApplication.CreateBuilder(args);
+// Stripped from what configures the host: the command is a positional argument, which the command
+// line configuration provider refuses to parse.
+var hostCommand = HostCommands.Match(args);
+
+var builder = WebApplication.CreateBuilder(hostCommand is null ? args : args[1..]);
 
 var runtimeSettings = VyzioConfigLoader.Load();
 
@@ -70,6 +80,31 @@ builder.Services.AddScoped<INotificationChannelCatalog, NotificationChannelCatal
 builder.Services.AddSingleton<IChannelCommandReceiver, TelegramCommandReceiver>();
 builder.Services.AddSingleton<IChannelCommandReceiver, DiscordCommandReceiver>();
 builder.Services.AddSingleton<IChannelCommandReceiverCatalog, ChannelCommandReceiverCatalog>();
+// The barrier: one scheme, one cookie, sessions the server can revoke (ADR-54).
+builder.Services
+    .AddAuthentication(SessionAuthentication.Scheme)
+    .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthentication.Scheme, null);
+// Guarded unless a route says otherwise: a barrier that must be remembered per route is one that gets
+// forgotten, and the route we forget is the one that leaks (ADR-54).
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder(SessionAuthentication.Scheme)
+        .RequireAuthenticatedUser()
+        .Build());
+
+// Only the doors that take a password: rate limiting the rest would throttle the interface itself.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(AccessEndpoints.SignInRateLimitPolicy, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(5)
+            }));
+});
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
@@ -84,10 +119,18 @@ using (var scope = app.Services.CreateScope())
 
 }
 
-app.UseExceptionHandler();
+// Everything is wired by now, so a host command runs against the same repositories the API uses.
+if (hostCommand is not null) return await HostCommands.RunAsync(app.Services, hostCommand);
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" }));
+app.UseExceptionHandler();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// The container probe: it must answer before anyone has installed anything.
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
+app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" })).AllowAnonymous();
+app.MapAccess();
 app.MapHub();
 app.MapDetectionLabels();
 app.MapCameras();
@@ -98,5 +141,7 @@ app.MapSystem();
 app.MapSettings();
 
 app.Run();
+
+return 0;
 
 public partial class Program;

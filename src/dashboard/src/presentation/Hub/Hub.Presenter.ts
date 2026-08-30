@@ -38,7 +38,7 @@ export function buildHubPresenter({
       dispatch({ type: 'PRIVACY_PENDING_SET', request })
     },
 
-    // Une camera ou toutes : meme chemin, donc meme confirmation, meme attente, meme annonce.
+    // One camera or all of them: same path, so same confirmation, same wait, same announcement.
     async onTogglePrivacy(request: PrivacyRequest): Promise<void> {
       dispatch({ type: 'PRIVACY_TOGGLE_STARTED' })
       try {

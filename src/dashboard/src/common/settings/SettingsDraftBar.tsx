@@ -3,15 +3,15 @@ import { cn } from '../ui/utils'
 import type { DraftChange } from './useSettingsDraft'
 
 /**
- * Barre d'actions du brouillon (ADR-41).
+ * The draft action bar (ADR-41).
  *
- * Elle occupe une position **fixe et identique partout**, en bas de la zone
- * visible, et non une place variable dans le flux du contenu : c'est ce qui la
- * rend trouvable, singulierement sur mobile ou un bouton en fin de page est
- * hors ecran.
+ * It sits in a **fixed position, identical everywhere**, at the bottom of the
+ * visible area rather than at a varying place in the content flow: that is what
+ * makes it findable, notably on mobile where a button at the end of the page is
+ * off screen.
  *
- * Elle dit **ce qui a change**, et rien de plus : enregistrer n'interrompt pas
- * la surveillance, l'interruption appartient au redemarrage (ADR-44).
+ * It says **what changed**, and nothing more: saving does not interrupt
+ * surveillance, the interruption belongs to the restart (ADR-44).
  */
 export function SettingsDraftBar({
   changes,

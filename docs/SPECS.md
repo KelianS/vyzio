@@ -215,7 +215,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des alertes, et accepter des commandes ;
 - les commandes doivent couvrir l'usage courant a distance — etat du systeme, apercu d'une camera, dernieres detections, mode vie privee, positions PTZ, interruption et reprise de la surveillance — de sorte qu'un acces reseau au produit reste **optionnel** ;
 - une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
-- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface ;
+- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md)) ;
 - seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
 - le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien ;
 - une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
@@ -311,6 +311,14 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 > **En tant qu'utilisateur**, je veux proteger l'acces a mon systeme, afin qu'un tiers local ne puisse pas consulter mes donnees.
 
+> **En tant qu'utilisateur**, je veux que mon telephone reste connecte, afin de ne pas ressaisir un mot de passe chaque fois que je jette un oeil a mes cameras.
+
+> **En tant qu'utilisateur**, je veux pouvoir deconnecter un appareil perdu, afin qu'il cesse d'acceder a mes images.
+
+> **En tant qu'utilisateur**, je veux pouvoir changer mon mot de passe, afin de reprendre son acces a qui l'aurait appris.
+
+> **En tant qu'utilisateur**, je veux pouvoir revenir dans mon installation apres avoir oublie mon mot de passe, sans perdre mes cameras ni mon historique.
+
 > **En tant qu'utilisateur**, je veux pouvoir supprimer ou exporter mes donnees, afin de garder le controle.
 
 ### 8.2 Regles produit
@@ -320,6 +328,20 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - l'acces a l'interface et aux donnees doit etre protege ;
 - les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ;
 - l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible.
+
+### 8.3 Acces a l'interface
+
+Comment cet acces est protege : [ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md).
+
+- une installation neuve **s'ouvre sur la creation du mot de passe** du proprietaire : c'est la premiere etape, avant l'ajout d'une camera, et elle ne se saute pas ;
+- une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant plusieurs semaines ;
+- se deconnecter est possible depuis l'interface, et **deconnecter tous les appareils** l'est aussi — c'est le geste attendu quand un telephone est perdu ;
+- une session terminee ramene a l'ecran de connexion en le disant, jamais sur un ecran vide ou une erreur technique ;
+- **changer son mot de passe** se fait dans l'interface : l'ancien est redemande, et le changement referme toutes les sessions ouvertes ailleurs ;
+- un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel. La remise a zero *retire* le mot de passe : l'installation reouvre sur l'ecran de choix pendant une demi-heure, sans rien perdre de ses cameras ni de son historique, puis se reverrouille si personne n'en choisit un ;
+- l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (§5.4).
+
+Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**. Le second, **resident**, est prevu : il consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images.
 
 ---
 

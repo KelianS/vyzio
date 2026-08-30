@@ -14,8 +14,8 @@ test.describe('Personnes', () => {
     await page.getByRole('textbox', { name: 'Nom' }).fill('Alice')
     await page.getByRole('button', { name: 'Ajouter' }).click()
 
-    // La suite de la tache, et non la fiche : sans photo le profil ne reconnait
-    // personne, et rien ne le dirait ailleurs.
+    // The rest of the task, and not the page: without a photo the profile recognises
+    // nobody, and nothing else would say so.
     await expect(page).toHaveURL(/\/settings\/detection\/personnes\/profile-\d+\/photos$/)
     await expect(
       page.getByText('Aucune photo : la reconnaissance est inactive pour cette personne.'),
@@ -48,8 +48,8 @@ test.describe('Personnes', () => {
     await page.getByRole('textbox', { name: 'Nom' }).fill('Alice Martin')
     await page.getByRole('button', { name: 'Enregistrer' }).click()
 
-    // Le nom appartient a la coquille : s'il ne suivait pas, la page nommerait
-    // quelqu'un qui n'existe plus.
+    // The name belongs to the shell: if it did not follow, the page would name
+    // somebody who no longer exists.
     await expect(page.getByRole('heading', { name: 'Alice Martin' })).toBeVisible()
   })
 })

@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { HelpPanel } from './HelpPanel'
 
 /**
- * Ces tests portent sur la decision d'ADR-53 : le troisieme niveau d'aide est **repli par defaut**,
- * et il ne s'ouvre de lui-meme que la ou la tache n'est pas encore faite.
+ * These tests cover the ADR-53 decision: the third level of help is **folded by default**,
+ * and it only opens by itself where the task is not done yet.
  */
 describe('Panneau « En savoir plus » — troisieme niveau d’aide', () => {
   it('panel_When nothing says otherwise_Should stay folded', () => {
@@ -14,8 +14,8 @@ describe('Panneau « En savoir plus » — troisieme niveau d’aide', () => {
       </HelpPanel>,
     )
 
-    // L'ecran nominal reste aussi dense sans le panneau : c'est la condition
-    // pour qu'une aide longue ait le droit d'exister dans la page.
+    // The nominal screen stays just as dense without the panel: that is the condition
+    // for a long help text to be allowed to exist in the page at all.
     expect(screen.getByText('Où trouver ces informations ?')).toBeVisible()
     expect(screen.getByText('Écrivez à BotFather.')).not.toBeVisible()
   })

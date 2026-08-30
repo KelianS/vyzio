@@ -1,7 +1,7 @@
 export const AppErrorKind = {
   NotFound: 'not_found',
   Network: 'network',
-  /** La surveillance ne repond pas — distinct d'une panne du serveur Vyzio, qui lui a repondu (ADR-49). */
+  /** Surveillance is not answering - distinct from a Vyzio server failure, which did answer (ADR-49). */
   SurveillanceDown: 'surveillance_down',
   Server: 'server',
   Unknown: 'unknown',

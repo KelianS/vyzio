@@ -2,25 +2,25 @@ import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { cn } from '../ui/utils'
 
-// Une miniature manque surtout quand la surveillance redemarre : la cause se resout d'elle-meme,
-// donc on retente, en espacant. Passe ces essais, c'est a l'utilisateur de redemander.
+// A thumbnail is missing mostly while surveillance restarts: the cause resolves itself,
+// so we retry, spacing the attempts. Past those, asking again is up to the user.
 const RETRY_DELAYS_MS = [2000, 5000, 10000]
 
 type Phase = 'loading' | 'loaded' | 'retrying' | 'failed'
 
 interface DetectionThumbnailProps {
   src: string
-  /** Vide quand la vignette accompagne un libelle qui dit deja de quoi il s'agit. */
+  /** Empty when the thumbnail sits beside a label that already says what it is. */
   alt?: string
   className?: string
 }
 
-/** L'apercu d'une detection : jamais une image cassee, jamais un echec definitif sans recours. */
+/** The preview of a detection: never a broken image, never a final failure without recourse. */
 export function DetectionThumbnail({ src, alt = '', className }: DetectionThumbnailProps) {
   const [attempt, setAttempt] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
 
-  // Une source neuve efface l'echec de la precedente sans cascade de setState dans un effet.
+  // A new source clears the previous failure without a cascade of setState inside an effect.
   const [previousSrc, setPreviousSrc] = useState(src)
   if (src !== previousSrc) {
     setPreviousSrc(src)
@@ -53,7 +53,7 @@ export function DetectionThumbnail({ src, alt = '', className }: DetectionThumbn
       )}
     >
       <img
-        // Le cache du navigateur garde l'echec : sans cette cle, retenter ne redemande rien.
+        // The browser caches the failure: without this key, retrying asks for nothing.
         src={attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`}
         alt={alt}
         loading="lazy"

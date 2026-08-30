@@ -117,8 +117,8 @@ export function ChannelPairingSection({
 }
 
 /**
- * L'etat de la boucle, la ou il se produit (principe #4) : une conversation reliee ne prouve rien,
- * c'est l'ecoute qui tombe quand le reseau tombe (ADR-52).
+ * The state of the loop, where it happens (principle #4): a linked conversation proves nothing,
+ * it is the listening that falls when the network falls (ADR-52).
  */
 function ListeningStatus({ state }: { state: ChannelListening }) {
   if (state.listening) {
@@ -148,7 +148,7 @@ function ListeningStatus({ state }: { state: ChannelListening }) {
       </div>
       <p className="text-sm text-muted-foreground">
         {state.reason
-          ? // La panne est dite dans les mots du canal : la paraphraser perd le seul indice qu'on a.
+          ? // The failure is said in the channel's own words: paraphrasing loses the only clue we have.
             `Vos commandes restent sans réponse jusqu’à ce qu’elle reprenne — Vyzio réessaie tout seul. Raison signalée : ${state.reason}`
           : 'Le canal doit être activé et enregistré pour répondre à vos commandes.'}
       </p>
@@ -184,7 +184,7 @@ function AwaitingConversation({
 function describe(status: ChannelPairing['status'], pairing: ChannelPairing | null): string {
   switch (status) {
     case 'not_paired':
-      // Sans cette phrase, le silence oppose a une commande passe pour une panne.
+      // Without this sentence, silence in the face of a command passes for a failure.
       return 'Aucune conversation ne peut commander votre installation : tant qu’aucune n’est reliée, une commande envoyée au bot reste sans réponse. Reliez-en une pour lui parler.'
     case 'expired':
       return 'Le code précédent a expiré sans être utilisé : tant qu’aucune conversation n’est reliée, une commande reste sans réponse.'

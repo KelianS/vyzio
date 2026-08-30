@@ -1,19 +1,19 @@
 import type { DetectionEvent } from '../../domain/entities/DetectionEvent'
 
-// Seules ces detections portent une identite : le backend les resout en person_known/person_unknown,
-// et n'en attribue a aucune autre. Attribuer un profil a un chat produit une donnee inexploitable.
+// Only these detections carry an identity: the backend resolves them to person_known/person_unknown,
+// and gives one to no other kind. Attaching a profile to a cat produces unusable data.
 const IDENTITY_LABELS: ReadonlySet<string> = new Set(['person', 'face'])
 
 export function carriesIdentity(event: DetectionEvent): boolean {
   return IDENTITY_LABELS.has(event.label.toLowerCase())
 }
 
-/** L'image plein cadre : ce qu'on ouvre, jamais ce qu'on affiche dans une tuile de 56 px. */
+/** The full frame: what one opens, never what a 56px tile shows. */
 export function snapshotUrl(apiBaseUrl: string, eventId: string): string {
   return `${apiBaseUrl}/api/detection-events/${eventId}/snapshot`
 }
 
-/** Le recadrage sur l'objet deja ecrit par Frigate : 175x175, quinze fois plus leger. */
+/** The crop around the object, already written by Frigate: 175x175, fifteen times lighter. */
 export function thumbnailUrl(apiBaseUrl: string, eventId: string): string {
   return `${apiBaseUrl}/api/detection-events/${eventId}/thumbnail`
 }
@@ -30,7 +30,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
   minute: '2-digit',
 })
 
-/** Aujourd'hui, l'heure suffit ; au-dela, la date situe. */
+/** Today, the time is enough; beyond that, the date places it. */
 export function formatEventTime(value: string): string {
   const date = new Date(value)
   const now = new Date()
@@ -49,7 +49,7 @@ export function formatEventTitle(event: DetectionEvent): string {
   return `Detection '${event.label}'`
 }
 
-/** Ou, quand, et avec quelle certitude — la certitude ne se lit que si le moteur en a donne une. */
+/** Where, when, and how sure - the certainty only shows when the engine gave one. */
 export function formatEventDetail(event: DetectionEvent): string {
   return [
     event.cameraName,

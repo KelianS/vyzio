@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
 
 /**
- * Editer et supprimer une camera etaient devenus injoignables en sortant la
- * fiche camera de l'ancien ecran : le cas d'usage existait encore, plus aucune
- * interface ne l'appelait. Ce parcours garde la porte ouverte.
+ * Editing and deleting a camera had become unreachable when the camera page was
+ * taken out of the old screen: the use case still existed, no interface called it
+ * any more. This journey keeps the door open.
  */
 test.describe('Caméra — connexion', () => {
   test.beforeEach(async ({ page }) => {
@@ -24,7 +24,7 @@ test.describe('Caméra — connexion', () => {
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(bar).toBeHidden()
 
-    // Le nom voyage jusqu'au titre de la fiche, donc jusqu'au catalogue partage.
+    // The name travels up to the page title, and so up to the shared catalogue.
     await expect(page.getByRole('heading', { name: 'Portail' })).toBeVisible()
   })
 

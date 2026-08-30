@@ -10,13 +10,13 @@ import {
 } from './settings.rubrics'
 
 /**
- * Coquille des reglages (ADR-40) : premier niveau = les rubriques, second =
- * les pages de chacune.
+ * The settings shell (ADR-40): first level = the sections, second = the pages of
+ * each one.
  *
- * Concue pour le petit ecran d'abord : **un seul niveau est visible a la fois**,
- * liste puis page, avec un retour explicite. Le grand ecran developpe cette
- * meme structure en deux colonnes — il ne la remplace pas, ce qui evite d'avoir
- * deux architectures de navigation a maintenir.
+ * Designed for the small screen first: **one level is visible at a time**, list
+ * then page, with an explicit way back. The large screen unfolds that same
+ * structure into two columns - it does not replace it, which avoids keeping two
+ * navigation architectures alive.
  */
 export function SettingsView() {
   const location = useLocation()
@@ -25,9 +25,9 @@ export function SettingsView() {
     location.pathname.startsWith(rubricPath(rubric.slug)),
   )
   const matches = useMatches()
-  // Titre et retour sont deux services rendus separement : un ecran peut se
-  // nommer sans savoir d'ou l'on vient. Les confondre empilait deux fleches sur
-  // la fiche camera, ou laissait les ecrans non repris sans issue.
+  // Title and back link are two services rendered separately: a screen can name
+  // itself without knowing where one came from. Merging them stacked two arrows on
+  // the camera page, or left the screens not reworked yet with no way out.
   const showRubricTitle = current !== undefined && !declaresOwnHeader(matches)
   const showRubricBackLink = current !== undefined && !declaresOwnBackLink(matches)
 
@@ -38,7 +38,7 @@ export function SettingsView() {
           aria-label="Rubriques de réglages"
           className={cn(
             'rounded-card bg-card text-card-foreground shadow-[var(--shadow-soft)] p-2',
-            // Sur mobile la liste cede la place a la page ouverte.
+            // On mobile the list gives way to the open page.
             atRoot ? 'block' : 'hidden md:block',
           )}
         >

@@ -3,8 +3,8 @@ import type { DetectionHistoryAction } from './DetectionHistory.Actions'
 import type { DetectionHistoryUido } from './DetectionHistory.Uido'
 
 /**
- * La surveillance arretee et une panne de lecture ne se disent pas pareil : sans surveillance il n'y
- * a pas d'historique du tout, et le taire le ferait lire comme « aucune detection » (principe #4).
+ * Surveillance being stopped and a read failure are not said the same way: without surveillance
+ * there is no history at all, and keeping quiet would read as "no detection" (principle #4).
  */
 function historyErrorMessage(error: AppError): string {
   return error.kind === AppErrorKind.SurveillanceDown
@@ -12,7 +12,7 @@ function historyErrorMessage(error: AppError): string {
     : "Impossible de charger l'historique."
 }
 
-/** Changer un filtre relit depuis le debut : un curseur ne survit pas au critere qui l'a produit. */
+/** Changing a filter reads again from the start: a cursor does not outlive the criteria that produced it. */
 const REFILTERED: Pick<DetectionHistoryUido, 'items' | 'nextCursor' | 'loaded'> = {
   items: [],
   nextCursor: null,
@@ -82,8 +82,8 @@ export function detectionHistoryReducer(
 
     case 'CORRECT_STARTED':
       return { ...state, correctingEventId: action.eventId }
-    // La correction s'affiche sans attendre la relecture : Frigate met quelques secondes a la
-    // propager, et un ecran qui ne bouge pas fait croire au geste rate (ADR-49).
+    // The correction shows without waiting for the re-read: Frigate takes a few seconds to
+    // propagate it, and a screen that does not move suggests the gesture failed (ADR-49).
     case 'CORRECT_SUCCEEDED':
       return {
         ...state,

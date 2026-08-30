@@ -2,7 +2,7 @@ import type { DetectionEvent } from './DetectionEvent'
 
 export interface DetectionHistoryPage {
   items: DetectionEvent[]
-  /** Null quand la plus ancienne detection est atteinte : l'historique se pagine par date (ADR-49). */
+  /** Null once the oldest detection is reached: the history pages by date (ADR-49). */
   nextCursor: string | null
 }
 

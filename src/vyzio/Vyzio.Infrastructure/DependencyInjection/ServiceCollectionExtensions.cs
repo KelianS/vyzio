@@ -5,6 +5,7 @@ using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
+using Vyzio.Infrastructure.Security;
 using Vyzio.Infrastructure.Services;
 using Vyzio.Infrastructure.VendorAdapters;
 
@@ -33,6 +34,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRecordingSettingsRepository, RecordingSettingsRepository>();
         services.AddScoped<ICommandJournalRepository, CommandJournalRepository>();
         services.AddScoped<IChannelPairingRepository, ChannelPairingRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<ICameraDiscoveryService, AssistedCameraDiscoveryService>();
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();

@@ -32,16 +32,17 @@ public class VyzioDbContextTests : IDisposable
     }
 
     [Fact]
-    public void Schema_creates_retained_mvp_tables()
+    public void Deleting_an_account_closes_the_sessions_it_opened()
     {
-        _db.Sessions.Add(new Session
-        {
-            UserId = "user-001",
-            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1)
-        });
+        var account = new Account { PasswordHash = "hash" };
+        _db.Accounts.Add(account);
+        _db.Sessions.Add(Session.Open(account.Id, "token-hash", "Firefox", DateTimeOffset.UtcNow));
         _db.SaveChanges();
 
-        Assert.Equal(1, _db.Sessions.Count());
+        _db.Accounts.Remove(account);
+        _db.SaveChanges();
+
+        Assert.Empty(_db.Sessions);
     }
 
     [Fact]

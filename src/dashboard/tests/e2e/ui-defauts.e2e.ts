@@ -7,8 +7,8 @@ import {
 } from './fixtures/fakeBackend'
 
 /**
- * Les defauts releves a l'usage apres le chantier `config-ui` (voir `docs/BACKLOG.md`,
- * chantier `ui-defauts`). Chacun est reproduit ici avant d'etre corrige.
+ * The defects found in use after the `config-ui` batch (see `docs/BACKLOG.md`, batch
+ * `ui-defauts`). Each one is reproduced here before being fixed.
  */
 
 test.describe('Mettre une caméra en pause', () => {
@@ -21,13 +21,13 @@ test.describe('Mettre une caméra en pause', () => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Pause' }).click()
 
-    // Couper une camera coute autant que toutes : la demande s'annonce pareil.
+    // Cutting one camera costs as much as all of them: the request announces itself alike.
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Mettre « Salon » en pause ?')
     await expect(dialog).toContainText('Plus rien n’est enregistré ni signalé par cette caméra')
     await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
 
-    // Et le resultat se dit : sans ca, rien ne distingue une operation longue d'une qui a echoue.
+    // And the result is said: without that, nothing tells a long operation from a failed one.
     await expect(page.getByRole('status')).toContainText('Salon est en pause.')
     await expect(page.getByRole('button', { name: 'Réactiver' })).toBeVisible()
   })
@@ -46,7 +46,7 @@ test.describe('Vue live', () => {
     const overlay = page.getByRole('dialog', { name: 'Aperçu' })
     await expect(overlay).toBeVisible()
 
-    // Cliquer en dehors fermait deja ; rien ne l'annoncait, et le contenu recouvrait la croix.
+    // Clicking outside already closed it; nothing announced it, and the content covered the cross.
     const close = overlay.getByRole('button', { name: 'Fermer' })
     await expect(close).toBeVisible()
     await close.click()
@@ -59,15 +59,15 @@ test.describe('Vue live', () => {
   }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    // Ce que fait un redemarrage de la surveillance : l'image n'arrive pas.
+    // What a surveillance restart does: the image does not arrive.
     await page.route('**/live/latest.jpg**', (route) => route.abort())
 
     await page.goto('/')
 
     await expect(page.getByText('Reconnexion…').first()).toBeVisible()
-    // Une image sans donnees porte l'icone de rupture du navigateur : elle ne doit pas transparaitre.
+    // An image with no data carries the browser's broken icon: it must not show through.
     await expect(page.locator('article img')).not.toBeVisible()
-    // Et la vignette reste ouvrable : cacher l'image ne doit pas lui prendre son nom.
+    // And the thumbnail stays openable: hiding the image must not take its name away.
     await expect(page.getByRole('button', { name: 'Salon' })).toBeVisible()
   })
 })
@@ -93,7 +93,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
   }) => {
     const state = await openLive(page)
 
-    // L'appui long est le geste de l'ecrasement ; il n'y a rien a ecraser.
+    // The long press is the overwrite gesture; there is nothing to overwrite.
     await page.getByTitle('Enregistrer la position actuelle ici').first().click()
 
     await expect(page.getByRole('status')).toContainText('enregistrée')
@@ -122,7 +122,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
 
     await tile.click()
 
-    // Un deplacement dure : sans accuse, l'appui semble n'avoir rien fait.
+    // A move takes time: without an acknowledgement, the press looks like it did nothing.
     await expect(page.getByRole('status')).toContainText('Caméra en position « Surveillance ».')
     await expect(tile).toHaveAttribute('aria-pressed', 'true')
   })
@@ -138,7 +138,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
     await expect(page.getByRole('status')).toContainText('Caméra calibrée')
     expect(state.ptz.calibrated).toBe(true)
 
-    // Et les positions redeviennent utilisables sans passer par les reglages.
+    // And the positions become usable again without going through the settings.
     await page.getByTitle('Enregistrer la position actuelle ici').first().click()
     await expect(page.getByRole('status').last()).toContainText('enregistrée')
   })
@@ -160,7 +160,7 @@ test.describe('Historique', () => {
 
     await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
 
-    // Ce qu'on vient lire ici, ce sont les detections — pas un formulaire de filtres.
+    // What one comes to read here is the detections - not a filter form.
     await expect(page.getByRole('region', { name: 'Filtres' })).toBeHidden()
     await page.getByRole('button', { name: 'Filtrer' }).click()
     await expect(page.getByRole('region', { name: 'Filtres' })).toBeVisible()
@@ -171,7 +171,7 @@ test.describe('Historique', () => {
   }) => {
     await openHistory(page)
 
-    // La miniature de l'accueil manquait ici, alors que c'est la meme liste.
+    // The home thumbnail was missing here, although it is the same list.
     const preview = page.getByRole('button', { name: /Voir l’aperçu/ }).first()
     await expect(preview).toBeVisible()
     await expect(preview.locator('img')).toBeAttached()
@@ -190,7 +190,7 @@ test.describe('Historique', () => {
     )
     await page.goto('/history')
 
-    // Seules les detections de personne portent une identite (person_known/person_unknown).
+    // Only person detections carry an identity (person_known/person_unknown).
     await expect(page.getByRole('button', { name: 'Identifier' })).toHaveCount(1)
   })
 })

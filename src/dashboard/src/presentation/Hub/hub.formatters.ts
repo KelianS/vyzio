@@ -1,8 +1,8 @@
 import type { NotificationSummary } from '../../domain/entities/NotificationSummary'
 import type { Profile } from '../../domain/entities/Profile'
 
-// Ce qu'une detection dit d'elle-meme se formate dans `common/detection/detectionFormatters`,
-// l'accueil et l'historique montrant la meme liste.
+// What a detection says about itself is formatted in `common/detection/detectionFormatters`,
+// home and history showing the same list.
 
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
   hour: '2-digit',

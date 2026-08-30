@@ -67,7 +67,7 @@ describe('PtzControlPanel', () => {
     const empty = await screen.findAllByTitle('Enregistrer la position actuelle ici')
     await userEvent.click(empty[0])
 
-    // Un appui long serait le geste de l'ecrasement : il n'y a rien a ecraser.
+    // A long press would be the overwrite gesture: there is nothing to overwrite.
     await waitFor(() => expect(ptzSaveCurrentAsPreset.execute).toHaveBeenCalledWith('camera-1', 1))
   })
 
@@ -104,7 +104,7 @@ describe('PtzControlPanel', () => {
     renderPanel({ presets: [makePreset()] })
 
     const tile = await screen.findByTitle(/Surveillance — appui/)
-    // L'appui long est notre geste de redefinition ; le menu du navigateur le volait sur mobile.
+    // The long press is our redefine gesture; the browser menu was stealing it on mobile.
     expect(fireEvent.contextMenu(tile)).toBe(false)
   })
 })

@@ -7,17 +7,17 @@ interface StrategyDefinition {
   readonly value: PrivacyStrategy
   readonly label: string
   readonly explanation: string
-  /** Ce que la camera doit savoir faire pour que la strategie ait un sens. */
+  /** What the camera must be able to do for the strategy to make sense. */
   readonly available: (camera: Camera) => boolean
 }
 
 /**
- * Les facons de ne plus etre filme, de la plus faible a la plus forte.
+ * The ways of no longer being filmed, from the weakest to the strongest.
  *
- * Chaque option est decrite par **ce qu'elle garantit et ce qu'elle ne
- * garantit pas** : une coupure logicielle laisse la camera accessible sur le
- * reseau local, et le taire serait promettre une confidentialite qui n'existe
- * pas (principe produit #4).
+ * Every option is described by **what it guarantees and what it does not
+ * guarantee**: a software cut leaves the camera reachable on the local network,
+ * and keeping quiet about that would promise a privacy that does not exist
+ * (product principle #4).
  */
 const STRATEGIES: readonly StrategyDefinition[] = [
   {
@@ -50,8 +50,8 @@ const STRATEGIES: readonly StrategyDefinition[] = [
 ]
 
 export function availableStrategies(camera: Camera): SettingOption<PrivacyStrategy>[] {
-  // On ne propose que ce que cette camera sait faire : afficher une option
-  // grisee sans pouvoir agir dessus serait un etat opaque de plus.
+  // Only what this camera can actually do is offered: showing a greyed option
+  // with no way to act on it would be one more opaque state.
   return STRATEGIES.filter((strategy) => strategy.available(camera)).map((strategy) => ({
     value: strategy.value,
     label: strategy.label,
@@ -81,8 +81,8 @@ export function buildPrivacySettings({
       help: STRATEGIES.filter((strategy) => strategy.available(camera))
         .map((strategy) => `${strategy.label} — ${strategy.explanation}`)
         .join('\n\n'),
-      // Ce que l'option choisie garantit reellement reste visible sans geste :
-      // c'est une consequence, pas une explication (ADR-43).
+      // What the chosen option really guarantees stays visible without a gesture:
+      // it is a consequence, not an explanation (ADR-43).
       consequence: explanationOf(value),
       value,
       onChange: (next) => onChange(next as PrivacyStrategy),

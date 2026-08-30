@@ -6,11 +6,11 @@ import { SettingsPage } from '../../common/settings/SettingsPage'
 import { formatCameraAddress, formatCameraStatusLabel } from './cameras.formatters'
 
 /**
- * Troisieme niveau de l'arborescence : les pages d'**une** camera (ADR-40).
+ * The third level of the tree: the pages of **one** camera (ADR-40).
  *
- * Chaque page a une jumelle au niveau de l'installation, ou l'inverse — regler
- * une camera, c'est ouvrir le meme ecran un cran plus bas. C'est ce qui rend le
- * modele de surcharge d'ADR-39 lisible sans l'expliquer.
+ * Every page has a twin at installation level, or the other way round - setting a
+ * camera means opening the same screen one notch lower. That is what makes the
+ * override model of ADR-39 readable without explaining it.
  */
 const CAMERA_PAGES = [
   { slug: 'detection', label: 'Détection' },
@@ -26,8 +26,8 @@ export function CameraShell() {
 
   if (!camera) {
     return (
-      // Cette route annonce porter son propre en-tete : sans camera a nommer,
-      // c'est a l'echec de le faire, sinon la page resterait anonyme.
+      // This route announces that it carries its own header: with no camera to name,
+      // the failure has to do it, or the page would stay anonymous.
       <SettingsPage>
         <h1 className="font-serif text-3xl">Caméra introuvable</h1>
         <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">

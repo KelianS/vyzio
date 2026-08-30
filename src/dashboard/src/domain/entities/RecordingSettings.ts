@@ -10,7 +10,7 @@ export interface RecordingSettings {
   motion: RetentionSetting
   eventClip: RetentionSetting
   maxDays: number
-  /** Plancher de la duree qui porte l'historique : le zero n'y est pas une reponse (ADR-48). */
+  /** Floor of the duration carrying the history: zero is not an answer there (ADR-48). */
   minEventClipDays: number
 }
 

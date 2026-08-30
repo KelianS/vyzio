@@ -2,9 +2,9 @@ import { SettingRow } from './SettingRow'
 import type { SettingDeclaration } from './settingDeclaration'
 
 /**
- * Une liste de reglages declares. Le separateur entre lignes vient d'ici, pas
- * de chaque ligne : c'est ce qui garantit qu'une page de reglages se lit comme
- * un tableau regulier, quel que soit le contenu des lignes.
+ * A list of declared settings. The separator between rows comes from here, not
+ * from each row: that is what guarantees a settings page reads as a regular
+ * table, whatever the rows contain.
  */
 export function SettingsList({ settings }: { settings: readonly SettingDeclaration[] }) {
   return (
