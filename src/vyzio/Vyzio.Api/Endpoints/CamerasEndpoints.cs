@@ -191,19 +191,6 @@ public static class CamerasEndpoints
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
-        group.MapPost("/{id}/ptz/configure-parking", async (string id, ConfigurePtzParkingPositionUseCase useCase, CancellationToken ct) =>
-        {
-            try
-            {
-                var ok = await useCase.ExecuteAsync(id, ct);
-                return ok ? Results.NoContent() : Results.NotFound();
-            }
-            catch (PtzNotCalibratedException)
-            {
-                return Results.Conflict(new { error = "not_calibrated" });
-            }
-        });
-
         // Branch B calibration: homes the camera to establish virtual position (0,0).
         group.MapPost("/{id}/ptz/calibrate", async (string id, PtzCalibrateUseCase useCase, CancellationToken ct) =>
         {
