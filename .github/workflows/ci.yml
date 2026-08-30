@@ -61,6 +61,11 @@ jobs:
       - name: Format check
         run: task front:format:check
 
+      # Fails on any file, export or dependency nothing reaches. The repo was cleaned to zero
+      # before this step landed, so a finding here is always something the branch introduced.
+      - name: Dead code
+        run: task front:knip
+
       - name: Test
         run: task front:test -- --coverage
 

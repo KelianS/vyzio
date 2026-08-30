@@ -7,7 +7,7 @@ import {
 } from '../../common/ui/select'
 
 /** "Any" is a real value for the dropdown, since empty isn't one; never leaks past this file. */
-export const ALL = '__all__'
+const ALL = '__all__'
 export const UNKNOWN = '__unknown__'
 
 interface PickOneOption {

@@ -2,7 +2,7 @@ import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 
 /** What's being added: a discovered camera, or a manually typed address (ADR-40). */
-export type AddCameraSelection =
+type AddCameraSelection =
   /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
 

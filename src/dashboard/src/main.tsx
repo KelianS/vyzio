@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// `startThemeSync()` (common/theme.ts) is deliberately not called here:
-// see the sequencing explanation in that file.
+// No dark-theme sync: tried on 2026-08-03, several surfaces stayed unreadable, and the
+// tokens have to be finished before the class is put back on <html> (ADR-42).
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

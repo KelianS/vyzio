@@ -23,7 +23,7 @@ export interface ChannelCredential {
   value: string | null
 }
 
-export interface ChannelCapabilities {
+interface ChannelCapabilities {
   photo: boolean
   video: boolean
   groupedMedia: boolean
@@ -41,7 +41,7 @@ export interface NotificationChannelSummary {
   acceptsCommands: boolean
 }
 
-export type ChannelPairingStatus = 'not_paired' | 'awaiting_conversation' | 'expired' | 'paired'
+type ChannelPairingStatus = 'not_paired' | 'awaiting_conversation' | 'expired' | 'paired'
 
 /** Which conversation may command Vyzio on a channel — never the conversation itself, only its state. */
 export interface ChannelPairing {
