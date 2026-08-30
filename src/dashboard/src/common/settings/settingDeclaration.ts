@@ -55,7 +55,7 @@ export const VISIBLE_CHOICES_MAX = 7
  * Where the shown value comes from, when the setting can be overridden (ADR-39).
  * Supplied by the declaration, never recomputed while rendering.
  */
-export interface SettingProvenance {
+interface SettingProvenance {
   /** `true` for as long as the value is the one from the level above. */
   readonly following: boolean
   /** What going back restores, already formatted to be read. */

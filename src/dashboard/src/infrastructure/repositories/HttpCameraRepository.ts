@@ -245,16 +245,8 @@ export class HttpCameraRepository implements CameraRepository {
     })
   }
 
-  async ptzSavePreset(cameraId: string, presetId: number): Promise<void> {
-    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`, { presetId })
-  }
-
   async ptzGoToPreset(cameraId: string, presetId: number): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/goto`, { presetId })
-  }
-
-  async ptzConfigureParking(cameraId: string): Promise<void> {
-    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/configure-parking`)
   }
 
   async getPtzPresets(cameraId: string): Promise<{

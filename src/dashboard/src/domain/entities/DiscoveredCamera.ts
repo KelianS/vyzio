@@ -1,21 +1,21 @@
-export interface VendorDocumentation {
+interface VendorDocumentation {
   vendorFamily: string
   markdown: string
 }
 
-export interface DetectedPortSignal {
+interface DetectedPortSignal {
   protocol: string
   label: string
   port: number
 }
 
-export interface DetectedCapability {
+interface DetectedCapability {
   capability: string
   label: string
   protocolLabels: string[]
 }
 
-export interface DiscoveryTechnicalDetails {
+interface DiscoveryTechnicalDetails {
   resolvedHostName: string | null
   detectedPorts: DetectedPortSignal[]
   rtspPathsDetected: string[]

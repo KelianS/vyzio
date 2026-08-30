@@ -62,7 +62,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PtzStepUseCase>();
         services.AddScoped<PtzSavePresetUseCase>();
         services.AddScoped<PtzGoToPresetUseCase>();
-        services.AddScoped<ConfigurePtzParkingPositionUseCase>();
         services.AddScoped<GetPtzPositionUseCase>();
         services.AddScoped<GetPtzPresetsUseCase>();
         services.AddScoped<PtzCalibrateUseCase>();

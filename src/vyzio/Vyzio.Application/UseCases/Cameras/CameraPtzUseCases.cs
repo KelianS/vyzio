@@ -8,8 +8,8 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record PtzMoveRequest(string Direction, int Speed = 50);
 
-// Thrown by PtzSavePresetUseCase / ConfigurePtzParkingPositionUseCase when Branch B position
-// tracking has not been calibrated (PtzCalibrateUseCase not yet called this session).
+// Thrown by PtzSavePresetUseCase when Branch B position tracking has not been calibrated
+// (PtzCalibrateUseCase not yet called this session).
 public sealed class PtzNotCalibratedException : InvalidOperationException
 {
     public PtzNotCalibratedException()
@@ -135,48 +135,6 @@ public sealed class PtzGoToPresetUseCase(
                 for (var i = 0; i < targetY; i++)
                     await provider.PtzStepAsync(camera, binding, PtzDirection.Down, 50, ct);
             }
-        }
-
-        return true;
-    }
-}
-
-// Saves the current camera position as the surveillance home preset (preset ID 1).
-// Called from the fiche caméra when the user clicks "Définir position de surveillance".
-public sealed class ConfigurePtzParkingPositionUseCase(
-    ICameraRepository cameras,
-    ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry,
-    IPtzPresetRepository presets)
-{
-    public async Task<bool> ExecuteAsync(string cameraId, CancellationToken ct = default)
-    {
-        var camera = await cameras.GetByIdAsync(cameraId, ct);
-        if (camera is null) return false;
-
-        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
-
-        var provider = registry.ResolvePtz(binding.Protocol);
-
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
-        {
-            // Preset 1 = surveillance/home position by convention.
-            await provider.PtzSavePresetAsync(camera, binding, presetId: 1, ct);
-        }
-        else
-        {
-            if (provider.GetVirtualPosition(cameraId) is not { } pos)
-                throw new PtzNotCalibratedException();
-
-            await presets.UpsertAsync(new PtzPreset
-            {
-                CameraId = cameraId,
-                PresetId = 1,
-                Label = PtzPreset.DefaultLabel(1),
-                Native = false,
-                StepsX = pos.StepsX,
-                StepsY = pos.StepsY,
-            }, ct);
         }
 
         return true;

@@ -63,9 +63,7 @@ export interface CameraRepository {
   deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void>
   setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera>
   ptzStep(cameraId: string, direction: string, speed: number): Promise<void>
-  ptzSavePreset(cameraId: string, presetId: number): Promise<void>
   ptzGoToPreset(cameraId: string, presetId: number): Promise<void>
-  ptzConfigureParking(cameraId: string): Promise<void>
   getPtzPresets(cameraId: string): Promise<{
     presets: PtzPreset[]
     calibrated: boolean

@@ -11,18 +11,18 @@ export interface SystemStats {
   pendingChanges: boolean
 }
 
-export interface DetectionConfig {
+interface DetectionConfig {
   hardware: FrigateDetectorKind
   targetFps: number
 }
 
-export interface StorageStats {
+interface StorageStats {
   totalGb: number
   usedGb: number
   freeGb: number
 }
 
-export interface CameraFps {
+interface CameraFps {
   camera: string
   fps: number
 }

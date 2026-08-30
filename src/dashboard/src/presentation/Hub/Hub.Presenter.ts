@@ -56,5 +56,3 @@ export function buildHubPresenter({
     },
   }
 }
-
-export type HubPresenter = ReturnType<typeof buildHubPresenter>

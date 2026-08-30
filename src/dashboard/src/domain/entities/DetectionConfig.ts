@@ -16,7 +16,7 @@ export interface CameraStream {
 // itself, null meaning "follow the installation"; `installation` is what it falls back to, which is
 // what lets a revert name the value it returns to; `effective` is what actually applies, resolved
 // server-side so the view never re-derives it.
-export interface RetentionWindowValue {
+interface RetentionWindowValue {
   override: number | null
   installation: number
   effective: number

@@ -23,7 +23,7 @@ export const RETENTION_LABEL: Record<RetentionWindow, string> = {
   eventClip: 'Historique de détection',
 }
 
-export const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
+const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
   continuous:
     'Tout est enregistré, même quand il ne se passe rien. C’est ce qui occupe de loin le plus d’espace disque.',
   motion: 'Seuls les moments où l’image bouge sont conservés.',

@@ -93,5 +93,3 @@ export function buildDetectionHistoryPresenter({
     },
   }
 }
-
-export type DetectionHistoryPresenter = ReturnType<typeof buildDetectionHistoryPresenter>

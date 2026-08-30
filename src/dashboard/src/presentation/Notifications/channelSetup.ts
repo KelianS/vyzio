@@ -7,7 +7,7 @@ import type { NotificationChannelName } from '../../domain/entities/Notification
  * A step body is plain text with two marks the renderer understands: `code` for what is typed or
  * clicked, and [label](url) for a link. Keeping it text keeps this file a declaration.
  */
-export interface ChannelSetupStep {
+interface ChannelSetupStep {
   readonly title: string
   readonly body: string
 }
