@@ -74,7 +74,7 @@ knows how to drive them:
 
 | Brand            | Privacy mode                       | Move the camera | Image settings                    |
 | ---------------- | ---------------------------------- | --------------- | --------------------------------- |
-| TP-Link Tapo     | Hardware cut, lens covered, LED off | Pan-tilt models | Not yet                           |
+| TP-Link Tapo     | Hardware cut, lens covered, LED off | Yes             | Not yet                           |
 | ICSee / XMEye    | Turns away and stops recording      | Yes             | Brightness, contrast, saturation  |
 | V380 PRO         | Turns away and stops recording      | Yes             | Not confirmed on the tested units |
 
@@ -174,14 +174,14 @@ Changing a password you still know needs none of this: Settings › Access, in t
 ## Architecture
 
 Backend and frontend follow the same shape: clean architecture layers, dependencies pointing
-inwards only, cut into vertical slices by feature rather than by technical kind.
+inwards only, and features cut as vertical slices rather than by technical kind.
 
-| Layer          | Backend (`src/vyzio`)                                              | Frontend (`src/dashboard`)                                 |
-| -------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Domain         | `Vyzio.Core`: entities and rules, depending on nothing              | `src/domain`: entities and repository ports                 |
-| Application    | `Vyzio.Application/UseCases`: one folder per slice                  | `src/presentation/<Slice>`: use cases and screens together  |
-| Infrastructure | `Vyzio.Infrastructure`: EF Core, Frigate, camera protocols, channels | `src/infrastructure`: HTTP repositories                     |
-| Entry point    | `Vyzio.Api`: minimal API endpoints and composition root             | `src/App.tsx`: routing and container                        |
+| Layer          | Backend (`src/vyzio`)                                                | Frontend (`src/dashboard`)                              |
+| -------------- | -------------------------------------------------------------------- | ------------------------------------------------------- |
+| Domain         | `Vyzio.Core`: entities and rules, depending on nothing                | `src/domain/entities`, `src/domain/ports`               |
+| Use cases      | `Vyzio.Application/UseCases`, one folder per slice                    | `src/domain/usecases`, one class per use case           |
+| Infrastructure | `Vyzio.Infrastructure`: EF Core, Frigate, camera protocols, channels  | `src/infrastructure`: HTTP repositories                 |
+| Presentation   | `Vyzio.Api`: minimal API endpoints and composition root               | `src/presentation/<Slice>`: screens, and `App.tsx`      |
 
 The slices carry the same names on both sides (`Access`, `Cameras`, `Hub`, `Notifications`,
 `Profiles`, `Settings`), so a feature is one folder per side and nothing else.
