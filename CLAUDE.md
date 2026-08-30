@@ -46,6 +46,10 @@ un fichier de ces dossiers.
   référence d'ADR si besoin (`(ADR-44)`) — jamais le récit de la décision, qui vieillit en silence et
   duplique l'ADR (règle suprême ci-dessus). Si l'explication ne tient pas en une ligne, elle
   appartient à un ADR ou un TAD ; y renvoyer plutôt que la recopier.
+- **Nom de test** : `{Method}_Should{DoSomething}_When{ConditionIsTrue}`, en PascalCase, xUnit comme
+  Vitest. Le nom porte le sujet, l'effet attendu et la condition, pour qu'un échec en CI se lise sans
+  ouvrir le corps du test. Les tests écrits avant cette règle ne la suivent pas encore : ne pas les
+  prendre pour modèle.
 
 ## Principes produit (guident chaque décision produit / UX)
 
