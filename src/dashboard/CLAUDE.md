@@ -22,7 +22,7 @@ common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), 
                   presenter/ (usePresenter, hook générique), hooks/ (useAsync, useAsyncAction, polling).
 ```
 
-## Socle d'interface — deux étages ([ADR-42](../../docs/adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md))
+## Socle d'interface — deux étages ([ADR-42](../../docs/adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md))
 
 - **`common/ui/`** = primitives shadcn/ui **copiées du registre**, pas du code Vyzio. On les ajoute
   avec `pnpm dlx shadcn@latest add <nom>`, jamais à la main. **Ne jamais y mettre de règle métier** :
@@ -35,7 +35,7 @@ common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), 
   sombre) ; **aucune couleur ni rayon littéral dans un composant**, toujours un token.
 - **`App.css` est supprimé** : aucune couleur ni règle globale ; tout écran est en Tailwind + tokens.
 - Un réglage **se déclare, il ne se dessine pas** :
-  [ADR-43](../../docs/adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)
+  [ADR-43](../../docs/adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)
   fixe la table des contrôles et l'anatomie de la ligne de réglage.
 - Le repli de fin de page `Avancé` est le composant `common/settings/AdvancedFold` — jamais un
   `<details>` réécrit ni une section qui ne replie rien (c'est une position, pas un mode, ADR-40).
@@ -105,7 +105,7 @@ Boutons, pastilles d'état, modales de validation, styles, tokens de rayon → s
 
 L'aide d'une feature s'écrit **ici**, dans l'écran, jamais dans un markdown à côté : visible / infobulle
 d'un réglage / panneau `En savoir plus` d'une section, une infobulle tenant en deux phrases
-([ADR-53](../../docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)).
+([ADR-53](../../docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
 
 ## Outillage
 

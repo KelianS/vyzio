@@ -2,7 +2,7 @@
 
 > Statut : Accepté
 >
-> Remplace [ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md),
+> Remplace [ADR-47](0047-detection-history-an-index-reconciled-against-frigate-not-a-standalone-memory.md),
 > qui cherchait à tenir une copie correcte au lieu de demander pourquoi il y avait une copie.
 
 ## Contexte
@@ -18,7 +18,7 @@ jamais. Le même fait reçoit d'ailleurs trois réponses différentes selon le c
 l'aperçu ignore le drapeau, celle du clip le croit, la notification s'en passe et demande à Frigate.
 C'est la règle suprême zéro-duplication enfreinte sur un **fait métier**.
 
-[ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md)
+[ADR-47](0047-detection-history-an-index-reconciled-against-frigate-not-a-standalone-memory.md)
 en a tiré une réconciliation : garder la table, ne plus stocker les drapeaux, redemander et réparer.
 Mais une fois posé le tableau d'appartenance des faits, il ne restait dans la table **aucun fait
 détenu par Vyzio** — et une table qui ne détient rien est une copie qu'il faut entretenir sans
@@ -49,8 +49,8 @@ d'une vérité qu'il ne peut pas défendre.
    média. Un historique qui remonte plus loin que ce qu'il peut montrer promet ce qu'il n'a pas.
 4. **Copier les médias chez Vyzio pour rendre cette profondeur réelle.** Écartée : Vyzio deviendrait
    dépositaire du stockage vidéo, contre
-   [ADR-01](0001-s-appuyer-sur-frigate-plutot-que-reimplementer-le.md) et
-   [ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md) où il est un proxy
+   [ADR-01](0001-build-on-frigate-rather-than-reimplement-the-video-pipeline.md) et
+   [ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md) où il est un proxy
    authentifié devant les médias de Frigate.
 
 ## Décision
@@ -97,7 +97,7 @@ réessaie**, portée par la récupération du média elle-même. L'attente forfa
 Rediffuser `frigate/events` sous un autre nom n'apporte rien. Un topic `vyzio/…` ne se justifie que
 s'il porte ce que Frigate n'a pas — le profil résolu et son mode d'alerte — au bénéfice d'une
 intégration externe type Home Assistant, comme le prévoit
-[ADR-05](0005-communication-inter-services-vyzio-mqtt-channels.md). C'est un besoin produit distinct,
+[ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md). C'est un besoin produit distinct,
 il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline.
 
 ## Conséquences
@@ -109,7 +109,7 @@ il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline
   effet observable est ce qui la rend compréhensible (principe #1), et elle devient la seule durée
   qui gouverne ce que l'utilisateur voit.
 - **Elle ne peut donc jamais valoir zéro** —
-  [ADR-48](0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md)
+  [ADR-48](0048-one-day-minimum-retention-retention-is-tuned-not-turned-off.md)
   en devient la garantie, et non plus une commodité d'implémentation.
 - **Frigate injoignable ⇒ pas d'historique**, et l'écran le dit. Même boîtier, même cycle de vie :
   Frigate arrêté, il n'y a plus de surveillance du tout — masquer la panne derrière un cache
@@ -119,7 +119,7 @@ il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline
   qu'à moitié, et rien n'en dépend.
 - **Le frontend ne gagne aucun accès direct à Frigate.** Ce qui change est d'où le backend tient sa
   donnée, jamais à qui l'écran s'adresse : la surface d'API est inchangée, les médias restent servis
-  en proxy ([ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md)), et
+  en proxy ([ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md)), et
   `hasClip` / `hasSnapshot` gardent leur forme en changeant seulement de véracité — ils cessent
   d'être une copie pour devenir ce que Frigate vient de répondre. C'est ce qui rend la bascule
   invisible côté écran, et ce qui garde Frigate remplaçable.

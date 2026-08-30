@@ -27,7 +27,7 @@ Ordre, exceptions et gouvernance : [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 | Fonctionnement détaillé d'un composant (le *comment*) | [`docs/design/`](docs/design/) (catalogue [`README`](docs/design/README.md)) |
 | Ordre d'exécution, découpage, priorités | les [issues GitHub](https://github.com/KelianS/vyzio/issues) (`gh issue list`) |
 | UI du dashboard : boutons, pastilles, modales, tokens | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
-| Mode d'emploi d'une feature livrée | l'écran qui la porte, en code — [ADR-53](docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) |
+| Mode d'emploi d'une feature livrée | l'écran qui la porte, en code — [ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) |
 | Processus, workflow, gouvernance des docs | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
 | Setup, docker, variables d'env, tâches | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Vision, positionnement | [`README.md`](README.md) |

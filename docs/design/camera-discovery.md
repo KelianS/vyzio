@@ -1,8 +1,8 @@
 # TAD — Découverte réseau des caméras
 
 > Comment fonctionne le sous-système de découverte. Le *pourquoi* des choix est dans
-> [ADR-32](../adr/0032-pipeline-de-decouverte-reseau-en-3-etapes.md) (pipeline 3 étapes) et
-> [ADR-31](../adr/0031-override-manuel-du-constructeur-a-l-onboarding.md) (override manuel).
+> [ADR-32](../adr/0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) (pipeline 3 étapes) et
+> [ADR-31](../adr/0031-manual-vendor-override-at-onboarding.md) (override manuel).
 > Foyer du code : `src/vyzio/Vyzio.Infrastructure/Services/CameraDiscovery/`.
 
 ## Rôle
@@ -63,8 +63,8 @@ annonce ONVIF multicast (hostname), rDNS (hostname), ARP/OUI (indice constructeu
 
 L'interprétation ne code aucune capacité en dur : `AssistedCameraDiscoveryService.GetDetectedCapabilities`
 croise les protocoles détectés sur l'hôte avec `ICapabilityProviderRegistry.GetRegisteredProtocols(capability)`
-— le **même** registre qui pilote la détection à l'ajout ([ADR-22](../adr/0022-catalogue-de-capacites-camera-decouplage-marque.md),
-[ADR-28](../adr/0028-detection-de-capacite-en-cascade-multi-protocole-flag.md)). `Stream` est une
+— le **même** registre qui pilote la détection à l'ajout ([ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md),
+[ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)). `Stream` est une
 capacité de première classe (`IStreamCapabilityProvider`), pas un cas particulier.
 
 ## Contrat de sortie (vers le frontend)

@@ -1,7 +1,7 @@
 # ADR-41 — Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer
 
 > Statut : Accepté — volet « enregistrer vaut appliquer » remplacé par
-> [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md).
+> [ADR-44](0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md).
 >
 > Les sections « Deux temps, pas trois » et « Enregistrer rend la main tout de suite ; la mise en
 > service se poursuit derrière » ne font plus foi. Tout le reste — le brouillon, son unité par page,
@@ -14,7 +14,7 @@ l'**enregistrement côté Vyzio**, et l'**application au moteur de détection**.
 parce que Vyzio écrit la configuration du moteur immédiatement, mais que le moteur ne la relit qu'au
 redémarrage ; un marqueur de configuration en attente
 (`IFrigateConfigApplier.HasPendingChanges`) alimente un bandeau « configuration à appliquer »
-([ADR-38](0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md)).
+([ADR-38](0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md)).
 
 **Ce troisième état n'a jamais été un état utilisateur.** C'est la trace d'un détail
 d'implémentation qui a fui jusque dans l'interface, ce que le principe #2 interdit précisément.
@@ -22,7 +22,7 @@ L'utilisateur, lui, doit se demander deux fois s'il a fini.
 
 Chaque écran traite par ailleurs le cycle à sa façon : la fiche de connexion a un bouton
 « Enregistrer », la rétention livrée par
-[ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) enregistre à
+[ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) enregistre à
 la sortie du champ sans bouton, et « Appliquer » vit dans la barre latérale, loin du réglage modifié.
 Sur un écran déjà dense, le bouton d'action apparaît au fil du contenu, souvent hors de la zone
 visible.
@@ -75,7 +75,7 @@ celle qui l'a déclenchée, ni une autre.
 
 L'avancement est porté par le **statut global du moteur de détection**, qui existe déjà et distingue
 actif / redémarrage en cours / indisponible
-([ADR-33](0033-statut-du-moteur-de-detection-expose-au-hub.md)). C'est le bon foyer : le redémarrage
+([ADR-33](0033-detection-engine-status-exposed-on-the-hub.md)). C'est le bon foyer : le redémarrage
 est un fait d'installation, il n'appartient à aucun écran.
 
 **Enregistrer pendant un redémarrage est autorisé et n'empile rien.** La configuration générée est
@@ -127,7 +127,7 @@ deux informations distinctes qui doivent rester lisibles séparément.
   survivent inchangés.
 - **Chaque écran de réglages porte un état de brouillon.** C'est le coût principal de cette décision,
   et la raison pour laquelle elle se livre avec
-  [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) : le brouillon
+  [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md) : le brouillon
   est une primitive partagée du socle, jamais réimplémentée écran par écran.
 - **Le backend doit savoir dire si un changement exige un redémarrage.** Le marqueur booléen
   « configuration en attente » ne suffit plus : l'interface a besoin de la réponse **avant**

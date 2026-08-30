@@ -11,7 +11,7 @@ distant, et il ne pose aucun problème réseau** — pas de CGNAT, pas de certif
 Le rendre bidirectionnel couvre le geste le plus fréquent (« qu'est-ce qui se passe chez moi, et
 coupe-moi ça ») sans rien exiger de l'installation.
 
-C'est ce qui permet à l'accès réseau ([ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md))
+C'est ce qui permet à l'accès réseau ([ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md))
 de rester **optionnel** au lieu d'être le prérequis de tout usage distant.
 
 Deuxième constat, celui-là dans le code : [SPECS §5.2](../SPECS.md) promet que « plusieurs canaux
@@ -46,7 +46,7 @@ qu'il sait faire.
 
 Chaque canal déclare donc ses **capacités** (boutons, image, vidéo, longueur utile). Un canal qui ne
 sait pas afficher de boutons rend les suites en texte ; il n'y a pas de commande « pour Telegram ».
-C'est la même logique que le catalogue de capacités caméra ([ADR-22](0022-catalogue-de-capacites-camera-decouplage-marque.md))
+C'est la même logique que le catalogue de capacités caméra ([ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md))
 appliquée aux canaux : le produit s'adapte à ce que le canal sait faire, il ne le suppose pas.
 
 ### Une commande n'est pas un second produit
@@ -68,9 +68,9 @@ Sont exposés l'état du système, l'aperçu d'une caméra, les dernières déte
 les positions PTZ, la pause et la reprise de la surveillance — l'usage courant.
 
 **La configuration reste dans l'interface.** Un fil de discussion ne peut pas porter la grammaire des
-réglages ([ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)) : ni
+réglages ([ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md)) : ni
 la provenance d'une valeur, ni le brouillon, ni le retour arrière, ni le fait de voir ce qu'on a
-modifié avant de valider ([ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md)).
+modifié avant de valider ([ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md)).
 Prétendre régler depuis un chat produirait des changements invisibles et irréversibles.
 
 Deux corollaires : **pas de flux vidéo continu** par un canal de messagerie — image fixe et clip,
@@ -94,7 +94,7 @@ Comme partout, la restitution ne nomme jamais le moteur de détection sous-jacen
   recevoir de webhook : seule une **récupération sortante** (long polling Telegram, passerelle
   WebSocket) est compatible. Un canal qui n'accepte que le webhook entrant restera limité au sens
   sortant tant qu'aucune adresse publique n'existe — ce que
-  [ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md)
+  [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)
   ne fournit pas et ne veut pas fournir. **C'est une propriété du canal, à vérifier avant de
   l'annoncer** : Telegram et Discord offrent une voie sortante, l'API WhatsApp Cloud **n'expose que
   le webhook et aucune route de récupération** — elle restera donc limitée au sens sortant. Les
@@ -105,8 +105,8 @@ Comme partout, la restitution ne nomme jamais le moteur de détection sous-jacen
   s'applique telle quelle. Elles ne remplacent jamais l'accès local, elles le prolongent.
 - **Un journal des commandes** (origine, commande, issue, horodatage) est un fait que Vyzio produit
   et que personne d'autre ne détient — même raisonnement que le journal des notifications
-  ([ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md)).
+  ([ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md)).
   Il est aussi la seule trace exploitable si un appairage fuit.
 - **La déclaration de commande sert au-delà du chat.** La même surface alimentera les intégrations
-  tierces via MQTT ([ADR-05](0005-communication-inter-services-vyzio-mqtt-channels.md)) sans être
+  tierces via MQTT ([ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md)) sans être
   redéclarée.

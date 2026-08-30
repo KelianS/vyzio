@@ -2,12 +2,12 @@
 
 > Statut : Accepté
 >
-> Rétracte un point d'[ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) :
+> Rétracte un point d'[ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) :
 > zéro comme valeur légitime des trois durées, et la caméra qui n'enregistre rien qui en découlait.
 
 ## Contexte
 
-[ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) a fait de
+[ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) a fait de
 zéro une valeur légitime — « ne rien conserver de cette nature » — et en a tiré un effet observable :
 une caméra dont les trois durées valent zéro reçoit `record.enabled: false`.
 
@@ -16,7 +16,7 @@ choix courant, et c'est même la valeur livrée. Mais la troisième durée, cell
 **porte l'historique** — la page la plus consultée du produit. Zéro y signifie « détecter, notifier,
 et ne rien pouvoir montrer ensuite ».
 
-[ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md)
+[ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md)
 rend le coût de ce zéro visible. Si l'historique **est** la liste de Frigate, alors une durée à zéro
 ne produit pas un historique court : elle produit un historique qui n'existe pas. Le cas particulier
 devrait être porté partout — lecture, affichage, notification — pour un seul résultat utile, un écran
@@ -35,7 +35,7 @@ deux endroits de la génération de configuration, dont l'unique raison d'être 
    ce que le produit fait. Un réglage qu'il faut dissuader d'utiliser n'a pas à exister.
 3. **Interdire zéro sur les trois durées.** Écartée : l'enregistrement intégral à zéro est la valeur
    livrée et un choix délibéré assumé par ADR-39 comme par
-   [ADR-18](0018-enregistrement-continu-activation-par-camera-dans-la.md) — c'est le seul dont le
+   [ADR-18](0018-continuous-recording-enabled-per-camera-in-the-generated-frigate-config.md) — c'est le seul dont le
    coût disque croît avec le temps qui passe et non avec ce qui se produit.
 4. **Un plancher d'un jour sur la seule durée qui porte l'historique.** Retenue.
 
@@ -67,7 +67,7 @@ détection — un réglage de durée n'a jamais été le bon endroit pour étein
   empêcher un réglage de produire une installation absurde.
 - **L'interface doit refuser zéro sur cette durée**, et le dire avant la saisie plutôt qu'après :
   un contrôle qui accepte une valeur pour la corriger ensuite contredit
-  [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md).
+  [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md).
 - **Ce qu'ADR-39 pose et qui reste vrai** : le modèle global-surchargeable, les trois durées
   distinctes, `null` qui signifie « suivre l'installation », et zéro sur les deux durées
   d'enregistrement. Seuls tombent le zéro sur les clips d'événement et l'extinction qui en découlait.

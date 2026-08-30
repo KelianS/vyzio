@@ -222,7 +222,7 @@ Everything else is English: code, comments, commits, pull requests, issue titles
 | [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md)   | Market, positioning, business model      |
 
 User documentation lives inside the interface, on the screen it belongs to
-([ADR-53](docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)).
+([ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
 
 ---
 

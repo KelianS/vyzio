@@ -215,7 +215,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des alertes, et accepter des commandes ;
 - les commandes doivent couvrir l'usage courant a distance — etat du systeme, apercu d'une camera, dernieres detections, mode vie privee, positions PTZ, interruption et reprise de la surveillance — de sorte qu'un acces reseau au produit reste **optionnel** ;
 - une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
-- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md)) ;
+- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)) ;
 - seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
 - le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien ;
 - une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
@@ -331,7 +331,7 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 
 ### 8.3 Acces a l'interface
 
-Comment cet acces est protege : [ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md).
+Comment cet acces est protege : [ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md).
 
 - une installation neuve **s'ouvre sur la creation du mot de passe** du proprietaire : c'est la premiere etape, avant l'ajout d'une camera, et elle ne se saute pas ;
 - une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant plusieurs semaines ;
@@ -396,7 +396,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 - si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et de la position de surveillance avant de terminer ;
 - lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers une zone neutre ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix ;
 - la gestion des positions PTZ expose au minimum 4 slots : **preset 1** (Surveillance — ramener la caméra vers la zone surveillée nominale), **preset 2** (Parking vie privée — position de stationnement lors de l'activation du mode vie privée), **presets 3 et 4** personnalisables par l'utilisateur ; les presets 1 et 2 ont des labels fixes, les presets 3 et 4 ont un label libre ;
-- la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + comptage de pas pour les caméras qui ne supportent pas les presets natifs (voir [ADR-25](adr/0025-gestion-des-positions-ptz-presets-natifs-branch-a-vs.md)).
+- la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + comptage de pas pour les caméras qui ne supportent pas les presets natifs (voir [ADR-25](adr/0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)).
 
 ### 9.4 Miniatures de positions PTZ
 

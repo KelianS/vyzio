@@ -12,7 +12,7 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 4. **Implémentation** — code minimal, cohérent avec les documents validés.
 5. **Tests** — validation ciblée obligatoire du slice modifié.
 6. **Aide dans l'interface** — toute feature livrable est documentée **dans l'écran qui la porte**,
-   sur les trois niveaux d'[ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md).
+   sur les trois niveaux d'[ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md).
    Aucun mode d'emploi hors du produit.
 
 ## Règles pratiques

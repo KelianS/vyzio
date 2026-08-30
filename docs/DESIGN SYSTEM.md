@@ -79,7 +79,7 @@ C'est ce contraste qui permet a l'utilisateur de distinguer d'un coup d'oeil une
 ## Socle de composants
 
 Deux etages, jamais confondus
-([ADR-42](adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md)) :
+([ADR-42](adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md)) :
 
 | Etage | Ce que c'est | Regle |
 | --- | --- | --- |
@@ -97,11 +97,11 @@ C'est ce qui rend un defaut de contraste corrigeable en un point plutot qu'ecran
 
 Un reglage **se declare, il ne se dessine pas** : sa nature determine son controle, son alignement,
 sa provenance et son retour arriere. La table des controles et l'anatomie de la ligne de reglage sont
-fixees par [ADR-43](adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) —
+fixees par [ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md) —
 foyer unique, non recopie ici. Dessiner un reglage a la main est une exception a justifier.
 
 Une page **ne se nomme pas elle-meme** : ce qui y mene l'a deja nommee
-([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)).
+([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
 Concretement, `SettingsPage` est une surface **sans titre** ; `SettingsSection` n'ouvre un titre a
 l'interieur d'une page que si celle-ci traite plusieurs sujets, et ce titre nomme alors autre chose
 que la page. Un titre de section qui repete celui de la page signale qu'il fallait une page de plus.
@@ -113,7 +113,7 @@ ils donnent une page ou tout est au meme niveau et ou les sections ne separent p
 ### Aide : trois niveaux, pas un manuel
 
 Le mode d'emploi d'une feature vit **dans l'ecran qui la porte**, jamais dans un document a cote
-([ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md), foyer de la
+([ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md), foyer de la
 regle). Trois profondeurs : ce qui est **visible** (libelle et cout d'un reglage), l'**infobulle**
 d'un reglage, et le panneau repli **`En savoir plus`** d'une section.
 
@@ -127,13 +127,13 @@ les mots « En savoir plus », qui ne disent pas ce qu'on y trouvera ; il ne s'o
 la ou la tache qu'il explique n'est pas encore faite.
 
 Un panneau `En savoir plus` n'est pas le repli `Avance`, qui est une position de fin de page pour
-les reglages rares ([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)) :
+les reglages rares ([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)) :
 l'aide s'ouvre a cote de ce qu'elle explique.
 
 ### Style et theme
 
 `App.css` (CSS global, classes nommees a la main) n'existe plus : un seul systeme de style, Tailwind
-+ tokens ([ADR-42](adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md)).
++ tokens ([ADR-42](adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md)).
 Aucune classe globale, aucune couleur ni rayon litteral dans un composant — toujours un token.
 
 Le **theme sombre est supporte partout**. Chaque couleur employee etant un token qui porte ses deux
@@ -150,7 +150,7 @@ a l'utilisateur d'apprendre l'interface une fois.
 ### Navigation
 
 Un libelle dit la **nature** de l'ecran — consulter ou regler — jamais l'audience visee
-([ADR-40](adr/0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)).
+([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
 
 - Consulter : `Accueil`, `Direct`, `Historique`.
 - Regler : `Reglages`, puis une rubrique (`Cameras`, `Detection`, `Conservation`, `Notifications`, `Systeme`).
@@ -162,8 +162,8 @@ Un libelle dit la **nature** de l'ecran — consulter ou regler — jamais l'aud
 ### Cycle d'edition
 
 Un reglage s'enregistre ; la surveillance se redemarre a part
-([ADR-41](adr/0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md),
-[ADR-44](adr/0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md)).
+([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md),
+[ADR-44](adr/0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md)).
 
 - **`Enregistrer`** — verbe unique de validation. Il persiste, et rien de plus : la surveillance n'est
   pas touchee. Ne jamais l'appeler `Appliquer` ni `Mettre en service` : le premier promet une prise

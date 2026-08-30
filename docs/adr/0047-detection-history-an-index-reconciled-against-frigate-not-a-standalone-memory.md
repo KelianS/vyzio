@@ -1,6 +1,6 @@
 # ADR-47 — L'historique des détections : un index réconcilié sur Frigate, pas une mémoire autonome
 
-> Statut : Remplacé par [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md)
+> Statut : Remplacé par [ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md)
 >
 > Le constat et l'appartenance des faits restent valides ; la décision ne l'est pas. Une fois établi
 > que Vyzio ne détient aucun fait durable sur une détection, la table qu'il s'agissait de réconcilier
@@ -32,7 +32,7 @@ tous les jours actifs, avec la même distribution de confiance que les lignes sa
 une panne, c'est une décision de Frigate objet par objet.
 
 **Les deux durées divergent par construction.** La rétention des aperçus est fixée à 30 jours en dur
-dans la génération de configuration, quand les clips suivent le réglage utilisateur ([ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md)).
+dans la génération de configuration, quand les clips suivent le réglage utilisateur ([ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md)).
 La fenêtre où un aperçu survit à son clip est fabriquée par Vyzio, pas par Frigate.
 
 **La réponse est déjà écrite dans le code, à un seul endroit.** La notification Telegram porte en
@@ -73,8 +73,8 @@ dans le handler que le client MQTT attend avant de traiter le message suivant.
 5. **Ne pas garder ce que Frigate a jeté.** Retenue.
 6. **Copier le média chez Vyzio pour s'affranchir de Frigate.** Écartée : elle duplique le stockage
    vidéo, fait porter à Vyzio une rétention qui est le métier de Frigate, et contredit
-   [ADR-01](0001-s-appuyer-sur-frigate-plutot-que-reimplementer-le.md) comme
-   [ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md), où Vyzio est un proxy
+   [ADR-01](0001-build-on-frigate-rather-than-reimplement-the-video-pipeline.md) comme
+   [ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md), où Vyzio est un proxy
    authentifié devant les médias de Frigate, jamais leur dépositaire.
 
 ### Sur le couplage ingestion / utilisation
@@ -83,7 +83,7 @@ dans le handler que le client MQTT attend avant de traiter le message suivant.
    d'ingestion du délai de finalisation du média et de la disponibilité de Telegram, et interdit
    d'ajouter un consommateur sans rouvrir l'ingestion.
 8. **L'ingestion enregistre un fait ; les usages partent de ce fait.** Retenue — c'est déjà le
-   modèle du SAD et d'[ADR-05](0005-communication-inter-services-vyzio-mqtt-channels.md), auquel ce
+   modèle du SAD et d'[ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md), auquel ce
    pipeline avait échappé.
 
 ## Décision
@@ -117,8 +117,8 @@ passe sous la propriété de Vyzio dès que l'utilisateur la corrige. La correct
 écrasée par une relecture.
 
 Vyzio reste par ailleurs la seule façade : Frigate n'est jamais exposé
-([ADR-16](0016-acces-au-flux-live-polling-latest-jpg-via-vyzio.md),
-[ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md)), et le port Frigate dans
+([ADR-16](0016-live-stream-access-polling-latest-jpg-through-vyzio-frigate-never-exposed.md),
+[ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md)), et le port Frigate dans
 `Core` est ce qui donne au domaine un vocabulaire à lui, absorbant les évolutions de Frigate au lieu
 de les propager.
 
@@ -172,7 +172,7 @@ paramétrable.
   divergentes pour un même événement fabriquent une incohérence que la réconciliation devrait
   ensuite absorber.
 - **La durée qui porte l'historique ne peut plus valoir zéro** — voir
-  [ADR-48](0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md),
+  [ADR-48](0048-one-day-minimum-retention-retention-is-tuned-not-turned-off.md),
   qui rétracte ce point d'ADR-39.
 - **Le modèle *review* de Frigate reste inexploité.** Frigate regroupe déjà les objets d'un même
   passage en items de sévérité `alert` / `detection` — mesuré : 15 détections `person` pour 7 items.

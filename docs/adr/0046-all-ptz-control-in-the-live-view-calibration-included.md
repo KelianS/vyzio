@@ -2,12 +2,12 @@
 
 > Statut : Accepté
 >
-> Rétracte deux points d'[ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) :
+> Rétracte deux points d'[ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md) :
 > la calibration restée dans les réglages, et l'appui long comme geste de création.
 
 ## Contexte
 
-[ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) a déplacé l'édition
+[ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md) a déplacé l'édition
 des positions dans la vue live, en laissant la calibration dans la fiche caméra. À l'usage, deux
 défauts en découlent (relevés au chantier `ui-defauts`, livré) :
 

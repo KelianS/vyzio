@@ -33,7 +33,7 @@ structurellement au mauvais endroit et au mauvais moment.
 1. **Garder `docs/user/` et le tenir à jour avec discipline.** Écartée : c'est l'état actuel, et la
    discipline n'a pas suffi — la duplication est apparue dans la même PR que la règle qui l'interdit.
    Une règle que le processus rend difficile à tenir n'est pas une règle, c'est un vœu.
-2. **Tout replier dans l'infobulle des réglages** (le niveau `help` d'[ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)).
+2. **Tout replier dans l'infobulle des réglages** (le niveau `help` d'[ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md)).
    Écartée : un popover ne porte ni parcours en plusieurs étapes, ni liste de conditions, ni lien.
    Y déverser les modes d'emploi produirait un contenu à la fois noyé et illisible — pire que le
    statu quo.
@@ -56,7 +56,7 @@ trois profondeurs, chacune ouverte seulement si la précédente n'a pas suffi.
 | 3 | panneau replié « En savoir plus » | une **section ou un écran** | « comment je fais ? », « pourquoi ça n'a pas marché ? » |
 
 Les niveaux 1 et 2 existent déjà et ne changent pas : ils sont l'anatomie de la ligne de réglage
-fixée par [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md). Un
+fixée par [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md). Un
 **coût** reste toujours au niveau 1 : le cacher derrière un geste est un piège, pas de la sobriété.
 
 Le niveau 3 est la nouveauté, et il est le seul destinataire de ce que contenait `docs/user/`. Il est
@@ -104,7 +104,7 @@ une feature livrable est documentée **dans l'écran qui la porte**.
 - **Le diagnostic n'est pas un chapitre.** « Pourquoi ça ne marche pas » ne devient pas une section de
   niveau 3 par défaut : un message d'erreur porte son remède, et un état se lit là où il se produit
   (principe #4). Le niveau 3 n'accueille que ce qu'aucun état ne peut montrer.
-- **Un volet d'[ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)
+- **Un volet d'[ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md)
   est remplacé** : « une explication qui ne tient pas dans une info-bulle relève de la documentation
   utilisateur » devient « … relève du panneau `En savoir plus` de sa section ». Le reste d'ADR-43 —
   le nom qui se suffit, le déclencheur explicite, le coût toujours visible — est inchangé et reste le
