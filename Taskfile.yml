@@ -66,6 +66,12 @@ tasks:
     cmds:
       - pnpm test:e2e
 
+  docs:capture:
+    desc: Regenerates the documentation screenshots from the test fixtures
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm capture:docs
+
   front:lint:
     desc: Lint le frontend (eslint)
     dir: '{{.DASHBOARD_DIR}}'
