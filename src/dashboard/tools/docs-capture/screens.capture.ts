@@ -86,16 +86,64 @@ const state = createFakeBackendState({
 const STILLS = path.resolve(import.meta.dirname, 'stills')
 
 /**
- * Live tiles have nothing to show against a fake backend. Drop `<camera-slug>.jpg` in `stills/`
- * and the capture serves it there; without one the tile stays blank rather than inventing a scene.
+ * A stand-in frame, drawn rather than photographed: a screenshot must not pass off an invented
+ * scene as something a camera saw.
  */
-async function serveStills(page: Page) {
+async function placeholder(page: Page, label: string, width: number, height: number) {
+  const helper = await page.context().newPage()
+  await helper.setViewportSize({ width, height })
+  await helper.setContent(`<body style="margin:0">
+    <div style="width:100%;height:100vh;display:grid;place-items:center;font:500 ${Math.round(
+      height / 12,
+    )}px/1.2 system-ui,sans-serif;color:#cfe0d4;letter-spacing:.02em;text-align:center;
+      background:radial-gradient(120% 100% at 30% 0%,#2c5446 0%,#16302a 60%,#0e211d 100%)">
+      ${label}
+    </div>
+  </body>`)
+  const image = await helper.screenshot({ type: 'jpeg', quality: 82 })
+  await helper.close()
+  return image
+}
+
+/**
+ * Live tiles and detection thumbnails have nothing to show against a fake backend. Drop
+ * `<camera-slug>.jpg` in `stills/` to serve a real frame; otherwise they get a drawn stand-in.
+ */
+async function serveImagery(page: Page) {
   const slugOf = new Map(state.cameras.map((camera) => [camera.id, camera.slug]))
+  const jpeg = (route: Parameters<Parameters<Page['route']>[1]>[0], body: Buffer) =>
+    route.fulfill({ status: 200, contentType: 'image/jpeg', body })
+
   await page.route('**/live/latest.jpg*', async (route, request) => {
     const id = new URL(request.url()).pathname.split('/').at(-3) ?? ''
-    const file = path.join(STILLS, `${slugOf.get(id) ?? id}.jpg`)
-    if (!fs.existsSync(file)) return route.fallback()
-    await route.fulfill({ status: 200, contentType: 'image/jpeg', body: fs.readFileSync(file) })
+    const slug = slugOf.get(id) ?? id
+    const file = path.join(STILLS, `${slug}.jpg`)
+    const name = state.cameras.find((camera) => camera.slug === slug)?.displayName ?? slug
+    await jpeg(
+      route,
+      fs.existsSync(file) ? fs.readFileSync(file) : await placeholder(page, name, 640, 360),
+    )
+  })
+
+  await page.route('**/api/detection-events/*/{thumbnail,snapshot}', async (route) => {
+    await jpeg(route, await placeholder(page, '', 96, 96))
+  })
+}
+
+/** The fake backend reports no channel whatever the state holds; the capture shows one in place. */
+async function serveConfiguredAlerts(page: Page) {
+  await page.route('**/api/hub/overview', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        systemHealthy: true,
+        recentEvents: state.detectionHistory.slice(0, 5),
+        profiles: state.profiles,
+        notifications: { activeChannels: 1, sentCount: 12, lastSentAt: hoursAgo(2) },
+        warnings: [],
+      }),
+    })
   })
 }
 
@@ -113,7 +161,8 @@ async function shoot(page: Page, width: number, route: string, name: string) {
 
 test('desktop screens', async ({ page }) => {
   await installFakeBackend(page, state)
-  await serveStills(page)
+  await serveImagery(page)
+  await serveConfiguredAlerts(page)
   await shoot(page, 1280, '/', 'hub')
   await shoot(page, 1280, '/history', 'history')
   await shoot(page, 1280, '/settings/cameras', 'cameras')
@@ -122,6 +171,7 @@ test('desktop screens', async ({ page }) => {
 
 test('phone screens', async ({ page }) => {
   await installFakeBackend(page, state)
-  await serveStills(page)
+  await serveImagery(page)
+  await serveConfiguredAlerts(page)
   await shoot(page, 390, '/', 'hub-phone')
 })
