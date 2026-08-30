@@ -17,11 +17,15 @@ Closes #
 
 ## Definition of done
 
-An item is not finished if a single one of these is missing.
+Tick what the diff actually shows. A line that does not apply is struck through with the reason on
+it -- never ticked to keep the list tidy.
 
-- [ ] a clear business goal
-- [ ] minimal, readable code
-- [ ] a fitting executable test or verification
-- [ ] framing documentation up to date where needed (`docs/`, in French)
-- [ ] user documentation up to date for a shippable feature — in the screen that carries it (ADR-53)
+- [ ] unit tests added or updated for the behaviour this changes
+- [ ] e2e test added or updated for the happy path a user walks through
+- [ ] comments follow CLAUDE.md: English, one line, the non-deducible *why*, an ADR reference where
+      there is one
+- [ ] `docs/` describes the target only -- no history, no "used to be", a rejected option living in
+      the 'Options ecartees' of its ADR
+- [ ] nothing duplicated: what is new has exactly one home, referenced from anywhere else it comes up
+- [ ] no dead code, no unused export, no flag on a path nothing takes any more
 - [ ] no implicit dependency on an option that was not retained
