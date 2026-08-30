@@ -184,7 +184,9 @@ inwards only, and features cut as vertical slices rather than by technical kind.
 | Presentation   | `Vyzio.Api`: minimal API endpoints and composition root               | `src/presentation/<Slice>`: screens, and `App.tsx`      |
 
 The slices carry the same names on both sides (`Access`, `Cameras`, `Hub`, `Notifications`,
-`Profiles`, `Settings`), so a feature is one folder per side and nothing else.
+`Profiles`, `Settings`), so a feature is one folder per side and nothing else. What several slices
+share sits in `src/common`: design-system primitives, hooks, error handling, and the vocabulary a
+screen needs twice. It belongs to the presentation layer, not to the domain.
 
 Boundaries, cross-cutting choices and the target state are in [`docs/SAD.md`](docs/SAD.md). Every
 structural decision is recorded as an ADR in [`docs/adr/`](docs/adr/), with the reasoning and the
