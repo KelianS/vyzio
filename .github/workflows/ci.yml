@@ -25,22 +25,6 @@ jobs:
           task back:test --
           -c Release --collect:"XPlat Code Coverage" --results-directory ${{ github.workspace }}/coverage
 
-      - name: Write backend coverage to summary
-        if: always()
-        run: |
-          xml=$(find coverage -name "coverage.cobertura.xml" | head -1)
-          if [ -z "$xml" ]; then
-            echo "No coverage report found." >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
-          python3 - "$xml" >> $GITHUB_STEP_SUMMARY <<'EOF'
-          import sys, xml.etree.ElementTree as ET
-          root = ET.parse(sys.argv[1]).getroot()
-          lr = float(root.get('line-rate', 0)) * 100
-          br = float(root.get('branch-rate', 0)) * 100
-          print(f"## Backend Coverage\n| Metric | Rate |\n|---|---|\n| Lines | {lr:.1f}% |\n| Branches | {br:.1f}% |")
-          EOF
-
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4
         with:
@@ -78,17 +62,7 @@ jobs:
         run: task front:format:check
 
       - name: Test
-        run: |
-          set -o pipefail
-          task front:test -- --coverage 2>&1 | tee /tmp/frontend-coverage.txt
-
-      - name: Write frontend coverage to summary
-        if: always()
-        run: |
-          echo "## Frontend Coverage" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat /tmp/frontend-coverage.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+        run: task front:test -- --coverage
 
       - name: Upload frontend coverage
         uses: actions/upload-artifact@v4
@@ -111,6 +85,85 @@ jobs:
         with:
           name: playwright-report
           path: src/dashboard/playwright-report/
+
+  coverage:
+    name: Coverage
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    needs: [backend, frontend]
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend-coverage
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend-coverage
+
+      # Read here rather than with a coverage action: CI_RUNNER is containerised, so a
+      # container action mounts a workspace path the Docker host does not have and sees nothing.
+      - name: Read both reports
+        run: |
+          set -euo pipefail
+          cp "$(find backend-coverage -name 'coverage.cobertura.xml' | head -1)" backend.xml
+          cp frontend-coverage/cobertura-coverage.xml frontend.xml
+          rate() {
+            grep -o "$2=\"[0-9.]*\"" "$1" | head -1 | grep -o '[0-9.]*' |
+              awk '{ printf "%.1f", $1 * 100 }'
+          }
+          {
+            echo '### Coverage'
+            echo
+            echo '| | Lines | Branches |'
+            echo '|---|---:|---:|'
+            echo "| Backend | $(rate backend.xml line-rate)% | $(rate backend.xml branch-rate)% |"
+            echo "| Frontend | $(rate frontend.xml line-rate)% | $(rate frontend.xml branch-rate)% |"
+            echo
+            echo 'EF Core migrations and type-only files are out of the denominator. Everything that'
+            echo 'emits runtime code is in it, tested or not.'
+          } > coverage.md
+          cat coverage.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on the pull request
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage
+          recreate: true
+          path: coverage.md
+
+      # The badge endpoints live on an orphan branch, force-pushed: the README needs the latest
+      # number, never the history, and main stays free of commits nobody wrote.
+      - name: Publish the badge endpoints
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          badge() {
+            rate=$(grep -o 'line-rate="[0-9.]*"' "$1" | head -1 | grep -o '[0-9.]*')
+            pct=$(awk -v r="$rate" 'BEGIN { printf "%.0f", r * 100 }')
+            if   [ "$pct" -ge 75 ]; then colour=green
+            elif [ "$pct" -ge 50 ]; then colour=yellow
+            else                         colour=red
+            fi
+            printf '{"schemaVersion":1,"label":"%s coverage","message":"%s%%","color":"%s"}' \
+              "$2" "$pct" "$colour" > "$work/badge-coverage-$2.json"
+          }
+          badge backend.xml backend
+          badge frontend.xml frontend
+          git -C "$work" init -q
+          git -C "$work" checkout -qb badges
+          git -C "$work" add -A
+          git -C "$work" -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -qm "chore(ci): coverage badges for ${GITHUB_SHA}"
+          git -C "$work" push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" badges
 
   docker-build-check:
     name: Docker — build images (no push)

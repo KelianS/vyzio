@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Applies the coverage exclusions to every `dotnet test`, not only the ones that pass a flag. -->
+    <RunSettingsFilePath>$(MSBuildProjectDirectory)\..\coverlet.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>

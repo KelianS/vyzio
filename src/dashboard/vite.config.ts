@@ -26,8 +26,19 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./src/test-setup.ts'],
       coverage: {
         provider: 'v8',
-        reporter: ['text', 'lcov'],
+        reporter: ['text-summary', 'cobertura', 'lcov'],
         reportsDirectory: './coverage',
+        // Required: without it, v8 measures only files a test imported, leaving untested
+        // code out of the denominator. (Vitest 4 removed `coverage.all`.)
+        include: ['src/**/*.{ts,tsx}'],
+        // Only files that emit no runtime code. Anything that executes stays measured, even
+        // when it gets no test of its own.
+        exclude: [
+          'src/main.tsx', // bootstrap: mounts React, no logic
+          'src/test-setup.ts', // test harness, not shipped code
+          'src/**/*.d.ts', // ambient types, erased at build
+          'src/domain/ports/**', // interfaces only, erased at build
+        ],
       },
     },
   }
