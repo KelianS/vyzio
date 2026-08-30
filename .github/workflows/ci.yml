@@ -109,10 +109,12 @@ jobs:
       - name: Read both reports
         run: |
           set -euo pipefail
-          cp "$(find backend-coverage -name 'coverage.cobertura.xml' | head -1)" backend.xml
+          cp "$(find backend-coverage -name 'coverage.cobertura.xml' -print -quit)" backend.xml
           cp frontend-coverage/cobertura-coverage.xml frontend.xml
+          # -m1 rather than `| head -1`: head closes the pipe on the first match, and the
+          # grep still writing behind it dies of SIGPIPE, which pipefail turns into a failure.
           rate() {
-            grep -o "$2=\"[0-9.]*\"" "$1" | head -1 | grep -o '[0-9.]*' |
+            grep -m1 -o "$2=\"[0-9.]*\"" "$1" | tr -dc '0-9.' |
               awk '{ printf "%.1f", $1 * 100 }'
           }
           {
@@ -146,7 +148,7 @@ jobs:
           set -euo pipefail
           work=$(mktemp -d)
           badge() {
-            rate=$(grep -o 'line-rate="[0-9.]*"' "$1" | head -1 | grep -o '[0-9.]*')
+            rate=$(grep -m1 -o 'line-rate="[0-9.]*"' "$1" | tr -dc '0-9.')
             pct=$(awk -v r="$rate" 'BEGIN { printf "%.0f", r * 100 }')
             if   [ "$pct" -ge 75 ]; then colour=green
             elif [ "$pct" -ge 50 ]; then colour=yellow
