@@ -171,37 +171,16 @@ Changing a password you still know needs none of this: Settings › Access, in t
 
 ---
 
-## Architecture
+## Under the hood
 
-Backend and frontend follow the same shape: clean architecture layers, dependencies pointing
-inwards only, and features cut as vertical slices rather than by technical kind.
+.NET 10 and EF Core on the backend, React 19 with TypeScript and Vite on the frontend, Frigate for
+video analysis, the whole thing running under Docker Compose. Tests are xUnit, Vitest and
+Playwright; `Taskfile.yml` at the root drives both sides.
 
-| Layer          | Backend (`src/vyzio`)                                                | Frontend (`src/dashboard`)                              |
-| -------------- | -------------------------------------------------------------------- | ------------------------------------------------------- |
-| Domain         | `Vyzio.Core`: entities and rules, depending on nothing                | `src/domain/entities`, `src/domain/ports`               |
-| Use cases      | `Vyzio.Application/UseCases`, one folder per slice                    | `src/domain/usecases`, one class per use case           |
-| Infrastructure | `Vyzio.Infrastructure`: EF Core, Frigate, camera protocols, channels  | `src/infrastructure`: HTTP repositories                 |
-| Presentation   | `Vyzio.Api`: minimal API endpoints and composition root               | `src/presentation/<Slice>`: screens, and `App.tsx`      |
-
-The slices carry the same names on both sides (`Access`, `Cameras`, `Hub`, `Notifications`,
-`Profiles`, `Settings`), so a feature is one folder per side and nothing else. What several slices
-share sits in `src/common`: design-system primitives, hooks, error handling, and the vocabulary a
-screen needs twice. It belongs to the presentation layer, not to the domain.
-
-Boundaries, cross-cutting choices and the target state are in [`docs/SAD.md`](docs/SAD.md). Every
-structural decision is recorded as an ADR in [`docs/adr/`](docs/adr/), with the reasoning and the
-options that were rejected.
-
-### Tooling
-
-| | |
-| --- | --- |
-| Backend | .NET 10, EF Core, xUnit, NSubstitute |
-| Frontend | React 19, TypeScript, Vite, Tailwind, Vitest, Testing Library |
-| End to end | Playwright, against the production build and a fake backend |
-| Runtime | Docker Compose, Frigate for video analysis |
-| Commands | `Taskfile.yml` at the root drives both sides, pnpm for the dashboard |
-| Checks | GitHub Actions: build and test, CodeQL, dependency audit, Semgrep |
+Both sides follow the same clean architecture, cut into vertical slices whose folders carry the
+same names. The layout and its boundaries are in [`docs/SAD.md`](docs/SAD.md), every structural
+decision and the options rejected with it in [`docs/adr/`](docs/adr/), and how to run it in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
