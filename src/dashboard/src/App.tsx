@@ -133,7 +133,7 @@ function Root() {
   return (
     <AppContainerProvider>
       <ToastProvider>
-        {/* Rien de l'application ne se monte avant d'etre entre (ADR-54). */}
+        {/* None of the application mounts before someone is in (ADR-54). */}
         <AccessGate>
           <AppShell />
         </AccessGate>

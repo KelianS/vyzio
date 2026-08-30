@@ -3,8 +3,8 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 
 /**
- * Une session qui a expire pendant qu'on regardait un ecran : la reponse arrive sur n'importe quel
- * appel, et l'interface doit ramener a la connexion en le disant, pas laisser un ecran vide (ADR-54).
+ * A session that ended while a screen was open: the answer lands on any call at all, and the
+ * interface must return to sign-in saying so rather than leave an empty screen (ADR-54).
  */
 export function onSessionLost(listener: Listener): () => void {
   listeners.add(listener)
@@ -12,7 +12,7 @@ export function onSessionLost(listener: Listener): () => void {
 }
 
 export function reportSessionLost(url: string) {
-  // Les routes d'acces repondent 401 pour dire « mot de passe refuse » : ce n'est pas une session perdue.
+  // The access routes answer 401 to mean "password refused", which is not a session ending.
   if (url.includes('/api/access/')) return
 
   listeners.forEach((listener) => listener())

@@ -1,6 +1,6 @@
 import type { AccessRepository } from '../ports/AccessRepository'
 
-/** Le geste du telephone perdu : tous les appareils cessent d'ouvrir, celui-ci compris (ADR-54). */
+/** The gesture for a lost phone: every device stops opening, this one included (ADR-54). */
 export class SignOutEverywhere {
   constructor(private readonly repository: AccessRepository) {}
 

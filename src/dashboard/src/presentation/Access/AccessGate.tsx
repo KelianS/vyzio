@@ -8,8 +8,8 @@ import { onSessionLost } from '../../infrastructure/http/sessionLost'
 import { PasswordScreen } from './PasswordScreen'
 
 /**
- * Rien ne s'affiche avant d'etre entre : une installation neuve ouvre sur la creation du mot de
- * passe, et une session finie ramene a la connexion en le disant (ADR-54).
+ * Nothing shows before someone is in: a fresh installation opens on choosing the password, and a
+ * session that ended returns to sign-in saying so (ADR-54).
  */
 export function AccessGate({ children }: { children: ReactNode }) {
   const { access } = useAppContainer()
@@ -27,7 +27,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
     reload()
   }, [reload])
 
-  // Une session peut finir pendant qu'on regarde un ecran : la reponse arrive sur un appel quelconque.
+  // A session can end while a screen is open: the answer lands on whichever call happens next.
   useEffect(() => onSessionLost(() => setExpired(true)), [])
 
   if (gate.loading) return null
@@ -48,7 +48,11 @@ export function AccessGate({ children }: { children: ReactNode }) {
 
   if (!gate.data.state.installed) {
     return (
-      <CreateOwnerScreen minLength={gate.data.state.minimumPasswordLength} onCreated={reopen} />
+      <CreateOwnerScreen
+        minLength={gate.data.state.minimumPasswordLength}
+        afterReset={gate.data.state.awaitingReset}
+        onCreated={reopen}
+      />
     )
   }
 
@@ -59,7 +63,15 @@ export function AccessGate({ children }: { children: ReactNode }) {
   return children
 }
 
-function CreateOwnerScreen({ minLength, onCreated }: { minLength: number; onCreated: () => void }) {
+function CreateOwnerScreen({
+  minLength,
+  afterReset,
+  onCreated,
+}: {
+  minLength: number
+  afterReset: boolean
+  onCreated: () => void
+}) {
   const { access } = useAppContainer()
 
   const creating = useAsyncAction(
@@ -69,26 +81,34 @@ function CreateOwnerScreen({ minLength, onCreated }: { minLength: number; onCrea
 
   return (
     <PasswordScreen
-      title="Protégez votre installation"
-      lede="Vyzio donne accès à vos caméras : choisissez le mot de passe qui ouvrira cette interface. C’est la seule étape avant d’ajouter votre première caméra."
+      // Same screen, different moment: after a reset the installation already exists, and the first
+      // question its owner has is what became of it.
+      title={afterReset ? 'Choisissez un nouveau mot de passe' : 'Protégez votre installation'}
+      lede={
+        afterReset
+          ? 'Le mot de passe a été retiré depuis la machine qui héberge Vyzio. Vos caméras, vos réglages et votre historique n’ont pas bougé.'
+          : 'Vyzio donne accès à vos caméras : choisissez le mot de passe qui ouvrira cette interface. C’est la seule étape avant d’ajouter votre première caméra.'
+      }
       label="Mot de passe"
       hint={`Au moins ${minLength} caractères.`}
       minLength={minLength}
-      action="Protéger et continuer"
+      action={afterReset ? 'Enregistrer et continuer' : 'Protéger et continuer'}
       busy={creating.loading}
       onSubmit={(value) => void creating.run(value)}
       help={
-        <HelpPanel title="Et si je l’oublie ?">
-          <p>
-            Il n’y a ni courriel de récupération ni compte en ligne : Vyzio ne connaît personne
-            d’autre que vous. Un mot de passe oublié se remet à zéro depuis la machine qui héberge
-            Vyzio — il faut donc y avoir accès, ce qui est précisément ce qui protège vos images.
-          </p>
-          <p>
-            Choisissez-en un que votre navigateur retient. Il ne vous sera pas redemandé à chaque
-            visite : une fois connecté, cet appareil le reste plusieurs semaines.
-          </p>
-        </HelpPanel>
+        afterReset ? undefined : (
+          <HelpPanel title="Et si je l’oublie ?">
+            <p>
+              Il n’y a ni courriel de récupération ni compte en ligne : Vyzio ne connaît personne
+              d’autre que vous. Un mot de passe oublié se remet à zéro depuis la machine qui héberge
+              Vyzio — il faut donc y avoir accès, ce qui est précisément ce qui protège vos images.
+            </p>
+            <p>
+              Choisissez-en un que votre navigateur retient. Il ne vous sera pas redemandé à chaque
+              visite : une fois connecté, cet appareil le reste plusieurs semaines.
+            </p>
+          </HelpPanel>
+        )
       }
     />
   )
@@ -100,7 +120,7 @@ function SignInScreen({ expired, onSignedIn }: { expired: boolean; onSignedIn: (
 
   const signingIn = useAsyncAction(async (password: string) => access.signIn.execute(password), {
     onSuccess: (session) => {
-      // Un mot de passe refuse n'est pas une panne : l'ecran le dit et laisse reessayer.
+      // A refused password is not a failure: the screen says so and lets them try again.
       if (session === null) setRefused(true)
       else onSignedIn()
     },

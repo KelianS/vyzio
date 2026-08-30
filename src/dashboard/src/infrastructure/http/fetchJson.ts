@@ -1,7 +1,7 @@
 import { HttpError } from './HttpError'
 import { reportSessionLost } from './sessionLost'
 
-/** Un seul endroit sait qu'un 401 est un fait d'interface, et non une erreur de plus. */
+/** One place knows that a 401 is a fact about the interface, not one more error. */
 function failed(response: Response, url: string): HttpError {
   if (response.status === 401) reportSessionLost(url)
   return new HttpError(response.status, url)

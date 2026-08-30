@@ -205,10 +205,19 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
   }
 }
 
+export interface FakeAccessState {
+  installed: boolean
+  signedIn: boolean
+  /** The password was just removed from the host machine (ADR-54). */
+  awaitingReset?: boolean
+  /** What the fake installation accepts today: changing it must change what opens. */
+  password?: string
+}
+
 export interface FakeBackendState {
   cameras: FakeCamera[]
-  /** Ou en est l'installation vis-a-vis de son mot de passe, et ce navigateur vis-a-vis d'elle. */
-  access: { installed: boolean; signedIn: boolean }
+  /** Where the installation stands on its password, and where this browser stands with it. */
+  access: FakeAccessState
   /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
@@ -267,7 +276,7 @@ export function createFakeBackendState(
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
-    // Installee et deverrouillee par defaut : chaque test franchirait sinon la meme porte (ADR-54).
+    // Installed and unlocked by default: every test would otherwise walk through the same door (ADR-54).
     access: { installed: true, signedIn: true },
     pendingChanges: false,
     restartFails: false,
@@ -297,7 +306,7 @@ export function createFakeBackendState(
   }
 }
 
-/** Le mot de passe de l'installation feinte : les tests le tapent, rien d'autre ne le connait. */
+/** The fake installation's password: the tests type it, nothing else knows it. */
 export const FAKE_PASSWORD = 'mot-de-passe-de-test'
 
 function json(route: Route, body: unknown, status = 200) {
@@ -324,9 +333,13 @@ export async function installFakeBackend(
     const path = url.pathname
     const postData = request.postDataJSON?.() as Record<string, unknown> | undefined
 
-    // --- Acces (ADR-54) ---
+    // --- Access (ADR-54) ---
     if (path === '/api/access/state' && method === 'GET') {
-      return json(route, { installed: state.access.installed, minimumPasswordLength: 8 })
+      return json(route, {
+        installed: state.access.installed,
+        awaitingReset: state.access.awaitingReset ?? false,
+        minimumPasswordLength: 8,
+      })
     }
 
     if (path === '/api/access/session' && method === 'GET') {
@@ -336,13 +349,15 @@ export async function installFakeBackend(
     }
 
     if (path === '/api/access/account' && method === 'POST') {
-      state.access = { installed: true, signedIn: true }
+      const chosen = (postData?.password as string | undefined) ?? ''
+      state.access = { installed: true, signedIn: true, password: chosen }
       return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
     }
 
     if (path === '/api/access/session' && method === 'POST') {
       const password = (postData?.password as string | undefined) ?? ''
-      if (password !== FAKE_PASSWORD) return json(route, { error: 'unauthorized' }, 401)
+      if (password !== (state.access.password ?? FAKE_PASSWORD))
+        return json(route, { error: 'unauthorized' }, 401)
 
       state.access = { ...state.access, signedIn: true }
       return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
@@ -358,9 +373,21 @@ export async function installFakeBackend(
       return json(route, { closed: 2 })
     }
 
-    // Passe cette ligne, tout exige une session — comme l'API, sinon le harnais testerait
-    // une application que personne ne fait tourner (ADR-54).
+    // Past this line everything needs a session, like the API does: otherwise the harness would be
+    // testing an application nobody runs (ADR-54).
     if (!state.access.signedIn) return json(route, { error: 'unauthorized' }, 401)
+
+    // Guarded like the rest: changing a password is a setting, not a way in.
+    if (path === '/api/access/password' && method === 'PUT') {
+      const current = (postData?.currentPassword as string | undefined) ?? ''
+      const next = (postData?.newPassword as string | undefined) ?? ''
+      if (current !== (state.access.password ?? FAKE_PASSWORD))
+        return json(route, { error: 'wrong_password' }, 400)
+      if (next.length < 8) return json(route, { error: 'password_too_short' }, 400)
+
+      state.access = { ...state.access, password: next }
+      return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+    }
 
     // --- Hub ---
     if (path === '/api/hub/overview' && method === 'GET') {

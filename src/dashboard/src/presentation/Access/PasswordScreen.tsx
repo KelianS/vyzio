@@ -3,8 +3,8 @@ import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
 
 /**
- * Le seul ecran qu'on voit sans etre entre. Il porte son aide sur place : il n'y a aucun ecran
- * derriere lequel la replier, ce qu'ADR-53 prevoit explicitement.
+ * The only screen seen without being in. It carries its help inline: there is no screen behind which
+ * to fold it away, a case ADR-53 provides for explicitly.
  */
 export function PasswordScreen({
   title,
@@ -66,7 +66,7 @@ export function PasswordScreen({
           </p>
         </div>
 
-        {/* Un refus se lit a cote du champ refuse, jamais dans une notification qui s'efface. */}
+        {/* A refusal is read beside the field it refused, never in a notification that fades. */}
         {error !== undefined && (
           <p role="alert" className="text-sm font-medium text-danger">
             {error}
