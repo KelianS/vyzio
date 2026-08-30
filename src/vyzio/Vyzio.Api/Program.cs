@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Vyzio.Application.DependencyInjection;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.Options;
+using Vyzio.Api;
 using Vyzio.Api.Access;
 using Vyzio.Api.Endpoints;
 using Vyzio.Api.Integration.Frigate;
@@ -16,7 +17,11 @@ using Vyzio.Infrastructure.DependencyInjection;
 using Vyzio.Infrastructure.Notifications;
 using Vyzio.Infrastructure.Persistence;
 
-var builder = WebApplication.CreateBuilder(args);
+// Stripped from what configures the host: the command is a positional argument, which the command
+// line configuration provider refuses to parse.
+var hostCommand = HostCommands.Match(args);
+
+var builder = WebApplication.CreateBuilder(hostCommand is null ? args : args[1..]);
 
 var runtimeSettings = VyzioConfigLoader.Load();
 
@@ -114,6 +119,9 @@ using (var scope = app.Services.CreateScope())
 
 }
 
+// Everything is wired by now, so a host command runs against the same repositories the API uses.
+if (hostCommand is not null) return await HostCommands.RunAsync(app.Services, hostCommand);
+
 app.UseExceptionHandler();
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -133,5 +141,7 @@ app.MapSystem();
 app.MapSettings();
 
 app.Run();
+
+return 0;
 
 public partial class Program;

@@ -35,6 +35,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SignInUseCase>();
         services.AddScoped<SignOutUseCase>();
         services.AddScoped<SignOutEverywhereUseCase>();
+        services.AddScoped<ChangePasswordUseCase>();
+        services.AddScoped<ResetOwnerPasswordUseCase>();
         services.AddScoped<AuthenticateSessionUseCase>();
 
         // Camera use cases

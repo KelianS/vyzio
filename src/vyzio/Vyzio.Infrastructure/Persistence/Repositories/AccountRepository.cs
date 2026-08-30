@@ -25,4 +25,12 @@ public sealed class AccountRepository(VyzioDbContext db) : IAccountRepository
         db.Accounts.Add(account);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task UpdateAsync(Account account, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(account);
+
+        db.Accounts.Update(account);
+        await db.SaveChangesAsync(ct);
+    }
 }

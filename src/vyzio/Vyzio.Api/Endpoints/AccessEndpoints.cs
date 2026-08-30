@@ -61,6 +61,22 @@ public static class AccessEndpoints
             // Anonymous on purpose: signing out with a cookie that already died must not be an error.
         }).AllowAnonymous();
 
+        // Guarded, and it re-opens a session in the same answer: changing the password closes every
+        // device, and the one that asked for it would otherwise lock itself out (ADR-54).
+        app.MapPut("/api/access/password", async (
+            ChangePasswordRequest request,
+            HttpContext context,
+            ChangePasswordUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (context.CurrentSession() is not { } session) return Results.Unauthorized();
+
+            var outcome = await useCase.ExecuteAsync(
+                session.AccountId, request?.CurrentPassword, request?.NewPassword, DeviceOf(context), ct);
+
+            return Grant(context, outcome);
+        });
+
         app.MapDelete("/api/access/sessions", async (
             HttpContext context,
             SignOutEverywhereUseCase useCase,
@@ -88,6 +104,9 @@ public static class AccessEndpoints
     {
         AccessRefusal.AlreadyInstalled => Results.Conflict(new { error = "already_installed" }),
         AccessRefusal.PasswordTooShort => Results.BadRequest(new { error = "password_too_short" }),
+        // Deliberately not 401: the caller holds a live session, and the interface reads 401 as "you were
+        // signed out" — answering that here would close a screen instead of refusing one field.
+        AccessRefusal.CurrentPasswordWrong => Results.BadRequest(new { error = "wrong_password" }),
         // Same answer whether the account is missing or the password wrong: telling them apart helps only a guesser.
         AccessRefusal.NotInstalled or AccessRefusal.WrongPassword => Results.Unauthorized(),
         _ => Results.Unauthorized()

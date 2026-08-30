@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Vyzio.Application.DTOs.Access;
+using Vyzio.Application.UseCases.Access;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
@@ -35,6 +36,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
 
         Assert.NotNull(state);
         Assert.False(state!.Installed);
+        Assert.False(state.AwaitingReset);
         Assert.Equal(Account.MinimumPasswordLength, state.MinimumPasswordLength);
     }
 
@@ -137,6 +139,110 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
+    public async Task Changing_the_password_is_refused_without_the_current_one_and_keeps_the_session()
+    {
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
+
+        var refused = await client.PutAsJsonAsync(
+            "/api/access/password", new ChangePasswordRequest("pas-le-bon-mot", "un-nouveau-mot"));
+
+        // Not 401: the caller is signed in, and the interface reads 401 as having been signed out.
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/access/session")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Changing_the_password_makes_the_new_one_the_only_one_that_opens()
+    {
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
+
+        var changed = await client.PutAsJsonAsync(
+            "/api/access/password", new ChangePasswordRequest(Password, "un-nouveau-mot"));
+        Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
+
+        using var elsewhere = _factory.CreateClient();
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await elsewhere.PostAsJsonAsync("/api/access/session", new PasswordRequest(Password))).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await elsewhere.PostAsJsonAsync("/api/access/session", new PasswordRequest("un-nouveau-mot"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task Changing_the_password_closes_the_other_devices_but_not_the_one_asking()
+    {
+        using var phone = _factory.CreateClient();
+        await phone.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
+
+        using var laptop = _factory.CreateClient();
+        await laptop.PostAsJsonAsync("/api/access/session", new PasswordRequest(Password));
+
+        await phone.PutAsJsonAsync("/api/access/password", new ChangePasswordRequest(Password, "un-nouveau-mot"));
+
+        // The whole point of changing it: whoever knew the old one is out, including a device left open.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await laptop.GetAsync("/api/access/session")).StatusCode);
+        // And the person who asked stays where they were, on the session the answer handed back.
+        Assert.Equal(HttpStatusCode.OK, (await phone.GetAsync("/api/access/session")).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_host_reset_reopens_the_first_run_screen_and_closes_every_device()
+    {
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
+
+        var reset = _factory.ResetFromHost();
+
+        Assert.NotNull(reset);
+        Assert.Equal(1, reset!.SessionsClosed);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/access/session")).StatusCode);
+
+        var state = await client.GetFromJsonAsync<AccessStateDto>("/api/access/state");
+        Assert.False(state!.Installed);
+        // Told apart from a brand new install, because the screen does not say the same thing to both.
+        Assert.True(state.AwaitingReset);
+    }
+
+    [Fact]
+    public async Task A_password_chosen_after_a_host_reset_keeps_the_same_account()
+    {
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
+        var before = _factory.OwnerId();
+
+        _factory.ResetFromHost();
+        var claimed = await client.PostAsJsonAsync("/api/access/account", new PasswordRequest("un-nouveau-mot"));
+
+        Assert.Equal(HttpStatusCode.OK, claimed.StatusCode);
+        // The account is never deleted: its role, and whatever attaches to it later, survive the reset.
+        Assert.Equal(before, _factory.OwnerId());
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/access/session")).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_reset_window_left_to_close_locks_the_install_instead_of_staying_open()
+    {
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
+        _factory.ResetFromHost();
+
+        _factory.CloseResetWindow();
+
+        var state = await client.GetFromJsonAsync<AccessStateDto>("/api/access/state");
+        Assert.True(state!.Installed);
+        // Nobody walks in late: neither by claiming the account nor with the password that was removed.
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await client.PostAsJsonAsync("/api/access/account", new PasswordRequest("un-nouveau-mot"))).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await client.PostAsJsonAsync("/api/access/session", new PasswordRequest(Password))).StatusCode);
+    }
+
+    [Fact]
     public async Task A_cookie_that_matches_nothing_opens_nothing()
     {
         using var client = _factory.CreateClient();
@@ -170,6 +276,35 @@ public sealed class AccessApiFactory : WebApplicationFactory<Program>
             session.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1);
 
         db.SaveChanges();
+    }
+
+    /// <summary>What the host-side command does, run through the very same use case.</summary>
+    public PasswordResetDto? ResetFromHost()
+    {
+        using var scope = Services.CreateScope();
+        var useCase = scope.ServiceProvider.GetRequiredService<ResetOwnerPasswordUseCase>();
+
+        return useCase.ExecuteAsync().GetAwaiter().GetResult();
+    }
+
+    /// <summary>Ages the reset past its window — the only way to test a half-hour of waiting.</summary>
+    public void CloseResetWindow()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
+
+        foreach (var account in db.Accounts)
+            account.PasswordForgottenAt = DateTimeOffset.UtcNow - Account.ResetWindow - TimeSpan.FromMinutes(1);
+
+        db.SaveChanges();
+    }
+
+    public string? OwnerId()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
+
+        return db.Accounts.Select(account => account.Id).FirstOrDefault();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
