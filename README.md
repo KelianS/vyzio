@@ -21,6 +21,12 @@ a YAML file in sight.
 
 ## A look at it
 
+<img src="docs/assets/hub.png" alt="Home screen: live cameras, latest detections, alerts and system health">
+
+The home screen is the whole product in one page: what the cameras see, who was recognised and
+when, whether alerts are going out, and what the machine is doing. One camera is on a privacy
+schedule and says so.
+
 Adding a camera: Vyzio searches the network, and asks for nothing it can find on its own.
 
 <p>
@@ -36,8 +42,9 @@ Cameras, and the people the system knows about:
   <img src="docs/assets/people.png" width="420" alt="Known people, and what Vyzio does when it recognises them">
 </p>
 
-> Screenshots are generated from the test fixtures (`pnpm capture:docs`), so they hold no real
-> installation's data and can be regenerated whenever a screen changes.
+> Screenshots are generated from the test fixtures (`task docs:capture`), so they hold no real
+> installation's data and can be regenerated whenever a screen changes. Live tiles and detection
+> thumbnails show a drawn stand-in: nothing here is passed off as a scene a camera saw.
 
 ---
 
@@ -56,6 +63,29 @@ Cameras, and the people the system knows about:
   the network comes back.
 - **Guided setup.** Network discovery finds the cameras, and the interface walks through the
   rest. No configuration file to hand-write.
+
+---
+
+## Cameras
+
+**Any RTSP or ONVIF camera can be added**, by discovery or by typing its address. Beyond the video
+stream, the brands below are recognised on sight and arrive pre-configured, because Vyzio already
+knows how to drive them:
+
+| Brand            | Privacy mode                       | Move the camera | Image settings                    |
+| ---------------- | ---------------------------------- | --------------- | --------------------------------- |
+| TP-Link Tapo     | Hardware cut, lens covered, LED off | Pan-tilt models | Not yet                           |
+| ICSee / XMEye    | Turns away and stops recording      | Yes             | Brightness, contrast, saturation  |
+| V380 PRO         | Turns away and stops recording      | Yes             | Not confirmed on the tested units |
+
+A **hardware cut** means Vyzio asks the camera's own firmware to close the shutter and kill the
+sensor, so nothing is filmed at all. Where a camera offers no such thing, Vyzio physically turns it
+to a wall and stops recording at the same time.
+
+Nothing in that table is taken on trust: a capability is probed on the camera itself before Vyzio
+offers it, and a failed probe hides that one control without affecting the others. The list grows
+one brand at a time, and the full detail, protocol by protocol, is in
+[`src/vyzio/vendors/README.md`](src/vyzio/vendors/README.md).
 
 ---
 
@@ -80,7 +110,6 @@ commitment.
 ## Quick start
 
 > **Requirements.** Linux with Docker Engine 25+ and Docker Compose v2.
-> Tested on Debian, Ubuntu and Raspberry Pi OS (64-bit).
 
 ```bash
 curl -O https://raw.githubusercontent.com/KelianS/vyzio/main/docker-compose.yml
@@ -144,21 +173,33 @@ Changing a password you still know needs none of this: Settings › Access, in t
 
 ## Architecture
 
-Four .NET projects, dependencies pointing inwards only, plus a React dashboard:
+Backend and frontend follow the same shape: clean architecture layers, dependencies pointing
+inwards only, cut into vertical slices by feature rather than by technical kind.
 
-| Project                | Role                                                                |
-| ---------------------- | ------------------------------------------------------------------- |
-| `Vyzio.Core`           | Domain model and rules. Depends on nothing.                          |
-| `Vyzio.Application`    | Use cases, orchestration, ports.                                     |
-| `Vyzio.Infrastructure` | Adapters: EF Core, Frigate, camera protocols, notification channels. |
-| `Vyzio.Api`            | Minimal API endpoints and composition root.                          |
-| `src/dashboard`        | React 19 + TypeScript + Vite, tested with Vitest and Playwright.     |
+| Layer          | Backend (`src/vyzio`)                                              | Frontend (`src/dashboard`)                                 |
+| -------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Domain         | `Vyzio.Core`: entities and rules, depending on nothing              | `src/domain`: entities and repository ports                 |
+| Application    | `Vyzio.Application/UseCases`: one folder per slice                  | `src/presentation/<Slice>`: use cases and screens together  |
+| Infrastructure | `Vyzio.Infrastructure`: EF Core, Frigate, camera protocols, channels | `src/infrastructure`: HTTP repositories                     |
+| Entry point    | `Vyzio.Api`: minimal API endpoints and composition root             | `src/App.tsx`: routing and container                        |
+
+The slices carry the same names on both sides (`Access`, `Cameras`, `Hub`, `Notifications`,
+`Profiles`, `Settings`), so a feature is one folder per side and nothing else.
 
 Boundaries, cross-cutting choices and the target state are in [`docs/SAD.md`](docs/SAD.md). Every
 structural decision is recorded as an ADR in [`docs/adr/`](docs/adr/), with the reasoning and the
 options that were rejected.
 
-**Stack.** .NET 10, EF Core, React 19, TypeScript, Vite, Docker Compose, Frigate.
+### Tooling
+
+| | |
+| --- | --- |
+| Backend | .NET 10, EF Core, xUnit, NSubstitute |
+| Frontend | React 19, TypeScript, Vite, Tailwind, Vitest, Testing Library |
+| End to end | Playwright, against the production build and a fake backend |
+| Runtime | Docker Compose, Frigate for video analysis |
+| Commands | `Taskfile.yml` at the root drives both sides, pnpm for the dashboard |
+| Checks | GitHub Actions: build and test, CodeQL, dependency audit, Semgrep |
 
 ---
 
