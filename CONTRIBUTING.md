@@ -29,6 +29,14 @@ Docker commands run via `wsl docker compose ...` under the hood, since Docker is
 
 `task docs:capture` drives the real production build against the e2e fake backend and writes the README images to `docs/assets`. Live tiles have nothing to show there: drop a `<camera-slug>.jpg` into `src/dashboard/tools/docs-capture/stills/` to fill them, which is git-ignored on purpose since those frames are footage of someone's home.
 
+### Coverage
+
+`task back:test` always collects coverage: the exclusions live in `src/vyzio/coverlet.runsettings`, which `Vyzio.Tests.csproj` points at, so there is no flag to remember and no way to get a different number locally than in CI. `task front:test -- --coverage` does the frontend.
+
+Two things are deliberately out of the denominator, and nothing else is: EF Core migrations, which are generated rather than written, and files that emit no runtime code (ambient types, interface-only ports). A file that executes stays measured even when no test touches it, which is why the frontend rate is what it is.
+
+CI reports both rates on every pull request, in one comment kept up to date, and refreshes the README badges from `main`. Neither gates the build.
+
 ### Environment variables reference
 
 #### General

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Referenced by Vyzio.Tests.csproj (RunSettingsFilePath), so it applies to every `dotnet test`
+  without a flag to remember.
+
+  EF Core migrations are excluded because they are generated, not written: the Designer and
+  ModelSnapshot files are ~36k of the ~55k measured lines and count as covered simply because the
+  model builder runs at every test start. Left in, they reported 86% where the hand-written code
+  was at 63%.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <ExcludeByFile>**/Persistence/Migrations/*.cs</ExcludeByFile>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
