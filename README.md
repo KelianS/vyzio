@@ -160,6 +160,6 @@ Vyzio est un projet open source. Les contributions sont bienvenues sur :
 
 - [Spécifications fonctionnelles](docs/SPECS.md)
 - [Architecture logicielle](docs/SAD.md)
-- [Backlog de reprise](docs/BACKLOG.md)
+- [Ce qui reste à faire](https://github.com/KelianS/vyzio/issues)
 - [Business Plan](docs/BUSINESS_PLAN.md)
 - [Design System](docs/DESIGN%20SYSTEM.md)

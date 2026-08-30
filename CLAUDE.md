@@ -25,7 +25,7 @@ Ordre, exceptions et gouvernance : [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 | Architecture d'ensemble, frontières, choix transverses | [`docs/SAD.md`](docs/SAD.md) |
 | Une décision d'architecture précise (le *pourquoi* d'un choix) | [`docs/adr/`](docs/adr/) (index [`README`](docs/adr/README.md)) |
 | Fonctionnement détaillé d'un composant (le *comment*) | [`docs/design/`](docs/design/) (catalogue [`README`](docs/design/README.md)) |
-| Ordre d'exécution, découpage, priorités | [`docs/BACKLOG.md`](docs/BACKLOG.md) |
+| Ordre d'exécution, découpage, priorités | les [issues GitHub](https://github.com/KelianS/vyzio/issues) (`gh issue list`) |
 | UI du dashboard : boutons, pastilles, modales, tokens | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
 | Mode d'emploi d'une feature livrée | l'écran qui la porte, en code — [ADR-53](docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) |
 | Processus, workflow, gouvernance des docs | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
