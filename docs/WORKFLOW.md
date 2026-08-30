@@ -7,7 +7,8 @@ interdiction de commencer l'implémentation tant que les étapes documentaires a
 
 1. **SPECS** ([`SPECS.md`](SPECS.md)) — si le besoin produit change : user stories, parcours, périmètre MVP.
 2. **SAD** ([`SAD.md`](SAD.md)) — si la solution technique ou les frontières changent : composants, responsabilités, ADR.
-3. **BACKLOG** ([`BACKLOG.md`](BACKLOG.md)) — ordre d'exécution, découpage, dépendances, gates de validation.
+3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) — ordre d'exécution, découpage,
+   dépendances, critère de fin. Une issue s'adosse aux documents ci-dessus, elle ne les redécide pas.
 4. **Implémentation** — code minimal, cohérent avec les documents validés.
 5. **Tests** — validation ciblée obligatoire du slice modifié.
 6. **Aide dans l'interface** — toute feature livrable est documentée **dans l'écran qui la porte**,
@@ -64,7 +65,7 @@ Chaque document a une **nature** ; la respecter évite qu'il gonfle et se périm
 ## Précédence (une info = un seul foyer)
 
 Vision → [`../README.md`](../README.md) · Besoin → `SPECS.md` · Solution technique → `SAD.md` ·
-Plan d'exécution → `BACKLOG.md` · Mode d'emploi → **l'écran lui-même** (ADR-53).
+Plan d'exécution → **les issues** · Mode d'emploi → **l'écran lui-même** (ADR-53).
 
 Chaque document décrit son propre rôle dans son en-tête. En cas de doute, remonter au bon niveau :
 vision → besoin → architecture → exécution → usage. Ne jamais recopier une info d'un document à
@@ -93,9 +94,32 @@ Co-Authored-By: …
 
 - **type** : `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `chore`. Un changement
   cassant s'écrit `type(scope)!: …`.
-- **scope** : la zone touchée, optionnelle mais préférée — `api`, `dashboard`, `e2e`, `docs`,
-  `frigate`, `ptz`… Un seul, celui qui porte le changement.
+- **scope** : le sujet touché, optionnel mais préféré — `api`, `dashboard`, `access`, `onboarding`,
+  `recording`… Un seul, celui qui porte le changement. C'est **lui qui porte le thème** : il n'y a
+  pas de label de thème, le regroupement se lit dans le titre et se cherche par lui.
 - **sujet** : l'effet obtenu, pas la mécanique employée. « ce que ça change pour qui lit », jamais
   « ajoute une méthode X ».
 - **PR** : titre au même format que le sujet de commit, description en anglais — le *pourquoi*, le
-  périmètre, et ce qui a été vérifié.
+  périmètre, et ce qui a été vérifié. Gabarit :
+  [`pull_request_template.md`](../.github/pull_request_template.md), qui porte aussi la
+  **definition of done** — son foyer est là, là où on la coche.
+
+### Issues — deux gabarits, un état
+
+La langue par défaut du dépôt est **l'anglais** : code, commentaires, commits, PR, gabarits, labels.
+Le français reste **obligatoire** dans `docs/` (cadrage métier) et **toléré** dans le corps d'une
+issue. La cible est un dépôt entièrement anglophone et un produit multilingue : toute prose nouvelle
+s'écrit donc en anglais partout où rien ne l'oblige au français.
+
+Le **titre**, lui, est toujours anglais et conventionnel — il devient tel quel le titre de la PR
+puis le sujet du commit, écrit une fois et réutilisé.
+
+Deux gabarits dans [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/) : **Feature** et **Bug**.
+
+Il n'y a **pas de gabarit « idée »** : une idée est une feature dont la direction n'est pas encore
+tranchée, c'est-à-dire un **état**, pas une catégorie. On ouvre l'issue avec l'objectif seul et le
+label `needs-framing` ; les SPECS ou un ADR tranchent ; on remplit le reste et on retire le label.
+Rien ne se construit tant qu'il est posé — c'est l'ordre imposé ci-dessus, rendu visible.
+
+Un gabarit **rappelle, il n'applique pas** : GitHub ne l'impose ni au web ni à `gh issue create`.
+Ce qui appliquerait vraiment le format serait un contrôle d'intégration — il n'existe pas.

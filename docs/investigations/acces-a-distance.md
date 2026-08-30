@@ -4,7 +4,7 @@
 > de décision et compare des solutions. Le choix retenu ira dans un ADR, et l'attendu produit
 > correspondant dans [`SPECS.md`](../SPECS.md).
 >
-> Déclencheur : idée « Accès à Vyzio depuis l'extérieur » du [`BACKLOG`](../BACKLOG.md).
+> Déclencheur : idée « Accès à Vyzio depuis l'extérieur ».
 > Faits réseau et prix relevés en **août 2026** — les offres des fournisseurs bougent vite, à
 > revérifier avant de décider.
 
@@ -327,7 +327,7 @@ La direction est tranchée en deux décisions, qui sont désormais le foyer du s
   aujourd'hui.
 
 Attendus produit correspondants : [SPECS](../SPECS.md) §5.4 et §7. Exécution :
-[`BACKLOG`](../BACKLOG.md) § `remote-access`. Le SAD a été corrigé du Cloudflare Tunnel qu'il
+[issue #63](https://github.com/KelianS/vyzio/issues/63). Le SAD a été corrigé du Cloudflare Tunnel qu'il
 inscrivait (§1).
 
 Cette étude ne conserve donc que ce que les ADR ne portent pas : le relevé de terrain, les critères,

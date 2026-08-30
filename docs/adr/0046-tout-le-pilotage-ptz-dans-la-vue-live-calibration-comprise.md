@@ -9,7 +9,7 @@
 
 [ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) a déplacé l'édition
 des positions dans la vue live, en laissant la calibration dans la fiche caméra. À l'usage, deux
-défauts en découlent (voir [`BACKLOG`](../BACKLOG.md), chantier `ui-defauts`) :
+défauts en découlent (relevés au chantier `ui-defauts`, livré) :
 
 **Une caméra non calibrée rend la vue live inerte sans le dire.** Sans position de référence, la
 caméra ne sait pas où elle est : enregistrer une position échoue et y aller ne mène nulle part. La

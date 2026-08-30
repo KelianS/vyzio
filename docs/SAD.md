@@ -326,7 +326,7 @@ l'utilisateur, **une seule frontière d'authentification** derrière laquelle to
 > TLS, ni certificat, ni redirection. La cible est un point d'entrée chiffré (annexe A) ; tant qu'il
 > ne l'est pas, l'identifiant de session et le mot de passe circulent en clair sur le réseau local,
 > et l'accès distant (ADR-51) ne peut pas être annoncé. Chantier suivi au
-> [`BACKLOG`](BACKLOG.md) § `remote-access`.
+> [issue #63](https://github.com/KelianS/vyzio/issues/63).
 
 ### 8.2 Onboarding guidé (zéro fichier YAML pour l'utilisateur)
 
