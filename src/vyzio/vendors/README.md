@@ -2,41 +2,56 @@
 
 Ce dossier est la **source unique** pour tout ce qui concerne le support d'une marque ou d'un modèle de caméra dans Vyzio :
 - La documentation utilisateur affichée dans l'interface lors de la découverte
-- Les capacités déclarées pour chaque marque (mode vie privée, PTZ)
+- Les capacités déclarées pour chaque marque (PTZ, vie privée matérielle, réglages image)
 - La liste officielle du matériel reconnu
 
 ---
 
 ## Matériel supporté
 
-| Famille (`VendorFamily`) | id | Nom affiché | Mode vie privée | PTZ | Réglages image |
+| Famille (`VendorFamily`) | id | Nom affiché | Vie privée atteignable | PTZ | Réglages image |
 |---|---|---|---|---|---|
-| `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **Coupure matérielle** (cache objectif + LED éteinte) via KLAP | Oui (C200/C210/C225…) via KLAP — probe requis | Non (KLAP non investigué) |
-| `Icsee` | `icsee` | ICSee / XMEye | PTZ parking via DVRIP | Oui — ONVIF essayé en premier, repli DVRIP (ADR-28) | Luminosité/contraste/saturation via DVRIP (ADR-29) — netteté/IR non disponibles |
-| `V380Pro` | `v380_pro` | V380 PRO | PTZ parking via ONVIF | Oui via ONVIF | Non confirmé (ONVIF Imaging non implémenté sur le matériel testé) — configurable manuellement |
+| `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **Coupure matérielle** (cache objectif + LED éteinte) via KLAP | Oui via KLAP | Non (KLAP non investigué) |
+| `Icsee` | `icsee` | ICSee / XMEye | **PTZ parking** | Oui, ONVIF essayé en premier, repli DVRIP (ADR-28) | Luminosité, contraste, saturation via DVRIP (ADR-29). Netteté et IR non disponibles |
+| `V380Pro` | `v380_pro` | V380 PRO | **PTZ parking** | Oui via V380 | Non confirmé sur le matériel testé, configurable à la main |
 
-> **"Coupure matérielle"** : Vyzio commande l'API locale du constructeur. Le capteur ou le cache physique est désactivé — signal non falsifiable.
+> **« Coupure matérielle »** : Vyzio commande l'API locale du constructeur. Le capteur ou le cache physique est désactivé, signal non falsifiable.
 >
-> **"PTZ parking"** : Vyzio commande physiquement la rotation de la caméra vers une butée mécanique, et désactive simultanément l'enregistrement. Double protection : la caméra ne voit plus rien ET Vyzio n'enregistre plus.
+> **« PTZ parking »** : Vyzio commande physiquement la rotation de la caméra vers une butée mécanique, et désactive simultanément l'enregistrement. Double protection : la caméra ne voit plus rien ET Vyzio n'enregistre plus.
 
-Les valeurs `VendorFamily` dans le code C# (enum `Vyzio.Core.Entities.VendorFamily`) sont converties vers ces valeurs DB par `JsonNamingPolicy.SnakeCaseLower` — le nom du fichier `.md` doit correspondre à la valeur DB.
+La colonne « vie privée » dit ce que la marque rend **atteignable**, pas ce qui est appliqué. La
+stratégie effective est un réglage par caméra (`Camera.PrivacyStrategy`, `SoftwareBlur` par défaut),
+jamais déduite de la marque : `Hardware` exige un binding `HardwarePrivacy` vérifié, `PtzParking`
+un binding `Ptz` vérifié.
+
+Les valeurs `VendorFamily` dans le code C# (enum `Vyzio.Core.Entities.VendorFamily`) sont converties vers ces valeurs DB par `JsonNamingPolicy.SnakeCaseLower`. Le nom du fichier `.md` doit correspondre à la valeur DB.
 
 ---
 
-## Modèle de capacités (ADR-22)
+## Modèle de capacités (ADR-22, mis à jour par ADR-24)
 
-Chaque marque est définie comme un **preset de capacités**, pas comme un adaptateur monolithique. Une capacité (ex. `Ptz`) est indépendante de la marque — elle est résolue par **protocole** (`Onvif`, `Dvrip`, `TapoKlap`…).
+Chaque marque est définie comme un **preset de capacités**, pas comme un adaptateur monolithique. Une capacité (ex. `Ptz`) est indépendante de la marque : elle est résolue par **protocole réseau** (`SupportedProtocol` : `Onvif`, `V380`, `Dvrip`, `TapoKlap`, `Rtsp`).
 
+<!-- vendor-presets:start -->
 ```
-VendorCapabilityPreset:
-  TplinkTapo → [ PrivacyMode/TapoKlap, Ptz/TapoKlap ]
-  Icsee      → [ Ptz/[Onvif, Dvrip] (cascade, ADR-28), PrivacyMode/PtzParking, ImageSettings/Dvrip (ADR-29) ]
-  V380Pro    → [ Ptz/Onvif, PrivacyMode/PtzParking ]
-  # ImageSettings/Onvif volontairement retiré du preset V380Pro (2026-07-14) : test réel a
-  # confirmé "GetImagingSettings not implemented" — reste configurable manuellement.
+TplinkTapo → HardwarePrivacy/[TapoKlap], Ptz/[TapoKlap]
+Icsee → Ptz/[Onvif, Dvrip], ImageSettings/[Dvrip]
+V380Pro → Ptz/[V380]
 ```
+<!-- vendor-presets:end -->
 
-Le preset déclare quelles capacités sont *attendues* pour cette marque. Elles sont ensuite **vérifiées par probe** sur le matériel réel avant d'être activables. Un probe échoué ne bloque pas les autres capacités.
+> Ce bloc est rendu depuis `VendorCapabilityPresets.All` et vérifié par
+> `VendorCatalogDocumentationTests`. Ne pas le modifier à la main : le test échoue en affichant le
+> texte attendu, à coller ici tel quel.
+
+Plusieurs protocoles pour une même capacité forment une **cascade**, essayée dans l'ordre écrit
+(ADR-28). Le preset déclare ce qui est *attendu* pour la marque ; chaque capacité est ensuite
+**vérifiée par probe** sur le matériel réel avant d'être activable, et un probe échoué ne bloque
+pas les autres.
+
+La vie privée n'est plus une capacité, à l'exception de `HardwarePrivacy` : `PtzParking` s'appuie
+sur le binding `Ptz` existant. Les capacités volontairement absentes d'un preset, et la raison de
+leur absence, sont commentées dans `VendorCapabilityPresets.cs`.
 
 ---
 
@@ -83,45 +98,35 @@ Les liens Markdown `[label](url)` sont cliquables dans l'UI. Les assets statique
 
 ### 2. Ajouter la valeur dans l'enum `VendorFamily`
 
-Dans `Vyzio.Core/Entities/VendorFamily.cs` :
-
-```csharp
-public enum VendorFamily
-{
-    TplinkTapo,
-    Icsee,
-    V380Pro,
-    MonConstructeur,  // "mon_constructeur" en DB via SnakeCaseLower
-}
-```
-
-Le nom du membre doit être en PascalCase — `JsonNamingPolicy.SnakeCaseLower` génère automatiquement la valeur DB (ex. `MonConstructeur` → `"mon_constructeur"`). Le nom du fichier `.md` doit correspondre.
+Dans `Vyzio.Core/Entities/VendorFamily.cs`. Le nom du membre est en PascalCase :
+`JsonNamingPolicy.SnakeCaseLower` en dérive la valeur DB (`MonConstructeur` → `"mon_constructeur"`),
+et le nom du fichier `.md` doit correspondre à cette valeur.
 
 ---
 
 ### 3. Enregistrer la détection réseau
 
-Dans `AssistedCameraDiscoveryKnownDevices.cs` :
+Dans `Vyzio.Infrastructure/Services/CameraDiscovery/` :
 
-- Ajouter la détection par empreinte (nom mDNS, hostname, OUI MAC) dans `DetectVendorFamily`
-- Ajouter le nom d'affichage dans `FormatVendorFamily`
-- Ajouter le niveau de support dans `DetermineSupportLevel` (`"guided"` ou `"basic"`)
+- `AssistedCameraDiscoveryKnownDevices.cs` : l'empreinte (nom mDNS, hostname, OUI MAC) dans `DetectVendorFamily`, le nom d'affichage dans `FormatVendorFamily`
+- `AssistedCameraDiscoveryIdentifier.cs` : le niveau de support dans `DetermineSupportLevel` (`"guided"` ou `"basic"`)
 
 ---
 
 ### 4. Déclarer le preset de capacités
 
-Dans `Vyzio.Core/Entities/VendorCapabilityPresets.cs` :
+Dans `Vyzio.Core/Entities/VendorCapabilityPresets.cs`, sur le modèle des entrées existantes : une
+capacité, et la liste ordonnée des protocoles à essayer pour elle.
 
-```csharp
-new VendorCapabilityPreset(VendorFamily.MonConstructeur, [
-    (CameraCapability.Ptz, CapabilityProtocol.Onvif),
-    (CameraCapability.PrivacyMode, CapabilityProtocol.PtzParking),
-])
-```
-
-Si le protocole n'existe pas encore, créer un `IPtzCapabilityProvider` ou `IPrivacyCapabilityProvider` correspondant dans `Vyzio.Infrastructure/CapabilityProviders/` et l'enregistrer dans `ServiceCollectionExtensions.cs`.
+Si le protocole n'existe pas encore, créer le provider correspondant (`IPtzCapabilityProvider`,
+`IPrivacyCapabilityProvider`, `IImageSettingsCapabilityProvider`) dans
+`Vyzio.Infrastructure/CapabilityProviders/` et l'enregistrer dans
+`Vyzio.Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs`. **L'ordre
+d'enregistrement DI est l'ordre d'essai** en détection à l'aveugle, ONVIF en premier (ADR-28).
 
 ---
 
-### 5. Mettre à jour le tableau "Matériel supporté" dans ce README
+### 5. Mettre à jour ce README
+
+Le tableau « Matériel supporté » à la main, le bloc de capacités en relançant `dotnet test` : le
+test échoue en affichant le bloc attendu.
