@@ -162,10 +162,10 @@ function MultiChoiceControl({
   )
 }
 
-/** Au-dela, le resume varierait de largeur et la colonne de controle avec lui. */
+/** Beyond that, the summary would vary in width, and the control column with it. */
 const SUMMARY_NAMES_MAX = 2
 
-/** L'etat d'un choix multiple en une ligne : deux noms au plus, puis le compte du reste. */
+/** The state of a multiple choice in one line: two names at most, then the count of the rest. */
 function summarise(options: Narrow<'multiChoice'>['options'], selected: string[]): string {
   const chosen = options.filter((option) => selected.includes(option.value))
   if (chosen.length === 0) return 'Aucune sélection'
@@ -202,8 +202,8 @@ function NumberControl({
   }
 
   return (
-    // Le champ occupe la colonne comme tout autre controle : une largeur propre au
-    // nombre rompait l'alignement vertical que l'anatomie fixe cherche (ADR-43).
+    // The field fills the column like every other control: a width of its own, fitted to
+    // the number, broke the vertical alignment the fixed anatomy is after (ADR-43).
     <div className="flex w-full items-center gap-2">
       <Input
         id={setting.id}

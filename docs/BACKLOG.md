@@ -28,7 +28,7 @@ Item traite : une fois qu'un item d'execution devient une issue GitHub, on le re
 - Verification des credentials contre les protocoles supportes (ONVIF, DVRIP, RTSP) avant de les stocker dans la DB. Eviter de stocker des credentials invalides ou d'attendre sur Frigate pour detecter un flux invalide. Configurer pendant l'onboarding les capacités de la caméra (PTZ, multi-flux, etc.) et vérifier que les credentials fournis permettent d'accéder à ces fonctionnalités.
 - Améliorer le 'live' avec un vrai flux vidéo, pas uniquement un pulling a 1fps + latence.
 - Rendre chaque détéction plus configurable en mode avancée, par exemple les min_threshold, min_score etc, par label. Et reprendre le systèle + override par caméra.
-- Nettoyage des migrations de DB : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
+- Nettoyage des migrations de DB (**derniere fenetre : avant qu'une installation existe ailleurs**) : app pas encore publique, donc pas de risque de casser des installations existantes. Supprimer les migrations inutiles, fusionner les migrations redondantes, renommer les tables et colonnes pour qu'elles soient plus claires.
 - Réglages image Tapo KLAP — investigation terrain nécessaire avant implémentation (protocole binaire propriétaire, pas de doc publique). ONVIF et DVRIP déjà livrés, voir [ADR-27](adr/0027-reglages-image-avances-capacite-imagesettings-onvif.md)/[ADR-29](adr/0029-dvrip-dvripclient-partage-reglages-image-avenc.md).
 - **Interrompre et reprendre la surveillance depuis une conversation** — écarté à l'arbitrage du jeu de commandes ([ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)), alors que [SPECS](SPECS.md) §5.4 le cite : couper la surveillance à distance engage trop pour un fil de discussion, et le mode vie privée couvre déjà le besoin courant. À rouvrir si l'usage le réclame.
 - Notifications d'événements système (caméra offline, batterie faible, boot Vyzio, mise à jour) — configurable par caméra et par type.
@@ -63,6 +63,63 @@ Itérations courtes, buildables indépendamment. Priorité décroissante.
 
 ---
 
+### `access` — Acces a l'interface
+
+Direction tranchee : [ADR-54](adr/0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md).
+Attendus produit : [SPECS](SPECS.md) §8.3 et §5.4. **Prealable a toute release**, y compris privee :
+le port de l'interface est publie sur le reseau local et rien ne le garde.
+
+Chaque etape est livrable seule ; l'ordre est contraint (rien ne sert de garder des routes avant de
+savoir ouvrir une session, et le front ne peut pas se brancher sur une barriere qui n'existe pas).
+
+1. **Le compte et la session, cote API.** Entites `Account` (mot de passe hache, role) et `Session`
+   (appareil, dernier usage, revocation) — l'entite `Session` heritee du schema initial (`sessions`,
+   un `UserId` sans table d'utilisateurs, jamais lue depuis mai) est **remplacee**, pas etendue.
+   Routes : etat de l'installation (compte cree ou non), creation du compte, connexion, deconnexion,
+   deconnexion de tous les appareils, session courante. Cookie `httpOnly` / `SameSite=Lax`, session
+   glissante de l'ordre du mois. Limitation de debit sur la seule route de connexion.
+   *Verifiable par* : tests d'integration sur le cycle complet, dont une session revoquee qui cesse
+   d'ouvrir et un mot de passe faux qui finit par etre refuse en rafale.
+
+2. **La barriere sur tout le reste.** Chaque route **declare** ce qu'elle exige, a l'endroit ou elle
+   est declaree — jamais un test disperse dans un service. Deux exceptions nommees : la sonde de
+   sante, et les routes de l'etape 1 qui doivent rester ouvertes. Les relais d'images, apercus et
+   clips passent la meme barriere que le reste.
+   *Verifiable par* : un test qui parcourt les routes exposees et echoue si l'une repond sans session
+   sans figurer dans la liste des exceptions — c'est ce test qui empeche la prochaine route d'oublier.
+
+3. **Les ecrans.** Creation du mot de passe au premier demarrage (avant toute autre chose), connexion,
+   deconnexion, et « deconnecter tous les appareils ». Une reponse « non authentifie » ramene a la
+   connexion **en le disant**, jamais sur un ecran vide ou une erreur technique. Ces ecrans portent
+   leur aide sur place, faute d'ecran derriere lequel la replier
+   ([ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)).
+   *Verifiable par* : e2e — une installation vierge s'ouvre sur la creation du mot de passe, et une
+   session expiree ramene a la connexion.
+
+4. **Le harnais de test franchit la barriere.** Faux backend Playwright et tests e2e ouvrent une
+   session ; aucune dispense par environnement, qui finirait tot ou tard ailleurs.
+
+5. **La remise a zero du mot de passe depuis la machine hote**, et sa note dans le
+   [README](../README.md) — c'est de l'exploitation de sa propre installation, donc hors interface
+   (ADR-53) mais pas hors documentation utilisateur. La commande *retire* le mot de passe au lieu
+   d'en poser un, et ouvre une fenetre bornee pendant laquelle l'ecran de creation revient.
+   *Verifiable par* : une fenetre laissee expirer reverrouille l'installation, au lieu de rester
+   ouverte.
+
+6. **Changer un mot de passe connu, depuis l'interface.** Reglages > Acces, l'ancien redemande, et
+   toutes les autres sessions refermees au passage.
+   *Verifiable par* : apres le changement, l'ancien mot de passe n'ouvre plus et un appareil laisse
+   ouvert ailleurs cesse de repondre.
+
+Le role est porte des l'etape 1 mais **n'est pas exerce** : un seul role existe. Ce qui suit n'est
+pas dans ce chantier et attend un besoin exprime — second compte, ecran d'invitation, liste des
+comptes, et l'attribution d'une coupure de vie privee a qui l'a posee.
+
+**Fait quand** une installation neuve s'ouvre sur la creation du mot de passe, qu'aucune adresse
+d'API ni d'apercu ne repond sans session, et qu'une session revoquee cesse d'ouvrir.
+
+---
+
 ### `remote-access` — Usage hors du domicile
 
 Direction tranchée : [ADR-50](adr/0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)
@@ -76,9 +133,10 @@ facultatif. Reste l'étape 2, bloquée par son propre prérequis, le transport c
 
 #### 2. Accès distant à l'interface (NetBird)
 
-- **prérequis bloquant — le transport chiffré.** Le produit est servi en clair aujourd'hui
-  (SAD §8.1) : chiffrer le trajet jusqu'à la maison pour livrer l'interface en HTTP à l'arrivée
-  n'aurait aucun sens, et l'identifiant de session circulerait avec. À livrer avant, pas en parallèle.
+- **prérequis bloquants — la barrière d'authentification, puis le transport chiffré.** La barrière
+  est le thème `access` ci-dessus ; sans elle, publier le hub au-delà du domicile publierait un
+  produit sans serrure. Le transport reste en clair (SAD §8.1) : tant qu'il l'est, l'identifiant de
+  session et le mot de passe circulent en clair. Les deux se livrent avant, pas en parallèle.
 - **à vérifier avant de s'engager** : le parcours réel sur Android et iOS en 4G, chez au moins deux
   opérateurs.
 - **réglage d'installation** : parcours guidé de création du compte NetBird, saisie de la clé

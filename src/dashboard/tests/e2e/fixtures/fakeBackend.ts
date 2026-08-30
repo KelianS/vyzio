@@ -156,7 +156,7 @@ const CHANNEL_CATALOGUE: Record<
   },
 }
 
-/** Un canal deja en place, pour partir d'un ecran configure sans rejouer le parcours. */
+/** A channel already in place, to start from a configured screen without replaying the journey. */
 export function makeFakeChannel(
   channel: string,
   overrides: Partial<FakeChannelConfig> = {},
@@ -205,9 +205,20 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
   }
 }
 
+export interface FakeAccessState {
+  installed: boolean
+  signedIn: boolean
+  /** The password was just removed from the host machine (ADR-54). */
+  awaitingReset?: boolean
+  /** What the fake installation accepts today: changing it must change what opens. */
+  password?: string
+}
+
 export interface FakeBackendState {
   cameras: FakeCamera[]
-  /** Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44). */
+  /** Where the installation stands on its password, and where this browser stands with it. */
+  access: FakeAccessState
+  /** Saved settings that surveillance has not picked up yet (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
   profiles: {
@@ -219,7 +230,7 @@ export interface FakeBackendState {
     createdAt: string
   }[]
   notificationChannels: Record<string, FakeChannelConfig>
-  /** L'etat de la boucle entrante d'un canal, et la trace de ce qu'on lui a demande (ADR-52). */
+  /** The state of a channel's incoming loop, and the trace of what was asked of it (ADR-52). */
   channelListening: Record<string, FakeChannelListening>
   commandJournal: Record<string, FakeCommandJournalEntry[]>
   detectionHistory: FakeDetectionEvent[]
@@ -238,7 +249,7 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
-  /** Le pilotage d'une camera : ses positions enregistrees, et si elle sait ou elle est (ADR-25). */
+  /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
   ptz: {
     presets: {
       presetId: number
@@ -265,6 +276,8 @@ export function createFakeBackendState(
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
+    // Installed and unlocked by default: every test would otherwise walk through the same door (ADR-54).
+    access: { installed: true, signedIn: true },
     pendingChanges: false,
     restartFails: false,
     profiles: [],
@@ -281,7 +294,7 @@ export function createFakeBackendState(
       motionDaysOverride: null,
       eventClipDaysOverride: null,
     },
-    // Valeurs livrees par Vyzio (ADR-39).
+    // Values shipped by Vyzio (ADR-39).
     recordingSettings: {
       continuous: { days: 0, default: 0 },
       motion: { days: 7, default: 7 },
@@ -292,6 +305,9 @@ export function createFakeBackendState(
     ...overrides,
   }
 }
+
+/** The fake installation's password: the tests type it, nothing else knows it. */
+export const FAKE_PASSWORD = 'mot-de-passe-de-test'
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
@@ -316,6 +332,62 @@ export async function installFakeBackend(
     const method = request.method()
     const path = url.pathname
     const postData = request.postDataJSON?.() as Record<string, unknown> | undefined
+
+    // --- Access (ADR-54) ---
+    if (path === '/api/access/state' && method === 'GET') {
+      return json(route, {
+        installed: state.access.installed,
+        awaitingReset: state.access.awaitingReset ?? false,
+        minimumPasswordLength: 8,
+      })
+    }
+
+    if (path === '/api/access/session' && method === 'GET') {
+      return state.access.signedIn
+        ? json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+        : json(route, { error: 'unauthorized' }, 401)
+    }
+
+    if (path === '/api/access/account' && method === 'POST') {
+      const chosen = (postData?.password as string | undefined) ?? ''
+      state.access = { installed: true, signedIn: true, password: chosen }
+      return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+    }
+
+    if (path === '/api/access/session' && method === 'POST') {
+      const password = (postData?.password as string | undefined) ?? ''
+      if (password !== (state.access.password ?? FAKE_PASSWORD))
+        return json(route, { error: 'unauthorized' }, 401)
+
+      state.access = { ...state.access, signedIn: true }
+      return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+    }
+
+    if (path.startsWith('/api/access/session') && method === 'DELETE') {
+      state.access = { ...state.access, signedIn: false }
+      return json(route, null, 204)
+    }
+
+    if (path === '/api/access/sessions' && method === 'DELETE') {
+      state.access = { ...state.access, signedIn: false }
+      return json(route, { closed: 2 })
+    }
+
+    // Past this line everything needs a session, like the API does: otherwise the harness would be
+    // testing an application nobody runs (ADR-54).
+    if (!state.access.signedIn) return json(route, { error: 'unauthorized' }, 401)
+
+    // Guarded like the rest: changing a password is a setting, not a way in.
+    if (path === '/api/access/password' && method === 'PUT') {
+      const current = (postData?.currentPassword as string | undefined) ?? ''
+      const next = (postData?.newPassword as string | undefined) ?? ''
+      if (current !== (state.access.password ?? FAKE_PASSWORD))
+        return json(route, { error: 'wrong_password' }, 400)
+      if (next.length < 8) return json(route, { error: 'password_too_short' }, 400)
+
+      state.access = { ...state.access, password: next }
+      return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
+    }
 
     // --- Hub ---
     if (path === '/api/hub/overview' && method === 'GET') {
@@ -354,7 +426,7 @@ export async function installFakeBackend(
         status: 'online',
       })
       state.cameras.push(camera)
-      // Comme le vrai : le catalogue a change, la surveillance ne l'a pas repris.
+      // Like the real one: the catalogue changed, surveillance has not picked it up.
       state.pendingChanges = true
       return json(route, camera)
     }
@@ -403,7 +475,7 @@ export async function installFakeBackend(
       })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
-      // Comme le vrai : un redemarrage reussi vide l'attente, un echec la laisse.
+      // Like the real one: a successful restart clears the pending state, a failure leaves it.
       if (state.restartFails) {
         return json(route, {
           applied: false,
@@ -502,7 +574,7 @@ export async function installFakeBackend(
         return json(route, {})
       }
       if (rest === '/ptz/preset/save' && method === 'POST') {
-        // Comme le vrai : sans reference, la position courante est inconnue, rien ne s'enregistre.
+        // Like the real one: with no reference, the current position is unknown, nothing is saved.
         if (!state.ptz.calibrated) return json(route, { message: 'not_calibrated' }, 409)
         const presetId = Number(postData?.presetId)
         const position = state.ptz.currentPosition ?? { x: 0, y: 0 }
@@ -678,7 +750,7 @@ export async function installFakeBackend(
         return json(route, { success: true, errorMessage: null })
       }
       if (method === 'GET') {
-        // Un canal jamais configure a quand meme une forme : c'est l'ecran d'ajout.
+        // A channel never configured still has a shape: that is the add screen.
         return json(route, state.notificationChannels[channel] ?? unconfiguredChannel(channel))
       }
       if (method === 'PUT') {
@@ -734,7 +806,7 @@ export async function installFakeBackend(
         return json(route, state.commandJournal[channel] ?? [])
       }
       if (subject === 'pairing') {
-        // Aucun appairage n'est simule : l'ecran doit tenir sur l'etat le plus nu.
+        // No pairing is simulated: the screen must hold on the barest state.
         if (method === 'DELETE') return json(route, true)
         return json(route, {
           channel,

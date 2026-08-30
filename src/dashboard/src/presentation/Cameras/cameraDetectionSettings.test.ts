@@ -77,8 +77,8 @@ describe('Réglages de détection d’une caméra', () => {
     const labels = settings.find((setting) => setting.id === 'detection-labels')!
     const options = optionsOf(labels)
 
-    // Mieux vaut tout proposer que rien : une camera muette sur ses capacites
-    // ne doit pas priver l'utilisateur du reglage.
+    // Better to offer everything than nothing: a camera silent about its capabilities
+    // must not deprive the user of the setting.
     expect(options).toHaveLength(3)
   })
 
@@ -103,7 +103,7 @@ describe('Réglages de détection d’une caméra', () => {
 
     sensitivity.onChange('low')
 
-    // Un seul geste porte les deux faits : choisir un niveau *est* le fixer.
+    // One gesture carries both facts: choosing a level *is* pinning it.
     expect(set).toHaveBeenCalledWith('motionSensitivity', 'low')
     expect(set).toHaveBeenCalledWith('motionSensitivityPinned', true)
   })
@@ -119,8 +119,8 @@ describe('Réglages de détection d’une caméra', () => {
 
     sensitivity.onChange('auto')
 
-    // Le retour a l'automatique doit exister — c'etait le trou — et il ne
-    // remet pas le niveau a zero : il redevient le point de depart.
+    // Going back to automatic has to exist - that was the gap - and it does not
+    // reset the level: it becomes the starting point again.
     expect(set).toHaveBeenCalledExactlyOnceWith('motionSensitivityPinned', false)
   })
 
@@ -137,7 +137,7 @@ describe('Réglages de détection d’une caméra', () => {
 
   it('stream_When the camera serves only one_Should not offer a choice', () => {
     const { settings } = build(config({ streams: [STREAMS[0]] }))
-    // Un seul flux ne laisse rien a arbitrer (ADR-38).
+    // A single stream leaves nothing to arbitrate (ADR-38).
     expect(settings.find((setting) => setting.id === 'detection-stream')).toBeUndefined()
   })
 
@@ -146,8 +146,8 @@ describe('Réglages de détection d’une caméra', () => {
     const stream = settings.find((setting) => setting.id === 'detection-stream')!
     const options = optionsOf(stream)
 
-    // Jamais un nom de palier invente : les pixels reels, et le rang seulement
-    // en complement.
+    // Never an invented tier name: the real pixels, and the rank only as a
+    // complement.
     expect(options[0].label).toContain('1920 × 1080')
     expect(options[0].label).toContain('la plus détaillée')
     expect(options[1].label).toContain('640 × 360')

@@ -15,7 +15,7 @@ describe('DetectionThumbnail', () => {
     render(<DetectionThumbnail src="/api/detection-events/e1/snapshot" />)
 
     expect(screen.getByRole('status', { name: 'Chargement de l’aperçu' })).toBeInTheDocument()
-    // Une image sans donnees affiche l'icone de rupture du navigateur : elle reste cachee.
+    // An image with no data shows the browser's broken icon: it stays hidden.
     expect(screen.getByRole('presentation')).toHaveClass('invisible')
   })
 
@@ -28,7 +28,7 @@ describe('DetectionThumbnail', () => {
 
     act(() => void vi.advanceTimersByTime(2000))
 
-    // Le cache du navigateur garde l'echec : la source doit changer pour redemander.
+    // The browser caches the failure: the source must change to ask again.
     expect(screen.getByRole('presentation')).toHaveAttribute(
       'src',
       '/api/detection-events/e1/snapshot?retry=1',
@@ -39,7 +39,7 @@ describe('DetectionThumbnail', () => {
   it('laisse redemander la main une fois les essais épuisés', () => {
     render(<DetectionThumbnail src="/api/detection-events/e1/snapshot" />)
 
-    // Trois essais espacés, puis l'échec est acté.
+    // Three spaced attempts, then the failure is settled.
     for (const delay of [2000, 5000, 10000, 0]) {
       fireEvent.error(screen.getByRole('presentation'))
       act(() => void vi.advanceTimersByTime(delay))

@@ -64,7 +64,7 @@ test.describe('Redémarrage de la surveillance', () => {
     const failed = page.getByRole('button', { name: /Redémarrage échoué/ })
     await expect(failed).toBeVisible()
 
-    // Quitter les reglages repose la question — elle doit repartir de l'echec, pas de zero.
+    // Leaving the settings asks the question again - it must start from the failure, not from zero.
     await page.getByRole('link', { name: 'Accueil' }).click()
     const guard = page.getByRole('alertdialog')
     await expect(guard).toContainText('La surveillance n’a pas redémarré.')
@@ -106,7 +106,7 @@ test.describe('Redémarrage de la surveillance', () => {
       const dialog = page.getByRole('alertdialog')
       await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
 
-      // « Plus tard » lets through too: the gap is allowed.
+      // "Plus tard" lets through too: the gap is allowed.
       await dialog.getByRole('button', { name: 'Plus tard' }).click()
       await expect(page).toHaveURL('/')
       await expect(page.getByRole('button', trigger())).toBeVisible()

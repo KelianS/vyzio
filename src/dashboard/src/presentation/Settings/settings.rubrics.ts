@@ -29,6 +29,11 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
     summary: 'Canaux et horaires',
   },
   {
+    slug: 'acces',
+    label: 'Accès',
+    summary: 'Mot de passe et appareils',
+  },
+  {
     slug: 'systeme',
     label: 'Système',
     summary: 'Stockage et ressources',

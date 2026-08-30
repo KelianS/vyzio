@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react'
 
 /**
- * Surface d'une page de reglages.
+ * The surface of a settings page.
  *
- * **Elle ne porte pas de titre**, et c'est la regle : ce qui mene a la page l'a
- * deja nommee — l'onglet reste affiche juste au-dessus, l'entree de rubrique
- * reste surlignee a cote. Le repeter ajoutait un titre par palier, jusqu'a
- * coiffer un seul reglage de trois noms identiques.
+ * **It carries no title**, and that is the rule: whatever leads to the page has
+ * already named it - the tab stays visible right above, the section entry stays
+ * highlighted beside it. Repeating it added one title per level, up to crowning
+ * a single setting with three identical names.
  *
- * Le nom de la page est donc rendu **une fois**, par la coquille qui la contient
- * (`SettingsView`, ou l'en-tete de la camera).
+ * The name of the page is therefore rendered **once**, by the shell holding it
+ * (`SettingsView`, or the camera header).
  */
 export function SettingsPage({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
@@ -21,13 +21,12 @@ export function SettingsPage({ lede, children }: { lede?: string; children: Reac
 }
 
 /**
- * Un groupe **a l'interieur** d'une page, quand celle-ci traite reellement
- * plusieurs sujets.
+ * A group **inside** a page, when the page really covers several subjects.
  *
- * Un titre de groupe se justifie s'il nomme autre chose que la page ; sinon
- * c'est la page qu'il faut ouvrir, pas un cadre qu'il faut ajouter. Il est rendu
- * plus discret qu'un titre de page, mais dans le **serif des titres** : c'est ce
- * qui l'empeche de ressembler au libelle d'un reglage, qui n'est jamais un titre.
+ * A group title is justified when it names something other than the page;
+ * otherwise it is a page that should be opened, not a frame that should be added.
+ * It renders more quietly than a page title, but in the **serif of titles**: that
+ * is what keeps it from looking like a setting label, which is never a title.
  */
 export function SettingsSection({
   title,

@@ -30,9 +30,9 @@ interface CredentialCopy {
 }
 
 /**
- * Le vocabulaire de chaque canal, mot pour mot : le champ porte le nom de ce que l'utilisateur vient
- * de copier chez lui, sinon il ne sait pas qu'il tient la bonne chose. Où le trouver reste au mode
- * d'emploi (channelSetup).
+ * The vocabulary of each channel, word for word: the field carries the name of what the user just
+ * copied from their side, otherwise they cannot tell they hold the right thing. Where to find it
+ * belongs to the how-to (channelSetup).
  */
 const CREDENTIAL_COPY: Record<
   NotificationChannelName,
@@ -71,7 +71,7 @@ export function credentialCopy(
   return CREDENTIAL_COPY[channel][field]
 }
 
-/** Ce qu'un brouillon non enregistré nomme, dans les mots du canal qu'il modifie. */
+/** What an unsaved draft names, in the words of the channel it edits. */
 export function notificationDraftLabels(
   channel: NotificationChannelName,
 ): Record<keyof NotificationValues, string> {

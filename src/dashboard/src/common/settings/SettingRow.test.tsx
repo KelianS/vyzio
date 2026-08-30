@@ -23,9 +23,9 @@ function declare(overrides: Partial<SettingDeclaration>): SettingDeclaration {
 }
 
 /**
- * Ces tests portent sur la **decision** d'ADR-43, pas sur le rendu : la nature
- * de la valeur determine le controle, et l'auteur d'un ecran n'a pas prise
- * dessus. Si l'un d'eux devient faux, c'est la grammaire qui a derive.
+ * These tests cover the **decision** of ADR-43, not the rendering: the nature of
+ * the value determines the control, and the author of a screen has no hold on it.
+ * If one of them turns false, it is the grammar that drifted.
  */
 describe('Grammaire des réglages — le contrôle se déduit de la nature', () => {
   it('toggle_When declared_Should render a switch', () => {
@@ -36,8 +36,8 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
   it.each([2, 4, 9])(
     'choice_When exclusive with %i options_Should always be a dropdown',
     (count) => {
-      // Un controle segmente a libelles longs deborde et casse la colonne de
-      // controle commune, qui est justement ce qui rend une page balayable.
+      // A segmented control with long labels overflows and breaks the shared control
+      // column, which is precisely what makes a page scannable.
       render(
         <SettingRow
           setting={declare({ nature: { kind: 'choice', options: options(count) }, value: 'v0' })}
@@ -48,8 +48,8 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
   )
 
   it('multiChoice_When at rest_Should summarise the state on a single line', async () => {
-    // Un reglage se lit au repos : une liste de cases montre les options, jamais
-    // l'etat — et elle mange la hauteur de la page au passage.
+    // A setting reads at rest: a list of boxes shows the options, never the state -
+    // and it eats the height of the page on the way.
     render(
       <SettingRow
         setting={declare({
@@ -141,8 +141,8 @@ describe('Grammaire des réglages — anatomie de la ligne', () => {
     )
 
     expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
-    // Attenuee tant qu'elle est suivie : la provenance se lit sur l'aspect de la
-    // valeur, pas sur une legende repetee sous chaque ligne.
+    // Dimmed for as long as it follows: provenance reads from how the value looks,
+    // not from a caption repeated under every row.
     expect(screen.getByRole('spinbutton').className).toContain('text-muted-foreground')
   })
 
@@ -163,7 +163,7 @@ describe('Grammaire des réglages — anatomie de la ligne', () => {
       />,
     )
 
-    // Nomme la valeur retablie plutot que d'annoncer une remise a zero.
+    // Names the restored value rather than announcing a reset.
     const revert = screen.getAllByRole('button', {
       name: 'Revenir à la valeur d’origine : 7 jours',
     })

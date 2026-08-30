@@ -71,7 +71,7 @@ function DetectionForm({
     async () =>
       container.saveCameraDetectionConfig.execute(cameraId, {
         ...draft.values,
-        // Inchangees ici : elles se reglent sur la page Conservation.
+        // Unchanged here: they are set on the Retention page.
         continuousDaysOverride: config.retention.continuous.override,
         motionDaysOverride: config.retention.motion.override,
         eventClipDaysOverride: config.retention.eventClip.override,

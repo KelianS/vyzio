@@ -12,9 +12,9 @@ export interface RestartWording {
 }
 
 /**
- * Un echec de redemarrage est persistant (ADR-44) : partout ou la question se repose, elle se
- * repose en le disant. Foyer unique — l'en-tete et le garde de navigation posent la meme question,
- * et le garde la reposait avec le texte d'origine, comme si rien n'avait echoue.
+ * A failed restart is persistent (ADR-44): everywhere the question is asked again, it is asked
+ * saying so. A single home - the header and the navigation guard ask the same question, and the
+ * guard used to ask it with the original wording, as if nothing had failed.
  */
 export function restartWording(failure: string | null): RestartWording {
   return failure

@@ -60,3 +60,4 @@ référence ces ADR sans les recopier.
 | [ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md) | Accès distant à l'interface : réseau overlay NetBird, guidé par Vyzio mais opéré par l'utilisateur | Accepté |
 | [ADR-52](0052-le-sens-entrant-passe-par-le-bot-natif-du-canal-identifiants-declares-par-sens.md) | Le sens entrant passe par le bot natif du canal : identifiants déclarés par sens | Accepté |
 | [ADR-53](0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) | La documentation utilisateur vit dans l'interface : trois niveaux d'aide | Accepté |
+| [ADR-54](0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md) | L'accès à l'interface est gardé par un compte propriétaire, session serveur en cookie | Accepté |

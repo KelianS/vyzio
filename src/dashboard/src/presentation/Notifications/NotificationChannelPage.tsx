@@ -67,8 +67,8 @@ export function NotificationChannelPage() {
 
   if (!channel || (!config.loading && !config.data)) {
     return (
-      // Cette route annonce porter son propre en-tete : sans canal a nommer,
-      // c'est a l'echec de le faire, sinon la page resterait anonyme.
+      // This route announces that it carries its own header: with no channel to name,
+      // the failure has to do it, or the page would stay anonymous.
       <SettingsPage>
         <h1 className="font-serif text-3xl">Canal introuvable</h1>
         <Link
@@ -176,7 +176,7 @@ function ChannelForm({
       value: draft.values.enabled,
       onChange: (value) => draft.set('enabled', value as boolean),
     },
-    // Ce que le canal demande, il le declare : l'ecran ne connait aucun canal en propre.
+    // What the channel asks for, it declares: the screen knows no channel of its own.
     ...config.credentials.map((credential): SettingDeclaration => {
       const copy = credentialCopy(config.channel, credential.field)
       return {
@@ -192,7 +192,7 @@ function ChannelForm({
     }),
   ]
 
-  // Meme ordre que la detection : ce qui est concerne d'abord, le seuil ensuite.
+  // Same order as detection: what is concerned first, the threshold next.
   const when: SettingDeclaration[] = [
     {
       id: 'channel-labels',
@@ -272,7 +272,7 @@ function ChannelForm({
     {
       id: 'channel-media',
       label: 'Ce qui est envoyé',
-      // Un canal qui ne sait pas porter de video ne l'offre pas : la capacite decide (ADR-50).
+      // A channel that cannot carry video does not offer it: the capability decides (ADR-50).
       nature: {
         kind: 'choice',
         options: MEDIA_MODE_OPTIONS.filter(

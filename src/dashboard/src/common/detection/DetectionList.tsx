@@ -14,13 +14,13 @@ interface DetectionListProps {
   events: DetectionEvent[]
   apiBaseUrl: string
   onOpenMedia: (type: 'image' | 'video', url: string) => void
-  /** Ce que l'ecran ajoute a une ligne — la correction d'identite, sur l'historique seulement. */
+  /** What the screen adds to a row - the identity correction, on the history only. */
   renderExtra?: (event: DetectionEvent) => ReactNode
 }
 
 /**
- * La liste des detections, la meme a l'accueil et dans l'historique : l'accueil n'en est que les
- * dernieres. Deux rendus separes avaient diverge, l'un gardant la miniature que l'autre avait perdue.
+ * The detection list, the same on the home screen and in the history: home is only the latest
+ * of them. Two separate renderings had drifted, one keeping the thumbnail the other had lost.
  */
 export function DetectionList({
   events,
@@ -47,7 +47,7 @@ export function DetectionList({
               type="button"
               aria-label={`Voir l’aperçu — ${formatEventTitle(event)}`}
               className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              // La tuile montre le recadrage, l'ouverture montre le plan large : deux images, pas deux tailles.
+              // The tile shows the crop, opening shows the wide shot: two images, not two sizes.
               onClick={() => onOpenMedia('image', snapshotUrl(apiBaseUrl, event.eventId))}
             >
               <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />

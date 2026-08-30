@@ -1,5 +1,5 @@
-// Classe sur <html> plutot que la seule requete media (ADR-42) : rend un choix explicite possible plus tard.
-// Pas encore appele dans main.tsx : tente le 2026-08-03, plusieurs surfaces restaient illisibles en sombre.
+// A class on <html> rather than the media query alone (ADR-42): makes an explicit choice possible later.
+// Not called from main.tsx yet: tried on 2026-08-03, several surfaces stayed unreadable in dark.
 
 const DARK_CLASS = 'dark'
 const DARK_QUERY = '(prefers-color-scheme: dark)'
@@ -8,7 +8,7 @@ function apply(dark: boolean) {
   document.documentElement.classList.toggle(DARK_CLASS, dark)
 }
 
-/** Aligne le theme sur la preference systeme et le maintient aligne ; renvoie de quoi arreter l'ecoute. */
+/** Aligns the theme on the system preference and keeps it aligned; returns how to stop listening. */
 export function startThemeSync(): () => void {
   const query = window.matchMedia(DARK_QUERY)
   apply(query.matches)

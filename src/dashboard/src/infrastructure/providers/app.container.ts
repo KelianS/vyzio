@@ -1,4 +1,5 @@
 import { getDashboardRuntime } from '../config/runtime'
+import { HttpAccessRepository } from '../repositories/HttpAccessRepository'
 import { HttpCameraRepository } from '../repositories/HttpCameraRepository'
 import {
   HttpCameraLabelsRepository,
@@ -9,6 +10,7 @@ import { HttpNotificationSettingsRepository } from '../repositories/HttpNotifica
 import { HttpProfileRepository } from '../repositories/HttpProfileRepository'
 import { HttpRecordingSettingsRepository } from '../repositories/HttpRecordingSettingsRepository'
 import { HttpSystemRepository } from '../repositories/HttpSystemRepository'
+import { makeAccessContainer, type AccessContainer } from './access.container'
 import { makeCamerasContainer, type CamerasContainer } from './cameras.container'
 import {
   makeDetectionHistoryContainer,
@@ -21,6 +23,7 @@ import { makeProfilesContainer, type ProfilesContainer } from './profiles.contai
 export interface AppContainer {
   apiBaseUrl: string
   frigateBaseUrl: string
+  access: AccessContainer
   hub: HubContainer
   cameras: CamerasContainer
   profiles: ProfilesContainer
@@ -31,6 +34,7 @@ export interface AppContainer {
 export function makeAppContainer(): AppContainer {
   const runtime = getDashboardRuntime()
 
+  const accessRepository = new HttpAccessRepository(runtime.apiBaseUrl)
   const hubRepository = new HttpHubRepository(runtime.apiBaseUrl)
   const systemRepository = new HttpSystemRepository(runtime.apiBaseUrl)
   const cameraRepository = new HttpCameraRepository(runtime.apiBaseUrl)
@@ -43,6 +47,7 @@ export function makeAppContainer(): AppContainer {
   return {
     apiBaseUrl: runtime.apiBaseUrl,
     frigateBaseUrl: runtime.frigateBaseUrl,
+    access: makeAccessContainer(accessRepository),
     hub: makeHubContainer(hubRepository, systemRepository),
     cameras: makeCamerasContainer(
       cameraRepository,

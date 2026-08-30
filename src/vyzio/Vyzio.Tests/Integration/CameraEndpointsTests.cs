@@ -367,7 +367,14 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
             db.Database.Migrate();
             SeedDatabase(db);
+            SignedInTestClient.SeedOwnerSession(db);
         });
+    }
+
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Add("Cookie", SignedInTestClient.Cookie);
     }
 
     protected override void Dispose(bool disposing)

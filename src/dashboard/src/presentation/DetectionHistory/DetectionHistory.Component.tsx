@@ -245,7 +245,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-/** Ce que l'historique ajoute a une ligne de detection : dire qui c'etait vraiment. */
+/** What the history adds to a detection row: saying who it really was. */
 function IdentityCorrection({
   event,
   profiles,
@@ -262,7 +262,7 @@ function IdentityCorrection({
 
   if (!fixing) {
     return (
-      // `ghost` ne se donnait pas pour un bouton, pose sous une ligne de texte gris.
+      // `ghost` did not pass for a button, sitting under a line of grey text.
       <Button
         type="button"
         variant="outline"

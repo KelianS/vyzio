@@ -2,11 +2,11 @@ import { useEffect } from 'react'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 
 /**
- * Declare qu'une page porte des modifications non enregistrees.
+ * Declares that a page carries unsaved changes.
  *
- * La page ne bloque pas elle-meme : elle le **signale**, et `NavigationGuard`
- * en tire les consequences. C'est ce qui garde un seul blocage dans
- * l'application, la ou react-router n'en accepte qu'un.
+ * The page does not block by itself: it **signals**, and `NavigationGuard` draws
+ * the consequences. That is what keeps a single block in the application, where
+ * react-router accepts only one.
  */
 export function useUnsavedChanges(dirty: boolean) {
   const setUnsavedChanges = useRootStore((state) => state.setUnsavedChanges)
@@ -18,8 +18,8 @@ export function useUnsavedChanges(dirty: boolean) {
 
   useEffect(() => {
     if (!dirty) return
-    // Fermeture d'onglet ou rechargement : le navigateur n'autorise qu'un
-    // avertissement generique, et c'est tout ce qui est possible.
+    // Closing the tab or reloading: the browser allows a generic warning only,
+    // and that is all that is possible.
     const warn = (event: BeforeUnloadEvent) => event.preventDefault()
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)

@@ -3,13 +3,13 @@ import { Link, useLocation } from 'react-router'
 import { cn } from '../ui/utils'
 
 /**
- * Barre principale (ADR-40). Elle ne porte que la **consultation**, plus une
- * unique entree vers les reglages : un libelle doit dire la nature de l'ecran,
- * consulter ou regler, et les deux ne se melangent pas.
+ * The main bar (ADR-40). It carries **viewing** only, plus a single way into the
+ * settings: a label must say what kind of screen it opens, viewing or setting, and
+ * the two never mix.
  *
- * Elle est **fermee par construction** — la place d'un reglage est dans
- * l'arborescence, jamais ici. Ajouter une entree est une decision, pas un
- * reflexe : c'est cette contrainte qui empeche de retrouver l'etat corrige.
+ * It is **closed by construction** - the place for a setting is in the tree, never
+ * here. Adding an entry is a decision, not a reflex: that constraint is what keeps
+ * the corrected state from drifting back.
  */
 const CONSULTATION_ITEMS = [
   { path: '/', label: 'Accueil' },
@@ -28,8 +28,8 @@ export function AppHeader({ trailing }: { trailing?: ReactNode }) {
 
   const linkClass = (active: boolean) =>
     cn(
-      // Pilule : c'est un lien de navigation, pas un bouton d'action
-      // (regle de forme du DESIGN SYSTEM).
+      // Pill: this is a navigation link, not an action button
+      // (shape rule of the DESIGN SYSTEM).
       'inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition-colors',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current',
       active

@@ -17,6 +17,40 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("Vyzio.Core.Entities.Account", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("PasswordChangedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_changed_at");
+
+                    b.Property<DateTime?>("PasswordForgottenAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_forgotten_at");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id")
+                        .HasName("pk_accounts");
+
+                    b.ToTable("accounts", (string)null);
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>
                 {
                     b.Property<string>("Id")
@@ -759,26 +793,48 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("account_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Device")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("device");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("expires_at");
 
-                    b.Property<bool>("Revoked")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("revoked");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(100)
+                    b.Property<DateTime>("LastSeenAt")
                         .HasColumnType("TEXT")
-                        .HasColumnName("user_id");
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("token_hash");
 
                     b.HasKey("Id")
                         .HasName("pk_sessions");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("idx_sessions_account");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sessions_token");
 
                     b.ToTable("sessions", (string)null);
                 });
@@ -850,6 +906,16 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_profile_photos_profiles_profile_id");
 
                     b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sessions_accounts_account_id");
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>

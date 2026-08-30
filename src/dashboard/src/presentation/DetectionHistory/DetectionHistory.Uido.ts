@@ -9,7 +9,7 @@ export interface DetectionMedia {
 
 export interface DetectionHistoryUido {
   items: DetectionEvent[]
-  /** Ce qui reste a lire au-dela de la derniere ligne affichee ; null quand il n'y a plus rien. */
+  /** What is left to read past the last shown row; null when there is nothing more. */
   nextCursor: string | null
   loaded: boolean
   profiles: Profile[]
@@ -18,7 +18,7 @@ export interface DetectionHistoryUido {
   loadingMore: boolean
   error: string | null
   media: DetectionMedia | null
-  /** Les filtres sont une option, pas le haut de l'ecran : replies tant qu'on ne les demande pas. */
+  /** Filters are an option, not the top of the screen: folded until they are asked for. */
   filtersOpen: boolean
 
   filterCamera: string

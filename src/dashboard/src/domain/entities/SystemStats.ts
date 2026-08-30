@@ -7,7 +7,7 @@ export interface SystemStats {
   storage: StorageStats | null
   cameras: CameraFps[]
   detection: DetectionConfig
-  // Des reglages enregistres que la surveillance n'a pas encore repris (ADR-44).
+  // Saved settings that surveillance has not picked up yet (ADR-44).
   pendingChanges: boolean
 }
 

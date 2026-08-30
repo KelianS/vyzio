@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Vyzio.Application.UseCases.Access;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.Commands;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -27,6 +28,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DetectionProfileResolver>();
         services.AddScoped<CameraDirectory>();
         services.AddSingleton(new DetectionMessageFormatter(tz));
+
+        // Access use cases (ADR-54)
+        services.AddScoped<GetAccessStateUseCase>();
+        services.AddScoped<CreateOwnerAccountUseCase>();
+        services.AddScoped<SignInUseCase>();
+        services.AddScoped<SignOutUseCase>();
+        services.AddScoped<SignOutEverywhereUseCase>();
+        services.AddScoped<ChangePasswordUseCase>();
+        services.AddScoped<ResetOwnerPasswordUseCase>();
+        services.AddScoped<AuthenticateSessionUseCase>();
 
         // Camera use cases
         services.AddScoped<DiscoverCamerasUseCase>();
