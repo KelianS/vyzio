@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
@@ -23,6 +23,7 @@ public class DvripPtzProviderTests
         var camera = new Camera
         {
             Slug = "cam",
+            FrigateCameraName = "cam",
             DisplayName = "cam",
             Host = "127.0.0.1",
             Port = 554,

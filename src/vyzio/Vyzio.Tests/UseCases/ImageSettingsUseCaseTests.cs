@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -24,6 +24,7 @@ public class GetCameraImageSettingsUseCaseTests
     {
         Id = id,
         Slug = id,
+        FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
     };
@@ -97,6 +98,7 @@ public class SetCameraImageSettingsUseCaseTests
     {
         Id = id,
         Slug = id,
+        FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
     };

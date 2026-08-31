@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Core.Entities;
@@ -13,6 +13,7 @@ public class TapoKlapProviderTests
     {
         Id = "cam1",
         Slug = "cam1",
+        FrigateCameraName = "cam1",
         DisplayName = "Tapo Cam",
         Host = "192.168.1.50",
         Port = 554,

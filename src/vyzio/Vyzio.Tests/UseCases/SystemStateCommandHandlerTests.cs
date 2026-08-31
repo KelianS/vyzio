@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -82,7 +82,7 @@ public class SystemStateCommandHandlerTests
         ConfigureWorkingChannel();
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new Camera { Slug = "front_door", DisplayName = "Entree", Host = "127.0.0.1" }
+            new Camera { Slug = "front_door", FrigateCameraName = "front_door", DisplayName = "Entree", Host = "127.0.0.1" }
         ]);
         _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns(
         [

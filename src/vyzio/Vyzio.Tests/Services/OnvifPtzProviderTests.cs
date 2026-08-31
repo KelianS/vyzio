@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -14,6 +14,7 @@ public class OnvifPtzProviderTests
     {
         Id = "cam1",
         Slug = "cam1",
+        FrigateCameraName = "cam1",
         DisplayName = "ONVIF Cam",
         Host = "192.168.1.100",
         Port = 8899,

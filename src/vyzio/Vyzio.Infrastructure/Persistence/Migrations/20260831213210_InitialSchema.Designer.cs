@@ -11,8 +11,8 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20260706163704_AddPtzPresets")]
-    partial class AddPtzPresets
+    [Migration("20260831213210_InitialSchema")]
+    partial class InitialSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,24 +20,68 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("Vyzio.Core.Entities.Account", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("PasswordChangedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_changed_at");
+
+                    b.Property<DateTime?>("PasswordForgottenAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_forgotten_at");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id")
+                        .HasName("pk_accounts");
+
+                    b.ToTable("accounts", (string)null);
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
-                    b.Property<bool>("ContinuousRecordingEnabled")
+                    b.Property<int?>("ContinuousDaysOverride")
                         .HasColumnType("INTEGER")
-                        .HasColumnName("continuous_recording_enabled");
+                        .HasColumnName("continuous_days_override");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("DetectStreamId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("detect_stream_id");
+
                     b.Property<string>("DetectionLabelsJson")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT")
                         .HasColumnName("detection_labels_json");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("device_id");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -45,7 +89,12 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("display_name");
 
+                    b.Property<int?>("EventClipDaysOverride")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("event_clip_days_override");
+
                     b.Property<string>("FrigateCameraName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")
                         .HasColumnName("frigate_camera_name");
@@ -68,6 +117,18 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("last_successful_frame_at");
 
+                    b.Property<int?>("MotionDaysOverride")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("motion_days_override");
+
+                    b.Property<int>("MotionSensitivity")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("motion_sensitivity");
+
+                    b.Property<bool>("MotionSensitivityPinned")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("motion_sensitivity_pinned");
+
                     b.Property<string>("Password")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT")
@@ -88,7 +149,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Property<string>("PrivacyStrategy")
                         .IsRequired()
                         .HasColumnType("TEXT")
-                        .HasColumnName("privacy_mode_strategy");
+                        .HasColumnName("privacy_strategy");
 
                     b.Property<bool>("PrivacyVendorCut")
                         .HasColumnType("INTEGER")
@@ -115,11 +176,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("status");
-
-                    b.Property<string>("StreamPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("stream_path");
 
                     b.Property<string>("StreamProtocol")
                         .IsRequired()
@@ -151,6 +207,9 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_cameras");
+
+                    b.HasIndex("DeviceId")
+                        .HasDatabaseName("idx_cameras_device");
 
                     b.HasIndex("DisplayName")
                         .HasDatabaseName("idx_cameras_display_name");
@@ -192,6 +251,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Property<string>("LastError")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_error");
+
+                    b.Property<bool>("ManuallyConfigured")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("manually_configured");
 
                     b.Property<string>("Protocol")
                         .IsRequired()
@@ -266,7 +329,147 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("camera_privacy_schedules", (string)null);
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraStream", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CameraId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("camera_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("Fps")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("fps");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("height");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("ordinal");
+
+                    b.Property<string>("Path")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("path");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_camera_streams");
+
+                    b.HasIndex("CameraId", "Ordinal")
+                        .IsUnique()
+                        .HasDatabaseName("ux_camera_streams_camera_ordinal");
+
+                    b.ToTable("camera_streams", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.ChannelPairing", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTime?>("CodeExpiresAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("code_expires_at");
+
+                    b.Property<string>("ConversationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<DateTime?>("PairedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("paired_at");
+
+                    b.Property<string>("PairingCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("pairing_code");
+
+                    b.HasKey("Id")
+                        .HasName("pk_channel_pairings");
+
+                    b.HasIndex("Channel")
+                        .IsUnique()
+                        .HasDatabaseName("idx_channel_pairings_channel");
+
+                    b.ToTable("channel_pairings", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CommandJournal", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("channel");
+
+                    b.Property<string>("Command")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("command");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("outcome");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("received_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_command_journal");
+
+                    b.HasIndex("ReceivedAt")
+                        .HasDatabaseName("idx_command_journal_received");
+
+                    b.HasIndex("Channel", "ConversationId", "ReceivedAt")
+                        .HasDatabaseName("idx_command_journal_origin");
+
+                    b.ToTable("command_journal", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.Notification", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT")
@@ -278,81 +481,8 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("camera");
 
-                    b.Property<float?>("Confidence")
-                        .HasColumnType("REAL")
-                        .HasColumnName("confidence");
-
-                    b.Property<string>("FrigateEventId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("frigate_event_id");
-
-                    b.Property<bool>("HasClip")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("has_clip");
-
-                    b.Property<bool>("HasSnapshot")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("has_snapshot");
-
-                    b.Property<string>("Identity")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("identity");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("label");
-
-                    b.Property<string>("Lifecycle")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("lifecycle");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("occurred_at");
-
-                    b.Property<string>("ProfileId")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("profile_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_observed_events");
-
-                    b.HasIndex("FrigateEventId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_events_frigate_event_id");
-
-                    b.HasIndex("OccurredAt")
-                        .HasDatabaseName("idx_events_occurred");
-
-                    b.HasIndex("Camera", "OccurredAt")
-                        .HasDatabaseName("idx_events_camera");
-
-                    b.HasIndex("Label", "OccurredAt")
-                        .HasDatabaseName("idx_events_label");
-
-                    b.HasIndex("ProfileId", "OccurredAt")
-                        .HasDatabaseName("idx_events_profile");
-
-                    b.ToTable("observed_events", (string)null);
-                });
-
-            modelBuilder.Entity("Vyzio.Core.Entities.Notification", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("id");
-
                     b.Property<string>("Channel")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("channel");
 
@@ -360,11 +490,17 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("error_message");
 
-                    b.Property<string>("EventId")
+                    b.Property<string>("FrigateEventId")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT")
-                        .HasColumnName("event_id");
+                        .HasColumnName("frigate_event_id");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label");
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("TEXT")
@@ -372,12 +508,17 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("status");
 
                     b.HasKey("Id")
                         .HasName("pk_notifications");
+
+                    b.HasIndex("FrigateEventId", "Channel")
+                        .HasDatabaseName("idx_notifications_event");
+
+                    b.HasIndex("Channel", "Camera", "Label", "SentAt")
+                        .HasDatabaseName("idx_notifications_cooldown");
 
                     b.ToTable("notifications", (string)null);
                 });
@@ -397,25 +538,13 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnName("active_to_hour");
 
                     b.Property<string>("AllowedLabelsJson")
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT")
                         .HasColumnName("allowed_labels_json");
 
-                    b.Property<string>("BotToken")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("bot_token");
-
                     b.Property<string>("Channel")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("channel");
-
-                    b.Property<string>("ChatId")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("chat_id");
 
                     b.Property<DateTime?>("ConfiguredAt")
                         .HasColumnType("TEXT")
@@ -425,6 +554,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("cooldown_minutes");
 
+                    b.Property<string>("CredentialsJson")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("credentials_json");
+
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_enabled");
@@ -433,22 +566,20 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("last_test_error");
 
-                    b.Property<string>("LastTestStatus")
-                        .HasMaxLength(50)
+                    b.Property<string>("LastTestOutcome")
                         .HasColumnType("TEXT")
-                        .HasColumnName("last_test_status");
+                        .HasColumnName("last_test_outcome");
 
                     b.Property<DateTime?>("LastTestedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_tested_at");
 
                     b.Property<string>("MediaMode")
-                        .HasMaxLength(20)
+                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("media_mode");
 
                     b.Property<string>("MessageFieldsJson")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT")
                         .HasColumnName("message_fields_json");
 
@@ -458,6 +589,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_notification_channel_configs");
+
+                    b.HasIndex("Channel")
+                        .IsUnique()
+                        .HasDatabaseName("ux_notification_channel");
 
                     b.ToTable("notification_channel_configs", (string)null);
                 });
@@ -627,32 +762,83 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.ToTable("ptz_presets", (string)null);
                 });
 
+            modelBuilder.Entity("Vyzio.Core.Entities.RecordingSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ContinuousDays")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("continuous_days");
+
+                    b.Property<int>("EventClipDays")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("event_clip_days");
+
+                    b.Property<int>("MotionDays")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("motion_days");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recording_settings");
+
+                    b.ToTable("recording_settings", (string)null);
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("account_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Device")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("device");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("expires_at");
 
-                    b.Property<bool>("Revoked")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("revoked");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(100)
+                    b.Property<DateTime>("LastSeenAt")
                         .HasColumnType("TEXT")
-                        .HasColumnName("user_id");
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("token_hash");
 
                     b.HasKey("Id")
                         .HasName("pk_sessions");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("idx_sessions_account");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sessions_token");
 
                     b.ToTable("sessions", (string)null);
                 });
@@ -681,15 +867,16 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Navigation("Camera");
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.DetectionEvent", b =>
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraStream", b =>
                 {
-                    b.HasOne("Vyzio.Core.Entities.Profile", "Profile")
-                        .WithMany("DetectionEvents")
-                        .HasForeignKey("ProfileId")
+                    b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
+                        .WithMany("Streams")
+                        .HasForeignKey("CameraId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_observed_events_profiles_profile_id");
+                        .IsRequired()
+                        .HasConstraintName("fk_camera_streams_cameras_camera_id");
 
-                    b.Navigation("Profile");
+                    b.Navigation("Camera");
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.ProfileCameraLink", b =>
@@ -725,11 +912,24 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Navigation("Profile");
                 });
 
+            modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sessions_accounts_account_id");
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>
+                {
+                    b.Navigation("Streams");
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.Profile", b =>
                 {
                     b.Navigation("CameraLinks");
-
-                    b.Navigation("DetectionEvents");
 
                     b.Navigation("Photos");
                 });

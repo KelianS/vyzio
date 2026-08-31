@@ -1,4 +1,4 @@
-using Vyzio.Core.Common;
+﻿using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
@@ -20,7 +20,7 @@ public sealed record CameraDto(
     bool NeedsAttention,
     DateTimeOffset? LastReachabilityCheckAt,
     DateTimeOffset? LastSuccessfulFrameAt,
-    string? FrigateCameraName,
+    string FrigateCameraName,
     string? VendorFamily,
     bool PrivacyModeActive,
     string? PrivacyModeSource,
@@ -30,9 +30,6 @@ public sealed record CameraDto(
     IReadOnlyList<string> SupportedProtocols,
     IReadOnlyList<string> VerifiedCapabilities)
 {
-    /// <summary>Name this camera answers to in Frigate — same rule as <see cref="Camera.FrigateName"/>.</summary>
-    public string FrigateName => CameraNaming.ToFrigateName(FrigateCameraName, Slug);
-
     public static CameraDto From(Camera camera, IEnumerable<CameraCapabilityBinding>? verifiedBindings = null) => new(
         camera.Id,
         camera.Slug,

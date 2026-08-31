@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using Vyzio.Core.Common;
@@ -81,11 +81,10 @@ public class Camera
 
     public DateTimeOffset? LastSuccessfulFrameAt { get; set; }
 
-    [MaxLength(200)]
-    public string? FrigateCameraName { get; set; }
-
-    [NotMapped]
-    public string FrigateName => CameraNaming.ToFrigateName(FrigateCameraName, Slug);
+    // The key this camera answers to in Frigate. Set at onboarding and on every rename, never null:
+    // Frigate keys refuse dashes, so it is never the slug itself.
+    [Required, MaxLength(200)]
+    public required string FrigateCameraName { get; set; }
 
     [Required, MaxLength(50)]
     public string ValidationState { get; set; } = "draft";
@@ -102,8 +101,7 @@ public class Camera
     // PTZ + privacy strategy (ADR-21)
     public bool PtzSupported { get; set; }
 
-    // App-level privacy configuration. Column kept as privacy_mode_strategy for schema compat.
-    [Column("privacy_mode_strategy")]
+    // App-level privacy configuration (ADR-24)
     public PrivacyStrategy PrivacyStrategy { get; set; } = PrivacyStrategy.SoftwareBlur;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

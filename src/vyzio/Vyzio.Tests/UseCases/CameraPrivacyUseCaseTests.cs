@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -27,6 +27,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     {
         Id = id,
         Slug = id,
+        FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
         Port = 554,
@@ -167,6 +168,7 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     {
         Id = id,
         Slug = id,
+        FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
         Port = 554,
@@ -219,6 +221,7 @@ public class SetCameraPrivacyStrategyUseCaseTests
     {
         Id = "cam1",
         Slug = "cam1",
+        FrigateCameraName = "cam1",
         DisplayName = "Test",
         Host = "192.168.1.1",
     };

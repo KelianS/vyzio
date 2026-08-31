@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.StaticFiles;
+﻿using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -118,7 +118,7 @@ public static class CamerasEndpoints
             var camera = cameras.FirstOrDefault(c => c.Id == id);
             if (camera is null) return Results.NotFound();
 
-            var frigateCamera = camera.FrigateName;
+            var frigateCamera = camera.FrigateCameraName;
             var frame = await frames.TryGetLatestFrameAsync(frigateCamera, ct);
             if (frame is null) return Results.NotFound();
 
@@ -332,7 +332,7 @@ public static class CamerasEndpoints
             var camera = cameras.FirstOrDefault(c => c.Id == id);
             if (camera is null) return Results.NotFound();
 
-            var slug = camera.FrigateName;
+            var slug = camera.FrigateCameraName;
             var bytes = await frames.TryGetLatestFrameAsync(slug, ct);
             if (bytes is null)
                 return Results.Problem("Could not retrieve frame from Frigate");

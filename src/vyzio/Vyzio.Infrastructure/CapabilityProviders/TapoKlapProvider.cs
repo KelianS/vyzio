@@ -40,11 +40,8 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
             active, camera.Host, active ? "off" : "on");
     }
 
-    // NEW — continuous pan/tilt via KLAP motorMove. Direction/speed mapping is a first
-    // implementation derived from community KLAP documentation (python-kasa); the exact
-    // payload shape should be confirmed against real Tapo pan-tilt hardware before this
-    // provider is offered as a verified preset binding (see ADR-22 migration/backfill notes —
-    // Ptz/TapoKlap is never auto-activated for existing cameras, probe-gated only).
+    // Direction/speed mapping comes from community KLAP documentation, never confirmed against real
+    // Tapo pan-tilt hardware, which is why this binding stays probe-gated and is never seeded (ADR-22).
     public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
         var session = await AuthenticateAsync(camera, ct)

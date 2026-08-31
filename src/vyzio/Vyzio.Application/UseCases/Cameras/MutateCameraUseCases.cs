@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -316,7 +316,6 @@ public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfig
 
         camera.IsEnabled = true;
         camera.ValidationState = "validated";
-        camera.FrigateCameraName ??= camera.Slug.Replace('-', '_');
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         var catalog = await cameras.GetAllAsync(ct);
@@ -402,8 +401,7 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
         {
             camera.IsEnabled = true;
             camera.ValidationState = "validated";
-            camera.FrigateCameraName ??= camera.Slug.Replace('-', '_');
-            camera.UpdatedAt = DateTimeOffset.UtcNow;
+                camera.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         var applyResult = await frigateConfigApplier.ApplyAsync(applicable, ct);

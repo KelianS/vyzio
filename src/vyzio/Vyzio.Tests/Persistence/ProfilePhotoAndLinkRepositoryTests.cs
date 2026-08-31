@@ -119,6 +119,7 @@ public class ProfileCameraLinkRepositoryTests : IDisposable
         var camera = new Camera
         {
             Slug = cameraName,
+            FrigateCameraName = cameraName.Replace('-', '_'),
             DisplayName = cameraName,
             SourceType = "rtsp",
             Host = "192.168.1.1",
