@@ -102,8 +102,7 @@ public class Camera
     // PTZ + privacy strategy (ADR-21)
     public bool PtzSupported { get; set; }
 
-    // App-level privacy configuration. Column kept as privacy_mode_strategy for schema compat.
-    [Column("privacy_mode_strategy")]
+    // App-level privacy configuration (ADR-24)
     public PrivacyStrategy PrivacyStrategy { get; set; } = PrivacyStrategy.SoftwareBlur;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

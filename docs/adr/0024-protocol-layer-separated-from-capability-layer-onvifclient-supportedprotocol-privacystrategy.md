@@ -52,7 +52,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
 
 **3. `PrivacyStrategy` — enum des stratégies vie privée par caméra.**
 
-`PrivacyModeStrategy { Software, PtzParking, Hardware }` renommé en `PrivacyStrategy { None, SoftwareBlur, PtzParking, Hardware }`. Valeur BDD conservée dans la colonne `privacy_mode_strategy` (pas de rename schéma), avec migration de données `'software'` → `'software_blur'`.
+`PrivacyModeStrategy { Software, PtzParking, Hardware }` renommé en `PrivacyStrategy { None, SoftwareBlur, PtzParking, Hardware }`, persisté dans la colonne `privacy_strategy`.
 
 **4. `PtzParkingPrivacyProvider` et `SoftwareOnlyPrivacyProvider` supprimés.**
 
@@ -72,7 +72,7 @@ Renommage sémantique : la capacité "privacy" enregistrée dans `camera_capabil
 
 **7. `BackfillCameraCapabilityBindingsUseCase` supprimé.**
 
-Le backfill au démarrage via Linq était un one-shot de migration devenu stale. La migration EF Core `20260705120000_ArchProtocolRefacto` remplace toutes ses transformations de données.
+Le backfill au démarrage via Linq était un one-shot de migration devenu stale, supprimé sans remplacement : le schéma initial porte directement l'état cible.
 
 ## Conséquences
 
@@ -81,4 +81,3 @@ Le backfill au démarrage via Linq était un one-shot de migration devenu stale.
 - ✅ `Camera.SupportedProtocols` ouvre la porte à des affichages informatifs en UI (badges protocoles)
 - ✅ `PtzParking` en tant que stratégie vie privée n'est plus couplé à un provider par protocole — fonctionne avec tout provider PTZ existant ou futur
 - ✅ `PrivacyStrategy.None` est maintenant une valeur explicite — les caméras sans stratégie configurée ne tombent plus silencieusement sur `SoftwareBlur`
-- ⚠️ Migration de données requise : `'software'` → `'software_blur'` dans `privacy_mode_strategy`, `'privacy_mode'` → `'hardware_privacy'` dans `capability`, suppression des bindings `ptz_parking`/`software_only`

@@ -145,7 +145,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Property<string>("PrivacyStrategy")
                         .IsRequired()
                         .HasColumnType("TEXT")
-                        .HasColumnName("privacy_mode_strategy");
+                        .HasColumnName("privacy_strategy");
 
                     b.Property<bool>("PrivacyVendorCut")
                         .HasColumnType("INTEGER")

@@ -28,7 +28,7 @@ new VendorCapabilityPreset(VendorFamily.Icsee,
 
 `SeedAndProbePresetAsync` essaie chaque candidat **dans l'ordre**, s'arrête au premier qui vérifie (`Verified = true`), et conserve le dernier essayé (avec son `LastError`) si aucun ne fonctionne — jamais de fallback silencieux vers un état non testé.
 
-**b) Nouveau champ `CameraCapabilityBinding.ManuallyConfigured`** (colonne `manually_configured`, migration additive `AddManuallyConfiguredToCapabilityBindings`) :
+**b) Nouveau champ `CameraCapabilityBinding.ManuallyConfigured`** (colonne `manually_configured`) :
 - mis à `true` uniquement par `ConfigureCameraCapabilityUseCase` (le chemin manuel — formulaire de configuration, y compris sur une marque reconnue) ;
 - laissé à `false` pour tout binding seedé depuis un preset ;
 - `SeedAndProbePresetAsync` ne touche **jamais** un binding `ManuallyConfigured = true`, qu'il soit vérifié ou non — seul un nouveau choix manuel de l'utilisateur peut le changer. Il se contente de re-probe pour rafraîchir `Verified`/`LastError`.

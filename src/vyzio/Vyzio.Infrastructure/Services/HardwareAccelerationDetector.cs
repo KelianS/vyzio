@@ -1,12 +1,9 @@
-using Vyzio.Core.Entities;
+﻿using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.Services;
 
-// Sonde des chemins connus du système de fichiers, sans dépendance à un outil externe
-// (nvidia-smi, lsusb) — sur un hôte qui ne les expose pas (dev, CI), retombe naturellement sur
-// CPU. Limité aux paliers déployables avec l'image Frigate déjà pinnée : Nvidia/AMD retombent
-// volontairement sur CPU (ADR-34, Coral USB non détecté — seul le PCIe l'est).
+// Probes known device paths instead of shelling out to nvidia-smi or lsusb, and only for the tiers the pinned Frigate image can actually use (ADR-34).
 public sealed class HardwareAccelerationDetector : IHardwareAccelerationDetector
 {
     private const string CoralPciePath = "/dev/apex_0";
