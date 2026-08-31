@@ -188,13 +188,17 @@ decision and the options rejected with it in [`docs/adr/`](docs/adr/), and how t
 
 ## Project status
 
-Vyzio is under **active development** and not yet released publicly. Cameras, detection, person
-recognition, notifications, live view, clips and history all work today, and the production
-plumbing (CI, Docker images, Compose deployment) is in place.
+Vyzio is under **active development**, and its version numbers say so: releases are `0.x`, and a
+screen can still move between two of them. Cameras, detection, person recognition, notifications,
+live view, clips and history all work today, and the production plumbing (CI, Docker images,
+Compose deployment) is in place.
 
-What is still missing before a public release is tracked in the
-[issues](https://github.com/KelianS/vyzio/issues), notably encrypted transport, per-camera areas
-of interest, and data export and erasure.
+What a 1.0 still waits on is tracked in the
+[issues](https://github.com/KelianS/vyzio/issues), notably
+[encrypted transport](https://github.com/KelianS/vyzio/issues/67),
+[per-camera areas of interest](https://github.com/KelianS/vyzio/issues/68), and
+[data export and erasure](https://github.com/KelianS/vyzio/issues/69). The transport gap is the one
+to read before deploying: [`SECURITY.md`](SECURITY.md) says what it means in practice.
 
 ---
 
