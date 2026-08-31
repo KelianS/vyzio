@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Vyzio.Core.Entities;
@@ -32,6 +32,7 @@ public class RtspCameraVerifierTests
         var result = await sut.VerifyAsync(new Camera
         {
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "127.0.0.1",
             Port = port,

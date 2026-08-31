@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20260831212006_InitialSchema")]
+    [Migration("20260831213210_InitialSchema")]
     partial class InitialSchema
     {
         /// <inheritdoc />
@@ -94,6 +94,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnName("event_clip_days_override");
 
                     b.Property<string>("FrigateCameraName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")
                         .HasColumnName("frigate_camera_name");

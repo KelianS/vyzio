@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using Vyzio.Core.Common;
@@ -81,11 +81,10 @@ public class Camera
 
     public DateTimeOffset? LastSuccessfulFrameAt { get; set; }
 
-    [MaxLength(200)]
-    public string? FrigateCameraName { get; set; }
-
-    [NotMapped]
-    public string FrigateName => CameraNaming.ToFrigateName(FrigateCameraName, Slug);
+    // The key this camera answers to in Frigate. Set at onboarding and on every rename, never null:
+    // Frigate keys refuse dashes, so it is never the slug itself.
+    [Required, MaxLength(200)]
+    public required string FrigateCameraName { get; set; }
 
     [Required, MaxLength(50)]
     public string ValidationState { get; set; } = "draft";

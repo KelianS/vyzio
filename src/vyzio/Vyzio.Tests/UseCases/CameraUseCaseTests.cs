@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -26,6 +26,7 @@ public class GetCamerasUseCaseTests
             new Camera
             {
                 Slug = "front-door",
+                FrigateCameraName = "front_door",
                 DisplayName = "Front Door",
                 Host = "192.168.1.10",
                 Port = 554,
@@ -51,7 +52,7 @@ public class GetCamerasUseCaseTests
         var cameraId = "cam-1";
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new Camera { Id = cameraId, Slug = "garage", DisplayName = "Garage", Host = "192.168.1.11", Port = 554, Status = "online", ValidationState = "validated", IsEnabled = true }
+            new Camera { Id = cameraId, Slug = "garage", FrigateCameraName = "garage", DisplayName = "Garage", Host = "192.168.1.11", Port = 554, Status = "online", ValidationState = "validated", IsEnabled = true }
         ]);
         _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -79,6 +80,7 @@ public class GetCameraStatusUseCaseTests
         {
             Id = "camera-1",
             Slug = "garage",
+            FrigateCameraName = "garage",
             DisplayName = "Garage",
             Host = "192.168.1.11",
             Port = 554,
@@ -142,6 +144,7 @@ public class DiscoverCamerasUseCaseTests
             {
                 Id = "camera-1",
                 Slug = "front-door",
+                FrigateCameraName = "front_door",
                 DisplayName = "Front Door",
                 Host = "192.168.1.10",
                 Port = 554,
@@ -169,6 +172,7 @@ public class DiscoverCamerasUseCaseTests
             {
                 Id = "camera-1",
                 Slug = "front-door",
+                FrigateCameraName = "front_door",
                 DisplayName = "Front Door",
                 Host = "192.168.1.10",
                 Port = 554,
@@ -282,6 +286,7 @@ public class VerifyCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -306,6 +311,7 @@ public class VerifyCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -474,6 +480,7 @@ public class ApplyCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -497,6 +504,7 @@ public class ApplyCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -535,6 +543,7 @@ public class DeleteCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             ValidationState = "validated",
@@ -572,6 +581,7 @@ public class UpdateCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -608,6 +618,7 @@ public class UpdateCameraUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -653,6 +664,7 @@ public class ApplyCameraConfigurationUseCaseTests
         {
             Id = "camera-1",
             Slug = "front-door",
+            FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
             Port = 554,
@@ -664,6 +676,7 @@ public class ApplyCameraConfigurationUseCaseTests
         {
             Id = "camera-2",
             Slug = "garage",
+            FrigateCameraName = "garage",
             DisplayName = "Garage",
             Host = "192.168.1.11",
             Port = 554,

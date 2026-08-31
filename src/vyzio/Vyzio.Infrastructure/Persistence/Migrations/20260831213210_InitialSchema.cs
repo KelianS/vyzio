@@ -53,7 +53,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     last_reachability_check_at = table.Column<DateTime>(type: "TEXT", nullable: true),
                     last_successful_frame_at = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    frigate_camera_name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    frigate_camera_name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     validation_state = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     is_enabled = table.Column<bool>(type: "INTEGER", nullable: false),
                     privacy_mode_active = table.Column<bool>(type: "INTEGER", nullable: false),

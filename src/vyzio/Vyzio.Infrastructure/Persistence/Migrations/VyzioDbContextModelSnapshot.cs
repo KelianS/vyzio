@@ -91,6 +91,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnName("event_clip_days_override");
 
                     b.Property<string>("FrigateCameraName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")
                         .HasColumnName("frigate_camera_name");

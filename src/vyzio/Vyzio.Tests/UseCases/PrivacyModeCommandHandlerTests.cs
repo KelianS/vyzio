@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -28,6 +28,7 @@ public class PrivacyModeCommandHandlerTests
     private static Camera Camera(string slug, string displayName, bool privacy = false) => new()
     {
         Slug = slug,
+        FrigateCameraName = slug.Replace('-', '_'),
         DisplayName = displayName,
         Host = "127.0.0.1",
         IsEnabled = true,

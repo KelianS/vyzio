@@ -1,4 +1,4 @@
-using Vyzio.Core.Entities;
+﻿using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
@@ -15,6 +15,6 @@ public sealed class CameraDirectory(ICameraRepository cameras)
     {
         _cameras ??= await cameras.GetAllAsync(ct);
         return _cameras.FirstOrDefault(camera =>
-            string.Equals(camera.FrigateName, frigateName, StringComparison.Ordinal));
+            string.Equals(camera.FrigateCameraName, frigateName, StringComparison.Ordinal));
     }
 }

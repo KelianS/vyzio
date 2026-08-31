@@ -1,4 +1,4 @@
-using Vyzio.Application.UseCases.Cameras;
+﻿using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -46,7 +46,7 @@ public sealed class SnapshotCommandHandler(GetCamerasUseCase cameras, IFrigateLi
             return CommandResult.Text($"🔒 {camera.DisplayName} est en mode vie privee",
                 ["Elle ne regarde rien pour l'instant."]);
 
-        var frame = await frames.TryGetLatestFrameAsync(camera.FrigateName, ct);
+        var frame = await frames.TryGetLatestFrameAsync(camera.FrigateCameraName, ct);
         if (frame is null)
             return CommandResult.Text($"Je n'arrive pas a voir {camera.DisplayName} en ce moment",
                 ["Reessayez dans un instant."]);

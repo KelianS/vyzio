@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -29,6 +29,7 @@ public class PtzPositionCommandHandlerTests
     private static Camera Motorised(string slug, string displayName) => new()
     {
         Slug = slug,
+        FrigateCameraName = slug.Replace('-', '_'),
         DisplayName = displayName,
         Host = "127.0.0.1",
         IsEnabled = true,

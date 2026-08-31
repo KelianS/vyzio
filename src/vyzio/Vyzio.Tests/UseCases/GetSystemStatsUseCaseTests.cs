@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Application.UseCases.Monitoring;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -34,6 +34,7 @@ public class GetSystemStatsUseCaseTests
     private static Camera MakeCamera(bool isEnabled = true, string validationState = "validated") => new()
     {
         Slug = "front-door",
+        FrigateCameraName = "front_door",
         DisplayName = "Front Door",
         Host = "192.168.1.10",
         Port = 554,

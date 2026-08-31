@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
@@ -57,6 +57,7 @@ public class PrivacySchedulerServiceTests
     {
         Id = id,
         Slug = id,
+        FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
         Port = 554,
