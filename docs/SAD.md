@@ -344,7 +344,7 @@ reachable**, everything going through the Vyzio proxy (ADR-07/16/17).
 > (HTTP)**: no TLS, no certificate, no redirect. The target is an encrypted entry point (annex A); until
 > it is, the session id and the password travel in the clear on the local network, and remote access
 > (ADR-51) cannot be announced. Tracked in
-> [issue #63](https://github.com/KelianS/vyzio/issues/63).
+> [issue #67](https://github.com/KelianS/vyzio/issues/67).
 
 ### 8.2 Guided onboarding (zero YAML for the user)
 
