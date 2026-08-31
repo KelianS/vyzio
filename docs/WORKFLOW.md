@@ -1,125 +1,136 @@
-# Workflow & gouvernance documentaire
+# Workflow and documentation governance
 
-Source de vérité du processus de travail du repo. Tout changement significatif suit cet ordre ;
-interdiction de commencer l'implémentation tant que les étapes documentaires amont ne sont pas alignées.
+The source of truth for how work happens in this repository. Every significant change follows this
+order; starting the implementation before the upstream documents are aligned is forbidden.
 
-## Ordre imposé
+## Mandated order
 
-1. **SPECS** ([`SPECS.md`](SPECS.md)) — si le besoin produit change : user stories, parcours, périmètre MVP.
-2. **SAD** ([`SAD.md`](SAD.md)) — si la solution technique ou les frontières changent : composants, responsabilités, ADR.
-3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) — ordre d'exécution, découpage,
-   dépendances, critère de fin. Une issue s'adosse aux documents ci-dessus, elle ne les redécide pas.
-4. **Implémentation** — code minimal, cohérent avec les documents validés.
-5. **Tests** — validation ciblée obligatoire du slice modifié.
-6. **Aide dans l'interface** — toute feature livrable est documentée **dans l'écran qui la porte**,
-   sur les trois niveaux d'[ADR-53](adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md).
-   Aucun mode d'emploi hors du produit.
+1. **SPECS** ([`SPECS.md`](SPECS.md)) if the product need changes: user stories, journeys, MVP scope.
+2. **SAD** ([`SAD.md`](SAD.md)) if the technical solution or the boundaries change: components,
+   responsibilities, ADRs.
+3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
+   dependencies, definition of done. An issue leans on the documents above, it does not re-decide them.
+4. **Implementation**, minimal code, consistent with the validated documents.
+5. **Tests**, targeted validation of the modified slice, mandatory.
+6. **Help inside the interface**: every deliverable feature is documented **in the screen that carries
+   it**, across the three levels of
+   [ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md).
+   No instructions for use outside the product.
 
-## Règles pratiques
+## Practical rules
 
-- Une feature qui ne modifie ni besoin, ni architecture, ni plan → directement implémentation puis tests.
-- Une feature qui contredit un document existant → mettre le document à jour **avant** d'écrire le code.
-- Le backlog ne sert jamais à découvrir la stratégie après coup ; il traduit une stratégie déjà décidée dans les SPECS et/ou le SAD.
-- Aucune PR n'est propre si le code est à jour mais la documentation de cadrage en retard.
+- A feature that changes neither the need, nor the architecture, nor the plan goes straight to
+  implementation, then tests.
+- A feature that contradicts an existing document means updating the document **before** writing code.
+- The backlog is never where the strategy is discovered after the fact; it expresses a strategy already
+  decided in the SPECS and the SAD.
+- No pull request is clean when the code is up to date and the framing documentation lags behind.
 
-## Architecture documentaire (types de documents)
+## Document architecture (types of document)
 
-| Type | Rôle | Foyer | Stabilité |
+| Type | Role | Home | Stability |
 |---|---|---|---|
-| **SPECS** | Besoin, parcours, périmètre produit | [`SPECS.md`](SPECS.md) | moyenne |
-| **SAD** | Frontières, grands choix, vue d'ensemble ; **référence** le code, ne le paraphrase pas | [`SAD.md`](SAD.md) | haute |
-| **ADR** | Une décision d'architecture = un fichier (Contexte → Options → Décision → Conséquences) | [`adr/`](adr/) — un `NNNN-slug.md` par décision, index [`adr/README.md`](adr/README.md) | figée une fois `accepté` |
-| **TAD** | *Comment* un sous-système fonctionne (détail trop spécifique pour le SAD) | [`design/`](design/) — un `.md` par composant, catalogue [`design/README.md`](design/README.md) | moyenne |
-| **Investigation** | Exploration, essais, reverse engineering, captures | [`investigations/`](investigations/) | jetable |
-| **Aide utilisateur** | Mode d'emploi d'une feature livrée | l'écran qui la porte, en code (ADR-53) | suit la feature |
+| **SPECS** | Need, journeys, product scope | [`SPECS.md`](SPECS.md) | medium |
+| **SAD** | Boundaries, major choices, the overall picture; **references** the code, never paraphrases it | [`SAD.md`](SAD.md) | high |
+| **ADR** | One architectural decision per file (Context, Options, Decision, Consequences) | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
+| **TAD** | *How* a subsystem works (detail too specific for the SAD) | [`design/`](design/), one `.md` per component, catalogue [`design/README.md`](design/README.md) | medium |
+| **Investigation** | Exploration, trials, reverse engineering, captures | [`investigations/`](investigations/) | disposable |
+| **User help** | How to use a delivered feature | the screen that carries it, in code (ADR-53) | follows the feature |
 
-Chaîne : le SAD pose les **frontières** → un ADR **tranche** une décision (et cite ses options
-écartées) → un TAD documente le **comment** d'un composant → le code **fait**. Chacun son foyer,
-aucune recopie.
+The chain: the SAD sets the **boundaries**, an ADR **settles** a decision (and states the options it
+rejected), a TAD documents the **how** of a component, and the code **does**. Each has its own home,
+nothing is copied.
 
-**Règles d'échelle :**
-- Le corps du SAD ne bouge pas quand une décision s'ajoute : un nouvel ADR = un fichier dans `adr/`
-  + une ligne d'index. Le SAD §5 **pointe** vers l'index, il ne le recopie pas.
-- Un ADR remplacé n'est jamais supprimé : statut `remplacé par ADR-NNNN` ; la décision qui le
-  remplace résume l'option abandonnée dans sa rubrique « Options écartées ».
-- Le détail bas niveau (trames d'octets, catalogues de ports, schéma SQL, payloads, listes de
-  routes) vit dans un **TAD** ou dans le **code**, jamais dupliqué dans un ADR ni le SAD, qui le
-  référencent.
+**Scaling rules:**
+- The body of the SAD does not move when a decision is added: a new ADR is a file in `adr/` plus one
+  index line. SAD §5 **points at** the index, it does not copy it.
+- A superseded ADR is never deleted: its status becomes `superseded by ADR-NNNN`, and the decision
+  that replaces it summarises the abandoned option under its own "Options rejected" heading.
+- Low-level detail (byte frames, port catalogues, the SQL schema, payloads, route lists) lives in a
+  **TAD** or in the **code**, never duplicated into an ADR or the SAD, which reference it.
 
-## Discipline de rédaction (nature de chaque document)
+## Writing discipline (the nature of each document)
 
-Chaque document a une **nature** ; la respecter évite qu'il gonfle et se périme.
+Each document has a **nature**; respecting it is what stops it from swelling and going stale.
 
-- **SAD = cible, pas histoire.** Le SAD décrit l'architecture **visée**, au présent — jamais ce qui
-  était fait avant, ni le chemin parcouru. Le seul endroit où « ce qui était fait avant » peut
-  apparaître est la rubrique **« Options écartées »** d'un ADR (valeur : expliquer *pourquoi pas*).
-  Interdit : empiler des « Correction (a)(b)(c)… » chronologiques dans un ADR — fusionner dans la
-  décision cible. Titre d'ADR orienté cible (« X écarté, Y retenu »), pas historique (« X tenté
-  puis abandonné »).
-- **Ne pas paraphraser le code.** Schéma SQL, signatures, trames d'octets, listes de routes ont leur
-  foyer dans le code (entités EF, endpoints, catalogues). Les documents les **référencent**, ne les
-  recopient pas — c'est la règle suprême zéro-duplication appliquée au couple doc/code.
-- **Historique d'exploration** (essais, captures réseau, reverse engineering) → [`investigations/`](investigations/),
-  jamais le SAD.
+- **A SAD is the target, not the history.** The SAD describes the **intended** architecture, in the
+  present tense, never what was done before nor the road travelled. The one place where "what was done
+  before" may appear is the **"Options rejected"** heading of an ADR, whose value is explaining *why
+  not*. Forbidden: stacking chronological "Correction (a)(b)(c)..." entries in an ADR; merge them into
+  the target decision. An ADR title states the target ("X rejected, Y chosen"), not the history ("X
+  attempted then abandoned").
+- **Do not paraphrase the code.** The SQL schema, signatures, byte frames and route lists have their
+  home in the code (EF entities, endpoints, catalogues). Documents **reference** them, they do not copy
+  them. This is the supreme zero-duplication rule applied to the doc/code pair.
+- **Exploration history** (trials, network captures, reverse engineering) goes to
+  [`investigations/`](investigations/), never into the SAD.
 
-## Précédence (une info = un seul foyer)
+## Precedence (one piece of information, one home)
 
-Vision → [`../README.md`](../README.md) · Besoin → `SPECS.md` · Solution technique → `SAD.md` ·
-Plan d'exécution → **les issues** · Mode d'emploi → **l'écran lui-même** (ADR-53).
+Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` · the technical solution to
+`SAD.md` · the execution plan to **the issues** · how to use a feature to **the screen itself**
+(ADR-53).
 
-Chaque document décrit son propre rôle dans son en-tête. En cas de doute, remonter au bon niveau :
-vision → besoin → architecture → exécution → usage. Ne jamais recopier une info d'un document à
-l'autre — voir la règle suprême zéro-duplication dans [`../CLAUDE.md`](../CLAUDE.md).
+Every document states its own role in its header. When in doubt, climb to the right level: vision,
+need, architecture, execution, use. Never copy information from one document into another, see the
+supreme zero-duplication rule in [`../CLAUDE.md`](../CLAUDE.md).
+
+## Language
+
+**The repository is written in English**, code and prose alike: comments, commits, pull requests,
+issues, templates, labels, and every framing document. Two files are the exception and stay in French,
+[`SPECS.md`](SPECS.md) and [`BUSINESS_PLAN.md`](BUSINESS_PLAN.md), because they frame the product and
+the business for a French market and are read as much by non-engineers as by contributors.
+
+One gap remains, and it is deliberate. The **bodies of the ADRs are still in French**, while their
+filenames are already English. Renaming is the operation that breaks links, so it was done once, on its
+own, ahead of any translation of the content. Until that translation lands, an existing ADR is read in
+French. **A new ADR is written in English**, like everything else.
 
 ## Git
 
-- Branches : `main` (stable), `dev` (intégration), `feature/*` (travail).
-- PR : review + tests au vert obligatoires.
+- Branches: `main` (stable), `dev` (integration), `feature/*` (work in progress).
+- Pull requests: review and green tests are mandatory.
 
-### Commits et PR — anglais, format conventionnel
+### Commits and pull requests, English and conventional
 
-Un commit et une PR s'adressent à l'outillage et aux tiers, pas aux documents de cadrage : ils
-suivent donc la langue du code, **l'anglais**, et le format [Conventional
-Commits](https://www.conventionalcommits.org/en/v1.0.0/) — sujet, corps, titre et description de PR
-compris. Les documents de cadrage (`docs/`) restent en français, voir la précédence ci-dessus.
+A commit and a pull request address the tooling and third parties rather than the framing documents, so
+they follow the language of the code, **English**, and the [Conventional
+Commits](https://www.conventionalcommits.org/en/v1.0.0/) format: subject, body, pull request title and
+description alike.
 
 ```
-type(scope): subject à l'impératif, minuscule, sans point final (≤ 72 caracteres)
+type(scope): imperative subject, lowercase, no trailing period (72 characters or fewer)
 
-Le corps dit le *pourquoi* : ce que le diff ne montre pas. Une ligne vide le
-sépare du sujet. ASCII uniquement.
+The body says the *why*: what the diff does not show. A blank line separates
+it from the subject. ASCII only.
 
-Co-Authored-By: …
+Co-Authored-By: ...
 ```
 
-- **type** : `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `chore`. Un changement
-  cassant s'écrit `type(scope)!: …`.
-- **scope** : le sujet touché, optionnel mais préféré — `api`, `dashboard`, `access`, `onboarding`,
-  `recording`… Un seul, celui qui porte le changement. C'est **lui qui porte le thème** : il n'y a
-  pas de label de thème, le regroupement se lit dans le titre et se cherche par lui.
-- **sujet** : l'effet obtenu, pas la mécanique employée. « ce que ça change pour qui lit », jamais
-  « ajoute une méthode X ».
-- **PR** : titre au même format que le sujet de commit, description en anglais — le *pourquoi*, le
-  périmètre, et ce qui a été vérifié. Gabarit :
-  [`pull_request_template.md`](../.github/pull_request_template.md), qui porte aussi la
-  **definition of done** — son foyer est là, là où on la coche.
+- **type**: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `chore`. A breaking change is
+  written `type(scope)!: ...`.
+- **scope**: the subject touched, optional but preferred: `api`, `dashboard`, `access`, `onboarding`,
+  `recording`. Exactly one, the one that carries the change. **The scope carries the theme**: there is
+  no theme label, the grouping reads from the title and is searched through it.
+- **subject**: the effect obtained, not the mechanism used. What it changes for whoever reads it, never
+  "adds an X method".
+- **pull request**: title in the same format as a commit subject, description in English, saying the
+  *why*, the scope, and what was verified. Template:
+  [`pull_request_template.md`](../.github/pull_request_template.md), which also carries the
+  **definition of done**, whose home is there, where it gets ticked.
 
-### Issues — deux gabarits, un état
+### Issues, two templates and one state
 
-La langue par défaut du dépôt est **l'anglais** : code, commentaires, commits, PR, gabarits, labels.
-Le français reste **obligatoire** dans `docs/` (cadrage métier) et **toléré** dans le corps d'une
-issue. La cible est un dépôt entièrement anglophone et un produit multilingue : toute prose nouvelle
-s'écrit donc en anglais partout où rien ne l'oblige au français.
+The **title** is always English and conventional: it becomes the pull request title as it stands, then
+the commit subject, written once and reused.
 
-Le **titre**, lui, est toujours anglais et conventionnel — il devient tel quel le titre de la PR
-puis le sujet du commit, écrit une fois et réutilisé.
+Two templates in [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/): **Feature** and **Bug**.
 
-Deux gabarits dans [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/) : **Feature** et **Bug**.
+There is **no "idea" template**: an idea is a feature whose direction has not been settled yet, which
+makes it a **state**, not a category. The issue is opened with the objective alone and the
+`needs-framing` label; the SPECS or an ADR settle it; the rest is filled in and the label removed.
+Nothing gets built while it is up, which is the mandated order above, made visible.
 
-Il n'y a **pas de gabarit « idée »** : une idée est une feature dont la direction n'est pas encore
-tranchée, c'est-à-dire un **état**, pas une catégorie. On ouvre l'issue avec l'objectif seul et le
-label `needs-framing` ; les SPECS ou un ADR tranchent ; on remplit le reste et on retire le label.
-Rien ne se construit tant qu'il est posé — c'est l'ordre imposé ci-dessus, rendu visible.
-
-Un gabarit **rappelle, il n'applique pas** : GitHub ne l'impose ni au web ni à `gh issue create`.
-Ce qui appliquerait vraiment le format serait un contrôle d'intégration — il n'existe pas.
+A template **reminds, it does not enforce**: GitHub imposes it neither on the web nor through
+`gh issue create`. What would truly enforce the format is an integration check, and there is none.

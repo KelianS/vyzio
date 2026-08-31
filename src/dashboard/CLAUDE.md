@@ -1,117 +1,118 @@
-# Frontend React — règles
+# React frontend, rules
 
-Chargé quand tu édites `src/dashboard`. Complète le routeur racine [`../../CLAUDE.md`](../../CLAUDE.md).
+Loaded when you edit `src/dashboard`. Completes the root router [`../../CLAUDE.md`](../../CLAUDE.md).
 
-## Clean Architecture (obligatoire)
+## Clean Architecture (mandatory)
 
-Direction des dépendances jamais dérogée : `infrastructure → domain`, `presentation → domain +
-infrastructure`, `common` est un socle partagé importable de partout (jamais l'inverse). Appliquée
-via la règle ESLint `boundaries/dependencies` (`eslint.config.js`) — toute violation est une erreur
-de lint, pas une suggestion.
-
-```
-domain/         ← entities (types) + ports (interfaces repository) + usecases. Pur : aucun React, aucun fetch.
-infrastructure/ ← HttpXxxRepository (fetch + implémentation du port dans le même fichier), http/
-                  (fetchJson, HttpError), config/ (runtime), providers/ (un *.container.ts par écran +
-                  app.container.ts + AppContainerContext, DI manuel), store/ (zustand, état cross-écrans).
-presentation/   ← un dossier par écran (Hub, Cameras, Profiles, Notifications, DetectionHistory, Expert),
-                  pattern 5 fichiers `<Screen>.{Uido,Actions,Reducer,Presenter,Component}`.
-common/         ← errors/ (AppError + toAppError, unique pipeline d'erreurs), components/ (UI partagée :
-                  AppHeader, Toast, Badge, ConfirmModal, PtzControlPanel, LiveFeedModal…),
-                  ui/ (primitives shadcn/ui **copiées**, voir ci-dessous),
-                  presenter/ (usePresenter, hook générique), hooks/ (useAsync, useAsyncAction, polling).
-```
-
-## Socle d'interface — deux étages ([ADR-42](../../docs/adr/0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md))
-
-- **`common/ui/`** = primitives shadcn/ui **copiées du registre**, pas du code Vyzio. On les ajoute
-  avec `pnpm dlx shadcn@latest add <nom>`, jamais à la main. **Ne jamais y mettre de règle métier** :
-  la règle ESLint `boundaries` interdit à `ui-primitive` d'importer autre chose que `ui-primitive`,
-  et Prettier les ignore pour qu'une régénération ne produise aucun bruit.
-- **`common/components/`** = composants Vyzio bâtis _au-dessus_ des primitives. C'est là que vivent
-  le vocabulaire produit et la discipline de code du projet.
-- **Styles** : Tailwind v4 uniquement. Les tokens du
-  [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) sont réalisés dans `src/index.css` (thème clair et
-  sombre) ; **aucune couleur ni rayon littéral dans un composant**, toujours un token.
-- **`App.css` est supprimé** : aucune couleur ni règle globale ; tout écran est en Tailwind + tokens.
-- Un réglage **se déclare, il ne se dessine pas** :
-  [ADR-43](../../docs/adr/0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md)
-  fixe la table des contrôles et l'anatomie de la ligne de réglage.
-- Le repli de fin de page `Avancé` est le composant `common/settings/AdvancedFold` — jamais un
-  `<details>` réécrit ni une section qui ne replie rien (c'est une position, pas un mode, ADR-40).
-- L'aide longue d'une section est `common/components/HelpPanel` — également jamais un `<details>`
-  réécrit ; son titre est la question posée, pas le nom d'un chapitre (ADR-53).
-- Une liste de détections est `common/detection/DetectionList`, à l'accueil comme dans l'historique
-  (l'accueil n'en est que les dernières) — deux rendus séparés avaient divergé.
-- Un aperçu de détection passe par `common/components/DetectionThumbnail` : jamais un `<img>` nu,
-  qui laisse une image cassée quand la surveillance redémarre et ne retente jamais.
-
-- **domain** ne dépend de rien (ni framework, ni HTTP). Un port = une interface (`CameraRepository`).
-  Un use case = une classe avec `execute()`, dépend uniquement des ports du domaine.
-- **infrastructure** : les `HttpXxxRepository` implémentent les ports `domain/ports` et font le fetch
-  eux-mêmes (pas de couche gateway séparée) — tout fetch passe par `infrastructure/http/fetchJson.ts`.
-- **presentation** : pattern 5 fichiers par écran — `<Screen>.Uido.ts` (état de vue local),
-  `<Screen>.Actions.ts` (union discriminée + créateurs), `<Screen>.Reducer.ts` (pur, aucun fetch),
-  `<Screen>.Presenter.ts` (orchestration via le container, dispatch des actions), `<Screen>.Component.tsx`
-  (vue "dumb", ne fetch jamais directement). Un composant n'appelle **jamais** `fetch` ni un repository
-  directement — toujours via un use case, à travers le presenter de l'écran.
-  Exception : un écran sans état ni appel domaine (ex. `Expert`) reste un fichier unique.
-  Les sous-sections déjà autonomes d'un écran (ex. `PrivacyScheduleSection`, `PtzCalibrationSection`,
-  `CapabilitySection` sous `Cameras/`) gardent leur propre état local via `useAppContainer()` plutôt
-  que de tout remonter dans le reducer parent.
-- Le wiring (instanciation repos + use cases) vit **uniquement** dans `infrastructure/providers/`
-  (un `*.container.ts` par écran, assemblés dans `app.container.ts`, exposés via
-  `AppContainerContext` / `useAppContainer()`).
-- **Navigation** : `react-router` (`BrowserRouter`/`Routes`, lazy par écran dans `App.tsx`).
-- **État partagé entre écrans** (`cameras`, `systemStats`) : zustand (`infrastructure/store/rootStore.ts`),
-  jamais dupliqué en état local par écran.
-
-## Gestion des erreurs (obligatoire)
-
-Toute interaction backend passe par la pipeline. Jamais de `catch(() => {})` silencieux ni de
-`try/catch + toast()` ad hoc.
+Dependency direction, never departed from: `infrastructure -> domain`, `presentation -> domain +
+infrastructure`, `common` is a shared base importable from anywhere (never the reverse). Enforced by
+the ESLint rule `boundaries/dependencies` (`eslint.config.js`): any violation is a lint error, not a
+suggestion.
 
 ```
-fetch → HttpError (infrastructure) → toAppError (common/errors) → AppError → presenter / useAsync / useAsyncAction (UI)
+domain/         <- entities (types) + ports (repository interfaces) + usecases. Pure: no React, no fetch.
+infrastructure/ <- HttpXxxRepository (fetch + port implementation in the same file), http/
+                  (fetchJson, HttpError), config/ (runtime), providers/ (one *.container.ts per screen +
+                  app.container.ts + AppContainerContext, manual DI), store/ (zustand, cross-screen state).
+presentation/   <- one folder per screen (Hub, Cameras, Profiles, Notifications, DetectionHistory, Expert),
+                  five-file pattern `<Screen>.{Uido,Actions,Reducer,Presenter,Component}`.
+common/         <- errors/ (AppError + toAppError, the single error pipeline), components/ (shared UI:
+                  AppHeader, Toast, Badge, ConfirmModal, PtzControlPanel, LiveFeedModal...),
+                  ui/ (**copied** shadcn/ui primitives, see below),
+                  presenter/ (usePresenter, generic hook), hooks/ (useAsync, useAsyncAction, polling).
 ```
 
-- **Écran simple, hors du pattern 5-fichiers** (sous-section autonome type `CapabilitySection`) →
-  `useAsync(() => useCase.execute(), [deps])` → `{ data, loading, error, reload }` pour la lecture,
-  `useAsyncAction(fn, { onSuccess })` → toast d'erreur automatique, pas de catch, pour les mutations.
-  Les deux vivent dans `common/hooks/`.
-- **Écran 5-fichiers** → le presenter appelle le use case dans un `try/catch`, convertit avec
-  `toAppError(e)`, et soit dispatch une action `*_FAILED` (erreur affichée dans le reducer/uido), soit
-  appelle `toast(appErrorMessage(error), 'error')` pour une notification éphémère — jamais les deux à
-  la fois pour la même erreur.
-- **Afficher une erreur dans le rendu** → `appErrorMessage(error)` (`common/errors/AppError.ts`).
-- **Tester le type d'une erreur** → `AppErrorKind` (jamais les string literals).
-- **Cas spéciaux** (404 → null, multipart, logique sur le status) → fetch manuel dans le repository, mais lancer `HttpError`, jamais `new Error()`.
+## Interface foundation, two tiers ([ADR-42](../../docs/adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md))
 
-Interdits : `throw new Error(\`HTTP ${status}\`)`, `.catch(() => {})`dans un composant, helpers HTTP
-locaux dans les repositories (tout passe par`infrastructure/http/fetchJson.ts`).
+- **`common/ui/`** holds shadcn/ui primitives **copied from the registry**, not Vyzio code. They are
+  added with `pnpm dlx shadcn@latest add <name>`, never by hand. **Never put a business rule in
+  there**: the ESLint `boundaries` rule forbids `ui-primitive` from importing anything but
+  `ui-primitive`, and Prettier ignores them so a regeneration produces no noise.
+- **`common/components/`** holds Vyzio components built _on top of_ the primitives. That is where the
+  product vocabulary and the project's code discipline live.
+- **Styles**: Tailwind v4 only. The [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) tokens are realised
+  in `src/index.css` (light and dark themes); **no literal colour or radius in a component**, always a
+  token.
+- **`App.css` is gone**: no colour, no global rule; every screen is Tailwind plus tokens.
+- A setting **is declared, it is not drawn**:
+  [ADR-43](../../docs/adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)
+  fixes the control table and the anatomy of a settings row.
+- The end-of-page `Avance` fold is the `common/settings/AdvancedFold` component, never a rewritten
+  `<details>` nor a section that folds nothing away (it is a position, not a mode, ADR-40).
+- A section's long-form help is `common/components/HelpPanel`, likewise never a rewritten
+  `<details>`; its heading is the question being asked, not the name of a chapter (ADR-53).
+- A detection list is `common/detection/DetectionList`, on the home screen as in the history (the
+  home screen shows only the latest ones). Two separate renderings had drifted apart.
+- A detection preview goes through `common/components/DetectionThumbnail`, never a bare `<img>`,
+  which leaves a broken image when surveillance restarts and never retries.
 
-## Comparaisons type-safe (règle d'or)
+- **domain** depends on nothing (no framework, no HTTP). A port is an interface (`CameraRepository`).
+  A use case is a class with `execute()`, depending only on domain ports.
+- **infrastructure**: the `HttpXxxRepository` classes implement the `domain/ports` interfaces and do
+  the fetching themselves (no separate gateway layer). Every fetch goes through
+  `infrastructure/http/fetchJson.ts`.
+- **presentation**: five files per screen, `<Screen>.Uido.ts` (local view state),
+  `<Screen>.Actions.ts` (discriminated union + creators), `<Screen>.Reducer.ts` (pure, no fetch),
+  `<Screen>.Presenter.ts` (orchestration through the container, action dispatch),
+  `<Screen>.Component.tsx` (dumb view, never fetches directly). A component **never** calls `fetch`
+  or a repository directly, always a use case, through the screen's presenter.
+  Exception: a screen with no state and no domain call (`Expert`, for instance) stays a single file.
+  The already-autonomous subsections of a screen (`PrivacyScheduleSection`, `PtzCalibrationSection`,
+  `CapabilitySection` under `Cameras/`) keep their own local state through `useAppContainer()` rather
+  than lifting everything into the parent reducer.
+- Wiring (instantiating repos and use cases) lives **only** in `infrastructure/providers/` (one
+  `*.container.ts` per screen, assembled in `app.container.ts`, exposed through `AppContainerContext`
+  and `useAppContainer()`).
+- **Navigation**: `react-router` (`BrowserRouter`/`Routes`, lazy per screen in `App.tsx`).
+- **State shared across screens** (`cameras`, `systemStats`): zustand
+  (`infrastructure/store/rootStore.ts`), never duplicated as per-screen local state.
 
-Ne jamais comparer une valeur métier à une chaîne littérale éparpillée dans le JSX/logique
-(`if (x !== 'active')`). Le type union littéral (`type Status = 'active' | 'restarting' | ...`) est
-déjà le pattern idiomatique côté TS ; dessus, utiliser un `switch` exhaustif (avec branche
-`default: { const _x: never = ...; }`) ou une table `Record<Union, T>` — jamais une chaîne de
-comparaisons `===`/`!==` répétées.
+## Error handling (mandatory)
+
+Every backend interaction goes through the pipeline. No silent `catch(() => {})`, no ad hoc
+`try/catch + toast()`.
+
+```
+fetch -> HttpError (infrastructure) -> toAppError (common/errors) -> AppError -> presenter / useAsync / useAsyncAction (UI)
+```
+
+- **A simple screen, outside the five-file pattern** (an autonomous subsection such as
+  `CapabilitySection`): `useAsync(() => useCase.execute(), [deps])` giving
+  `{ data, loading, error, reload }` for reads, and `useAsyncAction(fn, { onSuccess })` giving an
+  automatic error toast, no catch, for mutations. Both live in `common/hooks/`.
+- **A five-file screen**: the presenter calls the use case inside a `try/catch`, converts with
+  `toAppError(e)`, and either dispatches a `*_FAILED` action (error shown through the reducer and
+  uido) or calls `toast(appErrorMessage(error), 'error')` for an ephemeral notification, never both
+  for the same error.
+- **Showing an error in the render**: `appErrorMessage(error)` (`common/errors/AppError.ts`).
+- **Testing the kind of an error**: `AppErrorKind` (never string literals).
+- **Special cases** (404 to null, multipart, logic on the status): a manual fetch in the repository,
+  but throwing `HttpError`, never `new Error()`.
+
+Forbidden: throwing a bare `Error` carrying an HTTP status, `.catch(() => {})` in a component, local
+HTTP helpers in the repositories (everything goes through `infrastructure/http/fetchJson.ts`).
+
+## Type-safe comparisons (golden rule)
+
+Never compare a business value against a string literal scattered through the JSX or the logic
+(`if (x !== 'active')`). The literal union type (`type Status = 'active' | 'restarting' | ...`) is
+already the idiomatic TypeScript pattern; on top of it, use an exhaustive `switch` (with a
+`default: { const _x: never = ...; }` branch) or a `Record<Union, T>` table, never a chain of
+repeated `===` / `!==` comparisons.
 
 ## UI
 
-Boutons, pastilles d'état, modales de validation, styles, tokens de rayon → suivre le guide
-[`../../docs/DESIGN SYSTEM.md`](../../docs/DESIGN%20SYSTEM.md).
+Buttons, status pills, confirmation modals, styles, radius tokens: follow the
+[`../../docs/DESIGN SYSTEM.md`](../../docs/DESIGN%20SYSTEM.md) guide.
 
-L'aide d'une feature s'écrit **ici**, dans l'écran, jamais dans un markdown à côté : visible / infobulle
-d'un réglage / panneau `En savoir plus` d'une section, une infobulle tenant en deux phrases
-([ADR-53](../../docs/adr/0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md)).
+A feature's help is written **here**, in the screen, never in a markdown file alongside: visible text,
+a setting's tooltip, or a section's `En savoir plus` panel, a tooltip fitting in two sentences
+([ADR-53](../../docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
 
-## Outillage
+## Tooling
 
-- **pnpm** obligatoire (jamais npm/yarn).
-- Tests via Vitest (`task front:test`).
-- **Code mort** : `task front:knip` bloque la CI sur tout fichier, export ou dépendance que rien
-  n'atteint. Un export utilisé seulement dans son propre fichier perd son `export`, il ne devient
-  pas une exception. Portée et exclusions : [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)
-  § Dead code.
+- **pnpm** mandatory (never npm or yarn).
+- Tests through Vitest (`task front:test`).
+- **Dead code**: `task front:knip` fails CI on any file, export or dependency nothing reaches. An
+  export used only inside its own file loses its `export`, it does not become an exception. Scope and
+  exclusions: [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) § Dead code.

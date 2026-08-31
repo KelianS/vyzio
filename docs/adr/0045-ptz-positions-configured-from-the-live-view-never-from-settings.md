@@ -2,13 +2,13 @@
 
 > Statut : Accepté — la calibration restée dans les réglages et l'appui long comme geste de
 > création sont rétractés par
-> [ADR-46](0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md).
+> [ADR-46](0046-all-ptz-control-in-the-live-view-calibration-included.md).
 
 ## Contexte
 
 SPECS §9.3 l'exige déjà : « les contrôles PTZ doivent être accessibles depuis la vue live de la
 caméra (pas seulement depuis les paramètres) — c'est le parcours d'usage quotidien ». L'implémentation
-livrée par [ADR-26](0026-miniatures-de-positions-ptz-capture-client-triggered.md) ne l'a jamais
+livrée par [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) ne l'a jamais
 respecté pour l'écriture : la section positions PTZ de la fiche caméra (`PtzPresetsSection`) exposait
 un bouton « Définir ici » qui enregistrait **immédiatement** la position courante de la caméra, sans
 aucun moyen de l'orienter avant — le joystick n'existe que dans la modale live
@@ -44,7 +44,7 @@ n'écrase rien et se fait sans confirmation.
 - `PtzPresetsSection` (réglages) est supprimée ; remplacée par `PtzCalibrationSection`, qui ne connaît
   plus les positions elles-mêmes.
 - `PtzControlPanel` gère désormais lui-même le chargement des presets, leur sauvegarde et la capture
-  de miniature déclenchée par [ADR-26](0026-miniatures-de-positions-ptz-capture-client-triggered.md) —
+  de miniature déclenchée par [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) —
   ce n'était plus réparti entre deux composants.
 - La liste d'affichage d'ADR-26 (« Affichage ») pointe ici plutôt que vers un composant qui n'existe
   plus.

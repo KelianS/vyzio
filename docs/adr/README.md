@@ -1,63 +1,66 @@
-# Décisions d'architecture (ADR)
+# Architecture decision records (ADR)
 
-Une décision d'architecture = un fichier. Format : Contexte → Options comparées → Décision
-→ Conséquences (dont « Options écartées »). Règles de rédaction et cycle de vie :
-[`../WORKFLOW.md`](../WORKFLOW.md). Le SAD ([`../SAD.md`](../SAD.md)) pose les frontières et
-référence ces ADR sans les recopier.
+One architectural decision, one file. Format: Context, Options compared, Decision, Consequences
+(including "Options rejected"). Writing rules and lifecycle:
+[`../WORKFLOW.md`](../WORKFLOW.md). The SAD ([`../SAD.md`](../SAD.md)) sets the boundaries and
+references these ADRs rather than copying them.
 
-| ADR | Décision | Statut |
+> The ADR bodies are still French, the filenames are English. Content translation is tracked as a
+> separate piece of work, see [`../WORKFLOW.md`](../WORKFLOW.md) § Language.
+
+| ADR | Decision | Status |
 |---|---|---|
-| [ADR-01](0001-s-appuyer-sur-frigate-plutot-que-reimplementer-le.md) | S'appuyer sur Frigate plutôt que réimplémenter le pipeline vidéo | Accepté |
-| [ADR-02](0002-langage-principal-net-10.md) | Langage principal : .NET 10 | Accepté |
-| [ADR-03](0003-reconnaissance-faciale-frigate-retenu-worker-python.md) | Reconnaissance faciale : Frigate retenu, worker Python non retenu | Accepté |
-| [ADR-04](0004-communication-frigate-vyzio-mqtt-api-rest-frigate.md) | Communication Frigate → Vyzio : MQTT + API REST Frigate | Accepté |
-| [ADR-05](0005-communication-inter-services-vyzio-mqtt-channels.md) | Communication inter-services Vyzio : MQTT + Channels | Accepté |
-| [ADR-06](0006-base-de-donnees-sqlite.md) | Base de données : SQLite | Accepté |
-| [ADR-07](0007-api-asp-net-core.md) | API : ASP.NET Core | Accepté |
-| [ADR-08](0008-dashboard-react-typescript.md) | Dashboard : React + TypeScript | Accepté |
-| [ADR-09](0009-notifications-telegram-prioritaire-fcm-canaux.md) | Notifications : Telegram (prioritaire) + FCM + canaux alternatifs | Accepté |
-| [ADR-10](0010-authentification-jwt-bcrypt.md) | Authentification : JWT + bcrypt | Accepté |
-| [ADR-11](0011-strategie-ux-non-tech-hub-vyzio-simplifie-frigate.md) | Stratégie UX non-tech : Hub Vyzio simplifié + Frigate avancé | Accepté |
-| [ADR-12](0012-gestion-des-cameras-pilotee-par-vyzio-appliquee-a.md) | Gestion des caméras pilotée par Vyzio, appliquée à Frigate | Accepté |
-| [ADR-13](0013-photos-de-profil-stockage-vyzio-synchronisation-via.md) | Photos de profil : stockage Vyzio + synchronisation via API REST Frigate | Accepté |
-| [ADR-14](0014-labels-de-detection-par-camera-colonne-json-sur-camera.md) | Labels de détection par caméra : colonne JSON sur Camera | Accepté |
-| [ADR-15](0015-association-profil-camera-table-de-jointure-filtrage.md) | Association profil-caméra : table de jointure + filtrage dans ProfileRulesService | Accepté |
-| [ADR-16](0016-acces-au-flux-live-polling-latest-jpg-via-vyzio.md) | Accès au flux live : polling latest.jpg via Vyzio, Frigate non exposé | Accepté |
-| [ADR-17](0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md) | Accès aux clips événementiels : proxy Vyzio authentifié en streaming | Accepté |
-| [ADR-18](0018-enregistrement-continu-activation-par-camera-dans-la.md) | Enregistrement continu : activation par caméra dans la config Frigate générée | Remplacé par ADR-39 (rétention, activation) |
-| [ADR-19](0019-protocole-dvrip-xmeye-go2rtc-comme-passerelle-de.md) | Protocole dvrip/XMEye : go2rtc comme passerelle de fallback, transparent pour Frigate | Accepté |
-| [ADR-20](0020-privacy-mode-api-constructeur-en-premier-fallback.md) | Privacy Mode : API constructeur en premier, fallback Frigate `enabled: false` + `IVendorCameraAdapter` comme brique partagee | Accepté |
-| [ADR-21](0021-ptz-parking-et-adaptateur-onvif-generique-strategie.md) | PTZ Parking et adaptateur ONVIF générique : stratégie multi-couche pour le mode vie privée | Accepté |
-| [ADR-22](0022-catalogue-de-capacites-camera-decouplage-marque.md) | Catalogue de capacités caméra : découplage marque/protocole, presets vendor et onboarding manuel | Accepté |
-| [ADR-23](0023-surveillance-de-joignabilite-des-cameras-polling-tcp.md) | Surveillance de joignabilité des caméras : polling TCP périodique indépendant de Frigate | Accepté |
-| [ADR-24](0024-separation-couche-protocole-couche-fonctionnelle.md) | Séparation couche protocole / couche fonctionnelle : `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy` | Accepté |
-| [ADR-25](0025-gestion-des-positions-ptz-presets-natifs-branch-a-vs.md) | Gestion des positions PTZ : presets natifs (Branch A) vs positions Vyzio-managed (Branch B) | Accepté |
-| [ADR-26](0026-miniatures-de-positions-ptz-capture-client-triggered.md) | Miniatures de positions PTZ : capture client-triggered, stockage fichier, serving direct | Accepté |
-| [ADR-27](0027-reglages-image-avances-capacite-imagesettings-onvif.md) | Réglages image avancés : capacité `ImageSettings`, ONVIF Imaging Service, valeurs non persistées | Accepté |
-| [ADR-28](0028-detection-de-capacite-en-cascade-multi-protocole-flag.md) | Détection de capacité en cascade multi-protocole + flag `ManuallyConfigured` | Accepté |
-| [ADR-29](0029-dvrip-dvripclient-partage-reglages-image-avenc.md) | DVRIP : `DvripClient` partagé, réglages image (`AVEnc.VideoColor.[0]`), PTZ Move/Stop | Accepté |
-| [ADR-30](0030-reglages-image-v380-natif-ecarte-imagesettings-via.md) | Réglages image V380 natif : écarté, `ImageSettings` via ONVIF uniquement | Accepté |
-| [ADR-31](0031-override-manuel-du-constructeur-a-l-onboarding.md) | Override manuel du constructeur à l'onboarding | Accepté |
-| [ADR-32](0032-pipeline-de-decouverte-reseau-en-3-etapes.md) | Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation | Accepté |
-| [ADR-33](0033-statut-du-moteur-de-detection-expose-au-hub.md) | Statut du moteur de détection exposé au Hub : tracker de redémarrage + enrichissement de `/api/system/stats` | Accepté |
-| [ADR-34](0034-adaptation-materielle-automatique-du-detecteur-frigate.md) | Adaptation matérielle automatique du détecteur Frigate : Coral → Intel GPU (`onnx` + YOLOX) → CPU (natif, FPS borné) | Accepté |
-| [ADR-35](0035-sensibilite-de-detection-auto-adaptative-par-camera.md) | Sensibilité de détection auto-adaptative par caméra : boucle fermée à trois paliers, appliquée à chaud par MQTT | Accepté |
-| [ADR-36](0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md) | Alignement du débit d'images sur la caméra : capacité `StreamConfig`, conditionnée à la séparation détection/enregistrement | Accepté |
-| [ADR-37](0037-decodage-video-materiel-preset-vaapi-quicksync-differe.md) | Décodage vidéo matériel : `preset-vaapi` retenu, QuickSync différé (faute de codec connu par caméra) | Accepté |
-| [ADR-38](0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md) | Modèle de flux caméra : un flux = une qualité, un objectif = une caméra, rôles `detect`/`record` séparés | Accepté |
-| [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) | Réglages globaux surchargeables par caméra, appliqué à la rétention d'enregistrement | Accepté (zéro sur les clips d'événement et l'extinction qui en découlait rétractés par ADR-48) |
-| [ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) | Architecture de l'information : séparer consulter et régler, arborescence de réglages à deux niveaux | Accepté |
-| [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) | Cycle d'édition des réglages : brouillon explicite, et enregistrer vaut appliquer | Accepté (volet « enregistrer vaut appliquer » remplacé par ADR-44) |
-| [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) | Socle de composants d'interface : shadcn/ui sur Radix et Tailwind, tokens du design system en source unique | Accepté |
-| [ADR-43](0043-grammaire-des-reglages-un-reglage-se-declare-il-ne-se-dessine-pas.md) | Grammaire des réglages : un réglage se déclare, il ne se dessine pas | Accepté (renvoi de l'aide longue à `docs/user/` remplacé par ADR-53) |
-| [ADR-44](0044-redemarrage-de-la-surveillance-acte-explicite-groupe-et-differe.md) | Redémarrage de la surveillance : un acte explicite de l'utilisateur, groupé et différé | Accepté |
-| [ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md) | Positions PTZ configurées depuis la vue live, jamais depuis les réglages | Accepté (calibration et geste de création rétractés par ADR-46) |
-| [ADR-46](0046-tout-le-pilotage-ptz-dans-la-vue-live-calibration-comprise.md) | Tout le pilotage PTZ dans la vue live, calibration comprise | Accepté |
-| [ADR-47](0047-l-historique-des-detections-index-reconcilie-sur-frigate-et-non-memoire-autonome.md) | L'historique des détections : un index réconcilié sur Frigate, pas une mémoire autonome | Remplacé par ADR-49 |
-| [ADR-48](0048-retention-minimale-d-un-jour-la-conservation-se-regle-elle-ne-s-eteint-pas.md) | Rétention minimale d'un jour : la conservation se règle, elle ne s'éteint pas | Accepté |
-| [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md) | Vyzio ne persiste pas les détections : l'historique est la liste de Frigate, enrichie à la lecture | Accepté |
-| [ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md) | Le canal de messagerie devient bidirectionnel : une couche de commandes agnostique du canal | Accepté |
-| [ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md) | Accès distant à l'interface : réseau overlay NetBird, guidé par Vyzio mais opéré par l'utilisateur | Accepté |
-| [ADR-52](0052-le-sens-entrant-passe-par-le-bot-natif-du-canal-identifiants-declares-par-sens.md) | Le sens entrant passe par le bot natif du canal : identifiants déclarés par sens | Accepté |
-| [ADR-53](0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) | La documentation utilisateur vit dans l'interface : trois niveaux d'aide | Accepté |
-| [ADR-54](0054-l-acces-a-l-interface-est-garde-par-un-compte-proprietaire-session-serveur-en-cookie.md) | L'accès à l'interface est gardé par un compte propriétaire, session serveur en cookie | Accepté |
+| [ADR-01](0001-build-on-frigate-rather-than-reimplement-the-video-pipeline.md) | Build on Frigate rather than reimplement the video pipeline | Accepted |
+| [ADR-02](0002-primary-language-dotnet-10.md) | Primary language: .NET 10 | Accepted |
+| [ADR-03](0003-face-recognition-frigate-chosen-over-a-python-worker.md) | Face recognition: Frigate chosen, a Python worker rejected | Accepted |
+| [ADR-04](0004-frigate-to-vyzio-communication-mqtt-and-frigate-rest-api.md) | Frigate to Vyzio communication: MQTT + Frigate REST API | Accepted |
+| [ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md) | Vyzio inter-service communication: MQTT + Channels | Accepted |
+| [ADR-06](0006-database-sqlite.md) | Database: SQLite | Accepted |
+| [ADR-07](0007-api-asp-net-core.md) | API: ASP.NET Core | Accepted |
+| [ADR-08](0008-dashboard-react-and-typescript.md) | Dashboard: React + TypeScript | Accepted |
+| [ADR-09](0009-notifications-telegram-first-plus-fcm-and-alternative-channels.md) | Notifications: Telegram (primary) + FCM + alternative channels | Accepted |
+| [ADR-10](0010-authentication-jwt-and-bcrypt.md) | Authentication: JWT + bcrypt | Accepted |
+| [ADR-11](0011-non-technical-ux-strategy-simplified-vyzio-hub-plus-advanced-frigate.md) | Non-technical UX strategy: simplified Vyzio Hub + advanced Frigate | Accepted |
+| [ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md) | Camera management driven by Vyzio, applied to Frigate | Accepted |
+| [ADR-13](0013-profile-photos-stored-by-vyzio-synced-through-the-frigate-rest-api.md) | Profile photos: stored by Vyzio, synced through the Frigate REST API | Accepted |
+| [ADR-14](0014-per-camera-detection-labels-json-column-on-camera.md) | Per-camera detection labels: a JSON column on Camera | Accepted |
+| [ADR-15](0015-profile-camera-association-join-table-and-filtering-in-profilerulesservice.md) | Profile-camera association: a join table + filtering in ProfileRulesService | Accepted |
+| [ADR-16](0016-live-stream-access-polling-latest-jpg-through-vyzio-frigate-never-exposed.md) | Live stream access: polling latest.jpg through Vyzio, Frigate never exposed | Accepted |
+| [ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md) | Event clip access: an authenticated streaming Vyzio proxy | Accepted |
+| [ADR-18](0018-continuous-recording-enabled-per-camera-in-the-generated-frigate-config.md) | Continuous recording: enabled per camera in the generated Frigate config | Superseded by ADR-39 (retention, activation) |
+| [ADR-19](0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md) | dvrip/XMEye protocol: go2rtc as a fallback gateway, transparent to Frigate | Accepted |
+| [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md) | Privacy mode: vendor API first, Frigate `enabled: false` fallback, `IVendorCameraAdapter` as the shared building block | Accepted |
+| [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) | PTZ parking and a generic ONVIF adapter: a layered strategy for privacy mode | Accepted |
+| [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md) | Camera capability catalogue: brand/protocol decoupling, vendor presets and manual onboarding | Accepted |
+| [ADR-23](0023-camera-reachability-monitoring-periodic-tcp-polling-independent-of-frigate.md) | Camera reachability monitoring: periodic TCP polling, independent of Frigate | Accepted |
+| [ADR-24](0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md) | Protocol layer separated from capability layer: `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy` | Accepted |
+| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Accepted |
+| [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) | PTZ position thumbnails: client-triggered capture, file storage, direct serving | Accepted |
+| [ADR-27](0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md) | Advanced image settings: the `ImageSettings` capability, ONVIF Imaging Service, values not persisted | Accepted |
+| [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) | Cascading multi-protocol capability detection + the `ManuallyConfigured` flag | Accepted |
+| [ADR-29](0029-dvrip-a-shared-dvripclient-image-settings-and-ptz-move-stop.md) | DVRIP: a shared `DvripClient`, image settings (`AVEnc.VideoColor.[0]`), PTZ Move/Stop | Accepted |
+| [ADR-30](0030-native-v380-image-settings-rejected-imagesettings-through-onvif-only.md) | Native V380 image settings rejected, `ImageSettings` through ONVIF only | Accepted |
+| [ADR-31](0031-manual-vendor-override-at-onboarding.md) | Manual vendor override at onboarding | Accepted |
+| [ADR-32](0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) | Three-stage network discovery pipeline: identification, enrichment, interpretation | Accepted |
+| [ADR-33](0033-detection-engine-status-exposed-on-the-hub.md) | Detection engine status exposed on the Hub: a restart tracker + `/api/system/stats` enrichment | Accepted |
+| [ADR-34](0034-automatic-hardware-adaptation-of-the-frigate-detector.md) | Automatic hardware adaptation of the Frigate detector: Coral, then Intel GPU (`onnx` + YOLOX), then CPU (native, capped FPS) | Accepted |
+| [ADR-35](0035-self-adjusting-per-camera-detection-sensitivity.md) | Self-adjusting per-camera detection sensitivity: a three-tier closed loop, applied live over MQTT | Accepted |
+| [ADR-36](0036-frame-rate-aligned-on-the-camera-the-streamconfig-capability.md) | Frame rate aligned on the camera: the `StreamConfig` capability, conditional on the detect/record split | Accepted |
+| [ADR-37](0037-hardware-video-decoding-preset-vaapi-chosen-quicksync-deferred.md) | Hardware video decoding: `preset-vaapi` chosen, QuickSync deferred (no known per-camera codec) | Accepted |
+| [ADR-38](0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md) | Camera stream model: one stream = one quality, one target = one camera, separate `detect`/`record` roles | Accepted |
+| [ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) | Global settings overridable per camera, applied to recording retention | Accepted (the zero-retention and shutdown-on-zero behaviour for event clips was withdrawn by ADR-48) |
+| [ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md) | Information architecture: viewing apart from configuring, a two-level settings tree | Accepted |
+| [ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) | Settings edit cycle: an explicit draft, and saving means applying | Accepted (the "saving means applying" part was replaced by ADR-44) |
+| [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md) | Interface component foundation: shadcn/ui on Radix and Tailwind, design system tokens as the single source | Accepted |
+| [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md) | Settings grammar: a setting is declared, it is not drawn | Accepted (the long-help redirect to `docs/user/` was replaced by ADR-53) |
+| [ADR-44](0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md) | Surveillance restart: an explicit user act, grouped and deferred | Accepted |
+| [ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md) | PTZ positions configured from the live view, never from settings | Accepted (calibration and the creation gesture were withdrawn by ADR-46) |
+| [ADR-46](0046-all-ptz-control-in-the-live-view-calibration-included.md) | All PTZ control in the live view, calibration included | Accepted |
+| [ADR-47](0047-detection-history-an-index-reconciled-against-frigate-not-a-standalone-memory.md) | Detection history: an index reconciled against Frigate, not a standalone memory | Superseded by ADR-49 |
+| [ADR-48](0048-one-day-minimum-retention-retention-is-tuned-not-turned-off.md) | One-day minimum retention: retention is tuned, not turned off | Accepted |
+| [ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md) | Vyzio does not persist detections: history is Frigate's list, enriched on read | Accepted |
+| [ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md) | The messaging channel becomes bidirectional: a channel-agnostic command layer | Accepted |
+| [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md) | Remote access to the interface: a NetBird overlay network, guided by Vyzio but operated by the user | Accepted |
+| [ADR-52](0052-the-inbound-direction-uses-the-channels-native-bot-credentials-declared-per-direction.md) | The inbound direction uses the channel's native bot: credentials declared per direction | Accepted |
+| [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) | User documentation lives in the interface: three levels of help | Accepted |
+| [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted |

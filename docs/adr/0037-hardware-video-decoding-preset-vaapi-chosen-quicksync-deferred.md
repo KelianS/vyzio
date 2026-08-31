@@ -8,7 +8,7 @@ La documentation Frigate qualifie le décodage vidéo de *« l'une des tâches l
 CPU »* et annonce qu'une accélération matérielle permet de *« supporter 2 à 3 fois plus de caméras à
 matériel égal »*. Or `FrigateConfigApplier` n'émettait aucune section `ffmpeg` : la configuration
 générée laissait `hwaccel_args` vide, donc tout le décodage en logiciel, même sur un hôte doté d'un
-iGPU Intel — celui-là même qu'[ADR-34](0034-adaptation-materielle-automatique-du-detecteur-frigate.md)
+iGPU Intel — celui-là même qu'[ADR-34](0034-automatic-hardware-adaptation-of-the-frigate-detector.md)
 détecte déjà et pour lequel `/dev/dri` est déjà exposé au conteneur.
 
 Mesuré sur l'instance de dev ([investigation](../investigations/frigate-cpu-profiling.md)) : ~9 % d'un

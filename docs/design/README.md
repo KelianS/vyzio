@@ -1,26 +1,27 @@
-# Documents de conception technique (TAD)
+# Technical architecture documents (TAD)
 
-Un **TAD** (Technical Architecture Document) décrit **comment** un sous-système fonctionne — le
-détail trop spécifique pour le SAD (frontières) et trop transverse pour un ADR (une décision). Il
-**référence** le code et les ADR, il ne les recopie pas (règle suprême zéro-duplication,
-[`../CLAUDE.md`](../CLAUDE.md)). Rôle et cycle de vie : [`../WORKFLOW.md`](../WORKFLOW.md).
+A **TAD** describes **how** a subsystem works: the detail too specific for the SAD (boundaries) and too
+cross-cutting for an ADR (one decision). It **references** the code and the ADRs, it does not copy them
+(supreme zero-duplication rule, [`../CLAUDE.md`](../CLAUDE.md)). Role and lifecycle:
+[`../WORKFLOW.md`](../WORKFLOW.md).
 
-Chaîne : SAD (frontières) → ADR (décision + pourquoi) → **TAD (comment)** → code (fait).
+The chain: SAD (boundaries), ADR (decision and why), **TAD (how)**, code (does).
 
 ## Catalogue
 
-| Composant | TAD | Décisions sources | Foyer du code |
+| Component | TAD | Source decisions | Home of the code |
 |---|---|---|---|
-| Découverte réseau des caméras | [`camera-discovery.md`](camera-discovery.md) | ADR-31, ADR-32 | `Vyzio.Infrastructure/Services/CameraDiscovery/` |
+| Camera network discovery | [`camera-discovery.md`](camera-discovery.md) | ADR-31, ADR-32 | `Vyzio.Infrastructure/Services/CameraDiscovery/` |
 
-## Composants candidats (détail encore porté par leurs ADR + le code)
+## Candidate components (detail still carried by their ADRs and the code)
 
-Ces sous-systèmes ont un *comment* assez riche pour mériter un TAD dédié le jour où leur détail
-gêne la lecture de leurs ADR. Tant qu'ils tiennent, leur détail reste dans l'ADR et le code — ne pas
-créer de TAD vide par anticipation.
+These subsystems have a *how* rich enough to deserve a TAD of their own the day their detail gets in
+the way of reading their ADRs. As long as it holds, the detail stays in the ADR and the code. Do not
+create an empty TAD in anticipation.
 
-- **Protocoles & capacités caméra** — clients ONVIF/DVRIP/V380, registre de capacités,
-  `PrivacyStrategy`. Sources : ADR-19, ADR-20, ADR-22, ADR-24, ADR-27, ADR-28, ADR-29, ADR-30.
-- **Intégration Frigate** — contrat MQTT/REST consommé, `FrigateAdapter`, génération `config.yml`.
-  Sources : ADR-04, ADR-05, ADR-13, ADR-16, ADR-17, ADR-18.
-- **PTZ & positions** — presets natifs vs Vyzio-managed, miniatures. Sources : ADR-21, ADR-25, ADR-26.
+- **Camera protocols and capabilities**: the ONVIF, DVRIP and V380 clients, the capability registry,
+  `PrivacyStrategy`. Sources: ADR-19, ADR-20, ADR-22, ADR-24, ADR-27, ADR-28, ADR-29, ADR-30.
+- **Frigate integration**: the MQTT and REST contract consumed, `FrigateAdapter`, `config.yml`
+  generation. Sources: ADR-04, ADR-05, ADR-13, ADR-16, ADR-17, ADR-18.
+- **PTZ and positions**: native presets against Vyzio-managed ones, thumbnails. Sources: ADR-21,
+  ADR-25, ADR-26.
