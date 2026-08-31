@@ -23,7 +23,7 @@ sur-estime ce qui est conservé (rien). Un produit de vidéosurveillance qui per
 enregistrements échoue à sa raison d'être, et l'utilisateur ne le découvre qu'au moment où il en a
 besoin.
 
-[ADR-18](0018-enregistrement-continu-activation-par-camera-dans-la.md) avait explicitement renvoyé
+[ADR-18](0018-continuous-recording-enabled-per-camera-in-the-generated-frigate-config.md) avait explicitement renvoyé
 la rétention à plus tard (« sera exposee dans l'UI en US-P3.7 ou une future story ») et décrivait un
 schéma Frigate — `record.retain.days` + `record.retain.mode` — qui n'existe plus en 0.17. Le présent
 ADR le remplace sur ce point.
@@ -56,7 +56,7 @@ rétention est d'abord une question de capacité disque, qui est une ressource p
 5. **Un mode à deux valeurs (`tout` / `mouvement`) et une seule durée.** Deux contrôles au lieu de
    trois, mais écarté : c'est une invention de Vyzio par-dessus deux compteurs indépendants, elle
    interdit la combinaison ci-dessus, et elle recrée exactement le travers corrigé par
-   [ADR-38](0038-modele-de-flux-camera-un-flux-une-qualite-roles-detect-record-separes.md) — un
+   [ADR-38](0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md) — un
    modèle à deux valeurs plaqué sur une réalité qui en compte davantage.
 
 ### Sur les clips d'événement
@@ -80,7 +80,7 @@ d'ensemble, `Camera` porte des surcharges **nullables**, et `null` signifie « s
 partagent la génération de configuration et la frontière API ; aucune couche ne la réimplémente.
 
 Ce modèle est celui de Frigate, ce qui n'est pas un hasard : Vyzio pilote Frigate
-([ADR-12](0012-gestion-des-cameras-pilotee-par-vyzio-appliquee-a.md)), et décrire sa configuration
+([ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md)), et décrire sa configuration
 dans une autre forme obligerait à traduire dans les deux sens à chaque réglage ajouté.
 
 ### La rétention

@@ -68,7 +68,7 @@ vente au lieu d'une concession.
 ### Optionnel, et réversible sans trace
 
 Rien dans le produit ne l'exige : les commandes par messagerie
-([ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md))
+([ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md))
 couvrent l'usage courant à distance. Un utilisateur qui ne veut pas de compte NetBird garde un
 produit entier chez lui et informé partout. Retirer la clé rend le hub purement local, sans effet de
 bord ailleurs.

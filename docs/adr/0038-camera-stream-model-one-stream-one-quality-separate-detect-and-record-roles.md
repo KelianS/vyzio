@@ -15,7 +15,7 @@ Ce modèle bloque trois sujets à la fois :
   `detect.width/height`, jamais émis par Vyzio, laisse Frigate appliquer son défaut 1280×720 — au point
   d'**agrandir** une source 640×480, dépensant du CPU pour fabriquer des pixels interpolés et donner au
   modèle une image floue.
-- **Le débit d'images caméra** ([ADR-36](0036-alignement-du-debit-d-images-camera-capacite-streamconfig.md)),
+- **Le débit d'images caméra** ([ADR-36](0036-frame-rate-aligned-on-the-camera-the-streamconfig-capability.md)),
   explicitement conditionné à cette séparation : tant qu'un même flux porte les deux rôles, abaisser son
   débit dégraderait les enregistrements.
 - **Les caméras à plusieurs objectifs** (issue [#18](https://github.com/KelianS/vyzio/issues/18)), qui
@@ -87,7 +87,7 @@ d'une même scène, ceux qui en ont un différent sont des objectifs distincts. 
 elle-même, pas une heuristique Vyzio.
 
 Pour DVRIP, l'énumération interroge `Simplify.Encode` via le `DvripClient` partagé
-([ADR-29](0029-dvrip-dvripclient-partage-reglages-image-avenc.md)) : la réponse décrit `MainFormat` et
+([ADR-29](0029-dvrip-a-shared-dvripclient-image-settings-and-ptz-move-stop.md)) : la réponse décrit `MainFormat` et
 `ExtraFormat`, et `ExtraFormat.VideoEnable` **atteste que le sous-flux existe et est actif** avant que
 Vyzio ne le propose. Le chemin correspondant suit la convention `?channel=0&subtype=1` vérifiée sur le
 terrain. Aucun flux n'est donc proposé sur simple convention, conformément à la règle de vérification

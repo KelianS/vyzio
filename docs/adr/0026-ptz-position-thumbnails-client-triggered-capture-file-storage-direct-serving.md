@@ -34,7 +34,7 @@ GET  /api/cameras/{id}/ptz/presets/{presetId}/thumbnail → sert le JPEG (404 si
 - La miniature n'est pas capturée à la sauvegarde initiale d'un preset (la caméra n'est pas nécessairement à la position à ce moment)
 
 **Affichage :**
-- `PtzControlPanel` (vue live) : seul endroit où les presets se configurent ([ADR-45](0045-positions-ptz-configurees-depuis-la-vue-live-pas-les-reglages.md)) ; chaque tuile preset affiche sa miniature, déclenche la capture après GoTo et après un nouvel enregistrement
+- `PtzControlPanel` (vue live) : seul endroit où les presets se configurent ([ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md)) ; chaque tuile preset affiche sa miniature, déclenche la capture après GoTo et après un nouvel enregistrement
 - Cache-busting via `?t={timestamp}` dans le `src` de l'image, mis à jour après chaque capture réussie
 
 ## Conséquences

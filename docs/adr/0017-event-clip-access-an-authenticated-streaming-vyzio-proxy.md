@@ -1,7 +1,7 @@
 # ADR-17 — Accès aux clips événementiels : proxy Vyzio authentifié en streaming
 
 > Statut : Accepté — le proxy tient, mais l'identifiant de route n'est plus résolu en base :
-> [ADR-49](0049-vyzio-ne-persiste-pas-les-detections-l-historique-est-la-liste-de-frigate-enrichie-a-la-lecture.md)
+> [ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md)
 
 ## Contexte
 

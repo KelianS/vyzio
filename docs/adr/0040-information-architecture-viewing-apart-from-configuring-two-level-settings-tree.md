@@ -13,7 +13,7 @@ l'utilisateur trouvera en réalité sous « Historique ».
 Deux défauts structurels en découlent.
 
 **Il n'existe aucun endroit dont la fonction soit « régler l'installation ».** Quand
-[ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) a produit le
+[ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) a produit le
 premier réglage à cette portée, il n'y avait pas de case où le mettre : il a atterri dans la barre
 latérale de l'écran Caméras, entre « Saisie manuelle » et la liste des candidats découverts.
 Renommer l'écran « Paramètres » n'a fait que déplacer l'incohérence — c'est désormais une page
@@ -112,7 +112,7 @@ une caméra portent les surcharges. C'est la lecture littérale du modèle d'ADR
 
 ### La portée est une position dans l'arbre
 
-[ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md) a posé qu'un
+[ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) a posé qu'un
 réglage a une valeur d'installation qu'une caméra peut surcharger. La navigation rend ce modèle
 visible plutôt que de le laisser deviner : **une rubrique de réglages d'installation et la page
 correspondante d'une caméra ont la même forme et le même contenu, à un cran de profondeur d'écart.**
@@ -200,8 +200,8 @@ tout de suite une hauteur d'écran, donc elle ne peut l'être qu'une fois.
   construction : la place d'un réglage est dans l'arbre, jamais dans la barre. C'est la contrainte
   qui donne sa valeur à cet ADR, et la contourner reviendrait à retrouver l'état corrigé ici.
 - **Le cycle d'édition et le socle de composants sont traités séparément** —
-  [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) et
-  [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md) — mais les trois
+  [ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) et
+  [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md) — mais les trois
   décisions partagent le même déclencheur et se livrent ensemble : une arborescence propre remplie de
   formulaires incohérents ne résoudrait rien.
 - **SPECS §7.2 est réécrit** en conception mobile-first, et gagne l'attendu que la portée d'un réglage

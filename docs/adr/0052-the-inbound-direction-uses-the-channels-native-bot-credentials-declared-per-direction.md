@@ -4,7 +4,7 @@
 
 ## Contexte
 
-[ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)
+[ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md)
 a tranché le principe — un registre de commandes agnostique du canal, alimenté par une **récupération
 sortante** faute d'adresse publique — et le sens sortant est livré : un canal déclare ses capacités et
 les identifiants qu'il exige, Telegram et Discord sont deux adaptateurs derrière un port unique.
@@ -43,7 +43,7 @@ alors une propriété visible du produit, pas un manque silencieux.
 Un canal sans transport entrant reste un canal : il reçoit les alertes et n'accepte pas de commandes.
 L'interface le dit **avant** l'activation ([SPECS §5.2](../SPECS.md)), aucune boucle de récupération
 ne démarre pour lui, et aucune commande ne lui est publiée. C'est le même raisonnement que le
-catalogue de capacités caméra ([ADR-22](0022-catalogue-de-capacites-camera-decouplage-marque.md)) :
+catalogue de capacités caméra ([ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)) :
 le produit s'adapte à ce que le canal sait faire.
 
 ### Les commandes sont publiées dans la grammaire du canal

@@ -39,10 +39,10 @@ argument de vente.
 | --- | --- | --- |
 | Point d'entrée | Un seul service publié, celui qui sert l'interface (SAD §8.1) | Surface minimale : une seule chose à joindre |
 | TLS | **Aucun** — le produit est servi en clair ; le certificat auto-signé de l'annexe A du SAD n'est qu'une cible | Prérequis bloquant : chiffrer le trajet pour livrer du HTTP à l'arrivée n'aurait aucun sens |
-| Authentification | JWT + bcrypt, rate limiting login ([ADR-10](../adr/0010-authentification-jwt-bcrypt.md)) | Une auth existe — mais dimensionnée pour un LAN de confiance |
-| Frigate | lié à `127.0.0.1`, jamais routable ([ADR-11](../adr/0011-strategie-ux-non-tech-hub-vyzio-simplifie-frigate.md)) | Rien d'autre que Vyzio n'a à sortir |
-| Live | polling JPEG ~1 fps via Vyzio ([ADR-16](../adr/0016-acces-au-flux-live-polling-latest-jpg-via-vyzio.md)) | Peu gourmand aujourd'hui — mais le backlog prévoit un vrai flux vidéo, ce qui change l'ordre de grandeur du débit sortant |
-| Clips | proxy Vyzio authentifié ([ADR-17](../adr/0017-acces-aux-clips-evenementiels-proxy-vyzio-authentifie.md)) | Idem : vidéo, donc débit |
+| Authentification | JWT + bcrypt, rate limiting login ([ADR-10](../adr/0010-authentication-jwt-and-bcrypt.md)) | Une auth existe — mais dimensionnée pour un LAN de confiance |
+| Frigate | lié à `127.0.0.1`, jamais routable ([ADR-11](../adr/0011-non-technical-ux-strategy-simplified-vyzio-hub-plus-advanced-frigate.md)) | Rien d'autre que Vyzio n'a à sortir |
+| Live | polling JPEG ~1 fps via Vyzio ([ADR-16](../adr/0016-live-stream-access-polling-latest-jpg-through-vyzio-frigate-never-exposed.md)) | Peu gourmand aujourd'hui — mais le backlog prévoit un vrai flux vidéo, ce qui change l'ordre de grandeur du débit sortant |
+| Clips | proxy Vyzio authentifié ([ADR-17](../adr/0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md)) | Idem : vidéo, donc débit |
 | Notifications | Telegram, image incluse | **Seul canal déjà « distant » qui fonctionne** |
 
 Point notable : **l'architecture est déjà prête**. Un seul port HTTPS, un seul processus à joindre,
@@ -307,7 +307,7 @@ utilisateurs qui la maîtrisent déjà — jamais comme parcours par défaut.
 - **Le mode Expert restera cassé à distance** quelle que soit l'option : il pointe le navigateur vers
   Frigate sur `:5000`, hors du tunnel Vyzio (constat déjà au backlog). Un accès distant qui « marche
   sauf un écran » est un défaut visible.
-- **Le vrai flux vidéo change les termes.** Passer du JPEG 1 fps ([ADR-16](../adr/0016-acces-au-flux-live-polling-latest-jpg-via-vyzio.md))
+- **Le vrai flux vidéo change les termes.** Passer du JPEG 1 fps ([ADR-16](../adr/0016-live-stream-access-polling-latest-jpg-through-vyzio-frigate-never-exposed.md))
   à un flux continu multiplie le débit sortant. Cela ne change rien aux options A/B (pair à pair,
   pas de coût de transit), mais c'est déterminant pour D. Décider de l'accès distant **avant** le
   flux vidéo est donc le bon ordre.
@@ -318,10 +318,10 @@ utilisateurs qui la maîtrisent déjà — jamais comme parcours par défaut.
 
 La direction est tranchée en deux décisions, qui sont désormais le foyer du sujet :
 
-- **[ADR-50](../adr/0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)**
+- **[ADR-50](../adr/0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md)**
   — le canal de messagerie devient bidirectionnel, par une couche de commandes agnostique du canal.
   C'est ce qui rend l'accès réseau optionnel.
-- **[ADR-51](../adr/0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md)**
+- **[ADR-51](../adr/0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)**
   — l'accès distant à l'interface passe par un réseau overlay NetBird, guidé depuis Vyzio mais opéré
   par l'utilisateur (option B ci-dessus). Le relais Vyzio (option D) reste l'horizon, non retenu
   aujourd'hui.

@@ -3,11 +3,11 @@
 > Statut : Accepté
 >
 > Remplace le volet « enregistrer vaut appliquer » de
-> [ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md).
+> [ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md).
 
 ## Contexte
 
-[ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) a
+[ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) a
 supprimé le troisième état — « enregistré mais pas appliqué » — en décidant qu'enregistrer valait
 appliquer, la mise en service se poursuivant en arrière-plan.
 

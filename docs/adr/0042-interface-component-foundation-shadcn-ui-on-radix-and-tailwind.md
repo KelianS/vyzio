@@ -28,10 +28,10 @@ cohabitation — faute desquelles l'adoption produirait un troisième système d
 supprimer un.
 
 Ce socle ne tient pas la charge qui arrive.
-[ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)
+[ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)
 multiplie les écrans de formulaire et introduit des sections repliables, une navigation à deux
 niveaux et un panneau mobile ;
-[ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) impose
+[ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) impose
 un état de brouillon et une barre d'actions identique partout. Construire cela sur du CSS global et
 quatre composants revient à écrire à la main — et à tester à la main — la gestion du focus, le
 piégeage clavier des surfaces modales, les libellés d'assistance et le comportement tactile des

@@ -122,7 +122,7 @@ La connexion est **limitée en débit** ; le reste ne l'est pas.
 
 ### Deux portes, jamais un passe-partout
 
-L'appairage d'une conversation ([ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md))
+L'appairage d'une conversation ([ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md))
 reste une frontière **séparée**, avec sa propre révocation : une session web n'appaire pas une
 conversation, et une conversation appairée n'ouvre pas l'interface. Deux chemins d'entrée, deux
 serrures, aucun secret partagé.
@@ -168,13 +168,13 @@ la même réponse, faute de quoi le geste enfermerait dehors celui qui le fait.
   franchement plutôt que masqué : cette décision ne livre pas la confidentialité du trajet, elle
   livre l'identité. Un certificat auto-signé aurait mis un avertissement rouge devant un public non
   technicien — soit l'inverse de l'effet recherché. Le chiffrement reste traité comme le prérequis
-  de l'accès distant ([ADR-51](0051-acces-distant-a-l-interface-reseau-overlay-netbird-opere-par-l-utilisateur.md)) ;
+  de l'accès distant ([ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)) ;
   après cet ADR, il devient le **seul** écart entre la cible et la réalité ([SAD](../SAD.md) §8.1).
 - **Le premier écran du produit change.** Une installation neuve ouvre sur la création du mot de
   passe, avant l'ajout de la première caméra ([SAD](../SAD.md) §8.2).
 - **Un écran qu'on ne peut pas franchir porte son aide sur place** : la connexion et la création du
   compte sont exactement le cas prévu par
-  [ADR-53](0053-la-doc-utilisateur-vit-dans-l-interface-trois-niveaux-d-aide.md) — l'aide y vit dans
+  [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) — l'aide y vit dans
   l'état affiché, faute d'écran derrière lequel la replier.
 - **Une session expirée doit se lire, pas se deviner.** Une réponse « non authentifié » ramène à la
   connexion en le disant ; un écran vide ou une erreur technique ferait passer une déconnexion pour
@@ -189,8 +189,8 @@ la même réponse, faute de quoi le geste enfermerait dehors celui qui le fait.
   auditer l'ensemble des routes et des écrans après coup.
 - **Une coupure de vie privée devra dire qui l'a posée** le jour où un second compte existe. Le
   produit sait déjà attribuer un acte venu d'une conversation
-  ([ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md)) ;
+  ([ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md)) ;
   c'est la même exigence, étendue à l'interface.
 - **Le catalogue de commandes est désormais borné par une règle**, et non plus seulement par
-  l'arbitrage cas par cas d'[ADR-50](0050-le-canal-de-messagerie-devient-bidirectionnel-couche-de-commandes-agnostique-du-canal.md) :
+  l'arbitrage cas par cas d'[ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md) :
   une commande qui configure ou révèle un secret n'y entre pas.

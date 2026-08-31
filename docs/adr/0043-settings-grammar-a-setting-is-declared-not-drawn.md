@@ -4,9 +4,9 @@
 
 ## Contexte
 
-[ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md) range
+[ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md) range
 les réglages dans un arbre et
-[ADR-41](0041-cycle-d-edition-des-reglages-brouillon-explicite-enregistrer-vaut-appliquer.md) fixe
+[ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) fixe
 comment on les valide. Ni l'un ni l'autre ne dit **à quoi ressemble un réglage** une fois arrivé sur
 la page qui le porte. C'est pourtant là que se joue l'essentiel du ressenti, et c'est là que l'état
 actuel est le plus incohérent.
@@ -24,7 +24,7 @@ Constaté sur les écrans existants :
   complètes, le bloc Telegram un tutoriel entier ;
 - **un même fait est parfois porté par deux contrôles** — le booléen d'enregistrement continu à côté
   d'une durée, corrigé par
-  [ADR-39](0039-reglages-globaux-surchargeables-par-camera-retention-d-enregistrement.md), en était
+  [ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md), en était
   l'exemple.
 
 La cause est la même partout : **rien n'oblige un réglage nouveau à ressembler aux précédents.**
@@ -64,7 +64,7 @@ ce qui ajoute à chaque ligne une provenance et un retour arrière à afficher.
 7. **L'aide reste en texte courant sous le réglage.** Écarté : c'est ce qui noie les noms et les
    valeurs aujourd'hui.
 8. **L'aide au survol.** Écarté : inatteignable au doigt, donc inexistante sur la cible mobile
-   ([ADR-40](0040-architecture-de-l-information-consulter-vs-regler-arborescence-a-deux-niveaux.md)).
+   ([ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
 
 ## Décision
 
@@ -162,7 +162,7 @@ fréquence d'usage attendue, pas à la fin.
   écran par écran avec le reste du chantier ; aucun réglage nouveau n'est ajouté hors grammaire, sans
   quoi la dette se reconstitue pendant qu'on la rembourse.
 - **Le rendu déclaratif est un composant Vyzio, pas une primitive** (frontière posée par
-  [ADR-42](0042-socle-de-composants-d-interface-shadcn-ui-sur-radix-et-tailwind.md)) : il s'appuie sur
+  [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md)) : il s'appuie sur
   les primitives accessibles sans jamais les modifier.
 - **Un réglage qui n'entre pas dans la grammaire est un signal**, pas un cas particulier à traiter sur
   place : soit sa nature est mal identifiée, soit la table doit s'étendre. Les deux se règlent avant
