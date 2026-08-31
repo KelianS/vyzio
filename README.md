@@ -202,7 +202,11 @@ of interest, and data export and erasure.
 
 Contributions are welcome. Setup, tasks and environment variables are in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). The process, meaning how a change is framed before it is
-written, is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
+written, is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md). Taking part means keeping to the
+[code of conduct](CODE_OF_CONDUCT.md).
+
+Found a security flaw? Do not open an issue: [`SECURITY.md`](SECURITY.md) says how to report it
+privately, and what Vyzio does and does not defend against today.
 
 Documentation is French where it frames the business (`docs/SPECS.md`, `docs/BUSINESS_PLAN.md`).
 Everything else is English: code, comments, commits, pull requests, issue titles.
