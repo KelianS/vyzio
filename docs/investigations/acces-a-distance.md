@@ -84,8 +84,7 @@ contredit frontalement l'invariant privacy-first. Le critère n'est pas « est-c
 
 ### 3.4 Zéro abonnement obligatoire
 
-Pilier du positionnement ([`BUSINESS_PLAN`](../BUSINESS_PLAN.md) §3 : vente matérielle, abonnement
-support **opt-in**). Une solution dont le fonctionnement nominal exige un paiement récurrent
+Pilier du positionnement : vente matérielle, abonnement support **opt-in**. Une solution dont le fonctionnement nominal exige un paiement récurrent
 contredit l'argumentaire commercial contre Ring/Nest/Arlo.
 
 ---

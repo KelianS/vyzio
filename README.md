@@ -102,7 +102,6 @@ one brand at a time, and the full detail, protocol by protocol, is in
 | Third-party IP cameras             |      limited       |   ✓    |
 | Mandatory subscription             |         ✓          |  none  |
 
-Positioning, market and business model live in [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md).
 Vyzio is developed both as an open-source project and as a pre-configured appliance sold with
 French-language support. This repository is the open-source side, and carries no support
 commitment.
@@ -204,7 +203,7 @@ Contributions are welcome. Setup, tasks and environment variables are in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). The process, meaning how a change is framed before it is
 written, is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
-Documentation is French where it frames the business (`docs/SPECS.md`, `docs/BUSINESS_PLAN.md`).
+Documentation is French where it frames the product for its market (`docs/SPECS.md`).
 Everything else is English: code, comments, commits, pull requests, issue titles.
 
 ---
@@ -219,7 +218,6 @@ Everything else is English: code, comments, commits, pull requests, issue titles
 | [`docs/design/`](docs/design/)                     | How individual components work           |
 | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) | Interface tokens, components and intent  |
 | [`docs/WORKFLOW.md`](docs/WORKFLOW.md)             | Process and documentation governance     |
-| [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md)   | Market, positioning, business model      |
 
 User documentation lives inside the interface, on the screen it belongs to
 ([ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
