@@ -61,3 +61,6 @@ config/frigate.generated.yml
 
 # AI
 .claude/**
+
+# Business framing, kept out of the public repository
+docs/BUSINESS_PLAN.md

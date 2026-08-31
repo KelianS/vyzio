@@ -78,9 +78,9 @@ supreme zero-duplication rule in [`../CLAUDE.md`](../CLAUDE.md).
 ## Language
 
 **The repository is written in English**, code and prose alike: comments, commits, pull requests,
-issues, templates, labels, and every framing document. Two files are the exception and stay in French,
-[`SPECS.md`](SPECS.md) and [`BUSINESS_PLAN.md`](BUSINESS_PLAN.md), because they frame the product and
-the business for a French market and are read as much by non-engineers as by contributors.
+issues, templates, labels, and every framing document. One file is the exception and stays in French,
+[`SPECS.md`](SPECS.md), because it frames the product for a French market and is read as much by
+non-engineers as by contributors.
 
 One gap remains, and it is deliberate. The **bodies of the ADRs are still in French**, while their
 filenames are already English. Renaming is the operation that breaks links, so it was done once, on its

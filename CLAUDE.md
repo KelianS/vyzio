@@ -39,8 +39,8 @@ in those folders.
 ## Invariants (everywhere, no exception)
 
 - **Privacy first**: never transmit images without explicit consent.
-- Everything in this repository is written in **English**, code and prose alike. The two exceptions
-  are `docs/SPECS.md` and `docs/BUSINESS_PLAN.md`, which frame the business for a French market.
+- Everything in this repository is written in **English**, code and prose alike. The one exception
+  is `docs/SPECS.md`, which frames the product for a French market.
   Rule and current state: [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Language.
 - **Commits and PRs** (title and description): English, Conventional Commits format. Rule and
   template in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git.
