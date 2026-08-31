@@ -1,99 +1,99 @@
-# TAD — Découverte réseau des caméras
+# TAD: camera network discovery
 
-> Comment fonctionne le sous-système de découverte. Le *pourquoi* des choix est dans
-> [ADR-32](../adr/0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) (pipeline 3 étapes) et
-> [ADR-31](../adr/0031-manual-vendor-override-at-onboarding.md) (override manuel).
-> Foyer du code : `src/vyzio/Vyzio.Infrastructure/Services/CameraDiscovery/`.
+> How the discovery subsystem works. The *why* behind the choices is in
+> [ADR-32](../adr/0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) (three-stage pipeline) and
+> [ADR-31](../adr/0031-manual-vendor-override-at-onboarding.md) (manual override).
+> Home of the code: `src/vyzio/Vyzio.Infrastructure/Services/CameraDiscovery/`.
 
-## Rôle
+## Role
 
-À partir d'un **périmètre réseau** (hôtes ou plages CIDR), produire la liste des équipements
-présents, enrichie de faits vérifiables (ports ouverts + protocole confirmé, hostname, MAC) et
-d'une interprétation (marque probable, capacités supportées) — **sans jamais masquer** un
-équipement non reconnu.
+Starting from a **network scope** (hosts or CIDR ranges), produce the list of devices present, enriched
+with verifiable facts (open ports plus confirmed protocol, hostname, MAC) and with an interpretation
+(probable brand, supported capabilities), **without ever hiding** an unrecognised device.
 
-## Les trois étapes
+## The three stages
 
-Pipeline orchestré par `AssistedCameraDiscoveryProbePipeline`. Chaque classe porte un commentaire
-d'en-tête indiquant son étage.
+The pipeline is orchestrated by `AssistedCameraDiscoveryProbePipeline`. Each class carries a header
+comment stating which stage it belongs to.
 
-| Étage | Responsabilité | Classe(s) |
+| Stage | Responsibility | Class(es) |
 |---|---|---|
-| 1. Identification | Quels hôtes existent (ping / cible explicite) | `AssistedCameraDiscoveryProbePipeline` (`IdentifyHostsAsync`, `PingSweepAsync`) |
-| 2. Enrichissement | Faits vérifiables par hôte (ports+fingerprint, RTSP, ONVIF, hostname, MAC) | `AssistedCameraDiscoveryProbePipeline` (`Discover*SignalsAsync`) |
-| 3. Interprétation | Marque + capacités, à partir de preuves structurées | `AssistedCameraDiscoveryIdentifier`, `AssistedCameraDiscoveryFormatter`, `AssistedCameraDiscoveryService` |
+| 1. Identification | Which hosts exist (ping or explicit target) | `AssistedCameraDiscoveryProbePipeline` (`IdentifyHostsAsync`, `PingSweepAsync`) |
+| 2. Enrichment | Verifiable facts per host (ports and fingerprint, RTSP, ONVIF, hostname, MAC) | `AssistedCameraDiscoveryProbePipeline` (`Discover*SignalsAsync`) |
+| 3. Interpretation | Brand and capabilities, from structured evidence | `AssistedCameraDiscoveryIdentifier`, `AssistedCameraDiscoveryFormatter`, `AssistedCameraDiscoveryService` |
 
-**Règle d'or** : une étape ne fait jamais le travail d'une autre. L'identification ne filtre pas ce
-qui s'affiche (chaque hôte identifié reçoit un signal de base `network_host`, priorité `-10`) ;
-l'enrichissement ne suggère aucune marque (faits bruts seulement) ; l'interprétation ne dérive la
-marque que de `discoverySource` structuré, jamais du texte des notes.
+**Golden rule**: a stage never does another stage's work. Identification does not filter what gets
+displayed (every identified host receives a baseline `network_host` signal, priority `-10`); enrichment
+suggests no brand (raw facts only); interpretation derives the brand only from a structured
+`discoverySource`, never from the text of the notes.
 
-## Modèle de signal & qualification
+## Signal model and qualification
 
-- **`RawCameraDiscoverySignal`** — un fait produit par l'enrichissement (source, port, note,
+- **`RawCameraDiscoverySignal`**: one fact produced by enrichment (source, port, note,
   `ConfirmedProtocol?`, `PortServiceLabel?`).
-- **`DiscoveryProtocolCatalog`** — mappe chaque `discoverySource` → priorité de fusion (+ le
-  `SupportedProtocol` pour les sources qui prouvent un protocole). Utilisé par le `Formatter` pour
-  choisir le signal gagnant quand plusieurs décrivent le même hôte.
-- **`AssistedCameraDiscoveryIdentifier`** — qualifie chaque hôte sur trois paliers
-  (`DetermineQualification`) : **`camera_confirmed`** (port/protocole caméra confirmé — ONVIF, KLAP,
-  ou RTSP avec chemin connu), **`camera_likely`** (indice fort mais non confirmé — RTSP qui répond
-  sans chemin connu, signature HTTP camera, OUI MAC ou hostname évocateur), **`device_unknown`**
-  (aucun signal qualifiant ; inclut le signal de base `network_host`). Correspond au besoin produit
-  SPECS §2.2 (« distinguer une caméra confirmée, une caméra probable et un équipement non qualifié »).
-- **`AssistedCameraDiscoveryFormatter`** — fusionne les signaux par hôte (priorité) et décide de
-  l'exposition au front.
+- **`DiscoveryProtocolCatalog`**: maps each `discoverySource` to a merge priority (plus the
+  `SupportedProtocol` for the sources that prove a protocol). Used by the `Formatter` to pick the
+  winning signal when several describe the same host.
+- **`AssistedCameraDiscoveryIdentifier`**: qualifies each host on three tiers
+  (`DetermineQualification`). **`camera_confirmed`** (a camera port or protocol confirmed: ONVIF, KLAP,
+  or RTSP with a known path), **`camera_likely`** (a strong but unconfirmed hint: RTSP answering
+  without a known path, an HTTP camera signature, a MAC OUI or a suggestive hostname),
+  **`device_unknown`** (no qualifying signal, including the baseline `network_host` signal). This
+  matches the product need in SPECS §2.2 ("distinguish a confirmed camera, a probable camera and an
+  unqualified device").
+- **`AssistedCameraDiscoveryFormatter`**: merges the signals per host (by priority) and decides what is
+  exposed to the frontend.
 
-## Balayage de ports & fingerprint (« nmap »)
+## Port scanning and fingerprinting ("nmap")
 
-Source de vérité unique : **`DiscoveryPortCatalog`** (ne pas dupliquer sa table ici — elle vit dans
-le code).
+Single source of truth: **`DiscoveryPortCatalog`** (do not duplicate its table here, it lives in the
+code).
 
-- `ScannedPorts` : chaque port TCP-connecté, avec son libellé conventionnel (HTTP, SSH…). **Tout
-  port ouvert est affiché**, même sans protocole reconnu (« non identifié »).
-- `Fingerprints` : protocole → ports candidats + libellé. Un port ouvert n'est **étiqueté** d'un
-  protocole que si son handshake sans credentials passe (`ConfirmProtocolAsync`) : RTSP `OPTIONS`,
-  ONVIF SOAP `GetSystemDateAndTime`, DVRIP octet `0xFF`, V380 trame d'auth 256 octets, Tapo KLAP
-  `handshake1`. Un port peut confirmer plusieurs protocoles (many-to-many).
+- `ScannedPorts`: every TCP-connected port, with its conventional label (HTTP, SSH and so on). **Every
+  open port is displayed**, even without a recognised protocol ("unidentified").
+- `Fingerprints`: protocol to candidate ports plus label. An open port is **labelled** with a protocol
+  only once its credential-free handshake passes (`ConfirmProtocolAsync`): RTSP `OPTIONS`, ONVIF SOAP
+  `GetSystemDateAndTime`, DVRIP byte `0xFF`, the V380 256-byte auth frame, Tapo KLAP `handshake1`. One
+  port can confirm several protocols (many-to-many).
 
-Autres sources d'enrichissement, gardées pour leur valeur propre : RTSP DESCRIBE (chemin de flux),
-annonce ONVIF multicast (hostname), rDNS (hostname), ARP/OUI (indice constructeur).
+Other enrichment sources, kept for their own value: RTSP DESCRIBE (stream path), ONVIF multicast
+announcement (hostname), rDNS (hostname), ARP and OUI (vendor hint).
 
-## Capacités dérivées du registre
+## Capabilities derived from the registry
 
-L'interprétation ne code aucune capacité en dur : `AssistedCameraDiscoveryService.GetDetectedCapabilities`
-croise les protocoles détectés sur l'hôte avec `ICapabilityProviderRegistry.GetRegisteredProtocols(capability)`
-— le **même** registre qui pilote la détection à l'ajout ([ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md),
-[ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)). `Stream` est une
-capacité de première classe (`IStreamCapabilityProvider`), pas un cas particulier.
+Interpretation hardcodes no capability: `AssistedCameraDiscoveryService.GetDetectedCapabilities`
+crosses the protocols detected on the host with
+`ICapabilityProviderRegistry.GetRegisteredProtocols(capability)`, the **same** registry that drives
+detection when a camera is added ([ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md),
+[ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)). `Stream` is a
+first-class capability (`IStreamCapabilityProvider`), not a special case.
 
-## Contrat de sortie (vers le frontend)
+## Output contract (towards the frontend)
 
-Le backend transporte des DTO **déjà localisés** ; le frontend est en pur affichage (aucun nom de
-protocole/capacité en dur) :
+The backend carries **already localised** DTOs; the frontend is pure display (no protocol or capability
+name hardcoded):
 
-- `DetectedPortSignal(Protocol, Label, Port)` → table `Port | Protocole`.
-- `DetectedCapability(Capability, Label, ProtocolLabels)` → liste `Capacité → protocoles`.
+- `DetectedPortSignal(Protocol, Label, Port)` feeds the `Port | Protocol` table.
+- `DetectedCapability(Capability, Label, ProtocolLabels)` feeds the `capability to protocols` list.
 
 ## Configuration
 
-**Périmètre réseau uniquement** (`DiscoverySettings` : `ProbeHosts`, `ProbeCidrs`,
-`AutoDetectLocalCidrs`, `ProbeTimeoutMs`, `MaxConcurrentProbes`). Ports, chemins RTSP et protocoles
-sont des **constantes internes** de `DiscoveryPortCatalog` — jamais exposés à l'utilisateur. Les
-champs `*Override` de `DiscoverySettings` sont **de test uniquement**, jamais lus depuis la
-config/env (hermétisation des tests).
+**Network scope only** (`DiscoverySettings`: `ProbeHosts`, `ProbeCidrs`, `AutoDetectLocalCidrs`,
+`ProbeTimeoutMs`, `MaxConcurrentProbes`). Ports, RTSP paths and protocols are **internal constants** of
+`DiscoveryPortCatalog`, never exposed to the user. The `*Override` fields of `DiscoverySettings` are
+**for tests only**, never read from the configuration or the environment (test hermeticity).
 
-## Limites connues
+## Known limits
 
-- Ping ICMP et lecture ARP exigent le privilège réseau (Linux : `CAP_NET_RAW`, réseau `host`). Un
-  filet de sécurité (repli sur la liste non filtrée si aucun ping ne répond) absorbe l'ICMP bloqué
-  sans le résoudre.
-- Fingerprint V380 *best-effort* (pas de signature de réponse documentée) : privilégie « non
-  identifié » à un faux « V380 ».
-- Jeu de ports curé, pas 1-65535 (coût du TCP-connect × hôtes).
+- ICMP ping and ARP reads require network privilege (on Linux, `CAP_NET_RAW` and the `host` network). A
+  safety net (falling back to the unfiltered list when no ping answers) absorbs blocked ICMP without
+  resolving it.
+- V380 fingerprinting is *best effort* (no documented response signature): it prefers "unidentified"
+  over a false "V380".
+- A curated port set, not 1-65535 (the cost being TCP-connect times hosts).
 
-## Ajouter un protocole à port dédié
+## Adding a protocol with a dedicated port
 
-Une entrée `ScannedPorts` + une entrée `Fingerprints` dans `DiscoveryPortCatalog` (+ un cas dans
-`ConfirmProtocolAsync` réutilisant une sonde existante). Détection, affichage du port, confirmation
-caméra et croisement des capacités suivent automatiquement — frontend inclus.
+One `ScannedPorts` entry and one `Fingerprints` entry in `DiscoveryPortCatalog` (plus a case in
+`ConfirmProtocolAsync` reusing an existing probe). Detection, port display, camera confirmation and
+capability crossing follow automatically, frontend included.

@@ -1,147 +1,159 @@
-# Vyzio — Software Architecture Document (SAD)
+# Vyzio, Software Architecture Document (SAD)
 
-> Juillet 2026 — v2.3 — Document vivant
-
----
-
-## Table des matières
-
-1. [Introduction et périmètre](#1-introduction-et-périmètre)
-2. [Positionnement vis-à-vis de Frigate](#2-positionnement-vis-à-vis-de-frigate)
-3. [Contraintes et principes directeurs](#3-contraintes-et-principes-directeurs)
-4. [Vue d'ensemble de l'architecture](#4-vue-densemble-de-larchitecture)
-5. [Décisions d'architecture (ADR)](#5-décisions-darchitecture-adr) → index complet dans [`adr/README.md`](adr/README.md)
-6. [Architecture des services](#6-architecture-des-services)
-7. [Modèle de données](#7-modèle-de-données)
-8. [Architecture de déploiement](#8-architecture-de-déploiement)
-9. [Sécurité](#9-sécurité)
-10. [Performances et scalabilité](#10-performances-et-scalabilité)
-11. [Risques et mitigations](#11-risques-et-mitigations)
+> July 2026 · v2.3 · Living document
 
 ---
 
-## 1. Introduction et périmètre
+## Table of contents
 
-Ce document décrit les décisions d'architecture du système **Vyzio**, un produit de surveillance domestique local-first destiné à un public non-technicien.
+1. [Introduction and scope](#1-introduction-and-scope)
+2. [Positioning against Frigate](#2-positioning-against-frigate)
+3. [Constraints and guiding principles](#3-constraints-and-guiding-principles)
+4. [Architecture overview](#4-architecture-overview)
+5. [Architecture decisions (ADR)](#5-architecture-decisions-adr), full index in [`adr/README.md`](adr/README.md)
+6. [Service architecture](#6-service-architecture)
+7. [Data model](#7-data-model)
+8. [Deployment architecture](#8-deployment-architecture)
+9. [Security](#9-security)
+10. [Performance and scalability](#10-performance-and-scalability)
+11. [Risks and mitigations](#11-risks-and-mitigations)
 
-**Philosophie centrale** : ne pas réinventer ce qui existe et fonctionne. Vyzio est une **couche produit au-dessus de Frigate**. Frigate couvre le pipeline vidéo et de nombreux enrichissements IA. Vyzio se concentre sur l'accessibilité non-tech : installation, onboarding, configuration guidée, règles métier, notifications multi-canaux, support et packaging clef en main.
+---
+
+## 1. Introduction and scope
+
+This document states the architecture decisions of the **Vyzio** system, a local-first home
+surveillance product aimed at a non-technical audience.
+
+**Core philosophy**: do not reinvent what already exists and works. Vyzio is a **product layer on top
+of Frigate**. Frigate covers the video pipeline and a good deal of AI enrichment. Vyzio concentrates on
+non-technical accessibility: installation, onboarding, guided configuration, business rules,
+multi-channel notifications, support and turnkey packaging.
 
 ### Audience
 
-Ingénieurs contribuant au projet. Prérequis : .NET 10, React/TypeScript, architecture événementielle.
+Engineers contributing to the project. Assumed knowledge: .NET 10, React and TypeScript, event-driven
+architecture.
 
 ---
 
-## 2. Positionnement vis-à-vis de Frigate
+## 2. Positioning against Frigate
 
-### 2.1 Ce que Frigate fait — et que Vyzio NE réimplémente PAS
+### 2.1 What Frigate does, and Vyzio does NOT reimplement
 
-| Fonctionnalité | Prise en charge par |
+| Feature | Handled by |
 |---|---|
-| Ingestion flux RTSP / ONVIF / MJPEG | **Frigate** |
-| Découverte caméras ONVIF | **Frigate** |
-| Détection de mouvement | **Frigate** |
-| Détection de présence humaine (TFLite / OpenVINO / Coral) | **Frigate** |
-| Enregistrement vidéo MP4 + clips événementiels | **Frigate** |
-| Politique de rétention des clips | **Frigate** |
-| Support accélération matérielle (Coral TPU, GPU, VAAPI) | **Frigate** |
-| API REST et MQTT events | **Frigate** (consommé par Vyzio) |
-| Aperçu live des caméras (HLS / MJPEG) | **Frigate** (proxyfié par Vyzio) |
-| Reconnaissance faciale locale | **Frigate** (v0.16+) |
-| Reconnaissance de plaques (LPR) locale | **Frigate** (v0.16+) |
-| Recherche sémantique + triggers | **Frigate** (v0.15+) |
-| Classification locale (bird, object, state) | **Frigate** (v0.16/v0.17) |
-| Audio events + transcription locale | **Frigate** |
-| Notifications WebPush natives | **Frigate** |
+| RTSP / ONVIF / MJPEG stream ingestion | **Frigate** |
+| ONVIF camera discovery | **Frigate** |
+| Motion detection | **Frigate** |
+| Human presence detection (TFLite / OpenVINO / Coral) | **Frigate** |
+| MP4 recording and event clips | **Frigate** |
+| Clip retention policy | **Frigate** |
+| Hardware acceleration support (Coral TPU, GPU, VAAPI) | **Frigate** |
+| REST API and MQTT events | **Frigate** (consumed by Vyzio) |
+| Live camera preview (HLS / MJPEG) | **Frigate** (proxied by Vyzio) |
+| Local face recognition | **Frigate** (v0.16+) |
+| Local licence plate recognition (LPR) | **Frigate** (v0.16+) |
+| Semantic search and triggers | **Frigate** (v0.15+) |
+| Local classification (bird, object, state) | **Frigate** (v0.16/v0.17) |
+| Audio events and local transcription | **Frigate** |
+| Native WebPush notifications | **Frigate** |
 
-### 2.2 Ce que Frigate ne fait PAS — valeur ajoutée de Vyzio
+### 2.2 What Frigate does NOT do: Vyzio's added value
 
-| Fonctionnalité | Vyzio |
+| Feature | Vyzio |
 |---|---|
-| **Installation plug & play** (appliance + bootstrap) | ✅ Vyzio Hub |
-| **Onboarding guidé caméras** (scan, test, nommage, zones) | ✅ Vyzio Dashboard |
-| **Profils produit et règles métier** (foyer, livreur, plages horaires, priorités) | ✅ Vyzio Core |
-| **Notifications intelligentes multi-canaux** (Telegram, Discord, ntfy, webhook, email) | ✅ Notification Service |
-| **Usage hors du domicile** : commandes par messagerie, accès distant guidé sans exposition publique | ✅ Vyzio Core |
-| **UI grand public** : parcours simplifié, mobile-first, termes non-techniques | ✅ Dashboard React |
-| **Packaging all-in-one** : livré prêt à brancher, zéro configuration technique | ✅ Hub + Compose / Appliance |
-| **Support français** et documentation non-technicienne | ✅ Produit |
+| **Plug and play installation** (appliance plus bootstrap) | ✅ Vyzio Hub |
+| **Guided camera onboarding** (scan, test, naming, zones) | ✅ Vyzio Dashboard |
+| **Product profiles and business rules** (household, delivery, time windows, priorities) | ✅ Vyzio Core |
+| **Smart multi-channel notifications** (Telegram, Discord, ntfy, webhook, email) | ✅ Notification Service |
+| **Use away from home**: commands over messaging, guided remote access with no public exposure | ✅ Vyzio Core |
+| **Consumer UI**: simplified journey, mobile-first, non-technical wording | ✅ Dashboard React |
+| **All-in-one packaging**: shipped ready to plug in, zero technical configuration | ✅ Hub + Compose / Appliance |
+| **French-language support** and non-technical documentation | ✅ Product |
 
-### 2.3 Dépendance à Frigate — risques et mitigations
+### 2.3 The dependency on Frigate: risks and mitigations
 
-| Risque | Probabilité | Mitigation |
+| Risk | Likelihood | Mitigation |
 |---|:---:|---|
-| Breaking change API Frigate | Faible (API stable v0.12+) | Couche d'abstraction `FrigateAdapter` versionnée |
-| Arrêt du projet Frigate | Très faible (communauté active, HA intégration) | Architecture permet de remplacer Frigate par autre backend MQTT/REST |
-| Bug Frigate impactant Vyzio | Moyen | Tests d'intégration sur contrat MQTT/REST, pas sur les internals Frigate |
+| Breaking change in the Frigate API | Low (API stable since v0.12) | A versioned `FrigateAdapter` abstraction layer |
+| The Frigate project stops | Very low (active community, Home Assistant integration) | The architecture allows another MQTT/REST backend to replace Frigate |
+| A Frigate bug affecting Vyzio | Medium | Integration tests on the MQTT/REST contract, not on Frigate internals |
 
-### 2.4 Stratégie UX non-tech : comparaison
+### 2.4 Non-technical UX strategy: the comparison
 
-Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien sans exposition aux concepts YAML, brokers, rôles `ffmpeg`, ou tuning IA.
+The product goal is to make Frigate usable by a non-technical user with no exposure to YAML, brokers,
+`ffmpeg` roles or AI tuning.
 
-| Option | Description | Avantages | Inconvénients | Verdict |
+| Option | Description | Upside | Downside | Verdict |
 |---|---|---|---|---|
-| **A — Exposer uniquement l'UI Frigate** | Vendre une appliance Frigate avec branding/support minimal | Time-to-market maximal, peu de dev UI | Onboarding et configuration caméra trop techniques pour le grand public | ❌ Insuffisant pour la promesse Vyzio |
-| **B — UI Vyzio 100% custom, sans UI Frigate** | Refaire toute l'expérience, y compris fonctions avancées | Contrôle total UX | Coût très élevé, duplication de fonctionnalités Frigate, risque de retard | ❌ Trop coûteux / non aligné "ne pas réinventer" |
-| **C — Approche hybride (recommandée)** | **Hub Vyzio simplifié par défaut** + **accès Frigate avancé** (mode expert) | UX non-tech cohérente + puissance Frigate conservée + vélocité | Nécessite une bonne gouvernance des frontières UI | ✅ Meilleur compromis produit/technique |
+| **A, expose the Frigate UI only** | Sell a Frigate appliance with minimal branding and support | Fastest time to market, little UI development | Onboarding and camera configuration far too technical for a general audience | ❌ Falls short of the Vyzio promise |
+| **B, a fully custom Vyzio UI with no Frigate UI** | Rebuild the whole experience, advanced functions included | Total UX control | Very high cost, duplication of Frigate features, risk of delay | ❌ Too expensive, misaligned with "do not reinvent" |
+| **C, hybrid (recommended)** | **A simplified Vyzio Hub by default** plus **advanced Frigate access** (expert mode) | Coherent non-technical UX, Frigate's power retained, good velocity | Requires sound governance of the UI boundaries | ✅ The best product and technical compromise |
 
-**Décision stratégique** : Vyzio adopte l'approche **hybride**. Le parcours principal passe par le Hub Vyzio (installation + onboarding + configuration simplifiée). L'UI Frigate reste disponible en mode avancé pour les utilisateurs experts et le support.
+**Strategic decision**: Vyzio adopts the **hybrid** approach. The main journey goes through the Vyzio
+Hub (installation, onboarding, simplified configuration). The Frigate UI stays available in advanced
+mode for expert users and for support.
 
 ---
 
-## 3. Contraintes et principes directeurs
+## 3. Constraints and guiding principles
 
-### 3.1 Contraintes fermes
+### 3.1 Hard constraints
 
-| # | Contrainte | Source |
+| # | Constraint | Source |
 |---|---|---|
-| C1 | Les données biométriques (embeddings, frames) ne quittent jamais le réseau local | Specs §8.2 |
-| C2 | Le système fonctionne sans connexion Internet | Specs §5.3 |
-| C3 | Déploiement sur mini-PC (Intel NUC, Raspberry Pi 5, NAS) | Specs §1.3 |
-| C4 | Installation plug & play sans technicité | Specs §1.3 |
-| C5 | Support RTSP, ONVIF, HTTP MJPEG | Délégué à Frigate |
-| C6 | Reconnaissance faciale < 2s après détection de mouvement | Contrainte d'architecture dérivée des objectifs produit |
-| C7 | Pas de dépendance cloud pour les fonctions critiques | Specs §8.2 |
-| C8 | Stack cible : .NET 10 + TypeScript (runtime principal) | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) |
+| C1 | Biometric data (embeddings, frames) never leaves the local network | Specs §8.2 |
+| C2 | The system works without an internet connection | Specs §5.3 |
+| C3 | Deployment on a mini PC (Intel NUC, Raspberry Pi 5, NAS) | Specs §1.3 |
+| C4 | Plug and play installation with no technical skill required | Specs §1.3 |
+| C5 | RTSP, ONVIF and HTTP MJPEG support | Delegated to Frigate |
+| C6 | Face recognition under 2s after motion is detected | Architecture constraint derived from the product goals |
+| C7 | No cloud dependency for critical functions | Specs §8.2 |
+| C8 | Target stack: .NET 10 plus TypeScript (main runtime) | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) |
 
-### 3.2 Principes directeurs
+### 3.2 Guiding principles
 
-- **Ne pas réinventer Frigate** : toute fonctionnalité couverte par Frigate est déléguée.
-- **Délégation pragmatique à Frigate** : les enrichissements déjà fiables dans Frigate (face, LPR, semantic search, classification, audio) sont utilisés par défaut.
-- **Choix explicites documentés** : chaque fonctionnalité suit la grille _options comparées → solution retenue → conséquences_.
-- **Worker Python dédié non retenu** : conservé uniquement comme option étudiée, pas dans l'architecture cible.
-- **Faible couplage Frigate/Vyzio** : Vyzio consomme Frigate via ses interfaces publiques (MQTT + REST), pas ses internals.
-- **Local-first** : aucune image ni donnée biométrique ne sort du réseau sans opt-in explicite.
-- **Orienté produit** : les décisions techniques servent l'expérience grand public, pas l'exhaustivité technique.
+- **Do not reinvent Frigate**: any feature Frigate covers is delegated to it.
+- **Pragmatic delegation to Frigate**: the enrichments already reliable in Frigate (face, LPR, semantic
+  search, classification, audio) are used by default.
+- **Explicit documented choices**: every feature follows the grid _options compared, solution chosen,
+  consequences_.
+- **A dedicated Python worker was not retained**: kept only as an option studied, not in the target
+  architecture.
+- **Loose coupling between Frigate and Vyzio**: Vyzio consumes Frigate through its public interfaces
+  (MQTT and REST), not its internals.
+- **Local-first**: no image and no biometric data leaves the network without an explicit opt-in.
+- **Product-driven**: technical decisions serve the consumer experience, not technical exhaustiveness.
 
 ---
 
-## 4. Vue d'ensemble de l'architecture
+## 4. Architecture overview
 
-### 4.1 Diagramme de contexte (C4 Level 1)
+### 4.1 Context diagram (C4 level 1)
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  Réseau local de l'utilisateur                                 │
+│  The user's local network                                      │
 │                                                                │
-│  ┌─────────────┐  RTSP/ONVIF  ┌──────────────────────────────┐│
-│  │  Caméras IP │────────────► │         Vyzio                ││
-│  └─────────────┘              │  (Frigate + couche produit)  ││
-│                               │                              ││
-│  ┌─────────────┐  HTTP(S)     │  Dashboard + API             ││
-│  │  Navigateur │◄───────────► │                              ││
-│  └─────────────┘              └──────────────────────────────┘│
+│  ┌─────────────┐  RTSP/ONVIF  ┌──────────────────────────────┐ │
+│  │  IP cameras │────────────► │         Vyzio                │ │
+│  └─────────────┘              │  (Frigate + product layer)   │ │
+│                               │                              │ │
+│  ┌─────────────┐  HTTP(S)     │  Dashboard + API             │ │
+│  │   Browser   │◄───────────► │                              │ │
+│  └─────────────┘              └──────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────┘
                                           │
-                                   FCM (push uniquement —
-                                   payload texte + URL signée)
+                                   FCM (push only:
+                                   text payload + signed URL)
                                           │
-                             ┌────────────▼───────────┐
-                             │  Téléphone (Android/iOS)│
+                             ┌────────────▼────────────┐
+                             │  Phone (Android / iOS)  │
                              └─────────────────────────┘
 ```
 
-### 4.2 Diagramme des conteneurs (C4 Level 2)
+### 4.2 Container diagram (C4 level 2)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -149,10 +161,10 @@ Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien s
 │                                                                          │
 │  ┌──────────────────────────┐     MQTT publish/subscribe                 │
 │  │  Frigate                 │──────────────┐                             │
-│  │  (Python — non modifié)  │              │                             │
-│  │  - Ingestion RTSP/ONVIF  │              ▼                             │
-│  │  - Détection / clips     │   ┌──────────────────────┐                 │
-│  │  - API REST :5000        │   │  Mosquitto Broker    │                 │
+│  │  (Python, unmodified)    │              │                             │
+│  │  - RTSP/ONVIF ingestion  │              ▼                             │
+│  │  - Detection / clips     │   ┌──────────────────────┐                 │
+│  │  - REST API :5000        │   │  Mosquitto Broker    │                 │
 │  └──────────────┬───────────┘   │  - MQTT :1883        │                 │
 │                 │ REST          └──────────┬───────────┘                 │
 │                 │ (clips, live HLS)        │ MQTT                        │
@@ -179,290 +191,297 @@ Objectif produit : rendre Frigate utilisable par un utilisateur non-technicien s
 │  └──────────────────────────────┬─────────────────────────────────┘      │
 │                                 │ HTTPS                                  │
 │  ┌──────────────────────────────▼───────────────────────────────────┐    │
-│  │  Vyzio Dashboard  (React 19 + TypeScript — build statique)       │    │
+│  │  Vyzio Dashboard  (React 19 + TypeScript, static build)          │    │
 │  └──────────────────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Décisions d'architecture (ADR)
+## 5. Architecture decisions (ADR)
 
-Les décisions d'architecture sont consignées comme **ADR individuels** dans [`adr/`](adr/) — un fichier par décision, au format Contexte → Options comparées → Décision → Conséquences. Voir l'**index** : [`adr/README.md`](adr/README.md).
+Architecture decisions are recorded as **individual ADRs** under [`adr/`](adr/), one file per decision,
+in the format Context, Options compared, Decision, Consequences. See the **index**:
+[`adr/README.md`](adr/README.md).
 
-Le détail d'implémentation d'un composant (trames protocole, catalogues, schémas) vit dans un **TAD** sous [`design/`](design/), pas ici. Règles de rédaction : [`WORKFLOW.md`](WORKFLOW.md).
+The implementation detail of a component (protocol frames, catalogues, schemas) lives in a **TAD** under
+[`design/`](design/), not here. Writing rules: [`WORKFLOW.md`](WORKFLOW.md).
 
-## 6. Architecture des services
+## 6. Service architecture
 
-### 6.1 Responsabilités
-
-```
-Frigate                           → Vidéo brut, détection, clips, bibliothèque de reconnaissance faciale
-Mosquitto Broker                  → Bus MQTT partagé entre Frigate et Vyzio
-FrigateAdapter (.NET)             → Pont Frigate ↔ domaine Vyzio (MQTT consumer + REST client)
-FrigateRestClient (.NET)          → Appels REST Frigate : sub_label, upload photos faces, bibliothèque
-Profile & Rules Service (.NET)    → Profils produit, mapping sub_label → profil, filtre profil-caméra, règles d'alertes
-Notification Service (.NET)       → Règles d'alerte + remise à chaque canal actif derrière un port unique (ADR-50)
-Command Registry (.NET)           → Déclaration des commandes distantes : paramètres typés, autorisation, résultat structuré (ADR-50)
-Channel Ingress (.NET)            → Récupération sortante des messages d'un canal, appairage, exécution par les use cases existants (ADR-50/52)
-Storage Service (.NET)            → Persistance des données propres à Vyzio (EF Core) — jamais les détections (ADR-49)
-DetectionHistoryReader (.NET)     → Lecture des événements Frigate, filtrés et enrichis à la lecture (profil, nom de caméra, médias)
-FaceLibrarySyncService (.NET)     → Synchronisation des photos de profil Vyzio vers la bibliothèque Frigate
-CameraConfigWriter (.NET)         → Génération frigate.yml : caméras, labels détection, face_recognition, rôles detect/record
-CameraStreamEnumerator (.NET)     → Énumération des flux d'une caméra et de leur résolution (ADR-38), via ONVIF ou convention protocole
-MotionSensitivityTuner (.NET)     → Boucle d'auto-réglage de la sensibilité par caméra (ADR-35), appliquée à chaud via MQTT
-API (ASP.NET Core)                → REST + SignalR + proxy Frigate (auth)
-Dashboard / Hub (React + TS)      → UI grand public guidée : consultation et arborescence de réglages (ADR-40), cycle d'édition unique (ADR-41), socle shadcn/ui (ADR-42)
-```
-
-### 6.2 Flux complet : détection → notification
+### 6.1 Responsibilities
 
 ```
-1. Frigate détecte une personne (bibliothèque faces déjà synchronisée par FaceLibrarySyncService)
-   └─► Reconnaissance faciale Frigate : compare avec bibliothèque → sub_label = "Alice" si match
-   └─► Publish MQTT: frigate/events { label: "person", sub_label: "Alice", camera: "front_door" }
+Frigate                           -> Raw video, detection, clips, face recognition library
+Mosquitto Broker                  -> The MQTT bus shared between Frigate and Vyzio
+FrigateAdapter (.NET)             -> Bridge from Frigate to the Vyzio domain (MQTT consumer + REST client)
+FrigateRestClient (.NET)          -> Frigate REST calls: sub_label, face photo upload, library
+Profile & Rules Service (.NET)    -> Product profiles, sub_label to profile mapping, profile/camera filter, alert rules
+Notification Service (.NET)       -> Alert rules and delivery to every active channel behind a single port (ADR-50)
+Command Registry (.NET)           -> Declaration of the remote commands: typed parameters, authorisation, structured result (ADR-50)
+Channel Ingress (.NET)            -> Outbound retrieval of a channel's messages, pairing, execution through the existing use cases (ADR-50/52)
+Storage Service (.NET)            -> Persistence of Vyzio's own data (EF Core), never the detections (ADR-49)
+DetectionHistoryReader (.NET)     -> Reads the Frigate events, filtered and enriched on read (profile, camera name, media)
+FaceLibrarySyncService (.NET)     -> Synchronises the Vyzio profile photos into the Frigate library
+CameraConfigWriter (.NET)         -> Generates frigate.yml: cameras, detection labels, face_recognition, detect/record roles
+CameraStreamEnumerator (.NET)     -> Enumerates a camera's streams and their resolution (ADR-38), through ONVIF or protocol convention
+MotionSensitivityTuner (.NET)     -> Per-camera sensitivity self-tuning loop (ADR-35), applied live over MQTT
+API (ASP.NET Core)                -> REST + SignalR + authenticated Frigate proxy
+Dashboard / Hub (React + TS)      -> Guided consumer UI: viewing and a settings tree (ADR-40), a single editing cycle (ADR-41), the shadcn/ui foundation (ADR-42)
+```
 
-2. Broker Mosquitto dédié
-   └─► Transporte frigate/events vers les consommateurs Vyzio
+### 6.2 The full flow: detection to notification
 
-3. FrigateAdapter (.NET) — souscrit frigate/events
-   └─► Ne persiste rien : la détection appartient à Frigate (ADR-49)
-   └─► Ne retient que la fin d'un événement, filtre les labels, puis passe la détection en file
-   └─► Rend la main immédiatement — aucune attente dans le handler du message
+```
+1. Frigate detects a person (the face library is already synced by FaceLibrarySyncService)
+   |-> Frigate face recognition: compared against the library, sub_label = "Alice" on a match
+   |-> MQTT publish: frigate/events { label: "person", sub_label: "Alice", camera: "front_door" }
 
-4. NotificationService — consomme la file, hors du handler MQTT
-   └─► Relit l'identité auprès de Frigate (sub_label "Alice") — la résolution du profil, elle,
-       appartient à la lecture de l'historique (ADR-15)
-   └─► Récupère le média avec reprise (Frigate le finalise quelques secondes après la fin),
-       et retombe sur le texte si rien ne vient
-   └─► Remet le message et son média à chaque canal actif, qui le rend à sa façon :
-       "Alice est arrivée • Porte d'entrée • 09:32" + photo
-   └─► Journalise l'envoi, par canal, ancré sur l'identifiant d'événement Frigate — seul fait persisté
-   └─► SignalR : push vers dashboard ouvert
+2. The dedicated Mosquitto broker
+   |-> Carries frigate/events to the Vyzio consumers
 
-4bis. Consultation de l'historique (indépendante du flux ci-dessus)
-   └─► DetectionHistoryReader lit /api/events (filtres caméra, label, identité, période ;
-       pagination au curseur temporel), enrichit profil et nom de caméra à la lecture
-   └─► La profondeur de l'historique est celle de la rétention des clips d'événement
-   └─► Deux manques, deux causes distinctes, dites à l'écran seulement (ADR-49) : un média
-       au-delà de la rétention est marqué expiré à la lecture ; une surveillance injoignable
-       répond 503, car aucun historique n'est autre chose qu'un historique vide
+3. FrigateAdapter (.NET), subscribed to frigate/events
+   |-> Persists nothing: the detection belongs to Frigate (ADR-49)
+   |-> Keeps only the end of an event, filters the labels, then queues the detection
+   |-> Returns immediately, with no waiting inside the message handler
 
-5. Flux de synchronisation bibliothèque (indépendant du flux de détection) :
+4. NotificationService, consuming the queue outside the MQTT handler
+   |-> Re-reads the identity from Frigate (sub_label "Alice"). Resolving the profile itself
+       belongs to reading the history (ADR-15)
+   |-> Fetches the media with retries (Frigate finalises it a few seconds after the end),
+       and falls back to text when nothing comes
+   |-> Hands the message and its media to every active channel, which renders it its own way:
+       "Alice est arrivee • Porte d'entree • 09:32" plus a photo
+   |-> Logs the send, per channel, anchored on the Frigate event id, the only fact persisted
+   |-> SignalR: pushes to an open dashboard
+
+4bis. Browsing the history (independent of the flow above)
+   |-> DetectionHistoryReader reads /api/events (camera, label, identity and period filters;
+       pagination on a time cursor), enriching profile and camera name on read
+   |-> The depth of the history is the retention of the event clips
+   |-> Two absences, two distinct causes, stated on screen only (ADR-49): a medium past its
+       retention is marked expired on read; unreachable surveillance answers 503, because no
+       history is anything other than an empty history
+
+5. The library sync flow (independent of the detection flow):
    FaceLibrarySyncService
-   └─► Déclenché par : ajout/suppression de photo profil, renommage profil
-   └─► POST /api/faces/{name} → upload photo vers Frigate
-   └─► Mise à jour profile_photos.frigate_synced = 1
-   └─► Si activation face_recognition : régénère frigate.yml via CameraConfigWriter
+   |-> Triggered by: adding or removing a profile photo, renaming a profile
+   |-> POST /api/faces/{name}, uploads the photo to Frigate
+   |-> Updates profile_photos.frigate_synced = 1
+   |-> When face_recognition is enabled: regenerates frigate.yml through CameraConfigWriter
 ```
 
 ---
 
-## 7. Modèle de données
+## 7. Data model
 
-### 7.1 Périmètre
+### 7.1 Scope
 
-Vyzio gère uniquement ses propres données (profils, caméras, réglages, notifications, sessions). Les événements de détection comme leurs médias restent dans la base Frigate — Vyzio les lit via l'API REST et les enrichit à la lecture, sans jamais en garder copie (ADR-49).
+Vyzio manages only its own data (profiles, cameras, settings, notifications, sessions). Detection events
+and their media stay in the Frigate database. Vyzio reads them through the REST API and enriches them on
+read, never keeping a copy (ADR-49).
 
-### 7.2 Entités et relations
+### 7.2 Entities and relations
 
-> Source de vérité : les entités EF (`src/vyzio/Vyzio.Core/Entities/`) et les migrations
-> (`src/vyzio/Vyzio.Infrastructure/Persistence/Migrations/`). Ce tableau donne le **rôle et les
-> relations** ; colonnes, index et valeurs par défaut vivent dans le code, non recopiés ici.
+> Source of truth: the EF entities (`src/vyzio/Vyzio.Core/Entities/`) and the migrations
+> (`src/vyzio/Vyzio.Infrastructure/Persistence/Migrations/`). This table gives the **role and the
+> relations**; columns, indexes and default values live in the code and are not copied here.
 
-| Entité | Rôle | Relations clés |
+| Entity | Role | Key relations |
 |---|---|---|
-| `Profile` | Personne/animal reconnu : catégorie + mode d'alerte | ← `ProfilePhoto`, `ProfileCameraLink` |
-| `ProfilePhoto` | Photo de référence synchronisée vers Frigate (ADR-13) | → `Profile` |
-| `ProfileCameraLink` | Filtrage reconnaissance profil ↔ caméra (ADR-15) | → `Profile`, `Camera` |
-| `Camera` | Caméra : **une scène**, connexion, statut, privacy mode, protocoles détectés (ADR-38) | ← `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
-| `CameraStream` | Point d'accès vidéo d'une caméra : qualité, chemin, résolution relevée (ADR-38) | → `Camera` |
-| `CameraCapabilityBinding` | Capacité optionnelle (PTZ / privacy HW / image) découplée de la marque, **testée et jamais déclarative** (ADR-22/24/28) | → `Camera` |
-| `RecordingSettings` | Durées de rétention de l'installation, surchargeables par caméra (ADR-39) | singleton |
-| `Notification` | Envoi par canal pour un événement, ancré sur l'identifiant Frigate. **Seul fait persisté d'une détection** : les détections elles-mêmes ne sont pas stockées (ADR-49) | — |
-| `ChannelPairing` | Conversation autorisée à commander sur un canal, révocable ; toute autre origine est ignorée (ADR-50) | → config du canal |
-| `CommandJournal` | Commande reçue : origine, commande, issue, horodatage. Fait que Vyzio seul détient, et seule trace si un appairage fuit (ADR-50) | → `ChannelPairing` |
-| `Account` | Un accès humain à l'installation : mot de passe haché et **rôle**. Un seul compte et un seul rôle peuplés aujourd'hui ; l'axe existe dès la première migration parce qu'il ne se rattrape pas (ADR-54) | ← `Session` |
-| `Session` | Accès ouvert depuis un appareil, référencé par un cookie opaque ; révocable une à une ou toutes à la fois (ADR-54) | → `Account` |
+| `Profile` | A recognised person or animal: category plus alert mode | <- `ProfilePhoto`, `ProfileCameraLink` |
+| `ProfilePhoto` | A reference photo synced to Frigate (ADR-13) | -> `Profile` |
+| `ProfileCameraLink` | Profile/camera recognition filter (ADR-15) | -> `Profile`, `Camera` |
+| `Camera` | A camera: **one scene**, connection, status, privacy mode, detected protocols (ADR-38) | <- `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
+| `CameraStream` | A camera's video access point: quality, path, measured resolution (ADR-38) | -> `Camera` |
+| `CameraCapabilityBinding` | An optional capability (PTZ, hardware privacy, image) decoupled from the brand, **tested and never declarative** (ADR-22/24/28) | -> `Camera` |
+| `RecordingSettings` | The installation's retention durations, overridable per camera (ADR-39) | singleton |
+| `Notification` | A per-channel send for one event, anchored on the Frigate id. **The only fact persisted about a detection**: the detections themselves are not stored (ADR-49) | |
+| `ChannelPairing` | A conversation allowed to issue commands on a channel, revocable; any other origin is ignored (ADR-50) | -> the channel's config |
+| `CommandJournal` | A received command: origin, command, outcome, timestamp. A fact Vyzio alone holds, and the only trace should a pairing leak (ADR-50) | -> `ChannelPairing` |
+| `Account` | One human access to the installation: hashed password and **role**. Exactly one account and one role are populated today; the axis exists from the first migration because it cannot be retrofitted (ADR-54) | <- `Session` |
+| `Session` | An access opened from a device, referenced by an opaque cookie; revocable one at a time or all at once (ADR-54) | -> `Account` |
 
-Entités secondaires (positions PTZ, plannings privacy, réglages image, config des canaux de
-notification…) : voir le dossier des entités.
+Secondary entities (PTZ positions, privacy schedules, image settings, notification channel
+configuration) are in the entities folder.
 
-**Invariants de données** (contraintes d'architecture, pas de détail de colonne) :
-- Vyzio ne stocke **aucun embedding ni frame** biométrique — uniquement des métadonnées métier et la
-  référence Frigate (`frigate_event_id`) pour proxifier clips et thumbnails.
-- Credentials caméra **chiffrés au repos** (`Microsoft.AspNetCore.DataProtection`, §9.1).
-- Le mot de passe du propriétaire n'est **jamais stocké ni chiffré, seulement haché** : le chiffrement
-  se déchiffre, et rien dans le produit n'a besoin de relire un mot de passe (ADR-54). Sa colonne est
-  **nullable** : un compte sans mot de passe est un compte dont l'hôte vient de le retirer, et n'ouvre
-  rien tant qu'un nouveau n'est pas choisi.
-- Une capacité caméra n'est jamais activée sans un test réel réussi (`verified`, ADR-28).
-- Une `Camera` décrit **une seule scène** : ses `CameraStream` en sont des qualités, jamais des angles
-  de vue différents. Un boîtier multi-objectifs donne N `Camera` groupées par appareil (ADR-38).
-- Un réglage d'installation se surcharge par caméra via une colonne **nullable** sur `Camera` ; `null`
-  signifie « suivre l'installation » et jamais une valeur déguisée. La résolution `surcharge ?? global`
-  a un point unique dans `Core`, partagé par la génération de configuration et la frontière API (ADR-39).
+**Data invariants** (architecture constraints, not column detail):
+- Vyzio stores **no biometric embedding and no frame**, only business metadata and the Frigate
+  reference (`frigate_event_id`) used to proxy clips and thumbnails.
+- Camera credentials are **encrypted at rest** (`Microsoft.AspNetCore.DataProtection`, §9.1).
+- The owner's password is **never stored nor encrypted, only hashed**: encryption can be undone, and
+  nothing in the product needs to read a password back (ADR-54). Its column is **nullable**: an account
+  without a password is one whose host has just removed it, and it opens nothing until a new one is
+  chosen.
+- A camera capability is never enabled without a real test passing (`verified`, ADR-28).
+- A `Camera` describes **a single scene**: its `CameraStream` rows are qualities of it, never different
+  viewing angles. A multi-lens unit gives N `Camera` rows grouped by device (ADR-38).
+- An installation setting is overridden per camera through a **nullable** column on `Camera`; `null`
+  means "follow the installation" and never a disguised value. Resolving `override ?? global` has a
+  single point in `Core`, shared by configuration generation and the API boundary (ADR-39).
 
 ---
 
-## 8. Architecture de déploiement
+## 8. Deployment architecture
 
 ### 8.1 Docker Compose (self-hosted)
 
-Quatre conteneurs sur un réseau Docker interne — fichier réel : [`docker-compose.yml`](../docker-compose.yml) :
+Four containers on an internal Docker network. The real file is
+[`docker-compose.yml`](../docker-compose.yml):
 
-- **vyzio-dashboard** — sert l'interface et relaie l'API ; **seul service publié à l'utilisateur**.
-- **vyzio-api** — Core + API ; joignable uniquement depuis le réseau Docker.
-- **mqtt** (Mosquitto) — bus d'événements ; aucun port publié.
-- **frigate** — pipeline vidéo ; API liée à `127.0.0.1` (jamais exposée au réseau) ; accès matériel
-  optionnel (VAAPI, Coral).
+- **vyzio-dashboard** serves the interface and relays the API. It is the **only service published to
+  the user**.
+- **vyzio-api** is Core plus the API, reachable only from the Docker network.
+- **mqtt** (Mosquitto) is the event bus, with no published port.
+- **frigate** is the video pipeline, its API bound to `127.0.0.1` (never exposed to the network), with
+  optional hardware access (VAAPI, Coral).
 
-Trois propriétés tiennent la sécurité de ce découpage : **un seul point d'entrée** pour
-l'utilisateur, **une seule frontière d'authentification** derrière laquelle tout se trouve
-(ADR-54), et **Frigate jamais joignable directement** — tout transite par le proxy Vyzio
-(ADR-07/16/17).
+Three properties hold the security of this split: **a single entry point** for the user, **a single
+authentication boundary** behind which everything sits (ADR-54), and **Frigate never directly
+reachable**, everything going through the Vyzio proxy (ADR-07/16/17).
 
-> **Écart cible / réalité — le seul du document.** Le point d'entrée est **en clair (HTTP)** : ni
-> TLS, ni certificat, ni redirection. La cible est un point d'entrée chiffré (annexe A) ; tant qu'il
-> ne l'est pas, l'identifiant de session et le mot de passe circulent en clair sur le réseau local,
-> et l'accès distant (ADR-51) ne peut pas être annoncé. Chantier suivi au
+> **Target against reality, the only gap in this document.** The entry point is **in the clear
+> (HTTP)**: no TLS, no certificate, no redirect. The target is an encrypted entry point (annex A); until
+> it is, the session id and the password travel in the clear on the local network, and remote access
+> (ADR-51) cannot be announced. Tracked in
 > [issue #63](https://github.com/KelianS/vyzio/issues/63).
 
-### 8.2 Onboarding guidé (zéro fichier YAML pour l'utilisateur)
+### 8.2 Guided onboarding (zero YAML for the user)
 
 ```
-Dashboard Vyzio — Assistant de configuration
-  Étape 0 : Création du mot de passe du propriétaire (ADR-54) — rien d'autre n'est accessible avant
-  Étape 1 : Scan réseau → liste caméras ONVIF détectées
-  Étape 2 : Sélection + test connexion + aperçu live
-  Étape 3 : Nommage ("Porte d'entrée") + zones de détection (canvas)
-            → Vyzio génère frigate.yml + docker compose restart frigate
-  Étape 4 : Ajout premier profil (upload photo)
-  Étape 5 : Test notification push
-  → Surveillance active
+Vyzio Dashboard, configuration assistant
+  Step 0: Create the owner's password (ADR-54), nothing else is reachable before it
+  Step 1: Network scan, listing the ONVIF cameras found
+  Step 2: Selection, connection test and live preview
+  Step 3: Naming ("Porte d'entree") and detection zones (canvas)
+          -> Vyzio generates frigate.yml, then docker compose restart frigate
+  Step 4: Add the first profile (photo upload)
+  Step 5: Test a push notification
+  -> Surveillance is live
 ```
 
 ---
 
-## 9. Sécurité
+## 9. Security
 
 ### 9.1 Threat model
 
-| Menace | Surface | Mitigation |
+| Threat | Surface | Mitigation |
 |---|---|---|
-| Accès non autorisé au dashboard | Réseau local | Compte propriétaire, session serveur révocable en cookie `httpOnly`, limitation du débit de connexion (ADR-54) — **le chiffrement du transport reste à livrer**, cf. §8.1 |
-| Vol de la session par script injecté | Navigateur | Cookie `httpOnly` : la session n'est jamais lisible depuis la page (ADR-54) |
-| Appareil perdu conservant un accès | Session ouverte | Sessions en base, révocables une à une ou toutes à la fois (ADR-54) |
-| Mot de passe connu d'un tiers | Session ouverte | Changement du mot de passe depuis l'interface, qui referme toutes les sessions au passage (ADR-54) |
-| Installation prise pendant une remise à zéro | Réseau local | Accepté et borné : la fenêtre dure 30 minutes, s'ouvre sur un geste délibéré depuis l'hôte, et se referme sur un verrouillage total (ADR-54) |
-| Accès direct API Frigate | Réseau local | Frigate lié à `127.0.0.1`, non routable hors Docker |
-| Exfiltration données biométriques Frigate | API Vyzio | Vyzio ne stocke pas d'embeddings ; seules des métadonnées métier sont exposées |
-| Interception d'images hors réseau | Canal de messagerie | HTTPS + aucun intermédiaire qui déchiffre le flux du produit (ADR-51) |
-| Accès distant au hub | Réseau overlay | Chiffrement de bout en bout, hub pair et non passerelle : le réseau local n'est pas annoncé (ADR-51) |
-| Commande non autorisée depuis un canal de messagerie | Canal entrant | Conversation appairée explicitement et révocable ; toute autre origine ignorée sans réponse (ADR-50) |
-| Injection via EF Core | API | Requêtes paramétrées uniquement, zéro SQL brut |
-| Credentials caméra en clair | SQLite | Chiffrement via `Microsoft.AspNetCore.DataProtection` |
-| Brute-force du mot de passe | Route de connexion | Limitation du débit sur la seule route de connexion (ADR-54) |
+| Unauthorised dashboard access | Local network | Owner account, revocable server session in an `httpOnly` cookie, login rate limiting (ADR-54). **Transport encryption is still to be delivered**, see §8.1 |
+| Session theft by an injected script | Browser | An `httpOnly` cookie: the session is never readable from the page (ADR-54) |
+| A lost device keeping its access | Open session | Sessions stored in the database, revocable one at a time or all at once (ADR-54) |
+| A third party knowing the password | Open session | Changing the password from the interface, which closes every session on the way (ADR-54) |
+| The installation seized during a reset | Local network | Accepted and bounded: the window lasts 30 minutes, opens on a deliberate gesture from the host, and closes on a full lock (ADR-54) |
+| Direct access to the Frigate API | Local network | Frigate bound to `127.0.0.1`, not routable outside Docker |
+| Exfiltration of Frigate biometric data | Vyzio API | Vyzio stores no embeddings; only business metadata is exposed |
+| Image interception off the network | Messaging channel | HTTPS, and no intermediary decrypting the product's traffic (ADR-51) |
+| Remote access to the hub | Overlay network | End-to-end encryption, the hub a peer rather than a gateway: the local network is not advertised (ADR-51) |
+| An unauthorised command from a messaging channel | Inbound channel | The conversation is explicitly paired and revocable; any other origin is ignored without an answer (ADR-50) |
+| Injection through EF Core | API | Parameterised queries only, no raw SQL |
+| Camera credentials in the clear | SQLite | Encryption through `Microsoft.AspNetCore.DataProtection` |
+| Password brute force | Login route | Rate limiting on the login route alone (ADR-54) |
 
-### 9.2 Isolation réseau
+### 9.2 Network isolation
 
 ```
-Extérieur du domicile (optionnel, ADR-51)
-  ├─► Canal de messagerie ─► commandes (ADR-50) ──┐
-  └─► Réseau overlay ──────► point d'entrée Vyzio ─┤
-                                                  │
-Réseau local                                      │
-  └─► Navigateur ──────────► point d'entrée Vyzio ┘
-                                        │
+Outside the home (optional, ADR-51)
+  |-> Messaging channel ---> commands (ADR-50) -----|
+  |-> Overlay network ------> Vyzio entry point ----|
+                                                   |
+Local network                                      |
+  |-> Browser --------------> Vyzio entry point ----|
+                                        |
                                     Vyzio API
-                                        │
-Docker internal network (non routable depuis l'extérieur)
-  ├── vyzio ──► frigate:5000    (HTTP REST)
-  ├── vyzio ──► mqtt:1883       (MQTT)
-  └── composants Vyzio internes (API + services)
+                                        |
+Docker internal network (not routable from outside)
+  |-- vyzio --> frigate:5000    (HTTP REST)
+  |-- vyzio --> mqtt:1883       (MQTT)
+  |-- internal Vyzio components (API + services)
 ```
 
 ---
 
-## 10. Performances et scalabilité
+## 10. Performance and scalability
 
-### 10.1 Budget ressources — Intel NUC i5, 8 GB RAM
+### 10.1 Resource budget, Intel NUC i5, 8 GB RAM
 
-| Conteneur | RAM cible | Notes |
+| Container | Target RAM | Notes |
 |---|---|---|
-| Frigate | 400–800 MB | Variable : nb caméras, modèle IA |
-| Vyzio Core + API (.NET 10 NativeAOT) | ~150 MB | NativeAOT réduit significativement l'empreinte |
-| **Total** | **~0.9–1.1 GB** | Profil cible sans worker Python dédié |
+| Frigate | 400-800 MB | Varies with the number of cameras and the AI model |
+| Vyzio Core + API (.NET 10 NativeAOT) | ~150 MB | NativeAOT cuts the footprint significantly |
+| **Total** | **~0.9-1.1 GB** | The target profile, without a dedicated Python worker |
 
-### 10.2 Latence pipeline reconnaissance (CPU-only)
+### 10.2 Recognition pipeline latency (CPU only)
 
-| Étape | Responsable | Temps estimé |
+| Step | Owner | Estimated time |
 |---|---|---|
-| Détection personne | Frigate TFLite | ~50ms |
-| Enrichissement face (mode par défaut) | Frigate | ~100–400ms |
-| Règles métier + dispatch notification | Vyzio | ~5–20ms |
-| FCM push | Notification Service | ~200ms réseau |
-| **Total perçu (mode par défaut)** | | **~350–700ms** |
+| Person detection | Frigate TFLite | ~50ms |
+| Face enrichment (default mode) | Frigate | ~100-400ms |
+| Business rules and notification dispatch | Vyzio | ~5-20ms |
+| FCM push | Notification Service | ~200ms of network |
+| **Total as perceived (default mode)** | | **~350-700ms** |
 
-Avec **Coral Edge TPU** (Frigate) + **GPU** (enrichissements Frigate) : latence perçue significativement réduite.
+With a **Coral Edge TPU** (Frigate) plus a **GPU** (Frigate enrichments), perceived latency drops
+significantly.
 
 ---
 
-## 11. Risques et mitigations
+## 11. Risks and mitigations
 
-| Risque | Probabilité | Impact | Mitigation |
+| Risk | Likelihood | Impact | Mitigation |
 |---|:---:|:---:|---|
-| Breaking change API/MQTT Frigate | Faible | Moyen | `FrigateAdapter` versionné, tests contrat MQTT |
-| Arrêt projet Frigate | Très faible | Élevé | Architecture découplée — `FrigateAdapter` remplaçable |
-| Faux positif reconnaissance faciale | Moyen | Élevé | Seuil configurable, mode "incertain", confirmation depuis notification |
-| Caméra incompatible Frigate | Moyen | Faible | Frigate supporte >200 modèles + fallback RTSP manuel |
-| Dérive fonctionnelle Frigate (évolutions rapides) | Moyen | Moyen | Version pinning, matrice de compatibilité, tests de non-régression |
-| Dette de réimplémentation de features Frigate | Moyen | Élevé | Politique de délégation par défaut (ADR-03) |
-| Pression de "rebuild" de features Frigate | Moyen | Élevé | Discipline ADR : comparer options et conserver les choix non retenus |
-| Espace disque saturé (clips Frigate) | Moyen | Moyen | Politique rétention Frigate configurée par Vyzio + alertes dashboard |
-| Performance CPU sans GPU | Moyen | Moyen | ~500ms acceptable, recommandation Coral TPU documentée |
+| Breaking change in the Frigate API or MQTT contract | Low | Medium | A versioned `FrigateAdapter`, MQTT contract tests |
+| The Frigate project stops | Very low | High | A decoupled architecture, `FrigateAdapter` replaceable |
+| Face recognition false positive | Medium | High | Configurable threshold, an "uncertain" mode, confirmation from the notification |
+| A camera incompatible with Frigate | Medium | Low | Frigate supports over 200 models, plus a manual RTSP fallback |
+| Functional drift in Frigate (fast-moving releases) | Medium | Medium | Version pinning, a compatibility matrix, regression tests |
+| Debt from reimplementing Frigate features | Medium | High | A delegate-by-default policy (ADR-03) |
+| Pressure to rebuild Frigate features | Medium | High | ADR discipline: compare the options and keep the ones not chosen |
+| Disk space saturated (Frigate clips) | Medium | Medium | The Frigate retention policy configured by Vyzio, plus dashboard alerts |
+| CPU performance without a GPU | Medium | Medium | ~500ms is acceptable, the Coral TPU recommendation is documented |
 
 ---
 
-## Annexe A — Synthèse des choix technologiques
+## Annex A: technology choices at a glance
 
-| Composant | Technologie | Alternative écartée | Raison |
+| Component | Technology | Alternative rejected | Reason |
 |---|---|---|---|
-| Pipeline vidéo | **Frigate** (open source) | Réimplémentation custom | Ne pas réinventer ce qui existe |
-| Langage principal | **.NET 10 (C#)** | Rust | Vélocité + écosystème cohérent (ASP.NET, EF Core, SignalR) |
-| Face recognition (par défaut) | **Frigate natif** | Worker custom obligatoire | Réduction de dette, maintenance simplifiée |
-| Bus événements | **MQTT** (Mosquitto dédié) | MediatR (écarté), Redis Streams (v2) | Dépendance légère, continuité Frigate |
-| Base de données | **SQLite** | PostgreSQL | Zéro infra, plug & play, fichier unique |
-| API | **ASP.NET Core Minimal APIs** | FastAPI (Python) | Cohérence stack .NET |
-| WebSocket | **SignalR** | WebSocket brut | Reconnexion auto |
-| Dashboard | **React 19 + TypeScript** | SvelteKit | Pool contributeurs, écosystème UI |
-| UI components | **Shadcn/ui + Tailwind** | Material UI | Accessibilité, personnalisable sans designer |
-| Canvas zones | **React-Konva** | Fabric.js | Intégration React native |
-| Canaux de notification | **Telegram, Discord** — adaptateurs derrière un port unique | FCM | Image native hors réseau, aucun canal privilégié (ADR-50) |
-| Canaux envisagés | ntfy, e-mail, webhook | WhatsApp (sortant seulement) | Selon préférence utilisateur |
-| Auth | **JWT + bcrypt + refresh tokens** | OAuth2/Keycloak | Local-first |
-| TLS | **Certificat auto-signé** (cible, non livrée — §8.1) | Let's Encrypt | Fonctionne hors-ligne, sans dépendre d'un domaine public |
-| Accès distant à l'interface | **Réseau overlay NetBird**, opt-in, opéré par l'utilisateur | Tunnel de publication web, redirection de port, relais Vyzio | ADR-51 |
-| Usage courant à distance | **Canal de messagerie bidirectionnel** | Accès réseau obligatoire | ADR-50 — rend l'accès réseau optionnel |
-| Réception des commandes | **Bot natif du canal, récupération sortante** | Webhook entrant | Aucune adresse publique ; commandes publiées dans la grammaire du canal (ADR-52) |
+| Video pipeline | **Frigate** (open source) | A custom reimplementation | Do not reinvent what exists |
+| Main language | **.NET 10 (C#)** | Rust | Velocity plus a coherent ecosystem (ASP.NET, EF Core, SignalR) |
+| Face recognition (default) | **Frigate native** | A mandatory custom worker | Less debt, simpler maintenance |
+| Event bus | **MQTT** (a dedicated Mosquitto) | MediatR (rejected), Redis Streams (v2) | A light dependency, continuity with Frigate |
+| Database | **SQLite** | PostgreSQL | Zero infrastructure, plug and play, a single file |
+| API | **ASP.NET Core Minimal APIs** | FastAPI (Python) | Coherence with the .NET stack |
+| WebSocket | **SignalR** | Raw WebSocket | Automatic reconnection |
+| Dashboard | **React 19 + TypeScript** | SvelteKit | Contributor pool, UI ecosystem |
+| UI components | **shadcn/ui + Tailwind** | Material UI | Accessibility, customisable without a designer |
+| Zone canvas | **React-Konva** | Fabric.js | Native React integration |
+| Notification channels | **Telegram, Discord**, adapters behind a single port | FCM | A native image off the network, no privileged channel (ADR-50) |
+| Channels considered | ntfy, email, webhook | WhatsApp (outbound only) | Depending on user preference |
+| Auth | **JWT + bcrypt + refresh tokens** | OAuth2 / Keycloak | Local-first |
+| TLS | **A self-signed certificate** (target, not delivered, §8.1) | Let's Encrypt | Works offline, without depending on a public domain |
+| Remote access to the interface | **A NetBird overlay network**, opt-in, operated by the user | A web publishing tunnel, port forwarding, a Vyzio relay | ADR-51 |
+| Everyday remote use | **A bidirectional messaging channel** | Mandatory network access | ADR-50, it makes network access optional |
+| Receiving commands | **The channel's native bot, outbound retrieval** | An inbound webhook | No public address; commands published in the channel's own grammar (ADR-52) |
 
 ---
 
-## Annexe B — Organisation du code
+## Annex B: code organisation
 
-Monorepo sous `src/`. Backend .NET en couches hexagonales : `Vyzio.Core` (domaine + interfaces) →
-`Vyzio.Application` (use cases) → `Vyzio.Infrastructure` (EF/SQLite, MQTT, clients protocole,
-`FrigateAdapter`) → `Vyzio.Api` (ASP.NET Core + SignalR) ; tests dans `Vyzio.Tests`. Frontend
-`src/dashboard/` (React 19 + TypeScript, miroir domain/application/infrastructure/ui). Setup, tâches
-et détail d'arborescence : [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
+A monorepo under `src/`. The .NET backend is in hexagonal layers: `Vyzio.Core` (domain and interfaces),
+`Vyzio.Application` (use cases), `Vyzio.Infrastructure` (EF/SQLite, MQTT, protocol clients,
+`FrigateAdapter`), `Vyzio.Api` (ASP.NET Core and SignalR); the tests live in `Vyzio.Tests`. The frontend
+is `src/dashboard/` (React 19 and TypeScript, mirroring domain/application/infrastructure/ui). Setup,
+tasks and the folder detail: [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ---
 
-## Annexe C — Choix Étudiés Non Retenus
+## Annex C: options studied and not retained
 
-| Fonctionnalité | Option non retenue | Pourquoi non retenue maintenant | Condition de réévaluation |
+| Feature | Option not retained | Why not now | Condition for revisiting |
 |---|---|---|---|
-| Reconnaissance faciale | Worker Python dédié (InsightFace + gRPC) | Duplique Frigate, complexifie l'exploitation | Besoin métier non couvert par Frigate ou contrainte de précision spécifique |
-| API principale | FastAPI / Node | Introduit un runtime principal supplémentaire | Changement majeur d'équipe/stack |
-| Base de données | PostgreSQL | Surcoût opérationnel pour offre local-first | Passage multi-nœud / haute concurrence d'écriture |
-| UI | 100% UI custom sans Frigate | Coût et délais élevés, duplication de capacités | Besoin produit fort non atteignable via approche hybride |
+| Face recognition | A dedicated Python worker (InsightFace plus gRPC) | Duplicates Frigate, complicates operations | A business need Frigate does not cover, or a specific accuracy constraint |
+| Main API | FastAPI or Node | Introduces an additional main runtime | A major change of team or stack |
+| Database | PostgreSQL | Operational overhead for a local-first offer | A move to multiple nodes or high write concurrency |
+| UI | A fully custom UI without Frigate | High cost and long delays, duplicated capabilities | A strong product need unreachable through the hybrid approach |

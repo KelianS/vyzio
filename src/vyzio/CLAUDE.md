@@ -1,42 +1,42 @@
-# Backend .NET — règles
+# .NET backend, rules
 
-Chargé quand tu édites `src/vyzio`. Complète le routeur racine [`../../CLAUDE.md`](../../CLAUDE.md).
+Loaded when you edit `src/vyzio`. Completes the root router [`../../CLAUDE.md`](../../CLAUDE.md).
 
-## Clean Architecture (obligatoire)
+## Clean Architecture (mandatory)
 
-Direction des dépendances, jamais dérogée :
+Dependency direction, never departed from:
 
 ```
-Core          ← entités domaine + interfaces (ports). Aucune dépendance externe.
-Application   ← use cases uniquement. Dépend de Core. Jamais de DbContext ni d'EF.
-Infrastructure← implémentations des ports Core (repos EF, MQTT, HTTP…). Dépend de Core.
-Api           ← wiring DI + endpoints Minimal API groupés. Dépend de Application + Infrastructure.
+Core          <- domain entities + interfaces (ports). No external dependency.
+Application   <- use cases only. Depends on Core. Never a DbContext, never EF.
+Infrastructure<- implementations of the Core ports (EF repos, MQTT, HTTP...). Depends on Core.
+Api           <- DI wiring + grouped Minimal API endpoints. Depends on Application + Infrastructure.
 ```
 
-- **Core** : POCO + interfaces uniquement. Pas d'EF, pas d'ASP.NET, pas de package infra.
-- **Application** : un use case = une classe avec `ExecuteAsync`. Pas de CQRS/MediatR. Pas d'accès EF direct.
-- **Infrastructure** : seule couche autorisée à connaître EF, SQLite, MQTT…
-- **Api** : endpoints dans `Endpoints/`, `Program.cs` = wiring seul. Le `DbContext` n'est **jamais** injecté dans un endpoint.
+- **Core**: POCOs and interfaces only. No EF, no ASP.NET, no infrastructure package.
+- **Application**: a use case is a class with `ExecuteAsync`. No CQRS, no MediatR. No direct EF access.
+- **Infrastructure**: the only layer allowed to know about EF, SQLite, MQTT and the like.
+- **Api**: endpoints live in `Endpoints/`, `Program.cs` is wiring only. The `DbContext` is **never** injected into an endpoint.
 
-Flux type (feature « Profiles ») :
+A typical flow (the "Profiles" feature):
 
 ```
 IProfileRepository        (Core/Interfaces)
-ProfileRepository         (Infrastructure/…/Repositories) → implémente IProfileRepository
-CreateProfileUseCase      (Application/UseCases/Profiles) → reçoit IProfileRepository par DI
-ProfilesEndpoints         (Api/Endpoints)                 → reçoit CreateProfileUseCase par DI
-CreateProfileUseCaseTests (Tests/UseCases)                → mock IProfileRepository (NSubstitute)
+ProfileRepository         (Infrastructure/.../Repositories) -> implements IProfileRepository
+CreateProfileUseCase      (Application/UseCases/Profiles)   -> receives IProfileRepository by DI
+ProfilesEndpoints         (Api/Endpoints)                   -> receives CreateProfileUseCase by DI
+CreateProfileUseCaseTests (Tests/UseCases)                  -> mocks IProfileRepository (NSubstitute)
 ```
 
-## Comparaisons type-safe (règle d'or)
+## Type-safe comparisons (golden rule)
 
-Ne jamais comparer une valeur métier à une chaîne littérale (`if (x == "active")`). Utiliser un
-`enum` (`Vyzio.Core.Entities`) et comparer/switcher dessus. À la frontière API (DTO JSON), convertir
-via `SnakeCaseEnum.ToSnakeCase` / `TryFromSnakeCase` (`Vyzio.Core.Common`) — jamais une string en dur
-des deux côtés.
+Never compare a business value against a string literal (`if (x == "active")`). Use an `enum`
+(`Vyzio.Core.Entities`) and compare or switch on it. At the API boundary (JSON DTOs), convert through
+`SnakeCaseEnum.ToSnakeCase` / `TryFromSnakeCase` (`Vyzio.Core.Common`), never a hardcoded string on
+either side.
 
 ## Tests
 
-- Unitaires : use cases mockés via **NSubstitute**, zéro DB.
-- Intégration : **SQLite in-memory** (`EnsureCreated`).
-- Un use case doit rester testable sans base de données.
+- Unit: use cases mocked with **NSubstitute**, no database.
+- Integration: **SQLite in-memory** (`EnsureCreated`).
+- A use case must stay testable without a database.
