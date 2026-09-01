@@ -36,6 +36,16 @@ one entry point and one authentication boundary: the dashboard container is the 
 published, the API is reachable only from the Docker network, and Frigate is bound to `127.0.0.1`
 and never routable from outside. Nothing is reachable before an owner password has been set.
 
+**Vyzio also assumes the machine is yours to give.** Its API container carries the host's Docker
+socket, because writing a configuration is only half of applying it: something has to restart Frigate.
+A container holding that socket can do anything on the host, and mounting it read-only changes nothing
+there, since the restriction applies to the file and not to the commands sent through it. Whoever
+executes code inside `vyzio-api` therefore holds the machine.
+
+That is a deliberate trade for a product meant to install itself without asking anyone to write YAML,
+and it is bounded on the side that matters: the container is not published, and the command it runs is
+read from the environment when the process starts, never from a request. No route can choose it.
+
 The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) section 9.1 and is not
 repeated here.
 

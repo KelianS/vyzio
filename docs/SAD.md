@@ -331,7 +331,9 @@ Four containers on an internal Docker network. The real file is
 
 - **vyzio-dashboard** serves the interface and relays the API. It is the **only service published to
   the user**.
-- **vyzio-api** is Core plus the API, reachable only from the Docker network.
+- **vyzio-api** is Core plus the API, reachable only from the Docker network. It holds the **host's
+  Docker socket**, which is how a written configuration reaches a running Frigate, and therefore holds
+  root-equivalent access to the machine.
 - **mqtt** (Mosquitto) is the event bus, with no published port.
 - **frigate** is the video pipeline, its API bound to `127.0.0.1` (never exposed to the network), with
   optional hardware access (VAAPI, Coral).
@@ -339,6 +341,10 @@ Four containers on an internal Docker network. The real file is
 Three properties hold the security of this split: **a single entry point** for the user, **a single
 authentication boundary** behind which everything sits (ADR-54), and **Frigate never directly
 reachable**, everything going through the Vyzio proxy (ADR-07/16/17).
+
+The split concentrates rather than divides privilege: `vyzio-api` is the container that speaks to the
+cameras and the one that can restart anything on the host. The command it runs to do so is read once
+from the environment at startup and is never writable through the API, so no request can choose it.
 
 > **Target against reality, the only gap in this document.** The entry point is **in the clear
 > (HTTP)**: no TLS, no certificate, no redirect. The target is an encrypted entry point (annex A); until
@@ -379,6 +385,7 @@ Vyzio Dashboard, configuration assistant
 | Remote access to the hub | Overlay network | End-to-end encryption, the hub a peer rather than a gateway: the local network is not advertised (ADR-51) |
 | An unauthorised command from a messaging channel | Inbound channel | The conversation is explicitly paired and revocable; any other origin is ignored without an answer (ADR-50) |
 | Injection through EF Core | API | Parameterised queries only, no raw SQL |
+| **Code execution in `vyzio-api` reaching the host** | Docker socket | Accepted and bounded, see §8.1: the socket is what applies a configuration, the command that uses it comes from the environment at startup and no route can write it, and the container is not published. Whoever executes code there holds the machine |
 | Camera credentials in the clear | SQLite | Encryption through `Microsoft.AspNetCore.DataProtection` |
 | Password brute force | Login route | Rate limiting on the login route alone (ADR-54) |
 
