@@ -191,6 +191,7 @@ jobs:
           file: src/vyzio/Vyzio.Api/Dockerfile
           push: false
           tags: vyzio-api:ci
+          build-args: VYZIO_REVISION=${{ github.sha }}
           load: true
 
       - name: Install Trivy
@@ -206,6 +207,7 @@ jobs:
           file: src/dashboard/Dockerfile
           push: false
           tags: vyzio-dashboard:ci
+          build-args: VYZIO_REVISION=${{ github.sha }}
           load: true
 
       - name: Scan dashboard image
