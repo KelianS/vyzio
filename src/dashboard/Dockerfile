@@ -13,10 +13,11 @@ FROM nginxinc/nginx-unprivileged:alpine AS runtime
 
 # Root only for the two lines below, back to the image's own user right after.
 # openssl: floored to the CVE-2026-14456 fix, which Alpine ships and the base image does not yet.
+# libexpat: same, floored to the CVE-2026-66046 and CVE-2026-76641 fix.
 # curl: dropped with its dependency chain. Nothing here calls it, the healthcheck uses busybox
 # wget, and a package that is not shipped never needs patching again.
 USER root
-RUN apk add --no-cache 'libcrypto3>=3.5.8-r0' 'libssl3>=3.5.8-r0' \
+RUN apk add --no-cache 'libcrypto3>=3.5.8-r0' 'libssl3>=3.5.8-r0' 'libexpat>=2.8.4-r0' \
 	&& apk del curl
 USER 101
 
