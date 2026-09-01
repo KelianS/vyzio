@@ -11,6 +11,18 @@ RUN pnpm build
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 
+# The revision is the one thing an operator cannot recover from the image otherwise: a version tag
+# is a name someone chose, a commit is what actually built. Defaults keep a local build working.
+ARG VYZIO_VERSION=0.0.0-dev
+ARG VYZIO_REVISION=unknown
+LABEL org.opencontainers.image.title="Vyzio dashboard"
+LABEL org.opencontainers.image.description="Privacy-first home video surveillance with local AI: web interface."
+LABEL org.opencontainers.image.url="https://github.com/KelianS/vyzio"
+LABEL org.opencontainers.image.source="https://github.com/KelianS/vyzio"
+LABEL org.opencontainers.image.licenses="AGPL-3.0-only"
+LABEL org.opencontainers.image.version="${VYZIO_VERSION}"
+LABEL org.opencontainers.image.revision="${VYZIO_REVISION}"
+
 # Root only for the two lines below, back to the image's own user right after.
 # openssl: floored to the CVE-2026-14456 fix, which Alpine ships and the base image does not yet.
 # libexpat: same, floored to the CVE-2026-66046 and CVE-2026-76641 fix.

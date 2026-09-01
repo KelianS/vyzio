@@ -38,6 +38,9 @@ jobs:
           tags: |
             ghcr.io/kelians/vyzio-api:${{ steps.version.outputs.version }}
             ghcr.io/kelians/vyzio-api:latest
+          build-args: |
+            VYZIO_VERSION=${{ steps.version.outputs.version }}
+            VYZIO_REVISION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -50,5 +53,8 @@ jobs:
           tags: |
             ghcr.io/kelians/vyzio-dashboard:${{ steps.version.outputs.version }}
             ghcr.io/kelians/vyzio-dashboard:latest
+          build-args: |
+            VYZIO_VERSION=${{ steps.version.outputs.version }}
+            VYZIO_REVISION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

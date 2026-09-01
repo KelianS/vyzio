@@ -13,6 +13,18 @@ RUN dotnet publish ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj -c Release -o /app/pub
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
 
+# The revision is the one thing an operator cannot recover from the image otherwise: a version tag
+# is a name someone chose, a commit is what actually built. Defaults keep a local build working.
+ARG VYZIO_VERSION=0.0.0-dev
+ARG VYZIO_REVISION=unknown
+LABEL org.opencontainers.image.title="Vyzio API"
+LABEL org.opencontainers.image.description="Privacy-first home video surveillance with local AI: API and core."
+LABEL org.opencontainers.image.url="https://github.com/KelianS/vyzio"
+LABEL org.opencontainers.image.source="https://github.com/KelianS/vyzio"
+LABEL org.opencontainers.image.licenses="AGPL-3.0-only"
+LABEL org.opencontainers.image.version="${VYZIO_VERSION}"
+LABEL org.opencontainers.image.revision="${VYZIO_REVISION}"
+
 # docker-cli: restart Frigate on config apply
 # tzdata: IANA timezone database (Europe/Paris, etc.)
 # icu-libs: .NET globalization, disabled by default in Alpine-based images
