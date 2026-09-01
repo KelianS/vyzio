@@ -9,8 +9,8 @@ on:
 jobs:
   backend:
     name: Backend — build & test
-    # SQLitePCLRaw 3.x requires GLIBC >= 2.33; ubuntu-24.04 ships 2.36
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    # Floor to respect if this ever moves to a container: SQLitePCLRaw 3.x needs GLIBC >= 2.33.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +33,7 @@ jobs:
 
   frontend:
     name: Frontend — build & test
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -93,7 +93,7 @@ jobs:
 
   coverage:
     name: Coverage
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ubuntu-latest
     needs: [backend, frontend]
     permissions:
       contents: write
@@ -109,8 +109,8 @@ jobs:
           name: frontend-coverage
           path: frontend-coverage
 
-      # Read here rather than with a coverage action: CI_RUNNER is containerised, so a
-      # container action mounts a workspace path the Docker host does not have and sees nothing.
+      # Four numbers out of two files: a third-party action for that would be a dependency to
+      # trust and to pin, on a job that writes to the pull request.
       - name: Read both reports
         run: |
           set -euo pipefail
@@ -135,8 +135,11 @@ jobs:
           } > coverage.md
           cat coverage.md >> "$GITHUB_STEP_SUMMARY"
 
+      # A fork's pull request gets a read-only token, so the comment is impossible rather than
+      # merely denied: skipped, so an outside contribution never opens on a red job it cannot fix.
+      # The rates are in the job summary either way.
       - name: Comment on the pull request
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage
@@ -174,7 +177,7 @@ jobs:
 
   docker-build-check:
     name: Docker — build images (no push)
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ubuntu-latest
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4

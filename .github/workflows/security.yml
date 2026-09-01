@@ -11,8 +11,7 @@ on:
 jobs:
   codeql-backend:
     name: CodeQL — C#
-    if: false # requires GitHub Advanced Security (enable when repo goes public)
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       contents: read
@@ -37,8 +36,7 @@ jobs:
 
   codeql-frontend:
     name: CodeQL — TypeScript
-    if: false # requires GitHub Advanced Security (enable when repo goes public)
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       contents: read
@@ -56,7 +54,7 @@ jobs:
 
   semgrep:
     name: Semgrep — SAST
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +67,7 @@ jobs:
 
   dependency-audit:
     name: Dependency audit
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
