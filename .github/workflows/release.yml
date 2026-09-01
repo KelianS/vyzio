@@ -14,10 +14,7 @@ jobs:
       packages: write
 
     steps:
-      # Full history: the release notes read the tag's own annotation.
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Extract version
         id: version
@@ -76,9 +73,15 @@ jobs:
             exit 0
           fi
           notes="$RUNNER_TEMP/notes.md"
-          # The annotation is the part only a person can write, so it leads. A lightweight tag
-          # contributes nothing here and the generated list below stands on its own.
-          git tag -l --format='%(contents)' "$TAG" > "$notes"
+          : > "$notes"
+          # The annotation is the part only a person can write, so it leads. Read from the API
+          # because checkout refetches the commit over refs/tags/<tag>, flattening the annotated
+          # object it had just fetched, after which git reads back the commit message instead.
+          # A lightweight tag has no annotation and the generated list below stands on its own.
+          ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+          if [ "${ref%% *}" = "tag" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/git/tags/${ref##* }" --jq .message > "$notes"
+          fi
           {
             echo
             echo '### Images'
