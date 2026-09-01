@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -343,6 +343,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<VyzioDbContext>();
             services.RemoveAll<ICameraDiscoveryService>();
             services.RemoveAll<ICameraVerifier>();
+            services.RemoveAll<ICameraStreamEnumerator>();
             services.RemoveAll<IFrigateConfigApplier>();
             services.RemoveAll<IVendorAssistanceService>();
             services.RemoveAll<VyzioRuntimeSettings>();
@@ -360,6 +361,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
             services.AddSingleton<ICameraDiscoveryService>(new StubCameraDiscoveryService());
             services.AddSingleton<ICameraVerifier>(new StubCameraVerifier());
+            services.AddSingleton<ICameraStreamEnumerator>(new StubCameraStreamEnumerator());
             services.AddSingleton<IFrigateConfigApplier>(new StubFrigateConfigApplier());
             services.AddSingleton<IVendorAssistanceService>(new StubVendorAssistanceService());
 
@@ -420,6 +422,16 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                 "Camera responded to the stream verification.",
                 DateTimeOffset.Parse("2026-05-12T11:00:00+00:00"),
                 DateTimeOffset.Parse("2026-05-12T11:00:00+00:00")));
+    }
+
+    // A verified camera is asked what it serves, over the network, against the address the test
+    // invented: without this the suite passes or hangs depending on how the runner's network
+    // answers 192.168.x. Empty is the contract's "could not enumerate", so the camera keeps the
+    // single stream onboarding gave it.
+    private sealed class StubCameraStreamEnumerator : ICameraStreamEnumerator
+    {
+        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<EnumeratedScene>>([]);
     }
 
     private sealed class StubFrigateConfigApplier : IFrigateConfigApplier
