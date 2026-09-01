@@ -10,11 +10,14 @@ jobs:
     name: Build & push Docker images to GHCR
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
+      # Full history: the release notes read the tag's own annotation.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract version
         id: version
@@ -58,3 +61,35 @@ jobs:
             VYZIO_REVISION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Last, so a release never exists without the images it announces. Skipped when the release is
+      # already there, which is the case when it was drafted from the interface rather than tagged.
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, leaving it untouched."
+            exit 0
+          fi
+          notes="$RUNNER_TEMP/notes.md"
+          # The annotation is the part only a person can write, so it leads. A lightweight tag
+          # contributes nothing here and the generated list below stands on its own.
+          git tag -l --format='%(contents)' "$TAG" > "$notes"
+          {
+            echo
+            echo '### Images'
+            echo
+            echo '```'
+            echo "ghcr.io/kelians/vyzio-api:$VERSION"
+            echo "ghcr.io/kelians/vyzio-dashboard:$VERSION"
+            echo '```'
+            echo
+          } >> "$notes"
+          # Asking the API outright rather than through --generate-notes, whose documented
+          # interaction is with --notes and not with a notes file.
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes"             -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" --jq .body >> "$notes"
+          gh release create "$TAG" --title "$TAG" --notes-file "$notes" --verify-tag
