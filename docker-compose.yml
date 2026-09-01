@@ -30,8 +30,8 @@ services:
     depends_on:
       frigate:
         condition: service_healthy
-    # privileged + /dev bind mount: detection materielle (ADR-34), sans casser le demarrage
-    # sur un host sans iGPU/Coral.
+    # Reads the accelerator device nodes to pick a detector, and falls back to CPU on a host that
+    # has none (ADR-34). The docker socket below is what restarts Frigate once the config is written.
     privileged: true
     environment:
       ASPNETCORE_HTTP_PORTS: 8443
@@ -73,7 +73,7 @@ services:
     depends_on:
       mqtt:
         condition: service_healthy
-    # privileged + /dev bind mount: exploitation reelle du detecteur choisi (ADR-34).
+    # Drives the detector that was picked, which needs the real device and not just its node (ADR-34).
     privileged: true
     ports:
       - "127.0.0.1:5000:5000"
