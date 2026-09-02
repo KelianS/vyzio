@@ -1,7 +1,7 @@
 import { AppErrorKind } from './AppError'
 import type { AppError } from './AppError'
 
-function isHttpLike(e: unknown): e is { status: number } {
+function isHttpLike(e: unknown): e is { status: number; detail?: string } {
   return (
     typeof e === 'object' &&
     e !== null &&
@@ -17,6 +17,7 @@ export function toAppError(e: unknown): AppError {
   if (isHttpLike(e)) {
     if (e.status === 404) return { kind: AppErrorKind.NotFound }
     if (e.status === 503) return { kind: AppErrorKind.SurveillanceDown }
+    if (e.status === 502) return { kind: AppErrorKind.CameraRefused, reason: e.detail }
     if (e.status >= 500) return { kind: AppErrorKind.Server, status: e.status }
     return { kind: AppErrorKind.Unknown, message: `HTTP ${e.status}` }
   }

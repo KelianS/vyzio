@@ -10,17 +10,24 @@ namespace Vyzio.Tests.Services;
 
 public class OnvifPtzProviderTests
 {
-    private static Camera MakeCamera() => new()
+    // Carries a resolved ONVIF address so these tests exercise the provider, not the endpoint
+    // sweep (ADR-56): a persisted endpoint is used as-is.
+    private static Camera MakeCamera()
     {
-        Id = "cam1",
-        Slug = "cam1",
-        FrigateCameraName = "cam1",
-        DisplayName = "ONVIF Cam",
-        Host = "192.168.1.100",
-        Port = 8899,
-        Username = "admin",
-        Password = "pass",
-    };
+        var camera = new Camera
+        {
+            Id = "cam1",
+            Slug = "cam1",
+            FrigateCameraName = "cam1",
+            DisplayName = "ONVIF Cam",
+            Host = "192.168.1.100",
+            Port = 8899,
+            Username = "admin",
+            Password = "pass",
+        };
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.100:8899/onvif/device_service");
+        return camera;
+    }
 
     private static CameraCapabilityBinding MakeBinding() => new()
     {
@@ -41,8 +48,35 @@ public class OnvifPtzProviderTests
             : new CaptureHandler(captured, status, responseBody);
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(new HttpClient(httpHandler));
-        var onvifClient = new OnvifClient(factory, NullLogger<OnvifClient>.Instance);
+        var resolver = new OnvifEndpointResolver(factory, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvifClient = new OnvifClient(factory, resolver, NullLogger<OnvifClient>.Instance);
         return (new OnvifPtzProvider(onvifClient, NullLogger<OnvifPtzProvider>.Instance), captured);
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldRaise_WhenTheCameraRefusesTheCommand()
+    {
+        // A camera in privacy mode refuses PTZ; swallowing that reads as a camera without PTZ (ADR-56).
+        var (provider, _) = MakeProvider(handler: request =>
+        {
+            var body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult() ?? string.Empty;
+            return body.Contains("Stop")
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(
+                        """<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Reason><s:Text>Privacy mode is on</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>""",
+                        Encoding.UTF8, "application/soap+xml"),
+                }
+                : new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("<s:Envelope/>", Encoding.UTF8, "application/soap+xml"),
+                };
+        });
+
+        var error = await Assert.ThrowsAsync<OnvifCallException>(
+            () => provider.PtzStopAsync(MakeCamera(), MakeBinding()));
+
+        Assert.Contains("Privacy mode is on", error.Message);
     }
 
     [Fact]
@@ -69,9 +103,9 @@ public class OnvifPtzProviderTests
         await provider.PtzMoveAsync(MakeCamera(), MakeBinding(), PtzDirection.Up, speed: 80);
 
         var bodies = await ReadBodies(requests);
-        Assert.Contains("GetProfiles", bodies[0]);
-        Assert.Contains("ContinuousMove", bodies[1]);
-        Assert.Contains("profile_1", bodies[1]);
+        Assert.Contains(bodies, body => body.Contains("GetProfiles"));
+        var move = bodies.Last(body => body.Contains("ContinuousMove"));
+        Assert.Contains("profile_1", move);
     }
 
     [Fact]

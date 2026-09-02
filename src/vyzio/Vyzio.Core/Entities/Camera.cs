@@ -33,7 +33,7 @@ public class Camera
 
     public StreamProtocol StreamProtocol { get; set; } = StreamProtocol.Rtsp;
 
-    // Video access points of this camera — qualities of ONE scene (ADR-38).
+    // Video access points of this camera, qualities of ONE scene (ADR-38).
     public ICollection<CameraStream> Streams { get; set; } = [];
 
     // User's pick among Streams for the `detect` role. Null keeps the main stream, so face
@@ -41,7 +41,7 @@ public class Camera
     [MaxLength(100)]
     public string? DetectStreamId { get; set; }
 
-    // Groups the cameras that share one physical device — the lenses of a multi-sensor box are
+    // Groups the cameras that share one physical device, the lenses of a multi-sensor box are
     // separate cameras (ADR-38), and this is what lets the UI say so. Null for a single-lens device.
     [MaxLength(200)]
     public string? DeviceId { get; set; }
@@ -55,7 +55,12 @@ public class Camera
     // JSON array of detected network protocols e.g. ["onvif","v380"]. Populated by probe pipeline.
     public string? SupportedProtocolsJson { get; set; }
 
-    // Per-camera retention overrides (ADR-39). Null means "follow the installation" — never a
+    // JSON map of protocol -> resolved base address, e.g. {"onvif":"http://host:2020/onvif/service"}.
+    // Where a protocol actually answers on THIS device: a device fact, not a capability one, so it is
+    // held once here rather than copied into every binding's ConfigJson (ADR-56).
+    public string? ProtocolEndpointsJson { get; set; }
+
+    // Per-camera retention overrides (ADR-39). Null means "follow the installation", never a
     // disguised value, which is why these are nullable rather than defaulted. Zero is a real
     // answer and means "keep nothing of this kind for this camera".
     //
@@ -108,7 +113,7 @@ public class Camera
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // Rank 0 — the most detailed stream. Recording always uses it, and it is the fallback for
+    // Rank 0, the most detailed stream. Recording always uses it, and it is the fallback for
     // everything else.
     [NotMapped]
     public CameraStream? MainStream
@@ -123,7 +128,7 @@ public class Camera
         => (DetectStreamId is null ? null : Streams.FirstOrDefault(stream => stream.Id == DetectStreamId))
            ?? Streams.OrderByDescending(stream => stream.Ordinal).FirstOrDefault();
 
-    // Projection of the main stream's path — the connection-level view of a camera, on the same
+    // Projection of the main stream's path, the connection-level view of a camera, on the same
     // footing as Host and Port. Settable at construction because that is when onboarding knows it;
     // afterwards a path belongs to a stream and moves through SetMainStreamPath.
     [NotMapped]
@@ -192,6 +197,35 @@ public class Camera
         {
             current.Add(protocol);
             SupportedProtocolsJson = JsonSerializer.Serialize(current.Select(p => SnakeCaseEnum.ToSnakeCase(p)));
+        }
+    }
+
+    public string? GetProtocolEndpoint(SupportedProtocol protocol)
+        => ReadProtocolEndpoints().GetValueOrDefault(SnakeCaseEnum.ToSnakeCase(protocol));
+
+    public void SetProtocolEndpoint(SupportedProtocol protocol, string endpoint)
+    {
+        var endpoints = ReadProtocolEndpoints();
+        endpoints[SnakeCaseEnum.ToSnakeCase(protocol)] = endpoint;
+        ProtocolEndpointsJson = JsonSerializer.Serialize(endpoints);
+    }
+
+    // Drops every resolved address, so the next call re-resolves (ADR-56). Never called on its own:
+    // the in-memory cache must be cleared in the same gesture, see ICameraProtocolEndpointCache.
+    public void ClearProtocolEndpoints() => ProtocolEndpointsJson = null;
+
+    private Dictionary<string, string> ReadProtocolEndpoints()
+    {
+        if (ProtocolEndpointsJson is null)
+            return [];
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(ProtocolEndpointsJson) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 

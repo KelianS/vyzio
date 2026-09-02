@@ -15,7 +15,8 @@ public sealed class SeedAndProbePresetsUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ProbeCameraCapabilityUseCase probe,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    ICameraProtocolEndpointCache endpointCache)
 {
     private static readonly CameraCapability[] BlindProbeCapabilities =
         [CameraCapability.Ptz, CameraCapability.HardwarePrivacy, CameraCapability.ImageSettings];
@@ -24,6 +25,12 @@ public sealed class SeedAndProbePresetsUseCase(
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return;
+
+        // Detection is the user asking "look at this camera again": what was resolved about it is
+        // dropped first, so a service enabled since last time is found (ADR-56). Once, not per
+        // candidate, or the cascade would re-sweep the ports on every protocol it tries.
+        CameraEndpointForgetting.Forget(camera, endpointCache);
+        await cameras.UpdateAsync(camera, ct);
 
         var preset = camera.VendorFamily is { } vf ? VendorCapabilityPresets.GetByVendorFamily(vf) : null;
 
@@ -56,14 +63,14 @@ public sealed class SeedAndProbePresetsUseCase(
         // currently works or not — the user's choice stands until they change it themselves.
         if (existing is { ManuallyConfigured: true })
         {
-            await probe.ExecuteAsync(cameraId, capability, ct);
+            await probe.ExecuteAsync(cameraId, capability, ct: ct);
             return;
         }
 
         // Already verified with a protocol still in the candidate list — nothing to retry.
         if (existing is { Verified: true } && protocols.Contains(existing.Protocol))
         {
-            await probe.ExecuteAsync(cameraId, capability, ct);
+            await probe.ExecuteAsync(cameraId, capability, ct: ct);
             return;
         }
 
@@ -78,7 +85,7 @@ public sealed class SeedAndProbePresetsUseCase(
             await bindings.SaveAsync(binding, ct);
             existing = binding;
 
-            result = await probe.ExecuteAsync(cameraId, capability, ct);
+            result = await probe.ExecuteAsync(cameraId, capability, ct: ct);
             if (result?.Verified == true) break;
         }
 

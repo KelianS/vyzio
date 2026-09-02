@@ -40,15 +40,27 @@ public sealed record CameraCapabilityBindingDto(
 public sealed class ProbeCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    ICameraProtocolEndpointCache endpointCache)
 {
-    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
+    // rediscoverEndpoints: forgets where the protocol was last found, so the probe resolves the
+    // camera again from scratch (ADR-56). True when the user asked for this single check; false when
+    // SeedAndProbePresetsUseCase drives the cascade, because it has already forgotten once and a
+    // re-resolution per candidate would re-sweep the ports several times over.
+    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(
+        string cameraId, CameraCapability capability, bool rediscoverEndpoints = false, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
+        if (rediscoverEndpoints) CameraEndpointForgetting.Forget(camera, endpointCache);
+
         var binding = await bindings.GetAsync(cameraId, capability, ct);
         if (binding is null) return null;
+
+        // A probe resolves where the protocol answers on this camera (ADR-56); the entity carries it
+        // back, and comparing before/after is what tells this use case there is something to save.
+        var endpointsBefore = camera.ProtocolEndpointsJson;
 
         bool verified;
         string? error = null;
@@ -73,7 +85,7 @@ public sealed class ProbeCameraCapabilityUseCase(
         binding.LastError = verified ? null : error;
         await bindings.SaveAsync(binding, ct);
 
-        var cameraChanged = false;
+        var cameraChanged = camera.ProtocolEndpointsJson != endpointsBefore;
 
         // A protocol that just answered a real probe is proven to work on this camera. This is the
         // only way Camera.SupportedProtocols is ever written — never on declaration (ADR-28), which
@@ -97,6 +109,18 @@ public sealed class ProbeCameraCapabilityUseCase(
         }
 
         return CameraCapabilityBindingDto.From(binding);
+    }
+}
+
+// Drops both halves of what was remembered about where this camera answers: the row on the camera
+// and the process-wide cache. Public so SeedAndProbePresetsUseCase can do it once for a full
+// cascade (ADR-56).
+internal static class CameraEndpointForgetting
+{
+    public static void Forget(Camera camera, ICameraProtocolEndpointCache cache)
+    {
+        camera.ClearProtocolEndpoints();
+        cache.Forget(camera.Id);
     }
 }
 
@@ -135,7 +159,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
 
         await bindings.SaveAsync(binding, ct);
 
-        return await probe.ExecuteAsync(cameraId, capability, ct);
+        return await probe.ExecuteAsync(cameraId, capability, ct: ct);
     }
 }
 

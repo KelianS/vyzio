@@ -233,6 +233,20 @@ export function PtzControlPanel({
 
   const runStepRef = useRef<((direction: Direction) => void) | null>(null)
 
+  // A hold fires a step every few hundred ms: the camera's refusal is shown once per press, not
+  // once per step (ADR-56).
+  const refusalShownRef = useRef(false)
+  const reportStepFailure = useCallback(
+    (e: unknown) => {
+      isHoldingRef.current = false
+      isPressedRef.current = false
+      if (refusalShownRef.current) return
+      refusalShownRef.current = true
+      toast(appErrorMessage(toAppError(e)), 'error')
+    },
+    [toast],
+  )
+
   const runStep = useCallback(
     (direction: Direction) => {
       ptzStep
@@ -240,12 +254,9 @@ export function PtzControlPanel({
         .then(() => {
           if (isHoldingRef.current) runStepRef.current?.(direction) // chain next step while held
         })
-        .catch(() => {
-          isHoldingRef.current = false
-          isPressedRef.current = false
-        })
+        .catch(reportStepFailure)
     },
-    [cameraId, ptzStep, speed],
+    [cameraId, ptzStep, speed, reportStepFailure],
   )
 
   useLayoutEffect(() => {
@@ -257,13 +268,12 @@ export function PtzControlPanel({
       if (isPressedRef.current) return
       isPressedRef.current = true
       isHoldingRef.current = false
+      refusalShownRef.current = false
       // Moving means leaving the saved position.
       setActivePresetId(null)
 
       // Fire the first step immediately (tap behavior).
-      ptzStep.execute(cameraId, direction, speed).catch(() => {
-        isPressedRef.current = false
-      })
+      ptzStep.execute(cameraId, direction, speed).catch(reportStepFailure)
 
       // After HOLD_THRESHOLD_MS, switch to continuous chained mode.
       holdTimerRef.current = setTimeout(() => {
@@ -273,7 +283,7 @@ export function PtzControlPanel({
         }
       }, HOLD_THRESHOLD_MS)
     },
-    [cameraId, ptzStep, speed, runStep],
+    [cameraId, ptzStep, speed, runStep, reportStepFailure],
   )
 
   const handleRelease = useCallback(() => {

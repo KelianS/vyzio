@@ -287,7 +287,9 @@ public static class CamerasEndpoints
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
                 return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
 
-            var result = await useCase.ExecuteAsync(id, cap, ct);
+            // An explicit test re-resolves where the camera answers instead of trusting what was
+            // cached: it is the gesture a user makes after changing something on the camera (ADR-56).
+            var result = await useCase.ExecuteAsync(id, cap, rediscoverEndpoints: true, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 

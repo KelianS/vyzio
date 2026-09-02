@@ -10,6 +10,7 @@ public class ProbeCameraCapabilityUseCaseTests
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly IImageSettingsCapabilityProvider _imageSettingsProvider = Substitute.For<IImageSettingsCapabilityProvider>();
@@ -20,7 +21,7 @@ public class ProbeCameraCapabilityUseCaseTests
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
         _registry.ResolveImageSettings(Arg.Any<SupportedProtocol>()).Returns(_imageSettingsProvider);
-        _sut = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
+        _sut = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache);
     }
 
     private static Camera MakeCamera(string id = "cam1") => new()
@@ -38,6 +39,36 @@ public class ProbeCameraCapabilityUseCaseTests
         Capability = capability,
         Protocol = protocol,
     };
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldForgetWhereTheCameraAnswered_WhenTheUserAsksForAnExplicitTest()
+    {
+        // The gesture after changing something on the camera: a cached address would hide the change.
+        var camera = MakeCamera();
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.10:8899/onvif/device_service");
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(MakeBinding(CameraCapability.Ptz));
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz, rediscoverEndpoints: true);
+
+        Assert.Null(camera.GetProtocolEndpoint(SupportedProtocol.Onvif));
+        _endpointCache.Received(1).Forget("cam1");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepWhereTheCameraAnswered_WhenTheProbeIsDrivenByTheCascade()
+    {
+        // The cascade forgets once for the whole run: re-resolving per candidate would re-sweep.
+        var camera = MakeCamera();
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.10:8899/onvif/device_service");
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(MakeBinding(CameraCapability.Ptz));
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        Assert.NotNull(camera.GetProtocolEndpoint(SupportedProtocol.Onvif));
+        _endpointCache.DidNotReceive().Forget(Arg.Any<string>());
+    }
 
     [Fact]
     public async Task ExecuteAsync_returns_null_when_camera_not_found()
@@ -198,6 +229,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly ConfigureCameraCapabilityUseCase _sut;
 
@@ -205,7 +237,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     {
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
         _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
-        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
+        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache);
         _sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, probe);
     }
 
@@ -295,13 +327,14 @@ public class ProbeCameraCapabilityUseCasePtzSupportedTests
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly ProbeCameraCapabilityUseCase _sut;
 
     public ProbeCameraCapabilityUseCasePtzSupportedTests()
     {
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
-        _sut = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
+        _sut = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache);
     }
 
     [Fact]
@@ -357,6 +390,7 @@ public class SeedAndProbePresetsUseCaseTests
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly IImageSettingsCapabilityProvider _imageSettingsProvider = Substitute.For<IImageSettingsCapabilityProvider>();
@@ -370,8 +404,8 @@ public class SeedAndProbePresetsUseCaseTests
         // Blind-probe path (unlisted camera, ADR-28): no candidates by default — tests that
         // exercise it stub the specific capability's candidate list explicitly.
         _registry.GetRegisteredProtocols(Arg.Any<CameraCapability>()).Returns([]);
-        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry);
-        _sut = new SeedAndProbePresetsUseCase(_cameras, _bindings, probe, _registry);
+        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache);
+        _sut = new SeedAndProbePresetsUseCase(_cameras, _bindings, probe, _registry, _endpointCache);
     }
 
     [Fact]
@@ -382,6 +416,20 @@ public class SeedAndProbePresetsUseCaseTests
         await _sut.ExecuteAsync("x");
 
         await _bindings.DidNotReceive().SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldForgetWhereTheCameraAnsweredOnce_WhenDetectingEveryCapability()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://h:8899/onvif/device_service");
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
+
+        await _sut.ExecuteAsync("cam1");
+
+        Assert.Null(camera.GetProtocolEndpoint(SupportedProtocol.Onvif));
+        _endpointCache.Received(1).Forget("cam1");
     }
 
     [Fact]
@@ -396,14 +444,18 @@ public class SeedAndProbePresetsUseCaseTests
                      new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.HardwarePrivacy, Protocol = SupportedProtocol.TapoKlap });
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
             .Returns((CameraCapabilityBinding?)null,
-                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.TapoKlap });
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif });
+        _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null,
+                     new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.ImageSettings, Protocol = SupportedProtocol.Onvif });
         _privacyProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
         _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+        _imageSettingsProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
 
         await _sut.ExecuteAsync("cam1");
 
-        // Two preset bindings → two SaveAsync calls to create + two to persist probe result
-        await _bindings.Received(4).SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+        // Three preset bindings: one SaveAsync each to create, one each to persist the probe result
+        await _bindings.Received(6).SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -641,10 +693,11 @@ public class GetCameraCapabilitiesUseCaseTests
 
         var result = await _sut.ExecuteAsync("cam1");
 
-        // TplinkTapo preset: HardwarePrivacy/TapoKlap + Ptz/TapoKlap
-        Assert.Equal(2, result!.Count);
+        // TplinkTapo preset: Ptz/Onvif + ImageSettings/Onvif + HardwarePrivacy/TapoKlap (ADR-56)
+        Assert.Equal(3, result!.Count);
         Assert.Contains(result, b => b.Capability == "hardware_privacy" && b.Protocol == "tapo_klap" && b.IsPreset && !b.IsConfigured && !b.Verified);
-        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "tapo_klap" && b.IsPreset && !b.IsConfigured && !b.Verified);
+        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "onvif" && b.IsPreset && !b.IsConfigured && !b.Verified);
+        Assert.Contains(result, b => b.Capability == "image_settings" && b.Protocol == "onvif" && b.IsPreset && !b.IsConfigured && !b.Verified);
     }
 
     [Fact]
@@ -657,8 +710,9 @@ public class GetCameraCapabilitiesUseCaseTests
 
         var result = await _sut.ExecuteAsync("cam1");
 
-        // Ptz not configured yet → synthetic preset entry; HardwarePrivacy configured → isPreset=true, isConfigured=true
-        Assert.Equal(2, result!.Count);
+        // Ptz and ImageSettings not configured yet → synthetic preset entries; HardwarePrivacy
+        // configured → isPreset=true, isConfigured=true
+        Assert.Equal(3, result!.Count);
         var privacyDto = result.First(b => b.Capability == "hardware_privacy");
         Assert.True(privacyDto.IsPreset);
         Assert.True(privacyDto.IsConfigured);

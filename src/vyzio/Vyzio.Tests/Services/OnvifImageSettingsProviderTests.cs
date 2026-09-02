@@ -45,17 +45,24 @@ public class OnvifImageSettingsProviderTests
         </s:Envelope>
         """;
 
-    private static Camera MakeCamera() => new()
+    // Carries a resolved ONVIF address so these tests exercise the provider, not the endpoint
+    // sweep (ADR-56): a persisted endpoint is used as-is.
+    private static Camera MakeCamera()
     {
-        Id = "cam1",
-        Slug = "cam1",
-        FrigateCameraName = "cam1",
-        DisplayName = "ONVIF Cam",
-        Host = "192.168.1.100",
-        Port = 8899,
-        Username = "admin",
-        Password = "pass",
-    };
+        var camera = new Camera
+        {
+            Id = "cam1",
+            Slug = "cam1",
+            FrigateCameraName = "cam1",
+            DisplayName = "ONVIF Cam",
+            Host = "192.168.1.100",
+            Port = 8899,
+            Username = "admin",
+            Password = "pass",
+        };
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.100:8899/onvif/device_service");
+        return camera;
+    }
 
     private static CameraCapabilityBinding MakeBinding() => new()
     {
@@ -79,7 +86,8 @@ public class OnvifImageSettingsProviderTests
         });
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(new HttpClient(handler));
-        var onvifClient = new OnvifClient(factory, NullLogger<OnvifClient>.Instance);
+        var resolver = new OnvifEndpointResolver(factory, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvifClient = new OnvifClient(factory, resolver, NullLogger<OnvifClient>.Instance);
         return (new OnvifImageSettingsProvider(onvifClient), captured);
     }
 

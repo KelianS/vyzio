@@ -48,27 +48,39 @@ Remplacez :
 
 ## Mode vie privée
 
-**Niveau de garantie : coupure matérielle** — lorsque vous activez le mode vie privée sur une caméra Tapo, Vyzio commande directement la caméra via son API locale (protocole KLAP). Le cache physique de l'objectif se ferme et le **voyant LED s'éteint** : signal non falsifiable que la caméra ne capture plus rien, indépendamment de tout logiciel.
+**Niveau de garantie : PTZ parking.** Vyzio oriente physiquement la caméra vers une position de
+repos et arrête l'enregistrement au même moment. La caméra ne regarde plus la pièce, et Vyzio
+n'enregistre plus.
 
-Le même identifiant et mot de passe **compte camera** est utilisé pour cette commande.
+Les caméras Tapo savent aussi fermer un cache d'objectif et éteindre leur LED, ce qui serait une
+garantie plus forte. Cette commande passe par le protocole privé de TP-Link, que Vyzio ne sait pas
+encore parler : elle n'est donc pas proposée plutôt que d'être annoncée sans fonctionner.
+
+> **À savoir** : si vous activez le mode vie privée depuis l'application Tapo, la caméra refuse les
+> commandes d'orientation tant qu'il est actif. C'est normal, et Vyzio vous le dira au lieu de faire
+> semblant d'avoir bougé.
 
 ---
 
 ## Contrôle PTZ (caméras pan-tilt)
 
-Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) peuvent être orientés directement depuis Vyzio via la même connexion KLAP.
+Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) s'orientent depuis Vyzio,
+avec les mêmes identifiants **compte camera** que le flux vidéo. Aucun compte TP-Link n'est
+nécessaire.
 
-**Cette capacité doit être testée et confirmée une fois depuis la fiche de la caméra.** Dans la section *Capacités*, cliquez sur **Tester** à côté de "Contrôle PTZ". Si la commande aboutit, le panneau de contrôle PTZ apparaît dans la vue live.
+Les positions enregistrées dans l'application Tapo sont reconnues et réutilisées telles quelles :
+vos points de vue restent les vôtres.
 
-> **Note** : la commande PTZ Tapo (`motorMove`) repose sur le protocole KLAP communautaire et n'a pas été testée sur tous les firmwares. Si le test échoue, le PTZ n'est pas proposé — la caméra continue de fonctionner normalement pour la surveillance et le mode vie privée.
-
-Pour les caméras Tapo configurées avant la mise à jour (migration 1.0.3), le PTZ n'est pas activé automatiquement : un probe manuel est requis une seule fois.
+**Cette capacité est vérifiée une fois depuis la fiche de la caméra.** Dans la section *Capacités*,
+cliquez sur **Tester** à côté de « Contrôle PTZ ». Si la commande aboutit, le panneau de contrôle
+apparaît dans la vue live.
 
 ---
 
 ## Réglages image
 
-Non supporté pour l'instant depuis Vyzio — le protocole KLAP n'a pas encore été investigué pour ce réglage (contrairement au PTZ et à la vie privée, cf. ADR-27). Utilisez l'application Tapo en attendant.
+Luminosité, contraste, saturation, netteté et filtre infrarouge sont réglables depuis Vyzio, sur la
+fiche de la caméra.
 
 ---
 

@@ -11,7 +11,7 @@ Ce dossier est la **source unique** pour tout ce qui concerne le support d'une m
 
 | Famille (`VendorFamily`) | id | Nom affiché | Vie privée atteignable | PTZ | Réglages image |
 |---|---|---|---|---|---|
-| `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **Coupure matérielle** (cache objectif + LED éteinte) via KLAP | Oui via KLAP | Non (KLAP non investigué) |
+| `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **PTZ parking**. La coupure matérielle existe mais son protocole n'est pas encore validé sur du matériel (issue #88) | Oui via ONVIF, vérifié sur C200 | Luminosité, contraste, saturation, netteté et IR via ONVIF |
 | `Icsee` | `icsee` | ICSee / XMEye | **PTZ parking** | Oui, ONVIF essayé en premier, repli DVRIP (ADR-28) | Luminosité, contraste, saturation via DVRIP (ADR-29). Netteté et IR non disponibles |
 | `V380Pro` | `v380_pro` | V380 PRO | **PTZ parking** | Oui via V380 | Non confirmé sur le matériel testé, configurable à la main |
 
@@ -34,7 +34,7 @@ Chaque marque est définie comme un **preset de capacités**, pas comme un adapt
 
 <!-- vendor-presets:start -->
 ```
-TplinkTapo → HardwarePrivacy/[TapoKlap], Ptz/[TapoKlap]
+TplinkTapo → Ptz/[Onvif], ImageSettings/[Onvif], HardwarePrivacy/[TapoKlap]
 Icsee → Ptz/[Onvif, Dvrip], ImageSettings/[Dvrip]
 V380Pro → Ptz/[V380]
 ```

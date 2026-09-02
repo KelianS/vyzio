@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PtzControlPanel } from './PtzControlPanel'
+import { HttpError } from '../../infrastructure/http/HttpError'
 import { ToastProvider } from './Toast'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
@@ -26,9 +27,15 @@ interface Harness {
   presets?: PtzPreset[]
   calibrated?: boolean
   currentPosition?: { x: number; y: number } | null
+  stepRejection?: unknown
 }
 
-function renderPanel({ presets = [], calibrated = true, currentPosition = null }: Harness = {}) {
+function renderPanel({
+  presets = [],
+  calibrated = true,
+  currentPosition = null,
+  stepRejection,
+}: Harness = {}) {
   const getPtzPresets = {
     execute: vi.fn().mockResolvedValue({ presets, calibrated, currentPosition }),
   } as unknown as GetPtzPresets
@@ -41,7 +48,12 @@ function renderPanel({ presets = [], calibrated = true, currentPosition = null }
   const ptzCalibrate = {
     execute: vi.fn().mockResolvedValue(undefined),
   } as unknown as PtzCalibrate
-  const ptzStep = { execute: vi.fn().mockResolvedValue(undefined) } as unknown as PtzStep
+  const ptzStep = {
+    execute:
+      stepRejection === undefined
+        ? vi.fn().mockResolvedValue(undefined)
+        : vi.fn().mockRejectedValue(stepRejection),
+  } as unknown as PtzStep
 
   render(
     <ToastProvider>
@@ -57,7 +69,7 @@ function renderPanel({ presets = [], calibrated = true, currentPosition = null }
     </ToastProvider>,
   )
 
-  return { getPtzPresets, ptzSaveCurrentAsPreset, ptzGoToPreset, ptzCalibrate }
+  return { getPtzPresets, ptzSaveCurrentAsPreset, ptzGoToPreset, ptzCalibrate, ptzStep }
 }
 
 describe('PtzControlPanel', () => {
@@ -98,6 +110,21 @@ describe('PtzControlPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Calibrer maintenant' }))
     await waitFor(() => expect(ptzCalibrate.execute).toHaveBeenCalledWith('camera-1'))
+  })
+
+  it('PtzStep_ShouldShowTheCameraReason_WhenTheCameraRefusesTheMove', async () => {
+    // A Tapo in privacy mode refuses PTZ; before ADR-56 the move failed in silence.
+    renderPanel({
+      stepRejection: new HttpError(
+        502,
+        '/api/cameras/camera-1/ptz/step',
+        'Le mode vie privée est actif.',
+      ),
+    })
+
+    await userEvent.click(await screen.findByTitle('Haut'))
+
+    expect(await screen.findByText('Le mode vie privée est actif.')).toBeInTheDocument()
   })
 
   it('n’ouvre pas le menu contextuel du navigateur sur une position', async () => {
