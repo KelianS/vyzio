@@ -50,7 +50,7 @@ frontend only, the backend having no equivalent.
 
 Two things are deliberately out of the denominator, and nothing else is: EF Core migrations, which are generated rather than written, and files that emit no runtime code (ambient types, interface-only ports). A file that executes stays measured even when no test touches it, which is why the frontend rate is what it is.
 
-CI reports both rates on every pull request, in one comment kept up to date, and refreshes the README badges from `main`. Neither gates the build.
+CI reports both rates on every pull request, in one comment kept up to date, and refreshes the README badges from `main`. Each side also has a floor, set one point under its rate so a rounding wobble does not fail a pull request, and the build fails below it. That margin is also how much a change may cost before CI objects, so the floors are raised by hand as the rates climb, and never lowered to let a change through. They live in the `Read both reports` step of `.github/workflows/ci.yml`.
 
 ### Environment variables reference
 
