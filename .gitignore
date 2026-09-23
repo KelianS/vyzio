@@ -59,8 +59,9 @@ config/frigate.generated.yml
 **/test-results/
 **/playwright-report/
 
-# AI
-.claude/**
+# AI: the shared assistant configuration is versioned, each developer's own overrides are not
+.claude/settings.local.json
+.claude/worktrees/
 
 # Business framing, kept out of the public repository
 docs/BUSINESS_PLAN.md

@@ -17,6 +17,16 @@ which condense README and SPECS without replacing them.
 Follow the workflow: **the framing documents are aligned before the code.**
 Order, exceptions and governance: [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
+## Before opening a pull request
+
+1. `task check` is green: it runs what CI runs.
+2. The `delivery-reviewer` agent returns `PASS`. Run `framing-guardian` too when the change alters
+   behaviour, architecture or `docs/`, and `product-guardian` when it touches what a user sees or
+   walks through. Their definitions: [`.claude/agents/`](.claude/agents/).
+3. Blocking findings are fixed, never argued away in the pull request description.
+
+Merging stays with the owner: `.claude/settings.json` denies it.
+
 ## Which file to read for which task
 
 | You are working on… | Source |

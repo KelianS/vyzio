@@ -102,6 +102,12 @@ tasks:
     cmds:
       - pnpm format:check
 
+  front:typecheck:
+    desc: Type-checks the frontend without emitting (tsc --noEmit)
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm exec tsc --noEmit
+
   # --- Backend (.NET) ---
 
   back:test:
@@ -140,3 +146,16 @@ tasks:
     desc: Lint le frontend (le backend n'a pas de linter dedie)
     cmds:
       - task: front:lint
+
+  # Same steps as ci.yml, in the same order, so a green run here predicts a green pipeline.
+  check:
+    desc: Runs every check CI runs, backend then frontend
+    cmds:
+      - task: back:test
+      - task: front:typecheck
+      - task: front:lint
+      - task: front:format:check
+      - task: front:knip
+      - task: front:test
+      - task: front:build
+      - task: front:test:e2e
