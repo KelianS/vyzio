@@ -67,7 +67,7 @@ services:
       start_period: 5s
 
   frigate:
-    image: ghcr.io/blakeblackshear/frigate:0.17.1
+    image: ghcr.io/blakeblackshear/frigate:0.18.0
     container_name: vyzio-frigate
     restart: unless-stopped
     depends_on:
