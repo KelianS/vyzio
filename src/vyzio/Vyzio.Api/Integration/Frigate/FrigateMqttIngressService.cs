@@ -12,6 +12,7 @@ namespace Vyzio.Api.Integration.Frigate;
 public sealed class FrigateMqttIngressService(
     IServiceScopeFactory scopeFactory,
     VyzioRuntimeSettings settings,
+    FrigateMqttConnection connection,
     TimeProvider time,
     ILogger<FrigateMqttIngressService> logger) : BackgroundService
 {
@@ -37,6 +38,7 @@ public sealed class FrigateMqttIngressService(
 
             client.DisconnectedAsync += _ =>
             {
+                connection.Lost();
                 disconnected.TrySetResult();
                 return Task.CompletedTask;
             };
@@ -55,7 +57,10 @@ public sealed class FrigateMqttIngressService(
                     .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
                     .Build();
 
-                await client.SubscribeAsync(topicFilter, stoppingToken);
+                var subscription = await client.SubscribeAsync(topicFilter, stoppingToken);
+                if (subscription.Items.Any(item => item.ResultCode > MqttClientSubscribeResultCode.GrantedQoS2))
+                    throw new InvalidOperationException($"The broker refused the subscription to {settings.Frigate.Mqtt.Topic}.");
+                connection.Subscribed();
                 logger.LogInformation(
                     "Subscribed to Frigate MQTT topic {Topic} on {Host}:{Port}.",
                     settings.Frigate.Mqtt.Topic,
@@ -79,6 +84,7 @@ public sealed class FrigateMqttIngressService(
             }
             finally
             {
+                connection.Lost();
                 if (client.IsConnected)
                 {
                     await client.DisconnectAsync(new MqttClientDisconnectOptions(), stoppingToken);

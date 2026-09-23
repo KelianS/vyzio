@@ -9,6 +9,7 @@ using Vyzio.Application.Options;
 using Vyzio.Api;
 using Vyzio.Api.Access;
 using Vyzio.Api.Endpoints;
+using Vyzio.Api.Health;
 using Vyzio.Api.Integration.Frigate;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Services;
@@ -107,6 +108,8 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
+builder.Services.AddVyzioHealthChecks();
+builder.Services.AddSingleton<FrigateMqttConnection>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();
 builder.Services.AddHostedService<PrivacySchedulerService>();
 
@@ -127,8 +130,8 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// The container probe: it must answer before anyone has installed anything.
-app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
+// The container probes: they must answer before anyone has installed anything.
+app.MapHealth();
 app.MapGet("/", () => Results.Ok(new { service = "vyzio-api" })).AllowAnonymous();
 app.MapAccess();
 app.MapHub();

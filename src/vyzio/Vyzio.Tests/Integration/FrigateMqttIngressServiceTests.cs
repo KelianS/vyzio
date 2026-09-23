@@ -24,6 +24,7 @@ public sealed class FrigateMqttIngressServiceTests : IAsyncDisposable
     private readonly IDetectionNotificationQueue _queue = Substitute.For<IDetectionNotificationQueue>();
     private readonly FakeTimeProvider _time = BackgroundLoop.ClockAt("2026-09-23T10:00:00+00:00");
     private readonly TaskCompletionSource _subscribed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly FrigateMqttConnection _connection = new();
     private MqttServer? _broker;
 
     private FrigateMqttIngressService CreateSut(ILogger<FrigateMqttIngressService>? logger = null) => new(
@@ -44,6 +45,7 @@ public sealed class FrigateMqttIngressServiceTests : IAsyncDisposable
                 },
             },
         },
+        _connection,
         _time,
         logger ?? NullLogger<FrigateMqttIngressService>.Instance);
 
@@ -128,10 +130,11 @@ public sealed class FrigateMqttIngressServiceTests : IAsyncDisposable
     public async Task ExecuteAsync_ShouldSubscribe_WhenTheBrokerComesUpAfterVyzio()
     {
         // Arrange
-        var logger = new FirstErrorLogger<FrigateMqttIngressService>();
+        var logger = new LogSignal<FrigateMqttIngressService>();
+        var failed = logger.Reached(LogLevel.Error);
         var sut = CreateSut(logger);
         await sut.StartAsync(CancellationToken.None);
-        await logger.Logged.ObservedAsync();
+        await failed.ObservedAsync();
 
         // Act
         await StartBrokerAsync();
@@ -140,6 +143,30 @@ public sealed class FrigateMqttIngressServiceTests : IAsyncDisposable
 
         // Assert
         Assert.True(_subscribed.Task.IsCompletedSuccessfully);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReportTheSubscriptionLost_WhenTheBrokerStops()
+    {
+        // Arrange
+        // The ingress logs the subscription once it holds it, and an error once a lost connection is handled.
+        await StartBrokerAsync();
+        var logger = new LogSignal<FrigateMqttIngressService>();
+        var subscribed = logger.Reached(LogLevel.Information);
+        var failed = logger.Reached(LogLevel.Error);
+        var sut = CreateSut(logger);
+        await sut.StartAsync(CancellationToken.None);
+        await subscribed.ObservedAsync();
+        var wasSubscribed = _connection.IsSubscribed;
+
+        // Act
+        await _broker!.StopAsync();
+        await failed.ObservedAsync();
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(wasSubscribed);
+        Assert.False(_connection.IsSubscribed);
     }
 
     [Fact]
