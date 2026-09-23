@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using System.Globalization;
+using NSubstitute;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -33,7 +34,7 @@ public class GetCamerasUseCaseTests
                 Status = "online",
                 ValidationState = "validated",
                 IsEnabled = true,
-                LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00")
+                LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture)
             }
         ]);
 
@@ -294,7 +295,7 @@ public class VerifyCameraUseCaseTests
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
         _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
-            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00"), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00")));
+            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture)));
 
         var result = await _sut.ExecuteAsync(camera.Id);
 
@@ -443,7 +444,7 @@ public class VerifyDraftCameraUseCaseTests
     public async Task Execute_returns_status_projection_from_transient_camera_verification()
     {
         _verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(
-            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00"), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00")));
+            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture)));
 
         var result = await _sut.ExecuteAsync(new CreateCameraRequest(
             "Front Door",

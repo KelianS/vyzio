@@ -1,0 +1,28 @@
+root = true
+
+# C# only: the dashboard's formatting is Prettier's, configured in src/dashboard/.prettierrc.json.
+[*.cs]
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Test names follow the repository convention, underscores included (CLAUDE.md).
+[src/vyzio/Vyzio.Tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+[src/vyzio/**.cs]
+# LoggerMessage source generation buys throughput a home hub never needs, at the cost of every log line.
+dotnet_diagnostic.CA1848.severity = none
+# Log arguments are cheap property reads here; guarding each call with IsEnabled would only add noise.
+dotnet_diagnostic.CA1873.severity = none
+# Domain names such as CameraStream or DetectionNotificationQueue say what the type is.
+dotnet_diagnostic.CA1711.severity = none
+# Private members keep read-only interface types (IReadOnlyList, IReadOnlyDictionary) for intent, not speed.
+dotnet_diagnostic.CA1859.severity = none
+# Public members of DI-registered clients stay instance members; only private ones are flagged.
+dotnet_code_quality.CA1822.api_surface = private
+
+[src/vyzio/Vyzio.Infrastructure/Persistence/Migrations/**.cs]
+generated_code = true

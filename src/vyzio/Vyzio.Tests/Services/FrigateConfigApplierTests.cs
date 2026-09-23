@@ -6,7 +6,7 @@ using Vyzio.Infrastructure.Services;
 
 namespace Vyzio.Tests.Services;
 
-public class FrigateConfigApplierTests : IDisposable
+public sealed class FrigateConfigApplierTests : IDisposable
 {
     private readonly string _configPath = Path.Combine(Path.GetTempPath(), $"frigate_test_{Guid.NewGuid():N}.yml");
 

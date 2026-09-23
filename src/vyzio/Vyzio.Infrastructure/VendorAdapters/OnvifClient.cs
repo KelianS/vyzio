@@ -488,10 +488,12 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
     private static string BuildEnvelope(string username, string password, string body)
     {
         var nonce = RandomNumberGenerator.GetBytes(16);
-        var created = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var created = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
         var createdBytes = Encoding.UTF8.GetBytes(created);
         var passwordBytes = Encoding.UTF8.GetBytes(password);
+#pragma warning disable CA5350 // WS-Security UsernameToken digest is SHA-1 by specification.
         var digest = Convert.ToBase64String(SHA1.HashData([.. nonce, .. createdBytes, .. passwordBytes]));
+#pragma warning restore CA5350
         var nonce64 = Convert.ToBase64String(nonce);
 
         return $"""

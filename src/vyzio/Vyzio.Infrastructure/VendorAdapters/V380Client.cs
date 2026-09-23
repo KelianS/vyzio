@@ -133,7 +133,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
 
     // Auth handshake (cmd 1167): double-AES-ECB password encryption → ticket.
     // Returns null if authentication is rejected (ticket == 0) or connection fails.
-    private async Task<uint?> AuthenticateAsync(Camera camera, uint deviceId, CancellationToken ct)
+    private static async Task<uint?> AuthenticateAsync(Camera camera, uint deviceId, CancellationToken ct)
     {
         using var tcp = new TcpClient();
         await tcp.ConnectAsync(camera.Host, V380Port, ct);

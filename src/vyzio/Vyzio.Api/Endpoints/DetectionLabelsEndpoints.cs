@@ -2,8 +2,8 @@ namespace Vyzio.Api.Endpoints;
 
 public static class DetectionLabelsEndpoints
 {
-    private record CameraLabelDto(string Value, string DisplayName, string Emoji);
-    private record NotificationLabelDto(string Value, string DisplayName, string Emoji);
+    private sealed record CameraLabelDto(string Value, string DisplayName, string Emoji);
+    private sealed record NotificationLabelDto(string Value, string DisplayName, string Emoji);
 
     private static readonly CameraLabelDto[] CameraLabels =
     [

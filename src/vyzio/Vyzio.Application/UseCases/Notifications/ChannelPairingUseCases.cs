@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using Vyzio.Application.DTOs.Notifications;
 using Vyzio.Core.Entities;
@@ -42,7 +43,7 @@ public sealed class StartChannelPairingUseCase(
         pairing.ConversationId = null;
         pairing.PairedAt = null;
         pairing.FailedAttempts = 0;
-        pairing.PairingCode = RandomNumberGenerator.GetInt32(100_000, 1_000_000).ToString();
+        pairing.PairingCode = RandomNumberGenerator.GetInt32(100_000, 1_000_000).ToString(CultureInfo.InvariantCulture);
         pairing.CodeExpiresAt = DateTimeOffset.UtcNow.Add(CodeLifetime);
 
         await pairings.UpsertAsync(pairing, ct);

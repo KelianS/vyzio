@@ -216,7 +216,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private RawCameraDiscoverySignal BuildPortSignal(
+    private static RawCameraDiscoverySignal BuildPortSignal(
         string host, int port, string? macAddress, SupportedProtocol? protocol, string serviceLabel)
     {
         var reasons = protocol is { } p

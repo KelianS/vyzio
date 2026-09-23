@@ -67,7 +67,7 @@ public sealed class PtzPositionCommandHandler(
         return presets.FirstOrDefault(preset => CommandCameraLookup.Simplify(preset.Label) == wanted);
     }
 
-    private CommandResult WhichCamera(IReadOnlyList<CameraDto> motorised)
+    private static CommandResult WhichCamera(IReadOnlyList<CameraDto> motorised)
         => new(
             ChannelMessage.Plain("Quelle camera ?"),
             FollowUps: [.. motorised.Select(camera => new CommandFollowUp(
@@ -75,7 +75,7 @@ public sealed class PtzPositionCommandHandler(
                 RemoteCommandName.PtzPosition,
                 new Dictionary<string, string> { [CameraParameter] = camera.Slug }))]);
 
-    private CommandResult WhichPosition(CameraDto camera, IReadOnlyList<PtzPreset> known)
+    private static CommandResult WhichPosition(CameraDto camera, IReadOnlyList<PtzPreset> known)
         => new(
             ChannelMessage.Plain($"Ou doit regarder {camera.DisplayName} ?"),
             FollowUps: [.. known.Select(preset => new CommandFollowUp(

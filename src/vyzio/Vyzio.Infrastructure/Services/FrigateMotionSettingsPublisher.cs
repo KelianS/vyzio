@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Protocol;
@@ -35,7 +36,7 @@ public sealed class FrigateMotionSettingsPublisher(
         CancellationToken ct = default)
     {
         var topic = $"frigate/{frigateCameraName}/motion_contour_area/set";
-        var payload = ToContourArea(sensitivity).ToString();
+        var payload = ToContourArea(sensitivity).ToString(CultureInfo.InvariantCulture);
 
         try
         {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
@@ -100,7 +101,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
         var ret = doc?["Ret"]?.GetValue<int>();
         if (ret != 100)
-            throw new DvripCallException($"La caméra a refusé ConfigGet '{configName}' (Ret={ret?.ToString() ?? "?"}).");
+            throw new DvripCallException($"La caméra a refusé ConfigGet '{configName}' (Ret={ret?.ToString(CultureInfo.InvariantCulture) ?? "?"}).");
 
         return doc?[configName];
     }
@@ -140,7 +141,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
         var ret = response is null ? (int?)null : JsonNode.Parse(response)?["Ret"]?.GetValue<int>();
         if (ret != 100)
-            throw new DvripCallException($"La caméra a refusé ConfigSet '{configName}' (Ret={(ret?.ToString() ?? "aucune réponse")}).");
+            throw new DvripCallException($"La caméra a refusé ConfigSet '{configName}' (Ret={(ret?.ToString(CultureInfo.InvariantCulture) ?? "aucune réponse")}).");
     }
 
     private static string DescribeTimeout(Exception ex, CancellationTokenSource timeout, CancellationToken callerToken)
@@ -171,7 +172,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
         {
             var doc = JsonNode.Parse(response);
             var ret = doc?["Ret"]?.GetValue<int>();
-            if (ret != 100) return (null, $"identifiants refusés par la caméra (Ret={ret?.ToString() ?? "?"}).");
+            if (ret != 100) return (null, $"identifiants refusés par la caméra (Ret={ret?.ToString(CultureInfo.InvariantCulture) ?? "?"}).");
             return (doc?["SessionID"]?.GetValue<string>(), null);
         }
         catch (Exception ex)
@@ -187,7 +188,9 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
     // camera (Ret=203, "Password is incorrect").
     internal static string SofiaHash(string password)
     {
+#pragma warning disable CA5351 // DVRIP's Sofia hash is MD5 by protocol, not by choice.
         var md5 = System.Security.Cryptography.MD5.HashData(Encoding.UTF8.GetBytes(password));
+#pragma warning restore CA5351
         var sb = new StringBuilder(8);
         for (var i = 0; i < 16; i += 2)
         {

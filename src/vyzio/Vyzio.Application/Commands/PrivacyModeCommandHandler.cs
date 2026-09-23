@@ -40,7 +40,7 @@ public sealed class PrivacyModeCommandHandler(
     }
 
     /// <summary>The state of every camera, and one button each: the answer is also the remote control.</summary>
-    private CommandResult WhichOne(IReadOnlyList<CameraDto> known, string? asked)
+    private static CommandResult WhichOne(IReadOnlyList<CameraDto> known, string? asked)
         => new(
             ChannelMessage.List(
                 asked is null ? "Quelle camera ?" : $"Je ne connais pas de camera « {asked} »",

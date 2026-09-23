@@ -7,7 +7,7 @@ using Vyzio.Infrastructure.Persistence.Repositories;
 
 namespace Vyzio.Tests.Persistence;
 
-public class ProfilePhotoRepositoryTests : IDisposable
+public sealed class ProfilePhotoRepositoryTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;
@@ -94,7 +94,7 @@ public class ProfilePhotoRepositoryTests : IDisposable
     }
 }
 
-public class ProfileCameraLinkRepositoryTests : IDisposable
+public sealed class ProfileCameraLinkRepositoryTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;

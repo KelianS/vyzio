@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using System.Globalization;
+using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -87,7 +88,7 @@ public class SystemStateCommandHandlerTests
         _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns(
         [
             new FrigateDetection("frigate-1", "front_door", "person", "Alice", 0.9f,
-                DateTimeOffset.Parse("2026-05-12T10:00:00+00:00"), HasClip: true, HasSnapshot: true)
+                DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), HasClip: true, HasSnapshot: true)
         ]);
 
         var result = await CreateSut().ExecuteAsync(Invocation);

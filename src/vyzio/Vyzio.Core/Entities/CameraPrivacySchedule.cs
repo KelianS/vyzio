@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -43,6 +44,6 @@ public class CameraPrivacySchedule
         }
     }
 
-    public TimeSpan GetStartTime() => TimeSpan.Parse(StartTime);
-    public TimeSpan GetEndTime() => TimeSpan.Parse(EndTime);
+    public TimeSpan GetStartTime() => TimeSpan.Parse(StartTime, CultureInfo.InvariantCulture);
+    public TimeSpan GetEndTime() => TimeSpan.Parse(EndTime, CultureInfo.InvariantCulture);
 }

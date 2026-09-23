@@ -6,7 +6,7 @@ using Vyzio.Infrastructure.Persistence.Repositories;
 
 namespace Vyzio.Tests.Persistence;
 
-public class VyzioDbContextTests : IDisposable
+public sealed class VyzioDbContextTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly VyzioDbContext _db;

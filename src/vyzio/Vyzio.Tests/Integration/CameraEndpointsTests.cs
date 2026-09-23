@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -322,8 +323,8 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             Status = "online",
             ValidationState = "validated",
             IsEnabled = true,
-            LastReachabilityCheckAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00"),
-            LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:01:00+00:00"),
+            LastReachabilityCheckAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture),
+            LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:01:00+00:00", CultureInfo.InvariantCulture),
             FrigateCameraName = "front_door"
         });
 
@@ -420,8 +421,8 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                 true,
                 "online",
                 "Camera responded to the stream verification.",
-                DateTimeOffset.Parse("2026-05-12T11:00:00+00:00"),
-                DateTimeOffset.Parse("2026-05-12T11:00:00+00:00")));
+                DateTimeOffset.Parse("2026-05-12T11:00:00+00:00", CultureInfo.InvariantCulture),
+                DateTimeOffset.Parse("2026-05-12T11:00:00+00:00", CultureInfo.InvariantCulture)));
     }
 
     // A verified camera is asked what it serves, over the network, against the address the test

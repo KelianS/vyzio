@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -103,7 +104,7 @@ internal sealed class MotionSensitivityTunerService(
                 "Motion tuning {Camera}: sample {Ratio:F2} inferences/frame, level {Level}, "
                     + "{Samples} samples, aggregate {Aggregate}, outcome {Outcome}.",
                 frigateName, ratio, camera.MotionSensitivity, decision.SampleCount,
-                decision.Aggregate?.ToString("F2") ?? "n/a", decision.Outcome);
+                decision.Aggregate?.ToString("F2", CultureInfo.InvariantCulture) ?? "n/a", decision.Outcome);
 
             if (decision.NextLevel is not { } next) continue;
 
