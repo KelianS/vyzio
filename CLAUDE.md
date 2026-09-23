@@ -17,6 +17,11 @@ which condense README and SPECS without replacing them.
 Follow the workflow: **the framing documents are aligned before the code.**
 Order, exceptions and governance: [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
+## Before opening a pull request
+
+Follow the delivery gate in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git: `task check`, then the
+review agents of [`.claude/agents/`](.claude/agents/). Never merge: that stays with the owner.
+
 ## Which file to read for which task
 
 | You are working on… | Source |

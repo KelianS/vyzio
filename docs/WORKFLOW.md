@@ -92,6 +92,19 @@ French. **A new ADR is written in English**, like everything else.
 - Branches: `main` (stable), `dev` (integration), `feature/*` (work in progress).
 - Pull requests: review and green tests are mandatory.
 
+### Delivery gate, before a pull request is opened
+
+1. `task check` is green. It runs the steps of the backend and frontend CI jobs; the image build and
+   its Trivy scan stay CI-only.
+2. The review agents of [`.claude/agents/`](../.claude/agents/) have run on the branch:
+   `delivery-reviewer` always, `framing-guardian` when the change alters behaviour, architecture or
+   `docs/`, `product-guardian` when it touches what a user sees or walks through.
+3. Their blocking findings are fixed, not argued away in the pull request description.
+
+The agents are instructions, not hooks: the gate holds because it is followed. What is enforced is
+narrower: [`.claude/settings.json`](../.claude/settings.json) denies the assistant merging and
+force-pushing, and only branch protection on `main` would deny it to everyone.
+
 ### Commits and pull requests, English and conventional
 
 A commit and a pull request address the tooling and third parties rather than the framing documents, so

@@ -17,6 +17,7 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task up` / `task down` | Start/stop the dev docker stack |
 | `task mock:up` / `task mock:down` | Start/stop the synthetic RTSP camera stack |
 | `task front:dev` | Vite dev server |
+| `task check` | Run the backend and frontend CI checks locally, e2e included |
 | `task front:test` / `task back:test` / `task test` | Run frontend / backend / both test suites |
 | `task front:lint` | ESLint |
 | `task front:knip` | Dead code detection (Knip) |
