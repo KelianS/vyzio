@@ -82,5 +82,6 @@ weekly: Semgrep static analysis, and a dependency audit on both the .NET and the
 trees. Each fails the build on what it finds, the frontend audit from high severity up. The
 [CI workflow](.github/workflows/ci.yml) scans both images with Trivy and fails on a high or critical
 finding. [Dependabot](.github/dependabot.yml) proposes updates for every dependency ecosystem,
-base images included, as pull requests. CodeQL on C# and TypeScript is configured in the same workflow and runs as soon as the
+base images included, as pull requests, except a runtime major or a Frigate minor or major, which an
+issue decides. CodeQL on C# and TypeScript is configured in the same workflow and runs as soon as the
 repository is public, which is what its free tier requires.
