@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.Services;
 
-public sealed class RtspCameraVerifier : ICameraVerifier
+public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
 {
     public async Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
     {
@@ -14,13 +14,13 @@ public sealed class RtspCameraVerifier : ICameraVerifier
             return await VerifyDvripAsync(camera, ct);
         }
 
-        var checkedAt = DateTimeOffset.UtcNow;
+        var checkedAt = time.GetUtcNow();
 
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromSeconds(3), time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
             await client.ConnectAsync(camera.Host, camera.Port, timeout.Token);
             var probeResult = await ProbeRtspAsync(client, camera, timeout.Token);
@@ -62,14 +62,14 @@ public sealed class RtspCameraVerifier : ICameraVerifier
         }
     }
 
-    private static async Task<CameraVerificationResult> VerifyDvripAsync(Camera camera, CancellationToken ct)
+    private async Task<CameraVerificationResult> VerifyDvripAsync(Camera camera, CancellationToken ct)
     {
-        var checkedAt = DateTimeOffset.UtcNow;
+        var checkedAt = time.GetUtcNow();
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromSeconds(5));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromSeconds(5), time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
             await client.ConnectAsync(camera.Host, camera.Port, timeout.Token);
             return new CameraVerificationResult(
                 true,

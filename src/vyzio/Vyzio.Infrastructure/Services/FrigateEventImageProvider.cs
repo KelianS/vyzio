@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Infrastructure.Services;
 
 public sealed class FrigateEventImageProvider(
-    HttpClient httpClient, ILogger<FrigateEventImageProvider> logger) : IFrigateEventImageProvider
+    HttpClient httpClient, TimeProvider time, ILogger<FrigateEventImageProvider> logger) : IFrigateEventImageProvider
 {
     public Task<Stream?> TryGetImageAsync(
         string frigateEventId,
@@ -18,6 +18,7 @@ public sealed class FrigateEventImageProvider(
             image.ToString(),
             frigateEventId,
             finalizationWindow,
+            time,
             logger,
             ct);
 

@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Services;
 
@@ -16,6 +17,7 @@ public class FrigateEventImageProviderTests
         var handler = new CapturingHandler();
         var provider = new FrigateEventImageProvider(
             new HttpClient(handler) { BaseAddress = new Uri("http://frigate:5000/") },
+            new FakeTimeProvider(),
             NullLogger<FrigateEventImageProvider>.Instance);
 
         var stream = await provider.TryGetImageAsync("evt-1", image);

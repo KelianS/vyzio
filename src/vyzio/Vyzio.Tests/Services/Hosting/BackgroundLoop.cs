@@ -42,6 +42,8 @@ internal static class BackgroundLoop
     // Waits for an effect that needs no time to pass, such as a queue being drained.
     public static Task ObservedAsync(this Task effect) => effect.WaitAsync(Guard);
 
+    public static Task<T> ObservedAsync<T>(this Task<T> effect) => effect.WaitAsync(Guard);
+
     public static IServiceScopeFactory Scopes(Action<IServiceCollection> register)
     {
         var services = new ServiceCollection();

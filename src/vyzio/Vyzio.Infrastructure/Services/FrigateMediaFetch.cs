@@ -8,7 +8,7 @@ namespace Vyzio.Infrastructure.Services;
 /// </summary>
 internal static class FrigateMediaFetch
 {
-    private static readonly TimeSpan DefaultRetryInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(2);
 
     public static async Task<Stream?> TryReadAsync(
         HttpClient httpClient,
@@ -16,12 +16,11 @@ internal static class FrigateMediaFetch
         string media,
         string frigateEventId,
         TimeSpan finalizationWindow,
+        TimeProvider time,
         ILogger logger,
-        CancellationToken ct,
-        TimeSpan? retryInterval = null)
+        CancellationToken ct)
     {
-        var interval = retryInterval ?? DefaultRetryInterval;
-        var deadline = DateTimeOffset.UtcNow + finalizationWindow;
+        var deadline = time.GetUtcNow() + finalizationWindow;
         var attempts = 0;
 
         while (true)
@@ -34,7 +33,7 @@ internal static class FrigateMediaFetch
                 return stream;
             }
 
-            var remaining = deadline - DateTimeOffset.UtcNow;
+            var remaining = deadline - time.GetUtcNow();
             if (remaining <= TimeSpan.Zero)
             {
                 logger.LogWarning("{Media} still unavailable for event {EventId} after {Attempts} attempt(s)",
@@ -42,7 +41,7 @@ internal static class FrigateMediaFetch
                 return null;
             }
 
-            await Task.Delay(remaining < interval ? remaining : interval, ct);
+            await Task.Delay(remaining < RetryInterval ? remaining : RetryInterval, time, ct);
         }
     }
 
