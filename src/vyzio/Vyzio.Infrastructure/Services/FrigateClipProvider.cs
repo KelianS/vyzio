@@ -3,7 +3,8 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.Services;
 
-public sealed class FrigateClipProvider(HttpClient httpClient, ILogger<FrigateClipProvider> logger) : IFrigateClipProvider
+public sealed class FrigateClipProvider(
+    HttpClient httpClient, TimeProvider time, ILogger<FrigateClipProvider> logger) : IFrigateClipProvider
 {
     public Task<Stream?> TryGetClipAsync(
         string frigateEventId, TimeSpan finalizationWindow = default, CancellationToken ct = default)
@@ -13,6 +14,7 @@ public sealed class FrigateClipProvider(HttpClient httpClient, ILogger<FrigateCl
             "Clip",
             frigateEventId,
             finalizationWindow,
+            time,
             logger,
             ct);
 }

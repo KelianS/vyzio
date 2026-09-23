@@ -40,5 +40,7 @@ either side.
 - Unit: use cases mocked with **NSubstitute**, no database.
 - Integration: **SQLite in-memory** (`EnsureCreated`).
 - A use case must stay testable without a database.
-- A hosted service waits and timestamps through an injected `TimeProvider`; its tests drive it with
-  `FakeTimeProvider` through `Vyzio.Tests/Services/Hosting/BackgroundLoop`, and never sleep.
+- Code that waits, times out or measures a window (a hosted service, a retry, a network probe) reads
+  time from an injected `TimeProvider`; its tests drive it with `FakeTimeProvider` through
+  `Vyzio.Tests/Services/Hosting/BackgroundLoop`, and never sleep. A test against a real socket keeps
+  the fake clock still, so the verdict comes from what the peer answered, not from how fast.

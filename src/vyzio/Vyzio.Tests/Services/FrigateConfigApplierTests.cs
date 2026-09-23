@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -77,7 +78,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
             new StubHardwareAccelerationDetector(detectorKind, cpuCoreCount, hwAccel));
         var applier = new FrigateConfigApplier(
             settings,
-            new FrigateRestartTracker(),
+            new FrigateRestartTracker(new FakeTimeProvider()),
             planner,
             new NoopModelAssetInstaller(),
             new StubRecordingSettingsRepository(recordingSettings ?? RecordingSettings.CreateDefault()));
@@ -90,7 +91,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         var settings = Settings;
         return new FrigateConfigApplier(
             settings,
-            new FrigateRestartTracker(),
+            new FrigateRestartTracker(new FakeTimeProvider()),
             new FrigateDetectorPlanner(settings, new StubHardwareAccelerationDetector(FrigateDetectorKind.Cpu)),
             new NoopModelAssetInstaller(),
             new StubRecordingSettingsRepository(RecordingSettings.CreateDefault()));

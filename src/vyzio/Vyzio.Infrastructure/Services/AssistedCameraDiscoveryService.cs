@@ -21,13 +21,14 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
     // protocol serves which capability (ADR-32). Null → the Capabilities interpretation is empty.
     public AssistedCameraDiscoveryService(
         VyzioRuntimeSettings settings,
+        TimeProvider time,
         ICapabilityProviderRegistry? capabilityRegistry = null,
         ILogger<AssistedCameraDiscoveryService>? logger = null)
     {
         _settings = settings;
         _logger = logger;
         _capabilityRegistry = capabilityRegistry;
-        _probePipeline = new AssistedCameraDiscoveryProbePipeline(settings, logger);
+        _probePipeline = new AssistedCameraDiscoveryProbePipeline(settings, time, logger);
         _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
 

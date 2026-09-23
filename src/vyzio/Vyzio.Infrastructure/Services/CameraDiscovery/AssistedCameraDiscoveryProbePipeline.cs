@@ -24,10 +24,12 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
     private readonly ILogger? _logger;
     private readonly VyzioRuntimeSettings _settings;
+    private readonly TimeProvider _time;
 
-    public AssistedCameraDiscoveryProbePipeline(VyzioRuntimeSettings settings, ILogger? logger = null)
+    public AssistedCameraDiscoveryProbePipeline(VyzioRuntimeSettings settings, TimeProvider time, ILogger? logger = null)
     {
         _settings = settings;
+        _time = time;
         _logger = logger;
     }
 
@@ -258,13 +260,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     }
 
     // RTSP OPTIONS is path-agnostic: any RTSP server answers "RTSP/1.0 200"/"401" to it.
-    private static async Task<bool> FingerprintRtspAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<bool> FingerprintRtspAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
             await client.ConnectAsync(host, port, timeout.Token);
 
             using var stream = client.GetStream();
@@ -283,13 +285,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     }
 
     // DVRIP/XMEye: every response starts with the 0xFF magic byte (ADR-29).
-    private static async Task<bool> FingerprintDvripAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<bool> FingerprintDvripAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
             await client.ConnectAsync(host, port, timeout.Token);
 
             using var stream = client.GetStream();
@@ -322,13 +324,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     // V380 native (port 8800): send the cmd-1167 auth packet (256-byte frame, deviceId 0) and
     // require a full 256-byte V380-shaped reply. A non-V380 service on 8800 (e.g. a Tapo) won't
     // return that framed response, so it is not mislabelled V380. Best-effort but credential-free.
-    private static async Task<bool> FingerprintV380Async(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<bool> FingerprintV380Async(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
             await client.ConnectAsync(host, port, timeout.Token);
 
             var packet = new byte[256];
@@ -374,18 +376,18 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         var probePayload = Encoding.UTF8.GetBytes(BuildProbeEnvelope());
         await udpClient.SendAsync(probePayload, probePayload.Length, DiscoveryEndpoint);
 
-        var deadline = DateTimeOffset.UtcNow.AddSeconds(2);
+        var deadline = _time.GetUtcNow().AddSeconds(2);
 
-        while (DateTimeOffset.UtcNow < deadline && !ct.IsCancellationRequested)
+        while (_time.GetUtcNow() < deadline && !ct.IsCancellationRequested)
         {
             var receiveTask = udpClient.ReceiveAsync(ct).AsTask();
-            var remaining = deadline - DateTimeOffset.UtcNow;
+            var remaining = deadline - _time.GetUtcNow();
             if (remaining <= TimeSpan.Zero)
             {
                 break;
             }
 
-            var completed = await Task.WhenAny(receiveTask, Task.Delay(remaining, ct));
+            var completed = await Task.WhenAny(receiveTask, Task.Delay(remaining, _time, ct));
             if (completed != receiveTask)
             {
                 break;
@@ -645,13 +647,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
     // ADR-31: KLAP handshake1 requires no credentials (only handshake2 does), so a positive reply
     // is a genuine protocol-level signal. Used by the port-sweep Tapo KLAP fingerprint (ADR-32) —
     // KLAP shares port 80 with generic HTTP, so only this handshake distinguishes it.
-    private static async Task<RawCameraDiscoverySignal?> ProbeTapoKlapEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<RawCameraDiscoverySignal?> ProbeTapoKlapEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
             await client.ConnectAsync(host, port, timeout.Token);
 
@@ -878,13 +880,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<bool> CanConnectAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<bool> CanConnectAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
             await client.ConnectAsync(host, port, timeout.Token);
             return true;
         }
@@ -894,7 +896,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<string?> ProbeRtspPathsAsync(string host, int port, IReadOnlyList<string> paths, int timeoutMs, CancellationToken ct)
+    private async Task<string?> ProbeRtspPathsAsync(string host, int port, IReadOnlyList<string> paths, int timeoutMs, CancellationToken ct)
     {
         foreach (var path in paths)
         {
@@ -907,13 +909,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return null;
     }
 
-    private static async Task<bool> CanDescribeRtspPathAsync(string host, int port, string path, int timeoutMs, CancellationToken ct)
+    private async Task<bool> CanDescribeRtspPathAsync(string host, int port, string path, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
             await client.ConnectAsync(host, port, timeout.Token);
 
@@ -945,13 +947,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<RawCameraDiscoverySignal?> ProbeHttpEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<RawCameraDiscoverySignal?> ProbeHttpEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
             await client.ConnectAsync(host, port, timeout.Token);
 
@@ -983,13 +985,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static async Task<RawCameraDiscoverySignal?> ProbeOnvifUnicastEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    private async Task<RawCameraDiscoverySignal?> ProbeOnvifUnicastEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
         {
             using var client = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+            using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), _time);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
             await client.ConnectAsync(host, port, timeout.Token);
 

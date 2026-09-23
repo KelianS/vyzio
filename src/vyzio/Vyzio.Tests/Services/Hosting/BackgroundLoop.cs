@@ -9,7 +9,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Vyzio.Tests.Services.Hosting;
 
-// Drives a hosted service's loop through fake time; real time only paces the steps and bounds the wait.
+// Drives code that waits or times out through fake time; real time only paces the steps and bounds the wait.
 internal static class BackgroundLoop
 {
     private static readonly TimeSpan Guard = TimeSpan.FromSeconds(15);
@@ -42,6 +42,8 @@ internal static class BackgroundLoop
     // Waits for an effect that needs no time to pass, such as a queue being drained.
     public static Task ObservedAsync(this Task effect) => effect.WaitAsync(Guard);
 
+    public static Task<T> ObservedAsync<T>(this Task<T> effect) => effect.WaitAsync(Guard);
+
     public static IServiceScopeFactory Scopes(Action<IServiceCollection> register)
     {
         var services = new ServiceCollection();
@@ -49,7 +51,17 @@ internal static class BackgroundLoop
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 
-    // A loopback port nothing listens on, so a connection to it is refused at once.
+    // Bound without listening, so a connection is refused and no other socket takes the port while it is held.
+    public static Socket RefusingPort()
+    {
+        var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+        return socket;
+    }
+
+    public static int PortOf(this Socket socket) => ((IPEndPoint)socket.LocalEndPoint!).Port;
+
+    // A free loopback port, for a test that starts its own server on it later.
     public static int ClosedPort()
     {
         var listener = new TcpListener(IPAddress.Loopback, 0);

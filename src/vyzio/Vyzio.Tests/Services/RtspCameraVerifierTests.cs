@@ -1,8 +1,10 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Services;
+using Vyzio.Tests.Services.Hosting;
 
 namespace Vyzio.Tests.Services;
 
@@ -28,7 +30,8 @@ public class RtspCameraVerifierTests
             await stream.FlushAsync();
         });
 
-        var sut = new RtspCameraVerifier();
+        // Never advanced, so the verdict comes from what the listener answered, not from how fast it did.
+        var sut = new RtspCameraVerifier(new FakeTimeProvider());
         var result = await sut.VerifyAsync(new Camera
         {
             Slug = "front-door",
@@ -37,7 +40,7 @@ public class RtspCameraVerifierTests
             Host = "127.0.0.1",
             Port = port,
             StreamPath = "/stream1",
-        });
+        }).ObservedAsync();
 
         await serverTask;
 
