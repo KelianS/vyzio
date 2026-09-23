@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          global-json-file: global.json
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -73,7 +73,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          global-json-file: global.json
 
       - name: Restore .NET packages
         run: dotnet restore src/vyzio/Vyzio.slnx

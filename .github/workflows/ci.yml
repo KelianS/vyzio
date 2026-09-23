@@ -16,9 +16,12 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          global-json-file: global.json
 
       - uses: go-task/setup-task@v2
+
+      - name: Format check
+        run: task back:format:check
 
       - name: Test
         run: >
