@@ -53,7 +53,8 @@ public class CameraReachabilityPollerServiceTests
     public async Task ExecuteAsync_ShouldMarkTheCameraOffline_WhenItStopsAnswering()
     {
         // Arrange
-        var camera = ValidatedCamera(BackgroundLoop.ClosedPort(), "online");
+        using var refusing = BackgroundLoop.RefusingPort();
+        var camera = ValidatedCamera(refusing.PortOf(), "online");
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
         var updated = SignalOnUpdate();
         var sut = CreateSut();
@@ -93,7 +94,8 @@ public class CameraReachabilityPollerServiceTests
     public async Task ExecuteAsync_ShouldKeepPolling_WhenReadingTheCamerasFailsOnce()
     {
         // Arrange
-        var camera = ValidatedCamera(BackgroundLoop.ClosedPort(), "online");
+        using var refusing = BackgroundLoop.RefusingPort();
+        var camera = ValidatedCamera(refusing.PortOf(), "online");
         _cameras.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(
                 _ => throw new InvalidOperationException("database is locked"),
