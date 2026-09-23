@@ -29,7 +29,7 @@ jobs:
           -c Release --collect:"XPlat Code Coverage" --results-directory ${{ github.workspace }}/coverage
 
       - name: Upload backend coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: coverage/**/coverage.cobertura.xml
@@ -73,7 +73,7 @@ jobs:
         run: task front:test -- --coverage
 
       - name: Upload frontend coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: src/dashboard/coverage/
@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: src/dashboard/playwright-report/
