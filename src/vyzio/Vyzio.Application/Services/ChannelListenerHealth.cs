@@ -8,22 +8,22 @@ namespace Vyzio.Application.Services;
 /// In memory, and deliberately: this state dies with the process, exactly like the loops it describes.
 /// Persisting it would let Vyzio claim after a restart that it is listening when nothing is (ADR-52).
 /// </summary>
-internal sealed class ChannelListenerHealth : IChannelListenerHealth
+internal sealed class ChannelListenerHealth(TimeProvider time) : IChannelListenerHealth
 {
     private readonly ConcurrentDictionary<NotificationChannel, ChannelListening> _states = new();
 
     public void Started(NotificationChannel channel)
         => _states.AddOrUpdate(
             channel,
-            _ => new ChannelListening(true, DateTimeOffset.UtcNow, null, null),
+            _ => new ChannelListening(true, time.GetUtcNow(), null, null),
             // Since is when it started listening, not when it was last heard from: a round that comes
             // back is the same uninterrupted loop.
             (_, current) => current.Listening
                 ? current
-                : current with { Listening = true, Since = DateTimeOffset.UtcNow });
+                : current with { Listening = true, Since = time.GetUtcNow() });
 
     public void Interrupted(NotificationChannel channel, string reason)
-        => _states[channel] = new ChannelListening(false, null, DateTimeOffset.UtcNow, reason);
+        => _states[channel] = new ChannelListening(false, null, time.GetUtcNow(), reason);
 
     public void Stopped(NotificationChannel channel) => _states.TryRemove(channel, out _);
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Vyzio.Application.UseCases.Access;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.Commands;
@@ -22,6 +23,7 @@ public static class ServiceCollectionExtensions
     {
         var tz = timeZone ?? TimeZoneInfo.Local;
         services.AddSingleton(tz);
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton(new FrigateLabelFilter(retainedFrigateLabels));
         services.AddSingleton<FrigateEventContractAdapter>();
         services.AddScoped<DetectionEventContractProjector>();

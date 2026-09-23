@@ -12,8 +12,11 @@ namespace Vyzio.Api.Integration.Frigate;
 public sealed class FrigateMqttIngressService(
     IServiceScopeFactory scopeFactory,
     VyzioRuntimeSettings settings,
+    TimeProvider time,
     ILogger<FrigateMqttIngressService> logger) : BackgroundService
 {
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var factory = new MqttClientFactory();
@@ -72,7 +75,7 @@ public sealed class FrigateMqttIngressService(
                     settings.Frigate.Mqtt.Host,
                     settings.Frigate.Mqtt.Port);
 
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                await Task.Delay(RetryDelay, time, stoppingToken);
             }
             finally
             {
