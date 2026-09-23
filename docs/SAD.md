@@ -76,7 +76,7 @@ architecture.
 
 | Risk | Likelihood | Mitigation |
 |---|:---:|---|
-| Breaking change in the Frigate API | Low (API stable since v0.12) | A versioned `FrigateAdapter` abstraction layer |
+| Breaking change in the Frigate API | Medium (still 0.x: a minor can break it) | A versioned `FrigateAdapter` abstraction layer, and a Frigate minor adopted only through an issue |
 | The Frigate project stops | Very low (active community, Home Assistant integration) | The architecture allows another MQTT/REST backend to replace Frigate |
 | A Frigate bug affecting Vyzio | Medium | Integration tests on the MQTT/REST contract, not on Frigate internals |
 
@@ -438,11 +438,11 @@ significantly.
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|:---:|:---:|---|
-| Breaking change in the Frigate API or MQTT contract | Low | Medium | A versioned `FrigateAdapter`, MQTT contract tests |
+| Breaking change in the Frigate API or MQTT contract | Medium | Medium | A versioned `FrigateAdapter`, MQTT contract tests |
 | The Frigate project stops | Very low | High | A decoupled architecture, `FrigateAdapter` replaceable |
 | Face recognition false positive | Medium | High | Configurable threshold, an "uncertain" mode, confirmation from the notification |
 | A camera incompatible with Frigate | Medium | Low | Frigate supports over 200 models, plus a manual RTSP fallback |
-| Functional drift in Frigate (fast-moving releases) | Medium | Medium | Version pinning, a compatibility matrix, regression tests |
+| Functional drift in Frigate (fast-moving releases) | Medium | Medium | Version pinning, with only patches proposed automatically ([`dependabot.yml`](../.github/dependabot.yml)), a compatibility matrix, regression tests |
 | Debt from reimplementing Frigate features | Medium | High | A delegate-by-default policy (ADR-03) |
 | Pressure to rebuild Frigate features | Medium | High | ADR discipline: compare the options and keep the ones not chosen |
 | Disk space saturated (Frigate clips) | Medium | Medium | The Frigate retention policy configured by Vyzio, plus dashboard alerts |
