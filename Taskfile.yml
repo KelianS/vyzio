@@ -147,9 +147,9 @@ tasks:
     cmds:
       - task: front:lint
 
-  # Same steps as ci.yml, in the same order, so a green run here predicts a green pipeline.
+  # Steps of the backend and frontend jobs of ci.yml, in their order; the image build stays CI-only.
   check:
-    desc: Runs every check CI runs, backend then frontend
+    desc: Runs the backend and frontend CI checks locally, e2e included
     cmds:
       - task: back:test
       - task: front:typecheck

@@ -1,6 +1,6 @@
 ---
 name: framing-guardian
-description: Read-only check that framing documents lead the code. Use when a change alters behaviour, architecture, boundaries or a documented decision, or touches docs/. Verifies the mandated order and the writing discipline of docs/WORKFLOW.md, and returns what is missing or misplaced.
+description: Check that framing documents lead the code. Use when a change alters behaviour, architecture, boundaries or a documented decision, or touches docs/. Verifies the mandated order and the writing discipline of docs/WORKFLOW.md, and returns what is missing or misplaced.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---

@@ -19,13 +19,8 @@ Order, exceptions and governance: [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
 ## Before opening a pull request
 
-1. `task check` is green: it runs what CI runs.
-2. The `delivery-reviewer` agent returns `PASS`. Run `framing-guardian` too when the change alters
-   behaviour, architecture or `docs/`, and `product-guardian` when it touches what a user sees or
-   walks through. Their definitions: [`.claude/agents/`](.claude/agents/).
-3. Blocking findings are fixed, never argued away in the pull request description.
-
-Merging stays with the owner: `.claude/settings.json` denies it.
+Follow the delivery gate in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git: `task check`, then the
+review agents of [`.claude/agents/`](.claude/agents/). Never merge: that stays with the owner.
 
 ## Which file to read for which task
 

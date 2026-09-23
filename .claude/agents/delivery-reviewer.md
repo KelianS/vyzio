@@ -1,6 +1,6 @@
 ---
 name: delivery-reviewer
-description: Read-only gate run before opening a pull request. Reviews the branch diff against the repository's definition of done and code rules, and returns a blocking or passing verdict. Use it on every delivery, after `task check` is green.
+description: Review gate run before opening a pull request. Reviews the branch diff against the repository's definition of done and code rules, and returns a blocking or passing verdict. Use it on every delivery, after `task check` is green.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
