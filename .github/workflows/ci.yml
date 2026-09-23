@@ -16,9 +16,12 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          global-json-file: global.json
 
       - uses: go-task/setup-task@v2
+
+      - name: Format check
+        run: task back:format:check
 
       - name: Test
         run: >
@@ -39,7 +42,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: latest
+          package_json_file: src/dashboard/package.json
 
       - uses: actions/setup-node@v4
         with:
@@ -112,6 +115,10 @@ jobs:
       # Four numbers out of two files: a third-party action for that would be a dependency to
       # trust and to pin, on a job that writes to the pull request.
       - name: Read both reports
+        id: rates
+        env:
+          BACKEND_FLOOR: 64
+          FRONTEND_FLOOR: 15
         run: |
           set -euo pipefail
           cp "$(find backend-coverage -name 'coverage.cobertura.xml' -print -quit)" backend.xml
@@ -122,18 +129,24 @@ jobs:
             grep -m1 -o "$2=\"[0-9.]*\"" "$1" | tr -dc '0-9.' |
               awk '{ printf "%.1f", $1 * 100 }'
           }
+          below=''
+          under() { awk -v p="$1" -v f="$2" 'BEGIN { exit !(p < f) }'; }
+          under "$(rate backend.xml line-rate)" "$BACKEND_FLOOR" && below="$below backend"
+          under "$(rate frontend.xml line-rate)" "$FRONTEND_FLOOR" && below="$below frontend"
           {
             echo '### Coverage'
             echo
-            echo '| | Lines | Branches |'
-            echo '|---|---:|---:|'
-            echo "| Backend | $(rate backend.xml line-rate)% | $(rate backend.xml branch-rate)% |"
-            echo "| Frontend | $(rate frontend.xml line-rate)% | $(rate frontend.xml branch-rate)% |"
+            echo '| | Lines | Floor | Branches |'
+            echo '|---|---:|---:|---:|'
+            echo "| Backend | $(rate backend.xml line-rate)% | $BACKEND_FLOOR% | $(rate backend.xml branch-rate)% |"
+            echo "| Frontend | $(rate frontend.xml line-rate)% | $FRONTEND_FLOOR% | $(rate frontend.xml branch-rate)% |"
             echo
             echo 'EF Core migrations and type-only files are out of the denominator. Everything that'
             echo 'emits runtime code is in it, tested or not.'
+            if [ -n "$below" ]; then echo; echo "**Under its floor:$below.** See CONTRIBUTING.md, Coverage."; fi
           } > coverage.md
           cat coverage.md >> "$GITHUB_STEP_SUMMARY"
+          echo "below=$below" >> "$GITHUB_OUTPUT"
 
       # A fork's pull request gets a read-only token, so the comment is impossible rather than
       # merely denied: skipped, so an outside contribution never opens on a red job it cannot fix.
@@ -175,6 +188,13 @@ jobs:
               commit -qm "chore(ci): coverage badges for ${GITHUB_SHA}"
           git -C "$work" push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" badges
 
+      # Last, so the comment and the badges still say what the rates are when a floor fails.
+      - name: Enforce the coverage floors
+        if: steps.rates.outputs.below != ''
+        run: |
+          echo "::error::Line coverage under its floor:${{ steps.rates.outputs.below }} (floors in the Read both reports step)"
+          exit 1
+
   docker-build-check:
     name: Docker — build images (no push)
     runs-on: ubuntu-latest
@@ -195,7 +215,7 @@ jobs:
           load: true
 
       - name: Install Trivy
-        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/v0.74.0/contrib/install.sh | sh -s -- -b /usr/local/bin v0.74.0
 
       - name: Scan API image
         run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-api:ci

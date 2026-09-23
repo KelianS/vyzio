@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Entities;
@@ -49,7 +50,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
                 }
                 break;
 
-            // None / SoftwareBlur → Frigate only, no vendor call.
+                // None / SoftwareBlur → Frigate only, no vendor call.
         }
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -144,7 +145,8 @@ public sealed class CreateCameraPrivacyScheduleUseCase(
 
         if (request.DaysOfWeek.Count == 0)
             throw new ArgumentException("At least one day of week is required.");
-        if (!TimeSpan.TryParse(request.StartTime, out var start) || !TimeSpan.TryParse(request.EndTime, out var end))
+        if (!TimeSpan.TryParse(request.StartTime, CultureInfo.InvariantCulture, out var start)
+            || !TimeSpan.TryParse(request.EndTime, CultureInfo.InvariantCulture, out var end))
             throw new ArgumentException("Invalid time format. Use HH:mm.");
         if (end <= start)
             throw new ArgumentException("EndTime must be after StartTime. For midnight crossing, use two schedules.");
@@ -187,10 +189,10 @@ public sealed class UpdateCameraPrivacyScheduleUseCase(ICameraPrivacyRepository 
         }
 
         var newStart = request.StartTime is not null
-            ? TimeSpan.Parse(request.StartTime)
+            ? TimeSpan.Parse(request.StartTime, CultureInfo.InvariantCulture)
             : schedule.GetStartTime();
         var newEnd = request.EndTime is not null
-            ? TimeSpan.Parse(request.EndTime)
+            ? TimeSpan.Parse(request.EndTime, CultureInfo.InvariantCulture)
             : schedule.GetEndTime();
 
         if (newEnd <= newStart)

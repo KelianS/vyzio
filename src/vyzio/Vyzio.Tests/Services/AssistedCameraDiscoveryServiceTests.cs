@@ -122,7 +122,7 @@ public class AssistedCameraDiscoveryServiceTests
         }
         catch (OperationCanceledException) { }
         catch (System.Net.Sockets.SocketException) { }
-    });
+    }, ct);
 
     // Loop-accept helper: answers every request with the given raw HTTP response.
     private static Task RespondHttpAsync(TcpListener listener, string response, CancellationToken ct) => Task.Run(async () =>
@@ -141,7 +141,7 @@ public class AssistedCameraDiscoveryServiceTests
         }
         catch (OperationCanceledException) { }
         catch (System.Net.Sockets.SocketException) { }
-    });
+    }, ct);
 
     [Fact]
     public async Task DiscoverAsync_returns_http_candidate_with_tapo_hint()
@@ -247,7 +247,7 @@ public class AssistedCameraDiscoveryServiceTests
         }
         catch (OperationCanceledException) { }
         catch (System.Net.Sockets.SocketException) { }
-    });
+    }, ct);
 
     // ADR-32: an identified host that matches no protocol/vendor signal no longer disappears —
     // it now surfaces as a device_unknown "network_host" baseline candidate (backlog: "show

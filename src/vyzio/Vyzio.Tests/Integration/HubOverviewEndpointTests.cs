@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -85,7 +86,7 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
                 Camera = "front_door",
                 Label = "person",
                 Status = NotificationStatus.Sent,
-                SentAt = DateTimeOffset.Parse("2026-05-12T09:05:00+00:00")
+                SentAt = DateTimeOffset.Parse("2026-05-12T09:05:00+00:00", CultureInfo.InvariantCulture)
             });
 
             db.SaveChanges();
@@ -102,7 +103,7 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
             => Task.FromResult<IReadOnlyList<FrigateDetection>>(
             [
                 new FrigateDetection("frigate-hub-001", "front_door", "person", "Alice", 0.92f,
-                    DateTimeOffset.Parse("2026-05-12T09:00:00+00:00"), HasClip: true, HasSnapshot: true)
+                    DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture), HasClip: true, HasSnapshot: true)
             ]);
     }
 

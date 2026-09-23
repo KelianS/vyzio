@@ -187,6 +187,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         return caps;
     }
 
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     private static (float pan, float tilt) DirectionToVelocity(PtzDirection direction, int speed)
     {
         var s = Math.Clamp(speed / 100f, 0.1f, 1f);
@@ -233,4 +234,5 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         PtzDirection.DownRight => (1f, -1f),
         _                      => (0f,  0f),
     };
+#pragma warning restore format
 }

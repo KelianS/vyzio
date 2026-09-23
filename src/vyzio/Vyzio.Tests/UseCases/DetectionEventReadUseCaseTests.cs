@@ -1,3 +1,4 @@
+using System.Globalization;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -8,12 +9,12 @@ namespace Vyzio.Tests.UseCases;
 
 public abstract class DetectionReadTestBase
 {
-    protected readonly IFrigateEventReader Events = Substitute.For<IFrigateEventReader>();
-    protected readonly ICameraRepository Cameras = Substitute.For<ICameraRepository>();
-    protected readonly IProfileRepository Profiles = Substitute.For<IProfileRepository>();
-    protected readonly IProfileCameraLinkRepository Links = Substitute.For<IProfileCameraLinkRepository>();
+    protected IFrigateEventReader Events { get; } = Substitute.For<IFrigateEventReader>();
+    protected ICameraRepository Cameras { get; } = Substitute.For<ICameraRepository>();
+    protected IProfileRepository Profiles { get; } = Substitute.For<IProfileRepository>();
+    protected IProfileCameraLinkRepository Links { get; } = Substitute.For<IProfileCameraLinkRepository>();
 
-    protected readonly IRecordingSettingsRepository RecordingSettings =
+    protected IRecordingSettingsRepository RecordingSettings { get; } =
         Substitute.For<IRecordingSettingsRepository>();
 
     protected DetectionEventContractProjector Projector()
@@ -27,7 +28,7 @@ public abstract class DetectionReadTestBase
 
     protected static FrigateDetection Detection(string eventId, DateTimeOffset? occurredAt = null)
         => new(eventId, "front_door", "person", null, 0.9f,
-            occurredAt ?? DateTimeOffset.Parse("2026-05-10T10:15:00+00:00"),
+            occurredAt ?? DateTimeOffset.Parse("2026-05-10T10:15:00+00:00", CultureInfo.InvariantCulture),
             HasClip: true, HasSnapshot: true);
 }
 
@@ -103,14 +104,14 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     [Fact]
     public async Task Execute_offers_a_cursor_only_while_a_full_page_comes_back()
     {
-        var oldest = DateTimeOffset.Parse("2026-05-10T08:00:00+00:00");
+        var oldest = DateTimeOffset.Parse("2026-05-10T08:00:00+00:00", CultureInfo.InvariantCulture);
         Events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>())
             .Returns([Detection("frigate-001"), Detection("frigate-002", oldest)]);
 
         var page = await CreateSut().ExecuteAsync(new DetectionHistoryQuery(Limit: 2));
 
         Assert.Equal(2, page.Items.Count);
-        Assert.Equal(oldest.ToUnixTimeMilliseconds().ToString(), page.NextCursor);
+        Assert.Equal(oldest.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture), page.NextCursor);
     }
 
     [Fact]
@@ -127,10 +128,10 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     [Fact]
     public async Task Execute_reads_the_cursor_as_the_moment_to_read_before()
     {
-        var cursor = DateTimeOffset.Parse("2026-05-10T08:00:00+00:00");
+        var cursor = DateTimeOffset.Parse("2026-05-10T08:00:00+00:00", CultureInfo.InvariantCulture);
 
         await CreateSut().ExecuteAsync(
-            new DetectionHistoryQuery(Cursor: cursor.ToUnixTimeMilliseconds().ToString()));
+            new DetectionHistoryQuery(Cursor: cursor.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)));
 
         await Events.Received(1).QueryAsync(
             Arg.Is<FrigateDetectionQuery>(query => query.Before == cursor),

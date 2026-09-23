@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Notifications;
@@ -47,5 +48,5 @@ public class NotifyDetectionUseCaseTests
 
     private static FrigateDetection Detection(string eventId)
         => new(eventId, "front_door", "person", Identity: null, 0.97f,
-            DateTimeOffset.Parse("2026-05-12T09:00:00+00:00"), HasClip: true, HasSnapshot: true);
+            DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture), HasClip: true, HasSnapshot: true);
 }

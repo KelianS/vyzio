@@ -149,7 +149,7 @@ public sealed class VerifyCameraUseCase(
 
         // Only the scene this camera films is applied. Other scenes mean a multi-lens device, whose
         // extra lenses become cameras of their own through onboarding, never streams here (ADR-38).
-        var scene = scenes.FirstOrDefault();
+        var scene = scenes.Count > 0 ? scenes[0] : null;
         if (scene is null || scene.Streams.Count == 0)
         {
             return;
@@ -401,7 +401,7 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
         {
             camera.IsEnabled = true;
             camera.ValidationState = "validated";
-                camera.UpdatedAt = DateTimeOffset.UtcNow;
+            camera.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         var applyResult = await frigateConfigApplier.ApplyAsync(applicable, ct);

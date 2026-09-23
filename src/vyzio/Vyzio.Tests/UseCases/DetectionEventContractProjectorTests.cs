@@ -1,3 +1,4 @@
+using System.Globalization;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -35,7 +36,7 @@ public class DetectionEventContractProjectorTests
 
     private static FrigateDetection Detection(string eventId, string camera = "front_door", string? identity = null)
         => new(eventId, camera, "person", identity, 0.98f,
-            DateTimeOffset.Parse("2026-05-10T10:15:00+00:00"), HasClip: true, HasSnapshot: false);
+            DateTimeOffset.Parse("2026-05-10T10:15:00+00:00", CultureInfo.InvariantCulture), HasClip: true, HasSnapshot: false);
 
     [Fact]
     public async Task ToContract_names_the_camera_as_Vyzio_knows_it()

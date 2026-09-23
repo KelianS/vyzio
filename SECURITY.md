@@ -79,5 +79,8 @@ only as private as the network it sits on.
 
 The [Security workflow](.github/workflows/security.yml) runs on every push and pull request, and
 weekly: Semgrep static analysis, and a dependency audit on both the .NET and the frontend package
-trees. CodeQL on C# and TypeScript is configured in the same workflow and runs as soon as the
+trees. Each fails the build on what it finds, the frontend audit from high severity up. The
+[CI workflow](.github/workflows/ci.yml) scans both images with Trivy and fails on a high or critical
+finding. [Dependabot](.github/dependabot.yml) proposes updates for every dependency ecosystem,
+base images included, as pull requests. CodeQL on C# and TypeScript is configured in the same workflow and runs as soon as the
 repository is public, which is what its free tier requires.

@@ -77,6 +77,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
     internal static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
     {
         var s = Math.Clamp(speed, 1, 100);
+#pragma warning disable format // Aligned as a table so each row reads against the others.
         return direction switch
         {
             PtzDirection.Up        => (0,  s),
@@ -89,6 +90,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
             PtzDirection.DownRight => (s,  -s),
             _                      => (0,  0),
         };
+#pragma warning restore format
     }
 
     private async Task<KlapSession?> AuthenticateAsync(Camera camera, CancellationToken ct)

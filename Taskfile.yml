@@ -122,6 +122,18 @@ tasks:
     cmds:
       - dotnet build {{.BACKEND_SLN}}
 
+  back:format:
+    desc: Formats the backend to .editorconfig (dotnet format whitespace)
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - dotnet format whitespace {{.BACKEND_SLN}}
+
+  back:format:check:
+    desc: Checks the backend formatting without changing it
+    dir: '{{.BACKEND_DIR}}'
+    cmds:
+      - dotnet format whitespace {{.BACKEND_SLN}} --verify-no-changes
+
   back:run:
     desc: Lance l'API backend en local (hors docker)
     dir: '{{.BACKEND_DIR}}/Vyzio.Api'
@@ -143,14 +155,16 @@ tasks:
       - task: front:build
 
   lint:
-    desc: Lint le frontend (le backend n'a pas de linter dedie)
+    desc: Lints the frontend (ESLint) and checks the backend formatting; backend analyzers run in the build
     cmds:
       - task: front:lint
+      - task: back:format:check
 
   # Steps of the backend and frontend jobs of ci.yml, in their order; the image build stays CI-only.
   check:
     desc: Runs the backend and frontend CI checks locally, e2e included
     cmds:
+      - task: back:format:check
       - task: back:test
       - task: front:typecheck
       - task: front:lint

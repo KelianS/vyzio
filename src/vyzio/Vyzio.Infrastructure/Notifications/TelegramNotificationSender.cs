@@ -32,9 +32,9 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
         var response = (notification.Photo, notification.Video) switch
         {
             ({ } photo, { } video) => await SendMediaGroupAsync(photo, video, caption, botToken, chatId, ct),
-            (null, { } video)      => await SendVideoAsync(video, caption, botToken, chatId, ct),
-            ({ } photo, null)      => await SendPhotoAsync(photo, caption, botToken, chatId, ct),
-            _                      => await SendTextAsync(caption, botToken, chatId, ct)
+            (null, { } video) => await SendVideoAsync(video, caption, botToken, chatId, ct),
+            ({ } photo, null) => await SendPhotoAsync(photo, caption, botToken, chatId, ct),
+            _ => await SendTextAsync(caption, botToken, chatId, ct)
         };
 
         using (response)

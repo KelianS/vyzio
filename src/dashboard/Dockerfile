@@ -1,4 +1,4 @@
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
 WORKDIR /app
 
 RUN corepack enable pnpm
@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile
 COPY src/dashboard/ .
 RUN pnpm build
 
-FROM nginxinc/nginx-unprivileged:alpine AS runtime
+FROM nginxinc/nginx-unprivileged:alpine@sha256:6a23acdfca2b9cfbcec61419e3f1426bcbedb91362f2f19306a8567423bb4612 AS runtime
 
 # The revision is the one thing an operator cannot recover from the image otherwise: a version tag
 # is a name someone chose, a commit is what actually built. Defaults keep a local build working.

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
@@ -60,7 +61,7 @@ public static class SessionAuthentication
 
         if (id is null
             || !SnakeCaseEnum.TryFromSnakeCase<AccountRole>(role, out var parsed)
-            || !DateTimeOffset.TryParse(expiry, out var expiresAt)) return null;
+            || !DateTimeOffset.TryParse(expiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var expiresAt)) return null;
 
         return new AuthenticatedSession(id, parsed, expiresAt);
     }

@@ -35,6 +35,7 @@ public sealed class DetectionMessageFormatter(TimeZoneInfo timeZone)
         return new ChannelMessage($"{emoji} {subject}", details);
     }
 
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     private static string LabelEmoji(string label) => label.ToLowerInvariant() switch
     {
         "person"       => "🚶",
@@ -50,4 +51,5 @@ public sealed class DetectionMessageFormatter(TimeZoneInfo timeZone)
         "deer"         => "🦌",
         _              => "📡"
     };
+#pragma warning restore format
 }

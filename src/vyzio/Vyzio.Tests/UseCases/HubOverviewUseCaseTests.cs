@@ -1,3 +1,4 @@
+using System.Globalization;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -58,7 +59,7 @@ public class GetHubOverviewUseCaseTests
         _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns(
         [
             new FrigateDetection("frigate-1", "front_door", "person", "Alice", 0.9f,
-                DateTimeOffset.Parse("2026-05-12T10:00:00+00:00"), HasClip: true, HasSnapshot: true)
+                DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), HasClip: true, HasSnapshot: true)
         ]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -67,7 +68,7 @@ public class GetHubOverviewUseCaseTests
         ]);
         _notifications.CountSentAsync(Arg.Any<CancellationToken>()).Returns(3);
         _notifications.GetLastSentAtAsync(Arg.Any<CancellationToken>())
-            .Returns(DateTimeOffset.Parse("2026-05-12T10:30:00+00:00"));
+            .Returns(DateTimeOffset.Parse("2026-05-12T10:30:00+00:00", CultureInfo.InvariantCulture));
         _channelConfigs.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
             new NotificationChannelConfig

@@ -98,6 +98,7 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     // Fix: swap the Left/Right DVRIP command names (and their diagonal combinations) rather
     // than the PtzDirection the UI sends — the mismatch is between Vyzio's direction and this
     // camera's motor wiring/mount, not the DVRIP command names themselves.
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     internal static string DirectionToCommand(PtzDirection direction) => direction switch
     {
         PtzDirection.Up        => "DirectionUp",
@@ -110,4 +111,5 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
         PtzDirection.DownRight => "DirectionLeftDown",
         _                      => "DirectionUp"
     };
+#pragma warning restore format
 }

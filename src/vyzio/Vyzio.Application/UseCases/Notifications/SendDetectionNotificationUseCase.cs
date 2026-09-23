@@ -220,7 +220,7 @@ public sealed class SendDetectionNotificationUseCase(
         label.ToLowerInvariant() switch
         {
             "person" or "face" => string.IsNullOrWhiteSpace(identity) ? "person_unknown" : "person_known",
-            var other          => other
+            var other => other
         };
 
     internal static bool IsLabelAllowed(string label, string? identity, IReadOnlySet<string> allowedLabels)
