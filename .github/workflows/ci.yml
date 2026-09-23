@@ -205,7 +205,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Build API image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: src/vyzio/Vyzio.Api/Dockerfile
@@ -221,7 +221,7 @@ jobs:
         run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-api:ci
 
       - name: Build dashboard image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: src/dashboard/Dockerfile
