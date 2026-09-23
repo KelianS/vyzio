@@ -127,6 +127,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<Services.RemoteCommandListenerService>();
 
         // System
+        services.AddScoped<FrigateStatusReader>();
         services.AddScoped<GetSystemStatsUseCase>();
         services.AddScoped<GetRecordingSettingsUseCase>();
         services.AddScoped<SaveRecordingSettingsUseCase>();

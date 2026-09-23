@@ -342,6 +342,12 @@ Three properties hold the security of this split: **a single entry point** for t
 authentication boundary** behind which everything sits (ADR-54), and **Frigate never directly
 reachable**, everything going through the Vyzio proxy (ADR-07/16/17).
 
+`vyzio-api` answers two anonymous probes, which say nothing but a status word per dependency
+([`HealthEndpoints`](../src/vyzio/Vyzio.Api/Health/HealthEndpoints.cs)). **Liveness** (`/health`) is
+the process alone: it is what the container healthcheck reads, so a Frigate restart never marks the API
+unhealthy, and it is the only one the dashboard relays. **Readiness** (`/health/ready`) checks the
+database, the bus and Frigate, and stays on the Docker network ([`nginx.conf`](../src/dashboard/nginx.conf)) (ADR-55).
+
 The split concentrates rather than divides privilege: `vyzio-api` is the container that speaks to the
 cameras and the one that can restart anything on the host. The command it runs to do so is read once
 from the environment at startup and is never writable through the API, so no request can choose it.

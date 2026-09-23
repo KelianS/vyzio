@@ -165,12 +165,13 @@ public class RemoteCommandListenerServiceTests
     public async Task StopAsync_ShouldEndTheLoop_WhenTheHostShutsDownDuringTheBackOff()
     {
         // Arrange
-        var logger = new FirstErrorLogger<RemoteCommandListenerService>();
+        var logger = new LogSignal<RemoteCommandListenerService>();
+        var failed = logger.Reached(LogLevel.Error);
         _configs.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns<IReadOnlyList<NotificationChannelConfig>>(_ => throw new InvalidOperationException("database is locked"));
         var sut = CreateSut(logger);
         await sut.StartAsync(CancellationToken.None);
-        await logger.Logged.ObservedAsync();
+        await failed.ObservedAsync();
 
         // Act
         await sut.StopWithinGuardAsync();

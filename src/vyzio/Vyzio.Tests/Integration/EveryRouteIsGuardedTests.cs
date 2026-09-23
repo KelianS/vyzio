@@ -15,13 +15,14 @@ public class EveryRouteIsGuardedTests : IClassFixture<AccessApiFactory>
     private readonly AccessApiFactory _factory;
 
     /// <summary>
-    /// The only doors that open to a stranger, each for a stated reason: the container probe, and the
+    /// The only doors that open to a stranger, each for a stated reason: the liveness and readiness probes, and the
     /// routes one needs before being able to sign in at all. Nothing else belongs here.
     /// </summary>
     private static readonly HashSet<string> Anonymous =
     [
         "/",
         "/health",
+        "/health/ready",
         "/api/access/state",
         "POST /api/access/account",
         "POST /api/access/session",

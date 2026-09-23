@@ -16,7 +16,8 @@ public class GetSystemStatsUseCaseTests
 
     public GetSystemStatsUseCaseTests()
     {
-        _sut = new GetSystemStatsUseCase(_statsProvider, _restartTracker, _cameras, _detectorPlanner, _configApplier);
+        _sut = new GetSystemStatsUseCase(
+            new FrigateStatusReader(_statsProvider, _restartTracker), _cameras, _detectorPlanner, _configApplier);
     }
 
     [Fact]

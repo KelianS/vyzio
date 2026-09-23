@@ -5,8 +5,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.Monitoring;
 
 public sealed class GetSystemStatsUseCase(
-    IFrigateStatsProvider statsProvider,
-    IFrigateRestartTracker restartTracker,
+    FrigateStatusReader frigate,
     ICameraRepository cameras,
     IFrigateDetectorPlanner detectorPlanner,
     IFrigateConfigApplier configApplier)
@@ -15,15 +14,10 @@ public sealed class GetSystemStatsUseCase(
     {
         var detection = await ResolveDetectionConfigAsync(ct);
         var pendingChanges = configApplier.HasPendingChanges;
-        var stats = await statsProvider.TryGetStatsAsync(ct);
+        var (status, stats) = await frigate.ReadAsync(ct);
 
         if (stats is null)
-        {
-            var status = restartTracker.IsRestarting ? FrigateStatus.Restarting : FrigateStatus.Unavailable;
             return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(status), Storage: null, Cameras: [], detection, pendingChanges);
-        }
-
-        restartTracker.MarkRestartComplete();
 
         StorageStatsDto? storage = null;
         if (stats.Storage is { } s)
@@ -33,7 +27,7 @@ public sealed class GetSystemStatsUseCase(
             .Select(c => new CameraFpsDto(c.Camera, c.Fps))
             .ToList();
 
-        return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(FrigateStatus.Active), storage, cameraFps, detection, pendingChanges);
+        return new SystemStatsDto(SnakeCaseEnum.ToSnakeCase(status), storage, cameraFps, detection, pendingChanges);
     }
 
     private async Task<DetectionConfigDto> ResolveDetectionConfigAsync(CancellationToken ct)

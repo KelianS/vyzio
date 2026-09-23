@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -59,12 +60,14 @@ internal static class BackgroundLoop
     }
 }
 
-// Completes when the service logs its first error, so a test can act once a failure has been handled.
-internal sealed class FirstErrorLogger<T> : ILogger<T>
+// Signals when the service first logs at a level, so a test acts once a milestone or a failure is behind it.
+internal sealed class LogSignal<T> : ILogger<T>
 {
-    private readonly TaskCompletionSource _logged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly ConcurrentDictionary<LogLevel, TaskCompletionSource> _reached = new();
 
-    public Task Logged => _logged.Task;
+    // Ask before starting the service: a level logged earlier is not remembered.
+    public Task Reached(LogLevel level) =>
+        _reached.GetOrAdd(level, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -73,6 +76,9 @@ internal sealed class FirstErrorLogger<T> : ILogger<T>
     public void Log<TState>(LogLevel logLevel, EventId eventId,
         TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
-        if (logLevel >= LogLevel.Error) _logged.TrySetResult();
+        foreach (var (level, reached) in _reached)
+        {
+            if (logLevel >= level) reached.TrySetResult();
+        }
     }
 }
