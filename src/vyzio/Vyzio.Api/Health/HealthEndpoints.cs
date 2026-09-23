@@ -11,6 +11,8 @@ namespace Vyzio.Api.Health;
 public static class HealthEndpoints
 {
     private const string Readiness = "ready";
+    internal const string Starting = "starting";
+    internal const string Restarting = "restarting";
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(3);
 
     public static IServiceCollection AddVyzioHealthChecks(this IServiceCollection services)
@@ -39,16 +41,28 @@ public static class HealthEndpoints
         }).WithMetadata(new HttpMethodMetadata(["GET"])).AllowAnonymous();
     }
 
-    // Status words only: a probe anyone on the network can call must not describe the installation.
+    // Words from a closed list only: a probe anyone on the network can call must not describe the installation.
     private static Task WriteAsync(HttpContext context, HealthReport report)
     {
         context.Response.ContentType = "application/json";
         return context.Response.WriteAsync(JsonSerializer.Serialize(new
         {
             status = Word(report.Status),
-            checks = report.Entries.ToDictionary(entry => entry.Key, entry => Word(entry.Value.Status)),
+            checks = report.Entries.ToDictionary(entry => entry.Key, entry => State(entry.Value)),
         }));
     }
+
+    // The framework fills the description with the exception message when a check throws or times out.
+    private static string State(HealthReportEntry entry) => entry.Description switch
+    {
+        Starting or Restarting => entry.Description,
+        _ => entry.Status switch
+        {
+            HealthStatus.Healthy => "ok",
+            HealthStatus.Degraded => "degraded",
+            _ => "unavailable",
+        },
+    };
 
     private static string Word(HealthStatus status) => status switch
     {
@@ -61,7 +75,12 @@ public static class HealthEndpoints
 internal sealed class MqttHealthCheck(FrigateMqttConnection connection) : IHealthCheck
 {
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) =>
-        Task.FromResult(connection.IsSubscribed ? HealthCheckResult.Healthy() : HealthCheckResult.Unhealthy());
+        Task.FromResult(connection.State switch
+        {
+            FrigateMqttState.Subscribed => HealthCheckResult.Healthy(),
+            FrigateMqttState.Starting => HealthCheckResult.Unhealthy(HealthEndpoints.Starting),
+            _ => HealthCheckResult.Unhealthy(),
+        });
 }
 
 // A restart Vyzio asked for is degraded, not down (ADR-33).
@@ -73,7 +92,7 @@ internal sealed class FrigateHealthCheck(FrigateStatusReader frigate) : IHealthC
         return status switch
         {
             FrigateStatus.Active => HealthCheckResult.Healthy(),
-            FrigateStatus.Restarting => HealthCheckResult.Degraded(),
+            FrigateStatus.Restarting => HealthCheckResult.Degraded(HealthEndpoints.Restarting),
             _ => HealthCheckResult.Unhealthy(),
         };
     }

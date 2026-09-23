@@ -157,7 +157,7 @@ public sealed class FrigateMqttIngressServiceTests : IAsyncDisposable
         var sut = CreateSut(logger);
         await sut.StartAsync(CancellationToken.None);
         await subscribed.ObservedAsync();
-        var wasSubscribed = _connection.IsSubscribed;
+        var before = _connection.State;
 
         // Act
         await _broker!.StopAsync();
@@ -165,8 +165,8 @@ public sealed class FrigateMqttIngressServiceTests : IAsyncDisposable
         await sut.StopAsync(CancellationToken.None);
 
         // Assert
-        Assert.True(wasSubscribed);
-        Assert.False(_connection.IsSubscribed);
+        Assert.Equal(FrigateMqttState.Subscribed, before);
+        Assert.Equal(FrigateMqttState.Lost, _connection.State);
     }
 
     [Fact]

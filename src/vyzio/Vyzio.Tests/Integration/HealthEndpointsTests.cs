@@ -19,7 +19,7 @@ namespace Vyzio.Tests.Integration;
 public sealed class HealthEndpointsTests : IClassFixture<HealthApiFactory>
 {
     private static readonly FrigateStats Running = new(null, []);
-    private static readonly string[] StatusWords = ["healthy", "degraded", "unhealthy"];
+    private static readonly string[] States = ["ok", "starting", "restarting", "degraded", "unavailable"];
 
     private readonly HealthApiFactory _factory;
 
@@ -66,9 +66,9 @@ public sealed class HealthEndpointsTests : IClassFixture<HealthApiFactory>
         // Assert
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.Equal("healthy", body.GetProperty("status").GetString());
-        Assert.Equal("healthy", Check(body, "database"));
-        Assert.Equal("healthy", Check(body, "mqtt"));
-        Assert.Equal("healthy", Check(body, "frigate"));
+        Assert.Equal("ok", Check(body, "database"));
+        Assert.Equal("ok", Check(body, "mqtt"));
+        Assert.Equal("ok", Check(body, "frigate"));
     }
 
     [Fact]
@@ -82,7 +82,22 @@ public sealed class HealthEndpointsTests : IClassFixture<HealthApiFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.ServiceUnavailable, status);
-        Assert.Equal("unhealthy", Check(body, "mqtt"));
+        Assert.Equal("unavailable", Check(body, "mqtt"));
+    }
+
+    [Fact]
+    public async Task GetReadiness_ShouldSayStarting_WhenTheBrokerHasNotAnsweredSinceStartup()
+    {
+        // Arrange
+        using var factory = new HealthApiFactory();
+        factory.Stats.TryGetStatsAsync(Arg.Any<CancellationToken>()).Returns(Running);
+
+        // Act
+        var (status, body) = await GetAsync(factory, "/health/ready");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, status);
+        Assert.Equal("starting", Check(body, "mqtt"));
     }
 
     [Fact]
@@ -96,7 +111,7 @@ public sealed class HealthEndpointsTests : IClassFixture<HealthApiFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.ServiceUnavailable, status);
-        Assert.Equal("unhealthy", Check(body, "frigate"));
+        Assert.Equal("unavailable", Check(body, "frigate"));
     }
 
     [Fact]
@@ -112,7 +127,7 @@ public sealed class HealthEndpointsTests : IClassFixture<HealthApiFactory>
         // Assert
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.Equal("degraded", body.GetProperty("status").GetString());
-        Assert.Equal("degraded", Check(body, "frigate"));
+        Assert.Equal("restarting", Check(body, "frigate"));
     }
 
     [Fact]
@@ -133,23 +148,26 @@ public sealed class HealthEndpointsTests : IClassFixture<HealthApiFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.ServiceUnavailable, status);
-        Assert.Equal("unhealthy", Check(body, "database"));
+        Assert.Equal("unavailable", Check(body, "database"));
     }
 
     [Fact]
-    public async Task GetReadiness_ShouldSayNothingButStatuses_WhenAStrangerAsks()
+    public async Task GetReadiness_ShouldSayNothingButStateWords_WhenACheckFailsWithAMessage()
     {
         // Arrange
         _factory.Mqtt.Lost();
+        _factory.Stats.TryGetStatsAsync(Arg.Any<CancellationToken>())
+            .Returns<FrigateStats?>(_ => throw new HttpRequestException("Connection refused (frigate:5000)"));
 
         // Act
         var (_, body) = await GetAsync(_factory, "/health/ready");
 
         // Assert
         Assert.Equal(["status", "checks"], body.EnumerateObject().Select(property => property.Name));
+        Assert.Equal("unavailable", Check(body, "frigate"));
         Assert.All(
             body.GetProperty("checks").EnumerateObject(),
-            check => Assert.Contains(check.Value.GetString(), StatusWords));
+            check => Assert.Contains(check.Value.GetString(), States));
     }
 }
 

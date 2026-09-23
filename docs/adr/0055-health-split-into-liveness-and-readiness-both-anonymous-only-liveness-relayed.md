@@ -47,9 +47,12 @@ needs a decision and not just a route.
   bounded time, and answers `503` when one of them is down. Frigate reads on three levels, with the same
   rule as the hub ([ADR-33](0033-detection-engine-status-exposed-on-the-hub.md)): a restart Vyzio asked
   for is *degraded*, silence otherwise is *down*.
-- **Both are anonymous and say nothing but a status word per dependency**: no version, no host, no
-  error message, no exception. What an anonymous caller learns is that a dependency is down, which
-  reveals no image, no setting and no secret.
+- **Both are anonymous and say nothing but one word per dependency, from a closed list**: `ok`,
+  `starting` (the first attempt since startup has not concluded), `restarting` (a restart Vyzio asked
+  for), `unavailable`. No version, no host, no error message, no exception: the framework puts the
+  exception message in a check's description, so a description outside the list is never written.
+  What an anonymous caller learns is whether a dependency is up, coming up or down, which reveals no
+  image, no setting and no secret. The overall status and the HTTP code stay the framework's own.
 - **Only liveness leaves the Docker network** of the production stack. The dashboard relays `/health`
   exactly and nothing under it ([nginx.conf](../../src/dashboard/nginx.conf)), and the API publishes no
   port there, so `/health/ready` is reached from inside that network only (a `docker exec` on the host,
