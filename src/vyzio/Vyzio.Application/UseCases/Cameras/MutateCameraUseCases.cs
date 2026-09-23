@@ -401,7 +401,7 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
         {
             camera.IsEnabled = true;
             camera.ValidationState = "validated";
-                camera.UpdatedAt = DateTimeOffset.UtcNow;
+            camera.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         var applyResult = await frigateConfigApplier.ApplyAsync(applicable, ct);

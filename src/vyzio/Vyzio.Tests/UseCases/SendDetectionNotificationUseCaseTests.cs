@@ -263,6 +263,7 @@ public class SendDetectionNotificationUseCaseTests
         Assert.False(sent);
     }
 
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     [Theory]
     [InlineData(8, 22, 10, true)]
     [InlineData(8, 22, 7,  false)]
@@ -274,6 +275,7 @@ public class SendDetectionNotificationUseCaseTests
     [InlineData(8, null, 10, true)]
     public void IsWithinActiveHours_applies_schedule_correctly(int? from, int? to, int hour, bool expected)
         => Assert.Equal(expected, SendDetectionNotificationUseCase.IsWithinActiveHours(hour, from, to));
+#pragma warning restore format
 
     private static DateTimeOffset LocalTime(int year, int month, int day, int hour, int minute) =>
         new(year, month, day, hour, minute, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(year, month, day, hour, minute, 0)));
@@ -297,6 +299,7 @@ public class SendDetectionNotificationUseCaseTests
 
 public class LabelRoutingTests
 {
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     [Theory]
     [InlineData("person", null,    "person_unknown")]
     [InlineData("person", "",      "person_unknown")]
@@ -329,6 +332,7 @@ public class LabelRoutingTests
         var allowedSet = new HashSet<string>(allowed, StringComparer.OrdinalIgnoreCase);
         Assert.Equal(expected, SendDetectionNotificationUseCase.IsLabelAllowed(label, identity, allowedSet));
     }
+#pragma warning restore format
 }
 
 public class DetectionMessageFormatterTests

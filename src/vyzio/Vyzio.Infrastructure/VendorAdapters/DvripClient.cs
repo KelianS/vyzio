@@ -265,7 +265,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
     private static void WriteInt32Le(byte[] buf, int offset, int value)
     {
-        buf[offset]     = (byte)value;
+        buf[offset] = (byte)value;
         buf[offset + 1] = (byte)(value >> 8);
         buf[offset + 2] = (byte)(value >> 16);
         buf[offset + 3] = (byte)(value >> 24);
@@ -273,7 +273,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
     private static void WriteInt16Le(byte[] buf, int offset, short value)
     {
-        buf[offset]     = (byte)value;
+        buf[offset] = (byte)value;
         buf[offset + 1] = (byte)(value >> 8);
     }
 

@@ -50,7 +50,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
                 }
                 break;
 
-            // None / SoftwareBlur → Frigate only, no vendor call.
+                // None / SoftwareBlur → Frigate only, no vendor call.
         }
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;

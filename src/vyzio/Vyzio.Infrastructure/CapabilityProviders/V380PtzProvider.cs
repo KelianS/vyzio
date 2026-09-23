@@ -31,6 +31,7 @@ internal sealed class V380PtzProvider(
     // Direction mapping confirmed by physical testing — inverted from prsyahmi/v380 source labels:
     //   pan:  1002 (0x03EA) = RIGHT on screen, 1001 (0x03E9) = LEFT
     //   tilt: 1003 (0x03EB) = UP,              1004 (0x03EC) = DOWN
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     private static ReadOnlySpan<byte> Stop      => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xE8,0x03,0xE8,0x03, 0x00,0x00,0x01,0x00];
     private static ReadOnlySpan<byte> Right     => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xEA,0x03,0xE8,0x03, 0x00,0x00,0x01,0x00];
     private static ReadOnlySpan<byte> Left      => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xE9,0x03,0xE8,0x03, 0x00,0x00,0x01,0x00];
@@ -40,6 +41,7 @@ internal sealed class V380PtzProvider(
     private static ReadOnlySpan<byte> UpLeft    => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xE9,0x03,0xEB,0x03, 0x00,0x00,0x01,0x00];
     private static ReadOnlySpan<byte> DownRight => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xEA,0x03,0xEC,0x03, 0x00,0x00,0x01,0x00];
     private static ReadOnlySpan<byte> DownLeft  => [0xAA,0x00,0x00,0x00, 0xE8,0x03,0xE8,0x03, 0xE9,0x03,0xEC,0x03, 0x00,0x00,0x01,0x00];
+#pragma warning restore format
 
     public SupportedProtocol Protocol => SupportedProtocol.V380;
 
@@ -128,6 +130,7 @@ internal sealed class V380PtzProvider(
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
+#pragma warning disable format // Aligned as a table so each row reads against the others.
     private static (int dx, int dy) DirectionToDelta(PtzDirection direction) => direction switch
     {
         PtzDirection.Up        => ( 0, -1),
@@ -153,4 +156,5 @@ internal sealed class V380PtzProvider(
         PtzDirection.DownRight => DownRight,
         _                      => Stop,
     };
+#pragma warning restore format
 }
