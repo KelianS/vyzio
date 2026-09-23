@@ -8,6 +8,7 @@ namespace Vyzio.Application.Services;
 
 internal sealed class CameraReachabilityPollerService(
     IServiceScopeFactory scopeFactory,
+    TimeProvider time,
     ILogger<CameraReachabilityPollerService> logger) : BackgroundService
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(60);
@@ -16,12 +17,24 @@ internal sealed class CameraReachabilityPollerService(
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        await Task.Delay(StartupDelay, ct);
+        await Task.Delay(StartupDelay, time, ct);
 
         while (!ct.IsCancellationRequested)
         {
-            await PollAllAsync(ct);
-            await Task.Delay(PollInterval, ct);
+            try
+            {
+                await PollAllAsync(ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Camera reachability poll failed; will retry next interval.");
+            }
+
+            await Task.Delay(PollInterval, time, ct);
         }
     }
 
@@ -46,18 +59,18 @@ internal sealed class CameraReachabilityPollerService(
                     camera.Id, camera.Host, camera.Port, camera.Status, newStatus);
 
                 camera.Status = newStatus;
-                camera.LastReachabilityCheckAt = DateTimeOffset.UtcNow;
+                camera.LastReachabilityCheckAt = time.GetUtcNow();
                 await cameras.UpdateAsync(camera, ct);
             }
         }
     }
 
-    private static async Task<string> ProbeAsync(string host, int port, CancellationToken appCt)
+    private async Task<string> ProbeAsync(string host, int port, CancellationToken appCt)
     {
         try
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(appCt);
-            cts.CancelAfter(TcpTimeout);
+            using var timeout = new CancellationTokenSource(TcpTimeout, time);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(appCt, timeout.Token);
             using var tcp = new TcpClient();
             await tcp.ConnectAsync(host, port, cts.Token);
             return "online";

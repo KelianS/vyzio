@@ -38,7 +38,7 @@ public class ChannelListeningTests
     [Fact]
     public void A_channel_nobody_started_listening_on_says_so()
     {
-        var dto = new GetChannelListeningUseCase(Catalog(), new ChannelListenerHealth())
+        var dto = new GetChannelListeningUseCase(Catalog(), new ChannelListenerHealth(TimeProvider.System))
             .Execute(NotificationChannel.Telegram);
 
         Assert.NotNull(dto);
@@ -49,7 +49,7 @@ public class ChannelListeningTests
     [Fact]
     public void An_interrupted_loop_reads_as_silent_and_says_why()
     {
-        var health = new ChannelListenerHealth();
+        var health = new ChannelListenerHealth(TimeProvider.System);
         health.Started(NotificationChannel.Telegram);
         health.Interrupted(NotificationChannel.Telegram, "No such host is known.");
 
@@ -64,7 +64,7 @@ public class ChannelListeningTests
     [Fact]
     public void A_loop_that_comes_back_keeps_the_trace_of_the_interruption()
     {
-        var health = new ChannelListenerHealth();
+        var health = new ChannelListenerHealth(TimeProvider.System);
         health.Interrupted(NotificationChannel.Telegram, "Network unreachable.");
         health.Started(NotificationChannel.Telegram);
 
@@ -79,7 +79,7 @@ public class ChannelListeningTests
     [Fact]
     public void Rounds_that_keep_coming_back_do_not_restart_the_clock()
     {
-        var health = new ChannelListenerHealth();
+        var health = new ChannelListenerHealth(TimeProvider.System);
         health.Started(NotificationChannel.Telegram);
         var since = health.StateOf(NotificationChannel.Telegram).Since;
 
@@ -91,7 +91,7 @@ public class ChannelListeningTests
     [Fact]
     public void A_channel_taken_down_on_purpose_stops_claiming_anything()
     {
-        var health = new ChannelListenerHealth();
+        var health = new ChannelListenerHealth(TimeProvider.System);
         health.Started(NotificationChannel.Telegram);
         health.Stopped(NotificationChannel.Telegram);
 
@@ -101,7 +101,7 @@ public class ChannelListeningTests
     [Fact]
     public void A_channel_that_cannot_listen_has_nothing_to_show()
     {
-        var dto = new GetChannelListeningUseCase(Catalog(), new ChannelListenerHealth())
+        var dto = new GetChannelListeningUseCase(Catalog(), new ChannelListenerHealth(TimeProvider.System))
             .Execute(NotificationChannel.Discord);
 
         Assert.Null(dto);

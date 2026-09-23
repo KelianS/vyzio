@@ -13,6 +13,7 @@ internal sealed class MotionSensitivityTunerService(
     IServiceScopeFactory scopeFactory,
     MotionSensitivityTuner tuner,
     MotionTuningOptions options,
+    TimeProvider time,
     ILogger<MotionSensitivityTunerService> logger) : BackgroundService
 {
     // Frigate's fps figures are rolling averages; sampling before it has served frames for a while
@@ -33,7 +34,7 @@ internal sealed class MotionSensitivityTunerService(
             options.SampleInterval, options.AggregationPercentile, options.AggregationWindow,
             options.MinimumWindowCoverage);
 
-        await Task.Delay(StartupDelay, ct);
+        await Task.Delay(StartupDelay, time, ct);
 
         while (!ct.IsCancellationRequested)
         {
@@ -50,7 +51,7 @@ internal sealed class MotionSensitivityTunerService(
                 logger.LogError(ex, "Motion sensitivity tuning pass failed; will retry next interval.");
             }
 
-            await Task.Delay(options.SampleInterval, ct);
+            await Task.Delay(options.SampleInterval, time, ct);
         }
     }
 
@@ -70,7 +71,7 @@ internal sealed class MotionSensitivityTunerService(
         var byName = stats.Cameras.ToDictionary(c => c.Camera, StringComparer.OrdinalIgnoreCase);
         var cameras = scope.ServiceProvider.GetRequiredService<ICameraRepository>();
         var publisher = scope.ServiceProvider.GetRequiredService<IFrigateMotionSettingsPublisher>();
-        var now = DateTimeOffset.UtcNow;
+        var now = time.GetUtcNow();
 
         foreach (var camera in await cameras.GetAllAsync(ct))
         {

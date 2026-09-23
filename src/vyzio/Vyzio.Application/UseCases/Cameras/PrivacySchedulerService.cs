@@ -11,6 +11,7 @@ namespace Vyzio.Application.UseCases.Cameras;
 public sealed class PrivacySchedulerService(
     IServiceScopeFactory scopeFactory,
     TimeZoneInfo timeZone,
+    TimeProvider time,
     ILogger<PrivacySchedulerService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -29,11 +30,11 @@ public sealed class PrivacySchedulerService(
             }
 
             // Wait until the start of the next minute
-            var now = DateTimeOffset.UtcNow;
+            var now = time.GetUtcNow();
             var nextMinute = now.AddSeconds(60 - now.Second).AddMilliseconds(-now.Millisecond);
-            var delay = nextMinute - DateTimeOffset.UtcNow;
+            var delay = nextMinute - time.GetUtcNow();
             if (delay > TimeSpan.Zero)
-                await Task.Delay(delay, stoppingToken);
+                await Task.Delay(delay, time, stoppingToken);
         }
     }
 
@@ -44,7 +45,7 @@ public sealed class PrivacySchedulerService(
         var cameraRepo = scope.ServiceProvider.GetRequiredService<ICameraRepository>();
         var toggleUseCase = scope.ServiceProvider.GetRequiredService<ToggleCameraPrivacyModeUseCase>();
 
-        var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, timeZone);
+        var now = TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone);
         var currentDay = (int)now.DayOfWeek;
         var currentTime = now.TimeOfDay;
 

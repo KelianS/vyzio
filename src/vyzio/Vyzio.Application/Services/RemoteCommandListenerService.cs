@@ -15,6 +15,7 @@ internal sealed class RemoteCommandListenerService(
     IChannelCommandReceiverCatalog receivers,
     IServiceScopeFactory scopeFactory,
     IChannelListenerHealth health,
+    TimeProvider time,
     ILogger<RemoteCommandListenerService> logger) : BackgroundService
 {
     private static readonly TimeSpan ReconciliationInterval = TimeSpan.FromSeconds(10);
@@ -31,7 +32,7 @@ internal sealed class RemoteCommandListenerService(
             try
             {
                 await ReconcileAsync(ct);
-                await Task.Delay(ReconciliationInterval, ct);
+                await Task.Delay(ReconciliationInterval, time, ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -40,7 +41,14 @@ internal sealed class RemoteCommandListenerService(
             catch (Exception exception)
             {
                 logger.LogError(exception, "Could not reconcile the inbound channels.");
-                await Task.Delay(ReconciliationInterval, CancellationToken.None);
+                try
+                {
+                    await Task.Delay(ReconciliationInterval, time, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
         }
 
@@ -126,7 +134,7 @@ internal sealed class RemoteCommandListenerService(
                 logger.LogWarning(exception, "The command loop of {Channel} was interrupted.", receiver.Channel);
                 try
                 {
-                    await Task.Delay(RetryDelay, ct);
+                    await Task.Delay(RetryDelay, time, ct);
                 }
                 catch (OperationCanceledException)
                 {
