@@ -8,7 +8,7 @@ services:
       - "127.0.0.1:8554:8554"
 
   mock-camera:
-    image: jrottenberg/ffmpeg:7.1-alpine
+    image: jrottenberg/ffmpeg:9.0-alpine
     container_name: vyzio-mock-camera
     depends_on:
       - mediamtx
