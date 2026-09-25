@@ -12,6 +12,7 @@ import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/Settings/settings.ru
 import { RestartSurveillanceTrigger } from './presentation/Surveillance/RestartSurveillanceTrigger'
 import { NavigationGuard } from './presentation/Navigation/NavigationGuard'
 import { AccessGate } from './presentation/Access/AccessGate'
+import { useCameraListFailureToast } from './presentation/Cameras/useCameraListFailureToast'
 
 const HubView = lazy(() =>
   import('./presentation/Hub/Hub.Component').then((m) => ({ default: m.HubView })),
@@ -109,6 +110,7 @@ const ExpertView = lazy(() =>
 function AppShell() {
   const { hub, cameras } = useAppContainer()
   useSystemStatsPolling(hub.getSystemStats)
+  useCameraListFailureToast()
 
   // The camera catalogue is state shared between screens, so it loads here rather
   // than in whichever screen happened to need it first. Without that, opening the

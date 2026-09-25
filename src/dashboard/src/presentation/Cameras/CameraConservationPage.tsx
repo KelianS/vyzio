@@ -21,6 +21,7 @@ import {
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import { RetentionHelp } from '../../common/recording/RetentionHelp'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 
 type RetentionOverrides = Pick<
   DetectionConfigUpdate,
@@ -40,6 +41,12 @@ export function CameraConservationPage() {
   const config = useAsync(() => container.getCameraDetectionConfig.execute(cameraId!), [cameraId])
 
   if (config.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (config.error)
+    return (
+      <SettingsPage>
+        <ErrorMessage error={config.error} />
+      </SettingsPage>
+    )
   if (!config.data) return null
 
   return <ConservationForm cameraId={cameraId!} config={config.data} reload={config.reload} />

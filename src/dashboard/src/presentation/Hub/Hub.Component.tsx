@@ -44,6 +44,7 @@ export function HubView() {
 
   const cameras = useRootStore((s) => s.cameras)
   const camerasLoading = useRootStore((s) => s.camerasLoading)
+  const camerasError = useRootStore((s) => s.camerasError)
   const systemStats = useRootStore((s) => s.systemStats)
 
   const [modalMedia, setModalMedia] = useState<ModalMedia | null>(null)
@@ -54,6 +55,8 @@ export function HubView() {
 
   if (uido.loading || camerasLoading) return <HubLoading />
   if (uido.error || !uido.data?.systemHealthy) return <HubUnreachable error={uido.error} />
+  // An unread list is not an empty one: onboarding would invite adding cameras that exist.
+  if (camerasError && cameras.length === 0) return <HubUnreachable error={camerasError} />
   if (cameras.length === 0) return <HubWelcome />
 
   return (

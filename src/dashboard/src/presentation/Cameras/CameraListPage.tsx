@@ -4,6 +4,7 @@ import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import { SettingsPage } from '../../common/settings/SettingsPage'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import {
   formatCameraAddress,
   formatCameraStatusLabel,
@@ -14,6 +15,7 @@ import {
 export function CameraListPage() {
   const cameras = useRootStore((state) => state.cameras)
   const loading = useRootStore((state) => state.camerasLoading)
+  const error = useRootStore((state) => state.camerasError)
 
   return (
     <SettingsPage lede="Choisissez une caméra pour la régler.">
@@ -41,6 +43,8 @@ export function CameraListPage() {
             </li>
           ))}
         </ul>
+      ) : error ? (
+        <ErrorMessage error={error} className="py-3" />
       ) : (
         <p className="py-3 text-muted-foreground">
           {loading ? 'Chargement…' : 'Aucune caméra pour l’instant.'}
