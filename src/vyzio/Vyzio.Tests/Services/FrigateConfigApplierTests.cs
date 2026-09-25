@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -519,5 +519,62 @@ public sealed class FrigateConfigApplierTests : IDisposable
         var yaml = await ApplyAndReadYamlAsync(cameras, FrigateDetectorKind.Cpu, cpuCoreCount);
 
         Assert.Contains($"fps: {expectedFps}", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // The path as Frigate reads it, after YAML unquoting: the string it hands to its own escaping.
+    private static List<string> ReadInputPaths(string yaml, string cameraKey)
+    {
+        var document = new YamlDotNet.Serialization.DeserializerBuilder().Build().Deserialize<Dictionary<string, object>>(yaml);
+        var camera = (Dictionary<object, object>)((Dictionary<object, object>)document["cameras"])[cameraKey];
+        var inputs = (List<object>)((Dictionary<object, object>)camera["ffmpeg"])["inputs"];
+        return inputs.Select(input => (string)((Dictionary<object, object>)input)["path"]).ToList();
+    }
+
+    [Theory]
+    [InlineData("Pass1?")]
+    [InlineData("p@ss")]
+    [InlineData("p#ss")]
+    [InlineData("p:ss")]
+    [InlineData("p/ss")]
+    [InlineData("100%")]
+    public async Task ApplyAsync_ShouldWriteThePasswordRaw_WhenFrigateEncodesItItself(string password)
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.Username = "salome";
+        camera.Password = password;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.All(ReadInputPaths(yaml, "front_door"),
+            path => Assert.Equal($"rtsp://salome:{password}@192.168.1.10:554/stream1", path));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldDoubleTheBraces_WhenThePasswordContainsOne()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.Username = "salome";
+        camera.Password = "p{ss}";
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.All(ReadInputPaths(yaml, "front_door"),
+            path => Assert.Equal("rtsp://salome:p{{ss}}@192.168.1.10:554/stream1", path));
+    }
+
+    [Theory]
+    [InlineData("john.doe", "Pass1?", "john.doe:Pass1%3F")]
+    [InlineData("salome", "pass word", "salome:pass%20word")]
+    public async Task ApplyAsync_ShouldPercentEncodeTheCredentials_WhenFrigateWouldLeaveThemAsWritten(
+        string username, string password, string expectedUserInfo)
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.Username = username;
+        camera.Password = password;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.All(ReadInputPaths(yaml, "front_door"),
+            path => Assert.Equal($"rtsp://{expectedUserInfo}@192.168.1.10:554/stream1", path));
     }
 }

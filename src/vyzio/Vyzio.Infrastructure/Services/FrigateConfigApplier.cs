@@ -396,13 +396,25 @@ public sealed class FrigateConfigApplier(
             Query = separatorIndex >= 0 ? streamPath![(separatorIndex + 1)..] : string.Empty,
         };
 
-        if (!string.IsNullOrWhiteSpace(camera.Username))
-        {
-            builder.UserName = camera.Username;
-            builder.Password = camera.Password ?? string.Empty;
-        }
+        var address = builder.Uri.ToString();
+        if (string.IsNullOrWhiteSpace(camera.Username)) return address;
 
-        return builder.Uri.ToString();
+        var scheme = $"{builder.Scheme}://";
+        return $"{scheme}{FrigateInputUserInfo(camera.Username, camera.Password ?? string.Empty)}@{address[scheme.Length..]}";
+    }
+
+    // Frigate URL-encodes an input's password itself, so a pre-encoded one reaches the camera
+    // encoded twice (#91); it does so only for a user and password its pattern recognises.
+    private static string FrigateInputUserInfo(string username, string password)
+    {
+        var frigateEncodesPassword = username.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-')
+            && password.Length > 0
+            && !password.Any(char.IsWhiteSpace);
+
+        // The input path also goes through Python str.format for {FRIGATE_*} variables.
+        return frigateEncodesPassword
+            ? $"{username}:{password.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal)}"
+            : $"{Uri.EscapeDataString(username)}:{Uri.EscapeDataString(password)}";
     }
 
     private sealed class FrigateDocument
