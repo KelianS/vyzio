@@ -88,8 +88,10 @@ public sealed class CameraAccountWatch(
         // One reload for every camera refused in this reading, so the capture stops retrying them.
         if (!refused) return;
         var applied = await frigateConfig.ApplyAsync(all, ct);
-        if (!applied.Applied)
-            logger.LogError("Capture reload failed after an account refusal; the camera is still retried: {Reason}", applied.Message);
+        if (applied.Applied) return;
+        // The config without the camera is written; the user is offered the restart that takes it up (ADR-44).
+        await frigateConfig.WriteConfigAsync(all, changed: true, ct);
+        logger.LogError("Capture reload failed after an account refusal; the camera is still retried: {Reason}", applied.Message);
     }
 }
 

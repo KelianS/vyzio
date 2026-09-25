@@ -66,10 +66,11 @@ public class CameraAccountWatchTests
         Assert.Equal(_time.GetUtcNow(), _camera.AccountRefusedAt);
         await _cameras.Received(1).UpdateAsync(_camera, Arg.Any<CancellationToken>());
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+        await _frigateConfig.DidNotReceive().WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ReadAsync_ShouldKeepTheRefusalAndReloadOnlyOnce_WhenTheReloadFailed()
+    public async Task ReadAsync_ShouldReloadOnlyOnceAndOfferTheRestart_WhenTheReloadFailed()
     {
         _probe.CheckAsync(_camera, Arg.Any<CancellationToken>()).Returns(RtspAccountCheck.Refused);
         _frigateConfig.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
@@ -83,6 +84,7 @@ public class CameraAccountWatchTests
         Assert.Equal(_time.GetUtcNow(), _camera.AccountRefusedAt);
         await _probe.Received(1).CheckAsync(_camera, Arg.Any<CancellationToken>());
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), true, Arg.Any<CancellationToken>());
     }
 
     [Fact]

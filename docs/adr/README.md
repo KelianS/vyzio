@@ -53,7 +53,7 @@ references these ADRs rather than copying them.
 | [ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) | Settings edit cycle: an explicit draft, and saving means applying | Accepted (the "saving means applying" part was replaced by ADR-44) |
 | [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md) | Interface component foundation: shadcn/ui on Radix and Tailwind, design system tokens as the single source | Accepted |
 | [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md) | Settings grammar: a setting is declared, it is not drawn | Accepted (the long-help redirect to `docs/user/` was replaced by ADR-53) |
-| [ADR-44](0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md) | Surveillance restart: an explicit user act, grouped and deferred | Accepted |
+| [ADR-44](0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md) | Surveillance restart: an explicit user act, grouped and deferred | Accepted, amended by ADR-58 |
 | [ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md) | PTZ positions configured from the live view, never from settings | Accepted (calibration and the creation gesture were withdrawn by ADR-46) |
 | [ADR-46](0046-all-ptz-control-in-the-live-view-calibration-included.md) | All PTZ control in the live view, calibration included | Accepted |
 | [ADR-47](0047-detection-history-an-index-reconciled-against-frigate-not-a-standalone-memory.md) | Detection history: an index reconciled against Frigate, not a standalone memory | Superseded by ADR-49 |

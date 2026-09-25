@@ -1,6 +1,9 @@
 # ADR-58: A refused camera account is caught by one RTSP probe, and the camera leaves capture
 
 > Status: Accepted
+>
+> Amends [ADR-44](0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md) on one case:
+> Vyzio reloads the capture on its own to take out a camera whose account is refused (c).
 
 ## Context
 
@@ -21,7 +24,7 @@ stay replaceable (principle 2).
 credentials; a camera that answers `401` gets the same request once more with the camera's own account,
 in the scheme it named (Digest or Basic). It reads `Accepted`, `Refused` or `NoAnswer`. It never guesses
 an account and never sends one to a camera that did not ask. It is built to also serve the credential
-check when a camera is added, which #46 tracks.
+check when a camera is added.
 
 **b) A camera is probed once per outage.** A watcher reads the capture's frame rates on a fixed period.
 A validated, enabled camera outside privacy mode that shows no frames on two readings in a row is probed
@@ -63,8 +66,8 @@ that status says, and its verdict comes from the camera, never from the capture 
 - The probe runs only after two silent readings, so a refusal is caught within about a minute of the
   capture going dark, a few attempts in.
 - The reload is attempted once. If it fails, the refusal stays recorded and the capture config written
-  without the camera is taken up at the next restart; until then the capture keeps retrying it, and the
-  failure is logged. Retrying the reload on its own would restart surveillance again and again, beyond
+  without the camera is marked pending, so the user is offered the restart (ADR-44); until then the
+  capture keeps retrying it, and the failure is logged. Retrying the reload on its own would restart surveillance again and again, beyond
   the one exception SPECS 7.2 allows.
 - A camera that bans after very few attempts can still lock Vyzio out before the watcher acts; the card
   then says the account is refused, which remains true once the lockout ends.
