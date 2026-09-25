@@ -1,0 +1,375 @@
+using System.Net;
+using System.Text;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
+using NSubstitute;
+using Vyzio.Core.Entities;
+using Vyzio.Infrastructure.Services.CameraDiscovery;
+using Vyzio.Infrastructure.VendorAdapters;
+
+namespace Vyzio.Tests.Services;
+
+// Pins the two shapes met on hardware: one endpoint per service (V380) and one for all (Tapo) (ADR-56).
+public sealed class OnvifEndpointResolverTests
+{
+    private const string DateAndTimeAnswer = """
+        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+          <s:Body><GetSystemDateAndTimeResponse xmlns="http://www.onvif.org/ver10/device/wsdl"/></s:Body>
+        </s:Envelope>
+        """;
+
+    private static string ServicesAnswer(string mediaXAddr, string ptzXAddr) => $"""
+        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+          <s:Body>
+            <GetServicesResponse xmlns="http://www.onvif.org/ver10/device/wsdl">
+              <Service>
+                <Namespace>http://www.onvif.org/ver10/media/wsdl</Namespace>
+                <XAddr>{mediaXAddr}</XAddr>
+              </Service>
+              <Service>
+                <Namespace>http://www.onvif.org/ver20/ptz/wsdl</Namespace>
+                <XAddr>{ptzXAddr}</XAddr>
+              </Service>
+            </GetServicesResponse>
+          </s:Body>
+        </s:Envelope>
+        """;
+
+    private static Camera MakeCamera() => new()
+    {
+        Id = "cam1",
+        Slug = "cam1",
+        FrigateCameraName = "cam1",
+        DisplayName = "Camera",
+        Host = "192.168.1.10",
+        Username = "user",
+        Password = "pass",
+    };
+
+    private static (OnvifEndpointResolver resolver, List<Uri> calls) MakeResolver(
+        Func<Uri, string, HttpResponseMessage> respond, TimeProvider? time = null)
+    {
+        var calls = new List<Uri>();
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("onvif").Returns(new HttpClient(new StubHandler(calls, respond)));
+        return (new OnvifEndpointResolver(factory, time ?? TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance), calls);
+    }
+
+    private static HttpResponseMessage Soap(string body) => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent(body, Encoding.UTF8, "application/soap+xml"),
+    };
+
+    [Fact]
+    public async Task ResolveAsync_ShouldFindTheServiceOnItsRealPortAndPath_WhenTheyAreNotTheCommonConvention()
+    {
+        var (resolver, _) = MakeResolver((url, _) =>
+            url.Port == 2020 && url.AbsolutePath == "/onvif/service"
+                ? Soap(DateAndTimeAnswer)
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.NotNull(endpoint);
+        Assert.Equal("http://192.168.1.10:2020/onvif/service", endpoint!.DeviceServiceUrl.ToString());
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldAddressEveryServiceAtTheDeviceUrl_WhenTheCameraAnnouncesNoXAddr()
+    {
+        var (resolver, _) = MakeResolver((url, _) =>
+            url.AbsolutePath == "/onvif/service"
+                ? Soap(DateAndTimeAnswer)
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.NotNull(endpoint);
+        Assert.Equal(endpoint!.DeviceServiceUrl, endpoint.UrlFor(OnvifService.Ptz));
+        Assert.Equal(endpoint.DeviceServiceUrl, endpoint.UrlFor(OnvifService.Imaging));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldUseTheAnnouncedAddress_WhenTheCameraSplitsItsServicesPerPath()
+    {
+        var (resolver, _) = MakeResolver((url, body) =>
+        {
+            if (url.AbsolutePath != "/onvif/device_service") return new HttpResponseMessage(HttpStatusCode.NotFound);
+            return Soap(body.Contains("GetServices")
+                ? ServicesAnswer("http://192.168.1.10/onvif/media_service", "http://192.168.1.10/onvif/ptz_service")
+                : DateAndTimeAnswer);
+        });
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.NotNull(endpoint);
+        Assert.Equal("/onvif/ptz_service", endpoint!.UrlFor(OnvifService.Ptz).AbsolutePath);
+        Assert.Equal("/onvif/media_service", endpoint.UrlFor(OnvifService.Media).AbsolutePath);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldKeepTheHostItReachedTheCameraOn_WhenTheAnnouncedAddressNamesAnother()
+    {
+        var (resolver, _) = MakeResolver((url, body) =>
+        {
+            if (url.AbsolutePath != "/onvif/device_service") return new HttpResponseMessage(HttpStatusCode.NotFound);
+            return Soap(body.Contains("GetServices")
+                ? ServicesAnswer("http://10.0.0.1/onvif/media_service", "http://10.0.0.1/onvif/ptz_service")
+                : DateAndTimeAnswer);
+        });
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal("192.168.1.10", endpoint!.UrlFor(OnvifService.Ptz).Host);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldSendNoCredentials_WhenSweepingForTheEndpoint()
+    {
+        var envelopes = new List<string>();
+        var (resolver, _) = MakeResolver((url, body) =>
+        {
+            envelopes.Add(body);
+            return url.AbsolutePath == "/onvif/service" && !body.Contains("GetServices")
+                ? Soap(DateAndTimeAnswer)
+                : new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        var sweep = envelopes.Where(envelope => envelope.Contains("GetSystemDateAndTime")).ToList();
+        Assert.NotEmpty(sweep);
+        Assert.All(sweep, envelope => Assert.DoesNotContain("UsernameToken", envelope));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldPersistTheAddressOnTheCamera_WhenTheSweepSucceeds()
+    {
+        var (resolver, _) = MakeResolver((url, _) =>
+            url.Port == 2020 && url.AbsolutePath == "/onvif/service"
+                ? Soap(DateAndTimeAnswer)
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+        var camera = MakeCamera();
+
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        Assert.Equal("http://192.168.1.10:2020/onvif/service", camera.GetProtocolEndpoint(SupportedProtocol.Onvif));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNotSweep_WhenTheCameraAlreadyCarriesAResolvedAddress()
+    {
+        var (resolver, calls) = MakeResolver((_, _) => Soap(DateAndTimeAnswer));
+        var camera = MakeCamera();
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.10:2020/onvif/service");
+
+        var endpoint = await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        Assert.Equal("http://192.168.1.10:2020/onvif/service", endpoint!.DeviceServiceUrl.ToString());
+        Assert.Single(calls); // GetServices only, no port sweep
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldReturnNull_WhenNoPortAnswersOnvif()
+    {
+        var (resolver, _) = MakeResolver((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        Assert.Null(await resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldRecogniseTheService_WhenItRefusesTheUnauthenticatedProbe()
+    {
+        var (resolver, _) = MakeResolver((url, _) =>
+        {
+            if (url.Port != 2020) return new HttpResponseMessage(HttpStatusCode.NotFound);
+            var refused = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            refused.Headers.WwwAuthenticate.ParseAdd("Digest realm=\"ONVIF\", nonce=\"n\"");
+            return refused;
+        });
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.NotNull(endpoint);
+        Assert.Equal(2020, endpoint!.DeviceServiceUrl.Port);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNotSweepAgain_WhenTheLastSweepFoundNothingMomentsAgo()
+    {
+        var time = new FakeTimeProvider();
+        var (resolver, calls) = MakeResolver((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound), time);
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+        var sweep = calls.Count;
+
+        time.Advance(TimeSpan.FromMinutes(4));
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal(sweep, calls.Count);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldSweepAgain_WhenTheCooldownAfterAFailedSweepHasPassed()
+    {
+        var time = new FakeTimeProvider();
+        var (resolver, calls) = MakeResolver((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound), time);
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+        var sweep = calls.Count;
+
+        time.Advance(TimeSpan.FromMinutes(6));
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal(2 * sweep, calls.Count);
+    }
+
+    private static (OnvifEndpointResolver resolver, List<(Uri Url, string Body)> requests) MakeRecordingResolver(
+        Func<Uri, string, HttpResponseMessage> respond)
+    {
+        var requests = new List<(Uri, string)>();
+        var (resolver, _) = MakeResolver((url, body) =>
+        {
+            requests.Add((url, body));
+            return respond(url, body);
+        });
+        return (resolver, requests);
+    }
+
+    private static bool IsGetServices(string body) => body.Contains("GetServices", StringComparison.Ordinal);
+    private static bool CarriesCredentials(string body) => body.Contains("UsernameToken", StringComparison.Ordinal);
+
+    [Fact]
+    public async Task ResolveAsync_ShouldAskForTheServicesWithoutCredentials_WhenTheCameraAllowsIt()
+    {
+        var (resolver, requests) = MakeRecordingResolver((url, body) => url.AbsolutePath != "/onvif/device_service"
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : Soap(IsGetServices(body)
+                ? ServicesAnswer("http://192.168.1.10/onvif/media_service", "http://192.168.1.10/onvif/ptz_service")
+                : DateAndTimeAnswer));
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal("/onvif/ptz_service", endpoint!.UrlFor(OnvifService.Ptz).AbsolutePath);
+        Assert.All(requests, request => Assert.False(CarriesCredentials(request.Body)));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldPresentTheCameraAccount_WhenTheServicesDemandAuthentication()
+    {
+        var (resolver, requests) = MakeRecordingResolver((url, body) =>
+        {
+            if (url.AbsolutePath != "/onvif/device_service") return new HttpResponseMessage(HttpStatusCode.NotFound);
+            if (!IsGetServices(body)) return Soap(DateAndTimeAnswer);
+            return CarriesCredentials(body)
+                ? Soap(ServicesAnswer("http://192.168.1.10/onvif/media_service", "http://192.168.1.10/onvif/ptz_service"))
+                : new HttpResponseMessage(HttpStatusCode.Unauthorized);
+        });
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal("/onvif/ptz_service", endpoint!.UrlFor(OnvifService.Ptz).AbsolutePath);
+        Assert.Contains(requests, request => IsGetServices(request.Body) && request.Body.Contains("<wsse:Username>user</wsse:Username>", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNeverGuessACredential_WhenTheCameraHasNoAccount()
+    {
+        var camera = MakeCamera();
+        camera.Username = null;
+        camera.Password = null;
+        var (resolver, requests) = MakeRecordingResolver((url, body) =>
+            url.AbsolutePath != "/onvif/device_service" ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : IsGetServices(body) ? new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            : Soap(DateAndTimeAnswer));
+
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        Assert.DoesNotContain(requests, request => CarriesCredentials(request.Body));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldAskForTheServicesAgain_WhenTheLastAnswerWasLost()
+    {
+        var getServices = 0;
+        var (resolver, _) = MakeResolver((url, body) =>
+        {
+            if (url.AbsolutePath != "/onvif/device_service") return new HttpResponseMessage(HttpStatusCode.NotFound);
+            if (!IsGetServices(body)) return Soap(DateAndTimeAnswer);
+            return ++getServices == 1
+                ? throw new HttpRequestException(HttpRequestError.ConnectionError, "reset")
+                : Soap(ServicesAnswer("http://192.168.1.10/onvif/media_service", "http://192.168.1.10/onvif/ptz_service"));
+        });
+        var camera = MakeCamera();
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        var endpoint = await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        Assert.Equal("/onvif/ptz_service", endpoint!.UrlFor(OnvifService.Ptz).AbsolutePath);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNotHoldTheCameraAsSilent_WhenTheCallerGaveUpMidSweep()
+    {
+        using var caller = new CancellationTokenSource();
+        var (resolver, calls) = MakeResolver((_, _) =>
+        {
+            caller.Cancel();
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => resolver.ResolveAsync(MakeCamera(), caller.Token));
+        var afterGivingUp = calls.Count;
+
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.True(calls.Count > afterGivingUp);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldSweepOnce_WhenCallersQueueBehindASweepThatFindsNothing()
+    {
+        var firstRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var (resolver, calls) = MakeResolver((_, _) =>
+        {
+            firstRequest.TrySetResult();
+            release.Task.GetAwaiter().GetResult();
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var first = Task.Run(() => resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
+        await firstRequest.Task;
+        // Called inline: it returns only once it waits on the gate the first caller holds.
+        var queued = resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+        release.SetResult();
+        await Task.WhenAll(first, queued);
+        var oneSweep = calls.Count;
+
+        Assert.Null(await queued);
+        Assert.Equal(DiscoveryPortCatalog.OnvifPorts.Count * DiscoveryPortCatalog.OnvifPaths.Count, oneSweep);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNotAskForTheServicesAgain_WhenTheCameraRefusedItsOwnAccount()
+    {
+        var (resolver, requests) = MakeRecordingResolver((url, body) =>
+            url.AbsolutePath != "/onvif/device_service" ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : IsGetServices(body) ? new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            : Soap(DateAndTimeAnswer));
+        var camera = MakeCamera();
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+        var askedFirst = requests.Count(request => IsGetServices(request.Body));
+
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        Assert.Equal(askedFirst, requests.Count(request => IsGetServices(request.Body)));
+    }
+
+    private sealed class StubHandler(List<Uri> calls, Func<Uri, string, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            calls.Add(request.RequestUri!);
+            var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(ct);
+            return respond(request.RequestUri!, body);
+        }
+    }
+}

@@ -4,12 +4,9 @@ using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
-
-// Thrown by PostSoapAsync(throwOnFailure: true) — carries the real HTTP status / SOAP fault
-// reason so it can surface as CameraCapabilityBinding.LastError instead of a generic message.
-public sealed class OnvifCallException(string message, Exception? inner = null) : Exception(message, inner);
 
 public sealed record OnvifDeviceInfo(
     string? Manufacturer,
@@ -30,16 +27,24 @@ public sealed record OnvifMediaProfile(
 // Covers any ONVIF-compliant device: V380 Pro, Hikvision, Dahua, Reolink, Axis, etc.
 // Feature orchestration (PTZ, privacy, device ID bootstrap) lives in the provider layer.
 // Registered as Singleton: shared across providers, stateless (no per-camera cache here).
-internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<OnvifClient> logger)
+internal sealed class OnvifClient(
+    IHttpClientFactory httpClientFactory,
+    OnvifEndpointResolver endpointResolver,
+    TimeProvider time,
+    ILogger<OnvifClient> logger)
 {
-    private const int DefaultOnvifPort = 8899;
+    // Short: long enough to hear a refusal, short enough not to stall a held PTZ button (ADR-56).
+    private static readonly TimeSpan CommandTimeout = TimeSpan.FromMilliseconds(1500);
+
+    // A continuous move is stopped after a short step: waiting longer than that would overshoot it.
+    private static readonly TimeSpan MoveStartTimeout = TimeSpan.FromMilliseconds(300);
 
     // Returns device identification info from ONVIF GetDeviceInformation.
     // The SerialNumber field encodes the V380 device ID in bytes 2-5 as uint32 big-endian.
     public async Task<OnvifDeviceInfo?> GetDeviceInformationAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/>";
-        var xml = await PostSoapAsync(camera, "device_service", body, ct);
+        var xml = await PostSoapAsync(camera, OnvifService.Device, body, ct);
         if (xml is null) return null;
 
         try
@@ -61,7 +66,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
     public async Task<(string ProfileToken, string PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
-        var xml = await PostSoapAsync(camera, "media_service", body, ct);
+        var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct);
 
         var profileToken = "profile1";
         var ptzConfigToken = "ptz_config_0";
@@ -90,7 +95,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
     public async Task<IReadOnlyList<OnvifMediaProfile>> GetMediaProfilesAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
-        var xml = await PostSoapAsync(camera, "media_service", body, ct,
+        var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct,
             soapAction: "http://www.onvif.org/ver10/media/wsdl/GetProfiles");
         if (xml is null) return [];
 
@@ -150,7 +155,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <ProfileToken>{profileToken}</ProfileToken>
             </GetStreamUri>
             """;
-        var xml = await PostSoapAsync(camera, "media_service", body, ct,
+        var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct,
             soapAction: "http://www.onvif.org/ver10/media/wsdl/GetStreamUri");
         if (xml is null) return null;
 
@@ -187,7 +192,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <ConfigurationToken>{configToken}</ConfigurationToken>
             </GetConfigurationOptions>
             """;
-        return PostSoapAsync(camera, "ptz_service", body, ct);
+        return PostSoapAsync(camera, OnvifService.Ptz, body, ct);
     }
 
     // Returns (pan, tilt) in ONVIF normalized space [-1, 1], or null if unsupported.
@@ -198,7 +203,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <ProfileToken>{profileToken}</ProfileToken>
             </GetStatus>
             """;
-        var xml = await PostSoapAsync(camera, "ptz_service", body, ct);
+        var xml = await PostSoapAsync(camera, OnvifService.Ptz, body, ct);
         if (xml is null) return null;
 
         try
@@ -232,7 +237,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               </Velocity>
             </ContinuousMove>
             """;
-        return SendCommandAsync(camera, "ptz_service", body, ct);
+        return SendCommandAsync(camera, OnvifService.Ptz, body, ct, wait: MoveStartTimeout);
     }
 
     public Task RelativeMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)
@@ -247,7 +252,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               </Translation>
             </RelativeMove>
             """;
-        return SendCommandAsync(camera, "ptz_service", body, ct);
+        return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
     }
 
     public Task StopAsync(Camera camera, string profileToken, CancellationToken ct)
@@ -259,7 +264,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <Zoom>true</Zoom>
             </Stop>
             """;
-        return SendCommandAsync(camera, "ptz_service", body, ct);
+        return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
     }
 
     public Task SetPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
@@ -271,7 +276,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <PresetName>vyzio_home</PresetName>
             </SetPreset>
             """;
-        return SendCommandAsync(camera, "ptz_service", body, ct);
+        return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
     }
 
     public Task GotoPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
@@ -285,7 +290,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               </Speed>
             </GotoPreset>
             """;
-        return SendCommandAsync(camera, "ptz_service", body, ct);
+        return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
     }
 
     // Returns the VideoSourceConfiguration token of the first media profile — required by the
@@ -293,12 +298,12 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
     public async Task<string> GetVideoSourceTokenAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
-        var xml = await PostSoapAsync(camera, "media_service", body, ct,
+        var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct,
             soapAction: "http://www.onvif.org/ver10/media/wsdl/GetProfiles", throwOnFailure: true);
 
         XDocument doc;
         try { doc = XDocument.Parse(xml!); }
-        catch (Exception ex) { throw new OnvifCallException($"Réponse ONVIF media_service illisible pour {camera.Host} : {ex.Message}", ex); }
+        catch (Exception ex) { throw new CameraCommandRefusedException($"ONVIF Media GetProfiles from {camera.Host}: unreadable answer ({ex.Message})", ex); }
 
         // SourceToken is a child element of VideoSourceConfiguration (tt:SourceToken), not an
         // attribute — the "token" attribute on VideoSourceConfiguration is its own config token.
@@ -307,14 +312,12 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
             ?.Elements().FirstOrDefault(e => e.Name.LocalName == "SourceToken")?.Value;
 
         if (string.IsNullOrWhiteSpace(token))
-            throw new OnvifCallException($"La caméra {camera.Host} n'expose pas de VideoSourceConfiguration ONVIF exploitable (profil vide ou non conforme).");
+            throw new CameraCommandRefusedException($"ONVIF Media on {camera.Host}: no usable VideoSourceConfiguration");
 
         return token;
     }
 
-    // Returns current image settings via ONVIF Imaging service. Throws OnvifCallException with a
-    // real diagnostic on failure — this capability's probe must surface why, unlike PTZ/media
-    // calls elsewhere in this client which tolerate silent failure with built-in fallbacks.
+    // Throws a CameraCommandException on failure: this capability's probe must say why (ADR-27).
     public async Task<CameraImageSettings?> GetImagingSettingsAsync(Camera camera, string videoSourceToken, CancellationToken ct)
     {
         var body = $"""
@@ -322,7 +325,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <VideoSourceToken>{videoSourceToken}</VideoSourceToken>
             </GetImagingSettings>
             """;
-        var xml = await PostSoapAsync(camera, "imaging_service", body, ct,
+        var xml = await PostSoapAsync(camera, OnvifService.Imaging, body, ct,
             soapAction: "http://www.onvif.org/ver20/imaging/wsdl/GetImagingSettings", throwOnFailure: true);
 
         try
@@ -347,9 +350,9 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
                 Read("Sharpness"),
                 irCut);
         }
-        catch (Exception ex) when (ex is not OnvifCallException)
+        catch (Exception ex) when (ex is not CameraCommandException)
         {
-            throw new OnvifCallException($"Réponse ONVIF Imaging illisible pour {camera.Host} : {ex.Message}", ex);
+            throw new CameraCommandRefusedException($"ONVIF Imaging from {camera.Host}: unreadable answer ({ex.Message})", ex);
         }
     }
 
@@ -376,7 +379,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <ForcePersistence>true</ForcePersistence>
             </SetImagingSettings>
             """;
-        return SendCommandAsync(camera, "imaging_service", body, ct,
+        return SendCommandAsync(camera, OnvifService.Imaging, body, ct,
             soapAction: "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings");
     }
 
@@ -389,7 +392,7 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
               <ProfileToken>{profileToken}</ProfileToken>
             </GetPresets>
             """;
-        var xml = await PostSoapAsync(camera, "ptz_service", body, ct);
+        var xml = await PostSoapAsync(camera, OnvifService.Ptz, body, ct);
         if (xml is null) return 0;
         try
         {
@@ -399,75 +402,117 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
         catch { return 0; }
     }
 
-    // Fire-and-forget ONVIF command: sends the request and returns as soon as headers arrive
-    // (or after 500ms timeout). Budget cameras (V380) take 2-3s to respond but execute the
-    // command on TCP receipt — we don't need to wait for their HTTP response.
-    private async Task SendCommandAsync(Camera camera, string service, string soapBody, CancellationToken ct, string? soapAction = null)
+    private async Task SendCommandAsync(
+        Camera camera, OnvifService service, string soapBody, CancellationToken ct, string? soapAction = null, TimeSpan? wait = null)
     {
-        var url = $"http://{camera.Host}:{DefaultOnvifPort}/onvif/{service}";
-        var envelope = BuildEnvelope(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
+        var url = await ResolveUrlAsync(camera, service, ct);
+        var envelope = EnvelopeFor(camera, soapBody);
         var http = httpClientFactory.CreateClient("onvif");
 
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+        var patience = wait ?? CommandTimeout;
+        using var timeout = new CancellationTokenSource(patience, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+
+        HttpResponseMessage response;
         try
         {
-            var content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml");
-            if (soapAction is not null)
-                content.Headers.ContentType?.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("action", $"\"{soapAction}\""));
-            var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token);
+            var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = BuildContent(envelope, soapAction) };
+            response = await http.SendAsync(request, HttpCompletionOption.ResponseContentRead, linked.Token);
         }
-        catch (Exception ex)
+        // Only silence counts as done: a slow camera (V380) executes on receipt and answers seconds later (ADR-56).
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
         {
-            logger.LogDebug("ONVIF {Service} command sent to {Host} (response not awaited: {Msg}).", service, camera.Host, ex.Message);
+            logger.LogDebug("ONVIF {Service} command sent to {Host}, no answer within {Timeout}.", service, camera.Host, patience);
+            return;
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "ONVIF {Service} command to {Host} failed: {Error}.", service, camera.Host, ex.HttpRequestError);
+            throw TransportFailure(service, url, ex);
+        }
+
+        using (response)
+        {
+            if (response.IsSuccessStatusCode) return;
+
+            var faultText = await TryReadSoapFaultReasonAsync(response, ct);
+            logger.LogWarning("ONVIF {Service} command refused ({Status}) by {Host}: {Fault}.",
+                service, response.StatusCode, camera.Host, faultText ?? "no SOAP fault");
+            throw new CameraCommandRefusedException(RefusalDetail(service, response, faultText));
         }
     }
 
-    // readBody=false: ResponseHeadersRead — returns as soon as status is known, without reading body.
-    // Use for commands (Move, RelativeMove, Preset) where we only need the camera to receive the request.
-    // Use readBody=true (default) for queries (GetProfiles, GetDeviceInformation) that need the response XML.
-    // soapAction: SOAP 1.2 action URI (e.g. ".../imaging/wsdl/GetImagingSettings") — some ONVIF stacks
-    // reject requests with a generic BadRequest when it's missing from the Content-Type "action" param.
-    // throwOnFailure: throws OnvifCallException with the real reason (HTTP status + SOAP fault text if
-    // present) instead of silently returning null — used where the caller needs to surface a real
-    // diagnostic (ADR-27/28 probe paths), not the many callers that treat "no answer" as "unsupported".
-    internal async Task<string?> PostSoapAsync(Camera camera, string service, string soapBody, CancellationToken ct,
-        bool readBody = true, string? soapAction = null, bool throwOnFailure = false)
-    {
-        var url = $"http://{camera.Host}:{DefaultOnvifPort}/onvif/{service}";
-        var envelope = BuildEnvelope(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
+    // A malformed answer is how a Tapo refuses PTZ in privacy mode (measured); a cut-off one reads as the network (ADR-56).
+    private static CameraCommandException TransportFailure(OnvifService service, Uri url, HttpRequestException ex)
+        => ex.HttpRequestError is HttpRequestError.InvalidResponse
+            ? new CameraCommandRefusedException($"ONVIF {service} at {url}: malformed answer ({ex.HttpRequestError})", ex)
+            : new CameraUnreachableException($"ONVIF {service} at {url}: {ex.HttpRequestError} ({ex.Message})", ex);
 
-        var http = httpClientFactory.CreateClient("onvif");
+    private static string RefusalDetail(OnvifService service, HttpResponseMessage response, string? faultText)
+        => $"ONVIF {service} {(int)response.StatusCode} {response.ReasonPhrase}" + (faultText is null ? string.Empty : $": {faultText}");
+
+    private async Task<Uri> ResolveUrlAsync(Camera camera, OnvifService service, CancellationToken ct)
+    {
+        var endpoint = await endpointResolver.ResolveAsync(camera, ct)
+            ?? throw new CameraUnreachableException($"No ONVIF service answered on {camera.Host}");
+        return endpoint.UrlFor(service);
+    }
+
+    // A camera without an account is asked without one: a guessed credential locks accounts out (ADR-56).
+    private static string EnvelopeFor(Camera camera, string soapBody)
+        => string.IsNullOrWhiteSpace(camera.Username)
+            ? OnvifEnvelope.Anonymous(soapBody)
+            : OnvifEnvelope.Build(camera.Username, camera.Password ?? string.Empty, soapBody);
+
+    private static StringContent BuildContent(string envelope, string? soapAction)
+    {
         var content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml");
         if (soapAction is not null)
             content.Headers.ContentType?.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("action", $"\"{soapAction}\""));
-        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-        var completion = readBody ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
+        return content;
+    }
+
+    // A query; soapAction because some stacks refuse its absence, throwOnFailure where the caller must say why (ADR-27/28).
+    internal async Task<string?> PostSoapAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct,
+        string? soapAction = null, bool throwOnFailure = false)
+    {
+        Uri url;
+        try
+        {
+            url = await ResolveUrlAsync(camera, service, ct);
+        }
+        catch (CameraUnreachableException) when (!throwOnFailure)
+        {
+            return null;
+        }
+
+        var envelope = EnvelopeFor(camera, soapBody);
+        var http = httpClientFactory.CreateClient("onvif");
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = BuildContent(envelope, soapAction) };
 
         try
         {
-            using var response = await http.SendAsync(request, completion, ct);
+            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseContentRead, ct);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("ONVIF {Service} call failed ({Status}) for {Host}.", service, response.StatusCode, camera.Host);
                 if (throwOnFailure)
                 {
                     var faultText = await TryReadSoapFaultReasonAsync(response, ct);
-                    throw new OnvifCallException(faultText is not null
-                        ? $"La caméra a refusé la requête ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}) : {faultText}"
-                        : $"La caméra a refusé la requête ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}).");
+                    throw new CameraCommandRefusedException(RefusalDetail(service, response, faultText));
                 }
                 return null;
             }
-            return readBody ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
+            return await response.Content.ReadAsStringAsync(ct);
         }
-        catch (OnvifCallException) { throw; }
+        catch (CameraCommandException) { throw; }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "ONVIF {Service} call error for {Host}.", service, camera.Host);
             if (throwOnFailure)
-                throw new OnvifCallException($"Impossible de joindre le service ONVIF {service} sur {camera.Host}:{DefaultOnvifPort} ({ex.Message}).", ex);
+                throw ex is HttpRequestException transport
+                    ? TransportFailure(service, url, transport)
+                    : new CameraUnreachableException($"ONVIF {service} at {url}: {ex.GetType().Name} ({ex.Message})", ex);
             return null;
         }
     }
@@ -483,38 +528,5 @@ internal sealed class OnvifClient(IHttpClientFactory httpClientFactory, ILogger<
             return string.IsNullOrWhiteSpace(text) ? null : text;
         }
         catch { return null; }
-    }
-
-    private static string BuildEnvelope(string username, string password, string body)
-    {
-        var nonce = RandomNumberGenerator.GetBytes(16);
-        var created = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-        var createdBytes = Encoding.UTF8.GetBytes(created);
-        var passwordBytes = Encoding.UTF8.GetBytes(password);
-#pragma warning disable CA5350 // WS-Security UsernameToken digest is SHA-1 by specification.
-        var digest = Convert.ToBase64String(SHA1.HashData([.. nonce, .. createdBytes, .. passwordBytes]));
-#pragma warning restore CA5350
-        var nonce64 = Convert.ToBase64String(nonce);
-
-        return $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
-                        xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
-                        xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-utility-1.0.xsd">
-              <s:Header>
-                <wsse:Security>
-                  <wsse:UsernameToken>
-                    <wsse:Username>{username}</wsse:Username>
-                    <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">{digest}</wsse:Password>
-                    <wsse:Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">{nonce64}</wsse:Nonce>
-                    <wsu:Created>{created}</wsu:Created>
-                  </wsse:UsernameToken>
-                </wsse:Security>
-              </s:Header>
-              <s:Body>
-                {body}
-              </s:Body>
-            </s:Envelope>
-            """;
     }
 }

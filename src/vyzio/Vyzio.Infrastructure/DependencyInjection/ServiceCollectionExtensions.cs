@@ -56,6 +56,8 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient(Notifications.TelegramCommandReceiver.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(60));
         services.AddHttpClient(Notifications.DiscordApi.HttpClientName);
+        services.AddSingleton<OnvifEndpointResolver>();
+        services.AddSingleton<ICameraProtocolEndpointCache>(sp => sp.GetRequiredService<OnvifEndpointResolver>());
         services.AddSingleton<OnvifClient>();
         services.AddSingleton<DvripClient>();
         services.AddSingleton<V380Client>();

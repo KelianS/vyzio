@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PtzControlPanel } from './PtzControlPanel'
+import { HttpError } from '../../infrastructure/http/HttpError'
 import { ToastProvider } from './Toast'
 import type { PtzPreset } from '../../domain/entities/PtzPreset'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
@@ -26,9 +27,17 @@ interface Harness {
   presets?: PtzPreset[]
   calibrated?: boolean
   currentPosition?: { x: number; y: number } | null
+  stepRejection?: unknown
+  stepExecute?: PtzStep['execute']
 }
 
-function renderPanel({ presets = [], calibrated = true, currentPosition = null }: Harness = {}) {
+function renderPanel({
+  presets = [],
+  calibrated = true,
+  currentPosition = null,
+  stepRejection,
+  stepExecute,
+}: Harness = {}) {
   const getPtzPresets = {
     execute: vi.fn().mockResolvedValue({ presets, calibrated, currentPosition }),
   } as unknown as GetPtzPresets
@@ -41,7 +50,13 @@ function renderPanel({ presets = [], calibrated = true, currentPosition = null }
   const ptzCalibrate = {
     execute: vi.fn().mockResolvedValue(undefined),
   } as unknown as PtzCalibrate
-  const ptzStep = { execute: vi.fn().mockResolvedValue(undefined) } as unknown as PtzStep
+  const ptzStep = {
+    execute:
+      stepExecute ??
+      (stepRejection === undefined
+        ? vi.fn().mockResolvedValue(undefined)
+        : vi.fn().mockRejectedValue(stepRejection)),
+  } as unknown as PtzStep
 
   render(
     <ToastProvider>
@@ -57,7 +72,7 @@ function renderPanel({ presets = [], calibrated = true, currentPosition = null }
     </ToastProvider>,
   )
 
-  return { getPtzPresets, ptzSaveCurrentAsPreset, ptzGoToPreset, ptzCalibrate }
+  return { getPtzPresets, ptzSaveCurrentAsPreset, ptzGoToPreset, ptzCalibrate, ptzStep }
 }
 
 describe('PtzControlPanel', () => {
@@ -98,6 +113,41 @@ describe('PtzControlPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Calibrer maintenant' }))
     await waitFor(() => expect(ptzCalibrate.execute).toHaveBeenCalledWith('camera-1'))
+  })
+
+  it('PtzStep_ShouldSayTheCameraRefusedAndShowWhy_WhenTheCameraRefusesTheMove', async () => {
+    // A Tapo in privacy mode refuses PTZ: the user reads it, support reads why (ADR-56).
+    const why =
+      'POST /api/cameras/camera-1/ptz/step · 502 Bad Gateway · camera_refused · ONVIF Ptz: malformed answer'
+    renderPanel({
+      stepRejection: new HttpError(502, '/api/cameras/camera-1/ptz/step', why, 'camera_refused'),
+    })
+
+    await userEvent.click(await screen.findByTitle('Haut'))
+
+    expect(await screen.findByText('La caméra a refusé la commande')).toBeInTheDocument()
+    expect(screen.getByText(why)).toBeInTheDocument()
+  })
+
+  it('PtzStep_ShouldShowOneToastPerPress_WhenSeveralStepsOfAHoldFail', async () => {
+    const failure = (why: string) =>
+      new HttpError(502, '/api/cameras/camera-1/ptz/step', why, 'camera_refused')
+    let calls = 0
+    const stepExecute = vi.fn(() => {
+      calls += 1
+      // The first step answers late, after the hold has already sent the next one.
+      return calls === 1
+        ? new Promise<void>((_, reject) => setTimeout(() => reject(failure('first step')), 600))
+        : Promise.reject(failure('held step'))
+    })
+    renderPanel({ stepExecute })
+
+    fireEvent.mouseDown(await screen.findByTitle('Haut'))
+    await screen.findByText('held step')
+    await new Promise((resolve) => setTimeout(resolve, 700))
+
+    expect(screen.getAllByText('La caméra a refusé la commande')).toHaveLength(1)
+    expect(screen.queryByText('first step')).not.toBeInTheDocument()
   })
 
   it('n’ouvre pas le menu contextuel du navigateur sur une position', async () => {

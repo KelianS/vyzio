@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Configuration;
+using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
@@ -985,7 +986,19 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
+    // Every candidate path: a single-endpoint firmware (Tapo) answers 404 on the common one (ADR-56).
     private async Task<RawCameraDiscoverySignal?> ProbeOnvifUnicastEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
+    {
+        foreach (var path in DiscoveryPortCatalog.OnvifPaths)
+        {
+            if (await ProbeOnvifPathAsync(host, port, path, timeoutMs, ct) is { } signal)
+                return signal;
+        }
+
+        return null;
+    }
+
+    private async Task<RawCameraDiscoverySignal?> ProbeOnvifPathAsync(string host, int port, string path, int timeoutMs, CancellationToken ct)
     {
         try
         {
@@ -996,8 +1009,8 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             await client.ConnectAsync(host, port, timeout.Token);
 
             using var stream = client.GetStream();
-            var envelope = BuildOnvifGetCapabilitiesEnvelope();
-            var request = $"POST /onvif/device_service HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/soap+xml; charset=utf-8\r\nConnection: close\r\nUser-Agent: Vyzio\r\nContent-Length: {Encoding.UTF8.GetByteCount(envelope)}\r\n\r\n{envelope}";
+            var envelope = OnvifServiceProbe.CredentialFreeEnvelope;
+            var request = $"POST {path} HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/soap+xml; charset=utf-8\r\nConnection: close\r\nUser-Agent: Vyzio\r\nContent-Length: {Encoding.UTF8.GetByteCount(envelope)}\r\n\r\n{envelope}";
             var bytes = Encoding.UTF8.GetBytes(request);
 
             await stream.WriteAsync(bytes, timeout.Token);
@@ -1016,12 +1029,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 return null;
             }
 
-            if (response.Contains(" 404 ", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            if (!LooksLikeOnvifUnicastResponse(response))
+            if (!OnvifServiceProbe.IdentifiesRawHttp(response))
             {
                 return null;
             }
@@ -1042,28 +1050,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         {
             return null;
         }
-    }
-
-    private static bool LooksLikeOnvifUnicastResponse(string response)
-    {
-        var normalized = response.ToLowerInvariant();
-        var hasSoapEnvelope = normalized.Contains("application/soap+xml")
-            || normalized.Contains("<s:envelope")
-            || normalized.Contains("<soap:envelope")
-            || normalized.Contains("<soap-env:envelope");
-
-        var hasOnvifMarker = normalized.Contains("http://www.onvif.org/")
-            || normalized.Contains("www.onvif.org/")
-            || normalized.Contains("/onvif/device_service")
-            || normalized.Contains("getcapabilitiesresponse")
-            || normalized.Contains("getservicesresponse")
-            || normalized.Contains("device_service")
-            || normalized.Contains("trt:")
-            || normalized.Contains("tds:")
-            || normalized.Contains("realm=\"onvif\"")
-            || normalized.Contains("realm='onvif'");
-
-        return hasSoapEnvelope && hasOnvifMarker;
     }
 
     private static async Task<string?> ResolveMacAddressAsync(string host, CancellationToken ct)
@@ -1271,16 +1257,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         "</e:Header>" +
         "<e:Body><d:Probe><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></e:Body>" +
         "</e:Envelope>";
-
-    private static string BuildOnvifGetCapabilitiesEnvelope() =>
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-        "<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\">" +
-        "<s:Body>" +
-        "<GetCapabilities xmlns=\"http://www.onvif.org/ver10/device/wsdl\">" +
-        "<Category>All</Category>" +
-        "</GetCapabilities>" +
-        "</s:Body>" +
-        "</s:Envelope>";
 
     private static string ToDisplayName(string host)
         => host.Replace('-', ' ').Replace('_', ' ');

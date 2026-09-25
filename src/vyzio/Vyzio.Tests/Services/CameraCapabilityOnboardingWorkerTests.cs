@@ -16,11 +16,12 @@ public class CameraCapabilityOnboardingWorkerTests
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
 
     private CameraCapabilityOnboardingWorker CreateSut() => new(
         _queue,
         BackgroundLoop.Scopes(services => services.AddSingleton(new SeedAndProbePresetsUseCase(
-            _cameras, _bindings, new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry), _registry))),
+            _cameras, _bindings, new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache), _registry, _endpointCache))),
         NullLogger<CameraCapabilityOnboardingWorker>.Instance);
 
     // The probe starts by loading the camera: an unknown one ends it there, which is all these tests need.

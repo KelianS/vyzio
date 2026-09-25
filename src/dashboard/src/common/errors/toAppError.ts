@@ -9,6 +9,12 @@ const KNOWN_REFUSALS = new Map<string, string>([
   [ApiErrorCode.NotCalibrated, 'Cette caméra doit d’abord être calibrée'],
 ])
 
+// A camera's own answer is named by its code, never by a status a proxy in between also sends.
+const CAMERA_ERRORS = new Map<string, AppError>([
+  [ApiErrorCode.CameraRefused, { kind: AppErrorKind.CameraRefused }],
+  [ApiErrorCode.CameraUnreachable, { kind: AppErrorKind.CameraUnreachable }],
+])
+
 function isHttpLike(e: unknown): e is { status: number; code?: unknown } {
   return (
     typeof e === 'object' &&
@@ -35,6 +41,8 @@ function kindOf(e: unknown, code: string | undefined): AppError {
     return { kind: AppErrorKind.Network }
   }
   if (isHttpLike(e)) {
+    const cameraError = code === undefined ? undefined : CAMERA_ERRORS.get(code)
+    if (cameraError) return cameraError
     if (e.status === 404) return { kind: AppErrorKind.NotFound }
     if (e.status === 503) return { kind: AppErrorKind.SurveillanceDown }
     if (e.status >= 500) return { kind: AppErrorKind.Server, status: e.status }

@@ -10,7 +10,7 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 
 // Thrown on a diagnosable DVRIP failure (login rejected, Ret != 100, connection error) —
 // propagated so ProbeCameraCapabilityUseCase surfaces it as LastError instead of a generic
-// message (same rationale as OnvifCallException, ADR-28 follow-up).
+// message (same rationale as CameraCommandException, ADR-28 follow-up).
 public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
 
 // Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client — binary framing over TCP port 34567,

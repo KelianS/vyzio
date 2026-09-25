@@ -44,6 +44,28 @@ describe('toAppError', () => {
     expect(error.code).toBe(ApiErrorCode.NotCalibrated)
   })
 
+  it('toAppError_ShouldReadAsACameraRefusal_WhenTheApiNamesIt', () => {
+    const error = toAppError(
+      failedCall(502, 'POST /api/x · 502 · camera_refused', ApiErrorCode.CameraRefused),
+    )
+
+    expect(error.kind).toBe(AppErrorKind.CameraRefused)
+  })
+
+  it('toAppError_ShouldReadAsAnUnreachableCamera_WhenTheApiNamesIt', () => {
+    const error = toAppError(
+      failedCall(502, 'POST /api/x · 502 · camera_unreachable', ApiErrorCode.CameraUnreachable),
+    )
+
+    expect(error.kind).toBe(AppErrorKind.CameraUnreachable)
+  })
+
+  it('toAppError_ShouldNotBlameTheCamera_WhenAProxyAnswers502WithoutACode', () => {
+    const error = toAppError(failedCall(502, 'GET /api/hub · 502 Bad Gateway'))
+
+    expect(error.kind).toBe(AppErrorKind.Server)
+  })
+
   it('toAppError_ShouldGiveAPlainSentenceAndKeepTheTechnicalText_WhenTheErrorIsUnexpected', () => {
     const error = toAppError(new RangeError('Invalid time value'))
 

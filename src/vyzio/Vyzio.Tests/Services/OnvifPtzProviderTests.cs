@@ -1,8 +1,10 @@
 ﻿using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.VendorAdapters;
 
@@ -10,17 +12,23 @@ namespace Vyzio.Tests.Services;
 
 public class OnvifPtzProviderTests
 {
-    private static Camera MakeCamera() => new()
+    // A resolved address, so these tests exercise the provider, not the sweep (ADR-56).
+    private static Camera MakeCamera()
     {
-        Id = "cam1",
-        Slug = "cam1",
-        FrigateCameraName = "cam1",
-        DisplayName = "ONVIF Cam",
-        Host = "192.168.1.100",
-        Port = 8899,
-        Username = "admin",
-        Password = "pass",
-    };
+        var camera = new Camera
+        {
+            Id = "cam1",
+            Slug = "cam1",
+            FrigateCameraName = "cam1",
+            DisplayName = "ONVIF Cam",
+            Host = "192.168.1.100",
+            Port = 8899,
+            Username = "admin",
+            Password = "pass",
+        };
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.100:8899/onvif/device_service");
+        return camera;
+    }
 
     private static CameraCapabilityBinding MakeBinding() => new()
     {
@@ -41,8 +49,159 @@ public class OnvifPtzProviderTests
             : new CaptureHandler(captured, status, responseBody);
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(new HttpClient(httpHandler));
-        var onvifClient = new OnvifClient(factory, NullLogger<OnvifClient>.Instance);
+        var resolver = new OnvifEndpointResolver(factory, TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvifClient = new OnvifClient(factory, resolver, TimeProvider.System, NullLogger<OnvifClient>.Instance);
         return (new OnvifPtzProvider(onvifClient, NullLogger<OnvifPtzProvider>.Instance), captured);
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldRaise_WhenTheCameraRefusesTheCommand()
+    {
+        // A camera in privacy mode refuses PTZ; swallowing that reads as a camera without PTZ (ADR-56).
+        var (provider, _) = MakeProvider(handler: request =>
+        {
+            var body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult() ?? string.Empty;
+            return body.Contains("Stop")
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(
+                        """<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Reason><s:Text>Privacy mode is on</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>""",
+                        Encoding.UTF8, "application/soap+xml"),
+                }
+                : new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("<s:Envelope/>", Encoding.UTF8, "application/soap+xml"),
+                };
+        });
+
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
+            () => provider.PtzStopAsync(MakeCamera(), MakeBinding()));
+
+        Assert.Contains("Privacy mode is on", error.Message);
+    }
+
+    // Answers every query, and hands the Stop command to the scenario under test.
+    private static OnvifPtzProvider MakeProviderAnsweringStop(
+        Func<CancellationToken, Task<HttpResponseMessage>> stop, TimeProvider time)
+    {
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("onvif").Returns(new HttpClient(new ScenarioHandler(stop)));
+        var resolver = new OnvifEndpointResolver(factory, time, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvifClient = new OnvifClient(factory, resolver, time, NullLogger<OnvifClient>.Instance);
+        return new OnvifPtzProvider(onvifClient, NullLogger<OnvifPtzProvider>.Instance);
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldReportARefusal_WhenTheCameraAnswersWithAMalformedResponse()
+    {
+        var provider = MakeProviderAnsweringStop(
+            _ => throw new HttpRequestException(HttpRequestError.InvalidResponse, "The response ended prematurely."),
+            TimeProvider.System);
+
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
+            () => provider.PtzStopAsync(MakeCamera(), MakeBinding()));
+
+        Assert.Contains("malformed answer", error.Message);
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldReportTheCameraUnreachable_WhenItsAnswerIsCutOffHalfWay()
+    {
+        var provider = MakeProviderAnsweringStop(
+            _ => throw new HttpRequestException(HttpRequestError.ResponseEnded, "The response ended prematurely."),
+            TimeProvider.System);
+
+        await Assert.ThrowsAsync<CameraUnreachableException>(
+            () => provider.PtzStopAsync(MakeCamera(), MakeBinding()));
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldReportTheCameraUnreachable_WhenTheConnectionIsRefused()
+    {
+        var provider = MakeProviderAnsweringStop(
+            _ => throw new HttpRequestException(HttpRequestError.ConnectionError, "Connection refused"),
+            TimeProvider.System);
+
+        await Assert.ThrowsAsync<CameraUnreachableException>(
+            () => provider.PtzStopAsync(MakeCamera(), MakeBinding()));
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldCountTheCommandAsDone_WhenTheCameraIsSilentPastTheTimeout()
+    {
+        var time = new FakeTimeProvider();
+        var stopArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var provider = MakeProviderAnsweringStop(async ct =>
+        {
+            stopArrived.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("unreachable");
+        }, time);
+
+        var stop = provider.PtzStopAsync(MakeCamera(), MakeBinding());
+        await stopArrived.Task;
+        time.Advance(TimeSpan.FromSeconds(2));
+
+        Assert.Null(await Record.ExceptionAsync(() => stop));
+    }
+
+    [Fact]
+    public async Task ContinuousMoveAsync_ShouldReturnWithinAShortStep_WhenTheCameraIsSilent()
+    {
+        var time = new FakeTimeProvider();
+        var moveArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("onvif").Returns(new HttpClient(new SilentHandler(moveArrived)));
+        var resolver = new OnvifEndpointResolver(factory, time, NullLogger<OnvifEndpointResolver>.Instance);
+        var client = new OnvifClient(factory, resolver, time, NullLogger<OnvifClient>.Instance);
+
+        var move = client.ContinuousMoveAsync(MakeCamera(), "profile_1", 1f, 0f, CancellationToken.None);
+        await moveArrived.Task;
+        time.Advance(TimeSpan.FromMilliseconds(350));
+
+        Assert.Null(await Record.ExceptionAsync(() => move.WaitAsync(TimeSpan.FromSeconds(5))));
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldSendNoCredential_WhenTheCameraHasNoAccount()
+    {
+        var camera = MakeCamera();
+        camera.Username = null;
+        camera.Password = null;
+        var (provider, requests) = MakeProvider();
+
+        await provider.PtzStopAsync(camera, MakeBinding());
+
+        var bodies = await ReadBodies(requests);
+        Assert.Contains(bodies, body => body.Contains("GetProfiles", StringComparison.Ordinal));
+        Assert.Contains(bodies, body => body.Contains("<Stop ", StringComparison.Ordinal));
+        Assert.All(bodies, body => Assert.DoesNotContain("UsernameToken", body));
+    }
+
+    private sealed class SilentHandler(TaskCompletionSource arrived) : HttpMessageHandler
+    {
+        // Silent on the move only: the resolver's own questions get a plain refusal.
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(ct);
+            if (!body.Contains("<ContinuousMove", StringComparison.Ordinal)) return new HttpResponseMessage(HttpStatusCode.NotFound);
+            arrived.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("unreachable");
+        }
+    }
+
+    private sealed class ScenarioHandler(Func<CancellationToken, Task<HttpResponseMessage>> stop) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(ct);
+            if (body.Contains("<Stop")) return await stop(ct);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("<s:Envelope/>", Encoding.UTF8, "application/soap+xml"),
+            };
+        }
     }
 
     [Fact]
@@ -69,9 +228,9 @@ public class OnvifPtzProviderTests
         await provider.PtzMoveAsync(MakeCamera(), MakeBinding(), PtzDirection.Up, speed: 80);
 
         var bodies = await ReadBodies(requests);
-        Assert.Contains("GetProfiles", bodies[0]);
-        Assert.Contains("ContinuousMove", bodies[1]);
-        Assert.Contains("profile_1", bodies[1]);
+        Assert.Contains(bodies, body => body.Contains("GetProfiles"));
+        var move = bodies.Last(body => body.Contains("ContinuousMove"));
+        Assert.Contains("profile_1", move);
     }
 
     [Fact]

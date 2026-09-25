@@ -55,6 +55,9 @@ public class Camera
     // JSON array of detected network protocols e.g. ["onvif","v380"]. Populated by probe pipeline.
     public string? SupportedProtocolsJson { get; set; }
 
+    // Protocol -> address it answers on, e.g. {"onvif":"http://host:2020/onvif/service"}: a device fact (ADR-56).
+    public string? ProtocolEndpointsJson { get; set; }
+
     // Per-camera retention overrides (ADR-39). Null means "follow the installation" — never a
     // disguised value, which is why these are nullable rather than defaulted. Zero is a real
     // answer and means "keep nothing of this kind for this camera".
@@ -192,6 +195,34 @@ public class Camera
         {
             current.Add(protocol);
             SupportedProtocolsJson = JsonSerializer.Serialize(current.Select(p => SnakeCaseEnum.ToSnakeCase(p)));
+        }
+    }
+
+    public string? GetProtocolEndpoint(SupportedProtocol protocol)
+        => ReadProtocolEndpoints().GetValueOrDefault(SnakeCaseEnum.ToSnakeCase(protocol));
+
+    public void SetProtocolEndpoint(SupportedProtocol protocol, string endpoint)
+    {
+        var endpoints = ReadProtocolEndpoints();
+        endpoints[SnakeCaseEnum.ToSnakeCase(protocol)] = endpoint;
+        ProtocolEndpointsJson = JsonSerializer.Serialize(endpoints);
+    }
+
+    // Only through CameraEndpointForgetting, which clears the in-memory cache in the same gesture (ADR-56).
+    public void ClearProtocolEndpoints() => ProtocolEndpointsJson = null;
+
+    private Dictionary<string, string> ReadProtocolEndpoints()
+    {
+        if (ProtocolEndpointsJson is null)
+            return [];
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(ProtocolEndpointsJson) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 

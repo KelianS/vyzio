@@ -58,6 +58,106 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldStillStopRecording_WhenTheCameraRefusesTheParkingMove()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif));
+        _ptzProvider.PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), 1, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraCommandRefusedException("ONVIF Ptz: malformed answer")));
+
+        var result = await _sut.ExecuteAsync("cam1", active: true);
+
+        Assert.True(result!.PrivacyModeActive);
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStillStopRecordingWithoutClaimingACut_WhenTheLensCutFails()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.Dvrip));
+        _privacyProvider.SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraUnreachableException("DVRIP: no answer")));
+
+        var result = await _sut.ExecuteAsync("cam1", active: true);
+
+        Assert.True(result!.PrivacyModeActive);
+        Assert.False(result.PrivacyVendorCut);
+        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRaiseAndKeepPrivacyOn_WhenTheCameraFailsToOpenTheLens()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
+        camera.PrivacyModeActive = true;
+        camera.PrivacyVendorCut = true;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.Dvrip));
+        _privacyProvider.SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraUnreachableException("DVRIP: no answer")));
+
+        await Assert.ThrowsAsync<CameraUnreachableException>(() => _sut.ExecuteAsync("cam1", active: false));
+
+        Assert.True(camera.PrivacyModeActive);
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStillApplyPrivacy_WhenTheCallerHangsUpDuringTheCameraCall()
+    {
+        using var caller = new CancellationTokenSource();
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif));
+        _ptzProvider.PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), 1, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                caller.Cancel();
+                return Task.FromException(new OperationCanceledException(caller.Token));
+            });
+
+        await _sut.ExecuteAsync("cam1", active: true, ct: caller.Token);
+
+        await _cameras.Received(1).UpdateAsync(
+            Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Is<CancellationToken>(t => !t.IsCancellationRequested));
+        await _frigateConfig.Received(1).ApplyAsync(
+            Arg.Any<IReadOnlyList<Camera>>(), Arg.Is<CancellationToken>(t => !t.IsCancellationRequested));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRaiseAndSaveNothing_WhenTheBindingsCannotBeRead()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(strategy: PrivacyStrategy.Hardware));
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<CameraCapabilityBinding?>(new InvalidOperationException("database is locked")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExecuteAsync("cam1", active: true));
+
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRaise_WhenNoProviderServesTheBindingProtocol()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(strategy: PrivacyStrategy.Hardware));
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.Dvrip));
+        _registry.ResolvePrivacy(SupportedProtocol.Dvrip).Returns(_ => throw new NotSupportedException("no DVRIP privacy provider"));
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => _sut.ExecuteAsync("cam1", active: true));
+
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Execute_leaves_vendor_cut_false_when_strategy_is_software_blur()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.SoftwareBlur);
@@ -184,6 +284,46 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
         await _sut.ExecuteAsync(["cam1", "cam2"], active: true);
 
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCarryOnAndReloadOnce_WhenOneCameraOfTheBatchFails()
+    {
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns([MakeCamera("cam1", PrivacyStrategy.Hardware), MakeCamera("cam2", PrivacyStrategy.Hardware)]);
+        _bindings.GetAsync(Arg.Any<string>(), CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(ci => new CameraCapabilityBinding
+            {
+                CameraId = ci.ArgAt<string>(0),
+                Capability = CameraCapability.HardwarePrivacy,
+                Protocol = SupportedProtocol.Dvrip,
+                Verified = true,
+            });
+        _privacyProvider.SetPrivacyModeAsync(Arg.Is<Camera>(c => c.Id == "cam1"), Arg.Any<CameraCapabilityBinding>(), true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraUnreachableException("DVRIP: no answer")));
+
+        var result = await _sut.ExecuteAsync(["cam1", "cam2"], active: true);
+
+        Assert.Equal(2, result.Count);
+        Assert.All(result, camera => Assert.True(camera.PrivacyModeActive));
+        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReloadWithOnlyTheSavedCameras_WhenABindingCannotBeRead()
+    {
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns([MakeCamera("cam1"), MakeCamera("cam2", PrivacyStrategy.Hardware)]);
+        _bindings.GetAsync("cam2", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<CameraCapabilityBinding?>(new InvalidOperationException("database is locked")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExecuteAsync(["cam1", "cam2"], active: true));
+
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.Id == "cam1"), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).ApplyAsync(
+            Arg.Is<IReadOnlyList<Camera>>(all => all.Single(c => c.Id == "cam1").PrivacyModeActive
+                && !all.Single(c => c.Id == "cam2").PrivacyModeActive),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

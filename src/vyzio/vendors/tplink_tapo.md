@@ -37,6 +37,7 @@ Remplacez :
 ## Si cela ne fonctionne pas
 
 - Verifiez que vous utilisez bien le **compte camera**, et non votre compte Tapo principal.
+- Si la camera refuse soudain toute connexion : apres plusieurs mots de passe refuses, elle se bloque pendant environ vingt-cinq minutes, meme pour le bon. Verifiez l'identifiant saisi dans Vyzio, puis patientez sans nouvelle tentative.
 - Verifiez que le telephone, Vyzio et la camera sont sur le **meme reseau local**.
 - Si le premier flux ne fonctionne pas, essayez `stream2`.
 - Certaines cameras **sur batterie** ne proposent pas ce mode. Si besoin, verifiez le modele exact.
@@ -48,27 +49,38 @@ Remplacez :
 
 ## Mode vie privée
 
-**Niveau de garantie : coupure matérielle** — lorsque vous activez le mode vie privée sur une caméra Tapo, Vyzio commande directement la caméra via son API locale (protocole KLAP). Le cache physique de l'objectif se ferme et le **voyant LED s'éteint** : signal non falsifiable que la caméra ne capture plus rien, indépendamment de tout logiciel.
+**Niveau de garantie : caméra détournée.** Si vous choisissez cette protection sur la fiche de la
+caméra, Vyzio la tourne vers une position de repos et arrête l'enregistrement au même moment. La
+caméra ne regarde plus la pièce, et Vyzio n'enregistre plus. La caméra reste allumée : son image
+reste techniquement accessible sur votre réseau local, seul Vyzio cesse de la regarder.
 
-Le même identifiant et mot de passe **compte camera** est utilisé pour cette commande.
+Les caméras Tapo savent aussi fermer un cache d'objectif et éteindre leur LED, ce qui serait une
+garantie plus forte. Cette commande passe par le protocole privé de TP-Link, que Vyzio ne sait pas
+encore parler : elle n'est donc pas proposée plutôt que d'être annoncée sans fonctionner.
+
+> **À savoir** : si vous activez le mode vie privée depuis l'application Tapo, la caméra refuse les
+> commandes d'orientation tant qu'il est actif. C'est normal : Vyzio vous signale que la caméra a
+> refusé, au lieu de faire semblant d'avoir bougé. Désactivez-le dans l'application Tapo pour
+> orienter la caméra depuis Vyzio.
 
 ---
 
-## Contrôle PTZ (caméras pan-tilt)
+## Orienter la caméra (modèles motorisés)
 
-Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) peuvent être orientés directement depuis Vyzio via la même connexion KLAP.
+Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) s'orientent depuis Vyzio,
+avec les mêmes identifiants **compte camera** que le flux vidéo. Aucun compte TP-Link n'est
+nécessaire.
 
-**Cette capacité doit être testée et confirmée une fois depuis la fiche de la caméra.** Dans la section *Capacités*, cliquez sur **Tester** à côté de "Contrôle PTZ". Si la commande aboutit, le panneau de contrôle PTZ apparaît dans la vue live.
-
-> **Note** : la commande PTZ Tapo (`motorMove`) repose sur le protocole KLAP communautaire et n'a pas été testée sur tous les firmwares. Si le test échoue, le PTZ n'est pas proposé — la caméra continue de fonctionner normalement pour la surveillance et le mode vie privée.
-
-Pour les caméras Tapo configurées avant la mise à jour (migration 1.0.3), le PTZ n'est pas activé automatiquement : un probe manuel est requis une seule fois.
+**Cette capacité est vérifiée une fois depuis la fiche de la caméra.** Dans la section *Capacités*,
+cliquez sur **Tester** à côté de « Contrôle PTZ ». Si la commande aboutit, le panneau de contrôle
+apparaît dans la vue live.
 
 ---
 
 ## Réglages image
 
-Non supporté pour l'instant depuis Vyzio — le protocole KLAP n'a pas encore été investigué pour ce réglage (contrairement au PTZ et à la vie privée, cf. ADR-27). Utilisez l'application Tapo en attendant.
+Luminosité, contraste, saturation, netteté et filtre infrarouge sont réglables depuis Vyzio, sur la
+fiche de la caméra.
 
 ---
 

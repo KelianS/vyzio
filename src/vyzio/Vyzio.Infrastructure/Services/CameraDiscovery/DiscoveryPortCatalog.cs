@@ -54,6 +54,18 @@ internal static class DiscoveryPortCatalog
     public static IReadOnlyList<int> RtspProbePorts { get; } =
         Fingerprints.First(f => f.Protocol == SupportedProtocol.Rtsp).Ports;
 
+    // Shared with OnvifEndpointResolver: a camera recognised at discovery is one the client reaches (ADR-56).
+    public static IReadOnlyList<int> OnvifPorts { get; } =
+        Fingerprints.First(f => f.Protocol == SupportedProtocol.Onvif).Ports;
+
+    // "/onvif/service" serves every service on firmwares that do not split them (Tapo): a path, not a brand.
+    public static IReadOnlyList<string> OnvifPaths { get; } =
+    [
+        "/onvif/device_service",
+        "/onvif/service",
+        "/device_service",
+    ];
+
     public static IReadOnlyList<int> HttpProbePorts { get; } =
         ScannedPorts.Where(p => p.Value is "HTTP" or "HTTPS").Select(p => p.Key).Order().ToArray();
 

@@ -12,8 +12,11 @@ public static class VendorCapabilityPresets
     [
         new VendorCapabilityPreset(VendorFamily.TplinkTapo,
         [
+            // Over ONVIF only; the vendor protocol is kept for the lens cut alone, below (ADR-56).
+            (CameraCapability.Ptz, new[] { SupportedProtocol.Onvif }),
+            (CameraCapability.ImageSettings, new[] { SupportedProtocol.Onvif }),
+            // No ONVIF equivalent; unvalidated (#88), so an unverified binding leaves PtzParking in charge (ADR-21, ADR-24).
             (CameraCapability.HardwarePrivacy, new[] { SupportedProtocol.TapoKlap }),
-            (CameraCapability.Ptz, new[] { SupportedProtocol.TapoKlap }),
         ]),
         new VendorCapabilityPreset(VendorFamily.Icsee,
         [
