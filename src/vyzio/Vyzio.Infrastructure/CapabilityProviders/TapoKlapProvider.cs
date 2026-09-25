@@ -66,8 +66,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
     }
 
-    // Tapo consumer firmware does not expose ONVIF-style presets over KLAP — parking relies
-    // on PtzParkingPrivacyProvider's mechanical-limit move, not a saved preset position.
+    // No presets over KLAP; a Tapo reaches its saved positions over ONVIF instead (ADR-56, ADR-57).
     public Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 

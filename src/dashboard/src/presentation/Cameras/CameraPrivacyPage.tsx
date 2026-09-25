@@ -5,6 +5,9 @@ import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
+import { useAsync } from '../../common/hooks/useAsync'
+import { PARKING_PRESET_ID, SURVEILLANCE_PRESET_ID } from '../../domain/entities/PtzPreset'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
@@ -41,8 +44,19 @@ export function CameraPrivacyPage() {
     },
   )
 
+  const presets = useAsync(() => container.getPtzPresets.execute(camera.id), [camera.id], {
+    skip: !camera.ptzSupported,
+  })
+  const saved = (slot: number) =>
+    presets.data?.presets.some((p) => p.presetId === slot && p.configured) ?? false
+  // Unknown until read: a failed read must not pass for positions never saved.
+  const positionsSaved = presets.data
+    ? saved(PARKING_PRESET_ID) && saved(SURVEILLANCE_PRESET_ID)
+    : null
+
   const settings = buildPrivacySettings({
     camera,
+    setup: { positionsSaved },
     value: draft.values.strategy,
     onChange: (strategy) => draft.set('strategy', strategy),
   })
@@ -54,6 +68,7 @@ export function CameraPrivacyPage() {
           deux titres a un unique reglage. */}
       <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
         <SettingsList settings={settings} />
+        {presets.error && <ErrorMessage error={presets.error} />}
 
         {/* Section non encore reprise : elle garde ses propres actions. */}
         <SettingsSection title="Plages horaires" lede="Couper et rétablir automatiquement.">
