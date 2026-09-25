@@ -1,4 +1,5 @@
 ﻿using NSubstitute;
+using Vyzio.Core.Common;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -273,6 +274,24 @@ public class ConfigureCameraCapabilityUseCaseTests
         var result = await _sut.ExecuteAsync("x", new ConfigureCameraCapabilityRequest("ptz", "onvif", null));
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheLeftRightSwap_WhenPtzIsReconfigured()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        var existing = new CameraCapabilityBinding
+        {
+            CameraId = "cam1",
+            Capability = CameraCapability.Ptz,
+            Protocol = SupportedProtocol.V380,
+            ConfigJson = """{"pan_inverted":true}""",
+        };
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(existing);
+
+        await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "onvif", null));
+
+        Assert.True(BindingConfig.ReadBool(existing.ConfigJson, BindingConfig.PanInverted));
     }
 
     [Fact]

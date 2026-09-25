@@ -30,10 +30,19 @@ public static class BindingConfig
         return config.ToJsonString();
     }
 
-    // A setting the user owns survives a new config that does not name it.
+    // A setting the user owns survives a new config that does not name it; an unreadable one is left to the probe.
     public static string? Carry(string? from, string? into, string key)
     {
-        if (!ReadBool(from, key) || ReadBool(into, key)) return into;
-        return With(into, key, true);
+        if (!ReadBool(from, key)) return into;
+        try
+        {
+            var config = string.IsNullOrEmpty(into) ? null : JsonNode.Parse(into) as JsonObject;
+            if (config?.ContainsKey(key) == true) return into;
+            return With(into, key, true);
+        }
+        catch (JsonException)
+        {
+            return into;
+        }
     }
 }

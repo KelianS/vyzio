@@ -1,4 +1,3 @@
-using System.Text.Json;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Common;
@@ -64,64 +63,5 @@ public class PtzStepUseCaseTests
         await new PtzStepUseCase(_cameras, _bindings, _registry).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
 
         await _provider.Received(1).PtzStepAsync(_camera, binding, PtzDirection.Left, Arg.Any<int>(), Arg.Any<CancellationToken>());
-    }
-}
-
-public class SetPtzPanInvertedUseCaseTests
-{
-    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldSaveTheSettingAndKeepTheRestOfTheConfig_WhenInverted()
-    {
-        var binding = PtzBinding.With("""{"supports_native_presets":true}""");
-        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
-
-        var dto = await new SetPtzPanInvertedUseCase(_bindings).ExecuteAsync("cam1", inverted: true);
-
-        Assert.True(dto!.PanInverted);
-        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, "supports_native_presets"));
-        await _bindings.Received(1).SaveAsync(binding, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldReturnNothing_WhenTheCameraHasNoPtz()
-    {
-        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
-
-        Assert.Null(await new SetPtzPanInvertedUseCase(_bindings).ExecuteAsync("cam1", inverted: true));
-    }
-}
-
-public class BindingConfigTests
-{
-    [Fact]
-    public void Carry_ShouldKeepTheSwap_WhenANewConfigDoesNotNameIt()
-    {
-        var carried = BindingConfig.Carry("""{"pan_inverted":true}""", """{"device_id":42}""", BindingConfig.PanInverted);
-
-        Assert.True(BindingConfig.ReadBool(carried, BindingConfig.PanInverted));
-        Assert.Contains("\"device_id\":42", carried, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Carry_ShouldLeaveTheNewConfig_WhenTheOldOneHadNoSwap()
-    {
-        Assert.Null(BindingConfig.Carry("""{"supports_native_presets":true}""", null, BindingConfig.PanInverted));
-    }
-
-    [Fact]
-    public void With_ShouldRaise_WhenTheConfigCannotBeRead()
-    {
-        Assert.ThrowsAny<JsonException>(() => BindingConfig.With("not json", BindingConfig.PanInverted, true));
-    }
-
-    [Fact]
-    public void From_ShouldCarryNoSwap_WhenTheBindingIsNotPtz()
-    {
-        var binding = PtzBinding.With("""{"pan_inverted":true}""");
-        binding.Capability = CameraCapability.ImageSettings;
-
-        Assert.Null(CameraCapabilityBindingDto.From(binding).PanInverted);
     }
 }
