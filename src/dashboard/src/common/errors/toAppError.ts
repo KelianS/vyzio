@@ -8,8 +8,8 @@ const DIAGNOSTIC_LENGTH = 500
 const KNOWN_REFUSALS = new Map<string, string>([
   [ApiErrorCode.NotCalibrated, 'Cette caméra doit d’abord être calibrée'],
   [
-    ApiErrorCode.ParkingPositionMissing,
-    'Enregistrez d’abord la position Parking de cette caméra, dans « Image et pilotage »',
+    ApiErrorCode.ParkingPositionsMissing,
+    'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
   ],
 ])
 

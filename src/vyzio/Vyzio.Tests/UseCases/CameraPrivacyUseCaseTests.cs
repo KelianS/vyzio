@@ -423,6 +423,8 @@ public class SetCameraPrivacyStrategyUseCaseTests
     {
         _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
             .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot });
+        _presets.GetAsync("cam1", PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.SurveillanceSlot });
         _sut = new SetCameraPrivacyStrategyUseCase(_cameras, _presets);
     }
 
@@ -453,16 +455,31 @@ public class SetCameraPrivacyStrategyUseCaseTests
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyStrategy == expectedStrategy), Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task ExecuteAsync_ShouldRefuseParkingAndSaveNothing_WhenNoParkingPositionIsSaved()
+    [Theory]
+    [InlineData(PtzPreset.ParkingSlot)]
+    [InlineData(PtzPreset.SurveillanceSlot)]
+    public async Task ExecuteAsync_ShouldRefuseParkingAndSaveNothing_WhenOneOfItsPositionsIsNotSaved(int missingSlot)
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
-        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>()).Returns((PtzPreset?)null);
+        _presets.GetAsync("cam1", missingSlot, Arg.Any<CancellationToken>()).Returns((PtzPreset?)null);
 
-        await Assert.ThrowsAsync<ParkingPositionMissingException>(() =>
+        await Assert.ThrowsAsync<ParkingPositionsMissingException>(() =>
             _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("ptz_parking")));
 
         await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepParking_WhenTheCameraAlreadyHadItWithoutItsPositions()
+    {
+        var camera = MakeCamera();
+        camera.PrivacyStrategy = PrivacyStrategy.PtzParking;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _presets.GetAsync("cam1", Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns((PtzPreset?)null);
+
+        var result = await _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("ptz_parking"));
+
+        Assert.Equal("ptz_parking", result!.PrivacyStrategy);
     }
 
     [Fact]

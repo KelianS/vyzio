@@ -44,16 +44,16 @@ describe('toAppError', () => {
     expect(error.code).toBe(ApiErrorCode.NotCalibrated)
   })
 
-  it('toAppError_ShouldSayWhereToSaveTheParkingPosition_WhenParkingIsRefusedForLackOfIt', () => {
+  it('toAppError_ShouldSayWhereToSaveThePositions_WhenParkingIsRefusedForLackOfThem', () => {
     const error = toAppError(
       failedCall(
         409,
-        'PATCH /api/cameras/c/privacy-strategy · 409 · parking_position_missing',
-        ApiErrorCode.ParkingPositionMissing,
+        'PATCH /api/cameras/c/privacy-strategy · 409 · parking_positions_missing',
+        ApiErrorCode.ParkingPositionsMissing,
       ),
     )
 
-    expect(appErrorMessage(error)).toContain('position Parking')
+    expect(appErrorMessage(error)).toContain('positions Surveillance et Parking')
   })
 
   it('toAppError_ShouldReadAsACameraRefusal_WhenTheApiNamesIt', () => {

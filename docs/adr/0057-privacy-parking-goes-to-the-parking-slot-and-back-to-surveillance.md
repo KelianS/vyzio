@@ -37,9 +37,10 @@ logged; telling the user belongs to #143. The strict rule of ADR-20 for switchin
 while the lens stays shut) holds for the hardware cut only: a camera left turned away still films
 nothing of the room, so resuming recording hides nothing.
 
-**c) The `ptz_parking` strategy requires a saved Parking position.** The API refuses to select it for
-a camera whose slot 2 is not saved (`parking_position_missing`), and the dashboard says what to do
-first. Without it the strategy would promise a move that cannot happen. A position counts as saved
+**c) The `ptz_parking` strategy requires both positions saved, Surveillance and Parking.** The API
+refuses to select it for a camera missing either (`parking_positions_missing`), and the dashboard says
+what to do first. Without Parking the camera would not turn away; without Surveillance it would stay
+turned away when privacy ends, and recording would resume on the wall. A position counts as saved
 when Vyzio holds its row: saving a preset records the row on both branches, the native token included.
 A position saved in the vendor app is not known yet (#142).
 
@@ -50,13 +51,16 @@ A position saved in the vendor app is not known yet (#142).
   would claim more than it guarantees, and SPECS 9.3 defines parking as the Parking slot.
 - **Keep the current strategy choice and let an unsaved position fail silently.** Rejected: a
   strategy that does nothing on the camera, with only a log line, is an opaque state (principle 4).
+- **Require the Parking position alone.** Rejected: the return would then depend on a position nobody
+  was asked to save.
 - **Make the return move strict, like switching the hardware cut off.** Rejected: it would keep a
   camera out of surveillance because it failed to turn, although turned away it films nothing.
 
 ## Consequences
 
-- Cameras already set to `ptz_parking` without a saved Parking position keep their strategy; their
-  camera does not move until the position is saved, which is logged, and #143 will show it.
+- Cameras already set to `ptz_parking` without both positions keep their strategy; the dashboard
+  tells them which step is missing, the missing move is logged, and #143 will show it at the moment it
+  happens.
 - Switching privacy on or off waits for the camera's move, which takes seconds on a camera whose
   positions Vyzio keeps (homing, then steps). In a batch the cameras move one after another.
 - No thumbnail is taken for either move: thumbnails are captured by the client after a move it asked

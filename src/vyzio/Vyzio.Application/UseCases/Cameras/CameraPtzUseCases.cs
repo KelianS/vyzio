@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
@@ -8,11 +9,11 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record PtzMoveRequest(string Direction, int Speed = 50);
 
-// Thrown when ptz_parking is chosen before the Parking position is saved (ADR-57).
-public sealed class ParkingPositionMissingException : InvalidOperationException
+// Thrown when ptz_parking is chosen before both of its positions are saved (ADR-57).
+public sealed class ParkingPositionsMissingException : InvalidOperationException
 {
-    public ParkingPositionMissingException()
-        : base("Save the camera's Parking position (preset 2) before choosing ptz_parking.") { }
+    public ParkingPositionsMissingException()
+        : base("Save the camera's Surveillance (preset 1) and Parking (preset 2) positions before choosing ptz_parking.") { }
 }
 
 // Thrown by PtzSavePresetUseCase when Branch B position tracking has not been calibrated
@@ -75,7 +76,7 @@ public sealed class PtzSavePresetUseCase(
                 PresetId = presetId,
                 Label = PtzPreset.DefaultLabel(presetId),
                 Native = true,
-                NativeToken = presetId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                NativeToken = presetId.ToString(CultureInfo.InvariantCulture),
             }, ct);
         }
         else
@@ -243,11 +244,12 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, I
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        // Parking promises a move; without a saved Parking position there is nowhere to go (ADR-57).
+        // Parking promises a move there and back; both ends must be saved (ADR-57).
         if (strategy == PrivacyStrategy.PtzParking
             && camera.PrivacyStrategy != PrivacyStrategy.PtzParking
-            && await presets.GetAsync(cameraId, PtzPreset.ParkingSlot, ct) is null)
-            throw new ParkingPositionMissingException();
+            && (await presets.GetAsync(cameraId, PtzPreset.ParkingSlot, ct) is null
+                || await presets.GetAsync(cameraId, PtzPreset.SurveillanceSlot, ct) is null))
+            throw new ParkingPositionsMissingException();
 
         camera.PrivacyStrategy = strategy;
         camera.UpdatedAt = DateTimeOffset.UtcNow;

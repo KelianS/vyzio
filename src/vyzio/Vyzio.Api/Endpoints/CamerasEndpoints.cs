@@ -234,9 +234,9 @@ public static class CamerasEndpoints
                 var dto = await useCase.ExecuteAsync(id, new SetPrivacyStrategyRequest(request.Strategy), ct);
                 return dto is null ? Results.NotFound() : Results.Ok(dto);
             }
-            catch (ParkingPositionMissingException ex)
+            catch (ParkingPositionsMissingException ex)
             {
-                return Results.Conflict(new { error = "parking_position_missing", message = ex.Message });
+                return Results.Conflict(new { error = "parking_positions_missing", message = ex.Message });
             }
             catch (ArgumentException ex)
             {

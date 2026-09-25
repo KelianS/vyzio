@@ -16,7 +16,7 @@ type AppErrorKind = (typeof AppErrorKind)[keyof typeof AppErrorKind]
 /** The codes the API names that a screen acts on; a code nobody expects stays in the diagnostic line. */
 export const ApiErrorCode = {
   NotCalibrated: 'not_calibrated',
-  ParkingPositionMissing: 'parking_position_missing',
+  ParkingPositionsMissing: 'parking_positions_missing',
   CameraRefused: 'camera_refused',
   CameraUnreachable: 'camera_unreachable',
 } as const
