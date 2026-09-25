@@ -8,6 +8,9 @@
 # For local development with live builds, apply the dev override:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
+# Fixed, so the volumes do not follow the folder name: a clone or worktree elsewhere keeps the same data.
+name: vyzio
+
 services:
   vyzio-dashboard:
     image: ghcr.io/kelians/vyzio-dashboard:${VYZIO_VERSION:-latest}
