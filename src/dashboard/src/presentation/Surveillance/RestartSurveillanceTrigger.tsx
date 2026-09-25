@@ -37,6 +37,7 @@ export function RestartSurveillanceTrigger() {
         <ConfirmModal
           title={RESTART_QUESTION}
           body={wording.body}
+          diagnostic={wording.diagnostic}
           confirmLabel={wording.confirmLabel}
           cancelLabel="Plus tard"
           tone="confirm"

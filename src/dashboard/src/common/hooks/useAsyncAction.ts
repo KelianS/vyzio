@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { AppError } from '../errors/AppError'
-import { appErrorMessage } from '../errors/AppError'
+import { toastError } from '../errors/AppError'
 import { toAppError } from '../errors/toAppError'
 import { useToast } from '../components/Toast'
 
@@ -43,7 +43,7 @@ export function useAsyncAction<TArgs extends unknown[], TResult>(
         if (optionsRef.current.onError) {
           optionsRef.current.onError(appError)
         } else if (!optionsRef.current.silent) {
-          toast(appErrorMessage(appError), 'error')
+          toastError(toast, appError)
         }
         return undefined
       } finally {

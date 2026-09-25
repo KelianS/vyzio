@@ -34,7 +34,8 @@ export interface AddCameraUido {
   verification: { connected: boolean; guidance: string | null } | null
 
   message: string | null
-  error: string | null
+  /** A failure: its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
+  error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
 }
 

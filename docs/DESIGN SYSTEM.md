@@ -198,10 +198,24 @@ Product principle 2 forbids saying the name of the engine, not saying what is ha
 
 - A failed restart is stated in terms of **breakdown**, not of a remaining step.
 
+### Errors
+
+An error reads at two levels ([SPECS](SPECS.md) 1.5).
+
+- **The sentence** names the effect in the product's words, and what to do when there is something to
+  do. It is all the user needs.
+- **The diagnostic line** sits under it in `font-mono text-xs`, a step quieter than the sentence
+  (`text-muted-foreground` in place, the toast's own foreground at 70 % on the dark toast), and
+  selectable so it can be copied. What it holds is built by the error pipeline
+  ([`src/dashboard/CLAUDE.md`](../src/dashboard/CLAUDE.md) § Error handling). It never replaces the
+  sentence.
+- **A toast carrying a diagnostic line stays until it is dismissed**, long enough to be read and
+  photographed. Any other toast closes by itself, and the same failure raised twice shows once.
+
 ### Cross-cutting bans
 
 - Never `MQTT`, `broker`, `frigate events`, `sub_label`, `NVR`, nor the name of the detection engine, in
-  the nominal journey (product principle 2).
+  the nominal journey (product principle 2). The diagnostic line of an error is not the nominal journey.
 - Never an opaque state without a readable justification (principle 4).
 - Never instructions for use outside the product, nor help that paraphrases the screen: navigation, a
   greyed-out button, a missing option already read on screen (ADR-53).

@@ -2,7 +2,7 @@ import { useEffect, useReducer, type ComponentPropsWithoutRef, type ReactNode } 
 import ReactMarkdown from 'react-markdown'
 import { Link, useNavigate } from 'react-router'
 import { ChevronLeft, Keyboard, Radar } from 'lucide-react'
-import { appErrorMessage } from '../../common/errors/AppError'
+import { DiagnosticLine, ErrorMessage } from '../../common/components/ErrorMessage'
 import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
@@ -28,7 +28,7 @@ import {
 } from './vendorFamilies'
 import { buildAddCameraPresenter } from './AddCamera.Presenter'
 import { addCameraReducer } from './AddCamera.Reducer'
-import { buildInitialAddCameraUido } from './AddCamera.Uido'
+import { buildInitialAddCameraUido, type AddCameraUido } from './AddCamera.Uido'
 
 /** Discovery signal that unlocks the DVRIP fallback (ADR-32). */
 const DVRIP_SIGNAL = 'dvrip_port_detected'
@@ -349,7 +349,7 @@ export function AddCameraView() {
             {vendorAssistance.loading ? (
               <p className="text-muted-foreground">Chargement…</p>
             ) : vendorAssistance.error ? (
-              <p className="text-destructive">{appErrorMessage(vendorAssistance.error)}</p>
+              <ErrorMessage error={vendorAssistance.error} className="text-base" />
             ) : (
               <VendorNotice markdown={vendorAssistance.data!.markdown} />
             )}
@@ -410,8 +410,14 @@ function CandidateRow({
 }
 
 /** Last action's outcome: success or failure, never both. */
-function Feedback({ message, error }: { message: string | null; error: string | null }) {
-  if (error) return <p className="text-sm text-destructive">{error}</p>
+function Feedback({ message, error }: { message: string | null; error: AddCameraUido['error'] }) {
+  if (error)
+    return (
+      <div role="alert" className="text-sm text-destructive">
+        <p>{error.message}</p>
+        {error.diagnostic && <DiagnosticLine text={error.diagnostic} />}
+      </div>
+    )
   if (message) return <p className="text-sm text-success">{message}</p>
   return null
 }

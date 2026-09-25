@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { HelpPanel } from '../../common/components/HelpPanel'
 import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
-import { appErrorMessage } from '../../common/errors/AppError'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { onSessionLost } from '../../infrastructure/http/sessionLost'
 import { PasswordScreen } from './PasswordScreen'
@@ -36,7 +36,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-4 px-4 text-center">
         <h1 className="font-serif text-2xl">Vyzio ne répond pas</h1>
-        <p className="text-sm text-muted-foreground">{appErrorMessage(gate.error)}</p>
+        <ErrorMessage error={gate.error} className="text-muted-foreground" />
         <button type="button" onClick={reload} className="text-sm font-medium underline">
           Réessayer
         </button>

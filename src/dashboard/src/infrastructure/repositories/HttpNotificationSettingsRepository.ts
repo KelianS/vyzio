@@ -12,6 +12,7 @@ import type {
 import type { NotificationSettingsRepository } from '../../domain/ports/NotificationSettingsRepository'
 import { fetchJson, postJson, putJson } from '../http/fetchJson'
 import { HttpError } from '../http/HttpError'
+import { httpErrorFrom, send } from '../http/send'
 
 export class HttpNotificationSettingsRepository implements NotificationSettingsRepository {
   constructor(private readonly apiBaseUrl: string) {}
@@ -46,9 +47,9 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
 
   async deleteChannel(channel: NotificationChannelName): Promise<boolean> {
     const url = this.settingsUrl(channel)
-    const response = await fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
+    const response = await send(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
     if (response.status === 404) return false
-    if (!response.ok) throw new HttpError(response.status, url)
+    if (!response.ok) throw await httpErrorFrom(response, url, 'DELETE')
     return true
   }
 
@@ -77,9 +78,9 @@ export class HttpNotificationSettingsRepository implements NotificationSettingsR
 
   async revokePairing(channel: NotificationChannelName): Promise<boolean> {
     const url = this.pairingUrl(channel)
-    const response = await fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
+    const response = await send(url, { method: 'DELETE', headers: { Accept: 'application/json' } })
     if (response.status === 404) return false
-    if (!response.ok) throw new HttpError(response.status, url)
+    if (!response.ok) throw await httpErrorFrom(response, url, 'DELETE')
     return true
   }
 

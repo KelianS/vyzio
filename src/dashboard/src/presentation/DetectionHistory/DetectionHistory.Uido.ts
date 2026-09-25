@@ -16,7 +16,8 @@ export interface DetectionHistoryUido {
   detectionLabels: DetectionLabel[]
   loading: boolean
   loadingMore: boolean
-  error: string | null
+  /** A failed read: its sentence, and the diagnostic line support reads (SPECS 1.5). */
+  error: { message: string; diagnostic?: string } | null
   media: DetectionMedia | null
   /** Filters are an option, not the top of the screen: folded until they are asked for. */
   filtersOpen: boolean

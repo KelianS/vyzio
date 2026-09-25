@@ -78,9 +78,11 @@ supreme zero-duplication rule in [`../CLAUDE.md`](../CLAUDE.md).
 ## Language
 
 **The repository is written in English**, code and prose alike: comments, commits, pull requests,
-issues, templates, labels, and every framing document. One file is the exception and stays in French,
-[`SPECS.md`](SPECS.md), because it frames the product for a French market and is read as much by
-non-engineers as by contributors.
+issues, templates, labels, and every framing document. Two things are French: [`SPECS.md`](SPECS.md),
+because it frames the product for a French market and is read as much by non-engineers as by
+contributors; and what the interface shows the user, wherever it is written, the strings of the
+dashboard as well as the vendor sheets `src/vyzio/vendors/*.md`, which the interface serves as vendor
+assistance.
 
 One gap remains, and it is deliberate. The **bodies of the ADRs are still in French**, while their
 filenames are already English. Renaming is the operation that breaks links, so it was done once, on its
