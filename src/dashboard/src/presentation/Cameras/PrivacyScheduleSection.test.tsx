@@ -222,7 +222,7 @@ describe('PrivacyScheduleSection', () => {
         endTime: '06:00',
       })
     })
-    expect(await screen.findByText('22:00 → 06:00')).toBeInTheDocument()
+    expect(await screen.findByText('22:00 → 06:00 le lendemain')).toBeInTheDocument()
   })
 
   it('only offers "apply to all" when there is more than one camera', async () => {
@@ -277,12 +277,12 @@ describe('PrivacyScheduleSection', () => {
       />,
     )
 
-    await screen.findByText('22:00 → 06:00')
+    await screen.findByText('22:00 → 06:00 le lendemain')
     await user.click(screen.getByTitle('Supprimer'))
 
     await waitFor(() => {
       expect(deleteSchedule.execute).toHaveBeenCalledWith('camera-1', 'schedule-1')
     })
-    expect(screen.queryByText('22:00 → 06:00')).not.toBeInTheDocument()
+    expect(screen.queryByText('22:00 → 06:00 le lendemain')).not.toBeInTheDocument()
   })
 })
