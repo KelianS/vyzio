@@ -38,6 +38,7 @@ interface CameraDto {
   needsAttention: boolean
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
+  accountRefusedAt?: string | null
   frigateCameraName: string
   vendorFamily: string | null
   privacyModeActive: boolean
@@ -345,6 +346,7 @@ function mapCamera(camera: CameraDto): Camera {
     needsAttention: camera.needsAttention,
     lastReachabilityCheckAt: camera.lastReachabilityCheckAt,
     lastSuccessfulFrameAt: camera.lastSuccessfulFrameAt,
+    accountRefusedAt: camera.accountRefusedAt ?? null,
     frigateCameraName: camera.frigateCameraName,
     vendorFamily: camera.vendorFamily,
     privacyModeActive: camera.privacyModeActive ?? false,

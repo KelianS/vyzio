@@ -17,6 +17,7 @@ export interface FakeCamera {
   needsAttention: boolean
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
+  accountRefusedAt: string | null
   frigateCameraName: string | null
   vendorFamily: string | null
   privacyModeActive: boolean
@@ -80,6 +81,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     needsAttention: false,
     lastReachabilityCheckAt: new Date().toISOString(),
     lastSuccessfulFrameAt: new Date().toISOString(),
+    accountRefusedAt: null,
     frigateCameraName: 'front_door',
     vendorFamily: null,
     privacyModeActive: false,

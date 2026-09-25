@@ -167,6 +167,12 @@ function ConnectionForm({ camera }: { camera: Camera }) {
   return (
     <>
       <SettingsPage lede="Comment Vyzio joint cette caméra.">
+        {camera.accountRefusedAt && (
+          <p role="status" className="mb-3 text-sm text-destructive">
+            La caméra refuse son mot de passe. Vyzio ne le lui présente plus, pour qu’elle ne le
+            bloque pas : corrigez-le ci-dessous, enregistrez, puis vérifiez la connexion.
+          </p>
+        )}
         <SettingsList settings={declarations} />
 
         {/* Verifier et supprimer sont des **actions** : elles agissent tout de

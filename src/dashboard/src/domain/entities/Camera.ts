@@ -16,6 +16,8 @@ export interface Camera {
   needsAttention: boolean
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
+  /** When the camera refused its own account; it stays out of capture until fixed (ADR-58). */
+  accountRefusedAt: string | null
   frigateCameraName: string
   vendorFamily: string | null
   privacyModeActive: boolean

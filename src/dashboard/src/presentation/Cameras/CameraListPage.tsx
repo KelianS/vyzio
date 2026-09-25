@@ -32,9 +32,7 @@ export function CameraListPage() {
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
-                  <Badge tone={formatStatusTone(camera)}>
-                    {formatCameraStatusLabel(camera.status)}
-                  </Badge>
+                  <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
                   <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
                 </span>
               </Link>

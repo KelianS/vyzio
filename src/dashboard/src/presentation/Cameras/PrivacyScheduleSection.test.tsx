@@ -24,6 +24,7 @@ function makeCamera(overrides: Partial<Camera> = {}): Camera {
     needsAttention: false,
     lastReachabilityCheckAt: null,
     lastSuccessfulFrameAt: null,
+    accountRefusedAt: null,
     frigateCameraName: 'front_door',
     vendorFamily: null,
     privacyModeActive: false,
