@@ -61,6 +61,7 @@ interface CameraStatusDto {
   guidance: string | null
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
+  accountRefused: boolean
 }
 
 interface DiscoveredCameraDto {
@@ -373,6 +374,7 @@ function mapCameraStatus(status: CameraStatusDto): CameraStatus {
     guidance: status.guidance,
     lastReachabilityCheckAt: status.lastReachabilityCheckAt,
     lastSuccessfulFrameAt: status.lastSuccessfulFrameAt,
+    accountRefused: status.accountRefused,
   }
 }
 

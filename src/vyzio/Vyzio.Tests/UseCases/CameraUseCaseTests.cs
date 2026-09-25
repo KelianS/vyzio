@@ -272,13 +272,14 @@ public class VerifyCameraUseCaseTests
     private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
     private readonly ICameraStreamEnumerator _streamEnumerator = Substitute.For<ICameraStreamEnumerator>();
     private readonly IRtspAccountProbe _accountProbe = Substitute.For<IRtspAccountProbe>();
+    private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
     private readonly VerifyCameraUseCase _sut;
 
     public VerifyCameraUseCaseTests()
     {
         _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
             .Returns([]);
-        _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator, _accountProbe);
+        _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator, _accountProbe, _frigateConfig);
     }
 
     [Theory]
@@ -303,6 +304,8 @@ public class VerifyCameraUseCaseTests
         await _sut.ExecuteAsync(camera.Id);
 
         Assert.Equal(cleared, camera.AccountRefusedAt is null);
+        await _frigateConfig.Received(cleared ? 1 : 0)
+            .WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), true, Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -12,7 +12,8 @@ public sealed record CameraStatusDto(
     bool NeedsAttention,
     string? Guidance,
     DateTimeOffset? LastReachabilityCheckAt,
-    DateTimeOffset? LastSuccessfulFrameAt)
+    DateTimeOffset? LastSuccessfulFrameAt,
+    bool AccountRefused = false)
 {
     public static CameraStatusDto From(Camera camera, string? guidanceOverride = null)
     {
@@ -30,7 +31,9 @@ public sealed record CameraStatusDto(
             needsAttention,
                 guidanceOverride ?? BuildGuidance(camera, connected, previewAvailable),
             camera.LastReachabilityCheckAt,
-            camera.LastSuccessfulFrameAt);
+            camera.LastSuccessfulFrameAt,
+            // Answering on the network is not letting Vyzio in (ADR-58).
+            camera.AccountRefusedAt is not null);
     }
 
     private static string? BuildGuidance(Camera camera, bool connected, bool previewAvailable)

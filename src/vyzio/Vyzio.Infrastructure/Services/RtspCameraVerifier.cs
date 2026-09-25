@@ -94,7 +94,7 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
     private static async Task<RtspProbeResult> ProbeRtspAsync(TcpClient client, Camera camera, CancellationToken ct)
     {
         var stream = client.GetStream();
-        var requestUri = BuildRtspUri(camera);
+        var requestUri = RtspStreamAddress.Of(camera.Host, camera.Port, camera.StreamPath);
         var request = $"OPTIONS {requestUri} RTSP/1.0\r\nCSeq: 1\r\nUser-Agent: Vyzio\r\n\r\n";
         var bytes = Encoding.ASCII.GetBytes(request);
 
@@ -120,24 +120,6 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
         }
 
         return RtspProbeResult.Unknown;
-    }
-
-    private static string BuildRtspUri(Camera camera)
-    {
-        var builder = new UriBuilder("rtsp", camera.Host, camera.Port);
-
-        if (!string.IsNullOrWhiteSpace(camera.StreamPath))
-        {
-            builder.Path = camera.StreamPath!.TrimStart('/');
-        }
-
-        if (!string.IsNullOrWhiteSpace(camera.Username))
-        {
-            builder.UserName = camera.Username;
-            builder.Password = camera.Password ?? string.Empty;
-        }
-
-        return builder.Uri.ToString();
     }
 
     private enum RtspProbeResult

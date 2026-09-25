@@ -40,7 +40,16 @@ const DRAFT_LABELS: Record<keyof CameraImageSettings, string> = {
 export function CameraImagePage() {
   const camera = useOutletContext<Camera>()
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
-  const pilotage = camera.ptzSupported ? <PilotageSection camera={camera} /> : null
+  // Moving a camera Vyzio cannot reach would only spend an attempt on it (SPECS 2.2, ADR-58).
+  const pilotage = !camera.ptzSupported ? null : camera.connected ? (
+    <PilotageSection camera={camera} />
+  ) : (
+    <p className="text-muted-foreground">
+      {camera.accountRefusedAt
+        ? 'Pilotage suspendu : la caméra refuse son mot de passe.'
+        : 'Pilotage suspendu : la caméra est hors ligne.'}
+    </p>
+  )
 
   if (!hasImageSettings) {
     return (

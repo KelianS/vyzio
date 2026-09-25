@@ -124,7 +124,9 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
 
       {offline && (
         <p className="text-sm text-muted-foreground">
-          Caméra hors ligne — la détection sera disponible dès que la caméra sera joignable.
+          {camera.accountRefusedAt
+            ? 'Mot de passe refusé : la détection reprendra une fois la connexion vérifiée.'
+            : 'Caméra hors ligne — la détection sera disponible dès que la caméra sera joignable.'}
         </p>
       )}
 

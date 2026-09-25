@@ -548,6 +548,7 @@ export async function installFakeBackend(
           guidance: null,
           lastReachabilityCheckAt: new Date().toISOString(),
           lastSuccessfulFrameAt: new Date().toISOString(),
+          accountRefused: Boolean(camera?.accountRefusedAt),
         })
       }
       if (rest === '/verify' && method === 'POST') {
@@ -562,6 +563,8 @@ export async function installFakeBackend(
           guidance: 'Vérification terminée.',
           lastReachabilityCheckAt: new Date().toISOString(),
           lastSuccessfulFrameAt: new Date().toISOString(),
+          // Like the real one: answering on the network is not letting Vyzio in (ADR-58).
+          accountRefused: Boolean(camera?.accountRefusedAt),
         })
       }
       if (rest === '/privacy/toggle' && method === 'POST') {

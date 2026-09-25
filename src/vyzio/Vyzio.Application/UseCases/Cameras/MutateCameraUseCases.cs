@@ -110,7 +110,8 @@ public sealed class VerifyCameraUseCase(
     ICameraRepository cameras,
     ICameraVerifier verifier,
     ICameraStreamEnumerator streamEnumerator,
-    IRtspAccountProbe accountProbe)
+    IRtspAccountProbe accountProbe,
+    IFrigateConfigApplier frigateConfig)
 {
     public async Task<CameraStatusDto?> ExecuteAsync(string id, CancellationToken ct = default)
     {
@@ -121,8 +122,9 @@ public sealed class VerifyCameraUseCase(
         }
 
         // The way back from a refusal: the user checks again, and the camera itself says whether it lets Vyzio in (ADR-58).
-        if (camera.AccountRefusedAt is not null && await accountProbe.CheckAsync(camera, ct) == RtspAccountCheck.Accepted)
-            camera.AccountRefusedAt = null;
+        var readmitted = camera.AccountRefusedAt is not null
+            && await accountProbe.CheckAsync(camera, ct) == RtspAccountCheck.Accepted;
+        if (readmitted) camera.AccountRefusedAt = null;
 
         var result = await verifier.VerifyAsync(camera, ct);
         camera.Status = result.Status;
@@ -145,6 +147,10 @@ public sealed class VerifyCameraUseCase(
         }
 
         await cameras.UpdateAsync(camera, ct);
+
+        // Back in the capture config, taken up at the restart the user triggers (ADR-44, ADR-58).
+        if (readmitted) await frigateConfig.WriteConfigAsync(await cameras.GetAllAsync(ct), changed: true, ct);
+
         return CameraStatusDto.From(camera, result.Guidance);
     }
 

@@ -94,10 +94,14 @@ function ConnectionForm({ camera }: { camera: Camera }) {
 
   const verifying = useAsyncAction(async () => container.verifyCamera.execute(camera.id), {
     onSuccess: (status) => {
-      toast(
-        status?.connected ? 'Caméra joignable.' : 'Caméra injoignable — vérifiez ces réglages.',
-        status?.connected ? 'success' : 'error',
-      )
+      if (status?.accountRefused) toast('La caméra refuse toujours son mot de passe.', 'error')
+      else
+        toast(
+          status?.connected ? 'Caméra joignable.' : 'Caméra injoignable — vérifiez ces réglages.',
+          status?.connected ? 'success' : 'error',
+        )
+      // A camera let back in waits for the restart the user triggers (ADR-44, ADR-58).
+      refreshSurveillance()
       reloadCameras()
     },
   })
@@ -171,12 +175,13 @@ function ConnectionForm({ camera }: { camera: Camera }) {
         {camera.accountRefusedAt && (
           <div role="status" className="mb-3 text-sm text-destructive">
             <p>
-              Cette caméra n’enregistre plus : elle refuse le mot de passe que Vyzio connaît, sans
-              doute changé dans l’application du fabricant ou effacé par une mise à jour. Vyzio a
-              cessé de l’essayer pour que la caméra ne le bloque pas. Saisissez son mot de passe
-              actuel ci-dessous, enregistrez, puis vérifiez la connexion.
+              Cette caméra n’enregistre plus et ne détecte plus rien : elle refuse le mot de passe
+              que Vyzio connaît, sans doute changé dans l’application du fabricant ou effacé par une
+              mise à jour. Vyzio a cessé de l’essayer pour ne pas se faire bloquer par la caméra.
+              Saisissez son mot de passe actuel ci-dessous, enregistrez, puis vérifiez la connexion.
+              S’il a été rétabli dans l’application, vérifiez simplement la connexion.
             </p>
-            <DiagnosticLine text={`RTSP DESCRIBE 401 · ${camera.accountRefusedAt}`} />
+            <DiagnosticLine text={`RTSP DESCRIBE: account refused · ${camera.accountRefusedAt}`} />
           </div>
         )}
         <SettingsList settings={declarations} />
@@ -201,7 +206,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
             — elle teste une connexion et rend un resultat — pas une valeur. Elle
             ne rentre donc pas telle quelle dans le cycle de brouillon. */}
         <SettingsSection title="Capacités" lede="Ce que Vyzio a vérifié auprès de cette caméra.">
-          <CapabilitySection camera={camera} />
+          <CapabilitySection camera={camera} offline={!camera.connected} />
 
           <HelpPanel title="Le test échoue, que vérifier ?">
             <p>

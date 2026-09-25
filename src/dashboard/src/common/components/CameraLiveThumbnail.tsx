@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { EyeOff, KeyRound, Lock, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -90,9 +91,17 @@ export function CameraLiveThumbnail({
           </div>
         ) : camera.accountRefusedAt ? (
           // Its own cause, never passed off as the camera being away or reconnecting (SPECS 2.2).
-          <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
-            <KeyRound className="size-4" aria-hidden="true" />
-            Mot de passe refusé
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
+            <span className="flex items-center gap-2">
+              <KeyRound className="size-4" aria-hidden="true" />
+              Mot de passe refusé
+            </span>
+            <Link
+              to={`/settings/cameras/${camera.id}/connexion`}
+              className="font-normal underline underline-offset-2"
+            >
+              Corriger le mot de passe
+            </Link>
           </div>
         ) : deviceOffline ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">

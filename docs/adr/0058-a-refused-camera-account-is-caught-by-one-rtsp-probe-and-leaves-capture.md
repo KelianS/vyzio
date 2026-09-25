@@ -37,8 +37,9 @@ no other action (moving it, its image settings, a capability test) spends an att
 
 **d) The refusal ends when the camera lets Vyzio in again.** Saving new credentials clears it, and the
 connection check that follows puts the camera back into capture, as for any change of how Vyzio
-reaches it. A connection check alone asks the probe once more and clears the refusal if the camera now
-accepts, for a password restored in the vendor app. If the account is still refused, (b) and (c) catch
+reaches it. A connection check alone asks the probe once more and, if the camera now accepts (a password restored
+in the vendor app), clears the refusal and writes the camera back into the capture config, taken up at
+the restart the user triggers (ADR-44). If the account is still refused, (b) and (c) catch
 it again after a handful of attempts, never a loop.
 
 **e) The refusal sits beside reachability, not inside it.** ADR-23's online and offline status says
