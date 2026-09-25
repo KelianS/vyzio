@@ -7,6 +7,9 @@ export interface PtzPreset {
   configured: boolean
 }
 
+/** Where privacy parking sends the camera (ADR-57). */
+export const PARKING_PRESET_ID = 2
+
 export const PRESET_LABELS: Record<number, string> = {
   1: 'Surveillance',
   2: 'Parking',

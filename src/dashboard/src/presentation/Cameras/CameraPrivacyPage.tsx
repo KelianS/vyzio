@@ -4,6 +4,8 @@ import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
+import { useAsync } from '../../common/hooks/useAsync'
+import { PARKING_PRESET_ID } from '../../domain/entities/PtzPreset'
 import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
@@ -39,8 +41,15 @@ export function CameraPrivacyPage() {
     },
   )
 
+  const presets = useAsync(() => container.getPtzPresets.execute(camera.id), [camera.id], {
+    skip: !camera.ptzSupported,
+  })
+  const parkingSaved =
+    presets.data?.presets.some((p) => p.presetId === PARKING_PRESET_ID && p.configured) ?? false
+
   const settings = buildPrivacySettings({
     camera,
+    parkingSaved,
     value: draft.values.strategy,
     onChange: (strategy) => draft.set('strategy', strategy),
   })

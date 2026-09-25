@@ -8,7 +8,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Resolved through capability bindings, never the brand (ADR-22); parking goes to the Parking slot (ADR-25).
+// Resolved through capability bindings, never the brand (ADR-22); parking and its return follow ADR-57.
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -113,13 +113,16 @@ internal static class PrivacyVendorAction
                 break;
 
             case PrivacyStrategy.PtzParking:
-                if (active && await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
+                if (await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
                 {
                     var ptz = registry.ResolvePtz(ptzBinding.Protocol);
+                    var slot = active ? PtzPreset.ParkingSlot : PtzPreset.SurveillanceSlot;
                     deviceCall = async () =>
                     {
-                        if (!await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, PtzPreset.ParkingSlot, ct))
-                            throw new InvalidOperationException("No parking position is saved for this camera.");
+                        // A slot never saved is a missing setup step, not the camera failing: support must read it so.
+                        if (!await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, slot, ct))
+                            logger.LogWarning("Privacy {State} on {CameraId}: no {Slot} position is saved, so the camera stays where it is.",
+                                active ? "on" : "off", camera.Id, PtzPreset.DefaultLabel(slot));
                     };
                 }
                 break;
@@ -132,15 +135,16 @@ internal static class PrivacyVendorAction
             await deviceCall();
             return camera.PrivacyStrategy == PrivacyStrategy.Hardware && active;
         }
-        // Only switching on is best effort; a lens left shut must not be shown as privacy off (SPECS 9.2).
-        catch (Exception ex) when (active)
+        // Best effort, except a lens left shut: it must not be shown as privacy off (SPECS 9.2, ADR-57).
+        catch (Exception ex) when (active || camera.PrivacyStrategy == PrivacyStrategy.PtzParking)
         {
             // A caller hanging up is not the camera failing; support must not read it as one.
             if (ex is OperationCanceledException && ct.IsCancellationRequested)
-                logger.LogInformation("Privacy on for {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.", camera.Id);
+                logger.LogInformation("Privacy {State} on {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.",
+                    active ? "on" : "off", camera.Id);
             else
-                logger.LogWarning(ex, "Privacy on for {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
-                    camera.Id, camera.PrivacyStrategy);
+                logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
+                    active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
             return false;
         }
     }

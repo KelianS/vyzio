@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using Microsoft.Extensions.Logging;
+using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -14,6 +15,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
+    private readonly ILogger<ToggleCameraPrivacyModeUseCase> _logger = Substitute.For<ILogger<ToggleCameraPrivacyModeUseCase>>();
     private readonly ToggleCameraPrivacyModeUseCase _sut;
 
     public ToggleCameraPrivacyModeUseCaseTests()
@@ -21,7 +23,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets);
+        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, _logger);
     }
 
     private static Camera MakeCamera(string id = "cam1", PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()
@@ -241,23 +243,45 @@ public class ToggleCameraPrivacyModeUseCaseTests
         await _ptzProvider.DidNotReceive().PtzStepAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Any<CancellationToken>());
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+        Assert.Contains(_logger.ReceivedCalls(), call => call.GetArguments()[0] is LogLevel.Warning
+            && call.GetArguments()[2]?.ToString()?.Contains("no Parking position is saved", StringComparison.Ordinal) == true);
     }
 
     [Fact]
-    public async Task Execute_ptz_parking_deactivation_does_not_call_ptz_provider()
+    public async Task ExecuteAsync_ShouldTurnBackToSurveillance_WhenPrivacyEnds()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        camera.PrivacyModeActive = true;
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        var ptzBinding = MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.V380);
+        var ptzBinding = MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif, configJson: NativePresets);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(ptzBinding);
 
         await _sut.ExecuteAsync("cam1", active: false);
 
-        await _ptzProvider.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _ptzProvider.Received(1).PtzGoToPresetAsync(camera, ptzBinding, PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>());
+        await _ptzProvider.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), PtzPreset.ParkingSlot, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Execute_ptz_parking_skips_provider_when_no_verified_ptz_binding()
+    public async Task ExecuteAsync_ShouldStillResumeRecording_WhenTheCameraFailsToTurnBack()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        camera.PrivacyModeActive = true;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif, configJson: NativePresets));
+        _ptzProvider.PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraUnreachableException("ONVIF Ptz: no answer")));
+
+        var result = await _sut.ExecuteAsync("cam1", active: false);
+
+        Assert.False(result!.PrivacyModeActive);
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => !c.PrivacyModeActive), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotMoveTheCamera_WhenItsPtzIsNotVerified()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -392,11 +416,14 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
 public class SetCameraPrivacyStrategyUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
     private readonly SetCameraPrivacyStrategyUseCase _sut;
 
     public SetCameraPrivacyStrategyUseCaseTests()
     {
-        _sut = new SetCameraPrivacyStrategyUseCase(_cameras);
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot });
+        _sut = new SetCameraPrivacyStrategyUseCase(_cameras, _presets);
     }
 
     private static Camera MakeCamera() => new()
@@ -424,6 +451,18 @@ public class SetCameraPrivacyStrategyUseCaseTests
         Assert.Equal(strategy, result!.PrivacyStrategy);
         var expectedStrategy = Vyzio.Core.Common.SnakeCaseEnum.FromSnakeCase<PrivacyStrategy>(strategy);
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyStrategy == expectedStrategy), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuseParkingAndSaveNothing_WhenNoParkingPositionIsSaved()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>()).Returns((PtzPreset?)null);
+
+        await Assert.ThrowsAsync<ParkingPositionMissingException>(() =>
+            _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("ptz_parking")));
+
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

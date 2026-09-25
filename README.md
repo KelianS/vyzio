@@ -82,7 +82,7 @@ knows how to drive them:
 
 A **hardware cut** means Vyzio asks the camera's own firmware to close the shutter and kill the
 sensor, so nothing is filmed at all. Where a camera offers no such thing, Vyzio physically turns it
-to a wall and stops recording at the same time.
+to the parking position you saved, stops recording at the same time, and turns it back afterwards.
 
 Nothing in that table is taken on trust: a capability is probed on the camera itself before Vyzio
 offers it, and a failed probe hides that one control without affecting the others. The list grows

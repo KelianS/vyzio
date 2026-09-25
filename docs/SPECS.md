@@ -400,8 +400,8 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 **Règles fonctionnelles :**
 
 - chaque caméra peut avoir une stratégie de mode vie privée indépendante : `"software"` (désactivation Frigate uniquement), `"ptz_parking"` (mouvement physique + désactivation Frigate), `"hardware"` (coupure native firmware, ex. Tapo) ;
-- l'option `ptz_parking` n'est proposée que si la caméra supporte le PTZ — cette capacité doit être détectée automatiquement à l'onboarding et configurable manuellement ;
-- le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers la butée mécanique ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ;
+- l'option `ptz_parking` n'est proposée que si la caméra supporte le PTZ — cette capacité doit être détectée automatiquement à l'onboarding et configurable manuellement — et ne peut être choisie qu'une fois la position Parking (preset 2) enregistrée ; tant qu'elle ne l'est pas, l'interface dit de l'enregistrer d'abord ;
+- le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue ;
 - l'utilisateur doit pouvoir définir la position de surveillance (preset "home") via des contrôles PTZ live dans l'interface — une fois orientée, il clique "Définir comme position de surveillance" ;
 - les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) — c'est le parcours d'usage quotidien ;
 - si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et de la position de surveillance avant de terminer ;
