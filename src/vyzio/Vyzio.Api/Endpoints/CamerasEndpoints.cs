@@ -21,6 +21,7 @@ file sealed record BatchTogglePrivacyRequest(IReadOnlyList<string> CameraIds, bo
 file sealed record PtzStepApiRequest(string Direction, int Speed = 50);
 file sealed record PtzPresetApiRequest(int PresetId);
 file sealed record PrivacyStrategyApiRequest(string Strategy);
+file sealed record PtzPanInvertedApiRequest(bool Inverted);
 
 public static class CamerasEndpoints
 {
@@ -263,6 +264,12 @@ public static class CamerasEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
+        });
+
+        group.MapPut("/{id}/capabilities/ptz/pan-inverted", async (string id, PtzPanInvertedApiRequest request, SetPtzPanInvertedUseCase useCase, CancellationToken ct) =>
+        {
+            var binding = await useCase.ExecuteAsync(id, request.Inverted, ct);
+            return binding is null ? Results.NotFound() : Results.Ok(binding);
         });
 
         group.MapDelete("/{id}/capabilities/{capability}", async (

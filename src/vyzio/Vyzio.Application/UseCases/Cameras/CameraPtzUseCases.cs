@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -38,8 +39,67 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityB
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
         var provider = registry.ResolvePtz(binding.Protocol);
-        await provider.PtzStepAsync(camera, binding, direction, Math.Clamp(request.Speed, 1, 100), ct);
+        var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
+        await provider.PtzStepAsync(camera, binding, pressed, Math.Clamp(request.Speed, 1, 100), ct);
         return true;
+    }
+}
+
+// Sets whether left and right are swapped for a camera that turns the other way (SPECS 9.3).
+public sealed class SetPtzPanInvertedUseCase(ICameraCapabilityBindingRepository bindings)
+{
+    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, bool inverted, CancellationToken ct = default)
+    {
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { } binding) return null;
+
+        binding.ConfigJson = PtzPanDirection.WithInverted(binding.ConfigJson, inverted);
+        await bindings.SaveAsync(binding, ct);
+        return CameraCapabilityBindingDto.From(binding);
+    }
+}
+
+// The swap happens where the user presses, never in a provider: saved positions replay in the camera's own frame.
+internal static class PtzPanDirection
+{
+    private const string Key = "pan_inverted";
+
+    public static bool IsInverted(string? configJson)
+    {
+        if (string.IsNullOrEmpty(configJson)) return false;
+        try
+        {
+            return JsonNode.Parse(configJson)?[Key]?.GetValue<bool>() ?? false;
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+        {
+            return false;
+        }
+    }
+
+    public static PtzDirection AsPressed(PtzDirection direction, bool inverted) => !inverted ? direction : direction switch
+    {
+        PtzDirection.Left => PtzDirection.Right,
+        PtzDirection.Right => PtzDirection.Left,
+        PtzDirection.UpLeft => PtzDirection.UpRight,
+        PtzDirection.UpRight => PtzDirection.UpLeft,
+        PtzDirection.DownLeft => PtzDirection.DownRight,
+        PtzDirection.DownRight => PtzDirection.DownLeft,
+        _ => direction,
+    };
+
+    public static string WithInverted(string? configJson, bool inverted)
+    {
+        JsonObject config;
+        try
+        {
+            config = (string.IsNullOrEmpty(configJson) ? null : JsonNode.Parse(configJson) as JsonObject) ?? [];
+        }
+        catch (JsonException)
+        {
+            config = [];
+        }
+        config[Key] = inverted;
+        return config.ToJsonString();
     }
 }
 
