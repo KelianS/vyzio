@@ -157,7 +157,8 @@ public sealed class FrigateConfigApplier(
                     var detectStream = camera.DetectStream;
                     return new FrigateCameraConfig
                     {
-                        Enabled = !camera.PrivacyModeActive,
+                        // A refused account stays out of capture, or the retries get Vyzio banned (ADR-58).
+                        Enabled = !camera.PrivacyModeActive && camera.AccountRefusedAt is null,
                         Ffmpeg = new FrigateFfmpegConfig
                         {
                             Inputs = BuildInputs(camera, frigateKey),

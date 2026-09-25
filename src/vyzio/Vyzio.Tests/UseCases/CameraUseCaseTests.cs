@@ -613,6 +613,32 @@ public class UpdateCameraUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldClearTheRefusal_WhenThePasswordChanges()
+    {
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            FrigateCameraName = "front_door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            Port = 554,
+            Username = "viewer",
+            Password = "old-placeholder",
+            ValidationState = "validated",
+            IsEnabled = true,
+            SourceType = "rtsp_manual",
+            AccountRefusedAt = DateTimeOffset.UnixEpoch,
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        await _sut.ExecuteAsync(camera.Id, new UpdateCameraRequest(
+            "Front Door", "192.168.1.10", 554, "viewer", "new-placeholder", null, "rtsp_manual"));
+
+        Assert.Null(camera.AccountRefusedAt);
+    }
+
+    [Fact]
     public async Task Execute_resets_camera_to_draft_when_stream_settings_change()
     {
         var camera = new Camera

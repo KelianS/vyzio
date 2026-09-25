@@ -66,3 +66,4 @@ references these ADRs rather than copying them.
 | [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted |
 | [ADR-55](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |
+| [ADR-58](0058-a-refused-camera-account-is-caught-by-one-rtsp-probe-and-leaves-capture.md) | A refused camera account is caught by one RTSP probe, and the camera leaves capture | Accepted |

@@ -206,6 +206,17 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
+    public async Task ApplyAsync_ShouldLeaveTheCameraOutOfCapture_WhenItRefusedItsAccount()
+    {
+        var camera = MakeValidatedCamera("front-door");
+        camera.AccountRefusedAt = DateTimeOffset.UnixEpoch;
+
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        Assert.Contains("enabled: false", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task EdgeTpu_detected_emits_edgetpu_detector()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.EdgeTpu);

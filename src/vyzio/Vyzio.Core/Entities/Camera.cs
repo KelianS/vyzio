@@ -84,6 +84,9 @@ public class Camera
 
     public DateTimeOffset? LastSuccessfulFrameAt { get; set; }
 
+    // Set when the camera refused its own account; the camera stays out of capture until it is fixed (ADR-58).
+    public DateTimeOffset? AccountRefusedAt { get; set; }
+
     // The key this camera answers to in Frigate. Set at onboarding and on every rename, never null:
     // Frigate keys refuse dashes, so it is never the slug itself.
     [Required, MaxLength(200)]

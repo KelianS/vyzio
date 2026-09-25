@@ -77,6 +77,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SetCameraImageSettingsUseCase>();
         services.AddHostedService<Services.CameraCapabilityOnboardingWorker>();
         services.AddHostedService<Services.CameraReachabilityPollerService>();
+        services.AddScoped<Services.CameraAccountWatch>();
+        services.AddHostedService<Services.CameraAccountWatcherService>();
         // Singleton: the tuner carries the per-camera sample counters across passes (ADR-35).
         services.AddSingleton<Services.MotionSensitivityTuner>();
         services.AddHostedService<Services.MotionSensitivityTunerService>();

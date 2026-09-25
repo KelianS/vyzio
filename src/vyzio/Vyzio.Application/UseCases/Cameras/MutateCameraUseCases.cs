@@ -277,6 +277,8 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
             camera.IsEnabled = false;
             camera.LastReachabilityCheckAt = null;
             camera.LastSuccessfulFrameAt = null;
+            // New credentials earn one new attempt (ADR-58).
+            camera.AccountRefusedAt = null;
         }
 
         if (request.PtzSupported.HasValue)
