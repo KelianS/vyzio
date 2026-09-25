@@ -15,6 +15,7 @@ import { Badge } from '../../common/components/Badge'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
+import { Switch } from '../../common/ui/switch'
 import { cn } from '../../common/ui/utils'
 import {
   Select,
@@ -184,6 +185,16 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
   )
 }
 
+/** Whether this PTZ binding swaps left and right (SPECS 9.3); an unreadable config swaps nothing. */
+function isPanInverted(binding: CameraCapabilityBinding): boolean {
+  if (!binding.configJson) return false
+  try {
+    return (JSON.parse(binding.configJson) as { pan_inverted?: unknown }).pan_inverted === true
+  } catch {
+    return false
+  }
+}
+
 // --- CapabilityRow ---
 
 interface CapabilityRowProps {
@@ -195,7 +206,7 @@ interface CapabilityRowProps {
 }
 
 function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
-  const { configureCameraCapability, updateCamera, removeCameraCapability } =
+  const { configureCameraCapability, updateCamera, removeCameraCapability, setPtzPanInverted } =
     useAppContainer().cameras
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
@@ -253,6 +264,17 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
       },
     },
   )
+
+  const panInverted = isPanInverted(binding)
+  const panAction = useAsyncAction(() => setPtzPanInverted.execute(camera.id, !panInverted), {
+    onSuccess: () => {
+      onToast(
+        panInverted ? 'Sens gauche et droite rétabli.' : 'Gauche et droite inversés.',
+        'success',
+      )
+      onDone()
+    },
+  })
 
   const removeAction = useAsyncAction(
     () => removeCameraCapability.execute(camera.id, binding.capability),
@@ -345,6 +367,22 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
         )}
         {isVerified && verifiedAtLabel && (
           <div className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</div>
+        )}
+
+        {binding.capability === 'ptz' && isConfigured && (
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <Switch
+              checked={panInverted}
+              disabled={panAction.loading || offline}
+              onCheckedChange={() => void panAction.run()}
+            />
+            <span>
+              Inverser gauche et droite
+              <span className="block text-muted-foreground">
+                Si la caméra tourne à gauche quand vous appuyez à droite.
+              </span>
+            </span>
+          </label>
         )}
 
         {showV380IdInput && (

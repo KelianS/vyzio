@@ -252,6 +252,8 @@ export interface FakeBackendState {
     maxDays: number
   }
   /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
+  /** The camera's PTZ binding as the capability list shows it, when it has one. */
+  ptzBinding: { protocol: string; configJson: string | null } | null
   ptz: {
     presets: {
       presetId: number
@@ -304,6 +306,7 @@ export function createFakeBackendState(
       eventClip: { days: 14, default: 14 },
       maxDays: 365,
     },
+    ptzBinding: null,
     ptz: { presets: [], calibrated: true, currentPosition: { x: 0, y: 0 } },
     ...overrides,
   }
@@ -311,6 +314,19 @@ export function createFakeBackendState(
 
 /** The fake installation's password: the tests type it, nothing else knows it. */
 export const FAKE_PASSWORD = 'mot-de-passe-de-test'
+
+function ptzBindingOf(binding: { protocol: string; configJson: string | null }) {
+  return {
+    capability: 'ptz',
+    protocol: binding.protocol,
+    configJson: binding.configJson,
+    verified: true,
+    verifiedAt: '2026-01-01T00:00:00Z',
+    lastError: null,
+    isPreset: false,
+    isConfigured: true,
+  }
+}
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
@@ -607,7 +623,14 @@ export async function installFakeBackend(
       }
 
       if (rest === '/capabilities' && method === 'GET') {
-        return json(route, [])
+        return json(route, state.ptzBinding ? [ptzBindingOf(state.ptzBinding)] : [])
+      }
+      if (rest === '/capabilities/ptz/pan-inverted' && method === 'PUT') {
+        if (!state.ptzBinding) return json(route, {}, 404)
+        const inverted = Boolean(postData?.inverted)
+        const config = JSON.parse(state.ptzBinding.configJson ?? '{}') as Record<string, unknown>
+        state.ptzBinding.configJson = JSON.stringify({ ...config, pan_inverted: inverted })
+        return json(route, ptzBindingOf(state.ptzBinding))
       }
       if (rest === '/privacy/schedules' && method === 'GET') {
         return json(route, [])

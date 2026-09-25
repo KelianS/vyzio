@@ -82,6 +82,7 @@ export interface CameraRepository {
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
   removeCapability(cameraId: string, capability: Capability): Promise<void>
+  setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding>
   detectCapabilities(cameraId: string): Promise<void>
   // Image settings (ADR-27) — read/written live on the camera, nothing persisted by Vyzio.
   getImageSettings(cameraId: string): Promise<CameraImageSettings>
