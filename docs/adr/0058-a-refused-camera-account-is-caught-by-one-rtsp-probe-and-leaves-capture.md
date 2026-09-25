@@ -62,5 +62,9 @@ that status says, and its verdict comes from the camera, never from the capture 
 - A DVRIP camera speaks no RTSP on its port, so its refused account is not caught this way.
 - The probe runs only after two silent readings, so a refusal is caught within about a minute of the
   capture going dark, a few attempts in.
+- The reload is attempted once. If it fails, the refusal stays recorded and the capture config written
+  without the camera is taken up at the next restart; until then the capture keeps retrying it, and the
+  failure is logged. Retrying the reload on its own would restart surveillance again and again, beyond
+  the one exception SPECS 7.2 allows.
 - A camera that bans after very few attempts can still lock Vyzio out before the watcher acts; the card
   then says the account is refused, which remains true once the lockout ends.

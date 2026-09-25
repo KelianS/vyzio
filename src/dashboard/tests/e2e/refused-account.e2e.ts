@@ -29,7 +29,7 @@ test.describe('Refused camera account', () => {
 
     await page.getByRole('button', { name: 'Vérifier la connexion' }).click()
 
-    await expect(page.getByText('La caméra refuse toujours son mot de passe.')).toBeVisible()
+    await expect(page.getByText('La caméra ne laisse toujours pas entrer Vyzio.')).toBeVisible()
     await expect(page.getByText('Caméra joignable.')).toHaveCount(0)
   })
 
@@ -49,6 +49,21 @@ test.describe('Refused camera account', () => {
       ),
     ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Appliquer les changements' })).toBeVisible()
+  })
+
+  test('CameraConnectionPage_ShouldSayUnreachable_WhenARefusedCameraDoesNotAnswerTheCheck', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ status: 'offline', accountRefusedAt: '2026-09-25T10:00:00Z' })],
+    })
+    await installFakeBackend(page, state)
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    await page.getByRole('button', { name: 'Vérifier la connexion' }).click()
+
+    await expect(page.getByText('Caméra injoignable — vérifiez ces réglages.')).toBeVisible()
+    await expect(page.getByText('La caméra ne laisse toujours pas entrer Vyzio.')).toHaveCount(0)
   })
 
   test('HubView_ShouldNotOpenTheLiveView_WhenTheCameraCannotBeReached', async ({ page }) => {

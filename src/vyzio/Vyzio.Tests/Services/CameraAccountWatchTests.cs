@@ -69,19 +69,20 @@ public class CameraAccountWatchTests
     }
 
     [Fact]
-    public async Task ReadAsync_ShouldRetryTheReloadWithoutProbingAgain_WhenTheReloadFailed()
+    public async Task ReadAsync_ShouldKeepTheRefusalAndReloadOnlyOnce_WhenTheReloadFailed()
     {
         _probe.CheckAsync(_camera, Arg.Any<CancellationToken>()).Returns(RtspAccountCheck.Refused);
         _frigateConfig.ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>())
-            .Returns(new FrigateConfigApplyResult(false, "down", "frigate.yml"), new FrigateConfigApplyResult(true, "ok", "frigate.yml"));
+            .Returns(new FrigateConfigApplyResult(false, "down", "frigate.yml"));
 
         await ReadWithFps(0);
         await ReadWithFps(0);
         await ReadWithFps(0);
         await ReadWithFps(0);
 
+        Assert.Equal(_time.GetUtcNow(), _camera.AccountRefusedAt);
         await _probe.Received(1).CheckAsync(_camera, Arg.Any<CancellationToken>());
-        await _frigateConfig.Received(2).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

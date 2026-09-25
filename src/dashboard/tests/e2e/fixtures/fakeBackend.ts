@@ -564,7 +564,7 @@ export async function installFakeBackend(
           displayName: camera?.displayName ?? cameraId,
           status: 'online',
           validationState: 'validated',
-          connected: true,
+          connected: camera?.status !== 'offline',
           previewAvailable: true,
           needsAttention: false,
           guidance: 'Vérification terminée.',

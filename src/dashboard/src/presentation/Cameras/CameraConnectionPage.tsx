@@ -95,9 +95,9 @@ function ConnectionForm({ camera }: { camera: Camera }) {
 
   const verifying = useAsyncAction(async () => container.verifyCamera.execute(camera.id), {
     onSuccess: (status) => {
-      // A camera that did not answer has not refused anything: it falls to "injoignable" (ADR-58).
+      // The refusal holds until the camera accepts; one that is unreachable falls to "injoignable" (ADR-58).
       if (status?.accountRefused && status.connected)
-        toast('La caméra refuse toujours son mot de passe.', 'error')
+        toast('La caméra ne laisse toujours pas entrer Vyzio.', 'error')
       else if (camera.accountRefusedAt && status?.connected)
         toast(
           `La caméra accepte son mot de passe. Elle enregistre de nouveau après « ${RESTART_ACTION} ».`,
