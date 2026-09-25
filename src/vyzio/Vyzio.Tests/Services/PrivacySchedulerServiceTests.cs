@@ -96,6 +96,28 @@ public class PrivacySchedulerServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldActivatePrivacy_WhenTheNightStartedTheDayBefore()
+    {
+        // Arrange: Thursday 02:00, inside Wednesday's night.
+        var time = BackgroundLoop.ClockAt("2026-09-24T02:00:00+00:00");
+        var camera = KnownCamera();
+        var wednesdayNight = WednesdayMorning("cam1");
+        wednesdayNight.StartTime = "22:00";
+        wednesdayNight.EndTime = "06:00";
+        _schedules.GetAllActiveSchedulesAsync(Arg.Any<CancellationToken>()).Returns([wednesdayNight]);
+        var updated = SignalOnUpdate(time);
+        var sut = CreateSut(time);
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await updated.Task.ObservedAsync();
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(camera.PrivacyModeActive);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldStillApplyTheScheduleToTheOthers_WhenOneCameraFails()
     {
         var time = BackgroundLoop.ClockAt("2026-09-23T10:30:00+00:00");

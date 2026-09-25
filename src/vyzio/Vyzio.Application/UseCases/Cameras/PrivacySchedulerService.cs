@@ -57,12 +57,7 @@ public sealed class PrivacySchedulerService(
 
         foreach (var schedule in schedules)
         {
-            var days = schedule.GetDaysOfWeek();
-            if (!days.Contains(currentDay)) continue;
-
-            var start = schedule.GetStartTime();
-            var end = schedule.GetEndTime();
-            if (currentTime >= start && currentTime < end)
+            if (schedule.Covers(currentDay, currentTime))
                 desiredActive[schedule.CameraId] = true;
         }
 

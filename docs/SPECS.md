@@ -379,7 +379,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 - le mode vie privee peut etre active manuellement (bascule instantanee) ou via une planification recurrente (jours de la semaine + plage horaire) ;
 - le statut vie privee de chaque camera doit etre clairement visible dans l'interface (icone ou badge distinct de l'etat "hors ligne") ; le libelle du badge doit reflechir la strategie active ("Cache objectif", "Camera orientee — enregistrement desactive", "Enregistrement desactive") ;
 - la vue live d'une camera en mode vie privee doit afficher un etat explicite ("Camera en pause — vie privee") plutot qu'un echec de chargement ;
-- une planification ne doit pas pouvoir etre creee sans plage horaire valide (heure de debut < heure de fin ou gestion explicite du passage minuit) ;
+- une plage horaire peut passer minuit (22h a 6h) : elle appartient au jour ou elle commence et se termine le lendemain, ce que l'interface dit en clair ; une plage vide (debut = fin) ou mal formee est refusee avec une phrase qui dit quoi changer, jamais comme une erreur du serveur ;
 - en cas de conflit entre une activation manuelle et une planification, l'activation manuelle est prioritaire : la planification ne peut pas reactivation automatiquement une camera desactivee manuellement ; l'utilisateur doit reactiver manuellement pour revenir au pilotage automatique ;
 - l'etat du mode vie privee doit survivre a un redemarrage du systeme (persistance) ;
 - la desactivation du mode vie privee (manuelle ou fin de planification) doit restaurer le flux camera sans intervention utilisateur supplementaire ;

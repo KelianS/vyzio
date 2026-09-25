@@ -152,6 +152,33 @@ public sealed class GetCameraPrivacySchedulesUseCase(ICameraPrivacyRepository sc
     }
 }
 
+/// <summary>A schedule the user can fix, answered as a refusal naming what to change, never as a failure (SPECS 9.2).</summary>
+public sealed class InvalidPrivacyScheduleException(string code, string message) : ArgumentException(message)
+{
+    public const string NoDay = "schedule_no_day";
+    public const string InvalidTime = "schedule_invalid_time";
+    public const string EmptyRange = "schedule_empty_range";
+
+    public string Code { get; } = code;
+
+    internal static TimeSpan ParseTime(string value) =>
+        TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out var time)
+            ? time
+            : throw new InvalidPrivacyScheduleException(InvalidTime, $"Time '{value}' is not HH:mm.");
+
+    internal static void RequireDays(IReadOnlyList<int> days)
+    {
+        if (days.Count == 0 || days.Any(d => d is < 0 or > 6))
+            throw new InvalidPrivacyScheduleException(NoDay, "At least one day of week, 0 to 6, is required.");
+    }
+
+    internal static void RequireRange(TimeSpan start, TimeSpan end)
+    {
+        if (start == end)
+            throw new InvalidPrivacyScheduleException(EmptyRange, "Start and end are the same time.");
+    }
+}
+
 public sealed record CreatePrivacyScheduleRequest(
     IReadOnlyList<int> DaysOfWeek,
     string StartTime,
@@ -170,13 +197,10 @@ public sealed class CreateCameraPrivacyScheduleUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        if (request.DaysOfWeek.Count == 0)
-            throw new ArgumentException("At least one day of week is required.");
-        if (!TimeSpan.TryParse(request.StartTime, CultureInfo.InvariantCulture, out var start)
-            || !TimeSpan.TryParse(request.EndTime, CultureInfo.InvariantCulture, out var end))
-            throw new ArgumentException("Invalid time format. Use HH:mm.");
-        if (end <= start)
-            throw new ArgumentException("EndTime must be after StartTime. For midnight crossing, use two schedules.");
+        InvalidPrivacyScheduleException.RequireDays(request.DaysOfWeek);
+        InvalidPrivacyScheduleException.RequireRange(
+            InvalidPrivacyScheduleException.ParseTime(request.StartTime),
+            InvalidPrivacyScheduleException.ParseTime(request.EndTime));
 
         var schedule = new CameraPrivacySchedule
         {
@@ -208,23 +232,13 @@ public sealed class UpdateCameraPrivacyScheduleUseCase(ICameraPrivacyRepository 
         var schedule = await schedules.GetScheduleByIdAsync(scheduleId, ct);
         if (schedule is null) return null;
 
-        if (request.DaysOfWeek is not null)
-        {
-            if (request.DaysOfWeek.Count == 0)
-                throw new ArgumentException("At least one day of week is required.");
-            schedule.DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek);
-        }
+        if (request.DaysOfWeek is not null) InvalidPrivacyScheduleException.RequireDays(request.DaysOfWeek);
+        InvalidPrivacyScheduleException.RequireRange(
+            request.StartTime is not null ? InvalidPrivacyScheduleException.ParseTime(request.StartTime) : schedule.GetStartTime(),
+            request.EndTime is not null ? InvalidPrivacyScheduleException.ParseTime(request.EndTime) : schedule.GetEndTime());
 
-        var newStart = request.StartTime is not null
-            ? TimeSpan.Parse(request.StartTime, CultureInfo.InvariantCulture)
-            : schedule.GetStartTime();
-        var newEnd = request.EndTime is not null
-            ? TimeSpan.Parse(request.EndTime, CultureInfo.InvariantCulture)
-            : schedule.GetEndTime();
-
-        if (newEnd <= newStart)
-            throw new ArgumentException("EndTime must be after StartTime.");
-
+        // Validated whole before anything changes, so a refusal leaves the tracked entity untouched.
+        if (request.DaysOfWeek is not null) schedule.DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek);
         if (request.StartTime is not null) schedule.StartTime = request.StartTime;
         if (request.EndTime is not null) schedule.EndTime = request.EndTime;
         if (request.Enabled.HasValue) schedule.Enabled = request.Enabled.Value;

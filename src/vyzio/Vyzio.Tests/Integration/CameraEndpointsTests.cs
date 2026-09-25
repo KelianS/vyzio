@@ -18,6 +18,8 @@ namespace Vyzio.Tests.Integration;
 
 public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 {
+    private static readonly int[] Weekdays = [1, 2, 3, 4, 5];
+    private static readonly int[] Monday = [1];
     private readonly CamerasApiFactory _factory;
 
     public CameraEndpointsTests(CamerasApiFactory factory)
@@ -40,6 +42,29 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Equal("Front Door", camera.DisplayName);
         Assert.Equal("online", camera.Status);
         Assert.True(camera.PreviewAvailable);
+    }
+
+    [Fact]
+    public async Task CreatePrivacySchedule_ShouldAcceptTheNight_WhenTheRangeCrossesMidnight()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/privacy/schedules",
+            new { daysOfWeek = Weekdays, startTime = "22:00", endTime = "06:00" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreatePrivacySchedule_ShouldAnswerARefusalWithItsCode_WhenTheRangeIsEmpty()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/privacy/schedules",
+            new { daysOfWeek = Monday, startTime = "08:00", endTime = "08:00" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("schedule_empty_range", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]

@@ -142,14 +142,28 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/privacy/schedules", async (string id, CreatePrivacyScheduleRequest request, CreateCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
         {
-            var dto = await useCase.ExecuteAsync(id, request, ct);
-            return dto is null ? Results.NotFound() : Results.Created($"/api/cameras/{id}/privacy/schedules/{dto.Id}", dto);
+            try
+            {
+                var dto = await useCase.ExecuteAsync(id, request, ct);
+                return dto is null ? Results.NotFound() : Results.Created($"/api/cameras/{id}/privacy/schedules/{dto.Id}", dto);
+            }
+            catch (InvalidPrivacyScheduleException ex)
+            {
+                return Results.BadRequest(new { error = ex.Code, message = ex.Message });
+            }
         });
 
         group.MapPatch("/{id}/privacy/schedules/{scheduleId}", async (string id, string scheduleId, UpdatePrivacyScheduleRequest request, UpdateCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
         {
-            var dto = await useCase.ExecuteAsync(scheduleId, request, ct);
-            return dto is null ? Results.NotFound() : Results.Ok(dto);
+            try
+            {
+                var dto = await useCase.ExecuteAsync(scheduleId, request, ct);
+                return dto is null ? Results.NotFound() : Results.Ok(dto);
+            }
+            catch (InvalidPrivacyScheduleException ex)
+            {
+                return Results.BadRequest(new { error = ex.Code, message = ex.Message });
+            }
         });
 
         group.MapDelete("/{id}/privacy/schedules/{scheduleId}", async (string id, string scheduleId, DeleteCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>

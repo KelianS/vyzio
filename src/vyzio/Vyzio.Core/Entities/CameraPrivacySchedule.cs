@@ -26,7 +26,7 @@ public class CameraPrivacySchedule
     [Required, MaxLength(5)]
     public required string StartTime { get; set; }
 
-    // "HH:mm" — must be > StartTime (midnight crossing not supported; use two schedules)
+    // "HH:mm"; before StartTime, the range ends the next day (SPECS 9.2)
     [Required, MaxLength(5)]
     public required string EndTime { get; set; }
 
@@ -46,4 +46,17 @@ public class CameraPrivacySchedule
 
     public TimeSpan GetStartTime() => TimeSpan.Parse(StartTime, CultureInfo.InvariantCulture);
     public TimeSpan GetEndTime() => TimeSpan.Parse(EndTime, CultureInfo.InvariantCulture);
+
+    /// <summary>Whether the range holds this moment; a range crossing midnight belongs to the day it starts.</summary>
+    public bool Covers(int dayOfWeek, TimeSpan time)
+    {
+        var start = GetStartTime();
+        var end = GetEndTime();
+        var days = GetDaysOfWeek();
+        if (start < end) return days.Contains(dayOfWeek) && time >= start && time < end;
+        if (start == end) return false;
+
+        var previousDay = (dayOfWeek + 6) % 7;
+        return (days.Contains(dayOfWeek) && time >= start) || (days.Contains(previousDay) && time < end);
+    }
 }

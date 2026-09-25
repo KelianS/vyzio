@@ -15,6 +15,14 @@ import { useToast } from '../../common/components/Toast'
 
 const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 
+const minutesOf = (time: string) => {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
+/** A range ending before it starts runs into the next day (SPECS 9.2). */
+const endsNextDay = (start: string, end: string) => minutesOf(end) < minutesOf(start)
+
 interface PrivacyScheduleSectionProps {
   camera: Camera
   cameraId: string
@@ -151,6 +159,7 @@ export function PrivacyScheduleSection({
               <span className="min-w-0">{s.daysOfWeek.map((d) => DAY_LABELS[d]).join(', ')}</span>
               <span className="text-muted-foreground">
                 {s.startTime} → {s.endTime}
+                {endsNextDay(s.startTime, s.endTime) && ' le lendemain'}
               </span>
               {!s.enabled && <span className="text-muted-foreground">désactivé</span>}
               <Button
@@ -209,6 +218,10 @@ export function PrivacyScheduleSection({
             />
           </label>
         </div>
+
+        {endsNextDay(startTime, endTime) && (
+          <p className="text-sm text-muted-foreground">Se termine le lendemain à {endTime}.</p>
+        )}
 
         {invalid && <p className="text-sm text-destructive">{invalid}</p>}
         {failure && <ErrorMessage error={failure} />}
