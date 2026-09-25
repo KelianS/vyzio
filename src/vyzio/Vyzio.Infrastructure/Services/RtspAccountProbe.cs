@@ -21,19 +21,14 @@ internal sealed partial class RtspAccountProbe(TimeProvider time, ILogger<RtspAc
         try
         {
             var first = await DescribeAsync(camera, uri, cseq: 1, authorization: null, ct);
-            if (first.Status != 401) return first.Status == 0 ? RtspAccountCheck.NoAnswer : RtspAccountCheck.Accepted;
+            if (first.Status != 401) return Verdict(first.Status);
             if (string.IsNullOrEmpty(camera.Username)) return RtspAccountCheck.Refused;
 
             var authorization = Authorize(first.Challenge, camera.Username, camera.Password ?? string.Empty, uri);
             if (authorization is null) return RtspAccountCheck.NoAnswer;
 
             var second = await DescribeAsync(camera, uri, cseq: 2, authorization, ct);
-            return second.Status switch
-            {
-                0 => RtspAccountCheck.NoAnswer,
-                401 or 403 => RtspAccountCheck.Refused,
-                _ => RtspAccountCheck.Accepted,
-            };
+            return second.Status is 401 or 403 ? RtspAccountCheck.Refused : Verdict(second.Status);
         }
         catch (Exception ex) when (ex is SocketException or IOException or OperationCanceledException && !ct.IsCancellationRequested)
         {
@@ -41,6 +36,10 @@ internal sealed partial class RtspAccountProbe(TimeProvider time, ILogger<RtspAc
             return RtspAccountCheck.NoAnswer;
         }
     }
+
+    // Only a success lets Vyzio in; a wrong path or a server error says nothing about the account.
+    private static RtspAccountCheck Verdict(int status) =>
+        status is >= 200 and < 300 ? RtspAccountCheck.Accepted : RtspAccountCheck.NoAnswer;
 
     private async Task<(int Status, string? Challenge)> DescribeAsync(
         Camera camera, string uri, int cseq, string? authorization, CancellationToken ct)

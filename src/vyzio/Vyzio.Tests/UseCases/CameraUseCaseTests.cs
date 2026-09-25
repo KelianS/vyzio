@@ -282,10 +282,7 @@ public class VerifyCameraUseCaseTests
         _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator, _accountProbe, _frigateConfig);
     }
 
-    [Theory]
-    [InlineData(RtspAccountCheck.Accepted, true)]
-    [InlineData(RtspAccountCheck.Refused, false)]
-    public async Task ExecuteAsync_ShouldClearTheRefusalOnlyIfTheCameraLetsVyzioIn_WhenTheUserChecksAgain(RtspAccountCheck answer, bool cleared)
+    private Camera ReachableCamera(DateTimeOffset? refusedAt)
     {
         var camera = new Camera
         {
@@ -294,18 +291,46 @@ public class VerifyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            AccountRefusedAt = DateTimeOffset.UnixEpoch,
+            AccountRefusedAt = refusedAt,
         };
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
-        _accountProbe.CheckAsync(camera, Arg.Any<CancellationToken>()).Returns(answer);
         _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>())
             .Returns(new CameraVerificationResult(true, true, "online", "ok", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch));
+        return camera;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldClearTheRefusalAndWriteTheCameraBack_WhenTheCameraNowAcceptsItsAccount()
+    {
+        var camera = ReachableCamera(DateTimeOffset.UnixEpoch);
+        _accountProbe.CheckAsync(camera, Arg.Any<CancellationToken>()).Returns(RtspAccountCheck.Accepted);
 
         await _sut.ExecuteAsync(camera.Id);
 
-        Assert.Equal(cleared, camera.AccountRefusedAt is null);
-        await _frigateConfig.Received(cleared ? 1 : 0)
-            .WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), true, Arg.Any<CancellationToken>());
+        Assert.Null(camera.AccountRefusedAt);
+        await _frigateConfig.Received(1).WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheRefusal_WhenTheCameraStillRefusesItsAccount()
+    {
+        var camera = ReachableCamera(DateTimeOffset.UnixEpoch);
+        _accountProbe.CheckAsync(camera, Arg.Any<CancellationToken>()).Returns(RtspAccountCheck.Refused);
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.Equal(DateTimeOffset.UnixEpoch, camera.AccountRefusedAt);
+        await _frigateConfig.DidNotReceive().WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotSpendAnAttemptOnTheAccount_WhenTheCameraWasNotRefused()
+    {
+        var camera = ReachableCamera(refusedAt: null);
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        await _accountProbe.DidNotReceive().CheckAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -145,6 +145,17 @@ public sealed class RtspAccountProbeTests : IDisposable
         Assert.Single(_requests);
     }
 
+    [Theory]
+    [InlineData("404 Not Found")]
+    [InlineData("500 Internal Server Error")]
+    public async Task CheckAsync_ShouldGiveNoVerdict_WhenTheCameraAnswersNeitherSuccessNorChallenge(string status)
+    {
+        var camera = Serve($"RTSP/1.0 {status}\r\nCSeq: 1\r\n\r\n");
+
+        Assert.Equal(RtspAccountCheck.NoAnswer, await Probe().CheckAsync(MakeCamera()));
+        await camera;
+    }
+
     [Fact]
     public async Task CheckAsync_ShouldReportNoAnswer_WhenNothingListens()
     {

@@ -33,6 +33,56 @@ test.describe('Refused camera account', () => {
     await expect(page.getByText('Caméra joignable.')).toHaveCount(0)
   })
 
+  test('CameraConnectionPage_ShouldSayRecordingWaitsForTheRestart_WhenTheCheckLetsTheCameraBackIn', async ({
+    page,
+  }) => {
+    const state = refused()
+    state.accountRestored = true
+    await installFakeBackend(page, state)
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    await page.getByRole('button', { name: 'Vérifier la connexion' }).click()
+
+    await expect(
+      page.getByText(
+        'La caméra accepte son mot de passe. Elle enregistre de nouveau après « Appliquer les changements ».',
+      ),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Appliquer les changements' })).toBeVisible()
+  })
+
+  test('HubView_ShouldNotOpenTheLiveView_WhenTheCameraCannotBeReached', async ({ page }) => {
+    const state = createFakeBackendState({
+      cameras: [
+        makeFakeCamera({
+          id: 'camera-1',
+          displayName: 'Salon',
+          accountRefusedAt: '2026-09-25T10:00:00Z',
+        }),
+        makeFakeCamera({ id: 'camera-2', displayName: 'Garage', status: 'offline' }),
+      ],
+    })
+    await installFakeBackend(page, state)
+    await page.goto('/')
+
+    await expect(page.getByText('Mot de passe refusé')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Salon' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Garage' })).toHaveCount(0)
+  })
+
+  test('CameraConnectionPage_ShouldSuspendTheCapabilities_WhenTheCameraRefusedItsAccount', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, refused())
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    await expect(
+      page.getByText(
+        'Mot de passe refusé : la détection reprendra une fois la connexion vérifiée.',
+      ),
+    ).toBeVisible()
+  })
+
   test('CameraImagePage_ShouldSuspendPilotage_WhenTheCameraRefusedItsAccount', async ({ page }) => {
     const state = createFakeBackendState({
       cameras: [makeFakeCamera({ ptzSupported: true, accountRefusedAt: '2026-09-25T10:00:00Z' })],
@@ -66,6 +116,6 @@ test.describe('Refused camera account', () => {
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/connexion$/)
     const notice = page.getByRole('status')
     await expect(notice).toContainText('Cette caméra n’enregistre plus')
-    await expect(notice).toContainText('RTSP DESCRIBE: account refused')
+    await expect(notice).toContainText('RTSP DESCRIBE answered 401/403: account refused')
   })
 })

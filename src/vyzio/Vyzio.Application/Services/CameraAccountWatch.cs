@@ -13,6 +13,9 @@ internal sealed class CameraOutageTracker
     private readonly Dictionary<string, int> _silentReadings = [];
     private readonly HashSet<string> _probed = [];
 
+    // A refused camera is out of watch, so a reload that failed is owed until one takes (ADR-58 c).
+    public bool ReloadPending { get; set; }
+
     public IReadOnlyList<Camera> DueForProbe(IReadOnlyList<Camera> cameras, FrigateStats stats)
     {
         var watched = cameras.Where(IsWatched).ToList();
@@ -85,11 +88,12 @@ public sealed class CameraAccountWatch(
             refused = true;
         }
 
-        // One reload for every camera refused in this reading, so the capture stops retrying them.
-        if (!refused) return;
+        // One reload for every camera refused in this reading, retried on each reading until it takes.
+        if (!refused && !tracker.ReloadPending) return;
         var applied = await frigateConfig.ApplyAsync(all, ct);
+        tracker.ReloadPending = !applied.Applied;
         if (!applied.Applied)
-            logger.LogError("Capture reload failed after an account refusal; the camera is still retried: {Reason}", applied.Message);
+            logger.LogError("Capture reload failed after an account refusal; retried at the next reading: {Reason}", applied.Message);
     }
 }
 

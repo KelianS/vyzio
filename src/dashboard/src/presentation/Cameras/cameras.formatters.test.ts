@@ -6,10 +6,13 @@ const camera = (overrides: Partial<Camera>) =>
   ({ status: 'online', needsAttention: false, accountRefusedAt: null, ...overrides }) as Camera
 
 describe('cameras.formatters', () => {
-  it('formatCameraStatusLabel_ShouldNameTheRefusedPassword_WhenTheCameraRefusedItsAccount', () => {
-    const refused = camera({ status: 'offline', accountRefusedAt: '2026-09-25T10:00:00Z' })
+  const refused = camera({ status: 'offline', accountRefusedAt: '2026-09-25T10:00:00Z' })
 
+  it('formatCameraStatusLabel_ShouldNameTheRefusedPassword_WhenTheCameraRefusedItsAccount', () => {
     expect(formatCameraStatusLabel(refused)).toBe('Mot de passe refusé')
+  })
+
+  it('formatStatusTone_ShouldBeDanger_WhenTheCameraRefusedItsAccount', () => {
     expect(formatStatusTone(refused)).toBe('danger')
   })
 

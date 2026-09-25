@@ -225,6 +225,8 @@ export interface FakeBackendState {
   restartFails: boolean
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
+  /** The refused password was restored in the vendor app, so the next check is let in (ADR-58). */
+  accountRestored: boolean
   profiles: {
     id: string
     name: string
@@ -285,6 +287,7 @@ export function createFakeBackendState(
     pendingChanges: false,
     restartFails: false,
     restartBreaks: false,
+    accountRestored: false,
     profiles: [],
     notificationChannels: {},
     channelListening: {},
@@ -552,6 +555,10 @@ export async function installFakeBackend(
         })
       }
       if (rest === '/verify' && method === 'POST') {
+        if (camera && state.accountRestored && camera.accountRefusedAt) {
+          camera.accountRefusedAt = null
+          state.pendingChanges = true
+        }
         return json(route, {
           cameraId,
           displayName: camera?.displayName ?? cameraId,

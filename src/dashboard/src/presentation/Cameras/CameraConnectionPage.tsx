@@ -17,6 +17,7 @@ import type { Camera } from '../../domain/entities/Camera'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { HelpPanel } from '../../common/components/HelpPanel'
 import { CapabilitySection } from './CapabilitySection'
+import { RESTART_ACTION } from '../../common/surveillance/pendingRestart'
 
 interface ConnectionValues {
   displayName: string
@@ -94,7 +95,14 @@ function ConnectionForm({ camera }: { camera: Camera }) {
 
   const verifying = useAsyncAction(async () => container.verifyCamera.execute(camera.id), {
     onSuccess: (status) => {
-      if (status?.accountRefused) toast('La caméra refuse toujours son mot de passe.', 'error')
+      // A camera that did not answer has not refused anything: it falls to "injoignable" (ADR-58).
+      if (status?.accountRefused && status.connected)
+        toast('La caméra refuse toujours son mot de passe.', 'error')
+      else if (camera.accountRefusedAt && status?.connected)
+        toast(
+          `La caméra accepte son mot de passe. Elle enregistre de nouveau après « ${RESTART_ACTION} ».`,
+          'success',
+        )
       else
         toast(
           status?.connected ? 'Caméra joignable.' : 'Caméra injoignable — vérifiez ces réglages.',
@@ -181,7 +189,9 @@ function ConnectionForm({ camera }: { camera: Camera }) {
               Saisissez son mot de passe actuel ci-dessous, enregistrez, puis vérifiez la connexion.
               S’il a été rétabli dans l’application, vérifiez simplement la connexion.
             </p>
-            <DiagnosticLine text={`RTSP DESCRIBE: account refused · ${camera.accountRefusedAt}`} />
+            <DiagnosticLine
+              text={`RTSP DESCRIBE answered 401/403: account refused · ${camera.accountRefusedAt}`}
+            />
           </div>
         )}
         <SettingsList settings={declarations} />
