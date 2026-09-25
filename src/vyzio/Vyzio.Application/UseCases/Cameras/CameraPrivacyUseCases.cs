@@ -154,7 +154,12 @@ public sealed class GetCameraPrivacySchedulesUseCase(ICameraPrivacyRepository sc
 
 /// <summary>A schedule the user can fix, answered as a refusal naming what to change, never as a failure (SPECS 9.2).</summary>
 public sealed class InvalidPrivacyScheduleException(PrivacyScheduleRefusal refusal)
-    : Exception($"The schedule is refused: {refusal}.")
+    : Exception(refusal switch
+    {
+        PrivacyScheduleRefusal.NoDay => "At least one day of week, 0 to 6, is required.",
+        PrivacyScheduleRefusal.InvalidTime => "Start and end must both be times written HH:mm.",
+        _ => "Start and end are the same time.",
+    })
 {
     public PrivacyScheduleRefusal Refusal { get; } = refusal;
 

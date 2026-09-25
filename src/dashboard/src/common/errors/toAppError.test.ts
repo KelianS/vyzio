@@ -44,6 +44,24 @@ describe('toAppError', () => {
     expect(error.code).toBe(ApiErrorCode.NotCalibrated)
   })
 
+  it.each([
+    [ApiErrorCode.ScheduleNoDay, 'Choisissez au moins un jour'],
+    [
+      ApiErrorCode.ScheduleInvalidTime,
+      'Indiquez une heure de début et une heure de fin, par exemple 22:00',
+    ],
+    [
+      ApiErrorCode.ScheduleEmptyRange,
+      'Le début et la fin sont à la même heure : choisissez deux heures différentes',
+    ],
+  ])('toAppError_ShouldSayWhatToChange_WhenTheScheduleIsRefusedWith %s', (code, sentence) => {
+    const error = toAppError(
+      failedCall(400, `POST /api/cameras/c/privacy/schedules · 400 · ${code}`, code),
+    )
+
+    expect(appErrorMessage(error)).toBe(sentence)
+  })
+
   it('toAppError_ShouldReadAsACameraRefusal_WhenTheApiNamesIt', () => {
     const error = toAppError(
       failedCall(502, 'POST /api/x · 502 · camera_refused', ApiErrorCode.CameraRefused),
