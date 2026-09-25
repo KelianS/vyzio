@@ -1,3 +1,4 @@
+import { scrubSecrets } from '../../common/errors/scrubSecrets'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import type {
@@ -189,7 +190,7 @@ interface CapabilityRowProps {
   binding: CameraCapabilityBinding
   offline?: boolean
   onDone: () => void
-  onToast: (msg: string, type: 'success' | 'error') => void
+  onToast: (msg: string, type: 'success' | 'error', diagnostic?: string) => void
 }
 
 function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
@@ -217,11 +218,11 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           setIsEditing(false)
           onToast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
         } else {
+          // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
           onToast(
-            result?.lastError
-              ? `Connexion échouée : ${result.lastError}`
-              : "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
+            "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
             'error',
+            result?.lastError ? scrubSecrets(result.lastError) : undefined,
           )
         }
         onDone()

@@ -7,7 +7,8 @@ import type { PtzSaveCurrentAsPreset } from '../../domain/usecases/PtzSaveCurren
 import type { CapturePtzPresetThumbnail } from '../../domain/usecases/CapturePtzPresetThumbnail'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
 import { toAppError } from '../../common/errors/toAppError'
-import { appErrorMessage } from '../../common/errors/AppError'
+import type { AppError } from '../../common/errors/AppError'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { Button } from '../../common/ui/button'
 import { Overlay } from '../../common/components/Overlay'
 import { LiveFeedModal } from '../../common/components/LiveFeedModal'
@@ -44,7 +45,7 @@ export function PtzCalibrationSection({
   const [calibrated, setCalibrated] = useState(true)
   const [currentPosition, setCurrentPosition] = useState<{ x: number; y: number } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<AppError | null>(null)
   const [liveViewOpen, setLiveViewOpen] = useState(false)
 
   // Everything runs after the first await, so switching cameras swaps the state without flashing "Chargement…".
@@ -57,7 +58,7 @@ export function PtzCalibrationSection({
         setCalibrated(data.calibrated ?? true)
         setCurrentPosition(data.currentPosition ?? null)
       } catch (e) {
-        if (!cancelled) setError(appErrorMessage(toAppError(e)))
+        if (!cancelled) setError(toAppError(e))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -71,7 +72,7 @@ export function PtzCalibrationSection({
   return (
     <div className="flex flex-col gap-3">
       {loading && <p className="text-muted-foreground">Chargement…</p>}
-      {error && <p className="text-destructive">{error}</p>}
+      {error && <ErrorMessage error={error} />}
 
       {!loading && !error && (
         <>

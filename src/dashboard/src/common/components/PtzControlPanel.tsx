@@ -13,7 +13,8 @@ import { Button } from '../ui/button'
 import { useToast } from './Toast'
 import { ConfirmModal } from './ConfirmModal'
 import { toAppError } from '../errors/toAppError'
-import { appErrorMessage } from '../errors/AppError'
+import { ApiErrorCode, toastError, type AppError } from '../errors/AppError'
+import { ErrorMessage } from './ErrorMessage'
 import type { PtzStep } from '../../domain/usecases/PtzStep'
 import type { PtzGoToPreset } from '../../domain/usecases/PtzGoToPreset'
 import type { GetPtzPresets } from '../../domain/usecases/GetPtzPresets'
@@ -218,7 +219,7 @@ export function PtzControlPanel({
 }: PtzControlPanelProps) {
   const { toast } = useToast()
   const [presets, setPresets] = useState<PtzPreset[]>([])
-  const [presetsError, setPresetsError] = useState<string | null>(null)
+  const [presetsError, setPresetsError] = useState<AppError | null>(null)
   const [calibrated, setCalibrated] = useState(true)
   const [calibrating, setCalibrating] = useState(false)
   const [activePresetId, setActivePresetId] = useState<number | null>(null)
@@ -242,7 +243,7 @@ export function PtzControlPanel({
       isPressedRef.current = false
       if (refusalShownRef.current) return
       refusalShownRef.current = true
-      toast(appErrorMessage(toAppError(e)), 'error')
+      toastError(toast, toAppError(e))
     },
     [toast],
   )
@@ -318,7 +319,7 @@ export function PtzControlPanel({
         setActivePresetId(matchPreset(data.presets ?? [], data.currentPosition ?? null))
         setPresetsError(null)
       } catch (e) {
-        if (!cancelled) setPresetsError(appErrorMessage(toAppError(e)))
+        if (!cancelled) setPresetsError(toAppError(e))
       }
     })()
     return () => {
@@ -357,7 +358,7 @@ export function PtzControlPanel({
         toast(`Caméra en position « ${presetLabel(presetId)} ».`, 'success')
         scheduleCapture(presetId)
       } catch (e) {
-        toast(appErrorMessage(toAppError(e)), 'error')
+        toastError(toast, toAppError(e))
       } finally {
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
@@ -376,13 +377,9 @@ export function PtzControlPanel({
         setActivePresetId(presetId)
         scheduleCapture(presetId)
       } catch (e) {
-        const msg = appErrorMessage(toAppError(e))
-        if (msg.includes('not_calibrated') || msg.includes('Conflict')) {
-          setCalibrated(false)
-          toast('Cette caméra doit d’abord être calibrée.', 'error')
-        } else {
-          toast(msg, 'error')
-        }
+        const error = toAppError(e)
+        if (error.code === ApiErrorCode.NotCalibrated) setCalibrated(false)
+        toastError(toast, error)
       } finally {
         setActionStates((s) => ({ ...s, [presetId]: 'idle' }))
       }
@@ -398,7 +395,7 @@ export function PtzControlPanel({
       await reloadPresets()
       toast('Caméra calibrée — les positions sont de nouveau utilisables.', 'success')
     } catch (e) {
-      toast(appErrorMessage(toAppError(e)), 'error')
+      toastError(toast, toAppError(e))
     } finally {
       setCalibrating(false)
     }
@@ -454,7 +451,7 @@ export function PtzControlPanel({
 
       {getPtzPresets && (
         <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 sm:items-start">
-          {presetsError && <p className="text-sm text-destructive">{presetsError}</p>}
+          {presetsError && <ErrorMessage error={presetsError} />}
 
           {/* Sans reference, la camera ne sait pas ou elle est : les positions sont inertes, et
               c'etait la seule chose que rien ne disait. */}

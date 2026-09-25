@@ -1,7 +1,8 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { TriangleAlert } from 'lucide-react'
-import { appErrorMessage, type AppError } from '../../common/errors/AppError'
+import type { AppError } from '../../common/errors/AppError'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
@@ -150,7 +151,7 @@ function HubUnreachable({ error }: { error: AppError | null }) {
               <li>Son adresse n’a pas changé.</li>
             </ol>
 
-            {error && <p className="mt-4 text-sm text-destructive">{appErrorMessage(error)}</p>}
+            {error && <ErrorMessage error={error} className="mt-4" />}
           </div>
         </div>
       </Card>

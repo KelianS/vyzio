@@ -12,7 +12,7 @@ import type {
   UpdateProfileRequest,
 } from '../../domain/ports/ProfileRepository'
 import { fetchJson, postJson, putJson, deleteReq } from '../http/fetchJson'
-import { HttpError } from '../http/HttpError'
+import { httpErrorFrom, send } from '../http/send'
 
 export class HttpProfileRepository implements ProfileRepository {
   constructor(private readonly apiBaseUrl: string) {}
@@ -45,8 +45,8 @@ export class HttpProfileRepository implements ProfileRepository {
     const formData = new FormData()
     formData.append('file', file)
     const url = `${this.apiBaseUrl}/api/profiles/${profileId}/photos`
-    const response = await fetch(url, { method: 'POST', body: formData })
-    if (!response.ok) throw new HttpError(response.status, url)
+    const response = await send(url, { method: 'POST', body: formData })
+    if (!response.ok) throw await httpErrorFrom(response, url, 'POST')
     return response.json() as Promise<ProfilePhoto>
   }
 
@@ -85,9 +85,9 @@ export class HttpProfileRepository implements ProfileRepository {
 
   async getCameraDetectionConfig(cameraId: string): Promise<DetectionConfig | null> {
     const url = `${this.apiBaseUrl}/api/cameras/${cameraId}/detection-config`
-    const response = await fetch(url, { headers: { Accept: 'application/json' } })
+    const response = await send(url, { headers: { Accept: 'application/json' } })
     if (response.status === 404) return null
-    if (!response.ok) throw new HttpError(response.status, url)
+    if (!response.ok) throw await httpErrorFrom(response, url)
     return response.json() as Promise<DetectionConfig>
   }
 
@@ -125,11 +125,11 @@ export class HttpProfileRepository implements ProfileRepository {
 
   async correctDetectionIdentity(eventId: string, profileId: string | null): Promise<void> {
     const url = `${this.apiBaseUrl}/api/detection-events/${eventId}/identity`
-    const response = await fetch(url, {
+    const response = await send(url, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ profileId }),
     })
-    if (!response.ok) throw new HttpError(response.status, url)
+    if (!response.ok) throw await httpErrorFrom(response, url, 'PATCH')
   }
 }

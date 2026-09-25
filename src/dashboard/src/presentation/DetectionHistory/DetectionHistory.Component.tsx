@@ -15,6 +15,7 @@ import { buildDetectionHistoryPresenter } from './DetectionHistory.Presenter'
 import { detectionHistoryReducer } from './DetectionHistory.Reducer'
 import { buildInitialDetectionHistoryUido } from './DetectionHistory.Uido'
 import { PickOne, UNKNOWN } from './HistoryPickers'
+import { DiagnosticLine } from '../../common/components/ErrorMessage'
 
 /** A detection without an identity isn't anonymous by mistake — it's unknown. */
 const UNIDENTIFIED = 'Inconnu'
@@ -160,7 +161,12 @@ export function DetectionHistoryView() {
         </section>
       )}
 
-      {uido.error && <p className="text-destructive">{uido.error}</p>}
+      {uido.error && (
+        <div role="alert" className="text-destructive">
+          <p>{uido.error.message}</p>
+          {uido.error.diagnostic && <DiagnosticLine text={uido.error.diagnostic} />}
+        </div>
+      )}
 
       {uido.loading && <p className="text-muted-foreground">Chargement…</p>}
 

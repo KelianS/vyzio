@@ -73,6 +73,26 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(failed).toBeVisible()
   })
 
+  test('user_ShouldSeeWhatSupportNeedsUnderTheSentence_WhenTheServerBreaksOnTheRestart', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
+    state.pendingChanges = true
+    state.restartBreaks = true
+    await installFakeBackend(page, state)
+    await page.goto('/settings/conservation')
+
+    await page.getByRole('button', trigger()).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
+    await page.getByRole('button', { name: /Redémarrage échoué/ }).click()
+
+    // A photo of this dialog is what support receives: the failed request must be readable on it (SPECS 1.5).
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toContainText('Vyzio a rencontré une erreur')
+    await expect(dialog).toContainText('POST /api/cameras/apply-configuration · 500')
+    await expect(dialog).toContainText('trace 00-e2e-01')
+  })
+
   test('user_When moving between two settings pages_Should not be asked anything', async ({
     page,
   }) => {

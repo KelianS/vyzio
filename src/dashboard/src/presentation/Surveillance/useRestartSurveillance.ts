@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { appErrorMessage } from '../../common/errors/AppError'
+import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/AppError'
 import { toAppError } from '../../common/errors/toAppError'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
@@ -18,9 +18,13 @@ export function useRestartSurveillance() {
 
     try {
       const result = await container.restartSurveillance.execute()
-      store.setRestartFailure(result.applied ? null : result.message)
+      store.setRestartFailure(result.applied ? null : { message: result.message })
     } catch (error) {
-      store.setRestartFailure(appErrorMessage(toAppError(error)))
+      const appError = toAppError(error)
+      store.setRestartFailure({
+        message: appErrorMessage(appError),
+        diagnostic: appErrorDiagnostic(appError),
+      })
     } finally {
       store.setRestarting(false)
       // Re-read rather than infer: a success empties the wait, a failure leaves it.

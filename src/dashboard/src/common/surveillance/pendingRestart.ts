@@ -8,6 +8,7 @@ const RESTART_BODY =
 export interface RestartWording {
   triggerLabel: string
   body: string
+  diagnostic?: string
   confirmLabel: string
 }
 
@@ -16,11 +17,14 @@ export interface RestartWording {
  * saying so. A single home - the header and the navigation guard ask the same question, and the
  * guard used to ask it with the original wording, as if nothing had failed.
  */
-export function restartWording(failure: string | null): RestartWording {
+export function restartWording(
+  failure: { message: string; diagnostic?: string } | null,
+): RestartWording {
   return failure
     ? {
         triggerLabel: 'Redémarrage échoué',
-        body: `${failure} ${RESTART_BODY}`,
+        body: `${failure.message} ${RESTART_BODY}`,
+        diagnostic: failure.diagnostic,
         confirmLabel: 'Réessayer',
       }
     : { triggerLabel: RESTART_ACTION, body: RESTART_BODY, confirmLabel: 'Redémarrer' }

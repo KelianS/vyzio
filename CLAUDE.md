@@ -44,8 +44,8 @@ in those folders.
 ## Invariants (everywhere, no exception)
 
 - **Privacy first**: never transmit images without explicit consent.
-- Everything in this repository is written in **English**, code and prose alike. The one exception
-  is `docs/SPECS.md`, which frames the product for a French market.
+- Everything in this repository is written in **English**, code and prose alike, except
+  `docs/SPECS.md` and the text the interface shows the user, which are French.
   Rule and current state: [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Language.
 - **Commits and PRs** (title and description): English, Conventional Commits format. Rule and
   template in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git.
@@ -68,3 +68,4 @@ Digest, sources: [`README.md`](README.md), [`docs/SPECS.md`](docs/SPECS.md) §1,
 4. **Explainability**: no opaque score or state without a readable justification.
 5. **Plug and play**: reduce installation and configuration friction as far as it will go.
 6. **Unified camera control**: drive every camera directly (PTZ, hardware privacy, settings, Wi-Fi eventually), through a proprietary protocol where needed, to free the user from vendor apps.
+7. **Diagnosable errors**: a plain sentence first, then the full technical detail support needs to diagnose from a photo of the screen, never a secret. The one place a technical name may appear ([SPECS](docs/SPECS.md) 1.5).

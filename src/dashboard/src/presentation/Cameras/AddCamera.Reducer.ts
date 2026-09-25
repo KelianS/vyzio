@@ -91,7 +91,11 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
       }
 
     case 'DISCOVERY_FAILED':
-      return { ...state, discovering: false, error: action.message }
+      return {
+        ...state,
+        discovering: false,
+        error: { message: action.message, diagnostic: action.diagnostic },
+      }
 
     case 'REFRESH_CANDIDATE_STARTED':
       return { ...state, refreshing: true, message: null, error: null }
@@ -115,7 +119,11 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
       return { ...state, refreshing: false, message: action.message }
 
     case 'REFRESH_CANDIDATE_FAILED':
-      return { ...state, refreshing: false, error: action.message }
+      return {
+        ...state,
+        refreshing: false,
+        error: { message: action.message, diagnostic: action.diagnostic },
+      }
 
     case 'VERIFY_DRAFT_STARTED':
       return { ...state, verifying: true, message: null, error: null }
@@ -128,10 +136,15 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
             verification: { connected: true, guidance: action.guidance },
             message: action.message,
           }
-        : { ...state, verifying: false, verification: null, error: action.message }
+        : { ...state, verifying: false, verification: null, error: { message: action.message } }
 
     case 'VERIFY_DRAFT_FAILED':
-      return { ...state, verifying: false, verification: null, error: action.message }
+      return {
+        ...state,
+        verifying: false,
+        verification: null,
+        error: { message: action.message, diagnostic: action.diagnostic },
+      }
 
     case 'CREATE_STARTED':
       return { ...state, creating: true, message: null, error: null }
@@ -140,7 +153,11 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
       return { ...state, creating: false }
 
     case 'CREATE_FAILED':
-      return { ...state, creating: false, error: action.message }
+      return {
+        ...state,
+        creating: false,
+        error: { message: action.message, diagnostic: action.diagnostic },
+      }
 
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }

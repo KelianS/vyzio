@@ -17,6 +17,7 @@ Api           <- DI wiring + grouped Minimal API endpoints. Depends on Applicati
 - **Application**: a use case is a class with `ExecuteAsync`. No CQRS, no MediatR. No direct EF access.
 - **Infrastructure**: the only layer allowed to know about EF, SQLite, MQTT and the like.
 - **Api**: endpoints live in `Endpoints/`, `Program.cs` is wiring only. The `DbContext` is **never** injected into an endpoint.
+- **Error bodies**: the interface shows an error's `message` or `detail` on screen, for support ([SPECS](../../docs/SPECS.md) 1.5). It never carries a credential nor a camera account name; name the failure with a snake_case `error` code the interface can branch on.
 
 A typical flow (the "Profiles" feature):
 
