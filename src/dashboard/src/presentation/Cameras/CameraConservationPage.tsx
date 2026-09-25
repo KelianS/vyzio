@@ -21,7 +21,7 @@ import {
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import { RetentionHelp } from '../../common/recording/RetentionHelp'
-import { ErrorMessage } from '../../common/components/ErrorMessage'
+import { ReadFailure } from '../../common/components/ErrorMessage'
 
 type RetentionOverrides = Pick<
   DetectionConfigUpdate,
@@ -44,7 +44,7 @@ export function CameraConservationPage() {
   if (config.error)
     return (
       <SettingsPage>
-        <ErrorMessage error={config.error} />
+        <ReadFailure error={config.error} onRetry={config.reload} />
       </SettingsPage>
     )
   if (!config.data) return null

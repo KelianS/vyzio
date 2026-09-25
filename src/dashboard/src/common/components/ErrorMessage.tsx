@@ -1,4 +1,5 @@
 import { appErrorDiagnostic, appErrorMessage, type AppError } from '../errors/AppError'
+import { Button } from '../ui/button'
 import { cn } from '../ui/utils'
 
 /** The line support reads under an error: quiet, monospace, selectable to be copied (SPECS 1.5). */
@@ -15,6 +16,26 @@ export function ErrorMessage({ error, className }: { error: AppError; className?
     <div role="alert" className={cn('text-sm text-destructive', className)}>
       <p>{appErrorMessage(error)}</p>
       {diagnostic && <DiagnosticLine text={diagnostic} />}
+    </div>
+  )
+}
+
+/** A read that failed, shown where its data would have been, with a way to try again. */
+export function ReadFailure({
+  error,
+  onRetry,
+  className,
+}: {
+  error: AppError
+  onRetry: () => void
+  className?: string
+}) {
+  return (
+    <div className={cn('flex flex-col items-start gap-3', className)}>
+      <ErrorMessage error={error} />
+      <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+        Réessayer
+      </Button>
     </div>
   )
 }

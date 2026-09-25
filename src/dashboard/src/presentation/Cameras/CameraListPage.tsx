@@ -4,7 +4,8 @@ import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import { SettingsPage } from '../../common/settings/SettingsPage'
-import { ErrorMessage } from '../../common/components/ErrorMessage'
+import { ReadFailure } from '../../common/components/ErrorMessage'
+import { useReloadCameraList } from './cameraListRead'
 import {
   formatCameraAddress,
   formatCameraStatusLabel,
@@ -16,6 +17,9 @@ export function CameraListPage() {
   const cameras = useRootStore((state) => state.cameras)
   const loading = useRootStore((state) => state.camerasLoading)
   const error = useRootStore((state) => state.camerasError)
+  const reload = useReloadCameraList()
+  // An unread list is not an empty one: adding would invite duplicating cameras that exist.
+  const unread = error !== null && cameras.length === 0
 
   return (
     <SettingsPage lede="Choisissez une caméra pour la régler.">
@@ -43,22 +47,24 @@ export function CameraListPage() {
             </li>
           ))}
         </ul>
-      ) : error ? (
-        <ErrorMessage error={error} className="py-3" />
+      ) : unread ? (
+        <ReadFailure error={error} onRetry={reload} className="py-3" />
       ) : (
         <p className="py-3 text-muted-foreground">
           {loading ? 'Chargement…' : 'Aucune caméra pour l’instant.'}
         </p>
       )}
 
-      <div className="mt-5">
-        <Button asChild>
-          <Link to="/settings/cameras/ajout">
-            <Plus aria-hidden="true" />
-            Ajouter une caméra
-          </Link>
-        </Button>
-      </div>
+      {!unread && (
+        <div className="mt-5">
+          <Button asChild>
+            <Link to="/settings/cameras/ajout">
+              <Plus aria-hidden="true" />
+              Ajouter une caméra
+            </Link>
+          </Button>
+        </div>
+      )}
     </SettingsPage>
   )
 }

@@ -1,3 +1,4 @@
+import { useReloadCameraList } from './cameraListRead'
 import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
@@ -27,6 +28,7 @@ export function CameraPrivacyPage() {
   })
 
   useUnsavedChanges(draft.dirty)
+  const reloadCameras = useReloadCameraList()
 
   const saving = useAsyncAction(
     async () => container.setPrivacyStrategy.execute(camera.id, draft.values.strategy),
@@ -34,7 +36,7 @@ export function CameraPrivacyPage() {
       onSuccess: () => {
         draft.accept()
         toast('Mode vie privée enregistré.', 'success')
-        void useRootStore.getState().loadCameras(container.getCameras)
+        reloadCameras()
       },
     },
   )

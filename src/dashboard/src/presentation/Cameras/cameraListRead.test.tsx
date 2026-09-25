@@ -4,7 +4,7 @@ import { useRootStore } from '../../infrastructure/store/rootStore'
 import { HttpError } from '../../infrastructure/http/HttpError'
 import type { Camera } from '../../domain/entities/Camera'
 import type { GetCameras } from '../../domain/usecases/GetCameras'
-import { useCameraListFailureToast } from './useCameraListFailureToast'
+import { useCameraListFailureToast } from './cameraListRead'
 
 const toast = vi.fn()
 vi.mock('../../common/components/Toast', () => ({ useToast: () => ({ toast }) }))

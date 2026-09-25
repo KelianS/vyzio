@@ -24,7 +24,7 @@ import {
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import { RetentionHelp } from '../../common/recording/RetentionHelp'
-import { ErrorMessage } from '../../common/components/ErrorMessage'
+import { ReadFailure } from '../../common/components/ErrorMessage'
 
 // The save request is flat while reads are grouped by window; this bridges the two shapes.
 const FIELD_OF = {
@@ -52,7 +52,7 @@ export function ConservationPage() {
   if (error)
     return (
       <SettingsPage>
-        <ErrorMessage error={error} />
+        <ReadFailure error={error} onRetry={reload} />
       </SettingsPage>
     )
   if (!data) return null
