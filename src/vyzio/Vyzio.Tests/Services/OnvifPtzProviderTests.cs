@@ -159,7 +159,23 @@ public class OnvifPtzProviderTests
         await moveArrived.Task;
         time.Advance(TimeSpan.FromMilliseconds(350));
 
-        Assert.Null(await Record.ExceptionAsync(() => move));
+        Assert.Null(await Record.ExceptionAsync(() => move.WaitAsync(TimeSpan.FromSeconds(5))));
+    }
+
+    [Fact]
+    public async Task PtzStopAsync_ShouldSendNoCredential_WhenTheCameraHasNoAccount()
+    {
+        var camera = MakeCamera();
+        camera.Username = null;
+        camera.Password = null;
+        var (provider, requests) = MakeProvider();
+
+        await provider.PtzStopAsync(camera, MakeBinding());
+
+        var bodies = await ReadBodies(requests);
+        Assert.Contains(bodies, body => body.Contains("GetProfiles", StringComparison.Ordinal));
+        Assert.Contains(bodies, body => body.Contains("<Stop ", StringComparison.Ordinal));
+        Assert.All(bodies, body => Assert.DoesNotContain("UsernameToken", body));
     }
 
     private sealed class SilentHandler(TaskCompletionSource arrived) : HttpMessageHandler

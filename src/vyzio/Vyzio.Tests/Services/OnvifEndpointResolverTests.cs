@@ -337,7 +337,8 @@ public sealed class OnvifEndpointResolverTests
 
         var first = Task.Run(() => resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
         await firstRequest.Task;
-        var queued = Task.Run(() => resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
+        // Called inline: it returns only once it waits on the gate the first caller holds.
+        var queued = resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
         release.SetResult();
         await Task.WhenAll(first, queued);
         var oneSweep = calls.Count;

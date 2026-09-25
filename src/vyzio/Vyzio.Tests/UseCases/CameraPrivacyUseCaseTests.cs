@@ -126,8 +126,35 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         await _sut.ExecuteAsync("cam1", active: true, ct: caller.Token);
 
-        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Any<CancellationToken>());
-        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+        await _cameras.Received(1).UpdateAsync(
+            Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Is<CancellationToken>(t => !t.IsCancellationRequested));
+        await _frigateConfig.Received(1).ApplyAsync(
+            Arg.Any<IReadOnlyList<Camera>>(), Arg.Is<CancellationToken>(t => !t.IsCancellationRequested));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRaiseAndSaveNothing_WhenTheBindingsCannotBeRead()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(strategy: PrivacyStrategy.Hardware));
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<CameraCapabilityBinding?>(new InvalidOperationException("database is locked")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExecuteAsync("cam1", active: true));
+
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRaise_WhenNoProviderServesTheBindingProtocol()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(strategy: PrivacyStrategy.Hardware));
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.Dvrip));
+        _registry.ResolvePrivacy(SupportedProtocol.Dvrip).Returns(_ => throw new NotSupportedException("no DVRIP privacy provider"));
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => _sut.ExecuteAsync("cam1", active: true));
+
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -280,6 +307,23 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
         Assert.Equal(2, result.Count);
         Assert.All(result, camera => Assert.True(camera.PrivacyModeActive));
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReloadWithOnlyTheSavedCameras_WhenABindingCannotBeRead()
+    {
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns([MakeCamera("cam1"), MakeCamera("cam2", PrivacyStrategy.Hardware)]);
+        _bindings.GetAsync("cam2", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<CameraCapabilityBinding?>(new InvalidOperationException("database is locked")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExecuteAsync(["cam1", "cam2"], active: true));
+
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.Id == "cam1"), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).ApplyAsync(
+            Arg.Is<IReadOnlyList<Camera>>(all => all.Single(c => c.Id == "cam1").PrivacyModeActive
+                && !all.Single(c => c.Id == "cam2").PrivacyModeActive),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -57,20 +57,27 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
         var targets = allCameras.Where(c => cameraIds.Contains(c.Id)).ToList();
         var updated = new List<CameraDto>(targets.Count);
 
-        foreach (var camera in targets)
+        try
         {
-            camera.PrivacyModeActive = active;
-            camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
-            camera.PrivacyVendorCut = await PrivacyVendorAction.ApplyAsync(
-                camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+            foreach (var camera in targets)
+            {
+                // Asked before the entity changes: a camera that fails here keeps its saved state in the reload.
+                var vendorCut = await PrivacyVendorAction.ApplyAsync(
+                    camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+                camera.PrivacyModeActive = active;
+                camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
+                camera.PrivacyVendorCut = vendorCut;
 
-            camera.UpdatedAt = DateTimeOffset.UtcNow;
-            await cameras.UpdateAsync(camera, CancellationToken.None);
-            updated.Add(CameraDto.From(camera));
+                camera.UpdatedAt = DateTimeOffset.UtcNow;
+                await cameras.UpdateAsync(camera, CancellationToken.None);
+                updated.Add(CameraDto.From(camera));
+            }
         }
-
-        // Single Frigate reload for the whole batch, applied even if the caller hangs up.
-        await frigateConfig.ApplyAsync(allCameras, CancellationToken.None);
+        finally
+        {
+            // One reload for the batch, even stopped half way or hung up: a saved camera must stop recording.
+            await frigateConfig.ApplyAsync(allCameras, CancellationToken.None);
+        }
 
         return updated;
     }
@@ -116,8 +123,13 @@ internal static class PrivacyVendorAction
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
-                active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
+            // A caller hanging up is not the camera failing; support must not read it as one.
+            if (ex is OperationCanceledException && ct.IsCancellationRequested)
+                logger.LogInformation("Privacy {State} on {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.",
+                    active ? "on" : "off", camera.Id);
+            else
+                logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
+                    active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
             // A lens the camera never confirmed opening is still held as cut.
             return !active && camera.PrivacyVendorCut;
         }
