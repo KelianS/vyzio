@@ -41,7 +41,7 @@ public sealed class OnvifEndpointResolverTests
         Slug = "cam1",
         FrigateCameraName = "cam1",
         DisplayName = "Camera",
-        Host = "192.168.1.196",
+        Host = "192.168.1.10",
         Username = "user",
         Password = "pass",
     };
@@ -71,7 +71,7 @@ public sealed class OnvifEndpointResolverTests
         var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
 
         Assert.NotNull(endpoint);
-        Assert.Equal("http://192.168.1.196:2020/onvif/service", endpoint!.DeviceServiceUrl.ToString());
+        Assert.Equal("http://192.168.1.10:2020/onvif/service", endpoint!.DeviceServiceUrl.ToString());
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class OnvifEndpointResolverTests
         {
             if (url.AbsolutePath != "/onvif/device_service") return new HttpResponseMessage(HttpStatusCode.NotFound);
             return Soap(body.Contains("GetServices")
-                ? ServicesAnswer("http://192.168.1.196/onvif/media_service", "http://192.168.1.196/onvif/ptz_service")
+                ? ServicesAnswer("http://192.168.1.10/onvif/media_service", "http://192.168.1.10/onvif/ptz_service")
                 : DateAndTimeAnswer);
         });
 
@@ -120,7 +120,7 @@ public sealed class OnvifEndpointResolverTests
 
         var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
 
-        Assert.Equal("192.168.1.196", endpoint!.UrlFor(OnvifService.Ptz).Host);
+        Assert.Equal("192.168.1.10", endpoint!.UrlFor(OnvifService.Ptz).Host);
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public sealed class OnvifEndpointResolverTests
 
         await resolver.ResolveAsync(camera, CancellationToken.None);
 
-        Assert.Equal("http://192.168.1.196:2020/onvif/service", camera.GetProtocolEndpoint(SupportedProtocol.Onvif));
+        Assert.Equal("http://192.168.1.10:2020/onvif/service", camera.GetProtocolEndpoint(SupportedProtocol.Onvif));
     }
 
     [Fact]
@@ -161,11 +161,11 @@ public sealed class OnvifEndpointResolverTests
     {
         var (resolver, calls) = MakeResolver((_, _) => Soap(DateAndTimeAnswer));
         var camera = MakeCamera();
-        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.196:2020/onvif/service");
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.10:2020/onvif/service");
 
         var endpoint = await resolver.ResolveAsync(camera, CancellationToken.None);
 
-        Assert.Equal("http://192.168.1.196:2020/onvif/service", endpoint!.DeviceServiceUrl.ToString());
+        Assert.Equal("http://192.168.1.10:2020/onvif/service", endpoint!.DeviceServiceUrl.ToString());
         Assert.Single(calls); // GetServices only, no port sweep
     }
 
