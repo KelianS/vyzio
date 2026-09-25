@@ -97,8 +97,23 @@ public sealed class PtzGoToPresetUseCase(
 
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        var provider = registry.ResolvePtz(binding.Protocol);
+        return await PtzPresetMove.GoToAsync(camera, binding, registry.ResolvePtz(binding.Protocol), presets, presetId, ct);
+    }
+}
 
+// One way to reach a saved position, whether the camera keeps it or Vyzio does (ADR-25).
+internal static class PtzPresetMove
+{
+    // False when Vyzio keeps the positions and this one was never saved.
+    public static async Task<bool> GoToAsync(
+        Camera camera,
+        CameraCapabilityBinding binding,
+        IPtzCapabilityProvider provider,
+        IPtzPresetRepository presets,
+        int presetId,
+        CancellationToken ct)
+    {
+        var cameraId = camera.Id;
         if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
         {
             await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);

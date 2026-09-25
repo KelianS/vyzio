@@ -8,16 +8,13 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Resolution is via CameraCapabilityBinding + ICapabilityProviderRegistry (ADR-22) — never
-// via VendorFamily/IVendorCameraAdapter. Hardware strategy requires Verified=true on the
-// HardwarePrivacy binding. PtzParking is inlined here: fetches the Ptz binding and calls
-// PtzGoToPresetAsync(1): preset 1 is the parking position by convention (ADR-25), saved from
-// the live view like any other preset.
+// Resolved through capability bindings, never the brand (ADR-22); parking goes to the Parking slot (ADR-25).
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig,
+    IPtzPresetRepository presets,
     ILogger<ToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
@@ -27,7 +24,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
         // Asked before the entity changes: a camera that refuses leaves it as it was.
         var vendorCut = await PrivacyVendorAction.ApplyAsync(
-            camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+            camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
         camera.PrivacyVendorCut = vendorCut;
@@ -48,6 +45,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig,
+    IPtzPresetRepository presets,
     ILogger<BatchToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
@@ -65,7 +63,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
             {
                 // Asked before the entity changes: a camera that fails here keeps its saved state in the reload.
                 var vendorCut = await PrivacyVendorAction.ApplyAsync(
-                    camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+                    camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
                 camera.PrivacyVendorCut = vendorCut;
@@ -100,6 +98,7 @@ internal static class PrivacyVendorAction
         bool active,
         ICameraCapabilityBindingRepository bindings,
         ICapabilityProviderRegistry registry,
+        IPtzPresetRepository presets,
         ILogger logger,
         CancellationToken ct)
     {
@@ -117,7 +116,11 @@ internal static class PrivacyVendorAction
                 if (active && await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
                 {
                     var ptz = registry.ResolvePtz(ptzBinding.Protocol);
-                    deviceCall = () => ptz.PtzGoToPresetAsync(camera, ptzBinding, presetId: 1, ct);
+                    deviceCall = async () =>
+                    {
+                        if (!await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, PtzPreset.ParkingSlot, ct))
+                            throw new InvalidOperationException("No parking position is saved for this camera.");
+                    };
                 }
                 break;
         }
