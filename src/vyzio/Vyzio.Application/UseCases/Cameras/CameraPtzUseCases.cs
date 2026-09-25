@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -52,7 +51,7 @@ public sealed class SetPtzPanInvertedUseCase(ICameraCapabilityBindingRepository 
     {
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { } binding) return null;
 
-        binding.ConfigJson = PtzPanDirection.WithInverted(binding.ConfigJson, inverted);
+        binding.ConfigJson = BindingConfig.With(binding.ConfigJson, BindingConfig.PanInverted, inverted);
         await bindings.SaveAsync(binding, ct);
         return CameraCapabilityBindingDto.From(binding);
     }
@@ -61,20 +60,7 @@ public sealed class SetPtzPanInvertedUseCase(ICameraCapabilityBindingRepository 
 // The swap happens where the user presses, never in a provider: saved positions replay in the camera's own frame.
 internal static class PtzPanDirection
 {
-    private const string Key = "pan_inverted";
-
-    public static bool IsInverted(string? configJson)
-    {
-        if (string.IsNullOrEmpty(configJson)) return false;
-        try
-        {
-            return JsonNode.Parse(configJson)?[Key]?.GetValue<bool>() ?? false;
-        }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
-        {
-            return false;
-        }
-    }
+    public static bool IsInverted(string? configJson) => BindingConfig.ReadBool(configJson, BindingConfig.PanInverted);
 
     public static PtzDirection AsPressed(PtzDirection direction, bool inverted) => !inverted ? direction : direction switch
     {
@@ -86,21 +72,6 @@ internal static class PtzPanDirection
         PtzDirection.DownRight => PtzDirection.DownLeft,
         _ => direction,
     };
-
-    public static string WithInverted(string? configJson, bool inverted)
-    {
-        JsonObject config;
-        try
-        {
-            config = (string.IsNullOrEmpty(configJson) ? null : JsonNode.Parse(configJson) as JsonObject) ?? [];
-        }
-        catch (JsonException)
-        {
-            config = [];
-        }
-        config[Key] = inverted;
-        return config.ToJsonString();
-    }
 }
 
 public sealed class PtzSavePresetUseCase(

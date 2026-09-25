@@ -251,9 +251,9 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
-  /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
   /** The camera's PTZ binding as the capability list shows it, when it has one. */
   ptzBinding: { protocol: string; configJson: string | null } | null
+  /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
   ptz: {
     presets: {
       presetId: number
@@ -325,6 +325,8 @@ function ptzBindingOf(binding: { protocol: string; configJson: string | null }) 
     lastError: null,
     isPreset: false,
     isConfigured: true,
+    panInverted:
+      (JSON.parse(binding.configJson ?? '{}') as { pan_inverted?: boolean }).pan_inverted ?? false,
   }
 }
 

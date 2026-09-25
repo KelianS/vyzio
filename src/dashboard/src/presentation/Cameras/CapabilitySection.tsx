@@ -15,7 +15,8 @@ import { Badge } from '../../common/components/Badge'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
-import { Switch } from '../../common/ui/switch'
+import { SettingRow } from '../../common/settings/SettingRow'
+import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 import { cn } from '../../common/ui/utils'
 import {
   Select,
@@ -185,13 +186,20 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
   )
 }
 
-/** Whether this PTZ binding swaps left and right (SPECS 9.3); an unreadable config swaps nothing. */
-function isPanInverted(binding: CameraCapabilityBinding): boolean {
-  if (!binding.configJson) return false
-  try {
-    return (JSON.parse(binding.configJson) as { pan_inverted?: unknown }).pan_inverted === true
-  } catch {
-    return false
+/** The left and right swap of a camera that turns the other way (SPECS 9.3), in the settings grammar (ADR-43). */
+function panInvertedSetting(
+  inverted: boolean,
+  saving: boolean,
+  onChange: (inverted: boolean) => void,
+): SettingDeclaration {
+  return {
+    id: 'ptz-pan-inverted',
+    label: 'Inverser gauche et droite',
+    nature: { kind: 'toggle' },
+    help: 'Pour une caméra qui tourne à gauche quand vous appuyez à droite. Le haut, le bas et les positions enregistrées ne changent pas.',
+    value: inverted,
+    onChange: (value) => onChange(value as boolean),
+    disabled: saving,
   }
 }
 
@@ -265,16 +273,18 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
     },
   )
 
-  const panInverted = isPanInverted(binding)
-  const panAction = useAsyncAction(() => setPtzPanInverted.execute(camera.id, !panInverted), {
-    onSuccess: () => {
-      onToast(
-        panInverted ? 'Sens gauche et droite rétabli.' : 'Gauche et droite inversés.',
-        'success',
-      )
-      onDone()
+  const panAction = useAsyncAction(
+    (inverted: boolean) => setPtzPanInverted.execute(camera.id, inverted),
+    {
+      onSuccess: (saved) => {
+        onToast(
+          saved.panInverted ? 'Gauche et droite inversés.' : 'Sens gauche et droite rétabli.',
+          'success',
+        )
+        onDone()
+      },
     },
-  })
+  )
 
   const removeAction = useAsyncAction(
     () => removeCameraCapability.execute(camera.id, binding.capability),
@@ -369,20 +379,15 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           <div className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</div>
         )}
 
-        {binding.capability === 'ptz' && isConfigured && (
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <Switch
-              checked={panInverted}
-              disabled={panAction.loading || offline}
-              onCheckedChange={() => void panAction.run()}
-            />
-            <span>
-              Inverser gauche et droite
-              <span className="block text-muted-foreground">
-                Si la caméra tourne à gauche quand vous appuyez à droite.
-              </span>
-            </span>
-          </label>
+        {/* Stored by Vyzio, not sent to the camera: it stays usable offline. */}
+        {isConfigured && binding.panInverted !== null && (
+          <SettingRow
+            setting={panInvertedSetting(
+              binding.panInverted,
+              panAction.loading,
+              (inverted) => void panAction.run(inverted),
+            )}
+          />
         )}
 
         {showV380IdInput && (

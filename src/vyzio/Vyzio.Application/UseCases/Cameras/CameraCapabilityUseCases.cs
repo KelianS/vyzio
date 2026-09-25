@@ -12,7 +12,8 @@ public sealed record CameraCapabilityBindingDto(
     DateTimeOffset? VerifiedAt,
     string? LastError,
     bool IsPreset,
-    bool IsConfigured)
+    bool IsConfigured,
+    bool? PanInverted = null)
 {
     public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, bool isPreset = false) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
@@ -22,7 +23,11 @@ public sealed record CameraCapabilityBindingDto(
         binding.VerifiedAt,
         binding.LastError,
         IsPreset: isPreset,
-        IsConfigured: true);
+        IsConfigured: true,
+        // Only a PTZ binding has a direction to swap (SPECS 9.3).
+        PanInverted: binding.Capability == CameraCapability.Ptz
+            ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
+            : null);
 
     public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, SupportedProtocol protocol) => new(
         SnakeCaseEnum.ToSnakeCase(capability),
@@ -149,7 +154,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
         };
 
         binding.Protocol = protocol;
-        binding.ConfigJson = request.ConfigJson;
+        binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, request.ConfigJson, BindingConfig.PanInverted);
         binding.Verified = false;
         binding.LastError = null;
         binding.ManuallyConfigured = true;
