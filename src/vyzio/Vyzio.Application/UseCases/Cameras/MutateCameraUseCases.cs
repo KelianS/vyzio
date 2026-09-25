@@ -109,7 +109,8 @@ public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier)
 public sealed class VerifyCameraUseCase(
     ICameraRepository cameras,
     ICameraVerifier verifier,
-    ICameraStreamEnumerator streamEnumerator)
+    ICameraStreamEnumerator streamEnumerator,
+    IRtspAccountProbe accountProbe)
 {
     public async Task<CameraStatusDto?> ExecuteAsync(string id, CancellationToken ct = default)
     {
@@ -118,6 +119,10 @@ public sealed class VerifyCameraUseCase(
         {
             return null;
         }
+
+        // The way back from a refusal: the user checks again, and the camera itself says whether it lets Vyzio in (ADR-58).
+        if (camera.AccountRefusedAt is not null && await accountProbe.CheckAsync(camera, ct) == RtspAccountCheck.Accepted)
+            camera.AccountRefusedAt = null;
 
         var result = await verifier.VerifyAsync(camera, ct);
         camera.Status = result.Status;

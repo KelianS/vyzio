@@ -271,13 +271,38 @@ public class VerifyCameraUseCaseTests
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
     private readonly ICameraStreamEnumerator _streamEnumerator = Substitute.For<ICameraStreamEnumerator>();
+    private readonly IRtspAccountProbe _accountProbe = Substitute.For<IRtspAccountProbe>();
     private readonly VerifyCameraUseCase _sut;
 
     public VerifyCameraUseCaseTests()
     {
         _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
             .Returns([]);
-        _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator);
+        _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator, _accountProbe);
+    }
+
+    [Theory]
+    [InlineData(RtspAccountCheck.Accepted, true)]
+    [InlineData(RtspAccountCheck.Refused, false)]
+    public async Task ExecuteAsync_ShouldClearTheRefusalOnlyIfTheCameraLetsVyzioIn_WhenTheUserChecksAgain(RtspAccountCheck answer, bool cleared)
+    {
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            FrigateCameraName = "front_door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            AccountRefusedAt = DateTimeOffset.UnixEpoch,
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+        _accountProbe.CheckAsync(camera, Arg.Any<CancellationToken>()).Returns(answer);
+        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>())
+            .Returns(new CameraVerificationResult(true, true, "online", "ok", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch));
+
+        await _sut.ExecuteAsync(camera.Id);
+
+        Assert.Equal(cleared, camera.AccountRefusedAt is null);
     }
 
     [Fact]

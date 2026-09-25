@@ -50,7 +50,15 @@ export function CameraShell() {
         <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="font-serif text-3xl">{camera.displayName}</h1>
           <span className="text-sm text-muted-foreground">
-            {formatCameraAddress(camera)} · {formatCameraStatusLabel(camera)}
+            {formatCameraAddress(camera)} ·{' '}
+            {camera.accountRefusedAt ? (
+              // Straight to where the password is fixed (SPECS 2.2).
+              <Link to="connexion" className="text-destructive underline underline-offset-2">
+                {formatCameraStatusLabel(camera)}
+              </Link>
+            ) : (
+              formatCameraStatusLabel(camera)
+            )}
           </span>
         </div>
       </div>

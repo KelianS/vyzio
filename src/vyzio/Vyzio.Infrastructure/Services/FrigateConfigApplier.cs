@@ -390,17 +390,10 @@ public sealed class FrigateConfigApplier(
 
     private static string BuildRtspUrl(Camera camera, string? streamPath)
     {
-        var separatorIndex = streamPath?.IndexOf('?') ?? -1;
-        var builder = new UriBuilder("rtsp", camera.Host, camera.Port)
-        {
-            Path = (separatorIndex >= 0 ? streamPath![..separatorIndex] : streamPath)?.TrimStart('/') ?? string.Empty,
-            Query = separatorIndex >= 0 ? streamPath![(separatorIndex + 1)..] : string.Empty,
-        };
-
-        var address = builder.Uri.ToString();
+        var address = RtspStreamAddress.Of(camera.Host, camera.Port, streamPath);
         if (string.IsNullOrWhiteSpace(camera.Username)) return address;
 
-        var scheme = $"{builder.Scheme}://";
+        const string scheme = "rtsp://";
         return $"{scheme}{FrigateInputUserInfo(camera.Username, camera.Password ?? string.Empty)}@{address[scheme.Length..]}";
     }
 

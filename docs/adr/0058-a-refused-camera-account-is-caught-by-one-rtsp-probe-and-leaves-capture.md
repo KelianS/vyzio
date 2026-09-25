@@ -20,8 +20,8 @@ stay replaceable (principle 2).
 **a) Vyzio asks the camera itself, with one RTSP `DESCRIBE`.** The probe sends the request without
 credentials; a camera that answers `401` gets the same request once more with the camera's own account,
 in the scheme it named (Digest or Basic). It reads `Accepted`, `Refused` or `NoAnswer`. It never guesses
-an account and never sends one to a camera that did not ask. The same probe serves the credential check
-when a camera is added (#46).
+an account and never sends one to a camera that did not ask. It is built to also serve the credential
+check when a camera is added, which #46 tracks.
 
 **b) A camera is probed once per outage.** A watcher reads the capture's frame rates on a fixed period.
 A validated, enabled camera outside privacy mode that shows no frames on two readings in a row is probed
@@ -30,10 +30,20 @@ refusal (`NoAnswer`, `Accepted`) changes nothing.
 
 **c) A refused account takes the camera out of capture.** Vyzio records when the account was refused on
 the camera and reloads the capture without it, which stops the retries before the camera bans Vyzio.
-The camera says so on its card, as a cause distinct from being offline, with where to fix the password.
+This reload is Vyzio's own initiative, the one exception SPECS 7.2 names to surveillance being
+interrupted only by the user. The camera says so on its card and on the home screen, as a cause
+distinct from being offline, with where to fix the password; the interface treats it as unreachable, so
+no other action (moving it, its image settings, a capability test) spends an attempt on it.
 
-**d) Saving new credentials clears the refusal** and puts the camera back into capture: one new attempt.
-If the account is still refused, (b) and (c) catch it again after a handful of attempts, never a loop.
+**d) The refusal ends when the camera lets Vyzio in again.** Saving new credentials clears it, and the
+connection check that follows puts the camera back into capture, as for any change of how Vyzio
+reaches it. A connection check alone asks the probe once more and clears the refusal if the camera now
+accepts, for a password restored in the vendor app. If the account is still refused, (b) and (c) catch
+it again after a handful of attempts, never a loop.
+
+**e) The refusal sits beside reachability, not inside it.** ADR-23's online and offline status says
+whether the camera answers on the network; the watcher acts only once capture has gone dark, whatever
+that status says, and its verdict comes from the camera, never from the capture engine.
 
 ## Options rejected
 
@@ -46,8 +56,9 @@ If the account is still refused, (b) and (c) catch it again after a handful of a
 
 ## Consequences
 
-- A camera whose account is refused stops recording until the user fixes the password; before, it did
-  not record either, but kept hammering the camera.
+- A camera whose account is refused does not record until the user fixes the password, and is left
+  alone meanwhile.
+- A DVRIP camera speaks no RTSP on its port, so its refused account is not caught this way.
 - The probe runs only after two silent readings, so a refusal is caught within about a minute of the
   capture going dark, a few attempts in.
 - A camera that bans after very few attempts can still lock Vyzio out before the watcher acts; the card

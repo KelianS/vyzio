@@ -17,7 +17,7 @@ internal sealed partial class RtspAccountProbe(TimeProvider time, ILogger<RtspAc
     public async Task<RtspAccountCheck> CheckAsync(Camera camera, CancellationToken ct = default)
     {
         // The URI never carries the account: credentials travel only in the Authorization header.
-        var uri = new UriBuilder("rtsp", camera.Host, camera.Port, camera.StreamPath?.TrimStart('/') ?? string.Empty).Uri.ToString();
+        var uri = RtspStreamAddress.Of(camera.Host, camera.Port, camera.StreamPath);
         try
         {
             var first = await DescribeAsync(camera, uri, cseq: 1, authorization: null, ct);

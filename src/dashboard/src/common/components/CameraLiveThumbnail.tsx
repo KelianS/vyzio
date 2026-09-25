@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
-import { EyeOff, Lock, WifiOff } from 'lucide-react'
+import { EyeOff, KeyRound, Lock, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
 import { cn } from '../ui/utils'
 import type { Camera } from '../../domain/entities/Camera'
@@ -29,7 +29,8 @@ export function CameraLiveThumbnail({
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
-  const expandable = Boolean(onExpand) && !camera.privacyModeActive
+  // A camera Vyzio cannot reach has no live view to open (SPECS 2.2).
+  const expandable = Boolean(onExpand) && !camera.privacyModeActive && camera.connected
 
   // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
   const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
@@ -61,7 +62,7 @@ export function CameraLiveThumbnail({
       {/* Only the frame is the button — the footer's privacy toggle is a real one, and nesting is invalid. */}
       <div
         className={cn('relative aspect-video bg-surface-inverse', expandable && 'cursor-pointer')}
-        onClick={camera.privacyModeActive ? undefined : onExpand}
+        onClick={expandable ? onExpand : undefined}
         role={expandable ? 'button' : undefined}
         // Names the frame itself: the image, hidden during an outage, took its name along.
         aria-label={expandable ? camera.displayName : undefined}
@@ -86,6 +87,12 @@ export function CameraLiveThumbnail({
                 ? 'Caméra coupée — matériel'
                 : 'Caméra en pause — enregistrement désactivé'}
             </span>
+          </div>
+        ) : camera.accountRefusedAt ? (
+          // Its own cause, never passed off as the camera being away or reconnecting (SPECS 2.2).
+          <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
+            <KeyRound className="size-4" aria-hidden="true" />
+            Mot de passe refusé
           </div>
         ) : deviceOffline ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">

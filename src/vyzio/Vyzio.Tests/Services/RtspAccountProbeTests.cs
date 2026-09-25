@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Services;
@@ -48,7 +49,8 @@ public sealed class RtspAccountProbeTests : IDisposable
         }
     });
 
-    private static RtspAccountProbe Probe() => new(TimeProvider.System, NullLogger<RtspAccountProbe>.Instance);
+    // The fake clock stays still: the loopback camera answers at once, so no timeout may decide the verdict.
+    private static RtspAccountProbe Probe() => new(new FakeTimeProvider(), NullLogger<RtspAccountProbe>.Instance);
 
     [Fact]
     public async Task CheckAsync_ShouldAccept_WhenTheCameraAsksForNoAccount()
@@ -74,6 +76,51 @@ public sealed class RtspAccountProbeTests : IDisposable
         Assert.DoesNotContain("Authorization", _requests[0], StringComparison.Ordinal);
         Assert.Contains($"response=\"{Md5($"{ha1}:abc123:{ha2}")}\"", _requests[1], StringComparison.Ordinal);
         Assert.All(_requests, request => Assert.DoesNotContain("placeholder-pass", request, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CheckAsync_ShouldAnswerWithQop_WhenTheDigestChallengeOffersIt()
+    {
+        var camera = Serve(
+            "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"cam\", nonce=\"abc123\", qop=\"auth\"\r\n\r\n",
+            "RTSP/1.0 200 OK\r\nCSeq: 2\r\n\r\n");
+
+        Assert.Equal(RtspAccountCheck.Accepted, await Probe().CheckAsync(MakeCamera()));
+        await camera;
+
+        var authorization = _requests[1];
+        var cnonce = System.Text.RegularExpressions.Regex.Match(authorization, "cnonce=\"([^\"]+)\"").Groups[1].Value;
+        var ha1 = Md5("viewer:cam:placeholder-pass");
+        var ha2 = Md5($"DESCRIBE:rtsp://127.0.0.1:{Port}/stream1");
+        Assert.Contains("qop=auth, nc=00000001", authorization, StringComparison.Ordinal);
+        Assert.Contains($"response=\"{Md5($"{ha1}:abc123:00000001:{cnonce}:auth:{ha2}")}\"", authorization, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CheckAsync_ShouldAnswerInBasic_WhenTheCameraOffersOnlyBasic()
+    {
+        var camera = Serve(
+            "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Basic realm=\"cam\"\r\n\r\n",
+            "RTSP/1.0 200 OK\r\nCSeq: 2\r\n\r\n");
+
+        Assert.Equal(RtspAccountCheck.Accepted, await Probe().CheckAsync(MakeCamera()));
+        await camera;
+
+        var expected = Convert.ToBase64String(Encoding.UTF8.GetBytes("viewer:placeholder-pass"));
+        Assert.Contains($"Authorization: Basic {expected}", _requests[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CheckAsync_ShouldKeepTheQueryOfTheStreamPath_WhenThePathCarriesOne()
+    {
+        var camera = Serve("RTSP/1.0 200 OK\r\nCSeq: 1\r\n\r\n");
+        var withQuery = MakeCamera();
+        withQuery.SetMainStreamPath("cam/realmonitor?channel=1&subtype=0");
+
+        await Probe().CheckAsync(withQuery);
+        await camera;
+
+        Assert.StartsWith($"DESCRIBE rtsp://127.0.0.1:{Port}/cam/realmonitor?channel=1&subtype=0 RTSP/1.0", _requests[0], StringComparison.Ordinal);
     }
 
     [Fact]

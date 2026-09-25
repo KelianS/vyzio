@@ -39,8 +39,10 @@ internal sealed class CameraOutageTracker
         return due;
     }
 
+    // DVRIP cameras speak no RTSP on their port, so the probe has nothing to ask them (ADR-58).
     private static bool IsWatched(Camera camera) =>
-        camera.IsEnabled
+        camera.StreamProtocol != StreamProtocol.Dvrip
+        && camera.IsEnabled
         && string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase)
         && !camera.PrivacyModeActive
         && camera.AccountRefusedAt is null;
@@ -63,7 +65,18 @@ public sealed class CameraAccountWatch(
         var refused = false;
         foreach (var camera in tracker.DueForProbe(all, reading))
         {
-            if (await probe.CheckAsync(camera, ct) != RtspAccountCheck.Refused) continue;
+            RtspAccountCheck check;
+            try
+            {
+                check = await probe.CheckAsync(camera, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                // One camera that cannot be probed must not leave the others due in this reading unprobed.
+                logger.LogWarning(ex, "Camera {CameraId} could not be probed for its account.", camera.Id);
+                continue;
+            }
+            if (check != RtspAccountCheck.Refused) continue;
 
             logger.LogWarning("Camera {CameraId} refused its account; it leaves capture until the password is fixed.", camera.Id);
             camera.AccountRefusedAt = time.GetUtcNow();
@@ -73,7 +86,10 @@ public sealed class CameraAccountWatch(
         }
 
         // One reload for every camera refused in this reading, so the capture stops retrying them.
-        if (refused) await frigateConfig.ApplyAsync(all, ct);
+        if (!refused) return;
+        var applied = await frigateConfig.ApplyAsync(all, ct);
+        if (!applied.Applied)
+            logger.LogError("Capture reload failed after an account refusal; the camera is still retried: {Reason}", applied.Message);
     }
 }
 

@@ -227,6 +227,7 @@ CameraConfigWriter (.NET)         -> Generates frigate.yml: cameras, detection l
 CameraStreamEnumerator (.NET)     -> Enumerates a camera's streams and their resolution (ADR-38), through ONVIF or protocol convention
 OnvifEndpointResolver (.NET)      -> Finds where a camera serves ONVIF, port and path, asked of the device (ADR-56)
 MotionSensitivityTuner (.NET)     -> Per-camera sensitivity self-tuning loop (ADR-35), applied live over MQTT
+CameraAccountWatch (.NET)         -> Probes a camera gone silent once, takes a refused account out of capture (ADR-58)
 API (ASP.NET Core)                -> REST + SignalR + authenticated Frigate proxy
 Dashboard / Hub (React + TS)      -> Guided consumer UI: viewing and a settings tree (ADR-40), a single editing cycle (ADR-41), the shadcn/ui foundation (ADR-42)
 ```

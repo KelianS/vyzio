@@ -297,7 +297,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - l'interface doit etre **concue pour le telephone d'abord**, le grand ecran developpant la meme structure ; les actions principales doivent rester faisables sur les deux ;
 - modifier un reglage ne doit produire **aucun effet** tant que l'utilisateur n'a pas valide ; avant de valider, il doit voir **ce qu'il a modifie** et pouvoir **renoncer** ;
 - enregistrer un reglage doit **rendre la main immediatement** et ne jamais interrompre la surveillance de sa propre initiative ;
-- l'interruption de la surveillance doit rester un **acte de l'utilisateur** : il choisit quand redemarrer, le declencheur est atteignable depuis n'importe ou, et il ne s'affiche que lorsqu'un reglage l'exige reellement ;
+- l'interruption de la surveillance doit rester un **acte de l'utilisateur** : il choisit quand redemarrer, le declencheur est atteignable depuis n'importe ou, et il ne s'affiche que lorsqu'un reglage l'exige reellement ; seule exception, Vyzio redemarre de lui-meme pour retirer une camera qui refuse son mot de passe, avant qu'elle ne le bannisse (cf. §2.2) ;
 - un reglage enregistre mais pas encore repris par la surveillance doit se voir et **dire lesquels** ; l'ecart est autorise et n'oblige a rien, mais ne doit jamais etre silencieux ;
 - la question de redemarrer ne doit se poser qu'en **quittant les reglages**, jamais en passant d'une page de reglages a une autre ;
 - une **action** — verifier une connexion, supprimer une camera, couper la surveillance — prend effet tout de suite et ne differe jamais ;

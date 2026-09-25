@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
+import { DiagnosticLine } from '../../common/components/ErrorMessage'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useUnsavedChanges } from '../Navigation/useUnsavedChanges'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
@@ -168,10 +169,15 @@ function ConnectionForm({ camera }: { camera: Camera }) {
     <>
       <SettingsPage lede="Comment Vyzio joint cette caméra.">
         {camera.accountRefusedAt && (
-          <p role="status" className="mb-3 text-sm text-destructive">
-            La caméra refuse son mot de passe. Vyzio ne le lui présente plus, pour qu’elle ne le
-            bloque pas : corrigez-le ci-dessous, enregistrez, puis vérifiez la connexion.
-          </p>
+          <div role="status" className="mb-3 text-sm text-destructive">
+            <p>
+              Cette caméra n’enregistre plus : elle refuse le mot de passe que Vyzio connaît, sans
+              doute changé dans l’application du fabricant ou effacé par une mise à jour. Vyzio a
+              cessé de l’essayer pour que la caméra ne le bloque pas. Saisissez son mot de passe
+              actuel ci-dessous, enregistrez, puis vérifiez la connexion.
+            </p>
+            <DiagnosticLine text={`RTSP DESCRIBE 401 · ${camera.accountRefusedAt}`} />
+          </div>
         )}
         <SettingsList settings={declarations} />
 
