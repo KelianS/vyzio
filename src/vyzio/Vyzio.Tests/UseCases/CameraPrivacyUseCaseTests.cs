@@ -92,7 +92,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldStillShowTheLensCut_WhenTheCameraFailsToOpenIt()
+    public async Task ExecuteAsync_ShouldRaiseAndKeepPrivacyOn_WhenTheCameraFailsToOpenTheLens()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
         camera.PrivacyModeActive = true;
@@ -103,10 +103,10 @@ public class ToggleCameraPrivacyModeUseCaseTests
         _privacyProvider.SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), false, Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new CameraUnreachableException("DVRIP: no answer")));
 
-        var result = await _sut.ExecuteAsync("cam1", active: false);
+        await Assert.ThrowsAsync<CameraUnreachableException>(() => _sut.ExecuteAsync("cam1", active: false));
 
-        Assert.False(result!.PrivacyModeActive);
-        Assert.True(result.PrivacyVendorCut);
+        Assert.True(camera.PrivacyModeActive);
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

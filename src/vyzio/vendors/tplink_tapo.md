@@ -49,21 +49,23 @@ Remplacez :
 
 ## Mode vie privée
 
-**Niveau de garantie : PTZ parking.** Vyzio oriente physiquement la caméra vers une position de
-repos et arrête l'enregistrement au même moment. La caméra ne regarde plus la pièce, et Vyzio
-n'enregistre plus.
+**Niveau de garantie : caméra détournée.** Si vous choisissez cette protection sur la fiche de la
+caméra, Vyzio la tourne vers une position de repos et arrête l'enregistrement au même moment. La
+caméra ne regarde plus la pièce, et Vyzio n'enregistre plus. La caméra reste allumée : son image
+reste techniquement accessible sur votre réseau local, seul Vyzio cesse de la regarder.
 
 Les caméras Tapo savent aussi fermer un cache d'objectif et éteindre leur LED, ce qui serait une
 garantie plus forte. Cette commande passe par le protocole privé de TP-Link, que Vyzio ne sait pas
 encore parler : elle n'est donc pas proposée plutôt que d'être annoncée sans fonctionner.
 
 > **À savoir** : si vous activez le mode vie privée depuis l'application Tapo, la caméra refuse les
-> commandes d'orientation tant qu'il est actif. C'est normal, et Vyzio vous le dira au lieu de faire
-> semblant d'avoir bougé.
+> commandes d'orientation tant qu'il est actif. C'est normal : Vyzio vous signale que la caméra a
+> refusé, au lieu de faire semblant d'avoir bougé. Désactivez-le dans l'application Tapo pour
+> orienter la caméra depuis Vyzio.
 
 ---
 
-## Contrôle PTZ (caméras pan-tilt)
+## Orienter la caméra (modèles motorisés)
 
 Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) s'orientent depuis Vyzio,
 avec les mêmes identifiants **compte camera** que le flux vidéo. Aucun compte TP-Link n'est

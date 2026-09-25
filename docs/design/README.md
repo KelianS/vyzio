@@ -12,7 +12,7 @@ The chain: SAD (boundaries), ADR (decision and why), **TAD (how)**, code (does).
 | Component | TAD | Source decisions | Home of the code |
 |---|---|---|---|
 | Camera network discovery | [`camera-discovery.md`](camera-discovery.md) | ADR-31, ADR-32 | `Vyzio.Infrastructure/Services/CameraDiscovery/` |
-| ONVIF client and endpoint resolution | [`onvif.md`](onvif.md) | ADR-22, ADR-28, ADR-56 | `Vyzio.Infrastructure/VendorAdapters/` |
+| ONVIF client and endpoint resolution | [`onvif.md`](onvif.md) | ADR-24, ADR-27, ADR-56 | `Vyzio.Infrastructure/VendorAdapters/` |
 
 ## Candidate components (detail still carried by their ADRs and the code)
 
@@ -21,7 +21,8 @@ the way of reading their ADRs. As long as it holds, the detail stays in the ADR 
 create an empty TAD in anticipation.
 
 - **Camera protocols and capabilities**: the DVRIP and V380 clients, the capability registry,
-  `PrivacyStrategy`. ONVIF has its own TAD above. Sources: ADR-19, ADR-20, ADR-24, ADR-29, ADR-30.
+  `PrivacyStrategy`. ONVIF has its own TAD above. Sources: ADR-19, ADR-20, ADR-22, ADR-24, ADR-28, ADR-29,
+  ADR-30.
 - **Frigate integration**: the MQTT and REST contract consumed, `FrigateAdapter`, `config.yml`
   generation. Sources: ADR-04, ADR-05, ADR-13, ADR-16, ADR-17, ADR-18.
 - **PTZ and positions**: native presets against Vyzio-managed ones, thumbnails. Sources: ADR-21,

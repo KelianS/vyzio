@@ -4,7 +4,10 @@
 > [ADR-56](../adr/0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md)
 > (endpoint asked of the camera), [ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
 > (resolution by protocol, never by brand) and
-> [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) (capability cascade).
+> [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) (capability cascade),
+> [ADR-24](../adr/0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md)
+> (the client is transport only) and
+> [ADR-27](../adr/0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md) (imaging).
 > Home of the code: `src/vyzio/Vyzio.Infrastructure/VendorAdapters/OnvifClient.cs`,
 > `OnvifEndpointResolver.cs`, and the providers in `Vyzio.Infrastructure/CapabilityProviders/`.
 

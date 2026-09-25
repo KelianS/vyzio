@@ -76,7 +76,7 @@ knows how to drive them:
 
 | Brand            | Privacy mode                       | Move the camera | Image settings                    |
 | ---------------- | ---------------------------------- | --------------- | --------------------------------- |
-| TP-Link Tapo     | Hardware cut, lens covered, LED off | Yes             | Not yet                           |
+| TP-Link Tapo     | Turns away and stops recording      | Yes             | Brightness, contrast, sharpness, IR |
 | ICSee / XMEye    | Turns away and stops recording      | Yes             | Brightness, contrast, saturation  |
 | V380 PRO         | Turns away and stops recording      | Yes             | Not confirmed on the tested units |
 

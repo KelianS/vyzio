@@ -4,9 +4,10 @@
 >
 > Amends [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) and
 > [ADR-27](0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md)
-> on the ONVIF port they assume (8899), and
+> on the ONVIF port they assume (8899), ADR-27 also on its scope (a Tapo gains ONVIF imaging), and
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
-> on where an ONVIF address lives (not in a binding's `ConfigJson`).
+> on where an ONVIF address lives (not in a binding's `ConfigJson`) and on the Tapo preset (PTZ over
+> ONVIF only, the vendor protocol kept for the lens cut).
 
 ## Context
 
@@ -91,7 +92,7 @@ fault. The refusal is named by its error code.
 
 ## Consequences
 
-- ✅ Tapo PTZ and imaging become reachable, and Tapo PTZ moves to ONVIF as its primary protocol
+- ✅ Tapo PTZ and imaging become reachable, both over ONVIF only
 - ✅ The next ONVIF camera with a different port or path needs no code: a catalogue entry at most, and
   nothing at all when its port is already scanned
 - ✅ A camera recognised at discovery is one the client can reach: they ask the same question

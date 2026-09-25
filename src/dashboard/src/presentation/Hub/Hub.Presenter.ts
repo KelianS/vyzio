@@ -50,6 +50,8 @@ export function buildHubPresenter({
         dispatch({ type: 'PRIVACY_TOGGLE_SUCCEEDED' })
         toast(privacyWording(request).done, 'success')
       } catch (e) {
+        // A batch that stopped part way has still switched the cameras before the failing one.
+        reloadCameras()
         dispatch({ type: 'PRIVACY_TOGGLE_FAILED' })
         toastError(toast, toAppError(e))
       }

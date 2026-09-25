@@ -25,10 +25,12 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
+        // Asked before the entity changes: a camera that refuses leaves it as it was.
+        var vendorCut = await PrivacyVendorAction.ApplyAsync(
+            camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
-        camera.PrivacyVendorCut = await PrivacyVendorAction.ApplyAsync(
-            camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+        camera.PrivacyVendorCut = vendorCut;
 
         // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -73,6 +75,12 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
                 updated.Add(CameraDto.From(camera));
             }
         }
+        catch (Exception ex)
+        {
+            // Logged now: a failing reload below would replace it on the way out.
+            (logger ?? (ILogger)NullLogger.Instance).LogError(ex, "Privacy batch stopped part way; reloading Frigate for the cameras already saved.");
+            throw;
+        }
         finally
         {
             // One reload for the batch, even stopped half way or hung up: a saved camera must stop recording.
@@ -83,7 +91,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     }
 }
 
-// The camera's part of privacy, best effort: Vyzio stops recording whatever the camera answers (ADR-25).
+// The camera's part of privacy, best effort: Vyzio stops recording whatever the camera answers (ADR-20).
 internal static class PrivacyVendorAction
 {
     // Returns whether the lens is cut by the camera itself, as far as the camera confirmed.
@@ -121,17 +129,16 @@ internal static class PrivacyVendorAction
             await deviceCall();
             return camera.PrivacyStrategy == PrivacyStrategy.Hardware && active;
         }
-        catch (Exception ex)
+        // Only switching on is best effort; a lens left shut must not be shown as privacy off (SPECS 9.2).
+        catch (Exception ex) when (active)
         {
             // A caller hanging up is not the camera failing; support must not read it as one.
             if (ex is OperationCanceledException && ct.IsCancellationRequested)
-                logger.LogInformation("Privacy {State} on {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.",
-                    active ? "on" : "off", camera.Id);
+                logger.LogInformation("Privacy on for {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.", camera.Id);
             else
-                logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
-                    active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
-            // A lens the camera never confirmed opening is still held as cut.
-            return !active && camera.PrivacyVendorCut;
+                logger.LogWarning(ex, "Privacy on for {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
+                    camera.Id, camera.PrivacyStrategy);
+            return false;
         }
     }
 }
