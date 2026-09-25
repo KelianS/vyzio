@@ -24,6 +24,7 @@ import {
 } from '../../common/recording/retention'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import { RetentionHelp } from '../../common/recording/RetentionHelp'
+import { ReadFailure } from '../../common/components/ErrorMessage'
 
 // The save request is flat while reads are grouped by window; this bridges the two shapes.
 const FIELD_OF = {
@@ -48,7 +49,13 @@ export function ConservationPage() {
   )
 
   if (loading) return <SettingsPage>Chargement…</SettingsPage>
-  if (error || !data) return null
+  if (error)
+    return (
+      <SettingsPage>
+        <ReadFailure error={error} onRetry={reload} />
+      </SettingsPage>
+    )
+  if (!data) return null
 
   return <ConservationForm settings={data} reload={reload} save={container.saveRecordingSettings} />
 }
