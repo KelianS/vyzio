@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -540,31 +540,32 @@ public sealed class FrigateConfigApplierTests : IDisposable
     public async Task ApplyAsync_ShouldWriteThePasswordRaw_WhenFrigateEncodesItItself(string password)
     {
         var camera = MakeValidatedCamera("front-door");
-        camera.Username = "salome";
+        camera.Username = "viewer";
         camera.Password = password;
 
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
         Assert.All(ReadInputPaths(yaml, "front_door"),
-            path => Assert.Equal($"rtsp://salome:{password}@192.168.1.10:554/stream1", path));
+            path => Assert.Equal($"rtsp://viewer:{password}@192.168.1.10:554/stream1", path));
     }
 
     [Fact]
     public async Task ApplyAsync_ShouldDoubleTheBraces_WhenThePasswordContainsOne()
     {
         var camera = MakeValidatedCamera("front-door");
-        camera.Username = "salome";
+        camera.Username = "viewer";
         camera.Password = "p{ss}";
 
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
         Assert.All(ReadInputPaths(yaml, "front_door"),
-            path => Assert.Equal("rtsp://salome:p{{ss}}@192.168.1.10:554/stream1", path));
+            path => Assert.Equal("rtsp://viewer:p{{ss}}@192.168.1.10:554/stream1", path));
     }
 
     [Theory]
     [InlineData("john.doe", "Pass1?", "john.doe:Pass1%3F")]
-    [InlineData("salome", "pass word", "salome:pass%20word")]
+    [InlineData("viewer", "pass word", "viewer:pass%20word")]
+    [InlineData("viewer", "", "viewer")]
     public async Task ApplyAsync_ShouldPercentEncodeTheCredentials_WhenFrigateWouldLeaveThemAsWritten(
         string username, string password, string expectedUserInfo)
     {

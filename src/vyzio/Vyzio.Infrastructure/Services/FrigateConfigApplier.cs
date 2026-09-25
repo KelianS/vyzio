@@ -403,12 +403,12 @@ public sealed class FrigateConfigApplier(
         return $"{scheme}{FrigateInputUserInfo(camera.Username, camera.Password ?? string.Empty)}@{address[scheme.Length..]}";
     }
 
-    // Frigate URL-encodes an input's password itself, so a pre-encoded one reaches the camera
-    // encoded twice (#91); it does so only for a user and password its pattern recognises.
+    // Frigate URL-encodes a password its pattern recognises, so pre-encoding it would double it (#91).
     private static string FrigateInputUserInfo(string username, string password)
     {
+        if (password.Length == 0) return Uri.EscapeDataString(username);
+
         var frigateEncodesPassword = username.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-')
-            && password.Length > 0
             && !password.Any(char.IsWhiteSpace);
 
         // The input path also goes through Python str.format for {FRIGATE_*} variables.
