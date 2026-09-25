@@ -30,11 +30,13 @@ service name; the address is resolved beneath it.
 The unit of resolution is the **device service URL**. Everything else is read from the camera's own
 answer.
 
-1. **Persisted.** `Camera.ProtocolEndpointsJson`, keyed by `SupportedProtocol`. No network.
-2. **Announced.** Once the device service answers, `GetServices` gives an `XAddr` per service
-   namespace. Authoritative, and the only correct source for the per-service paths.
-3. **Swept.** The ONVIF ports of `DiscoveryPortCatalog` crossed with the candidate paths below. First
-   answer wins.
+1. **Stored.** `Camera.ProtocolEndpointsJson`, keyed by `SupportedProtocol`, taken as-is: only a real
+   resolution writes it, and a stale one surfaces as a failed call. No network.
+2. **Swept**, when nothing is stored. The ONVIF ports of `DiscoveryPortCatalog` crossed with the
+   candidate paths below. First answer wins, and becomes the device service URL.
+3. **Announced.** The device service is then asked `GetServices`, which gives an `XAddr` per service
+   namespace. Authoritative, and the only correct source for the per-service paths. A camera behind NAT
+   announces its own idea of its address: the announced path is kept, on the host Vyzio reached.
 
 Candidate paths, in order: `/onvif/device_service` (the common convention), `/onvif/service` (one
 endpoint for every service, Tapo), `/device_service`.
@@ -46,6 +48,7 @@ makes a one-endpoint camera work without naming it.
 **The identification probe is `GetSystemDateAndTime`**, which the ONVIF core specification defines as
 requiring no authentication. A sweep must never present credentials: a wrong guess repeated across
 ports locks accounts out on some firmwares (a Tapo cools down for about 25 minutes after 10 failures).
+An answer that demands authentication (401 with an ONVIF realm) still identifies the service.
 
 `OnvifServiceProbe` holds that envelope and the test that recognises an ONVIF answer, and the
 discovery fingerprint uses both, so a camera recognised at discovery is a camera reachable afterwards.
@@ -84,19 +87,31 @@ cameras, and holds no per-camera state of its own.
 Two send paths, and the difference matters.
 
 - **Queries** (`GetProfiles`, `GetStatus`, `GetPresets`, `GetImagingSettings`) read the response.
-  `throwOnFailure: true` raises `OnvifCallException` carrying the HTTP status and the SOAP fault
-  reason, so a probe can say *why*, instead of reporting an unsupported capability.
-- **Commands** (moves, presets, `SetImagingSettings`) wait only briefly for a status. A **definite
-  refusal** (error status or SOAP fault) raises and surfaces to the interface. A **timeout is treated
-  as success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ steps cannot
-  wait for them.
+  `throwOnFailure: true` raises instead of returning nothing, so a probe can say *why*, instead of
+  reporting an unsupported capability.
+- **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer. **Silence is treated as
+  success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ steps cannot wait
+  for them. Anything else that goes wrong is raised, and classified below.
+
+A failure is one of two things, both in `Vyzio.Core/Interfaces/CameraCommandException.cs`:
+
+| The camera… | Examples | Raised as | API code |
+|---|---|---|---|
+| answered, and said no | an error status, a SOAP fault, a malformed answer, an unreadable body | `CameraCommandRefusedException` | `camera_refused` |
+| could not be reached | connection refused, no route, no ONVIF service found | `CameraUnreachableException` | `camera_unreachable` |
+
+A malformed answer is `HttpRequestError.InvalidResponse` or `ResponseEnded`: the camera spoke, badly.
+Every other transport error means it did not. The message of either is support detail: the service,
+the status, the SOAP fault or the transport error, never a credential. `CameraCommandExceptionHandler`
+turns both into a 502 whose body carries the code and that message; the interface branches on the code,
+never on the status, which a proxy in front of the API also sends.
 
 ## Known camera behaviours
 
 | Behaviour | Effect | Where it is handled |
 |---|---|---|
 | One endpoint for every service (Tapo) | Per-service paths 404 | `XAddr` fallback, above |
-| PTZ refused while privacy mode is on (Tapo) | Malformed HTTP answer, not a SOAP fault | Surfaced as a command failure, never as a missing capability |
+| PTZ refused while privacy mode is on (Tapo) | Malformed HTTP answer, not a SOAP fault | Raised as a refusal, never as a missing capability |
 | Answers a command in 2 to 3 seconds (V380) | Full await would stall stepping | Timeout treated as success |
 | `RelativeMove` absent | Steps overshoot | `GetConfigurationOptions` read once per camera, `OnvifPtzProvider` falls back to move plus stop |
 

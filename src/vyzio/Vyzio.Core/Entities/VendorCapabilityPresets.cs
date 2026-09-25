@@ -12,14 +12,10 @@ public static class VendorCapabilityPresets
     [
         new VendorCapabilityPreset(VendorFamily.TplinkTapo,
         [
-            // PTZ and image settings are served over ONVIF, verified on a C200 against real hardware
-            // (ADR-56). The proprietary protocol is not a fallback for them: Tapo cameras do not even
-            // open the port it assumes.
+            // Over ONVIF, not the vendor protocol, whose port a Tapo does not even open (ADR-56).
             (CameraCapability.Ptz, new[] { SupportedProtocol.Onvif }),
             (CameraCapability.ImageSettings, new[] { SupportedProtocol.Onvif }),
-            // The hardware lens cut has no ONVIF equivalent on this firmware, so it stays on the
-            // vendor protocol, which is not validated yet (issue #88). Until it is, a Tapo falls back
-            // to PtzParking for privacy (ADR-25), which is why an unverified binding here is harmless.
+            // No ONVIF equivalent; unvalidated (#88), so an unverified binding leaves PtzParking in charge (ADR-25).
             (CameraCapability.HardwarePrivacy, new[] { SupportedProtocol.TapoKlap }),
         ]),
         new VendorCapabilityPreset(VendorFamily.Icsee,

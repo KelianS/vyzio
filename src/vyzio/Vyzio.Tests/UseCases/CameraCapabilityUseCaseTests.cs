@@ -56,6 +56,21 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldSaveTheForgottenAddress_WhenTheExplicitTestFindsNothingAgain()
+    {
+        // Saved, or the next load would bring the stale address back without ever sweeping.
+        var camera = MakeCamera();
+        camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://192.168.1.10:8899/onvif/device_service");
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(MakeBinding(CameraCapability.Ptz));
+
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz, rediscoverEndpoints: true);
+
+        await _cameras.Received(1).UpdateAsync(
+            Arg.Is<Camera>(c => c.GetProtocolEndpoint(SupportedProtocol.Onvif) == null), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldKeepWhereTheCameraAnswered_WhenTheProbeIsDrivenByTheCascade()
     {
         // The cascade forgets once for the whole run: re-resolving per candidate would re-sweep.
@@ -710,8 +725,7 @@ public class GetCameraCapabilitiesUseCaseTests
 
         var result = await _sut.ExecuteAsync("cam1");
 
-        // Ptz and ImageSettings not configured yet → synthetic preset entries; HardwarePrivacy
-        // configured → isPreset=true, isConfigured=true
+        // Ptz and ImageSettings unconfigured give preset entries; HardwarePrivacy configured is both.
         Assert.Equal(3, result!.Count);
         var privacyDto = result.First(b => b.Capability == "hardware_privacy");
         Assert.True(privacyDto.IsPreset);

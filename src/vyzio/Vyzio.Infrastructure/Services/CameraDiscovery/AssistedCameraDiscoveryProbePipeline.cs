@@ -8,7 +8,6 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Configuration;
-
 using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
@@ -987,9 +986,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    // Tries every candidate path, not just the common one: a firmware serving all its services on a
-    // single endpoint (Tapo) answers 404 on /onvif/device_service and would read as "not ONVIF"
-    // (ADR-56).
+    // Every candidate path: a single-endpoint firmware (Tapo) answers 404 on the common one (ADR-56).
     private async Task<RawCameraDiscoverySignal?> ProbeOnvifUnicastEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         foreach (var path in DiscoveryPortCatalog.OnvifPaths)

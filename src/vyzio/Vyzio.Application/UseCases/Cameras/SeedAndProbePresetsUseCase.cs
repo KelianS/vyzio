@@ -26,9 +26,7 @@ public sealed class SeedAndProbePresetsUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return;
 
-        // Detection is the user asking "look at this camera again": what was resolved about it is
-        // dropped first, so a service enabled since last time is found (ADR-56). Once, not per
-        // candidate, or the cascade would re-sweep the ports on every protocol it tries.
+        // "Look at this camera again": forget once for the whole cascade, not per candidate (ADR-56).
         CameraEndpointForgetting.Forget(camera, endpointCache);
         await cameras.UpdateAsync(camera, ct);
 

@@ -37,6 +37,7 @@ Remplacez :
 ## Si cela ne fonctionne pas
 
 - Verifiez que vous utilisez bien le **compte camera**, et non votre compte Tapo principal.
+- Si la camera refuse soudain l'identifiant alors qu'il est juste : apres plusieurs mots de passe refuses, elle se bloque pendant environ une demi-heure. Corrigez l'identifiant dans Vyzio, puis attendez sans nouvelle tentative.
 - Verifiez que le telephone, Vyzio et la camera sont sur le **meme reseau local**.
 - Si le premier flux ne fonctionne pas, essayez `stream2`.
 - Certaines cameras **sur batterie** ne proposent pas ce mode. Si besoin, verifiez le modele exact.

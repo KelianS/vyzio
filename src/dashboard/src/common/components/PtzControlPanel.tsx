@@ -234,8 +234,7 @@ export function PtzControlPanel({
 
   const runStepRef = useRef<((direction: Direction) => void) | null>(null)
 
-  // A hold fires a step every few hundred ms: the camera's refusal is shown once per press, not
-  // once per step (ADR-56).
+  // A hold fires a step every few hundred ms: a refusal is shown once per press (ADR-56).
   const refusalShownRef = useRef(false)
   const reportStepFailure = useCallback(
     (e: unknown) => {

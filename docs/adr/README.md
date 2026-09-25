@@ -64,5 +64,5 @@ references these ADRs rather than copying them.
 | [ADR-52](0052-the-inbound-direction-uses-the-channels-native-bot-credentials-declared-per-direction.md) | The inbound direction uses the channel's native bot: credentials declared per direction | Accepted |
 | [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) | User documentation lives in the interface: three levels of help | Accepted |
 | [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted |
-| [ADR-56](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
+| [ADR-55](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |

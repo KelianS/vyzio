@@ -112,19 +112,18 @@ describe('PtzControlPanel', () => {
     await waitFor(() => expect(ptzCalibrate.execute).toHaveBeenCalledWith('camera-1'))
   })
 
-  it('PtzStep_ShouldShowTheCameraReason_WhenTheCameraRefusesTheMove', async () => {
-    // A Tapo in privacy mode refuses PTZ; before ADR-56 the move failed in silence.
+  it('PtzStep_ShouldSayTheCameraRefusedAndShowWhy_WhenTheCameraRefusesTheMove', async () => {
+    // A Tapo in privacy mode refuses PTZ: the user reads it, support reads why (ADR-56).
+    const why =
+      'POST /api/cameras/camera-1/ptz/step · 502 Bad Gateway · camera_refused · ONVIF Ptz: malformed answer'
     renderPanel({
-      stepRejection: new HttpError(
-        502,
-        '/api/cameras/camera-1/ptz/step',
-        'Le mode vie privée est actif.',
-      ),
+      stepRejection: new HttpError(502, '/api/cameras/camera-1/ptz/step', why, 'camera_refused'),
     })
 
     await userEvent.click(await screen.findByTitle('Haut'))
 
-    expect(await screen.findByText('Le mode vie privée est actif.')).toBeInTheDocument()
+    expect(await screen.findByText('La caméra a refusé la commande')).toBeInTheDocument()
+    expect(screen.getByText(why)).toBeInTheDocument()
   })
 
   it('n’ouvre pas le menu contextuel du navigateur sur une position', async () => {

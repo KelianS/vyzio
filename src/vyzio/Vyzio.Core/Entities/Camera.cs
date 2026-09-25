@@ -55,9 +55,7 @@ public class Camera
     // JSON array of detected network protocols e.g. ["onvif","v380"]. Populated by probe pipeline.
     public string? SupportedProtocolsJson { get; set; }
 
-    // JSON map of protocol -> resolved base address, e.g. {"onvif":"http://host:2020/onvif/service"}.
-    // Where a protocol actually answers on THIS device: a device fact, not a capability one, so it is
-    // held once here rather than copied into every binding's ConfigJson (ADR-56).
+    // Protocol -> address it answers on, e.g. {"onvif":"http://host:2020/onvif/service"}: a device fact (ADR-56).
     public string? ProtocolEndpointsJson { get; set; }
 
     // Per-camera retention overrides (ADR-39). Null means "follow the installation", never a
@@ -210,8 +208,7 @@ public class Camera
         ProtocolEndpointsJson = JsonSerializer.Serialize(endpoints);
     }
 
-    // Drops every resolved address, so the next call re-resolves (ADR-56). Never called on its own:
-    // the in-memory cache must be cleared in the same gesture, see ICameraProtocolEndpointCache.
+    // Only through CameraEndpointForgetting, which clears the in-memory cache in the same gesture (ADR-56).
     public void ClearProtocolEndpoints() => ProtocolEndpointsJson = null;
 
     private Dictionary<string, string> ReadProtocolEndpoints()

@@ -43,24 +43,23 @@ public sealed class ProbeCameraCapabilityUseCase(
     ICapabilityProviderRegistry registry,
     ICameraProtocolEndpointCache endpointCache)
 {
-    // rediscoverEndpoints: forgets where the protocol was last found, so the probe resolves the
-    // camera again from scratch (ADR-56). True when the user asked for this single check; false when
-    // SeedAndProbePresetsUseCase drives the cascade, because it has already forgotten once and a
-    // re-resolution per candidate would re-sweep the ports several times over.
+    // rediscoverEndpoints: resolve where the camera answers from scratch; the cascade forgets once itself (ADR-56).
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(
         string cameraId, CameraCapability capability, bool rediscoverEndpoints = false, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
+        // Taken before forgetting, so a forgotten address is saved even when nothing is found again.
+        var endpointsBefore = camera.ProtocolEndpointsJson;
         if (rediscoverEndpoints) CameraEndpointForgetting.Forget(camera, endpointCache);
 
         var binding = await bindings.GetAsync(cameraId, capability, ct);
-        if (binding is null) return null;
-
-        // A probe resolves where the protocol answers on this camera (ADR-56); the entity carries it
-        // back, and comparing before/after is what tells this use case there is something to save.
-        var endpointsBefore = camera.ProtocolEndpointsJson;
+        if (binding is null)
+        {
+            if (camera.ProtocolEndpointsJson != endpointsBefore) await cameras.UpdateAsync(camera, ct);
+            return null;
+        }
 
         bool verified;
         string? error = null;
@@ -112,9 +111,7 @@ public sealed class ProbeCameraCapabilityUseCase(
     }
 }
 
-// Drops both halves of what was remembered about where this camera answers: the row on the camera
-// and the process-wide cache. Public so SeedAndProbePresetsUseCase can do it once for a full
-// cascade (ADR-56).
+// Drops both halves of where a camera answers, its row and the process cache, never one alone (ADR-56).
 internal static class CameraEndpointForgetting
 {
     public static void Forget(Camera camera, ICameraProtocolEndpointCache cache)

@@ -1,15 +1,14 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Tests.Services;
 
-// ONVIF standardises the SOAP contract, never the port and never the path (ADR-56). These tests pin
-// the resolution against the two shapes met on real hardware: one endpoint per service (V380, XM)
-// and a single endpoint for every service (Tapo).
+// Pins the two shapes met on hardware: one endpoint per service (V380) and one for all (Tapo) (ADR-56).
 public sealed class OnvifEndpointResolverTests
 {
     private const string DateAndTimeAnswer = """
@@ -47,12 +46,12 @@ public sealed class OnvifEndpointResolverTests
     };
 
     private static (OnvifEndpointResolver resolver, List<Uri> calls) MakeResolver(
-        Func<Uri, string, HttpResponseMessage> respond)
+        Func<Uri, string, HttpResponseMessage> respond, TimeProvider? time = null)
     {
         var calls = new List<Uri>();
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(new HttpClient(new StubHandler(calls, respond)));
-        return (new OnvifEndpointResolver(factory, NullLogger<OnvifEndpointResolver>.Instance), calls);
+        return (new OnvifEndpointResolver(factory, time ?? TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance), calls);
     }
 
     private static HttpResponseMessage Soap(string body) => new(HttpStatusCode.OK)
@@ -175,6 +174,51 @@ public sealed class OnvifEndpointResolverTests
         var (resolver, _) = MakeResolver((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound));
 
         Assert.Null(await resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldRecogniseTheService_WhenItRefusesTheUnauthenticatedProbe()
+    {
+        var (resolver, _) = MakeResolver((url, _) =>
+        {
+            if (url.Port != 2020) return new HttpResponseMessage(HttpStatusCode.NotFound);
+            var refused = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            refused.Headers.WwwAuthenticate.ParseAdd("Digest realm=\"ONVIF\", nonce=\"n\"");
+            return refused;
+        });
+
+        var endpoint = await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.NotNull(endpoint);
+        Assert.Equal(2020, endpoint!.DeviceServiceUrl.Port);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNotSweepAgain_WhenTheLastSweepFoundNothingMomentsAgo()
+    {
+        var time = new FakeTimeProvider();
+        var (resolver, calls) = MakeResolver((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound), time);
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+        var sweep = calls.Count;
+
+        time.Advance(TimeSpan.FromMinutes(4));
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal(sweep, calls.Count);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldSweepAgain_WhenTheCooldownAfterAFailedSweepHasPassed()
+    {
+        var time = new FakeTimeProvider();
+        var (resolver, calls) = MakeResolver((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound), time);
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+        var sweep = calls.Count;
+
+        time.Advance(TimeSpan.FromMinutes(6));
+        await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
+
+        Assert.Equal(2 * sweep, calls.Count);
     }
 
     private sealed class StubHandler(List<Uri> calls, Func<Uri, string, HttpResponseMessage> respond) : HttpMessageHandler

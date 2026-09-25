@@ -4,14 +4,9 @@ using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
-
-// Thrown by PostSoapAsync(throwOnFailure: true) and by a refused command: carries the real HTTP
-// status and SOAP fault reason, so it surfaces as CameraCapabilityBinding.LastError or reaches the
-// interface (ADR-56) instead of a generic message.
-public sealed class OnvifCallException(string message, Exception? inner = null)
-    : Vyzio.Core.Interfaces.CameraCommandRefusedException(message, inner);
 
 public sealed record OnvifDeviceInfo(
     string? Manufacturer,
@@ -35,10 +30,10 @@ public sealed record OnvifMediaProfile(
 internal sealed class OnvifClient(
     IHttpClientFactory httpClientFactory,
     OnvifEndpointResolver endpointResolver,
+    TimeProvider time,
     ILogger<OnvifClient> logger)
 {
-    // A command is no longer fire-and-forget: a refusal must reach the user (ADR-56). The wait stays
-    // short because a slow camera executes on TCP receipt, and its timeout is not a failure.
+    // Short: long enough to hear a refusal, short enough not to stall a held PTZ button (ADR-56).
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromMilliseconds(1500);
 
     // Returns device identification info from ONVIF GetDeviceInformation.
@@ -305,7 +300,7 @@ internal sealed class OnvifClient(
 
         XDocument doc;
         try { doc = XDocument.Parse(xml!); }
-        catch (Exception ex) { throw new OnvifCallException($"Réponse ONVIF media_service illisible pour {camera.Host} : {ex.Message}", ex); }
+        catch (Exception ex) { throw new CameraCommandRefusedException($"ONVIF Media GetProfiles from {camera.Host}: unreadable answer ({ex.Message})", ex); }
 
         // SourceToken is a child element of VideoSourceConfiguration (tt:SourceToken), not an
         // attribute — the "token" attribute on VideoSourceConfiguration is its own config token.
@@ -314,14 +309,12 @@ internal sealed class OnvifClient(
             ?.Elements().FirstOrDefault(e => e.Name.LocalName == "SourceToken")?.Value;
 
         if (string.IsNullOrWhiteSpace(token))
-            throw new OnvifCallException($"La caméra {camera.Host} n'expose pas de VideoSourceConfiguration ONVIF exploitable (profil vide ou non conforme).");
+            throw new CameraCommandRefusedException($"ONVIF Media on {camera.Host}: no usable VideoSourceConfiguration");
 
         return token;
     }
 
-    // Returns current image settings via ONVIF Imaging service. Throws OnvifCallException with a
-    // real diagnostic on failure — this capability's probe must surface why, unlike PTZ/media
-    // calls elsewhere in this client which tolerate silent failure with built-in fallbacks.
+    // Throws a CameraCommandException on failure: this capability's probe must say why (ADR-27).
     public async Task<CameraImageSettings?> GetImagingSettingsAsync(Camera camera, string videoSourceToken, CancellationToken ct)
     {
         var body = $"""
@@ -354,9 +347,9 @@ internal sealed class OnvifClient(
                 Read("Sharpness"),
                 irCut);
         }
-        catch (Exception ex) when (ex is not OnvifCallException)
+        catch (Exception ex) when (ex is not CameraCommandException)
         {
-            throw new OnvifCallException($"Réponse ONVIF Imaging illisible pour {camera.Host} : {ex.Message}", ex);
+            throw new CameraCommandRefusedException($"ONVIF Imaging from {camera.Host}: unreadable answer ({ex.Message})", ex);
         }
     }
 
@@ -406,16 +399,13 @@ internal sealed class OnvifClient(
         catch { return 0; }
     }
 
-    // Sends a command and waits briefly for its status. A definite refusal (error status or SOAP
-    // fault) raises so the interface can say why; a timeout is treated as success, because budget
-    // cameras (V380) execute on TCP receipt and answer seconds later (ADR-56).
     private async Task SendCommandAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct, string? soapAction = null)
     {
         var url = await ResolveUrlAsync(camera, service, ct);
         var envelope = OnvifEnvelope.Build(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
         var http = httpClientFactory.CreateClient("onvif");
 
-        using var timeout = new CancellationTokenSource(CommandTimeout);
+        using var timeout = new CancellationTokenSource(CommandTimeout, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
 
         HttpResponseMessage response;
@@ -424,10 +414,16 @@ internal sealed class OnvifClient(
             var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = BuildContent(envelope, soapAction) };
             response = await http.SendAsync(request, HttpCompletionOption.ResponseContentRead, linked.Token);
         }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
+        // Only silence counts as done: a slow camera (V380) executes on receipt and answers seconds later (ADR-56).
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
         {
-            logger.LogDebug("ONVIF {Service} command sent to {Host}, answer not awaited: {Msg}.", service, camera.Host, ex.Message);
+            logger.LogDebug("ONVIF {Service} command sent to {Host}, no answer within {Timeout}.", service, camera.Host, CommandTimeout);
             return;
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "ONVIF {Service} command to {Host} failed: {Error}.", service, camera.Host, ex.HttpRequestError);
+            throw TransportFailure(service, url, ex);
         }
 
         using (response)
@@ -437,16 +433,23 @@ internal sealed class OnvifClient(
             var faultText = await TryReadSoapFaultReasonAsync(response, ct);
             logger.LogWarning("ONVIF {Service} command refused ({Status}) by {Host}: {Fault}.",
                 service, response.StatusCode, camera.Host, faultText ?? "no SOAP fault");
-            throw new OnvifCallException(faultText is not null
-                ? $"La caméra a refusé la commande ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}) : {faultText}"
-                : $"La caméra a refusé la commande ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}).");
+            throw new CameraCommandRefusedException(RefusalDetail(service, response, faultText));
         }
     }
+
+    // A malformed answer is still an answer, the way a Tapo refuses PTZ in privacy mode; no answer is not (ADR-56).
+    private static CameraCommandException TransportFailure(OnvifService service, Uri url, HttpRequestException ex)
+        => ex.HttpRequestError is HttpRequestError.InvalidResponse or HttpRequestError.ResponseEnded
+            ? new CameraCommandRefusedException($"ONVIF {service} at {url}: malformed answer ({ex.HttpRequestError})", ex)
+            : new CameraUnreachableException($"ONVIF {service} at {url}: {ex.HttpRequestError} ({ex.Message})", ex);
+
+    private static string RefusalDetail(OnvifService service, HttpResponseMessage response, string? faultText)
+        => $"ONVIF {service} {(int)response.StatusCode} {response.ReasonPhrase}" + (faultText is null ? string.Empty : $": {faultText}");
 
     private async Task<Uri> ResolveUrlAsync(Camera camera, OnvifService service, CancellationToken ct)
     {
         var endpoint = await endpointResolver.ResolveAsync(camera, ct)
-            ?? throw new OnvifCallException($"Aucun service ONVIF n'a répondu sur {camera.Host}. Vérifiez que la caméra autorise l'accès local (ONVIF activé).");
+            ?? throw new CameraUnreachableException($"No ONVIF service answered on {camera.Host}");
         return endpoint.UrlFor(service);
     }
 
@@ -463,9 +466,7 @@ internal sealed class OnvifClient(
     // Use readBody=true (default) for queries (GetProfiles, GetDeviceInformation) that need the response XML.
     // soapAction: SOAP 1.2 action URI (e.g. ".../imaging/wsdl/GetImagingSettings") — some ONVIF stacks
     // reject requests with a generic BadRequest when it's missing from the Content-Type "action" param.
-    // throwOnFailure: throws OnvifCallException with the real reason (HTTP status + SOAP fault text if
-    // present) instead of silently returning null — used where the caller needs to surface a real
-    // diagnostic (ADR-27/28 probe paths), not the many callers that treat "no answer" as "unsupported".
+    // throwOnFailure: throws a CameraCommandException saying why, where the caller must surface it (ADR-27/28).
     internal async Task<string?> PostSoapAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct,
         bool readBody = true, string? soapAction = null, bool throwOnFailure = false)
     {
@@ -474,7 +475,7 @@ internal sealed class OnvifClient(
         {
             url = await ResolveUrlAsync(camera, service, ct);
         }
-        catch (OnvifCallException) when (!throwOnFailure)
+        catch (CameraUnreachableException) when (!throwOnFailure)
         {
             return null;
         }
@@ -493,20 +494,20 @@ internal sealed class OnvifClient(
                 if (throwOnFailure)
                 {
                     var faultText = await TryReadSoapFaultReasonAsync(response, ct);
-                    throw new OnvifCallException(faultText is not null
-                        ? $"La caméra a refusé la requête ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}) : {faultText}"
-                        : $"La caméra a refusé la requête ONVIF {service} ({(int)response.StatusCode} {response.ReasonPhrase}).");
+                    throw new CameraCommandRefusedException(RefusalDetail(service, response, faultText));
                 }
                 return null;
             }
             return readBody ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
         }
-        catch (OnvifCallException) { throw; }
+        catch (CameraCommandException) { throw; }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "ONVIF {Service} call error for {Host}.", service, camera.Host);
             if (throwOnFailure)
-                throw new OnvifCallException($"Impossible de joindre le service ONVIF {service} sur {url} ({ex.Message}).", ex);
+                throw ex is HttpRequestException transport
+                    ? TransportFailure(service, url, transport)
+                    : new CameraUnreachableException($"ONVIF {service} at {url}: {ex.GetType().Name} ({ex.Message})", ex);
             return null;
         }
     }

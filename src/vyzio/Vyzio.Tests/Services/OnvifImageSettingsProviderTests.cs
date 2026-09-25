@@ -45,8 +45,7 @@ public class OnvifImageSettingsProviderTests
         </s:Envelope>
         """;
 
-    // Carries a resolved ONVIF address so these tests exercise the provider, not the endpoint
-    // sweep (ADR-56): a persisted endpoint is used as-is.
+    // A resolved address, so these tests exercise the provider, not the sweep (ADR-56).
     private static Camera MakeCamera()
     {
         var camera = new Camera
@@ -86,8 +85,8 @@ public class OnvifImageSettingsProviderTests
         });
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(new HttpClient(handler));
-        var resolver = new OnvifEndpointResolver(factory, NullLogger<OnvifEndpointResolver>.Instance);
-        var onvifClient = new OnvifClient(factory, resolver, NullLogger<OnvifClient>.Instance);
+        var resolver = new OnvifEndpointResolver(factory, TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvifClient = new OnvifClient(factory, resolver, TimeProvider.System, NullLogger<OnvifClient>.Instance);
         return (new OnvifImageSettingsProvider(onvifClient), captured);
     }
 

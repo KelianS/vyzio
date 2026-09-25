@@ -4,8 +4,7 @@ using System.Text;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
-// The SOAP 1.2 envelope every ONVIF call is wrapped in, with WS-Security UsernameToken /
-// PasswordDigest. Shared by the client and the endpoint resolver so the wire format has one home.
+// SOAP 1.2 with WS-Security PasswordDigest: one home for the wire format of the client and the resolver.
 internal static class OnvifEnvelope
 {
     public static string Build(string username, string password, string body)
