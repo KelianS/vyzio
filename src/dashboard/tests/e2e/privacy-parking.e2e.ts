@@ -25,9 +25,7 @@ test.describe('Privacy parking', () => {
     await expect(page.getByRole('option', { name: 'Orientation à l’écart' })).toHaveCount(0)
     await page.keyboard.press('Escape')
 
-    await page
-      .getByRole('button', { name: /À quoi sert « Quand vous coupez la surveillance »/ })
-      .click()
+    // Visible without opening the help: a missing step is not a detail (ADR-43).
     await expect(
       page.getByText(/enregistrez d’abord ses positions Surveillance et Parking/),
     ).toBeVisible()

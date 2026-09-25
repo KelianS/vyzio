@@ -91,13 +91,9 @@ export function buildPrivacySettings({
       id: 'privacy-strategy',
       label: 'Quand vous coupez la surveillance',
       nature: { kind: 'choice', options },
-      help: offered
-        .map((strategy) => `${strategy.label} — ${strategy.explanation}`)
-        .concat(missingSteps)
-        .join('\n\n'),
-      // What the chosen option really guarantees stays visible without a gesture:
-      // it is a consequence, not an explanation (ADR-43).
-      consequence: explanationOf(value),
+      help: offered.map((strategy) => `${strategy.label} — ${strategy.explanation}`).join('\n\n'),
+      // What the chosen option guarantees, and a step still missing, stay visible without a gesture (ADR-43).
+      consequence: [explanationOf(value), ...missingSteps].join('\n\n'),
       value,
       onChange: (next) => onChange(next as PrivacyStrategy),
     },

@@ -12,10 +12,10 @@ export const PARKING_PRESET_ID = 2
 export const SURVEILLANCE_PRESET_ID = 1
 
 export const PRESET_LABELS: Record<number, string> = {
-  1: 'Surveillance',
-  2: 'Parking',
+  [SURVEILLANCE_PRESET_ID]: 'Surveillance',
+  [PARKING_PRESET_ID]: 'Parking',
 }
 
 export function isReservedPreset(presetId: number): boolean {
-  return presetId === 1 || presetId === 2
+  return presetId === SURVEILLANCE_PRESET_ID || presetId === PARKING_PRESET_ID
 }
