@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Core.Entities;
+using Vyzio.Infrastructure.Services.CameraDiscovery;
 using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Tests.Services;
@@ -320,6 +321,45 @@ public sealed class OnvifEndpointResolverTests
         await resolver.ResolveAsync(MakeCamera(), CancellationToken.None);
 
         Assert.True(calls.Count > afterGivingUp);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldSweepOnce_WhenCallersQueueBehindASweepThatFindsNothing()
+    {
+        var firstRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var (resolver, calls) = MakeResolver((_, _) =>
+        {
+            firstRequest.TrySetResult();
+            release.Task.GetAwaiter().GetResult();
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var first = Task.Run(() => resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
+        await firstRequest.Task;
+        var queued = Task.Run(() => resolver.ResolveAsync(MakeCamera(), CancellationToken.None));
+        release.SetResult();
+        await Task.WhenAll(first, queued);
+        var oneSweep = calls.Count;
+
+        Assert.Null(await queued);
+        Assert.Equal(DiscoveryPortCatalog.OnvifPorts.Count * DiscoveryPortCatalog.OnvifPaths.Count, oneSweep);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldNotAskForTheServicesAgain_WhenTheCameraRefusedItsOwnAccount()
+    {
+        var (resolver, requests) = MakeRecordingResolver((url, body) =>
+            url.AbsolutePath != "/onvif/device_service" ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : IsGetServices(body) ? new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            : Soap(DateAndTimeAnswer));
+        var camera = MakeCamera();
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+        var askedFirst = requests.Count(request => IsGetServices(request.Body));
+
+        await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        Assert.Equal(askedFirst, requests.Count(request => IsGetServices(request.Body)));
     }
 
     private sealed class StubHandler(List<Uri> calls, Func<Uri, string, HttpResponseMessage> respond) : HttpMessageHandler

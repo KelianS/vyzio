@@ -338,7 +338,7 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
         </div>
         {!isVerified && binding.lastError && (
           // The camera's answer is support detail: a plain sentence leads (SPECS 1.5).
-          <div role="alert" className="text-sm text-destructive">
+          <div className="text-sm text-destructive">
             <p>La dernière vérification a échoué.</p>
             <DiagnosticLine text={scrubSecrets(binding.lastError)} />
           </div>

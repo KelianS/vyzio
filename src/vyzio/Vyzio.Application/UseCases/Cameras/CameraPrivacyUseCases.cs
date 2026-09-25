@@ -30,11 +30,12 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         camera.PrivacyVendorCut = await PrivacyVendorAction.ApplyAsync(
             camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
 
+        // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
-        await cameras.UpdateAsync(camera, ct);
+        await cameras.UpdateAsync(camera, CancellationToken.None);
 
-        var allCameras = await cameras.GetAllAsync(ct);
-        await frigateConfig.ApplyAsync(allCameras, ct);
+        var allCameras = await cameras.GetAllAsync(CancellationToken.None);
+        await frigateConfig.ApplyAsync(allCameras, CancellationToken.None);
 
         return CameraDto.From(camera);
     }
@@ -64,22 +65,21 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
                 camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
 
             camera.UpdatedAt = DateTimeOffset.UtcNow;
-            await cameras.UpdateAsync(camera, ct);
+            await cameras.UpdateAsync(camera, CancellationToken.None);
             updated.Add(CameraDto.From(camera));
         }
 
-        // Single Frigate reload for the whole batch
-        await frigateConfig.ApplyAsync(allCameras, ct);
+        // Single Frigate reload for the whole batch, applied even if the caller hangs up.
+        await frigateConfig.ApplyAsync(allCameras, CancellationToken.None);
 
         return updated;
     }
 }
 
-// The camera's own part of privacy: the lens cut or the parking move. Best effort by design: whatever the
-// camera answers, Vyzio still stops recording, since privacy must never wait on a device (ADR-25).
+// The camera's part of privacy, best effort: Vyzio stops recording whatever the camera answers (ADR-25).
 internal static class PrivacyVendorAction
 {
-    // Returns whether the lens is now cut by the camera itself.
+    // Returns whether the lens is cut by the camera itself, as far as the camera confirmed.
     public static async Task<bool> ApplyAsync(
         Camera camera,
         bool active,
@@ -88,31 +88,38 @@ internal static class PrivacyVendorAction
         ILogger logger,
         CancellationToken ct)
     {
+        Func<Task>? deviceCall = null;
+        switch (camera.PrivacyStrategy)
+        {
+            case PrivacyStrategy.Hardware:
+                if (await bindings.GetAsync(camera.Id, CameraCapability.HardwarePrivacy, ct) is not { Verified: true } privacyBinding)
+                    return false;
+                var privacy = registry.ResolvePrivacy(privacyBinding.Protocol);
+                deviceCall = () => privacy.SetPrivacyModeAsync(camera, privacyBinding, active, ct);
+                break;
+
+            case PrivacyStrategy.PtzParking:
+                if (active && await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
+                {
+                    var ptz = registry.ResolvePtz(ptzBinding.Protocol);
+                    deviceCall = () => ptz.PtzGoToPresetAsync(camera, ptzBinding, presetId: 1, ct);
+                }
+                break;
+        }
+
+        if (deviceCall is null) return false;
+
         try
         {
-            switch (camera.PrivacyStrategy)
-            {
-                case PrivacyStrategy.Hardware:
-                    if (await bindings.GetAsync(camera.Id, CameraCapability.HardwarePrivacy, ct) is not { Verified: true } privacyBinding)
-                        return false;
-                    await registry.ResolvePrivacy(privacyBinding.Protocol).SetPrivacyModeAsync(camera, privacyBinding, active, ct);
-                    return active;
-
-                case PrivacyStrategy.PtzParking:
-                    // Preset 1 is the parking position by convention (ADR-25); an unverified PTZ leaves Vyzio alone in charge.
-                    if (active && await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
-                        await registry.ResolvePtz(ptzBinding.Protocol).PtzGoToPresetAsync(camera, ptzBinding, presetId: 1, ct);
-                    return false;
-
-                default:
-                    return false;
-            }
+            await deviceCall();
+            return camera.PrivacyStrategy == PrivacyStrategy.Hardware && active;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        catch (Exception ex)
         {
-            logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); recording stops regardless.",
+            logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
                 active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
-            return false;
+            // A lens the camera never confirmed opening is still held as cut.
+            return !active && camera.PrivacyVendorCut;
         }
     }
 }

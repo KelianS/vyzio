@@ -105,6 +105,17 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
+    public async Task PtzStopAsync_ShouldReportTheCameraUnreachable_WhenItsAnswerIsCutOffHalfWay()
+    {
+        var provider = MakeProviderAnsweringStop(
+            _ => throw new HttpRequestException(HttpRequestError.ResponseEnded, "The response ended prematurely."),
+            TimeProvider.System);
+
+        await Assert.ThrowsAsync<CameraUnreachableException>(
+            () => provider.PtzStopAsync(MakeCamera(), MakeBinding()));
+    }
+
+    [Fact]
     public async Task PtzStopAsync_ShouldReportTheCameraUnreachable_WhenTheConnectionIsRefused()
     {
         var provider = MakeProviderAnsweringStop(
@@ -132,6 +143,36 @@ public class OnvifPtzProviderTests
         time.Advance(TimeSpan.FromSeconds(2));
 
         Assert.Null(await Record.ExceptionAsync(() => stop));
+    }
+
+    [Fact]
+    public async Task ContinuousMoveAsync_ShouldReturnWithinAShortStep_WhenTheCameraIsSilent()
+    {
+        var time = new FakeTimeProvider();
+        var moveArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("onvif").Returns(new HttpClient(new SilentHandler(moveArrived)));
+        var resolver = new OnvifEndpointResolver(factory, time, NullLogger<OnvifEndpointResolver>.Instance);
+        var client = new OnvifClient(factory, resolver, time, NullLogger<OnvifClient>.Instance);
+
+        var move = client.ContinuousMoveAsync(MakeCamera(), "profile_1", 1f, 0f, CancellationToken.None);
+        await moveArrived.Task;
+        time.Advance(TimeSpan.FromMilliseconds(350));
+
+        Assert.Null(await Record.ExceptionAsync(() => move));
+    }
+
+    private sealed class SilentHandler(TaskCompletionSource arrived) : HttpMessageHandler
+    {
+        // Silent on the move only: the resolver's own questions get a plain refusal.
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(ct);
+            if (!body.Contains("<ContinuousMove", StringComparison.Ordinal)) return new HttpResponseMessage(HttpStatusCode.NotFound);
+            arrived.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("unreachable");
+        }
     }
 
     private sealed class ScenarioHandler(Func<CancellationToken, Task<HttpResponseMessage>> stop) : HttpMessageHandler

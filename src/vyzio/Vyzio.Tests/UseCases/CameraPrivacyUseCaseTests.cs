@@ -92,6 +92,45 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldStillShowTheLensCut_WhenTheCameraFailsToOpenIt()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
+        camera.PrivacyModeActive = true;
+        camera.PrivacyVendorCut = true;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.Dvrip));
+        _privacyProvider.SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraUnreachableException("DVRIP: no answer")));
+
+        var result = await _sut.ExecuteAsync("cam1", active: false);
+
+        Assert.False(result!.PrivacyModeActive);
+        Assert.True(result.PrivacyVendorCut);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStillApplyPrivacy_WhenTheCallerHangsUpDuringTheCameraCall()
+    {
+        using var caller = new CancellationTokenSource();
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif));
+        _ptzProvider.PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), 1, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                caller.Cancel();
+                return Task.FromException(new OperationCanceledException(caller.Token));
+            });
+
+        await _sut.ExecuteAsync("cam1", active: true, ct: caller.Token);
+
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Any<CancellationToken>());
+        await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Execute_leaves_vendor_cut_false_when_strategy_is_software_blur()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.SoftwareBlur);

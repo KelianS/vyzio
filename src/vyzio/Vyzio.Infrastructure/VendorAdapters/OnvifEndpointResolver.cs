@@ -147,8 +147,7 @@ internal sealed class OnvifEndpointResolver(
         }
     }
 
-    // An empty answer is not a failure: every service then resolves to the device service URL.
-    // Null when the camera gave no usable answer, empty when it announced nothing: only the latter is final.
+    // Null when no answer came back and it is worth asking again; empty when the camera's answer is final.
     private async Task<IReadOnlyDictionary<OnvifService, Uri>?> ReadAnnouncedServicesAsync(Camera camera, Uri deviceUrl, CancellationToken ct)
     {
         const string body = """<GetServices xmlns="http://www.onvif.org/ver10/device/wsdl"><IncludeCapability>false</IncludeCapability></GetServices>""";
@@ -158,10 +157,17 @@ internal sealed class OnvifEndpointResolver(
         if (xml is { Unauthorized: true } && !string.IsNullOrWhiteSpace(camera.Username))
             xml = await PostGetServicesAsync(deviceUrl, OnvifEnvelope.Build(camera.Username, camera.Password ?? string.Empty, body), ct);
 
+        if (xml is null)
+        {
+            logger.LogDebug("ONVIF GetServices did not answer on {Url}; asked again on the next call.", deviceUrl);
+            return null;
+        }
+
+        // A refusal, even to the camera's own account, is final: asking again on every call would lock it out.
         if (xml is not { Unauthorized: false, Body: { } answer })
         {
-            logger.LogDebug("ONVIF GetServices gave no usable answer on {Url}; every service uses the device address for now.", deviceUrl);
-            return null;
+            logger.LogDebug("ONVIF GetServices refused on {Url}; every service uses the device address.", deviceUrl);
+            return new Dictionary<OnvifService, Uri>();
         }
 
         var announced = new Dictionary<OnvifService, Uri>();

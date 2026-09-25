@@ -253,6 +253,47 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("Onvif", Assert.Single(candidate.TechnicalDetails!.DetectedPorts).Protocol);
     }
 
+    [Fact]
+    public async Task DiscoverAsync_ShouldConfirmOnvif_WhenTheServiceDemandsAuthentication()
+    {
+        using var listener = StartLoopbackListener();
+        var onvifPort = PortOf(listener);
+
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondAsync(listener,
+            "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Digest realm=\"ONVIF\", nonce=\"n\"\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            stopServer.Token);
+
+        var sut = Discovery(HermeticSettings(
+            scanPorts: [onvifPort],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
+
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        Assert.Equal("camera_confirmed", Assert.Single(result, item => item.Host == Loopback).Qualification);
+    }
+
+    private static Task RespondAsync(TcpListener listener, string reply, CancellationToken ct) => Task.Run(async () =>
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var buffer = new byte[2048];
+                _ = await stream.ReadAsync(buffer, ct);
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(reply), ct);
+                await stream.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.Sockets.SocketException) { }
+        catch (IOException) { }
+    }, ct);
+
     // Shaped like a Tapo (ADR-56): 404 on the common path, every service on /onvif/service.
     private static Task RespondOnvifOnSingleEndpointAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
     {

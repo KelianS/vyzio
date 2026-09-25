@@ -406,7 +406,7 @@ internal sealed class OnvifClient(
         Camera camera, OnvifService service, string soapBody, CancellationToken ct, string? soapAction = null, TimeSpan? wait = null)
     {
         var url = await ResolveUrlAsync(camera, service, ct);
-        var envelope = OnvifEnvelope.Build(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
+        var envelope = EnvelopeFor(camera, soapBody);
         var http = httpClientFactory.CreateClient("onvif");
 
         var patience = wait ?? CommandTimeout;
@@ -442,9 +442,9 @@ internal sealed class OnvifClient(
         }
     }
 
-    // A malformed answer is still an answer, the way a Tapo refuses PTZ in privacy mode; no answer is not (ADR-56).
+    // A malformed answer is how a Tapo refuses PTZ in privacy mode (measured); a cut-off one reads as the network (ADR-56).
     private static CameraCommandException TransportFailure(OnvifService service, Uri url, HttpRequestException ex)
-        => ex.HttpRequestError is HttpRequestError.InvalidResponse or HttpRequestError.ResponseEnded
+        => ex.HttpRequestError is HttpRequestError.InvalidResponse
             ? new CameraCommandRefusedException($"ONVIF {service} at {url}: malformed answer ({ex.HttpRequestError})", ex)
             : new CameraUnreachableException($"ONVIF {service} at {url}: {ex.HttpRequestError} ({ex.Message})", ex);
 
@@ -457,6 +457,12 @@ internal sealed class OnvifClient(
             ?? throw new CameraUnreachableException($"No ONVIF service answered on {camera.Host}");
         return endpoint.UrlFor(service);
     }
+
+    // A camera without an account is asked without one: a guessed credential locks accounts out (ADR-56).
+    private static string EnvelopeFor(Camera camera, string soapBody)
+        => string.IsNullOrWhiteSpace(camera.Username)
+            ? OnvifEnvelope.Anonymous(soapBody)
+            : OnvifEnvelope.Build(camera.Username, camera.Password ?? string.Empty, soapBody);
 
     private static StringContent BuildContent(string envelope, string? soapAction)
     {
@@ -480,7 +486,7 @@ internal sealed class OnvifClient(
             return null;
         }
 
-        var envelope = OnvifEnvelope.Build(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
+        var envelope = EnvelopeFor(camera, soapBody);
         var http = httpClientFactory.CreateClient("onvif");
         var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = BuildContent(envelope, soapAction) };
 

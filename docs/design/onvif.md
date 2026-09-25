@@ -103,8 +103,10 @@ A failure is one of two things, both in `Vyzio.Core/Interfaces/CameraCommandExce
 | answered, and said no | an error status, a SOAP fault, a malformed answer, an unreadable body | `CameraCommandRefusedException` | `camera_refused` |
 | could not be reached | connection refused, no route, no ONVIF service found | `CameraUnreachableException` | `camera_unreachable` |
 
-A malformed answer is `HttpRequestError.InvalidResponse` or `ResponseEnded`: the camera spoke, badly.
-Every other transport error means it did not. The message of either is support detail: the service,
+A malformed answer, `HttpRequestError.InvalidResponse`, means the camera spoke, badly: it is how a Tapo
+C200 refuses PTZ in privacy mode, measured on the device. An answer cut off half way (`ResponseEnded`)
+looks like a dropped connection as much as a refusal, and is read as unreachable, like every other
+transport error. The message of either is support detail: the service,
 the status, the SOAP fault or the transport error, never a credential. `CameraCommandExceptionHandler`
 turns both into a 502 whose body carries the code and that message; the interface branches on the code,
 never on the status, which a proxy in front of the API also sends.
