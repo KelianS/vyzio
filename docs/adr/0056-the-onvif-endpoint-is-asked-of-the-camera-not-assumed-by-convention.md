@@ -45,9 +45,10 @@ without naming Tapo anywhere.
 formatting one. Discovery asks the camera the same question the same way. How the resolver searches,
 in which order, on which ports and paths, is in the TAD ([`design/onvif.md`](../design/onvif.md)).
 
-**c) Finding the endpoint never presents a credential.** A port that may not even be a camera is asked
-a question the ONVIF core specification defines as unauthenticated. This is a safety property, not an
-optimisation: repeated credentialed guesses lock some camera accounts out.
+**c) Resolving the endpoint never guesses a credential.** A port that may not even be a camera is asked
+a question the ONVIF core specification defines as unauthenticated, and the services are asked the
+same way; the camera's own account is presented only where it demands one. This is a safety
+property, not an optimisation: repeated credentialed guesses lock some camera accounts out.
 
 **d) The resolved endpoint is stored on the camera, in `Camera.ProtocolEndpointsJson`**, keyed by
 `SupportedProtocol`. It describes the **device**, not one of its capabilities, so `ConfigJson` on
@@ -59,7 +60,7 @@ would still be left resolving it themselves. The column mirrors `SupportedProtoc
 **e) A command that does not go through says so, and says which way.** A camera that **refused** (an
 error status, a SOAP fault, or a malformed answer, the way a Tapo refuses PTZ in privacy mode) and a
 camera that **could not be reached** (no connection, no ONVIF service found) are two different things
-for the user and for support. Each leaves the API with its own error code, never as a server fault,
+for the user and for support. Each leaves the API with its own error code, never as an unexplained server error,
 and reaches the screen as a plain sentence with the camera's answer in the diagnostic line
 ([SPECS](../SPECS.md) 1.5). Silence within a short wait stays a success: budget cameras execute a
 command on receipt and answer seconds later, and treating their slowness as an error would break V380.

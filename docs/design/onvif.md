@@ -31,12 +31,15 @@ The unit of resolution is the **device service URL**. Everything else is read fr
 answer.
 
 1. **Stored.** `Camera.ProtocolEndpointsJson`, keyed by `SupportedProtocol`, taken as-is: only a real
-   resolution writes it, and a stale one surfaces as a failed call. No network.
+   resolution writes it, and a stale one surfaces as a failed call. No sweep.
 2. **Swept**, when nothing is stored. The ONVIF ports of `DiscoveryPortCatalog` crossed with the
    candidate paths below. First answer wins, and becomes the device service URL.
-3. **Announced.** The device service is then asked `GetServices`, which gives an `XAddr` per service
-   namespace. Authoritative, and the only correct source for the per-service paths. A camera behind NAT
-   announces its own idea of its address: the announced path is kept, on the host Vyzio reached.
+3. **Announced.** Whether stored or swept, the device service is then asked `GetServices`, which gives
+   an `XAddr` per service namespace. Authoritative, and the only correct source for the per-service
+   paths. It is asked without credentials first, `GetServices` being pre-authentication in the ONVIF
+   core; the camera's own account is presented only if it answers 401, and nothing is ever guessed. A
+   camera behind NAT announces its own idea of its address: the announced path is kept, on the host
+   Vyzio reached. Only a real answer is kept in memory; a lost one is asked again on the next call.
 
 Candidate paths, in order: `/onvif/device_service` (the common convention), `/onvif/service` (one
 endpoint for every service, Tapo), `/device_service`.
@@ -59,7 +62,7 @@ What is shared is the question and how its answer is read, not the plumbing.
 Resolution is cached in memory per camera and persisted by the use-case layer at probe time, the way
 the V380 device id already is. Nothing in `OnvifClient` writes to the database. A camera where no port
 answered is cached as such for five minutes, so a DVRIP-only or V380-only camera does not re-sweep on
-every call.
+every call; a caller that gives up mid-sweep leaves no such mark.
 
 ## Forgetting a resolved address
 
@@ -89,8 +92,8 @@ Two send paths, and the difference matters.
 - **Queries** (`GetProfiles`, `GetStatus`, `GetPresets`, `GetImagingSettings`) read the response.
   `throwOnFailure: true` raises instead of returning nothing, so a probe can say *why*, instead of
   reporting an unsupported capability.
-- **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer. **Silence is treated as
-  success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ steps cannot wait
+- **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer, 300 ms for the start of
+  a continuous move, which a step stops shortly after. **Silence is treated as success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ steps cannot wait
   for them. Anything else that goes wrong is raised, and classified below.
 
 A failure is one of two things, both in `Vyzio.Core/Interfaces/CameraCommandException.cs`:

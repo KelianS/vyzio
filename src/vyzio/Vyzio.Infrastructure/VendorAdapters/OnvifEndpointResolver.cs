@@ -60,18 +60,29 @@ internal sealed class OnvifEndpointResolver(
             if (_cache.TryGetValue(camera.Id, out cached))
                 return cached;
 
+            // Checked again once in: callers queued behind a failed sweep must not each sweep again.
+            if (_failedAt.TryGetValue(camera.Id, out lastFailure)
+                && time.GetUtcNow() - lastFailure < FailureCooldown)
+            {
+                return null;
+            }
+
             var deviceUrl = await FindDeviceServiceAsync(camera, ct);
             if (deviceUrl is null)
             {
+                // A caller that gave up has learnt nothing about the camera.
+                ct.ThrowIfCancellationRequested();
                 _failedAt[camera.Id] = time.GetUtcNow();
                 logger.LogWarning("No ONVIF service answered on {Host} (ports {Ports}).",
                     camera.Host, string.Join(", ", DiscoveryPortCatalog.OnvifPorts));
                 return null;
             }
 
-            var services = await ReadAnnouncedServicesAsync(camera, deviceUrl, ct);
+            var announced = await ReadAnnouncedServicesAsync(camera, deviceUrl, ct);
+            var services = announced ?? new Dictionary<OnvifService, Uri>();
             var endpoint = new OnvifEndpoint(deviceUrl, services);
-            _cache[camera.Id] = endpoint;
+            // Kept only once the camera said which services it has; a lost answer is asked again next call.
+            if (announced is not null) _cache[camera.Id] = endpoint;
             _failedAt.TryRemove(camera.Id, out _);
 
             // Written on the entity; the use case owning the transaction saves it (ADR-56).
@@ -127,13 +138,7 @@ internal sealed class OnvifEndpointResolver(
             var content = new StringContent(OnvifServiceProbe.CredentialFreeEnvelope, Encoding.UTF8, "application/soap+xml");
             using var response = await http.PostAsync(url, content, linked.Token);
             var body = await response.Content.ReadAsStringAsync(linked.Token);
-
-            // A 401 still identifies the service: only this unauthenticated probe is refused.
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
-                return body.Contains("onvif", StringComparison.OrdinalIgnoreCase)
-                    || (response.Headers.WwwAuthenticate.ToString().Contains("onvif", StringComparison.OrdinalIgnoreCase));
-
-            return response.IsSuccessStatusCode && OnvifServiceProbe.LooksLikeOnvif(body);
+            return OnvifServiceProbe.Identifies((int)response.StatusCode, response.Headers.WwwAuthenticate.ToString(), body);
         }
         catch (Exception ex)
         {
@@ -143,33 +148,26 @@ internal sealed class OnvifEndpointResolver(
     }
 
     // An empty answer is not a failure: every service then resolves to the device service URL.
-    private async Task<IReadOnlyDictionary<OnvifService, Uri>> ReadAnnouncedServicesAsync(Camera camera, Uri deviceUrl, CancellationToken ct)
+    // Null when the camera gave no usable answer, empty when it announced nothing: only the latter is final.
+    private async Task<IReadOnlyDictionary<OnvifService, Uri>?> ReadAnnouncedServicesAsync(Camera camera, Uri deviceUrl, CancellationToken ct)
     {
         const string body = """<GetServices xmlns="http://www.onvif.org/ver10/device/wsdl"><IncludeCapability>false</IncludeCapability></GetServices>""";
 
-        using var timeout = new CancellationTokenSource(ProbeTimeout, time);
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+        // Pre-authentication first (ONVIF core); the camera's own account only if it insists, never a guess.
+        var xml = await PostGetServicesAsync(deviceUrl, OnvifEnvelope.Anonymous(body), ct);
+        if (xml is { Unauthorized: true } && !string.IsNullOrWhiteSpace(camera.Username))
+            xml = await PostGetServicesAsync(deviceUrl, OnvifEnvelope.Build(camera.Username, camera.Password ?? string.Empty, body), ct);
 
-        string xml;
-        try
+        if (xml is not { Unauthorized: false, Body: { } answer })
         {
-            var http = httpClientFactory.CreateClient("onvif");
-            var envelope = OnvifEnvelope.Build(camera.Username ?? "admin", camera.Password ?? string.Empty, body);
-            var content = new StringContent(envelope, Encoding.UTF8, "application/soap+xml");
-            using var response = await http.PostAsync(deviceUrl, content, linked.Token);
-            if (!response.IsSuccessStatusCode) return new Dictionary<OnvifService, Uri>();
-            xml = await response.Content.ReadAsStringAsync(linked.Token);
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug("ONVIF GetServices unavailable on {Url} ({Message}), every service uses the device address.", deviceUrl, ex.Message);
-            return new Dictionary<OnvifService, Uri>();
+            logger.LogDebug("ONVIF GetServices gave no usable answer on {Url}; every service uses the device address for now.", deviceUrl);
+            return null;
         }
 
         var announced = new Dictionary<OnvifService, Uri>();
         try
         {
-            foreach (var element in XDocument.Parse(xml).Descendants().Where(e => e.Name.LocalName == "Service"))
+            foreach (var element in XDocument.Parse(answer).Descendants().Where(e => e.Name.LocalName == "Service"))
             {
                 var ns = element.Elements().FirstOrDefault(e => e.Name.LocalName == "Namespace")?.Value;
                 var addr = element.Elements().FirstOrDefault(e => e.Name.LocalName == "XAddr")?.Value;
@@ -182,9 +180,32 @@ internal sealed class OnvifEndpointResolver(
         catch (Exception ex)
         {
             logger.LogDebug(ex, "ONVIF GetServices answer unreadable for {Host}.", camera.Host);
+            return null;
         }
 
         return announced;
+    }
+
+    private sealed record GetServicesAnswer(bool Unauthorized, string? Body);
+
+    // Null on silence or transport failure; otherwise whether the camera demanded credentials, and its body when it answered.
+    private async Task<GetServicesAnswer?> PostGetServicesAsync(Uri deviceUrl, string envelope, CancellationToken ct)
+    {
+        using var timeout = new CancellationTokenSource(ProbeTimeout, time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+        try
+        {
+            var http = httpClientFactory.CreateClient("onvif");
+            using var response = await http.PostAsync(deviceUrl, new StringContent(envelope, Encoding.UTF8, "application/soap+xml"), linked.Token);
+            if (response.StatusCode == HttpStatusCode.Unauthorized) return new GetServicesAnswer(Unauthorized: true, Body: null);
+            if (!response.IsSuccessStatusCode) return new GetServicesAnswer(Unauthorized: false, Body: null);
+            return new GetServicesAnswer(Unauthorized: false, Body: await response.Content.ReadAsStringAsync(linked.Token));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogDebug("ONVIF GetServices on {Url} did not answer ({Message}).", deviceUrl, ex.Message);
+            return null;
+        }
     }
 
     // A camera behind NAT announces its own idea of its address: keep its path, keep the host we reached.

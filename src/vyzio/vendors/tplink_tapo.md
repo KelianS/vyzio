@@ -37,7 +37,7 @@ Remplacez :
 ## Si cela ne fonctionne pas
 
 - Verifiez que vous utilisez bien le **compte camera**, et non votre compte Tapo principal.
-- Si la camera refuse soudain l'identifiant alors qu'il est juste : apres plusieurs mots de passe refuses, elle se bloque pendant environ une demi-heure. Corrigez l'identifiant dans Vyzio, puis attendez sans nouvelle tentative.
+- Si la camera refuse soudain toute connexion : apres plusieurs mots de passe refuses, elle se bloque pendant environ vingt-cinq minutes, meme pour le bon. Verifiez l'identifiant saisi dans Vyzio, puis patientez sans nouvelle tentative.
 - Verifiez que le telephone, Vyzio et la camera sont sur le **meme reseau local**.
 - Si le premier flux ne fonctionne pas, essayez `stream2`.
 - Certaines cameras **sur batterie** ne proposent pas ce mode. Si besoin, verifiez le modele exact.
@@ -68,9 +68,6 @@ encore parler : elle n'est donc pas proposée plutôt que d'être annoncée sans
 Les modèles pan-tilt Tapo (**C200, C210, C225** et versions ultérieures) s'orientent depuis Vyzio,
 avec les mêmes identifiants **compte camera** que le flux vidéo. Aucun compte TP-Link n'est
 nécessaire.
-
-Les positions enregistrées dans l'application Tapo sont reconnues et réutilisées telles quelles :
-vos points de vue restent les vôtres.
 
 **Cette capacité est vérifiée une fois depuis la fiche de la caméra.** Dans la section *Capacités*,
 cliquez sur **Tester** à côté de « Contrôle PTZ ». Si la commande aboutit, le panneau de contrôle

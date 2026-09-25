@@ -36,6 +36,9 @@ internal sealed class OnvifClient(
     // Short: long enough to hear a refusal, short enough not to stall a held PTZ button (ADR-56).
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromMilliseconds(1500);
 
+    // A continuous move is stopped after a short step: waiting longer than that would overshoot it.
+    private static readonly TimeSpan MoveStartTimeout = TimeSpan.FromMilliseconds(300);
+
     // Returns device identification info from ONVIF GetDeviceInformation.
     // The SerialNumber field encodes the V380 device ID in bytes 2-5 as uint32 big-endian.
     public async Task<OnvifDeviceInfo?> GetDeviceInformationAsync(Camera camera, CancellationToken ct)
@@ -234,7 +237,7 @@ internal sealed class OnvifClient(
               </Velocity>
             </ContinuousMove>
             """;
-        return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
+        return SendCommandAsync(camera, OnvifService.Ptz, body, ct, wait: MoveStartTimeout);
     }
 
     public Task RelativeMoveAsync(Camera camera, string profileToken, float pan, float tilt, CancellationToken ct)
@@ -399,13 +402,15 @@ internal sealed class OnvifClient(
         catch { return 0; }
     }
 
-    private async Task SendCommandAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct, string? soapAction = null)
+    private async Task SendCommandAsync(
+        Camera camera, OnvifService service, string soapBody, CancellationToken ct, string? soapAction = null, TimeSpan? wait = null)
     {
         var url = await ResolveUrlAsync(camera, service, ct);
         var envelope = OnvifEnvelope.Build(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
         var http = httpClientFactory.CreateClient("onvif");
 
-        using var timeout = new CancellationTokenSource(CommandTimeout, time);
+        var patience = wait ?? CommandTimeout;
+        using var timeout = new CancellationTokenSource(patience, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
 
         HttpResponseMessage response;
@@ -417,7 +422,7 @@ internal sealed class OnvifClient(
         // Only silence counts as done: a slow camera (V380) executes on receipt and answers seconds later (ADR-56).
         catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
         {
-            logger.LogDebug("ONVIF {Service} command sent to {Host}, no answer within {Timeout}.", service, camera.Host, CommandTimeout);
+            logger.LogDebug("ONVIF {Service} command sent to {Host}, no answer within {Timeout}.", service, camera.Host, patience);
             return;
         }
         catch (HttpRequestException ex)
@@ -461,14 +466,9 @@ internal sealed class OnvifClient(
         return content;
     }
 
-    // readBody=false: ResponseHeadersRead — returns as soon as status is known, without reading body.
-    // Use for commands (Move, RelativeMove, Preset) where we only need the camera to receive the request.
-    // Use readBody=true (default) for queries (GetProfiles, GetDeviceInformation) that need the response XML.
-    // soapAction: SOAP 1.2 action URI (e.g. ".../imaging/wsdl/GetImagingSettings") — some ONVIF stacks
-    // reject requests with a generic BadRequest when it's missing from the Content-Type "action" param.
-    // throwOnFailure: throws a CameraCommandException saying why, where the caller must surface it (ADR-27/28).
+    // A query; soapAction because some stacks refuse its absence, throwOnFailure where the caller must say why (ADR-27/28).
     internal async Task<string?> PostSoapAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct,
-        bool readBody = true, string? soapAction = null, bool throwOnFailure = false)
+        string? soapAction = null, bool throwOnFailure = false)
     {
         Uri url;
         try
@@ -483,11 +483,10 @@ internal sealed class OnvifClient(
         var envelope = OnvifEnvelope.Build(camera.Username ?? "admin", camera.Password ?? string.Empty, soapBody);
         var http = httpClientFactory.CreateClient("onvif");
         var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = BuildContent(envelope, soapAction) };
-        var completion = readBody ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
 
         try
         {
-            using var response = await http.SendAsync(request, completion, ct);
+            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseContentRead, ct);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("ONVIF {Service} call failed ({Status}) for {Host}.", service, response.StatusCode, camera.Host);
@@ -498,7 +497,7 @@ internal sealed class OnvifClient(
                 }
                 return null;
             }
-            return readBody ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
+            return await response.Content.ReadAsStringAsync(ct);
         }
         catch (CameraCommandException) { throw; }
         catch (Exception ex)

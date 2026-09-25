@@ -28,6 +28,7 @@ interface Harness {
   calibrated?: boolean
   currentPosition?: { x: number; y: number } | null
   stepRejection?: unknown
+  stepExecute?: PtzStep['execute']
 }
 
 function renderPanel({
@@ -35,6 +36,7 @@ function renderPanel({
   calibrated = true,
   currentPosition = null,
   stepRejection,
+  stepExecute,
 }: Harness = {}) {
   const getPtzPresets = {
     execute: vi.fn().mockResolvedValue({ presets, calibrated, currentPosition }),
@@ -50,9 +52,10 @@ function renderPanel({
   } as unknown as PtzCalibrate
   const ptzStep = {
     execute:
-      stepRejection === undefined
+      stepExecute ??
+      (stepRejection === undefined
         ? vi.fn().mockResolvedValue(undefined)
-        : vi.fn().mockRejectedValue(stepRejection),
+        : vi.fn().mockRejectedValue(stepRejection)),
   } as unknown as PtzStep
 
   render(
@@ -124,6 +127,27 @@ describe('PtzControlPanel', () => {
 
     expect(await screen.findByText('La caméra a refusé la commande')).toBeInTheDocument()
     expect(screen.getByText(why)).toBeInTheDocument()
+  })
+
+  it('PtzStep_ShouldShowOneToastPerPress_WhenSeveralStepsOfAHoldFail', async () => {
+    const failure = (why: string) =>
+      new HttpError(502, '/api/cameras/camera-1/ptz/step', why, 'camera_refused')
+    let calls = 0
+    const stepExecute = vi.fn(() => {
+      calls += 1
+      // The first step answers late, after the hold has already sent the next one.
+      return calls === 1
+        ? new Promise<void>((_, reject) => setTimeout(() => reject(failure('first step')), 600))
+        : Promise.reject(failure('held step'))
+    })
+    renderPanel({ stepExecute })
+
+    fireEvent.mouseDown(await screen.findByTitle('Haut'))
+    await screen.findByText('held step')
+    await new Promise((resolve) => setTimeout(resolve, 700))
+
+    expect(screen.getAllByText('La caméra a refusé la commande')).toHaveLength(1)
+    expect(screen.queryByText('first step')).not.toBeInTheDocument()
   })
 
   it('n’ouvre pas le menu contextuel du navigateur sur une position', async () => {

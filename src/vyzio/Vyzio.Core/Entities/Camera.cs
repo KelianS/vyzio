@@ -33,7 +33,7 @@ public class Camera
 
     public StreamProtocol StreamProtocol { get; set; } = StreamProtocol.Rtsp;
 
-    // Video access points of this camera, qualities of ONE scene (ADR-38).
+    // Video access points of this camera — qualities of ONE scene (ADR-38).
     public ICollection<CameraStream> Streams { get; set; } = [];
 
     // User's pick among Streams for the `detect` role. Null keeps the main stream, so face
@@ -41,7 +41,7 @@ public class Camera
     [MaxLength(100)]
     public string? DetectStreamId { get; set; }
 
-    // Groups the cameras that share one physical device, the lenses of a multi-sensor box are
+    // Groups the cameras that share one physical device — the lenses of a multi-sensor box are
     // separate cameras (ADR-38), and this is what lets the UI say so. Null for a single-lens device.
     [MaxLength(200)]
     public string? DeviceId { get; set; }
@@ -58,7 +58,7 @@ public class Camera
     // Protocol -> address it answers on, e.g. {"onvif":"http://host:2020/onvif/service"}: a device fact (ADR-56).
     public string? ProtocolEndpointsJson { get; set; }
 
-    // Per-camera retention overrides (ADR-39). Null means "follow the installation", never a
+    // Per-camera retention overrides (ADR-39). Null means "follow the installation" — never a
     // disguised value, which is why these are nullable rather than defaulted. Zero is a real
     // answer and means "keep nothing of this kind for this camera".
     //
@@ -111,7 +111,7 @@ public class Camera
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // Rank 0, the most detailed stream. Recording always uses it, and it is the fallback for
+    // Rank 0 — the most detailed stream. Recording always uses it, and it is the fallback for
     // everything else.
     [NotMapped]
     public CameraStream? MainStream
@@ -126,7 +126,7 @@ public class Camera
         => (DetectStreamId is null ? null : Streams.FirstOrDefault(stream => stream.Id == DetectStreamId))
            ?? Streams.OrderByDescending(stream => stream.Ordinal).FirstOrDefault();
 
-    // Projection of the main stream's path, the connection-level view of a camera, on the same
+    // Projection of the main stream's path — the connection-level view of a camera, on the same
     // footing as Host and Port. Settable at construction because that is when onboarding knows it;
     // afterwards a path belongs to a stream and moves through SetMainStreamPath.
     [NotMapped]

@@ -68,24 +68,36 @@ public sealed class PrivacySchedulerService(
 
         foreach (var camera in cameras)
         {
-            var shouldBeActive = desiredActive.TryGetValue(camera.Id, out var v) && v;
-
-            // Manual activations are never overridden by the scheduler
-            if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
-                continue;
-
-            var currentlyActive = camera.PrivacyModeActive;
-
-            if (shouldBeActive && !currentlyActive)
+            try
             {
-                logger.LogInformation("PrivacyScheduler: activating privacy mode on {Camera} (schedule).", camera.DisplayName);
-                await toggleUseCase.ExecuteAsync(camera.Id, active: true, source: PrivacyModeSource.Schedule, ct);
+                await ApplyScheduleAsync(toggleUseCase, camera, desiredActive.TryGetValue(camera.Id, out var v) && v, ct);
             }
-            else if (!shouldBeActive && currentlyActive && camera.PrivacyModeSource == PrivacyModeSource.Schedule)
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
-                logger.LogInformation("PrivacyScheduler: deactivating privacy mode on {Camera} (schedule ended).", camera.DisplayName);
-                await toggleUseCase.ExecuteAsync(camera.Id, active: false, source: PrivacyModeSource.Schedule, ct);
+                // One camera failing must not leave every camera after it outside its schedule.
+                logger.LogWarning(ex, "PrivacyScheduler: could not apply the schedule to {Camera}.", camera.DisplayName);
             }
+        }
+    }
+
+    private async Task ApplyScheduleAsync(
+        ToggleCameraPrivacyModeUseCase toggleUseCase, Camera camera, bool shouldBeActive, CancellationToken ct)
+    {
+        // Manual activations are never overridden by the scheduler
+        if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
+            return;
+
+        var currentlyActive = camera.PrivacyModeActive;
+
+        if (shouldBeActive && !currentlyActive)
+        {
+            logger.LogInformation("PrivacyScheduler: activating privacy mode on {Camera} (schedule).", camera.DisplayName);
+            await toggleUseCase.ExecuteAsync(camera.Id, active: true, source: PrivacyModeSource.Schedule, ct);
+        }
+        else if (!shouldBeActive && currentlyActive && camera.PrivacyModeSource == PrivacyModeSource.Schedule)
+        {
+            logger.LogInformation("PrivacyScheduler: deactivating privacy mode on {Camera} (schedule ended).", camera.DisplayName);
+            await toggleUseCase.ExecuteAsync(camera.Id, active: false, source: PrivacyModeSource.Schedule, ct);
         }
     }
 }

@@ -1029,12 +1029,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 return null;
             }
 
-            if (response.Contains(" 404 ", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            if (!OnvifServiceProbe.LooksLikeOnvif(response))
+            if (!OnvifServiceProbe.IdentifiesRawHttp(response))
             {
                 return null;
             }

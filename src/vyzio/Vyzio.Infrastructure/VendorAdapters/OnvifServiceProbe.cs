@@ -30,4 +30,26 @@ internal static class OnvifServiceProbe
 
         return hasSoapEnvelope && hasOnvifMarker;
     }
+
+    // The one reading of an answer: a 404 is no service, a 401 with an ONVIF realm still is one.
+    public static bool Identifies(int status, string wwwAuthenticate, string body)
+    {
+        if (status == 404) return false;
+        if (status == 401)
+            return body.Contains("onvif", StringComparison.OrdinalIgnoreCase)
+                || wwwAuthenticate.Contains("onvif", StringComparison.OrdinalIgnoreCase);
+        return LooksLikeOnvif(body);
+    }
+
+    // The same reading, for a raw HTTP answer read off a socket.
+    public static bool IdentifiesRawHttp(string response)
+    {
+        var lines = response.Split("\r\n");
+        var statusParts = lines[0].Split(' ', 3);
+        if (statusParts.Length < 2 || !int.TryParse(statusParts[1], out var status)) return false;
+        var wwwAuthenticate = lines
+            .TakeWhile(line => line.Length > 0)
+            .FirstOrDefault(line => line.StartsWith("WWW-Authenticate:", StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+        return Identifies(status, wwwAuthenticate, response);
+    }
 }

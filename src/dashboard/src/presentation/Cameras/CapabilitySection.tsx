@@ -1,3 +1,4 @@
+import { DiagnosticLine } from '../../common/components/ErrorMessage'
 import { scrubSecrets } from '../../common/errors/scrubSecrets'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
@@ -336,7 +337,11 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           {PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}
         </div>
         {!isVerified && binding.lastError && (
-          <div className="text-sm text-destructive">{binding.lastError}</div>
+          // The camera's answer is support detail: a plain sentence leads (SPECS 1.5).
+          <div role="alert" className="text-sm text-destructive">
+            <p>La dernière vérification a échoué.</p>
+            <DiagnosticLine text={scrubSecrets(binding.lastError)} />
+          </div>
         )}
         {isVerified && verifiedAtLabel && (
           <div className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</div>

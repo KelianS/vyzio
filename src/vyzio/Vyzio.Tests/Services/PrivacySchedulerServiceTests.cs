@@ -96,6 +96,26 @@ public class PrivacySchedulerServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldStillApplyTheScheduleToTheOthers_WhenOneCameraFails()
+    {
+        var time = BackgroundLoop.ClockAt("2026-09-23T10:30:00+00:00");
+        var broken = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "Salon", Host = "192.168.1.10" };
+        var healthy = new Camera { Id = "cam2", Slug = "cam2", FrigateCameraName = "cam2", DisplayName = "Entree", Host = "192.168.1.11" };
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([broken, healthy]);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns<Camera?>(_ => throw new InvalidOperationException("database busy"));
+        _cameras.GetByIdAsync("cam2", Arg.Any<CancellationToken>()).Returns(healthy);
+        _schedules.GetAllActiveSchedulesAsync(Arg.Any<CancellationToken>()).Returns([WednesdayMorning("cam1"), WednesdayMorning("cam2")]);
+        var updated = SignalOnUpdate(time);
+        var sut = CreateSut(time);
+
+        await sut.StartAsync(CancellationToken.None);
+        await updated.Task.ObservedAsync();
+        await sut.StopAsync(CancellationToken.None);
+
+        Assert.True(healthy.PrivacyModeActive);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldActivatePrivacy_WhenTheWindowOpensWhileRunning()
     {
         // Arrange

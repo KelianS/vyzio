@@ -39,4 +39,8 @@ internal static class OnvifEnvelope
             </s:Envelope>
             """;
     }
+
+    // No security header: for the pre-authentication calls, where a guessed credential would lock accounts out.
+    public static string Anonymous(string body) =>
+        $"""<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>{body}</s:Body></s:Envelope>""";
 }

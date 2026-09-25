@@ -9,7 +9,7 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // unlike PTZ profile tokens, image settings are read/written once per call, not hot-path.
 //
 // Unlike PTZ/media calls elsewhere in OnvifClient (which tolerate silent failure with built-in
-// fallbacks), the token/settings calls here throw OnvifCallException on failure — left to
+// fallbacks), the token/settings calls here throw a CameraCommandException on failure — left to
 // propagate so ProbeCameraCapabilityUseCase's own try/catch captures ex.Message as LastError,
 // surfacing the real reason to the UI instead of a generic message (ADR-28 follow-up).
 internal sealed class OnvifImageSettingsProvider(OnvifClient onvif) : IImageSettingsCapabilityProvider

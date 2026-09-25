@@ -131,7 +131,7 @@ public class OnvifPtzProviderTests
         await stopArrived.Task;
         time.Advance(TimeSpan.FromSeconds(2));
 
-        await stop;
+        Assert.Null(await Record.ExceptionAsync(() => stop));
     }
 
     private sealed class ScenarioHandler(Func<CancellationToken, Task<HttpResponseMessage>> stop) : HttpMessageHandler

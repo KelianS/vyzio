@@ -231,6 +231,52 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("Onvif", port.Protocol);
     }
 
+    [Fact]
+    public async Task DiscoverAsync_ShouldConfirmOnvif_WhenTheCameraServesItOnASingleEndpoint()
+    {
+        using var listener = StartLoopbackListener();
+        var onvifPort = PortOf(listener);
+
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondOnvifOnSingleEndpointAsync(listener, stopServer.Token);
+
+        var sut = Discovery(HermeticSettings(
+            scanPorts: [onvifPort],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
+
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        var candidate = Assert.Single(result, item => item.Host == Loopback);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        Assert.Equal("Onvif", Assert.Single(candidate.TechnicalDetails!.DetectedPorts).Protocol);
+    }
+
+    // Shaped like a Tapo (ADR-56): 404 on the common path, every service on /onvif/service.
+    private static Task RespondOnvifOnSingleEndpointAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
+    {
+        const string notFound = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+        const string answer = "HTTP/1.1 200 OK\r\nContent-Type: application/soap+xml\r\nConnection: close\r\n\r\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Body><tds:GetSystemDateAndTimeResponse/></s:Body></s:Envelope>";
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var buffer = new byte[2048];
+                var read = await stream.ReadAsync(buffer, ct);
+                var request = Encoding.UTF8.GetString(buffer, 0, read);
+                var reply = request.StartsWith("POST /onvif/service ", StringComparison.Ordinal) ? answer : notFound;
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(reply), ct);
+                await stream.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.Sockets.SocketException) { }
+        catch (IOException) { }
+    }, ct);
+
     // Loop-accept helper answering only genuine ONVIF SOAP requests with a valid ONVIF reply.
     private static Task RespondOnvifAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
     {
