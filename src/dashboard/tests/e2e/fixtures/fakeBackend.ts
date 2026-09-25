@@ -221,6 +221,8 @@ export interface FakeBackendState {
   /** Saved settings that surveillance has not picked up yet (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
+  /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
+  restartBreaks: boolean
   profiles: {
     id: string
     name: string
@@ -280,6 +282,7 @@ export function createFakeBackendState(
     access: { installed: true, signedIn: true },
     pendingChanges: false,
     restartFails: false,
+    restartBreaks: false,
     profiles: [],
     notificationChannels: {},
     channelListening: {},
@@ -475,6 +478,14 @@ export async function installFakeBackend(
       })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
+      if (state.restartBreaks) {
+        const problem = {
+          title: 'An error occurred while processing your request.',
+          status: 500,
+          traceId: '00-e2e-01',
+        }
+        return json(route, problem, 500)
+      }
       // Like the real one: a successful restart clears the pending state, a failure leaves it.
       if (state.restartFails) {
         return json(route, {

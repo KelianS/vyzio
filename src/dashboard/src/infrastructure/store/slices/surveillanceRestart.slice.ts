@@ -1,11 +1,17 @@
 import type { StateCreator } from 'zustand'
 
+/** Its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
+interface RestartFailure {
+  message: string
+  diagnostic?: string
+}
+
 export interface SurveillanceRestartSlice {
   restarting: boolean
   // Persistent: an ephemeral message would let the user believe the settings were taken up (ADR-44).
-  restartFailure: string | null
+  restartFailure: RestartFailure | null
   setRestarting: (restarting: boolean) => void
-  setRestartFailure: (failure: string | null) => void
+  setRestartFailure: (failure: RestartFailure | null) => void
 }
 
 // Restarting belongs to no screen, so its state has to survive navigation. State only — the

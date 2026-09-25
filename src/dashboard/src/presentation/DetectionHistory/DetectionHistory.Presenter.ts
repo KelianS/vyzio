@@ -1,5 +1,5 @@
 import type { ToastTone } from '../../common/components/Toast'
-import { appErrorMessage } from '../../common/errors/AppError'
+import { toastError } from '../../common/errors/AppError'
 import { toAppError } from '../../common/errors/toAppError'
 import type { DetectionHistoryQuery } from '../../domain/entities/DetectionHistory'
 import type { Profile } from '../../domain/entities/Profile'
@@ -10,7 +10,7 @@ import type { DetectionMedia } from './DetectionHistory.Uido'
 export interface DetectionHistoryPresenterContext {
   container: DetectionHistoryContainer
   dispatch: (action: DetectionHistoryAction) => void
-  toast: (message: string, tone?: ToastTone) => void
+  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
 export function buildDetectionHistoryPresenter({
@@ -23,12 +23,12 @@ export function buildDetectionHistoryPresenter({
       container.getProfiles
         .execute()
         .then((profiles) => dispatch({ type: 'PROFILES_LOADED', profiles }))
-        .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
+        .catch((e: unknown) => toastError(toast, toAppError(e)))
 
       container.getCameraLabels
         .execute()
         .then((labels) => dispatch({ type: 'LABELS_LOADED', labels }))
-        .catch((e: unknown) => toast(appErrorMessage(toAppError(e)), 'error'))
+        .catch((e: unknown) => toastError(toast, toAppError(e)))
     },
 
     onLoadHistory(query: DetectionHistoryQuery) {
@@ -46,7 +46,7 @@ export function buildDetectionHistoryPresenter({
         .then((page) => dispatch({ type: 'HISTORY_MORE_SUCCEEDED', page }))
         .catch((e: unknown) => {
           dispatch({ type: 'HISTORY_MORE_FAILED' })
-          toast(appErrorMessage(toAppError(e)), 'error')
+          toastError(toast, toAppError(e))
         })
     },
 
@@ -86,9 +86,9 @@ export function buildDetectionHistoryPresenter({
           profileId: profile?.id ?? null,
         })
         toast(profile ? 'Reconnaissance corrigée' : 'Identité retirée', 'success')
-      } catch {
+      } catch (e) {
         dispatch({ type: 'CORRECT_FAILED' })
-        toast("Erreur lors de la correction de l'identité.", 'error')
+        toastError(toast, toAppError(e), 'La correction de l’identité n’a pas abouti.')
       }
     },
   }

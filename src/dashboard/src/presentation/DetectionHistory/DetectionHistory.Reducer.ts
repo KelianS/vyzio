@@ -1,4 +1,4 @@
-import { AppErrorKind, type AppError } from '../../common/errors/AppError'
+import { AppErrorKind, appErrorDiagnostic, type AppError } from '../../common/errors/AppError'
 import type { DetectionHistoryAction } from './DetectionHistory.Actions'
 import type { DetectionHistoryUido } from './DetectionHistory.Uido'
 
@@ -40,7 +40,14 @@ export function detectionHistoryReducer(
         nextCursor: action.page.nextCursor,
       }
     case 'HISTORY_LOAD_FAILED':
-      return { ...state, loading: false, error: historyErrorMessage(action.error) }
+      return {
+        ...state,
+        loading: false,
+        error: {
+          message: historyErrorMessage(action.error),
+          diagnostic: appErrorDiagnostic(action.error),
+        },
+      }
 
     case 'HISTORY_MORE_STARTED':
       return { ...state, loadingMore: true }

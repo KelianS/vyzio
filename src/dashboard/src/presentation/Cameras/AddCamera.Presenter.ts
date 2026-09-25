@@ -1,10 +1,16 @@
-import { appErrorMessage } from '../../common/errors/AppError'
+import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/AppError'
 import { toAppError } from '../../common/errors/toAppError'
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { AddCameraAction } from './AddCamera.Actions'
+
+/** A failed call as the screen keeps it: its sentence and its diagnostic line. */
+function failureOf(e: unknown): { message: string; diagnostic?: string } {
+  const error = toAppError(e)
+  return { message: appErrorMessage(error), diagnostic: appErrorDiagnostic(error) }
+}
 
 export interface AddCameraPresenterContext {
   container: CamerasContainer
@@ -62,7 +68,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
               : 'Aucune caméra trouvée sur le réseau.',
         })
       } catch (e) {
-        dispatch({ type: 'DISCOVERY_FAILED', message: appErrorMessage(toAppError(e)) })
+        dispatch({ type: 'DISCOVERY_FAILED', ...failureOf(e) })
       }
     },
 
@@ -90,7 +96,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
             : 'Informations mises à jour, mais la caméra n’est toujours pas joignable.',
         })
       } catch (e) {
-        dispatch({ type: 'REFRESH_CANDIDATE_FAILED', message: appErrorMessage(toAppError(e)) })
+        dispatch({ type: 'REFRESH_CANDIDATE_FAILED', ...failureOf(e) })
       }
     },
 
@@ -107,7 +113,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
             : (status.guidance ?? 'Caméra injoignable — vérifiez ces informations.'),
         })
       } catch (e) {
-        dispatch({ type: 'VERIFY_DRAFT_FAILED', message: appErrorMessage(toAppError(e)) })
+        dispatch({ type: 'VERIFY_DRAFT_FAILED', ...failureOf(e) })
       }
     },
 
@@ -133,7 +139,7 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
         dispatch({ type: 'CREATE_SUCCEEDED' })
         return { id: created.id, displayName: created.displayName, guidance: status.guidance }
       } catch (e) {
-        dispatch({ type: 'CREATE_FAILED', message: appErrorMessage(toAppError(e)) })
+        dispatch({ type: 'CREATE_FAILED', ...failureOf(e) })
         return null
       }
     },

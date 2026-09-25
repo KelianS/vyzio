@@ -1,3 +1,4 @@
+import { scrubSecrets } from '../../common/errors/scrubSecrets'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
@@ -136,12 +137,13 @@ function ChannelForm({
     async () => container.testNotificationChannel.execute(config.channel),
     {
       onSuccess: (result) => {
-        toast(
-          result?.success
-            ? 'Message envoyé : le canal fonctionne.'
-            : `Échec de l’envoi — ${result?.errorMessage ?? 'raison inconnue'}.`,
-          result?.success ? 'success' : 'error',
-        )
+        if (result?.success) toast('Message envoyé : le canal fonctionne.', 'success')
+        else
+          toast(
+            'Échec de l’envoi.',
+            'error',
+            scrubSecrets(result?.errorMessage ?? 'no reason given'),
+          )
         reload()
       },
     },

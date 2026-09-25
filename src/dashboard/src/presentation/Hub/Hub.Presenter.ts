@@ -1,4 +1,4 @@
-import { appErrorMessage } from '../../common/errors/AppError'
+import { toastError } from '../../common/errors/AppError'
 import { toAppError } from '../../common/errors/toAppError'
 import type { ToastTone } from '../../common/components/Toast'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
@@ -11,7 +11,7 @@ export interface HubPresenterContext {
   container: HubContainer
   camerasContainer: CamerasContainer
   dispatch: (action: HubAction) => void
-  toast: (message: string, tone?: ToastTone) => void
+  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
 export function buildHubPresenter({
@@ -51,7 +51,7 @@ export function buildHubPresenter({
         toast(privacyWording(request).done, 'success')
       } catch (e) {
         dispatch({ type: 'PRIVACY_TOGGLE_FAILED' })
-        toast(appErrorMessage(toAppError(e)), 'error')
+        toastError(toast, toAppError(e))
       }
     },
   }

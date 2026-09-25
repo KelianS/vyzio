@@ -50,7 +50,7 @@ common/         <- errors/ (AppError + toAppError, the single error pipeline), c
   A use case is a class with `execute()`, depending only on domain ports.
 - **infrastructure**: the `HttpXxxRepository` classes implement the `domain/ports` interfaces and do
   the fetching themselves (no separate gateway layer). Every fetch goes through
-  `infrastructure/http/fetchJson.ts`.
+  `infrastructure/http/` (`fetchJson.ts`, or `send.ts` for the special cases below).
 - **presentation**: five files per screen, `<Screen>.Uido.ts` (local view state),
   `<Screen>.Actions.ts` (discriminated union + creators), `<Screen>.Reducer.ts` (pure, no fetch),
   `<Screen>.Presenter.ts` (orchestration through the container, action dispatch),
@@ -73,8 +73,13 @@ Every backend interaction goes through the pipeline. No silent `catch(() => {})`
 `try/catch + toast()`.
 
 ```
-fetch -> HttpError (infrastructure) -> toAppError (common/errors) -> AppError -> presenter / useAsync / useAsyncAction (UI)
+send / fetchJson -> HttpError | NetworkError (infrastructure) -> toAppError (common/errors) -> AppError -> presenter / useAsync / useAsyncAction (UI)
 ```
+
+Every error reads at two levels, a sentence and a diagnostic line for support ([SPECS](../../docs/SPECS.md)
+1.5, [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) § Errors). The line is built once, in
+`infrastructure/http/send.ts`, from what the answer said; `toAppError` carries it and scrubs any secret
+from it. A screen never builds one, and never drops it.
 
 - **A simple screen, outside the five-file pattern** (an autonomous subsection such as
   `CapabilitySection`): `useAsync(() => useCase.execute(), [deps])` giving
@@ -82,15 +87,17 @@ fetch -> HttpError (infrastructure) -> toAppError (common/errors) -> AppError ->
   automatic error toast, no catch, for mutations. Both live in `common/hooks/`.
 - **A five-file screen**: the presenter calls the use case inside a `try/catch`, converts with
   `toAppError(e)`, and either dispatches a `*_FAILED` action (error shown through the reducer and
-  uido) or calls `toast(appErrorMessage(error), 'error')` for an ephemeral notification, never both
-  for the same error.
-- **Showing an error in the render**: `appErrorMessage(error)` (`common/errors/AppError.ts`).
+  uido) or calls `toastError(toast, error)` for an ephemeral notification (a third argument gives the
+  screen's own sentence; the diagnostic line always follows), never both for the same error.
+- **Showing an error in the render**: `<ErrorMessage error={error} />` (`common/components/`), which
+  shows the sentence and its diagnostic line. A state that keeps a failure as text keeps
+  `appErrorDiagnostic(error)` beside it and shows it with `<DiagnosticLine>`.
 - **Testing the kind of an error**: `AppErrorKind` (never string literals).
-- **Special cases** (404 to null, multipart, logic on the status): a manual fetch in the repository,
-  but throwing `HttpError`, never `new Error()`.
+- **Special cases** (404 to null, multipart, logic on the status): `send()` in the repository, then
+  `throw await httpErrorFrom(response, url, method)`, never `new Error()` nor a bare `fetch`.
 
 Forbidden: throwing a bare `Error` carrying an HTTP status, `.catch(() => {})` in a component, local
-HTTP helpers in the repositories (everything goes through `infrastructure/http/fetchJson.ts`).
+HTTP helpers in the repositories (everything goes through `infrastructure/http/`).
 
 ## Type-safe comparisons (golden rule)
 

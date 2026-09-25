@@ -12,12 +12,15 @@ import {
 } from '../ui/alert-dialog'
 import type { buttonVariants } from '../ui/button'
 import { cn } from '../ui/utils'
+import { DiagnosticLine } from './ErrorMessage'
 
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>['variant']>
 
 interface ConfirmModalProps {
   title: string
   body: string
+  /** A failure behind the question: the line support reads (SPECS 1.5). */
+  diagnostic?: string
   confirmLabel: string
   cancelLabel?: string
   tone?: 'warn' | 'danger' | 'default' | 'confirm'
@@ -37,6 +40,7 @@ const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant
 export function ConfirmModal({
   title,
   body,
+  diagnostic,
   confirmLabel,
   cancelLabel = 'Annuler',
   tone = 'default',
@@ -69,6 +73,7 @@ export function ConfirmModal({
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{body}</AlertDialogDescription>
+          {diagnostic && <DiagnosticLine text={diagnostic} />}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading} onClick={handleCancel}>

@@ -8,7 +8,8 @@ import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacyS
 import type { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraPrivacySchedules'
 import type { CreateCameraPrivacySchedule } from '../../domain/usecases/CreateCameraPrivacySchedule'
 import type { DeleteCameraPrivacySchedule } from '../../domain/usecases/DeleteCameraPrivacySchedule'
-import { appErrorMessage } from '../../common/errors/AppError'
+import { toastError, type AppError } from '../../common/errors/AppError'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { toAppError } from '../../common/errors/toAppError'
 import { useToast } from '../../common/components/Toast'
 
@@ -38,7 +39,8 @@ export function PrivacyScheduleSection({
   const [startTime, setStartTime] = useState('22:00')
   const [endTime, setEndTime] = useState('06:00')
   const [adding, setAdding] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [invalid, setInvalid] = useState<string | null>(null)
+  const [failure, setFailure] = useState<AppError | null>(null)
 
   const reload = () => {
     setLoading(true)
@@ -46,7 +48,7 @@ export function PrivacyScheduleSection({
       .execute(cameraId)
       .then(setSchedules)
       .catch((e: unknown) => {
-        toast(appErrorMessage(toAppError(e)), 'error')
+        toastError(toast, toAppError(e))
       })
       .finally(() => setLoading(false))
   }
@@ -61,7 +63,7 @@ export function PrivacyScheduleSection({
         if (!cancelled) setSchedules(data)
       })
       .catch((e: unknown) => {
-        if (!cancelled) toast(appErrorMessage(toAppError(e)), 'error')
+        if (!cancelled) toastError(toast, toAppError(e))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -76,16 +78,17 @@ export function PrivacyScheduleSection({
 
   const handleAdd = async () => {
     if (days.length === 0) {
-      setError('Sélectionnez au moins un jour.')
+      setInvalid('Sélectionnez au moins un jour.')
       return
     }
-    setError(null)
+    setInvalid(null)
+    setFailure(null)
     setAdding(true)
     try {
       await createSchedule.execute(cameraId, { daysOfWeek: days, startTime, endTime })
       reload()
     } catch (e: unknown) {
-      setError(appErrorMessage(toAppError(e)))
+      setFailure(toAppError(e))
     } finally {
       setAdding(false)
     }
@@ -96,16 +99,17 @@ export function PrivacyScheduleSection({
       await deleteSchedule.execute(cameraId, scheduleId)
       setSchedules((prev) => prev.filter((s) => s.id !== scheduleId))
     } catch (e: unknown) {
-      setError(appErrorMessage(toAppError(e)))
+      setFailure(toAppError(e))
     }
   }
 
   const handleApplyToAll = async () => {
     if (days.length === 0) {
-      setError('Sélectionnez au moins un jour.')
+      setInvalid('Sélectionnez au moins un jour.')
       return
     }
-    setError(null)
+    setInvalid(null)
+    setFailure(null)
     setAdding(true)
     try {
       for (const cam of allCameras) {
@@ -113,7 +117,7 @@ export function PrivacyScheduleSection({
       }
       reload()
     } catch (e: unknown) {
-      setError(appErrorMessage(toAppError(e)))
+      setFailure(toAppError(e))
     } finally {
       setAdding(false)
     }
@@ -206,7 +210,8 @@ export function PrivacyScheduleSection({
           </label>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {invalid && <p className="text-sm text-destructive">{invalid}</p>}
+        {failure && <ErrorMessage error={failure} />}
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" disabled={adding} onClick={handleAdd}>
