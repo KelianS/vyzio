@@ -40,10 +40,10 @@ no other action (moving it, its image settings, a capability test) spends an att
 
 **d) The refusal ends when the camera lets Vyzio in again.** Saving new credentials clears it, and the
 connection check that follows puts the camera back into capture, as for any change of how Vyzio
-reaches it. A connection check alone asks the probe once more and, if the camera now accepts (a password restored
-in the vendor app), clears the refusal and writes the camera back into the capture config, taken up at
-the restart the user triggers (ADR-44). If the account is still refused, (b) and (c) catch
-it again after a handful of attempts, never a loop.
+reaches it. A connection check alone asks the probe once more and, if the camera now accepts (a
+password restored in the vendor app), clears the refusal and writes the camera back into the capture
+config, taken up at the restart the user triggers (ADR-44). If the account is still refused, (b) and
+(c) catch it again after a handful of attempts, never a loop.
 
 **e) The refusal sits beside reachability, not inside it.** ADR-23's online and offline status says
 whether the camera answers on the network; the watcher acts only once capture has gone dark, whatever
@@ -67,7 +67,7 @@ that status says, and its verdict comes from the camera, never from the capture 
   capture going dark, a few attempts in.
 - The reload is attempted once. If it fails, the refusal stays recorded and the capture config written
   without the camera is marked pending, so the user is offered the restart (ADR-44); until then the
-  capture keeps retrying it, and the failure is logged. Retrying the reload on its own would restart surveillance again and again, beyond
-  the one exception SPECS 7.2 allows.
+  capture keeps retrying it, and the failure is logged. Retrying the reload on its own would restart
+  surveillance again and again, beyond the one exception SPECS 7.2 allows.
 - A camera that bans after very few attempts can still lock Vyzio out before the watcher acts; the card
   then says the account is refused, which remains true once the lockout ends.
