@@ -5,6 +5,14 @@ using System.Text.Json;
 
 namespace Vyzio.Core.Entities;
 
+/// <summary>What the user must change for a schedule to be kept (SPECS 9.2).</summary>
+public enum PrivacyScheduleRefusal
+{
+    NoDay,
+    InvalidTime,
+    EmptyRange,
+}
+
 [Table("camera_privacy_schedules")]
 public class CameraPrivacySchedule
 {
@@ -43,6 +51,18 @@ public class CameraPrivacySchedule
             return [];
         }
     }
+
+    /// <summary>Why this schedule cannot be kept, or null when it can.</summary>
+    public static PrivacyScheduleRefusal? Check(IReadOnlyList<int> daysOfWeek, string startTime, string endTime)
+    {
+        if (daysOfWeek.Count == 0 || daysOfWeek.Any(d => d is < 0 or > 6)) return PrivacyScheduleRefusal.NoDay;
+        if (!TryParseTime(startTime, out var start) || !TryParseTime(endTime, out var end))
+            return PrivacyScheduleRefusal.InvalidTime;
+        return start == end ? PrivacyScheduleRefusal.EmptyRange : null;
+    }
+
+    private static bool TryParseTime(string value, out TimeSpan time) =>
+        TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out time);
 
     public TimeSpan GetStartTime() => TimeSpan.Parse(StartTime, CultureInfo.InvariantCulture);
     public TimeSpan GetEndTime() => TimeSpan.Parse(EndTime, CultureInfo.InvariantCulture);

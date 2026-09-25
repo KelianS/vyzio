@@ -20,8 +20,9 @@ const minutesOf = (time: string) => {
   return hours * 60 + minutes
 }
 
-/** A range ending before it starts runs into the next day (SPECS 9.2). */
-const endsNextDay = (start: string, end: string) => minutesOf(end) < minutesOf(start)
+/** A range ending before it starts runs into the next day (SPECS 9.2); an unset time says nothing. */
+const endsNextDay = (start: string, end: string) =>
+  start !== '' && end !== '' && minutesOf(end) < minutesOf(start)
 
 interface PrivacyScheduleSectionProps {
   camera: Camera

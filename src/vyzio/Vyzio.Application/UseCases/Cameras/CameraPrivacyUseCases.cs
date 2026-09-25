@@ -153,29 +153,15 @@ public sealed class GetCameraPrivacySchedulesUseCase(ICameraPrivacyRepository sc
 }
 
 /// <summary>A schedule the user can fix, answered as a refusal naming what to change, never as a failure (SPECS 9.2).</summary>
-public sealed class InvalidPrivacyScheduleException(string code, string message) : ArgumentException(message)
+public sealed class InvalidPrivacyScheduleException(PrivacyScheduleRefusal refusal)
+    : Exception($"The schedule is refused: {refusal}.")
 {
-    public const string NoDay = "schedule_no_day";
-    public const string InvalidTime = "schedule_invalid_time";
-    public const string EmptyRange = "schedule_empty_range";
+    public PrivacyScheduleRefusal Refusal { get; } = refusal;
 
-    public string Code { get; } = code;
-
-    internal static TimeSpan ParseTime(string value) =>
-        TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out var time)
-            ? time
-            : throw new InvalidPrivacyScheduleException(InvalidTime, $"Time '{value}' is not HH:mm.");
-
-    internal static void RequireDays(IReadOnlyList<int> days)
+    internal static void ThrowIfRefused(IReadOnlyList<int> daysOfWeek, string startTime, string endTime)
     {
-        if (days.Count == 0 || days.Any(d => d is < 0 or > 6))
-            throw new InvalidPrivacyScheduleException(NoDay, "At least one day of week, 0 to 6, is required.");
-    }
-
-    internal static void RequireRange(TimeSpan start, TimeSpan end)
-    {
-        if (start == end)
-            throw new InvalidPrivacyScheduleException(EmptyRange, "Start and end are the same time.");
+        if (CameraPrivacySchedule.Check(daysOfWeek, startTime, endTime) is { } refusal)
+            throw new InvalidPrivacyScheduleException(refusal);
     }
 }
 
@@ -197,10 +183,7 @@ public sealed class CreateCameraPrivacyScheduleUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        InvalidPrivacyScheduleException.RequireDays(request.DaysOfWeek);
-        InvalidPrivacyScheduleException.RequireRange(
-            InvalidPrivacyScheduleException.ParseTime(request.StartTime),
-            InvalidPrivacyScheduleException.ParseTime(request.EndTime));
+        InvalidPrivacyScheduleException.ThrowIfRefused(request.DaysOfWeek, request.StartTime, request.EndTime);
 
         var schedule = new CameraPrivacySchedule
         {
@@ -232,10 +215,10 @@ public sealed class UpdateCameraPrivacyScheduleUseCase(ICameraPrivacyRepository 
         var schedule = await schedules.GetScheduleByIdAsync(scheduleId, ct);
         if (schedule is null) return null;
 
-        if (request.DaysOfWeek is not null) InvalidPrivacyScheduleException.RequireDays(request.DaysOfWeek);
-        InvalidPrivacyScheduleException.RequireRange(
-            request.StartTime is not null ? InvalidPrivacyScheduleException.ParseTime(request.StartTime) : schedule.GetStartTime(),
-            request.EndTime is not null ? InvalidPrivacyScheduleException.ParseTime(request.EndTime) : schedule.GetEndTime());
+        InvalidPrivacyScheduleException.ThrowIfRefused(
+            request.DaysOfWeek ?? schedule.GetDaysOfWeek(),
+            request.StartTime ?? schedule.StartTime,
+            request.EndTime ?? schedule.EndTime);
 
         // Validated whole before anything changes, so a refusal leaves the tracked entity untouched.
         if (request.DaysOfWeek is not null) schedule.DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek);

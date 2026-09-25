@@ -108,6 +108,27 @@ describe('PrivacyScheduleSection', () => {
     expect(await screen.findByText('Se termine le lendemain à 06:00.')).toBeInTheDocument()
   })
 
+  it('PrivacyScheduleSection_ShouldNotAnnounceTheNextDay_WhenTheEndIsNotSet', async () => {
+    const user = userEvent.setup()
+    render(
+      <PrivacyScheduleSection
+        camera={makeCamera()}
+        cameraId="camera-1"
+        allCameras={[makeCamera()]}
+        getSchedules={
+          { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+        }
+        createSchedule={{ execute: vi.fn() } as unknown as CreateCameraPrivacySchedule}
+        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
+      />,
+    )
+    await screen.findByText('Se termine le lendemain à 06:00.')
+
+    await user.clear(screen.getByLabelText('Fin'))
+
+    expect(screen.queryByText(/Se termine le lendemain/)).not.toBeInTheDocument()
+  })
+
   it('PrivacyScheduleSection_ShouldSayWhatToChange_WhenTheServerRefusesAnEmptyRange', async () => {
     const createSchedule = {
       execute: vi

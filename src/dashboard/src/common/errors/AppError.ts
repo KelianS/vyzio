@@ -18,6 +18,8 @@ export const ApiErrorCode = {
   NotCalibrated: 'not_calibrated',
   CameraRefused: 'camera_refused',
   CameraUnreachable: 'camera_unreachable',
+  ScheduleNoDay: 'schedule_no_day',
+  ScheduleInvalidTime: 'schedule_invalid_time',
   ScheduleEmptyRange: 'schedule_empty_range',
 } as const
 

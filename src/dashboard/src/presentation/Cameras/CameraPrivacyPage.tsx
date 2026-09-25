@@ -71,8 +71,8 @@ export function CameraPrivacyPage() {
               ne se défait qu’à la main.
             </p>
             <p>
-              Une plage ne passe pas minuit : pour couvrir 22:00–02:00, créez-en deux, 22:00–23:59
-              puis 00:00–02:00.
+              Une plage peut passer minuit : 22:00–06:00 commence le soir des jours choisis et se
+              termine le lendemain matin.
             </p>
             <p>
               Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle

@@ -44,18 +44,18 @@ public class CameraPrivacyScheduleUseCaseTests
     }
 
     [Theory]
-    [InlineData(new[] { 1 }, "08:00", "08:00", InvalidPrivacyScheduleException.EmptyRange)]
-    [InlineData(new[] { 1 }, "8h", "12:00", InvalidPrivacyScheduleException.InvalidTime)]
-    [InlineData(new[] { 1 }, "08:00", "25:00", InvalidPrivacyScheduleException.InvalidTime)]
-    [InlineData(new int[0], "08:00", "12:00", InvalidPrivacyScheduleException.NoDay)]
-    [InlineData(new[] { 7 }, "08:00", "12:00", InvalidPrivacyScheduleException.NoDay)]
+    [InlineData(new[] { 1 }, "08:00", "08:00", PrivacyScheduleRefusal.EmptyRange)]
+    [InlineData(new[] { 1 }, "8h", "12:00", PrivacyScheduleRefusal.InvalidTime)]
+    [InlineData(new[] { 1 }, "08:00", "25:00", PrivacyScheduleRefusal.InvalidTime)]
+    [InlineData(new int[0], "08:00", "12:00", PrivacyScheduleRefusal.NoDay)]
+    [InlineData(new[] { 7 }, "08:00", "12:00", PrivacyScheduleRefusal.NoDay)]
     public async Task ExecuteAsync_ShouldRefuseWithItsCodeAndSaveNothing_WhenTheScheduleCannotBeKept(
-        int[] days, string start, string end, string code)
+        int[] days, string start, string end, PrivacyScheduleRefusal expected)
     {
         var refusal = await Assert.ThrowsAsync<InvalidPrivacyScheduleException>(
             () => Create().ExecuteAsync("cam1", new CreatePrivacyScheduleRequest(days, start, end)));
 
-        Assert.Equal(code, refusal.Code);
+        Assert.Equal(expected, refusal.Refusal);
         await _schedules.DidNotReceive().AddScheduleAsync(Arg.Any<CameraPrivacySchedule>(), Arg.Any<CancellationToken>());
     }
 
@@ -82,7 +82,7 @@ public class CameraPrivacyScheduleUseCaseTests
             () => new UpdateCameraPrivacyScheduleUseCase(_schedules)
                 .ExecuteAsync("s1", new UpdatePrivacyScheduleRequest([1], "12:00", null, null)));
 
-        Assert.Equal(InvalidPrivacyScheduleException.EmptyRange, refusal.Code);
+        Assert.Equal(PrivacyScheduleRefusal.EmptyRange, refusal.Refusal);
         Assert.Equal(("[3]", "08:00"), (schedule.DaysOfWeek, schedule.StartTime));
         await _schedules.DidNotReceive().UpdateScheduleAsync(Arg.Any<CameraPrivacySchedule>(), Arg.Any<CancellationToken>());
     }

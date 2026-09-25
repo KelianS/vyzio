@@ -68,6 +68,21 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task UpdatePrivacySchedule_ShouldAnswerARefusalWithItsCode_WhenTheRangeBecomesEmpty()
+    {
+        using var client = _factory.CreateClient();
+        var created = await client.PostAsJsonAsync("/api/cameras/camera-1/privacy/schedules",
+            new { daysOfWeek = Weekdays, startTime = "22:00", endTime = "06:00" });
+        var schedule = await created.Content.ReadFromJsonAsync<CameraPrivacyScheduleDto>();
+
+        var response = await client.PatchAsJsonAsync($"/api/cameras/camera-1/privacy/schedules/{schedule!.Id}",
+            new { endTime = "22:00" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("schedule_empty_range", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task GetCameraStatus_returns_not_found_for_unknown_camera()
     {
         using var client = _factory.CreateClient();
