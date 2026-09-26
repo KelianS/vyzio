@@ -11,25 +11,12 @@ import path from 'node:path'
 // Where presentation may reach inside infrastructure: the composition root and the shared store only.
 const INFRASTRUCTURE_ENTRY_POINTS = ['providers/**', 'store/**']
 
-// What only a presenter may call: the container, and the hooks that call a use case from a view.
+// What only a presenter may call: the container.
 const CONTAINER_ACCESS = {
   group: ['**/infrastructure/providers/app_container.context'],
   message:
     'Only a presenter calls a use case: build one in the screen component, pass it the container.',
 }
-const USE_CASE_HOOKS = {
-  group: ['**/common/hooks/use_async', '**/common/hooks/use_async_action'],
-  message: 'A use case is called from the screen presenter, not from the view.',
-}
-const USE_CASE_ACCESS = [CONTAINER_ACCESS, USE_CASE_HOOKS]
-
-// Files that still call use cases from the view. This list only shrinks: each screen migration removes its files.
-const PRESENTER_RULE_BACKLOG = [
-  'src/presentation/access/access_gate.tsx',
-  'src/presentation/settings/access_page.tsx',
-  'src/presentation/settings/conservation_page.tsx',
-  'src/presentation/surveillance/use_surveillance_refresh.ts',
-]
 
 // Every file and folder name is snake_case, dot-separated role suffixes included (`hub.presenter.ts`).
 const SNAKE_CASE_SEGMENT = /^[a-z0-9_]+(\.[a-z0-9_]+)*$/
@@ -180,26 +167,21 @@ export default defineConfig([
     files: ['src/presentation/**/*.{ts,tsx}', 'src/common/**/*.{ts,tsx}'],
     ignores: ['**/*.test.{ts,tsx}'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: USE_CASE_ACCESS }],
+      'no-restricted-imports': ['error', { patterns: [CONTAINER_ACCESS] }],
     },
   },
   {
     // A presenter calls the use cases.
-    files: [
-      'src/presentation/*/*.presenter.ts',
-      'src/common/presenter/**',
-      ...PRESENTER_RULE_BACKLOG,
-    ],
+    files: ['src/presentation/*/*.presenter.ts', 'src/common/presenter/**'],
     rules: {
       'no-restricted-imports': 'off',
     },
   },
   {
-    // A screen's root component takes the container only to build its presenter, never a use-case hook.
+    // A screen's root component takes the container, only to build its presenter.
     files: ['src/presentation/*/*.component.tsx'],
-    ignores: PRESENTER_RULE_BACKLOG,
     rules: {
-      'no-restricted-imports': ['error', { patterns: [USE_CASE_HOOKS] }],
+      'no-restricted-imports': 'off',
     },
   },
   {

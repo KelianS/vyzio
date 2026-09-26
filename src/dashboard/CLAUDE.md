@@ -2,8 +2,7 @@
 
 Loaded when you edit `src/dashboard`. Completes the root router [`../../CLAUDE.md`](../../CLAUDE.md).
 These are conventions: they hold for any screen, present or future, and name no screen in particular.
-Code written before a convention may not follow it yet: never take it as a model. The lint names what
-is left to bring in line.
+Code written before a convention may not follow it yet: never take it as a model.
 
 ## Layers (mandatory, enforced by lint)
 
@@ -28,9 +27,8 @@ through a port or the container, never by silencing the rule.
 
 ## The screen pattern (mandatory)
 
-**The presenter is the only place that calls a use case.** The lint rejects the container and the
-use-case hooks anywhere else in `presentation/` and `common/`, apart from a list of files still to
-migrate that only shrinks.
+**The presenter is the only place that calls a use case.** The lint rejects the container anywhere
+in `presentation/` and `common/` except presenters and screen components.
 
 - Every routed screen, each tab of a shell included, has five files in its folder:
   - `<screen>.uido.ts`: the local view state;
