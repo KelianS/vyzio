@@ -1,12 +1,12 @@
-import { ChangePassword } from '../../domain/usecases/ChangePassword'
-import { CreateOwnerAccount } from '../../domain/usecases/CreateOwnerAccount'
-import { GetAccessState } from '../../domain/usecases/GetAccessState'
-import { GetCurrentSession } from '../../domain/usecases/GetCurrentSession'
-import { SignIn } from '../../domain/usecases/SignIn'
-import { SignOut } from '../../domain/usecases/SignOut'
-import { SignOutEverywhere } from '../../domain/usecases/SignOutEverywhere'
-import type { AccessRepository } from '../../domain/ports/AccessRepository'
-import { onSessionLost } from '../http/sessionLost'
+import { ChangePassword } from '../../domain/usecases/change_password.use_case'
+import { CreateOwnerAccount } from '../../domain/usecases/create_owner_account.use_case'
+import { GetAccessState } from '../../domain/usecases/get_access_state.use_case'
+import { GetCurrentSession } from '../../domain/usecases/get_current_session.use_case'
+import { SignIn } from '../../domain/usecases/sign_in.use_case'
+import { SignOut } from '../../domain/usecases/sign_out.use_case'
+import { SignOutEverywhere } from '../../domain/usecases/sign_out_everywhere.use_case'
+import type { AccessRepository } from '../../domain/ports/access.port'
+import { onSessionLost } from '../http/session_lost'
 
 export interface AccessContainer {
   getAccessState: GetAccessState

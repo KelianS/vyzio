@@ -5,7 +5,7 @@ import {
   createFakeBackendState,
   makeFakeCamera,
   makeFakeDetectionEvent,
-} from './fixtures/fakeBackend'
+} from './fixtures/fake_backend'
 
 /**
  * WCAG 2.1 A/AA scan (axe-core) of every screen, populated with real content —

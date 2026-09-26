@@ -1,21 +1,21 @@
 import { getDashboardRuntime } from '../config/runtime'
-import { HttpAccessRepository } from '../repositories/HttpAccessRepository'
-import { HttpCameraRepository } from '../repositories/HttpCameraRepository'
+import { HttpAccessRepository } from '../repositories/access.repository'
+import { HttpCameraRepository } from '../repositories/camera.repository'
 import {
   HttpCameraLabelsRepository,
   HttpNotificationLabelsRepository,
-} from '../repositories/HttpDetectionLabelsRepository'
-import { HttpHubRepository } from '../repositories/HttpHubRepository'
-import { HttpNotificationSettingsRepository } from '../repositories/HttpNotificationSettingsRepository'
-import { HttpProfileRepository } from '../repositories/HttpProfileRepository'
-import { HttpRecordingSettingsRepository } from '../repositories/HttpRecordingSettingsRepository'
-import { HttpSystemRepository } from '../repositories/HttpSystemRepository'
+} from '../repositories/detection_labels.repository'
+import { HttpHubRepository } from '../repositories/hub.repository'
+import { HttpNotificationSettingsRepository } from '../repositories/notification_settings.repository'
+import { HttpProfileRepository } from '../repositories/profile.repository'
+import { HttpRecordingSettingsRepository } from '../repositories/recording_settings.repository'
+import { HttpSystemRepository } from '../repositories/system.repository'
 import { makeAccessContainer, type AccessContainer } from './access.container'
 import { makeCamerasContainer, type CamerasContainer } from './cameras.container'
 import {
   makeDetectionHistoryContainer,
   type DetectionHistoryContainer,
-} from './detectionHistory.container'
+} from './detection_history.container'
 import { makeHubContainer, type HubContainer } from './hub.container'
 import { makeNotificationsContainer, type NotificationsContainer } from './notifications.container'
 import { makeProfilesContainer, type ProfilesContainer } from './profiles.container'

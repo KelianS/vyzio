@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
+import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 // Restarting is the user's act (ADR-44): saving interrupts nothing, and the question is only asked on the way out.
 test.describe('Redémarrage de la surveillance', () => {

@@ -7,7 +7,7 @@ import {
   makeFakeCamera,
   makeFakeChannel,
   makeFakeDetectionEvent,
-} from '../../tests/e2e/fixtures/fakeBackend'
+} from '../../tests/e2e/fixtures/fake_backend'
 
 const OUT = path.resolve(import.meta.dirname, '../../../../docs/assets')
 

@@ -1,8 +1,8 @@
 import type { StateCreator } from 'zustand'
-import type { AppError } from '../../../common/errors/AppError'
-import { toAppError } from '../../../common/errors/toAppError'
-import type { Camera } from '../../../domain/entities/Camera'
-import type { GetCameras } from '../../../domain/usecases/GetCameras'
+import type { AppError } from '../../../common/errors/app_error'
+import { toAppError } from '../../../common/errors/to_app_error'
+import type { Camera } from '../../../domain/entities/camera.entity'
+import type { GetCameras } from '../../../domain/usecases/get_cameras.use_case'
 
 export interface CamerasSlice {
   cameras: Camera[]

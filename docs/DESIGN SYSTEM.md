@@ -125,7 +125,7 @@ The boundary between them is checkable: **a tooltip fits in two sentences**. Wha
 about the task rather than the field, and belongs down in the section panel, leaving the one sufficient
 sentence in the tooltip. A **cost** never moves down: it stays visible without a gesture.
 
-The panel is the `common/components/HelpPanel` component, never a rewritten `<details>`. Its header
+The panel is the `common/components/help_panel` component, never a rewritten `<details>`. Its header
 carries the **question** the reader is asking ("Ou trouver ces informations ?") rather than the words
 "En savoir plus", which say nothing about what will be found there; it opens on its own only where the
 task it explains is not yet done.

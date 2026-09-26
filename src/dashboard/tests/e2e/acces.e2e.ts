@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState, FAKE_PASSWORD } from './fixtures/fakeBackend'
+import { installFakeBackend, createFakeBackendState, FAKE_PASSWORD } from './fixtures/fake_backend'
 
 /**
  * The product's front door (ADR-54). These screens are the only ones seen without being in, so what

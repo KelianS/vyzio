@@ -2,7 +2,10 @@
 // motion, alerts/detections — never surface: the user is told what is kept, not which bucket holds
 // it (principes produit #1 et #2).
 
-import type { CameraRetention, DetectionConfigUpdate } from '../../domain/entities/DetectionConfig'
+import type {
+  CameraRetention,
+  DetectionConfigUpdate,
+} from '../../domain/entities/detection_config.entity'
 
 // Keyed to match CameraRetention, so a window indexes its values directly with no lookup table.
 export type RetentionWindow = keyof Omit<CameraRetention, 'maxDays' | 'minEventClipDays'>

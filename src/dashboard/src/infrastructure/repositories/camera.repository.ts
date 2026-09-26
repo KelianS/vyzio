@@ -1,0 +1,425 @@
+import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
+import { PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
+import type { CameraConfigurationApplyResult } from '../../domain/entities/camera_configuration_apply_result.entity'
+import type { CameraStatus } from '../../domain/entities/camera_status.entity'
+import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import type { VendorAssistance } from '../../domain/entities/vendor_assistance.entity'
+import type { CameraRepository } from '../../domain/ports/camera.port'
+import type { DiscoveryRequest } from '../../domain/ports/camera.port'
+import type { VendorAssistanceRequest } from '../../domain/ports/camera.port'
+import type {
+  CreatePrivacyScheduleInput,
+  UpdatePrivacyScheduleInput,
+} from '../../domain/ports/camera.port'
+import type { CameraPrivacySchedule } from '../../domain/entities/camera_privacy_schedule.entity'
+import type {
+  CameraCapabilityBinding,
+  Capability,
+  SupportedProtocol,
+} from '../../domain/entities/camera_capability_binding.entity'
+import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetch_json'
+import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
+import type { CameraImageSettings } from '../../domain/entities/camera_image_settings.entity'
+
+interface CameraDto {
+  id: string
+  slug: string
+  displayName: string
+  sourceType: string
+  host: string
+  port: number
+  username: string | null
+  streamPath: string | null
+  streamProtocol: string
+  status: string
+  validationState: string
+  isEnabled: boolean
+  previewAvailable: boolean
+  needsAttention: boolean
+  lastReachabilityCheckAt: string | null
+  lastSuccessfulFrameAt: string | null
+  frigateCameraName: string
+  vendorFamily: string | null
+  privacyModeActive: boolean
+  privacyModeSource: 'manual' | 'schedule' | null
+  privacyVendorCut: boolean
+  privacyMiss?: string | null
+  privacyMissDetail?: string | null
+  ptzSupported: boolean
+  privacyStrategy: string
+  supportedProtocols: string[]
+  verifiedCapabilities: string[]
+}
+
+interface CameraStatusDto {
+  cameraId: string
+  displayName: string
+  status: string
+  validationState: string
+  connected: boolean
+  previewAvailable: boolean
+  needsAttention: boolean
+  guidance: string | null
+  lastReachabilityCheckAt: string | null
+  lastSuccessfulFrameAt: string | null
+}
+
+interface DiscoveredCameraDto {
+  displayName: string
+  host: string
+  port: number
+  sourceType: string
+  streamPath: string | null
+  rtspActive: boolean
+  discoverySource: string
+  note: string | null
+  macAddress: string | null
+  isSupported: boolean
+  qualification: string
+  supportLevel: string
+  vendorFamily: string | null
+  qualificationReasons: string[]
+  vendorDocumentation?: VendorDocumentationDto | null
+  technicalDetails?: DiscoveryTechnicalDetailsDto | null
+}
+
+interface DetectedPortSignalDto {
+  protocol: string
+  label: string
+  port: number
+}
+
+interface DetectedCapabilityDto {
+  capability: string
+  label: string
+  protocolLabels: string[]
+}
+
+interface DiscoveryTechnicalDetailsDto {
+  resolvedHostName: string | null
+  detectedPorts: DetectedPortSignalDto[]
+  rtspPathsDetected: string[]
+  capabilities: DetectedCapabilityDto[]
+}
+
+interface VendorDocumentationDto {
+  vendorFamily: string
+  markdown: string
+}
+
+interface VendorAssistanceDto {
+  vendorFamily: string
+  markdown: string
+}
+
+interface DeleteCameraDto {
+  deleted: boolean
+  message: string
+  configPath: string
+}
+
+interface ApplyCameraConfigurationDto {
+  applied: boolean
+  message: string
+  configPath: string
+  cameraCount: number
+}
+
+export class HttpCameraRepository implements CameraRepository {
+  constructor(private readonly apiBaseUrl: string) {}
+
+  async getAll(): Promise<Camera[]> {
+    const payload = await fetchJson<CameraDto[]>(`${this.apiBaseUrl}/api/cameras`)
+    return payload.map(mapCamera)
+  }
+
+  async discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]> {
+    const payload = await postJson<DiscoveredCameraDto[]>(
+      `${this.apiBaseUrl}/api/cameras/discovery`,
+      input,
+    )
+    return payload.map(mapDiscoveredCamera)
+  }
+
+  async getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null> {
+    return postJson<VendorAssistanceDto | null>(
+      `${this.apiBaseUrl}/api/cameras/vendor-assistance`,
+      input,
+    )
+  }
+
+  async create(input: CameraDraftInput): Promise<Camera> {
+    const payload = await postJson<CameraDto>(`${this.apiBaseUrl}/api/cameras`, input)
+    return mapCamera(payload)
+  }
+
+  async update(cameraId: string, input: CameraDraftInput): Promise<Camera> {
+    const payload = await putJson<CameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`, input)
+    return mapCamera(payload)
+  }
+
+  async verifyDraft(input: CameraDraftInput): Promise<CameraStatus> {
+    const payload = await postJson<CameraStatusDto>(
+      `${this.apiBaseUrl}/api/cameras/verify-draft`,
+      input,
+    )
+    return mapCameraStatus(payload)
+  }
+
+  async verify(cameraId: string): Promise<CameraStatus> {
+    const payload = await postJson<CameraStatusDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/verify`,
+    )
+    return mapCameraStatus(payload)
+  }
+
+  async applyConfiguration(): Promise<CameraConfigurationApplyResult> {
+    return postJson<ApplyCameraConfigurationDto>(
+      `${this.apiBaseUrl}/api/cameras/apply-configuration`,
+    )
+  }
+
+  async delete(
+    cameraId: string,
+  ): Promise<{ deleted: boolean; message: string; configPath: string }> {
+    return deleteJson<DeleteCameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`)
+  }
+
+  async togglePrivacyMode(cameraId: string, active: boolean): Promise<Camera> {
+    const payload = await postJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/toggle`,
+      { active },
+    )
+    return mapCamera(payload)
+  }
+
+  async batchTogglePrivacyMode(cameraIds: string[], active: boolean): Promise<Camera[]> {
+    const payload = await postJson<CameraDto[]>(
+      `${this.apiBaseUrl}/api/cameras/privacy/batch-toggle`,
+      { cameraIds, active },
+    )
+    return payload.map(mapCamera)
+  }
+
+  async getPrivacySchedules(cameraId: string): Promise<CameraPrivacySchedule[]> {
+    return fetchJson<CameraPrivacySchedule[]>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules`,
+    )
+  }
+
+  async createPrivacySchedule(
+    cameraId: string,
+    input: CreatePrivacyScheduleInput,
+  ): Promise<CameraPrivacySchedule> {
+    return postJson<CameraPrivacySchedule>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules`,
+      input,
+    )
+  }
+
+  async updatePrivacySchedule(
+    cameraId: string,
+    scheduleId: string,
+    input: UpdatePrivacyScheduleInput,
+  ): Promise<CameraPrivacySchedule> {
+    return patchJson<CameraPrivacySchedule>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
+      input,
+    )
+  }
+
+  async deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void> {
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`)
+  }
+
+  async setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera> {
+    const payload = await patchJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy-strategy`,
+      { strategy },
+    )
+    return mapCamera(payload)
+  }
+
+  async ptzStep(cameraId: string, direction: string, speed: number): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/step`, {
+      direction,
+      speed,
+    })
+  }
+
+  async ptzGoToPreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/goto`, { presetId })
+  }
+
+  async getPtzPresets(cameraId: string): Promise<{
+    presets: PtzPreset[]
+    calibrated: boolean
+    currentPosition: { x: number; y: number } | null
+  }> {
+    return fetchJson<{
+      presets: PtzPreset[]
+      calibrated: boolean
+      currentPosition: { x: number; y: number } | null
+    }>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/presets`)
+  }
+
+  async ptzSaveCurrentAsPreset(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/preset/save`, { presetId })
+  }
+
+  async ptzCalibrate(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/calibrate`)
+  }
+
+  async capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/snapshot`,
+    )
+  }
+
+  async getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]> {
+    return fetchJson<CameraCapabilityBinding[]>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities`,
+    )
+  }
+
+  async configureCapability(
+    cameraId: string,
+    capability: Capability,
+    protocol: SupportedProtocol,
+    configJson?: string,
+  ): Promise<CameraCapabilityBinding> {
+    return putJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`,
+      { protocol, configJson: configJson ?? null },
+    )
+  }
+
+  async probeCapability(
+    cameraId: string,
+    capability: Capability,
+  ): Promise<CameraCapabilityBinding> {
+    return postJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/probe`,
+    )
+  }
+
+  async removeCapability(cameraId: string, capability: Capability): Promise<void> {
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`)
+  }
+
+  async setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding> {
+    return putJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/ptz/pan-inverted`,
+      { inverted },
+    )
+  }
+
+  async detectCapabilities(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
+  }
+
+  async getImageSettings(cameraId: string): Promise<CameraImageSettings> {
+    return fetchJson<CameraImageSettings>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`,
+    )
+  }
+
+  async setImageSettings(
+    cameraId: string,
+    settings: CameraImageSettings,
+  ): Promise<CameraImageSettings> {
+    return putJson<CameraImageSettings>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`,
+      settings,
+    )
+  }
+}
+
+const PRIVACY_MISSES: readonly string[] = Object.values(PrivacyMiss)
+
+// A value this build does not know claims nothing rather than reaching a switch that has no case for it.
+function privacyMissOf(value: string | null | undefined): PrivacyMiss | null {
+  return value && PRIVACY_MISSES.includes(value) ? (value as PrivacyMiss) : null
+}
+
+function mapCamera(camera: CameraDto): Camera {
+  return {
+    id: camera.id,
+    slug: camera.slug,
+    displayName: camera.displayName,
+    sourceType: camera.sourceType,
+    host: camera.host,
+    port: camera.port,
+    username: camera.username,
+    streamPath: camera.streamPath,
+    streamProtocol: camera.streamProtocol ?? 'rtsp',
+    status: camera.status,
+    validationState: camera.validationState,
+    isEnabled: camera.isEnabled,
+    previewAvailable: camera.previewAvailable,
+    needsAttention: camera.needsAttention,
+    lastReachabilityCheckAt: camera.lastReachabilityCheckAt,
+    lastSuccessfulFrameAt: camera.lastSuccessfulFrameAt,
+    frigateCameraName: camera.frigateCameraName,
+    vendorFamily: camera.vendorFamily,
+    privacyModeActive: camera.privacyModeActive ?? false,
+    privacyModeSource: camera.privacyModeSource ?? null,
+    privacyVendorCut: camera.privacyVendorCut ?? false,
+    privacyMiss: privacyMissOf(camera.privacyMiss),
+    privacyMissDetail: camera.privacyMissDetail ?? null,
+    ptzSupported: camera.ptzSupported ?? false,
+    privacyStrategy: (camera.privacyStrategy || 'none') as Camera['privacyStrategy'],
+    supportedProtocols: camera.supportedProtocols ?? [],
+    verifiedCapabilities: camera.verifiedCapabilities ?? [],
+    connected: camera.status === 'online',
+  }
+}
+
+function mapCameraStatus(status: CameraStatusDto): CameraStatus {
+  return {
+    cameraId: status.cameraId,
+    displayName: status.displayName,
+    status: status.status,
+    validationState: status.validationState,
+    connected: status.connected,
+    previewAvailable: status.previewAvailable,
+    needsAttention: status.needsAttention,
+    guidance: status.guidance,
+    lastReachabilityCheckAt: status.lastReachabilityCheckAt,
+    lastSuccessfulFrameAt: status.lastSuccessfulFrameAt,
+  }
+}
+
+function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
+  return {
+    displayName: camera.displayName,
+    host: camera.host,
+    port: camera.port,
+    sourceType: camera.sourceType,
+    streamPath: camera.streamPath,
+    rtspActive: camera.rtspActive,
+    discoverySource: camera.discoverySource,
+    note: camera.note,
+    macAddress: camera.macAddress,
+    isSupported: camera.isSupported,
+    qualification: camera.qualification,
+    supportLevel: camera.supportLevel,
+    vendorFamily: camera.vendorFamily,
+    qualificationReasons: camera.qualificationReasons,
+    vendorDocumentation: camera.vendorDocumentation
+      ? {
+          vendorFamily: camera.vendorDocumentation.vendorFamily,
+          markdown: camera.vendorDocumentation.markdown,
+        }
+      : null,
+    technicalDetails: camera.technicalDetails
+      ? {
+          resolvedHostName: camera.technicalDetails.resolvedHostName,
+          detectedPorts: camera.technicalDetails.detectedPorts,
+          rtspPathsDetected: camera.technicalDetails.rtspPathsDetected,
+          capabilities: camera.technicalDetails.capabilities,
+        }
+      : null,
+  }
+}

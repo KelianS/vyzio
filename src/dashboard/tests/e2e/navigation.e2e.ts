@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fakeBackend'
+import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 test.describe('Navigation', () => {
   test('user_When visiting the app_Should reach every screen from the header without errors', async ({

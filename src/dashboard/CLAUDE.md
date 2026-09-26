@@ -49,9 +49,11 @@ migrate that only shrinks.
 
 ## Naming
 
-- **Every file name is snake_case**, suffixed by its role: `hub.presenter.ts`,
-  `camera_list.component.tsx`, `camera.repository.ts`. The exported React component keeps its
-  PascalCase identifier. Vendored primitives under `common/ui/` keep their generated names.
+- **Every file and folder name is snake_case**, suffixed by its role: `hub.presenter.ts`,
+  `camera_list.component.tsx`, `camera.repository.ts`, and in domain `camera.entity.ts`,
+  `camera.port.ts`, `create_camera.use_case.ts`. The exported identifier keeps its PascalCase or
+  camelCase. Vendored primitives under `common/ui/` keep their generated names; the lint rejects any
+  other exception.
 - Words follow the layer: the user's action in presentation (`onTogglePrivacy`), the business verb in
   domain (`setPrivacyMode`).
 

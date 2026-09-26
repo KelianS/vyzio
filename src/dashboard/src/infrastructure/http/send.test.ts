@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NetworkError } from './HttpError'
+import { NetworkError } from './http_error'
 import { httpErrorFrom, send } from './send'
 
 function answer(

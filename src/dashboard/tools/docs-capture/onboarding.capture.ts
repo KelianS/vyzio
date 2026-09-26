@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { expect, test, type Locator } from '@playwright/test'
-import { createFakeBackendState, installFakeBackend } from '../../tests/e2e/fixtures/fakeBackend'
+import { createFakeBackendState, installFakeBackend } from '../../tests/e2e/fixtures/fake_backend'
 
 const OUT = path.resolve(import.meta.dirname, '../../../../docs/assets')
 
