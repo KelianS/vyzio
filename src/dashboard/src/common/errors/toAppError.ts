@@ -7,6 +7,10 @@ const DIAGNOSTIC_LENGTH = 500
 // A refusal whose code is known reads as what to do; any other keeps the generic sentence.
 const KNOWN_REFUSALS = new Map<string, string>([
   [ApiErrorCode.NotCalibrated, 'Cette caméra doit d’abord être calibrée'],
+  [
+    ApiErrorCode.ParkingPositionsMissing,
+    'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
+  ],
 ])
 
 // A camera's own answer is named by its code, never by a status a proxy in between also sends.

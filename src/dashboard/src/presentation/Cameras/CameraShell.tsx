@@ -3,6 +3,8 @@ import { ChevronLeft } from 'lucide-react'
 import { cn } from '../../common/ui/utils'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import { SettingsPage } from '../../common/settings/SettingsPage'
+import { ReadFailure } from '../../common/components/ErrorMessage'
+import { useReloadCameraList } from './cameraListRead'
 import { formatCameraAddress, formatCameraStatusLabel } from './cameras.formatters'
 
 /**
@@ -23,6 +25,24 @@ const CAMERA_PAGES = [
 export function CameraShell() {
   const { cameraId } = useParams()
   const camera = useRootStore((state) => state.cameras.find((entry) => entry.id === cameraId))
+  const loading = useRootStore((state) => state.camerasLoading)
+  const error = useRootStore((state) => state.camerasError)
+  const reload = useReloadCameraList()
+
+  if (!camera && loading) return <SettingsPage>Chargement…</SettingsPage>
+
+  // An unread list says nothing about this camera: "not found" would be a false answer.
+  if (!camera && error) {
+    return (
+      <SettingsPage>
+        <h1 className="font-serif text-3xl">Cette caméra ne s’affiche pas</h1>
+        <ReadFailure error={error} onRetry={reload} className="mt-3" />
+        <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">
+          Revenir à la liste des caméras
+        </Link>
+      </SettingsPage>
+    )
+  }
 
   if (!camera) {
     return (

@@ -7,6 +7,9 @@ namespace Vyzio.Core.Entities;
 // Branch B (Vyzio-managed): native=false, steps_x/y set, native_token null.
 public sealed class PtzPreset
 {
+    public const int SurveillanceSlot = 1;
+    public const int ParkingSlot = 2;
+
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string CameraId { get; set; } = string.Empty;
     public int PresetId { get; set; }
@@ -18,8 +21,8 @@ public sealed class PtzPreset
 
     public static string DefaultLabel(int presetId) => presetId switch
     {
-        1 => "Surveillance",
-        2 => "Parking",
+        SurveillanceSlot => "Surveillance",
+        ParkingSlot => "Parking",
         _ => $"Position {presetId}",
     };
 }

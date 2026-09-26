@@ -17,7 +17,7 @@ Ce dossier est la **source unique** pour tout ce qui concerne le support d'une m
 
 > **« Coupure matérielle »** : Vyzio commande l'API locale du constructeur. Le capteur ou le cache physique est désactivé, signal non falsifiable.
 >
-> **« PTZ parking »** : Vyzio commande physiquement la rotation de la caméra vers une butée mécanique, et désactive simultanément l'enregistrement. Double protection : la caméra ne voit plus rien ET Vyzio n'enregistre plus.
+> **« PTZ parking »** : Vyzio commande physiquement la rotation de la caméra vers sa position Parking enregistrée, et désactive simultanément l'enregistrement ; à la fin, il la ramène sur sa position Surveillance (ADR-57). Double protection : la caméra ne voit plus rien ET Vyzio n'enregistre plus.
 
 La colonne « vie privée » dit ce que la marque rend **atteignable**, pas ce qui est appliqué. La
 stratégie effective est un réglage par caméra (`Camera.PrivacyStrategy`, `SoftwareBlur` par défaut),

@@ -211,6 +211,9 @@ An error reads at two levels ([SPECS](SPECS.md) 1.5).
   sentence.
 - **A toast carrying a diagnostic line stays until it is dismissed**, long enough to be read and
   photographed. Any other toast closes by itself, and the same failure raised twice shows once.
+- **A read that fails shows where its data would have been**, with `Réessayer`, never an empty or
+  welcome state that passes for a real answer. When it fails under data already shown, the data stays
+  and the failure goes to a toast.
 
 ### Cross-cutting bans
 

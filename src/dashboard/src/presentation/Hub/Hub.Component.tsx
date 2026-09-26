@@ -2,7 +2,7 @@ import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { TriangleAlert } from 'lucide-react'
 import type { AppError } from '../../common/errors/AppError'
-import { ErrorMessage } from '../../common/components/ErrorMessage'
+import { ErrorMessage, ReadFailure } from '../../common/components/ErrorMessage'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
@@ -19,6 +19,7 @@ import type { SystemStats } from '../../domain/entities/SystemStats'
 import { DetectionList } from '../../common/detection/DetectionList'
 import { formatEventTime } from '../../common/detection/detectionFormatters'
 import { SystemMonitorPanel } from './SystemMonitorPanel'
+import { useReloadCameraList } from '../Cameras/cameraListRead'
 import { buildHubPresenter } from './Hub.Presenter'
 import { hubReducer } from './Hub.Reducer'
 import { buildInitialHubUido } from './Hub.Uido'
@@ -44,6 +45,7 @@ export function HubView() {
 
   const cameras = useRootStore((s) => s.cameras)
   const camerasLoading = useRootStore((s) => s.camerasLoading)
+  const camerasError = useRootStore((s) => s.camerasError)
   const systemStats = useRootStore((s) => s.systemStats)
 
   const [modalMedia, setModalMedia] = useState<ModalMedia | null>(null)
@@ -54,6 +56,8 @@ export function HubView() {
 
   if (uido.loading || camerasLoading) return <HubLoading />
   if (uido.error || !uido.data?.systemHealthy) return <HubUnreachable error={uido.error} />
+  // An unread list is not an empty one: onboarding would invite adding cameras that exist.
+  if (camerasError && cameras.length === 0) return <HubCamerasUnread error={camerasError} />
   if (cameras.length === 0) return <HubWelcome />
 
   return (
@@ -154,6 +158,20 @@ function HubUnreachable({ error }: { error: AppError | null }) {
             {error && <ErrorMessage error={error} className="mt-4" />}
           </div>
         </div>
+      </Card>
+    </main>
+  )
+}
+
+/** The camera list could not be read: why is in the error, and retrying is the one thing to do. */
+function HubCamerasUnread({ error }: { error: AppError }) {
+  const reload = useReloadCameraList()
+  return (
+    <main className="py-4">
+      <Card>
+        <h1 className="font-serif text-3xl">Vos caméras ne s’affichent pas</h1>
+        <p className="mt-1 text-muted-foreground">La liste de vos caméras n’a pas pu être lue.</p>
+        <ReadFailure error={error} onRetry={reload} className="mt-4" />
       </Card>
     </main>
   )

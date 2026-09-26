@@ -30,11 +30,11 @@ references these ADRs rather than copying them.
 | [ADR-18](0018-continuous-recording-enabled-per-camera-in-the-generated-frigate-config.md) | Continuous recording: enabled per camera in the generated Frigate config | Superseded by ADR-39 (retention, activation) |
 | [ADR-19](0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md) | dvrip/XMEye protocol: go2rtc as a fallback gateway, transparent to Frigate | Accepted |
 | [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md) | Privacy mode: vendor API first, Frigate `enabled: false` fallback, `IVendorCameraAdapter` as the shared building block | Accepted |
-| [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) | PTZ parking and a generic ONVIF adapter: a layered strategy for privacy mode | Accepted, amended by ADR-56 |
+| [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) | PTZ parking and a generic ONVIF adapter: a layered strategy for privacy mode | Accepted, amended by ADR-56 and ADR-57 |
 | [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md) | Camera capability catalogue: brand/protocol decoupling, vendor presets and manual onboarding | Accepted, amended by ADR-56 |
 | [ADR-23](0023-camera-reachability-monitoring-periodic-tcp-polling-independent-of-frigate.md) | Camera reachability monitoring: periodic TCP polling, independent of Frigate | Accepted |
-| [ADR-24](0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md) | Protocol layer separated from capability layer: `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy` | Accepted |
-| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Accepted |
+| [ADR-24](0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md) | Protocol layer separated from capability layer: `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy` | Accepted, amended by ADR-57 |
+| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Accepted, amended by ADR-57 |
 | [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) | PTZ position thumbnails: client-triggered capture, file storage, direct serving | Accepted |
 | [ADR-27](0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md) | Advanced image settings: the `ImageSettings` capability, ONVIF Imaging Service, values not persisted | Accepted, amended by ADR-56 |
 | [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) | Cascading multi-protocol capability detection + the `ManuallyConfigured` flag | Accepted |
@@ -66,3 +66,4 @@ references these ADRs rather than copying them.
 | [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted |
 | [ADR-55](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |
+| [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) | Privacy parking goes to the Parking slot, and back to Surveillance | Accepted |

@@ -3,7 +3,6 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import { AppHeader } from './common/components/AppHeader'
 import { ToastProvider } from './common/components/Toast'
 import { useSystemStatsPolling } from './infrastructure/store/useSystemStatsPolling'
-import { useRootStore } from './infrastructure/store/rootStore'
 import {
   AppContainerProvider,
   useAppContainer,
@@ -12,6 +11,10 @@ import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/Settings/settings.ru
 import { RestartSurveillanceTrigger } from './presentation/Surveillance/RestartSurveillanceTrigger'
 import { NavigationGuard } from './presentation/Navigation/NavigationGuard'
 import { AccessGate } from './presentation/Access/AccessGate'
+import {
+  useCameraListFailureToast,
+  useReloadCameraList,
+} from './presentation/Cameras/cameraListRead'
 
 const HubView = lazy(() =>
   import('./presentation/Hub/Hub.Component').then((m) => ({ default: m.HubView })),
@@ -107,15 +110,17 @@ const ExpertView = lazy(() =>
 )
 
 function AppShell() {
-  const { hub, cameras } = useAppContainer()
+  const { hub } = useAppContainer()
+  const loadCameras = useReloadCameraList()
   useSystemStatsPolling(hub.getSystemStats)
+  useCameraListFailureToast()
 
   // The camera catalogue is state shared between screens, so it loads here rather
   // than in whichever screen happened to need it first. Without that, opening the
   // camera list directly would show it empty.
   useEffect(() => {
-    void useRootStore.getState().loadCameras(cameras.getCameras)
-  }, [cameras.getCameras])
+    loadCameras()
+  }, [loadCameras])
 
   return (
     <div className="grid min-w-0 max-w-full gap-6 pt-5 *:min-w-0">

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
@@ -7,6 +8,13 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record PtzMoveRequest(string Direction, int Speed = 50);
+
+// Thrown when ptz_parking is chosen before both of its positions are saved (ADR-57).
+public sealed class ParkingPositionsMissingException : InvalidOperationException
+{
+    public ParkingPositionsMissingException()
+        : base("Save the camera's Surveillance (preset 1) and Parking (preset 2) positions before choosing ptz_parking.") { }
+}
 
 // Thrown by PtzSavePresetUseCase when Branch B position tracking has not been calibrated
 // (PtzCalibrateUseCase not yet called this session).
@@ -92,6 +100,15 @@ public sealed class PtzSavePresetUseCase(
         if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
         {
             await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
+            // Held by the camera under the slot's token; the row lets Vyzio know the slot is saved (ADR-57).
+            await presets.UpsertAsync(new PtzPreset
+            {
+                CameraId = cameraId,
+                PresetId = presetId,
+                Label = PtzPreset.DefaultLabel(presetId),
+                Native = true,
+                NativeToken = presetId.ToString(CultureInfo.InvariantCulture),
+            }, ct);
         }
         else
         {
@@ -128,8 +145,23 @@ public sealed class PtzGoToPresetUseCase(
 
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        var provider = registry.ResolvePtz(binding.Protocol);
+        return await PtzPresetMove.GoToAsync(camera, binding, registry.ResolvePtz(binding.Protocol), presets, presetId, ct);
+    }
+}
 
+// One way to reach a saved position, whether the camera keeps it or Vyzio does (ADR-25).
+internal static class PtzPresetMove
+{
+    // False when Vyzio keeps the positions and this one was never saved.
+    public static async Task<bool> GoToAsync(
+        Camera camera,
+        CameraCapabilityBinding binding,
+        IPtzCapabilityProvider provider,
+        IPtzPresetRepository presets,
+        int presetId,
+        CancellationToken ct)
+    {
+        var cameraId = camera.Id;
         if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
         {
             await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
@@ -233,7 +265,7 @@ public sealed class PtzCalibrateUseCase(
 
 public sealed record SetPrivacyStrategyRequest(string Strategy);
 
-public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)
+public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, IPtzPresetRepository presets)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, SetPrivacyStrategyRequest request, CancellationToken ct = default)
     {
@@ -242,6 +274,13 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras)
 
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
+
+        // Parking promises a move there and back; both ends must be saved (ADR-57).
+        if (strategy == PrivacyStrategy.PtzParking
+            && camera.PrivacyStrategy != PrivacyStrategy.PtzParking
+            && (await presets.GetAsync(cameraId, PtzPreset.ParkingSlot, ct) is null
+                || await presets.GetAsync(cameraId, PtzPreset.SurveillanceSlot, ct) is null))
+            throw new ParkingPositionsMissingException();
 
         camera.PrivacyStrategy = strategy;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
