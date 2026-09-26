@@ -5,9 +5,6 @@ interface FakeAnswer {
   readonly body?: unknown
 }
 
-/** A fixed answer, or one computed from the body the screen sent. */
-type FakeRoute = FakeAnswer | ((body: unknown) => FakeAnswer)
-
 interface SentRequest {
   readonly route: string
   readonly query: string
@@ -19,6 +16,7 @@ function parsed(body: BodyInit | null | undefined): unknown {
   try {
     return JSON.parse(body)
   } catch {
+    // A body that is not JSON stays readable as sent, rather than failing inside the fake.
     return body
   }
 }
@@ -35,7 +33,7 @@ export function failure(status: number, error?: string, message?: string): FakeA
  * Replaces `fetch` for one test: each route is `"METHOD /path"`, the query string ignored. A route
  * nobody declared answers 501 and names itself, so a missing fake reads as such in the failure.
  */
-export function fakeNetwork(routes: Record<string, FakeRoute>) {
+export function fakeNetwork(routes: Record<string, FakeAnswer>) {
   const table = new Map(Object.entries(routes))
   const sent: SentRequest[] = []
 
@@ -47,13 +45,7 @@ export function fakeNetwork(routes: Record<string, FakeRoute>) {
       const body = parsed(init.body)
       sent.push({ route, query: url.search, body })
 
-      const handler = table.get(route)
-      const answer: FakeAnswer =
-        handler === undefined
-          ? failure(501, 'no_fake', `no fake answer for ${route}`)
-          : typeof handler === 'function'
-            ? handler(body)
-            : handler
+      const answer = table.get(route) ?? failure(501, 'no_fake', `no fake answer for ${route}`)
       const status = answer.status ?? 200
       return new Response(answer.body === undefined ? null : JSON.stringify(answer.body), {
         status,
@@ -66,8 +58,8 @@ export function fakeNetwork(routes: Record<string, FakeRoute>) {
     /** What the screen sent, in order. */
     sent,
     /** Changes one route's answer from now on, as the backend would after a write. */
-    answer(route: string, handler: FakeRoute) {
-      table.set(route, handler)
+    answer(route: string, answer: FakeAnswer) {
+      table.set(route, answer)
     },
   }
 }
