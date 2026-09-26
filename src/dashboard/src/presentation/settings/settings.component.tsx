@@ -58,9 +58,7 @@ export function SettingsView() {
                       active && 'bg-muted font-semibold',
                     )}
                   >
-                    {/* Deux niveaux distingues par trois signaux a la fois —
-                        taille, graisse et couleur. Un seul ne suffit pas :
-                        c'est ce qui rendait les deux lignes indistinctes. */}
+                    {/* Size, weight and colour together: one signal alone left the two lines alike. */}
                     <span className="min-w-0">
                       <span className="block font-medium">{rubric.label}</span>
                       <span className="block text-sm text-muted-foreground">{rubric.summary}</span>

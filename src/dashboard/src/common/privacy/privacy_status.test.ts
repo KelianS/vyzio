@@ -103,6 +103,54 @@ describe('privacyMissSentence', () => {
     expect(sentence).toMatch(/^La caméra n’est pas revenue sur sa position Surveillance/)
   })
 
+  it('privacyMissSentence_ShouldSayTheCameraDidNotComeBack_WhenNoSurveillancePositionIsSaved', () => {
+    // Arrange & Act
+    const sentence = privacyMissSentence({
+      ...parked,
+      privacyModeActive: false,
+      privacyMiss: PrivacyMiss.PositionMissing,
+    })
+
+    // Assert
+    expect(sentence).toBe(
+      'Aucune position Surveillance n’est enregistrée : la caméra n’est pas revenue. Enregistrez-la dans « Image et pilotage ».',
+    )
+  })
+
+  it('privacyMissSentence_ShouldSayTheCameraMayStillFilm_WhenItRefusedTheParkingMove', () => {
+    // Arrange & Act
+    const sentence = privacyMissSentence({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })
+
+    // Assert
+    expect(sentence).toBe(
+      'La caméra ne s’est pas tournée vers sa position Parking : elle filme peut-être encore, mais Vyzio n’enregistre plus rien. Vérifiez qu’elle est allumée et connectée.',
+    )
+  })
+
+  it('privacyMissSentence_ShouldSayRecordingIsCutButTheMoveIsUnknown_WhenTheCutWasInterrupted', () => {
+    // Arrange & Act
+    const sentence = privacyMissSentence({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })
+
+    // Assert
+    expect(sentence).toBe(
+      'La demande a été interrompue avant la réponse de la caméra : Vyzio ne sait pas si elle a suivi. L’enregistrement est bien coupé.',
+    )
+  })
+
+  it('privacyMissSentence_ShouldSayRecordingResumedButTheReturnIsUnknown_WhenTheResumeWasInterrupted', () => {
+    // Arrange & Act
+    const sentence = privacyMissSentence({
+      ...parked,
+      privacyModeActive: false,
+      privacyMiss: PrivacyMiss.Unconfirmed,
+    })
+
+    // Assert
+    expect(sentence).toBe(
+      'La demande a été interrompue avant la réponse de la caméra : Vyzio ne sait pas si elle est revenue sur sa position Surveillance. L’enregistrement a repris.',
+    )
+  })
+
   it('privacyMissSentence_ShouldNameTheLens_WhenTheHardwareCutIsNotVerified', () => {
     // Arrange & Act
     const sentence = privacyMissSentence({

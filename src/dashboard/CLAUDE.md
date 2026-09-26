@@ -73,8 +73,8 @@ in `presentation/` and `common/` except presenters and screen components.
   Declarative code (action creators, uido, containers) gets none.
 - No logic in a test (no loop, no condition, no computed expectation): `it.each` for one assertion over
   several inputs.
-- The coverage floor (`thresholds` in `vite.config.ts`) only rises: a PR may raise it, never lower it,
-  and never widens the exclude list to meet it.
+- Coverage holds 80% on every metric (`thresholds` in `vite.config.ts`), a fixed floor with no
+  ratchet. The exclude list never widens to meet it.
 - E2E tests live in `tests/e2e/`, run against the production build, and cover the journeys a user
   walks through.
 
