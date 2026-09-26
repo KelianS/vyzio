@@ -1,3 +1,4 @@
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
@@ -18,13 +19,13 @@ public sealed record CameraStatusDto(
     {
         var connected = string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase);
         var previewAvailable = camera.LastSuccessfulFrameAt.HasValue;
-        var needsAttention = !connected || !camera.IsEnabled || string.Equals(camera.ValidationState, "draft", StringComparison.OrdinalIgnoreCase);
+        var needsAttention = !connected || !camera.IsEnabled || camera.ValidationState == CameraValidationState.Draft;
 
         return new CameraStatusDto(
             camera.Id,
             camera.DisplayName,
             camera.Status,
-            camera.ValidationState,
+            SnakeCaseEnum.ToSnakeCase(camera.ValidationState),
             connected,
             previewAvailable,
             needsAttention,
@@ -35,12 +36,12 @@ public sealed record CameraStatusDto(
 
     private static string? BuildGuidance(Camera camera, bool connected, bool previewAvailable)
     {
-        if (string.Equals(camera.ValidationState, "pending_removal", StringComparison.OrdinalIgnoreCase))
+        if (camera.ValidationState == CameraValidationState.PendingRemoval)
         {
             return "Suppression en attente. Appliquez la configuration pour finaliser le retrait dans Frigate.";
         }
 
-        if (string.Equals(camera.ValidationState, "draft", StringComparison.OrdinalIgnoreCase))
+        if (camera.ValidationState == CameraValidationState.Draft)
         {
             if (string.IsNullOrWhiteSpace(camera.StreamPath))
             {

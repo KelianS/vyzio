@@ -33,7 +33,7 @@ public class SaveCameraDetectionConfigUseCaseTests
             Host = "192.168.1.10",
             Port = 554,
             IsEnabled = true,
-            ValidationState = "validated",
+            ValidationState = CameraValidationState.Validated,
             FrigateCameraName = "front_door",
             MotionSensitivity = sensitivity,
             MotionSensitivityPinned = pinned,

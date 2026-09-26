@@ -32,7 +32,7 @@ public class GetSystemStatsUseCaseTests
         Assert.True(result.PendingChanges);
     }
 
-    private static Camera MakeCamera(bool isEnabled = true, string validationState = "validated") => new()
+    private static Camera MakeCamera(bool isEnabled = true, CameraValidationState validationState = CameraValidationState.Validated) => new()
     {
         Slug = "front-door",
         FrigateCameraName = "front_door",
@@ -79,7 +79,7 @@ public class GetSystemStatsUseCaseTests
         [
             MakeCamera(),
             MakeCamera(isEnabled: false),
-            MakeCamera(validationState: "pending"),
+            MakeCamera(validationState: CameraValidationState.Draft),
         ]);
         _detectorPlanner.Plan(1).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 4, FrigateHwAccel.None));
         _statsProvider.TryGetStatsAsync(Arg.Any<CancellationToken>()).Returns(new FrigateStats(null, []));

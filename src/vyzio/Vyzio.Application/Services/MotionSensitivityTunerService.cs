@@ -82,7 +82,7 @@ internal sealed class MotionSensitivityTunerService(
 
             var eligible = camera.IsEnabled
                 && !camera.PrivacyModeActive
-                && string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase);
+                && camera.ValidationState == CameraValidationState.Validated;
 
             if (!eligible || camera.MotionSensitivityPinned)
             {

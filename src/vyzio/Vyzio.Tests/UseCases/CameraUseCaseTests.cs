@@ -32,7 +32,7 @@ public class GetCamerasUseCaseTests
                 Host = "192.168.1.10",
                 Port = 554,
                 Status = "online",
-                ValidationState = "validated",
+                ValidationState = CameraValidationState.Validated,
                 IsEnabled = true,
                 LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture)
             }
@@ -53,7 +53,7 @@ public class GetCamerasUseCaseTests
         var cameraId = "cam-1";
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new Camera { Id = cameraId, Slug = "garage", FrigateCameraName = "garage", DisplayName = "Garage", Host = "192.168.1.11", Port = 554, Status = "online", ValidationState = "validated", IsEnabled = true }
+            new Camera { Id = cameraId, Slug = "garage", FrigateCameraName = "garage", DisplayName = "Garage", Host = "192.168.1.11", Port = 554, Status = "online", ValidationState = CameraValidationState.Validated, IsEnabled = true }
         ]);
         _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -85,7 +85,7 @@ public class GetCameraStatusUseCaseTests
             DisplayName = "Garage",
             Host = "192.168.1.11",
             Port = 554,
-            ValidationState = "draft",
+            ValidationState = CameraValidationState.Draft,
             Status = "needs_attention"
         };
 
@@ -238,7 +238,7 @@ public class CreateCameraUseCaseTests
         await _repo.Received(1).AddAsync(Arg.Is<Camera>(camera =>
             camera.DisplayName == "Front Door"
             && camera.VendorFamily == VendorFamily.TplinkTapo
-            && camera.ValidationState == "draft"
+            && camera.ValidationState == CameraValidationState.Draft
             && camera.IsEnabled == false), Arg.Any<CancellationToken>());
     }
 
@@ -462,7 +462,7 @@ public class VerifyDraftCameraUseCaseTests
             camera.DisplayName == "Front Door"
             && camera.Host == "192.168.1.10"
             && camera.StreamPath == "/Streaming/Channels/101"
-            && camera.ValidationState == "draft"), Arg.Any<CancellationToken>());
+            && camera.ValidationState == CameraValidationState.Draft), Arg.Any<CancellationToken>());
     }
 }
 
@@ -486,7 +486,7 @@ public class ApplyCameraUseCaseTests
             Host = "192.168.1.10",
             Port = 554,
             Status = "offline",
-            ValidationState = "draft",
+            ValidationState = CameraValidationState.Draft,
         };
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
@@ -510,7 +510,7 @@ public class ApplyCameraUseCaseTests
             Host = "192.168.1.10",
             Port = 554,
             Status = "online",
-            ValidationState = "draft",
+            ValidationState = CameraValidationState.Draft,
         };
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
@@ -521,7 +521,7 @@ public class ApplyCameraUseCaseTests
 
         Assert.NotNull(result);
         Assert.True(result!.Applied);
-        await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated => updated.ValidationState == "validated" && updated.IsEnabled), Arg.Any<CancellationToken>());
+        await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated => updated.ValidationState == CameraValidationState.Validated && updated.IsEnabled), Arg.Any<CancellationToken>());
     }
 }
 
@@ -547,7 +547,7 @@ public class DeleteCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            ValidationState = "validated",
+            ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
         };
 
@@ -558,7 +558,7 @@ public class DeleteCameraUseCaseTests
         Assert.NotNull(result);
         Assert.True(result!.Deleted);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
-            updated.ValidationState == "pending_removal"
+            updated.ValidationState == CameraValidationState.PendingRemoval
             && updated.IsEnabled == false), Arg.Any<CancellationToken>());
     }
 }
@@ -588,7 +588,7 @@ public class UpdateCameraUseCaseTests
             Port = 554,
             StreamPath = "/Streaming/Channels/101",
             Status = "online",
-            ValidationState = "validated",
+            ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
             SourceType = "rtsp_manual",
         };
@@ -608,7 +608,7 @@ public class UpdateCameraUseCaseTests
         Assert.Equal("Entry", result!.DisplayName);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
             updated.DisplayName == "Entry"
-            && updated.ValidationState == "validated"
+            && updated.ValidationState == CameraValidationState.Validated
             && updated.IsEnabled), Arg.Any<CancellationToken>());
     }
 
@@ -625,7 +625,7 @@ public class UpdateCameraUseCaseTests
             Port = 554,
             StreamPath = "/Streaming/Channels/101",
             Status = "online",
-            ValidationState = "validated",
+            ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
             SourceType = "rtsp_manual",
         };
@@ -644,7 +644,7 @@ public class UpdateCameraUseCaseTests
         Assert.NotNull(result);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
             updated.StreamPath == "/Streaming/Channels/102"
-            && updated.ValidationState == "draft"
+            && updated.ValidationState == CameraValidationState.Draft
             && updated.IsEnabled == false
             && updated.Status == "needs_attention"), Arg.Any<CancellationToken>());
     }
@@ -670,7 +670,7 @@ public class ApplyCameraConfigurationUseCaseTests
             Host = "192.168.1.10",
             Port = 554,
             Status = "online",
-            ValidationState = "draft",
+            ValidationState = CameraValidationState.Draft,
         };
 
         var validated = new Camera
@@ -682,7 +682,7 @@ public class ApplyCameraConfigurationUseCaseTests
             Host = "192.168.1.11",
             Port = 554,
             Status = "offline",
-            ValidationState = "validated",
+            ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
         };
 
@@ -694,6 +694,6 @@ public class ApplyCameraConfigurationUseCaseTests
 
         Assert.True(result.Applied);
         Assert.Equal(2, result.CameraCount);
-        await _repo.Received(2).UpdateAsync(Arg.Is<Camera>(camera => camera.ValidationState == "validated" && camera.IsEnabled), Arg.Any<CancellationToken>());
+        await _repo.Received(2).UpdateAsync(Arg.Is<Camera>(camera => camera.ValidationState == CameraValidationState.Validated && camera.IsEnabled), Arg.Any<CancellationToken>());
     }
 }

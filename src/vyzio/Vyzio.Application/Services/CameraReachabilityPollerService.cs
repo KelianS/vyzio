@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.Services;
@@ -44,7 +45,7 @@ internal sealed class CameraReachabilityPollerService(
         var cameras = scope.ServiceProvider.GetRequiredService<ICameraRepository>();
 
         var all = await cameras.GetAllAsync(ct);
-        var toProbe = all.Where(c => c.ValidationState == "validated").ToList();
+        var toProbe = all.Where(c => c.ValidationState == CameraValidationState.Validated).ToList();
 
         foreach (var camera in toProbe)
         {

@@ -372,7 +372,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             Host = "192.168.1.10",
             Port = 554,
             Status = "online",
-            ValidationState = "validated",
+            ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
             LastReachabilityCheckAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture),
             LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:01:00+00:00", CultureInfo.InvariantCulture),

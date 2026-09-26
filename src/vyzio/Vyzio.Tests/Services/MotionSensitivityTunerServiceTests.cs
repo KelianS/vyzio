@@ -46,7 +46,7 @@ public class MotionSensitivityTunerServiceTests
         Port = 554,
         FrigateCameraName = "garden",
         IsEnabled = true,
-        ValidationState = "validated",
+        ValidationState = CameraValidationState.Validated,
         MotionSensitivity = MotionSensitivity.High,
     };
 
