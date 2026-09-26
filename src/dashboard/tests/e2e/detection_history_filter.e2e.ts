@@ -23,7 +23,7 @@ test.describe('Historique — filtres', () => {
       }),
     )
     await page.goto('/history')
-    // Filters are an option you open (see `ui-defauts.e2e.ts`), not the top of the screen.
+    // Filters are an option you open (see `ui_defauts.e2e.ts`), not the top of the screen.
     await page.getByRole('button', { name: 'Filtrer' }).click()
   })
 

@@ -64,7 +64,7 @@ const fileNames = {
       create(context) {
         return {
           Program(node) {
-            const relative = path.relative(context.cwd, context.filename)
+            const relative = path.relative(import.meta.dirname, context.filename)
             const segment = relative.split(path.sep).find((s) => !SNAKE_CASE_SEGMENT.test(s))
             if (segment) context.report({ node, messageId: 'notSnakeCase', data: { segment } })
           },

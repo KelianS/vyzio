@@ -1,6 +1,6 @@
 import type { NotificationSummary } from '../../domain/entities/notification_summary.entity'
 
-// What a detection says about itself is formatted in `common/detection/detectionFormatters`,
+// What a detection says about itself is formatted in `common/detection/detection_formatters`,
 // home and history showing the same list.
 
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
