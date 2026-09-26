@@ -49,7 +49,7 @@ public class PtzPositionCommandHandlerTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldSaySo_WhenNoCameraCanMove()
+    public async Task ExecuteAsync_ShouldAnswerThatNoCameraIsMotorised_WhenNoCameraCanMove()
     {
         var still = Motorised("entree", "Entrée");
         still.PtzSupported = false;
@@ -76,7 +76,7 @@ public class PtzPositionCommandHandlerTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldSaySo_WhenTheCameraHasNoSavedPosition()
+    public async Task ExecuteAsync_ShouldAnswerThatNoPositionIsSaved_WhenTheCameraHasNoSavedPosition()
     {
         var camera = Motorised("jardin", "Jardin");
         _presets.GetAllAsync(camera.Id, Arg.Any<CancellationToken>()).Returns([]);

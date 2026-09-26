@@ -327,7 +327,7 @@ public class LabelRoutingTests
     // other labels
     [InlineData("car",    null,    new[] { "car" },                           true)]
     [InlineData("car",    null,    new[] { "person_unknown", "person_known" },false)]
-    public void IsLabelAllowed_ShouldAllowTheDetection_WhenItsResolvedLabelIsInTheAllowedSet(string label, string? identity, string[] allowed, bool expected)
+    public void IsLabelAllowed_ShouldAllowOnlyAResolvedLabelInTheSet_WhenRoutingADetection(string label, string? identity, string[] allowed, bool expected)
     {
         var allowedSet = new HashSet<string>(allowed, StringComparer.OrdinalIgnoreCase);
         Assert.Equal(expected, SendDetectionNotificationUseCase.IsLabelAllowed(label, identity, allowedSet));

@@ -32,7 +32,7 @@ public class DiscoveryPortCatalogTests
 
     // A fingerprint on a port the sweep never opens is dead code: only scanned ports get probed.
     [Fact]
-    public void Fingerprints_ShouldOnlyUseSweptPorts_WhenComparedWithTheScannedPorts()
+    public void Fingerprints_ShouldOnlyUseSweptPorts_WhenTheCatalogueIsBuilt()
     {
         var unswept = DiscoveryPortCatalog.Fingerprints
             .SelectMany(fingerprint => fingerprint.Ports)

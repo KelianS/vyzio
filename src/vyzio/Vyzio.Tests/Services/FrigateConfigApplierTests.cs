@@ -338,7 +338,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldEmitTheDetectResolutionOnlyForTheStream_WhenTheStreamReportedOne()
+    public async Task ApplyAsync_ShouldEmitTheDetectResolutionOnlyIfKnown_WhenTheStreamDidOrDidNotReportItsSize()
     {
         var withSize = MakeValidatedCamera("front-door");
         withSize.MainStream!.Width = 640;

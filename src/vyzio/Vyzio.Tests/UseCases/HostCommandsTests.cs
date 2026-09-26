@@ -9,7 +9,7 @@ namespace Vyzio.Tests.UseCases;
 public class HostCommandsTests
 {
     [Fact]
-    public void Match_ShouldReturnNullSoTheApiServes_WhenNoCommandWasAskedFor()
+    public void Match_ShouldReturnNull_WhenNoCommandWasAskedFor()
     {
         Assert.Null(HostCommands.Match([]));
         Assert.Null(HostCommands.Match(["--urls", "http://+:8443"]));
