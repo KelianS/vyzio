@@ -4,6 +4,7 @@ import type { CameraRepository } from '../ports/camera.port'
 
 describe('VerifyDraftCamera', () => {
   it('execute_ShouldVerifyTheDraftThroughTheRepository_WhenCalled', async () => {
+    // Arrange
     const status = {
       cameraId: 'draft-camera',
       displayName: 'Front Door',
@@ -43,7 +44,11 @@ describe('VerifyDraftCamera', () => {
       detectionPreset: 'person_default',
     }
 
-    await expect(useCase.execute(input)).resolves.toEqual(status)
+    // Act
+    const result = await useCase.execute(input)
+
+    // Assert
+    expect(result).toEqual(status)
     expect(repository.verifyDraft).toHaveBeenCalledWith(input)
   })
 })

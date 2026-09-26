@@ -8,12 +8,14 @@ import { HelpPanel } from './help_panel'
  */
 describe('HelpPanel', () => {
   it('HelpPanel_ShouldStayFolded_WhenNothingSaysOtherwise', () => {
+    // Arrange & Act
     render(
       <HelpPanel title="Où trouver ces informations ?">
         <p>Écrivez à BotFather.</p>
       </HelpPanel>,
     )
 
+    // Assert
     // The nominal screen stays just as dense without the panel: that is the condition
     // for a long help text to be allowed to exist in the page at all.
     expect(screen.getByText('Où trouver ces informations ?')).toBeVisible()
@@ -21,12 +23,14 @@ describe('HelpPanel', () => {
   })
 
   it('HelpPanel_ShouldOpenByItself_WhenTheTaskItExplainsIsNotDone', () => {
+    // Arrange & Act
     render(
       <HelpPanel title="Où trouver ces informations ?" defaultOpen>
         <p>Écrivez à BotFather.</p>
       </HelpPanel>,
     )
 
+    // Assert
     expect(screen.getByText('Écrivez à BotFather.')).toBeVisible()
   })
 })

@@ -107,7 +107,7 @@ export function SystemMonitorPanel({ stats }: { stats: SystemStats }) {
               {stats.cameras.map(({ camera, fps }) => (
                 <span key={camera} className="flex justify-between gap-3">
                   <span className="min-w-0 truncate">{camera.replaceAll('_', ' ')}</span>
-                  {/* Sous une image par seconde, la camera ne suit plus. */}
+                  {/* Under one frame a second, the camera is no longer keeping up. */}
                   <span className={cn('tabular-nums', fps < 1 && 'text-destructive')}>
                     {fps.toFixed(1)}/s
                   </span>

@@ -4,7 +4,8 @@ import type { CameraRepository } from '../ports/camera.port'
 
 describe('RestartSurveillance', () => {
   it('execute_ShouldApplyTheConfigurationThroughTheRepository_WhenCalled', async () => {
-    const result = {
+    // Arrange
+    const configuration = {
       applied: true,
       message: 'Configuration appliquee pour 2 cameras.',
       configPath: 'config/frigate.generated.yml',
@@ -19,7 +20,7 @@ describe('RestartSurveillance', () => {
       verifyDraft: vi.fn(),
       verify: vi.fn(),
       apply: vi.fn(),
-      applyConfiguration: vi.fn().mockResolvedValue(result),
+      applyConfiguration: vi.fn().mockResolvedValue(configuration),
       delete: vi.fn(),
       update: vi.fn(),
       getVendorAssistance: vi.fn(),
@@ -27,7 +28,11 @@ describe('RestartSurveillance', () => {
 
     const useCase = new RestartSurveillance(repository as unknown as CameraRepository)
 
-    await expect(useCase.execute()).resolves.toEqual(result)
+    // Act
+    const result = await useCase.execute()
+
+    // Assert
+    expect(result).toEqual(configuration)
     expect(repository.applyConfiguration).toHaveBeenCalledWith()
   })
 })

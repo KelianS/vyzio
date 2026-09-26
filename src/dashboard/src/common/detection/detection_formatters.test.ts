@@ -19,10 +19,18 @@ const event = (overrides: Partial<DetectionEvent>): DetectionEvent => ({
 
 describe('formatEventTitle', () => {
   it('formatEventTitle_ShouldShowTheNameAlone_WhenTheEventCarriesAnIdentity', () => {
-    expect(formatEventTitle(event({ identity: 'Paul' }))).toBe('Paul')
+    // Arrange & Act
+    const title = formatEventTitle(event({ identity: 'Paul' }))
+
+    // Assert
+    expect(title).toBe('Paul')
   })
 
   it('formatEventTitle_ShouldNameTheDetectionInFrench_WhenNobodyWasRecognised', () => {
-    expect(formatEventTitle(event({ identity: null, label: 'car' }))).toBe('Détection « car »')
+    // Arrange & Act
+    const title = formatEventTitle(event({ identity: null, label: 'car' }))
+
+    // Assert
+    expect(title).toBe('Détection « car »')
   })
 })

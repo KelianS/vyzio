@@ -14,13 +14,16 @@ const renderTile = (camera: Camera) =>
 
 describe('CameraLiveThumbnail', () => {
   it('CameraLiveThumbnail_ShouldSayTheCameraTurned_WhenItAcceptedTheParkingMove', () => {
+    // Arrange & Act
     renderTile(makeCamera({ privacyModeActive: true, privacyStrategy: PrivacyStrategy.PtzParking }))
 
+    // Assert
     expect(screen.getByText('Caméra orientée, enregistrement désactivé')).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it('CameraLiveThumbnail_ShouldLinkToThePrivacyScreen_WhenTheCameraDidNotFollow', () => {
+    // Arrange & Act
     renderTile(
       makeCamera({
         privacyModeActive: true,
@@ -29,6 +32,7 @@ describe('CameraLiveThumbnail', () => {
       }),
     )
 
+    // Assert
     expect(screen.getByText('Caméra non tournée, enregistrement désactivé')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'La caméra ne s’est pas tournée' })).toHaveAttribute(
       'href',
@@ -37,6 +41,7 @@ describe('CameraLiveThumbnail', () => {
   })
 
   it('CameraLiveThumbnail_ShouldStillLinkToWhy_WhenTheCameraDidNotComeBackAfterPrivacy', () => {
+    // Arrange & Act
     renderTile(
       makeCamera({
         privacyStrategy: PrivacyStrategy.PtzParking,
@@ -44,6 +49,7 @@ describe('CameraLiveThumbnail', () => {
       }),
     )
 
+    // Assert
     expect(screen.getByRole('link', { name: 'La caméra n’est pas revenue' })).toBeInTheDocument()
   })
 })

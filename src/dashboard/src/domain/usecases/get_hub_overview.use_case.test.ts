@@ -4,6 +4,7 @@ import type { HubRepository } from '../ports/hub.port'
 
 describe('GetHubOverview', () => {
   it('execute_ShouldLoadTheOverviewFromTheRepository_WhenCalled', async () => {
+    // Arrange
     const overview = {
       systemHealthy: true,
       recentEvents: [],
@@ -22,7 +23,11 @@ describe('GetHubOverview', () => {
 
     const useCase = new GetHubOverview(repository)
 
-    await expect(useCase.execute()).resolves.toEqual(overview)
+    // Act
+    const result = await useCase.execute()
+
+    // Assert
+    expect(result).toEqual(overview)
     expect(repository.getOverview).toHaveBeenCalledOnce()
   })
 })

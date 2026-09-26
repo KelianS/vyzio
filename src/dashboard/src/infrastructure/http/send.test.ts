@@ -13,12 +13,14 @@ function answer(
 
 describe('httpErrorFrom', () => {
   it('httpErrorFrom_ShouldNameTheRequestAndKeepTheErrorCode_WhenTheAnswerCarriesACode', async () => {
+    // Arrange & Act
     const error = await httpErrorFrom(
       answer(409, 'Conflict', JSON.stringify({ error: 'not_calibrated' })),
       'http://hub/api/cameras/cam-1/ptz/presets/2?x=1',
       'PUT',
     )
 
+    // Assert
     expect(error.status).toBe(409)
     expect(error.diagnostic).toBe(
       'PUT /api/cameras/cam-1/ptz/presets/2 · 409 Conflict · not_calibrated',
@@ -26,55 +28,66 @@ describe('httpErrorFrom', () => {
   })
 
   it('httpErrorFrom_ShouldKeepTheCodeAndTheReason_WhenTheAnswerCarriesBoth', async () => {
+    // Arrange
     const body = JSON.stringify({ error: 'camera_refused', message: 'Privacy mode is on' })
 
+    // Act
     const error = await httpErrorFrom(
       answer(502, 'Bad Gateway', body),
       '/api/cameras/c/ptz/move',
       'POST',
     )
 
+    // Assert
     expect(error.diagnostic).toBe(
       'POST /api/cameras/c/ptz/move · 502 Bad Gateway · camera_refused · Privacy mode is on',
     )
   })
 
   it('httpErrorFrom_ShouldReadTheReason_WhenTheErrorFieldIsASentenceRatherThanACode', async () => {
+    // Arrange
     const body = JSON.stringify({ error: 'Unknown capability: zoom' })
 
+    // Act
     const error = await httpErrorFrom(
       answer(400, 'Bad Request', body),
       '/api/cameras/c/capabilities/zoom',
     )
 
+    // Assert
     expect(error.diagnostic).toBe(
       'GET /api/cameras/c/capabilities/zoom · 400 Bad Request · Unknown capability: zoom',
     )
   })
 
   it('httpErrorFrom_ShouldKeepTheDetailAndTheTraceId_WhenTheAnswerIsAProblemDetails', async () => {
+    // Arrange
     const body = JSON.stringify({
       title: 'An error occurred',
       detail: 'Frame unavailable',
       traceId: '00-abc-01',
     })
 
+    // Act
     const error = await httpErrorFrom(
       answer(500, 'Internal Server Error', body),
       '/api/cameras/c/frame',
     )
 
+    // Assert
     expect(error.diagnostic).toBe(
       'GET /api/cameras/c/frame · 500 Internal Server Error · Frame unavailable · trace 00-abc-01',
     )
   })
 
   it('httpErrorFrom_ShouldStillNameTheRequestAndStatus_WhenTheAnswerIsNotJson', async () => {
+    // Arrange & Act
     const error = await httpErrorFrom(
       answer(502, 'Bad Gateway', '<html>nginx</html>', 'text/html'),
       '/api/hub',
     )
 
+    // Assert
     expect(error.diagnostic).toBe('GET /api/hub · 502 Bad Gateway')
   })
 })
@@ -83,10 +96,13 @@ describe('send', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('send_ShouldNameTheRequestThatGotNoAnswer_WhenTheNetworkFails', async () => {
+    // Arrange
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 
+    // Act
     const failure = send('http://hub/api/cameras?token=abc', { method: 'DELETE' })
 
+    // Assert
     await expect(failure).rejects.toBeInstanceOf(NetworkError)
     await expect(failure).rejects.toMatchObject({
       diagnostic: 'DELETE /api/cameras · Failed to fetch',

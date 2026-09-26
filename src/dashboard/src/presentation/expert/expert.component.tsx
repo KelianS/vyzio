@@ -4,8 +4,7 @@ import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 
-// Static-ish screen: local timeout state only, no domain/use-case call to orchestrate — same
-// exception as the template's "zero async work" single-file screen.
+// One file: a local timeout is its only state, and it calls no use case.
 export function ExpertView() {
   const { frigateBaseUrl } = useAppContainer()
   const [loaded, setLoaded] = useState(false)

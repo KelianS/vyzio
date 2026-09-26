@@ -3,18 +3,26 @@ import { formatLastNotification, formatNotificationStatus } from './hub.formatte
 
 describe('hub formatters', () => {
   it('formatNotificationStatus_ShouldSayAlertsAreActiveWithoutNamingAChannel_WhenAChannelIsActive', () => {
-    expect(formatNotificationStatus({ activeChannels: 2, sentCount: 1, lastSentAt: null })).toBe(
-      'Alertes actives',
-    )
+    // Arrange & Act
+    const label = formatNotificationStatus({ activeChannels: 2, sentCount: 1, lastSentAt: null })
+
+    // Assert
+    expect(label).toBe('Alertes actives')
   })
 
   it('formatNotificationStatus_ShouldSayThereIsNoChannel_WhenNoneIsActive', () => {
-    expect(formatNotificationStatus({ activeChannels: 0, sentCount: 0, lastSentAt: null })).toBe(
-      'Aucun canal d’alerte',
-    )
+    // Arrange & Act
+    const label = formatNotificationStatus({ activeChannels: 0, sentCount: 0, lastSentAt: null })
+
+    // Assert
+    expect(label).toBe('Aucun canal d’alerte')
   })
 
   it('formatLastNotification_ShouldSayNoneWasSent_WhenThereIsNoTimestamp', () => {
-    expect(formatLastNotification(null)).toBe('Aucune alerte envoyee')
+    // Arrange & Act
+    const label = formatLastNotification(null)
+
+    // Assert
+    expect(label).toBe('Aucune alerte envoyee')
   })
 })
