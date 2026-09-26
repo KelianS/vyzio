@@ -29,10 +29,8 @@ describe('CameraLiveThumbnail', () => {
       }),
     )
 
-    expect(
-      screen.getByText('La caméra n’a pas suivi, enregistrement désactivé'),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'La caméra n’a pas suivi' })).toHaveAttribute(
+    expect(screen.getByText('Caméra non tournée, enregistrement désactivé')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'La caméra ne s’est pas tournée' })).toHaveAttribute(
       'href',
       '/settings/cameras/camera-1/vie-privee',
     )
@@ -46,6 +44,6 @@ describe('CameraLiveThumbnail', () => {
       }),
     )
 
-    expect(screen.getByRole('link', { name: 'La caméra n’a pas suivi' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'La caméra n’est pas revenue' })).toBeInTheDocument()
   })
 })

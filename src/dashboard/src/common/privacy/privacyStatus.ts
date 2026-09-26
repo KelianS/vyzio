@@ -51,6 +51,27 @@ const FOLLOWED: Record<PrivacyStrategy, PrivacyBadge> = {
   [PrivacyStrategy.Hardware]: RECORDING_OFF,
 }
 
+/** What did not happen, named per strategy rather than as a vague miss; null where nothing is asked of the camera. */
+const MISSED_BADGE: Record<PrivacyStrategy, string | null> = {
+  [PrivacyStrategy.None]: null,
+  [PrivacyStrategy.SoftwareBlur]: null,
+  [PrivacyStrategy.PtzParking]: 'Caméra non tournée, enregistrement désactivé',
+  [PrivacyStrategy.Hardware]: 'Objectif non coupé, enregistrement désactivé',
+}
+
+const MISSED_LABEL: Record<PrivacyStrategy, { on: string; off: string } | null> = {
+  [PrivacyStrategy.None]: null,
+  [PrivacyStrategy.SoftwareBlur]: null,
+  [PrivacyStrategy.PtzParking]: {
+    on: 'La caméra ne s’est pas tournée',
+    off: 'La caméra n’est pas revenue',
+  },
+  [PrivacyStrategy.Hardware]: {
+    on: 'L’objectif ne s’est pas coupé',
+    off: 'L’objectif ne s’est pas rouvert',
+  },
+}
+
 /** The sentence per strategy; the ones that ask nothing of the camera are stopped by ASKS_THE_CAMERA first. */
 const UNVERIFIED: Record<PrivacyStrategy, string | null> = {
   [PrivacyStrategy.None]: null,
@@ -68,9 +89,13 @@ const REFUSED_ON: Record<PrivacyStrategy, string | null> = {
   [PrivacyStrategy.Hardware]: `La caméra n’a pas coupé son objectif : ${STILL_FILMING} ${CHECK_CAMERA}`,
 }
 
-/** The short line a camera tile shows, pointing at the screen that explains it (SPECS 9.2). */
-export const privacyMissLabel = (miss: PrivacyMiss): string =>
-  DID_NOT_FOLLOW[miss] ? 'La caméra n’a pas suivi' : 'Demande interrompue'
+/** The short line a camera tile shows, pointing at the screen that explains it (SPECS 9.2); null when nothing missed. */
+export function privacyMissLabel(camera: PrivacyAnswer): string | null {
+  if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy]) return null
+  if (!DID_NOT_FOLLOW[camera.privacyMiss]) return 'Demande interrompue'
+  const label = MISSED_LABEL[camera.privacyStrategy]
+  return label && (camera.privacyModeActive ? label.on : label.off)
+}
 
 /** What the camera answered, never what its strategy promises (SPECS 9.2); null while privacy is off. */
 export function privacyBadge(
@@ -81,8 +106,9 @@ export function privacyBadge(
   if (!camera.privacyModeActive) return null
   if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy])
     return FOLLOWED[camera.privacyStrategy]
-  return DID_NOT_FOLLOW[camera.privacyMiss]
-    ? { text: 'La caméra n’a pas suivi, enregistrement désactivé', tone: 'warn', kind: 'missed' }
+  const missed = MISSED_BADGE[camera.privacyStrategy]
+  return DID_NOT_FOLLOW[camera.privacyMiss] && missed
+    ? { text: missed, tone: 'warn', kind: 'missed' }
     : RECORDING_OFF
 }
 

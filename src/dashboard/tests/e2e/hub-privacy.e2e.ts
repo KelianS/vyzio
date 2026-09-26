@@ -41,10 +41,10 @@ test.describe('Accueil — couper la surveillance', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [parked, watching] }))
 
     await page.goto('/')
-    await page.getByRole('link', { name: 'La caméra n’a pas suivi' }).click()
+    await page.getByRole('link', { name: 'La caméra ne s’est pas tournée' }).click()
 
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/vie-privee$/)
-    await expect(page.getByText('La caméra n’a pas suivi, enregistrement désactivé')).toBeVisible()
+    await expect(page.getByText('Caméra non tournée, enregistrement désactivé')).toBeVisible()
     await expect(page.getByRole('status')).toContainText(
       'ne s’est pas tournée vers sa position Parking',
     )

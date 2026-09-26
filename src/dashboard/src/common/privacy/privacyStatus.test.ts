@@ -17,7 +17,7 @@ describe('privacyBadge', () => {
   it('privacyBadge_ShouldSayTheCameraDidNotFollow_WhenItRefusedTheMove', () => {
     const badge = privacyBadge({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })
 
-    expect(badge?.text).toBe('La caméra n’a pas suivi, enregistrement désactivé')
+    expect(badge?.text).toBe('Caméra non tournée, enregistrement désactivé')
     expect(badge?.tone).toBe('warn')
   })
 
@@ -90,10 +90,34 @@ describe('privacyMissSentence', () => {
 
 describe('privacyMissLabel', () => {
   it('privacyMissLabel_ShouldNotBlameTheCamera_WhenTheRequestWasInterrupted', () => {
-    expect(privacyMissLabel(PrivacyMiss.Unconfirmed)).toBe('Demande interrompue')
+    expect(privacyMissLabel({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })).toBe(
+      'Demande interrompue',
+    )
   })
 
-  it('privacyMissLabel_ShouldSayTheCameraDidNotFollow_WhenItFailed', () => {
-    expect(privacyMissLabel(PrivacyMiss.CameraFailed)).toBe('La caméra n’a pas suivi')
+  it('privacyMissLabel_ShouldSayTheCameraDidNotTurn_WhenTheParkingMoveFailed', () => {
+    expect(privacyMissLabel({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })).toBe(
+      'La caméra ne s’est pas tournée',
+    )
+  })
+
+  it('privacyMissLabel_ShouldSayTheCameraDidNotComeBack_WhenTheReturnFailed', () => {
+    expect(
+      privacyMissLabel({
+        ...parked,
+        privacyModeActive: false,
+        privacyMiss: PrivacyMiss.CameraFailed,
+      }),
+    ).toBe('La caméra n’est pas revenue')
+  })
+
+  it('privacyMissLabel_ShouldNameTheLens_WhenTheHardwareCutFailed', () => {
+    expect(
+      privacyMissLabel({
+        ...parked,
+        privacyStrategy: PrivacyStrategy.Hardware,
+        privacyMiss: PrivacyMiss.CameraFailed,
+      }),
+    ).toBe('L’objectif ne s’est pas coupé')
   })
 })

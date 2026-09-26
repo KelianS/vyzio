@@ -28,9 +28,7 @@ describe('PrivacyAnswerNotice', () => {
       />,
     )
 
-    expect(
-      screen.getByText('La caméra n’a pas suivi, enregistrement désactivé'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Caméra non tournée, enregistrement désactivé')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(
       /ne s’est pas tournée vers sa position Parking.*ONVIF Ptz: no answer/,
     )

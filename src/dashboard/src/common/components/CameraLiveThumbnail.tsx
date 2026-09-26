@@ -55,6 +55,7 @@ export function CameraLiveThumbnail({
   }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
 
   const privacy = privacyBadge(camera)
+  const missLabel = privacyMissLabel(camera)
 
   function handleTogglePrivacy(event: MouseEvent) {
     event.stopPropagation()
@@ -151,13 +152,13 @@ export function CameraLiveThumbnail({
         )}
       </div>
       {/* Outside the frame, which may be a button; the privacy screen says why (SPECS 9.2). */}
-      {camera.privacyMiss && (
+      {missLabel && (
         <Link
           to={`/settings/cameras/${camera.id}/vie-privee`}
           className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
         >
           <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
-          {privacyMissLabel(camera.privacyMiss)}
+          {missLabel}
         </Link>
       )}
     </article>
