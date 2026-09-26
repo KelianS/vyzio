@@ -11,11 +11,12 @@ import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
-import type { Camera } from '../../domain/entities/Camera'
+import type { Camera, PrivacyStrategy } from '../../domain/entities/Camera'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { HelpPanel } from '../../common/components/HelpPanel'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
-import { buildPrivacySettings, type PrivacyStrategy } from './cameraPrivacySettings'
+import { PrivacyAnswerNotice } from './PrivacyAnswerNotice'
+import { buildPrivacySettings } from './cameraPrivacySettings'
 
 const DRAFT_LABELS = { strategy: 'Quand vous coupez la surveillance' }
 
@@ -67,13 +68,13 @@ export function CameraPrivacyPage() {
           surveillance s'arrete, et comment. Les separer en deux cadres donnait
           deux titres a un unique reglage. */}
       <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
+        <PrivacyAnswerNotice camera={camera} />
         <SettingsList settings={settings} />
         {presets.error && <ErrorMessage error={presets.error} />}
 
         {/* Section non encore reprise : elle garde ses propres actions. */}
         <SettingsSection title="Plages horaires" lede="Couper et rétablir automatiquement.">
           <PrivacyScheduleSection
-            camera={camera}
             cameraId={camera.id}
             allCameras={allCameras}
             getSchedules={container.getCameraPrivacySchedules}

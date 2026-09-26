@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -23,11 +24,11 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         if (camera is null) return null;
 
         // Asked before the entity changes: a camera that refuses leaves it as it was.
-        var vendorCut = await PrivacyVendorAction.ApplyAsync(
+        var answer = await PrivacyVendorAction.ApplyAsync(
             camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
-        camera.PrivacyVendorCut = vendorCut;
+        answer.ApplyTo(camera);
 
         // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -62,11 +63,11 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
             foreach (var camera in targets)
             {
                 // Asked before the entity changes: a camera that fails here keeps its saved state in the reload.
-                var vendorCut = await PrivacyVendorAction.ApplyAsync(
+                var answer = await PrivacyVendorAction.ApplyAsync(
                     camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
-                camera.PrivacyVendorCut = vendorCut;
+                answer.ApplyTo(camera);
 
                 camera.UpdatedAt = DateTimeOffset.UtcNow;
                 await cameras.UpdateAsync(camera, CancellationToken.None);
@@ -89,11 +90,26 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     }
 }
 
+// What the camera did with the last toggle: the lens cut it confirmed, or why it did not follow (SPECS 9.2).
+internal sealed record PrivacyCameraAnswer(bool VendorCut, PrivacyMiss? Miss = null, string? MissDetail = null)
+{
+    public static readonly PrivacyCameraAnswer Followed = new(VendorCut: false);
+
+    public static PrivacyCameraAnswer Missed(PrivacyMiss miss, string detail) =>
+        new(VendorCut: false, miss, detail.Length > Camera.PrivacyMissDetailLength ? detail[..Camera.PrivacyMissDetailLength] : detail);
+
+    public void ApplyTo(Camera camera)
+    {
+        camera.PrivacyVendorCut = VendorCut;
+        camera.PrivacyMiss = Miss;
+        camera.PrivacyMissDetail = MissDetail;
+    }
+}
+
 // The camera's part of privacy, best effort: Vyzio stops recording whatever the camera answers (ADR-20).
 internal static class PrivacyVendorAction
 {
-    // Returns whether the lens is cut by the camera itself, as far as the camera confirmed.
-    public static async Task<bool> ApplyAsync(
+    public static async Task<PrivacyCameraAnswer> ApplyAsync(
         Camera camera,
         bool active,
         ICameraCapabilityBindingRepository bindings,
@@ -102,51 +118,65 @@ internal static class PrivacyVendorAction
         ILogger logger,
         CancellationToken ct)
     {
-        Func<Task>? deviceCall = null;
+        var state = active ? "on" : "off";
+        var asked = $"privacy {state}, {SnakeCaseEnum.ToSnakeCase(camera.PrivacyStrategy)}";
+        Func<Task<PrivacyCameraAnswer>> deviceCall;
         switch (camera.PrivacyStrategy)
         {
             case PrivacyStrategy.Hardware:
+                // An unverified lens was never cut, so switching off has nothing to reopen.
                 if (await bindings.GetAsync(camera.Id, CameraCapability.HardwarePrivacy, ct) is not { Verified: true } privacyBinding)
-                    return false;
+                    return active ? Unverified(CameraCapability.HardwarePrivacy) : PrivacyCameraAnswer.Followed;
                 var privacy = registry.ResolvePrivacy(privacyBinding.Protocol);
-                deviceCall = () => privacy.SetPrivacyModeAsync(camera, privacyBinding, active, ct);
+                deviceCall = async () =>
+                {
+                    await privacy.SetPrivacyModeAsync(camera, privacyBinding, active, ct);
+                    return new PrivacyCameraAnswer(VendorCut: active);
+                };
                 break;
 
             case PrivacyStrategy.PtzParking:
-                if (await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
+                // An unverified camera was never parked, so switching off has nowhere to come back from.
+                if (await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is not { Verified: true } ptzBinding)
+                    return active ? Unverified(CameraCapability.Ptz) : PrivacyCameraAnswer.Followed;
+                var ptz = registry.ResolvePtz(ptzBinding.Protocol);
+                var slot = active ? PtzPreset.ParkingSlot : PtzPreset.SurveillanceSlot;
+                deviceCall = async () =>
                 {
-                    var ptz = registry.ResolvePtz(ptzBinding.Protocol);
-                    var slot = active ? PtzPreset.ParkingSlot : PtzPreset.SurveillanceSlot;
-                    deviceCall = async () =>
-                    {
-                        // A slot never saved is a missing setup step, not the camera failing: support must read it so.
-                        if (!await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, slot, ct))
-                            logger.LogWarning("Privacy {State} on {CameraId}: no {Slot} position is saved, so the camera stays where it is.",
-                                active ? "on" : "off", camera.Id, PtzPreset.DefaultLabel(slot));
-                    };
-                }
+                    if (await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, slot, ct))
+                        return PrivacyCameraAnswer.Followed;
+                    // A slot never saved is a missing setup step, not the camera failing: support must read it so.
+                    logger.LogWarning("Privacy {State} on {CameraId}: no {Slot} position is saved, so the camera stays where it is.",
+                        state, camera.Id, PtzPreset.DefaultLabel(slot));
+                    return PrivacyCameraAnswer.Missed(PrivacyMiss.PositionMissing, $"{asked}: no {PtzPreset.DefaultLabel(slot)} position is saved");
+                };
                 break;
-        }
 
-        if (deviceCall is null) return false;
+            default:
+                return PrivacyCameraAnswer.Followed;
+        }
 
         try
         {
-            await deviceCall();
-            return camera.PrivacyStrategy == PrivacyStrategy.Hardware && active;
+            return await deviceCall();
         }
         // Best effort, except a lens left shut: it must not be shown as privacy off (SPECS 9.2, ADR-57).
         catch (Exception ex) when (active || camera.PrivacyStrategy == PrivacyStrategy.PtzParking)
         {
             // A caller hanging up is not the camera failing; support must not read it as one.
             if (ex is OperationCanceledException && ct.IsCancellationRequested)
+            {
                 logger.LogInformation("Privacy {State} on {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.",
-                    active ? "on" : "off", camera.Id);
-            else
-                logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
-                    active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
-            return false;
+                    state, camera.Id);
+                return PrivacyCameraAnswer.Missed(PrivacyMiss.Unconfirmed, $"{asked}: interrupted before the camera answered");
+            }
+            logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
+                state, camera.Id, camera.PrivacyStrategy);
+            return PrivacyCameraAnswer.Missed(PrivacyMiss.CameraFailed, $"{asked}: {ex.GetType().Name}: {ex.Message}");
         }
+
+        PrivacyCameraAnswer Unverified(CameraCapability capability) =>
+            PrivacyCameraAnswer.Missed(PrivacyMiss.CapabilityUnverified, $"{asked}: the {SnakeCaseEnum.ToSnakeCase(capability)} capability is not verified");
     }
 }
 

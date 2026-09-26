@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
-import { EyeOff, Lock, WifiOff } from 'lucide-react'
+import { Link } from 'react-router'
+import { TriangleAlert, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
+import { privacyBadge, privacyMissLabel } from '../privacy/privacyStatus'
+import { PrivacyStateIcon } from '../privacy/PrivacyStateIcon'
 import { cn } from '../ui/utils'
 import type { Camera } from '../../domain/entities/Camera'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
@@ -51,6 +54,9 @@ export function CameraLiveThumbnail({
     }
   }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
 
+  const privacy = privacyBadge(camera)
+  const missLabel = privacyMissLabel(camera)
+
   function handleTogglePrivacy(event: MouseEvent) {
     event.stopPropagation()
     onTogglePrivacy?.(camera, !camera.privacyModeActive)
@@ -74,18 +80,11 @@ export function CameraLiveThumbnail({
             : undefined
         }
       >
-        {camera.privacyModeActive ? (
+        {camera.privacyModeActive && privacy ? (
+          // The same words as the privacy screen's badge: what the camera answered (SPECS 9.2).
           <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
-            {camera.privacyVendorCut ? (
-              <Lock className="size-5" aria-hidden="true" />
-            ) : (
-              <EyeOff className="size-5" aria-hidden="true" />
-            )}
-            <span className="text-sm font-medium">
-              {camera.privacyVendorCut
-                ? 'Caméra coupée — matériel'
-                : 'Caméra en pause — enregistrement désactivé'}
-            </span>
+            <PrivacyStateIcon kind={privacy.kind} className="size-5" />
+            <span className="text-sm font-medium">{privacy.text}</span>
           </div>
         ) : deviceOffline ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
@@ -152,6 +151,16 @@ export function CameraLiveThumbnail({
           </Button>
         )}
       </div>
+      {/* Outside the frame, which may be a button; the privacy screen says why (SPECS 9.2). */}
+      {missLabel && (
+        <Link
+          to={`/settings/cameras/${camera.id}/vie-privee`}
+          className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
+        >
+          <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+          {missLabel}
+        </Link>
+      )}
     </article>
   )
 }

@@ -82,6 +82,53 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldRecordTheCameraAnswer_WhenTheCameraRefusesTheParkingMove()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif, configJson: NativePresets));
+        _ptzProvider.PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraCommandRefusedException("ONVIF Ptz: malformed answer")));
+
+        await _sut.ExecuteAsync("cam1", active: true);
+
+        Assert.Equal(PrivacyMiss.CameraFailed, camera.PrivacyMiss);
+        Assert.Equal("privacy on, ptz_parking: CameraCommandRefusedException: ONVIF Ptz: malformed answer", camera.PrivacyMissDetail);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldClearThePreviousMiss_WhenTheCameraFollows()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        camera.PrivacyMiss = PrivacyMiss.CameraFailed;
+        camera.PrivacyMissDetail = "privacy on, ptz_parking: no answer";
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.Onvif, configJson: NativePresets));
+
+        var result = await _sut.ExecuteAsync("cam1", active: true);
+
+        Assert.Null(camera.PrivacyMiss);
+        Assert.Null(result!.PrivacyMissDetail);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheDetailWithinItsColumn_WhenTheCameraAnswersAtLength()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.Dvrip));
+        _privacyProvider.SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new CameraCommandRefusedException(new string('x', 2 * Camera.PrivacyMissDetailLength))));
+
+        await _sut.ExecuteAsync("cam1", active: true);
+
+        Assert.Equal(Camera.PrivacyMissDetailLength, camera.PrivacyMissDetail!.Length);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldStillStopRecordingWithoutClaimingACut_WhenTheLensCutFails()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
@@ -95,6 +142,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         Assert.True(result!.PrivacyModeActive);
         Assert.False(result.PrivacyVendorCut);
+        Assert.Equal(PrivacyMiss.CameraFailed, camera.PrivacyMiss);
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
     }
 
@@ -133,6 +181,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         await _sut.ExecuteAsync("cam1", active: true, ct: caller.Token);
 
+        Assert.Equal(PrivacyMiss.Unconfirmed, camera.PrivacyMiss);
         await _cameras.Received(1).UpdateAsync(
             Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Is<CancellationToken>(t => !t.IsCancellationRequested));
         await _frigateConfig.Received(1).ApplyAsync(
@@ -174,6 +223,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         Assert.NotNull(result);
         Assert.False(result!.PrivacyVendorCut);
+        Assert.Null(camera.PrivacyMiss);
         await _privacyProvider.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
@@ -189,7 +239,40 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         Assert.NotNull(result);
         Assert.False(result!.PrivacyVendorCut);
+        Assert.Equal(PrivacyMiss.CapabilityUnverified, camera.PrivacyMiss);
+        Assert.Equal("privacy on, hardware: the hardware_privacy capability is not verified", camera.PrivacyMissDetail);
         await _privacyProvider.DidNotReceive().SetPrivacyModeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRecordNoMiss_WhenPrivacyEndsOnALensThatWasNeverVerified()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
+        camera.PrivacyModeActive = true;
+        camera.PrivacyMiss = PrivacyMiss.CapabilityUnverified;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
+            .Returns(MakeBinding("cam1", CameraCapability.HardwarePrivacy, SupportedProtocol.TapoKlap, verified: false));
+
+        await _sut.ExecuteAsync("cam1", active: false);
+
+        Assert.Null(camera.PrivacyMiss);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRecordNoMiss_WhenPrivacyEndsOnACameraWhosePtzWasNeverVerified()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        camera.PrivacyModeActive = true;
+        camera.PrivacyMiss = PrivacyMiss.CapabilityUnverified;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null);
+
+        await _sut.ExecuteAsync("cam1", active: false);
+
+        Assert.Null(camera.PrivacyMiss);
+        await _ptzProvider.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -245,6 +328,8 @@ public class ToggleCameraPrivacyModeUseCaseTests
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
         Assert.Contains(_logger.ReceivedCalls(), call => call.GetArguments()[0] is LogLevel.Warning
             && call.GetArguments()[2]?.ToString()?.Contains("no Parking position is saved", StringComparison.Ordinal) == true);
+        Assert.Equal(PrivacyMiss.PositionMissing, camera.PrivacyMiss);
+        Assert.Equal("privacy on, ptz_parking: no Parking position is saved", camera.PrivacyMissDetail);
     }
 
     [Fact]
@@ -276,6 +361,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
         var result = await _sut.ExecuteAsync("cam1", active: false);
 
         Assert.False(result!.PrivacyModeActive);
+        Assert.Equal(PrivacyMiss.CameraFailed, camera.PrivacyMiss);
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => !c.PrivacyModeActive), Arg.Any<CancellationToken>());
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
     }
@@ -291,6 +377,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
         await _sut.ExecuteAsync("cam1", active: true);
 
         await _ptzProvider.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        Assert.Equal(PrivacyMiss.CapabilityUnverified, camera.PrivacyMiss);
     }
 
     [Fact]
@@ -373,6 +460,8 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
         Assert.Equal(2, result.Count);
         Assert.All(result, camera => Assert.True(camera.PrivacyModeActive));
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.Id == "cam1" && c.PrivacyMiss == PrivacyMiss.CameraFailed), Arg.Any<CancellationToken>());
+        await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.Id == "cam2" && c.PrivacyMiss == null), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -453,6 +542,34 @@ public class SetCameraPrivacyStrategyUseCaseTests
         Assert.Equal(strategy, result!.PrivacyStrategy);
         var expectedStrategy = Vyzio.Core.Common.SnakeCaseEnum.FromSnakeCase<PrivacyStrategy>(strategy);
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyStrategy == expectedStrategy), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldForgetTheLastMiss_WhenTheStrategyChanges()
+    {
+        var camera = MakeCamera();
+        camera.PrivacyStrategy = PrivacyStrategy.Hardware;
+        camera.PrivacyMiss = PrivacyMiss.CameraFailed;
+        camera.PrivacyMissDetail = "privacy on, hardware: CameraUnreachableException: DVRIP: no answer";
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        await _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("software_blur"));
+
+        Assert.Null(camera.PrivacyMiss);
+        Assert.Null(camera.PrivacyMissDetail);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheLastMiss_WhenTheSameStrategyIsSavedAgain()
+    {
+        var camera = MakeCamera();
+        camera.PrivacyStrategy = PrivacyStrategy.Hardware;
+        camera.PrivacyMiss = PrivacyMiss.CameraFailed;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        await _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("hardware"));
+
+        Assert.Equal(PrivacyMiss.CameraFailed, camera.PrivacyMiss);
     }
 
     [Theory]

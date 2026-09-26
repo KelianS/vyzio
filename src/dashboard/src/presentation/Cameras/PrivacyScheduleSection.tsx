@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { midnightRangeHint } from '../../common/settings/midnightRange'
-import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
 import { cn } from '../../common/ui/utils'
@@ -26,7 +25,6 @@ const endsNextDay = (start: string, end: string) =>
   start !== '' && end !== '' && minutesOf(end) < minutesOf(start)
 
 interface PrivacyScheduleSectionProps {
-  camera: Camera
   cameraId: string
   allCameras: Camera[]
   getSchedules: GetCameraPrivacySchedules
@@ -35,7 +33,6 @@ interface PrivacyScheduleSectionProps {
 }
 
 export function PrivacyScheduleSection({
-  camera,
   cameraId,
   allCameras,
   getSchedules,
@@ -133,23 +130,9 @@ export function PrivacyScheduleSection({
     }
   }
 
-  const privacyCut = camera.privacyVendorCut
-    ? { text: 'Coupure matérielle confirmée', icon: '🔒' }
-    : camera.privacyModeActive && camera.privacyStrategy === 'ptz_parking'
-      ? { text: 'Caméra orientée — enregistrement désactivé', icon: '🔇' }
-      : camera.privacyModeActive
-        ? { text: 'Enregistrement désactivé', icon: '🔇' }
-        : null
-
   return (
     // No own frame or title: the page already carries them.
     <section className="flex flex-col gap-4">
-      {privacyCut && (
-        <Badge tone={camera.privacyVendorCut ? 'ok' : 'neutral'} className="w-fit">
-          {privacyCut.icon} {privacyCut.text}
-        </Badge>
-      )}
-
       {loading ? (
         <p className="text-muted-foreground">Chargement…</p>
       ) : schedules.length === 0 ? (

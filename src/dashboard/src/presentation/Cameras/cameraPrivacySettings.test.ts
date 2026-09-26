@@ -1,39 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildPrivacySettings } from './cameraPrivacySettings'
 import type { Camera } from '../../domain/entities/Camera'
+import { makeCamera } from '../../testing/cameraFixture'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 
 const POSITIONS_FIRST = 'enregistrez d’abord ses positions Surveillance et Parking'
 
-function camera(overrides: Partial<Camera> = {}): Camera {
-  return {
-    id: 'camera-1',
-    slug: 'salon',
-    displayName: 'Salon',
-    sourceType: 'rtsp_manual',
-    host: '192.168.1.10',
-    port: 554,
-    streamProtocol: 'rtsp',
-    status: 'online',
-    validationState: 'validated',
-    isEnabled: true,
-    previewAvailable: true,
-    needsAttention: false,
-    lastReachabilityCheckAt: null,
-    lastSuccessfulFrameAt: null,
-    frigateCameraName: 'salon',
-    vendorFamily: null,
-    privacyModeActive: false,
-    privacyModeSource: null,
-    privacyVendorCut: false,
-    ptzSupported: true,
-    privacyStrategy: 'software_blur',
-    supportedProtocols: [],
-    connected: true,
-    verifiedCapabilities: [],
-    ...overrides,
-  }
-}
+const camera = (overrides: Partial<Camera> = {}) => makeCamera({ ptzSupported: true, ...overrides })
 
 function strategyOf(cam: Camera, positionsSaved: boolean | null): SettingDeclaration {
   const [setting] = buildPrivacySettings({
