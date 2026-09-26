@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
           'src/domain/ports/**', // interfaces only, erased at build
         ],
         // A floor that only rises: each screen migration lifts it to what it reached, up to 80%.
-        thresholds: { statements: 56, branches: 53, functions: 53, lines: 57 },
+        thresholds: { statements: 61, branches: 58, functions: 58, lines: 63 },
       },
     },
   }
