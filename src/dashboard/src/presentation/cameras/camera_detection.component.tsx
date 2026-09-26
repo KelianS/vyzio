@@ -1,60 +1,77 @@
+import { useEffect, useReducer } from 'react'
 import { useParams } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
-import { useSurveillanceRefresh } from '../surveillance/use_surveillance_refresh'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { DetectionConfig } from '../../domain/entities/detection_config.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
+import { ReadFailure } from '../../common/components/error_message'
 import {
   DETECTION_DRAFT_LABELS,
   buildDetectionSettings,
   type DetectionUpdate,
 } from './camera_detection_settings'
+import { buildCameraDetectionPresenter } from './camera_detection.presenter'
+import { cameraDetectionReducer } from './camera_detection.reducer'
+import { buildInitialCameraDetectionUido } from './camera_detection.uido'
 
-export function CameraDetectionPage() {
+export function CameraDetectionView() {
   const { cameraId } = useParams()
-  const { cameras: container } = useAppContainer()
+  const { cameras: container, hub: hubContainer } = useAppContainer()
+  const { toast } = useToast()
+  const [uido, dispatch] = useReducer(
+    cameraDetectionReducer,
+    undefined,
+    buildInitialCameraDetectionUido,
+  )
+  const presenter = usePresenter(buildCameraDetectionPresenter, {
+    container,
+    hubContainer,
+    dispatch,
+    toast,
+  })
 
-  const config = useAsync(() => container.getCameraDetectionConfig.execute(cameraId!), [cameraId])
-  const labels = useAsync(() => container.getCameraLabels.execute(), [])
+  useEffect(() => {
+    presenter.onLoad(cameraId!)
+  }, [presenter, cameraId])
 
-  if (config.loading || labels.loading) {
-    return <SettingsPage>Chargement…</SettingsPage>
-  }
-  if (!config.data || !labels.data) return null
+  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.error)
+    return (
+      <SettingsPage>
+        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(cameraId!)} />
+      </SettingsPage>
+    )
+  if (!uido.config) return null
+  const config = uido.config
 
   return (
     <DetectionForm
-      cameraId={cameraId!}
-      config={config.data}
-      allLabels={labels.data}
-      reload={config.reload}
+      config={config}
+      allLabels={uido.labels}
+      saving={uido.saving}
+      onSave={(values) => presenter.onSave(cameraId!, config, values)}
     />
   )
 }
 
 function DetectionForm({
-  cameraId,
   config,
   allLabels,
-  reload,
+  saving,
+  onSave,
 }: {
-  cameraId: string
   config: DetectionConfig
   allLabels: DetectionLabel[]
-  reload: () => void
+  saving: boolean
+  onSave: (values: DetectionUpdate) => Promise<boolean>
 }) {
-  const { cameras: container } = useAppContainer()
-  const { toast } = useToast()
-  const refreshSurveillance = useSurveillanceRefresh()
-
   const draft = useSettingsDraft<DetectionUpdate>({
     saved: {
       labels: config.labels,
@@ -66,25 +83,6 @@ function DetectionForm({
   })
 
   useUnsavedChanges(draft.dirty)
-
-  const saving = useAsyncAction(
-    async () =>
-      container.saveCameraDetectionConfig.execute(cameraId, {
-        ...draft.values,
-        // Unchanged here: they are set on the Retention page.
-        continuousDaysOverride: config.retention.continuous.override,
-        motionDaysOverride: config.retention.motion.override,
-        eventClipDaysOverride: config.retention.eventClip.override,
-      }),
-    {
-      onSuccess: () => {
-        draft.accept()
-        toast('Réglages de détection enregistrés.', 'success')
-        refreshSurveillance()
-        reload()
-      },
-    },
-  )
 
   const declarations = buildDetectionSettings({
     config,
@@ -147,8 +145,10 @@ function DetectionForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
-        onSave={() => void saving.run()}
+        saving={saving}
+        onSave={async () => {
+          if (await onSave(draft.values)) draft.accept()
+        }}
         onDiscard={draft.discard}
       />
     </>

@@ -64,7 +64,7 @@ describe('AddCameraView', () => {
     // Assert
     expect(await screen.findByText('« Porte » ajoutée.')).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/settings/cameras/camera-9/detection')
-    expect(network.sent.map((request) => request.route)).toContain('GET /api/system/stats')
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/system/stats' }))
   })
 
   it('onVerifyDraft_ShouldSayTheCameraDoesNotAnswer_WhenTheCameraIsUnreachable', async () => {

@@ -18,7 +18,6 @@ import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
 import { SystemMonitorPanel } from './system_monitor_panel'
-import { useReloadCameraList } from '../cameras/camera_list_read'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
 import { buildInitialHubUido } from './hub.uido'
@@ -57,7 +56,8 @@ export function HubView() {
   if (uido.loading || camerasLoading) return <HubLoading />
   if (uido.error || !uido.data?.systemHealthy) return <HubUnreachable error={uido.error} />
   // An unread list is not an empty one: onboarding would invite adding cameras that exist.
-  if (camerasError && cameras.length === 0) return <HubCamerasUnread error={camerasError} />
+  if (camerasError && cameras.length === 0)
+    return <HubCamerasUnread error={camerasError} onRetry={presenter.onReloadCameras} />
   if (cameras.length === 0) return <HubWelcome />
 
   return (
@@ -164,14 +164,13 @@ function HubUnreachable({ error }: { error: AppError | null }) {
 }
 
 /** The camera list could not be read: why is in the error, and retrying is the one thing to do. */
-function HubCamerasUnread({ error }: { error: AppError }) {
-  const reload = useReloadCameraList()
+function HubCamerasUnread({ error, onRetry }: { error: AppError; onRetry: () => void }) {
   return (
     <main className="py-4">
       <Card>
         <h1 className="font-serif text-3xl">Vos caméras ne s’affichent pas</h1>
         <p className="mt-1 text-muted-foreground">La liste de vos caméras n’a pas pu être lue.</p>
-        <ReadFailure error={error} onRetry={reload} className="mt-4" />
+        <ReadFailure error={error} onRetry={onRetry} className="mt-4" />
       </Card>
     </main>
   )

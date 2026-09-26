@@ -66,6 +66,25 @@ describe('HubView', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
   })
 
+  it('onReloadCameras_ShouldShowTheCameras_WhenTheRetryReadsTheList', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': failure(503),
+    })
+    renderScreen(<HubView />)
+    await screen.findByRole('heading', { name: 'Vos caméras ne s’affichent pas' })
+    network.answer('GET /api/cameras', ok([makeCamera()]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      await screen.findByRole('heading', { name: '1 caméra sous surveillance' }),
+    ).toBeInTheDocument()
+  })
+
   it('onTogglePrivacy_ShouldCutEveryCameraAndSaySo_WhenTheUserConfirms', async () => {
     // Arrange
     const network = fakeNetwork({

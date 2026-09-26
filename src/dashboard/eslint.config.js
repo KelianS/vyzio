@@ -27,8 +27,6 @@ const USE_CASE_ACCESS = [CONTAINER_ACCESS, USE_CASE_HOOKS]
 const PRESENTER_RULE_BACKLOG = [
   'src/presentation/access/access_gate.tsx',
   'src/presentation/cameras/camera_connection_page.tsx',
-  'src/presentation/cameras/camera_conservation_page.tsx',
-  'src/presentation/cameras/camera_detection_page.tsx',
   'src/presentation/cameras/camera_image_page.tsx',
   'src/presentation/cameras/camera_privacy_page.tsx',
   'src/presentation/cameras/capability_section.tsx',

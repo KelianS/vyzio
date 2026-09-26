@@ -20,19 +20,25 @@ describe('useCameraListFailureToast', () => {
   })
 
   it('useCameraListFailureToast_ShouldToastTheFailure_WhenAReloadFailsUnderAShownList', async () => {
+    // Arrange
     useRootStore.setState({ cameras: [{ id: 'camera-1' } as Camera] })
     renderHook(() => useCameraListFailureToast())
 
+    // Act
     await act(() => useRootStore.getState().loadCameras(failing))
 
+    // Assert
     expect(toast).toHaveBeenCalledWith(expect.any(String), 'error', expect.stringContaining('500'))
   })
 
   it('useCameraListFailureToast_ShouldStayQuiet_WhenNoListIsShown', async () => {
+    // Arrange
     renderHook(() => useCameraListFailureToast())
 
+    // Act
     await act(() => useRootStore.getState().loadCameras(failing))
 
+    // Assert
     expect(toast).not.toHaveBeenCalled()
   })
 })

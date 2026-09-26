@@ -41,6 +41,8 @@ migrate that only shrinks.
   - `<screen>.component.tsx`: the view. It renders the uido, forwards intents, and uses the container
     only to build its presenter (`usePresenter`).
 - A screen with no state and no use case is a single `<screen>.component.tsx`.
+- A screen that shows only state shared in the store has a presenter and a component: a local
+  uido would duplicate the store.
 - A screen's sub-parts live in `<screen>/components/` as dumb components: they take state and intent
   callbacks as props, and never reach the container. A context may carry view state (a filter, an
   open panel) to avoid threading props, never a use case.

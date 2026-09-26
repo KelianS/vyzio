@@ -82,7 +82,7 @@ test.describe('Navigation', () => {
     }
   })
 
-  test('CameraShell_ShouldFadeTheTabsOut_WhenMoreAreHiddenOnAPhone', async ({ page }) => {
+  test('CamerasView_ShouldFadeTheTabsOut_WhenMoreAreHiddenOnAPhone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await installFakeBackend(
       page,
@@ -97,7 +97,7 @@ test.describe('Navigation', () => {
     )
   })
 
-  test('CameraShell_ShouldBringTheCurrentTabIntoView_WhenOpenedOnAPhone', async ({ page }) => {
+  test('CamerasView_ShouldBringTheCurrentTabIntoView_WhenOpenedOnAPhone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await installFakeBackend(
       page,

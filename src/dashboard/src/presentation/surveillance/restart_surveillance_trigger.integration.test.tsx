@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
-import { appContainer } from '../../infrastructure/providers/app.container'
-import { useRootStore } from '../../infrastructure/store/root.store'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
+import { pollTheSurveillance } from '../../testing/shared_reads'
 import { RestartSurveillanceTrigger } from './restart_surveillance_trigger.component'
 
 function stats(pendingChanges: boolean): SystemStats {
@@ -16,11 +15,6 @@ function stats(pendingChanges: boolean): SystemStats {
     detection: { hardware: 'cpu', targetFps: 5 },
     pendingChanges,
   }
-}
-
-// What the header's background poll does, through the same network.
-async function pollTheSurveillance() {
-  await act(() => useRootStore.getState().loadSystemStats(appContainer.hub.getSystemStats))
 }
 
 describe('RestartSurveillanceTrigger', () => {
@@ -47,8 +41,8 @@ describe('RestartSurveillanceTrigger', () => {
 
     // Assert
     await waitFor(() => expect(screen.queryByRole('button')).toBeNull())
-    expect(network.sent.map((request) => request.route)).toContain(
-      'POST /api/cameras/apply-configuration',
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: 'POST /api/cameras/apply-configuration' }),
     )
   })
 
