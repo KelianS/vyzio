@@ -41,9 +41,9 @@ const CameraConservationView = lazy(() =>
     default: m.CameraConservationView,
   })),
 )
-const CameraPrivacyPage = lazy(() =>
-  import('./presentation/cameras/camera_privacy_page').then((m) => ({
-    default: m.CameraPrivacyPage,
+const CameraPrivacyView = lazy(() =>
+  import('./presentation/cameras/camera_privacy.component').then((m) => ({
+    default: m.CameraPrivacyView,
   })),
 )
 const CameraImagePage = lazy(() =>
@@ -176,7 +176,7 @@ const router = createBrowserRouter([
                   { index: true, element: <Navigate to="detection" replace /> },
                   { path: 'detection', element: <CameraDetectionView /> },
                   { path: 'conservation', element: <CameraConservationView /> },
-                  { path: 'vie-privee', element: <CameraPrivacyPage /> },
+                  { path: 'vie-privee', element: <CameraPrivacyView /> },
                   { path: 'image', element: <CameraImagePage /> },
                   { path: 'connexion', element: <CameraConnectionPage /> },
                 ],

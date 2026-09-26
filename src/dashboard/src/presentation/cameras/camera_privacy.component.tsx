@@ -1,30 +1,41 @@
-import { useReloadCameraList } from './camera_list_read'
+import { useEffect, useReducer } from 'react'
 import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
-import { useAsync } from '../../common/hooks/use_async'
-import { PARKING_PRESET_ID, SURVEILLANCE_PRESET_ID } from '../../domain/entities/ptz_preset.entity'
 import { ErrorMessage } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
-import { PrivacyScheduleSection } from './privacy_schedule_section'
-import { PrivacyAnswerNotice } from './privacy_answer_notice'
+import { PrivacyScheduleSection } from './components/privacy_schedule_section'
+import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
 import { buildPrivacySettings } from './camera_privacy_settings'
+import { buildCameraPrivacyPresenter } from './camera_privacy.presenter'
+import { cameraPrivacyReducer } from './camera_privacy.reducer'
+import { buildInitialCameraPrivacyUido } from './camera_privacy.uido'
 
 const DRAFT_LABELS = { strategy: 'Quand vous coupez la surveillance' }
 
-export function CameraPrivacyPage() {
+export function CameraPrivacyView() {
   const camera = useOutletContext<Camera>()
   const allCameras = useRootStore((state) => state.cameras)
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
+  const [uido, dispatch] = useReducer(
+    cameraPrivacyReducer,
+    undefined,
+    buildInitialCameraPrivacyUido,
+  )
+  const presenter = usePresenter(buildCameraPrivacyPresenter, { container, dispatch, toast })
+
+  useEffect(() => {
+    presenter.onLoad(camera.id, camera.ptzSupported)
+  }, [presenter, camera.id, camera.ptzSupported])
 
   const draft = useSettingsDraft<{ strategy: PrivacyStrategy }>({
     saved: { strategy: camera.privacyStrategy },
@@ -32,54 +43,43 @@ export function CameraPrivacyPage() {
   })
 
   useUnsavedChanges(draft.dirty)
-  const reloadCameras = useReloadCameraList()
-
-  const saving = useAsyncAction(
-    async () => container.setPrivacyStrategy.execute(camera.id, draft.values.strategy),
-    {
-      onSuccess: () => {
-        draft.accept()
-        toast('Mode vie privée enregistré.', 'success')
-        reloadCameras()
-      },
-    },
-  )
-
-  const presets = useAsync(() => container.getPtzPresets.execute(camera.id), [camera.id], {
-    skip: !camera.ptzSupported,
-  })
-  const saved = (slot: number) =>
-    presets.data?.presets.some((p) => p.presetId === slot && p.configured) ?? false
-  // Unknown until read: a failed read must not pass for positions never saved.
-  const positionsSaved = presets.data
-    ? saved(PARKING_PRESET_ID) && saved(SURVEILLANCE_PRESET_ID)
-    : null
 
   const settings = buildPrivacySettings({
     camera,
-    setup: { positionsSaved },
+    setup: { positionsSaved: uido.positionsSaved },
     value: draft.values.strategy,
     onChange: (strategy) => draft.set('strategy', strategy),
   })
 
   return (
     <>
-      {/* Le mode et ses plages horaires repondent a une seule question : quand la
-          surveillance s'arrete, et comment. Les separer en deux cadres donnait
-          deux titres a un unique reglage. */}
+      {/* The mode and its ranges answer one question, so they share one frame. */}
       <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
         <PrivacyAnswerNotice camera={camera} />
         <SettingsList settings={settings} />
-        {presets.error && <ErrorMessage error={presets.error} />}
+        {uido.presetsError && <ErrorMessage error={uido.presetsError} />}
 
-        {/* Section non encore reprise : elle garde ses propres actions. */}
         <SettingsSection title="Plages horaires" lede="Couper et rétablir automatiquement.">
           <PrivacyScheduleSection
-            cameraId={camera.id}
-            allCameras={allCameras}
-            getSchedules={container.getCameraPrivacySchedules}
-            createSchedule={container.createCameraPrivacySchedule}
-            deleteSchedule={container.deleteCameraPrivacySchedule}
+            schedules={uido.schedules}
+            loading={uido.schedulesLoading}
+            form={uido.form}
+            adding={uido.adding}
+            invalid={uido.invalid}
+            failure={uido.scheduleFailure}
+            cameraCount={allCameras.length}
+            onToggleDay={presenter.onToggleDay}
+            onStartTimeChange={presenter.onStartTimeChange}
+            onEndTimeChange={presenter.onEndTimeChange}
+            onAddHere={() => void presenter.onAddSchedule(camera.id, [camera.id], uido.form)}
+            onAddEverywhere={() =>
+              void presenter.onAddSchedule(
+                camera.id,
+                allCameras.map((entry) => entry.id),
+                uido.form,
+              )
+            }
+            onDelete={(scheduleId) => void presenter.onDeleteSchedule(camera.id, scheduleId)}
           />
 
           <HelpPanel title="Comment les plages et la coupure manuelle s’articulent-elles ?">
@@ -103,8 +103,10 @@ export function CameraPrivacyPage() {
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
-        onSave={() => void saving.run()}
+        saving={uido.saving}
+        onSave={async () => {
+          if (await presenter.onSaveStrategy(camera.id, draft.values.strategy)) draft.accept()
+        }}
         onDiscard={draft.discard}
       />
     </>
