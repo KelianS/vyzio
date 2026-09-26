@@ -2,8 +2,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
-// Pull request screenshots live on an orphan branch, never on main: a reviewer sees them inline in
-// the pull request, and the history of the product carries no image that only served one review.
+// An orphan branch, so main never carries an image that only served one review (docs/WORKFLOW.md).
 const BRANCH = 'pr-screenshots'
 const OUT = path.resolve(import.meta.dirname, 'out')
 
@@ -14,11 +13,13 @@ const gh = (args: string[], body?: object): string =>
     stdio: ['pipe', 'pipe', 'pipe'],
   })
 
-const tryGh = (args: string[]): string | undefined => {
+// Only a 404 means absent: an expired login or a dropped network must stop the run, not look like it.
+const ghUnlessMissing = (args: string[]): string | undefined => {
   try {
     return gh(args)
-  } catch {
-    return undefined
+  } catch (error) {
+    if (String((error as { stderr?: string }).stderr).includes('HTTP 404')) return undefined
+    throw error
   }
 }
 
@@ -26,7 +27,7 @@ const repo = gh(['repos/{owner}/{repo}', '--jq', '.full_name']).trim()
 
 // A branch with no parent, so it never shares history with the code.
 const ensureBranch = () => {
-  if (tryGh([`repos/${repo}/git/ref/heads/${BRANCH}`])) return
+  if (ghUnlessMissing([`repos/${repo}/git/ref/heads/${BRANCH}`])) return
   const readme = 'Screenshots attached to pull requests. Nothing here is part of the product.\n'
   const tree = JSON.parse(
     gh(['-X', 'POST', `repos/${repo}/git/trees`], {
@@ -57,8 +58,12 @@ if (shots.length === 0) {
 
 ensureBranch()
 for (const shot of shots.sort()) {
-  const target = `${folder}/${shot}`
-  const existing = tryGh([`repos/${repo}/contents/${target}?ref=${BRANCH}`, '--jq', '.sha'])
+  const target = `${folder}/${encodeURIComponent(shot)}`
+  const existing = ghUnlessMissing([
+    `repos/${repo}/contents/${target}?ref=${BRANCH}`,
+    '--jq',
+    '.sha',
+  ])
   gh(['-X', 'PUT', `repos/${repo}/contents/${target}`], {
     message: `chore: screenshot ${target}`,
     branch: BRANCH,
