@@ -4,15 +4,15 @@ import type { Camera } from '../../domain/entities/Camera'
 export function formatCameraStatusLabel(status: string): string {
   switch (status) {
     case 'online':
-      return 'Connectee'
+      return 'Connectée'
     case 'offline':
       return 'Hors ligne'
     case 'degraded':
-      return 'Degradee'
+      return 'Dégradée'
     case 'config_error':
       return 'Erreur de configuration'
     default:
-      return 'A verifier'
+      return 'À vérifier'
   }
 }
 
