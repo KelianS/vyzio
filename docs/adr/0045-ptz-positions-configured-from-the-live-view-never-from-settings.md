@@ -6,8 +6,7 @@
 
 ## Contexte
 
-SPECS §9.3 l'exige déjà : « les contrôles PTZ doivent être accessibles depuis la vue live de la
-caméra (pas seulement depuis les paramètres) — c'est le parcours d'usage quotidien ». L'implémentation
+SPECS §11 l'exige déjà : les contrôles PTZ sont accessibles depuis la vue live. L'implémentation
 livrée par [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) ne l'a jamais
 respecté pour l'écriture : la section positions PTZ de la fiche caméra (`PtzPresetsSection`) exposait
 un bouton « Définir ici » qui enregistrait **immédiatement** la position courante de la caméra, sans
@@ -19,7 +18,7 @@ laissant où elle se trouvait par hasard, jamais en la choisissant.
 
 1. **Dupliquer le joystick dans l'écran de réglages**, pour que déplacement et enregistrement se
    fassent au même endroit que l'ancien bouton. Écartée : un second joystick à maintenir en plus de
-   celui de la vue live, pour un geste que SPECS §9.3 place justement dans la vue live.
+   celui de la vue live, pour un geste que SPECS §9.3 et §11 placent justement dans la vue live.
 2. **Déplacer l'édition des positions dans la vue live**, à côté du joystick qui y vit déjà ; l'écran
    de réglages ne garde que la calibration et une porte vers cette vue live. Retenue.
 3. **Garder l'édition dans les réglages, bouton désactivé tant que l'utilisateur n'est pas passé par

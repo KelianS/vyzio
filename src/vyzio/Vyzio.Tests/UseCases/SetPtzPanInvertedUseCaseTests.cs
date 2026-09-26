@@ -19,7 +19,7 @@ public class SetPtzPanInvertedUseCaseTests
         var dto = await new SetPtzPanInvertedUseCase(_bindings).ExecuteAsync("cam1", inverted: true);
 
         Assert.True(dto!.PanInverted);
-        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, "supports_native_presets"));
+        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
         await _bindings.Received(1).SaveAsync(binding, Arg.Any<CancellationToken>());
     }
 

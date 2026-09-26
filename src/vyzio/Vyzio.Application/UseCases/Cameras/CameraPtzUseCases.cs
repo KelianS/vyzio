@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
