@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { midnightRangeHint } from '../../common/settings/midnightRange'
 import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
@@ -221,9 +222,7 @@ export function PrivacyScheduleSection({
         </div>
 
         {endsNextDay(startTime, endTime) && (
-          <p className="text-sm text-muted-foreground">
-            La plage passe minuit : elle se termine le lendemain à {endTime}.
-          </p>
+          <p className="text-sm text-muted-foreground">{midnightRangeHint(endTime)}</p>
         )}
 
         {invalid && <p className="text-sm text-destructive">{invalid}</p>}

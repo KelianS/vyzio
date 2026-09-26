@@ -89,7 +89,7 @@ export function CameraPrivacyPage() {
             </p>
             <p>
               Une plage peut passer minuit : 22:00–06:00 commence le soir des jours choisis et se
-              termine le lendemain matin.
+              termine le lendemain à 06:00.
             </p>
             <p>
               Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle

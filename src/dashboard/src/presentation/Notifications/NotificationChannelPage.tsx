@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { SettingsList } from '../../common/settings/SettingsList'
 import { AdvancedFold } from '../../common/settings/AdvancedFold'
+import { midnightRangeHint } from '../../common/settings/midnightRange'
 import { HelpPanel } from '../../common/components/HelpPanel'
 import { SettingsDraftBar } from '../../common/settings/SettingsDraftBar'
 import { useSettingsDraft } from '../../common/settings/useSettingsDraft'
@@ -242,10 +243,10 @@ function ChannelForm({
         id: 'channel-to',
         label: 'Jusqu’à',
         nature: { kind: 'choice', options: HOUR_OPTIONS },
-        // A range ending before it starts crosses midnight — the common case, worth stating.
+        // A range ending before it starts crosses midnight, the common case worth stating.
         consequence:
           draft.values.fromHour > draft.values.toHour
-            ? `La plage passe minuit : elle se termine le lendemain à ${hourLabel(draft.values.toHour)}.`
+            ? midnightRangeHint(hourLabel(draft.values.toHour))
             : undefined,
         value: String(draft.values.toHour),
         onChange: (value) => draft.set('toHour', Number(value)),
