@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 interface FakeAnswer {
   readonly status?: number
   readonly body?: unknown
+  readonly delayMs?: number
 }
 
 interface SentRequest {
@@ -23,6 +24,11 @@ function parsed(body: BodyInit | null | undefined): unknown {
 
 export function ok(body?: unknown): FakeAnswer {
   return { status: 200, body }
+}
+
+/** The same answer, sent after a delay, as a slow camera would. */
+export function late(answer: FakeAnswer, delayMs: number): FakeAnswer {
+  return { ...answer, delayMs }
 }
 
 export function failure(status: number, error?: string, message?: string): FakeAnswer {
@@ -46,6 +52,7 @@ export function fakeNetwork(routes: Record<string, FakeAnswer>) {
       sent.push({ route, query: url.search, body })
 
       const answer = table.get(route) ?? failure(501, 'no_fake', `no fake answer for ${route}`)
+      if (answer.delayMs) await new Promise((resolve) => setTimeout(resolve, answer.delayMs))
       const status = answer.status ?? 200
       return new Response(answer.body === undefined ? null : JSON.stringify(answer.body), {
         status,
