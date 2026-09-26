@@ -1,16 +1,29 @@
+import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { useAsync } from '../../common/hooks/use_async'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { channelSetupLede } from './channel_setup'
+import { buildAddNotificationChannelPresenter } from './add_notification_channel.presenter'
+import { addNotificationChannelReducer } from './add_notification_channel.reducer'
+import { buildInitialAddNotificationChannelUido } from './add_notification_channel.uido'
 
 /** Adding a channel is one task, one page (ADR-40) — the list of what Vyzio can talk through. */
-export function AddNotificationChannelPage() {
+export function AddNotificationChannelView() {
   const { notifications: container } = useAppContainer()
-  const channels = useAsync(() => container.listNotificationChannels.execute(), [])
+  const [uido, dispatch] = useReducer(
+    addNotificationChannelReducer,
+    undefined,
+    buildInitialAddNotificationChannelUido,
+  )
+  const presenter = usePresenter(buildAddNotificationChannelPresenter, { container, dispatch })
 
-  const available = (channels.data ?? []).filter((channel) => !channel.isConfigured)
+  useEffect(() => {
+    presenter.onLoad()
+  }, [presenter])
+
+  const available = uido.channels.filter((channel) => !channel.isConfigured)
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,7 +69,7 @@ export function AddNotificationChannelPage() {
           </ul>
         ) : (
           <p className="py-3 text-muted-foreground">
-            {channels.loading ? 'Chargement…' : 'Tous les canaux disponibles sont déjà en place.'}
+            {uido.loading ? 'Chargement…' : 'Tous les canaux disponibles sont déjà en place.'}
           </p>
         )}
       </SettingsPage>

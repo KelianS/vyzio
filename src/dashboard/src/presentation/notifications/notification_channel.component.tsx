@@ -1,5 +1,4 @@
-import { scrubSecrets } from '../../common/errors/scrub_secrets'
-import { useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
@@ -11,11 +10,10 @@ import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Button } from '../../common/ui/button'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import {
@@ -23,16 +21,21 @@ import {
   type MediaMode,
   type NotificationChannelConfig,
 } from '../../domain/entities/notification_channel_config.entity'
-import { NotificationLog } from './notification_log'
-import { CommandJournal } from './command_journal'
-import { ChannelPairingSection } from './channel_pairing_section'
-import { ChannelSetupSteps } from './channel_setup_steps'
+import { NotificationLog } from './components/notification_log'
+import { CommandJournal } from './components/command_journal'
+import { ChannelPairingSection } from './components/channel_pairing_section'
+import { ChannelSetupSteps } from './components/channel_setup_steps'
+import { buildNotificationChannelPresenter } from './notification_channel.presenter'
+import { notificationChannelReducer } from './notification_channel.reducer'
+import {
+  buildInitialNotificationChannelUido,
+  type NotificationChannelUido,
+} from './notification_channel.uido'
 import {
   credentialCopy,
   DEFAULT_NOTIFICATION_VALUES,
   notificationDraftLabels,
   toNotificationValues,
-  toSaveRequest,
   type NotificationValues,
 } from './notification_settings'
 
@@ -58,18 +61,23 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
 }))
 
 /** Second level of the Notifications rubric: one channel, whichever it is (ADR-40, ADR-50). */
-export function NotificationChannelPage() {
+export function NotificationChannelView() {
   const { channel: slug } = useParams()
   const channel = parseNotificationChannelName(slug)
   const { notifications: container } = useAppContainer()
-
-  const config = useAsync(
-    async () => (channel ? container.getNotificationChannelConfig.execute(channel) : null),
-    [channel],
+  const { toast } = useToast()
+  const [uido, dispatch] = useReducer(
+    notificationChannelReducer,
+    undefined,
+    buildInitialNotificationChannelUido,
   )
-  const labels = useAsync(() => container.getNotificationLabels.execute(), [])
+  const presenter = usePresenter(buildNotificationChannelPresenter, { container, dispatch, toast })
 
-  if (!channel || (!config.loading && !config.data)) {
+  useEffect(() => {
+    if (channel) presenter.onLoad(channel)
+  }, [presenter, channel])
+
+  if (!channel || (!uido.configLoading && !uido.config)) {
     return (
       // This route announces that it carries its own header: with no channel to name,
       // the failure has to do it, or the page would stay anonymous.
@@ -85,16 +93,17 @@ export function NotificationChannelPage() {
     )
   }
 
-  if (config.loading || labels.loading || !config.data) {
+  if (uido.configLoading || uido.labelsLoading || !uido.config) {
     return <SettingsPage>Chargement…</SettingsPage>
   }
 
   return (
     <ChannelForm
       key={channel}
-      config={config.data}
-      labels={labels.data ?? []}
-      reload={config.reload}
+      config={uido.config}
+      labels={uido.labels}
+      uido={uido}
+      presenter={presenter}
     />
   )
 }
@@ -102,17 +111,21 @@ export function NotificationChannelPage() {
 function ChannelForm({
   config,
   labels,
-  reload,
+  uido,
+  presenter,
 }: {
   config: NotificationChannelConfig
   labels: DetectionLabel[]
-  reload: () => void
+  uido: NotificationChannelUido
+  presenter: ReturnType<typeof buildNotificationChannelPresenter>
 }) {
-  const { notifications: container } = useAppContainer()
-  const { toast } = useToast()
   const navigate = useNavigate()
-  const [confirmEnable, setConfirmEnable] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
+  const { channel, acceptsCommands } = config
+
+  // The sections below the settings read on mount, as they did when each fetched its own.
+  useEffect(() => {
+    presenter.onOpen(channel, acceptsCommands)
+  }, [presenter, channel, acceptsCommands])
 
   const draft = useSettingsDraft<NotificationValues>({
     saved: config.isConfigured ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
@@ -121,55 +134,9 @@ function ChannelForm({
 
   useUnsavedChanges(draft.dirty)
 
-  const saving = useAsyncAction(
-    async () =>
-      container.saveNotificationChannelConfig.execute(
-        config.channel,
-        toSaveRequest(draft.values, config.credentials),
-      ),
-    {
-      onSuccess: () => {
-        draft.accept()
-        toast('Notifications enregistrées.', 'success')
-        reload()
-      },
-    },
-  )
-
-  const testing = useAsyncAction(
-    async () => container.testNotificationChannel.execute(config.channel),
-    {
-      onSuccess: (result) => {
-        if (result?.success) toast('Message envoyé : le canal fonctionne.', 'success')
-        else
-          toast(
-            'Échec de l’envoi.',
-            'error',
-            scrubSecrets(result?.errorMessage ?? 'no reason given'),
-          )
-        reload()
-      },
-    },
-  )
-
-  const removing = useAsyncAction(
-    async () => container.deleteNotificationChannel.execute(config.channel),
-    {
-      onSuccess: () => {
-        toast('Canal supprimé.', 'info')
-        draft.discard()
-        void navigate('/settings/notifications')
-      },
-    },
-  )
-
   // Enabling ships images off the local network: asked once, at save, never on the toggle itself.
-  function save() {
-    if (draft.values.enabled && !config.isEnabled) {
-      setConfirmEnable(true)
-      return
-    }
-    void saving.run()
+  async function save() {
+    if (await presenter.onSave(config, draft.values)) draft.accept()
   }
 
   const channelSettings: SettingDeclaration[] = [
@@ -328,14 +295,14 @@ function ChannelForm({
               <Button
                 type="button"
                 variant="outline"
-                disabled={testing.loading || !testable}
+                disabled={uido.testing || !testable}
                 title={testable ? undefined : 'Enregistrez la configuration avant de tester'}
-                onClick={() => void testing.run()}
+                onClick={() => void presenter.onTest(channel)}
               >
-                {testing.loading ? 'Envoi…' : 'Envoyer un message de test'}
+                {uido.testing ? 'Envoi…' : 'Envoyer un message de test'}
               </Button>
               {config.isConfigured && (
-                <Button type="button" variant="destructive" onClick={() => setConfirmRemove(true)}>
+                <Button type="button" variant="destructive" onClick={presenter.onAskRemove}>
                   Supprimer le canal
                 </Button>
               )}
@@ -355,7 +322,21 @@ function ChannelForm({
               title="Commander depuis la conversation"
               lede="Reliez une conversation à votre installation pour lui demander, depuis votre téléphone, ce qui se passe chez vous."
             >
-              <ChannelPairingSection channel={config.channel} displayName={config.displayName} />
+              <ChannelPairingSection
+                displayName={config.displayName}
+                pairing={uido.pairing}
+                pairingLoading={uido.pairingLoading}
+                listening={uido.listening}
+                listeningLoading={uido.listeningLoading}
+                starting={uido.startingPairing}
+                confirmRevoke={uido.confirmRevoke}
+                revoking={uido.revoking}
+                onStart={() => void presenter.onStartPairing(channel)}
+                onAskRevoke={presenter.onAskRevoke}
+                onCancelRevoke={presenter.onCancelRevoke}
+                onRevoke={() => void presenter.onRevoke(channel)}
+                onRefresh={() => presenter.onRefreshPairing(channel)}
+              />
 
               <HelpPanel title="Que puis-je demander, une fois relié ?">
                 <p>
@@ -399,12 +380,20 @@ function ChannelForm({
             </SettingsSection>
 
             <SettingsSection title="Derniers envois">
-              <NotificationLog channel={config.channel} />
+              <NotificationLog
+                entries={uido.log}
+                loading={uido.logLoading}
+                onRefresh={() => presenter.onRefreshLog(channel)}
+              />
             </SettingsSection>
 
             {config.acceptsCommands && (
               <SettingsSection title="Dernières commandes">
-                <CommandJournal channel={config.channel} />
+                <CommandJournal
+                  entries={uido.journal}
+                  loading={uido.journalLoading}
+                  onRefresh={() => presenter.onRefreshJournal(channel)}
+                />
               </SettingsSection>
             )}
           </AdvancedFold>
@@ -413,39 +402,39 @@ function ChannelForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
+        saving={uido.saving}
         onSave={save}
         onDiscard={draft.discard}
       />
 
-      {confirmEnable && (
+      {uido.confirmEnable && (
         <ConfirmModal
           title={`Envoyer les alertes par ${config.displayName} ?`}
           body={`Les photos, vidéos et noms de caméras seront transmis aux serveurs de ${config.displayName}, qui en aura connaissance. Vos données ne resteront plus strictement chez vous.`}
           confirmLabel="Activer"
           cancelLabel="Annuler"
           tone="warn"
-          loading={saving.loading}
+          loading={uido.saving}
           onConfirm={async () => {
-            await saving.run()
-            setConfirmEnable(false)
+            if (await presenter.onConfirmEnable(config, draft.values)) draft.accept()
           }}
-          onCancel={() => setConfirmEnable(false)}
+          onCancel={presenter.onCancelEnable}
         />
       )}
 
-      {confirmRemove && (
+      {uido.confirmRemove && (
         <ConfirmModal
           title={`Supprimer le canal ${config.displayName} ?`}
           body="Les informations de connexion seront effacées. Vous ne recevrez plus d’alertes par ce canal tant qu’il n’est pas reconfiguré."
           confirmLabel="Supprimer"
           tone="danger"
-          loading={removing.loading}
+          loading={uido.removing}
           onConfirm={async () => {
-            await removing.run()
-            setConfirmRemove(false)
+            if (!(await presenter.onRemove(channel))) return
+            draft.discard()
+            void navigate('/settings/notifications')
           }}
-          onCancel={() => setConfirmRemove(false)}
+          onCancel={presenter.onCancelRemove}
         />
       )}
     </>

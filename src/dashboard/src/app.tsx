@@ -84,19 +84,19 @@ const PersonCamerasView = lazy(() =>
     default: m.PersonCamerasView,
   })),
 )
-const NotificationChannelListPage = lazy(() =>
-  import('./presentation/notifications/notification_channel_list_page').then((m) => ({
-    default: m.NotificationChannelListPage,
+const NotificationChannelListView = lazy(() =>
+  import('./presentation/notifications/notification_channel_list.component').then((m) => ({
+    default: m.NotificationChannelListView,
   })),
 )
-const AddNotificationChannelPage = lazy(() =>
-  import('./presentation/notifications/add_notification_channel_page').then((m) => ({
-    default: m.AddNotificationChannelPage,
+const AddNotificationChannelView = lazy(() =>
+  import('./presentation/notifications/add_notification_channel.component').then((m) => ({
+    default: m.AddNotificationChannelView,
   })),
 )
-const NotificationChannelPage = lazy(() =>
-  import('./presentation/notifications/notification_channel_page').then((m) => ({
-    default: m.NotificationChannelPage,
+const NotificationChannelView = lazy(() =>
+  import('./presentation/notifications/notification_channel.component').then((m) => ({
+    default: m.NotificationChannelView,
   })),
 )
 const ConservationPage = lazy(() =>
@@ -209,17 +209,17 @@ const router = createBrowserRouter([
             ],
           },
           { path: 'conservation', element: <ConservationPage /> },
-          { path: 'notifications', element: <NotificationChannelListPage /> },
+          { path: 'notifications', element: <NotificationChannelListView /> },
           // Names the task, not the section.
           {
             path: 'notifications/ajout',
-            element: <AddNotificationChannelPage />,
+            element: <AddNotificationChannelView />,
             handle: OWN_HEADER,
           },
           // Carries the name of the open channel.
           {
             path: 'notifications/:channel',
-            element: <NotificationChannelPage />,
+            element: <NotificationChannelView />,
             handle: OWN_HEADER,
           },
           { path: 'acces', element: <AccessPage /> },

@@ -26,12 +26,6 @@ const USE_CASE_ACCESS = [CONTAINER_ACCESS, USE_CASE_HOOKS]
 // Files that still call use cases from the view. This list only shrinks: each screen migration removes its files.
 const PRESENTER_RULE_BACKLOG = [
   'src/presentation/access/access_gate.tsx',
-  'src/presentation/notifications/add_notification_channel_page.tsx',
-  'src/presentation/notifications/channel_pairing_section.tsx',
-  'src/presentation/notifications/command_journal.tsx',
-  'src/presentation/notifications/notification_channel_list_page.tsx',
-  'src/presentation/notifications/notification_channel_page.tsx',
-  'src/presentation/notifications/notification_log.tsx',
   'src/presentation/settings/access_page.tsx',
   'src/presentation/settings/conservation_page.tsx',
   'src/presentation/surveillance/use_surveillance_refresh.ts',
