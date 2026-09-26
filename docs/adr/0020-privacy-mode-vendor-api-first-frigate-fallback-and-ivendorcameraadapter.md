@@ -89,7 +89,7 @@ CREATE TABLE camera_privacy_schedules (
     enabled      INTEGER NOT NULL DEFAULT 1,
     days_of_week TEXT NOT NULL,   -- JSON array [0..6], 0 = dimanche
     start_time   TEXT NOT NULL,   -- "HH:mm"
-    end_time     TEXT NOT NULL,   -- "HH:mm" ; passage minuit = deux plages
+    end_time     TEXT NOT NULL,   -- "HH:mm"
     created_at   TEXT NOT NULL
 );
 CREATE INDEX idx_privacy_schedules_camera ON camera_privacy_schedules(camera_id, enabled);
@@ -150,5 +150,4 @@ La reponse de `/api/cameras` est etendue avec `privacyModeActive`, `privacyModeS
 - ✅ Batch toggle avec un seul reload Frigate
 - ⚠️ Reload Frigate : breve coupure (~1–3s) sur toutes les cameras — l'UI indique que l'operation est en cours
 - ⚠️ Cameras sans adaptateur vendor : l'UI indique explicitement que la coupure est Frigate uniquement (flux RTSP brut potentiellement accessible si quelqu'un connait l'IP)
-- ⚠️ Passage minuit pour les planifications : a trancher en implementation (deux plages ou detection depassement dans le scheduler)
 - ⚠️ Les credentials cameras (ADR-12) sont deja protegees via `DataProtection` — l'adaptateur vendor les consomme via le meme mecanisme
