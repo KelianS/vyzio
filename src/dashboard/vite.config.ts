@@ -36,9 +36,12 @@ export default defineConfig(({ mode }) => {
         exclude: [
           'src/main.tsx', // bootstrap: mounts React, no logic
           'src/test-setup.ts', // test harness, not shipped code
+          'src/testing/**', // shared test fixtures, not shipped code
           'src/**/*.d.ts', // ambient types, erased at build
           'src/domain/ports/**', // interfaces only, erased at build
         ],
+        // A floor that only rises: each screen migration lifts it to what it reached, up to 80%.
+        thresholds: { statements: 27, branches: 23, functions: 25, lines: 27 },
       },
     },
   }

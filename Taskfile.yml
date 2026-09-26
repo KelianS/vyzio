@@ -182,6 +182,8 @@ tasks:
       - task: front:lint
       - task: front:format:check
       - task: front:knip
+      # With coverage, as CI runs it, so the floor holds locally too.
       - task: front:test
+        vars: { CLI_ARGS: '--coverage' }
       - task: front:build
       - task: front:test:e2e
