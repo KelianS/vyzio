@@ -29,7 +29,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task GetCameras_returns_catalog_with_status_projection()
+    public async Task GetCameras_ShouldReturnTheCatalogWithEachCameraStatus_WhenACameraIsRegistered()
     {
         using var client = _factory.CreateClient();
 
@@ -94,7 +94,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task GetCameraStatus_returns_not_found_for_unknown_camera()
+    public async Task GetCameraStatus_ShouldReturnNotFound_WhenTheCameraIsUnknown()
     {
         using var client = _factory.CreateClient();
 
@@ -104,7 +104,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task GetCameraStatus_returns_guidance_for_known_camera()
+    public async Task GetCameraStatus_ShouldReturnGuidance_WhenTheCameraIsKnown()
     {
         using var client = _factory.CreateClient();
 
@@ -119,7 +119,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Discover_returns_candidates_from_discovery_service()
+    public async Task Discover_ShouldReturnTheDiscoveryServiceCandidates_WhenNoTargetIsGiven()
     {
         using var client = _factory.CreateClient();
 
@@ -137,7 +137,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Discover_can_refresh_a_single_target_without_full_scan()
+    public async Task Discover_ShouldRefreshOnlyThatTargetWithoutAFullScan_WhenASingleTargetIsGiven()
     {
         using var client = _factory.CreateClient();
 
@@ -155,7 +155,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Update_camera_persists_changes_without_forcing_delete_and_recreate()
+    public async Task UpdateCamera_ShouldPersistTheChangesInPlaceAsADraft_WhenTheCameraExists()
     {
         using var client = _factory.CreateClient();
 
@@ -178,7 +178,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Vendor_assistance_returns_markdown_from_dedicated_route()
+    public async Task GetVendorAssistance_ShouldReturnTheVendorMarkdown_WhenAKnownVendorFamilyIsAsked()
     {
         using var client = _factory.CreateClient();
 
@@ -196,7 +196,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Vendor_asset_route_serves_local_vendor_file()
+    public async Task GetVendorAsset_ShouldServeTheLocalFileAsText_WhenTheVendorAssetExists()
     {
         using var client = _factory.CreateClient();
 
@@ -210,7 +210,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Create_verify_and_apply_camera_flow_updates_catalog()
+    public async Task ApplyCamera_ShouldValidateTheCamera_WhenItWasCreatedThenVerifiedOnline()
     {
         using var client = _factory.CreateClient();
 
@@ -243,7 +243,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Verify_draft_returns_status_without_persisting_camera()
+    public async Task VerifyDraft_ShouldReturnTheStatusWithoutPersistingTheCamera_WhenTheCameraIsNotYetCreated()
     {
         using var client = _factory.CreateClient();
 
@@ -269,7 +269,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Apply_configuration_enables_all_eligible_cameras()
+    public async Task ApplyConfiguration_ShouldValidateAndEnableTheCamera_WhenItWasCreatedThenVerified()
     {
         using var client = _factory.CreateClient();
 
@@ -307,7 +307,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Delete_camera_removes_it_from_catalog()
+    public async Task DeleteCamera_ShouldMarkItPendingRemovalThenDropIt_WhenTheConfigurationIsApplied()
     {
         using var client = _factory.CreateClient();
 

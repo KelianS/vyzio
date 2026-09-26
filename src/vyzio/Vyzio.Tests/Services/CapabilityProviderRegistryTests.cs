@@ -36,7 +36,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_returns_stream_providers_in_registration_order()
+    public void GetRegisteredProtocols_ShouldListStreamProtocolsInRegistrationOrder_WhenSeveralStreamProvidersAreRegistered()
     {
         var rtsp = MakeStream(SupportedProtocol.Rtsp);
         var dvrip = MakeStream(SupportedProtocol.Dvrip);
@@ -46,7 +46,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePtz_returns_registered_provider()
+    public void ResolvePtz_ShouldReturnTheProvider_WhenItsProtocolIsRegistered()
     {
         var onvif = MakePtz(SupportedProtocol.Onvif);
         var sut = new CapabilityProviderRegistry([onvif], [], []);
@@ -55,7 +55,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePrivacy_returns_registered_provider()
+    public void ResolvePrivacy_ShouldReturnTheProvider_WhenItsProtocolIsRegistered()
     {
         var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
         var sut = new CapabilityProviderRegistry([], [tapo], []);
@@ -64,7 +64,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolveImageSettings_returns_registered_provider()
+    public void ResolveImageSettings_ShouldReturnTheProvider_WhenItsProtocolIsRegistered()
     {
         var onvif = MakeImageSettings(SupportedProtocol.Onvif);
         var sut = new CapabilityProviderRegistry([], [], [onvif]);
@@ -73,7 +73,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePtz_throws_for_unregistered_protocol()
+    public void ResolvePtz_ShouldThrow_WhenNoProviderIsRegistered()
     {
         var sut = new CapabilityProviderRegistry([], [], []);
 
@@ -81,7 +81,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePrivacy_throws_for_unregistered_protocol()
+    public void ResolvePrivacy_ShouldThrow_WhenNoProviderIsRegistered()
     {
         var sut = new CapabilityProviderRegistry([], [], []);
 
@@ -89,7 +89,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolveImageSettings_throws_for_unregistered_protocol()
+    public void ResolveImageSettings_ShouldThrow_WhenNoProviderIsRegistered()
     {
         var sut = new CapabilityProviderRegistry([], [], []);
 
@@ -97,7 +97,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePtz_distinguishes_multiple_registered_protocols()
+    public void ResolvePtz_ShouldReturnTheMatchingProvider_WhenSeveralProtocolsAreRegistered()
     {
         var onvif = MakePtz(SupportedProtocol.Onvif);
         var dvrip = MakePtz(SupportedProtocol.Dvrip);
@@ -108,7 +108,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePrivacy_distinguishes_multiple_registered_protocols()
+    public void ResolvePrivacy_ShouldReturnTheMatchingProvider_WhenSeveralProtocolsAreRegistered()
     {
         var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
         var dvrip = MakePrivacy(SupportedProtocol.Dvrip);
@@ -119,7 +119,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void ResolvePtz_throws_for_unknown_protocol_even_with_other_providers_registered()
+    public void ResolvePtz_ShouldThrow_WhenOnlyOtherProtocolsAreRegistered()
     {
         var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], [], []);
 
@@ -127,7 +127,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_returns_ptz_providers_in_registration_order()
+    public void GetRegisteredProtocols_ShouldListPtzProtocolsInRegistrationOrder_WhenSeveralPtzProvidersAreRegistered()
     {
         var onvif = MakePtz(SupportedProtocol.Onvif);
         var dvrip = MakePtz(SupportedProtocol.Dvrip);
@@ -137,7 +137,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_returns_privacy_providers_for_hardware_privacy()
+    public void GetRegisteredProtocols_ShouldListThePrivacyProtocol_WhenAskedForHardwarePrivacy()
     {
         var tapo = MakePrivacy(SupportedProtocol.TapoKlap);
         var sut = new CapabilityProviderRegistry([], [tapo], []);
@@ -146,7 +146,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_returns_image_settings_providers()
+    public void GetRegisteredProtocols_ShouldListImageSettingsProtocolsInRegistrationOrder_WhenSeveralImageSettingsProvidersAreRegistered()
     {
         var onvif = MakeImageSettings(SupportedProtocol.Onvif);
         var dvrip = MakeImageSettings(SupportedProtocol.Dvrip);
@@ -156,7 +156,7 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_returns_empty_when_no_provider_registered_for_capability()
+    public void GetRegisteredProtocols_ShouldReturnNothing_WhenNoProviderCoversTheCapability()
     {
         var sut = new CapabilityProviderRegistry([MakePtz(SupportedProtocol.Onvif)], [], []);
 

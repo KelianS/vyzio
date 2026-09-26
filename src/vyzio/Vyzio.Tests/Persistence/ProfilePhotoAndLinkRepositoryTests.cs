@@ -27,7 +27,7 @@ public sealed class ProfilePhotoRepositoryTests : IDisposable
     public void Dispose() { _db.Dispose(); _connection.Dispose(); }
 
     [Fact]
-    public async Task AddAsync_and_GetByProfileIdAsync_roundtrip()
+    public async Task GetByProfileIdAsync_ShouldReturnThePhoto_WhenItWasAddedForThatProfile()
     {
         var profile = new Profile { Name = "Alice" };
         _db.Profiles.Add(profile);
@@ -43,7 +43,7 @@ public sealed class ProfilePhotoRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetUnsyncedAsync_returns_only_unsynced()
+    public async Task GetUnsyncedAsync_ShouldReturnOnlyUnsyncedPhotos_WhenSomeAreAlreadySynced()
     {
         var profile = new Profile { Name = "Bob" };
         _db.Profiles.Add(profile);
@@ -59,7 +59,7 @@ public sealed class ProfilePhotoRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_photo()
+    public async Task DeleteAsync_ShouldRemoveThePhoto_WhenThePhotoExists()
     {
         var profile = new Profile { Name = "Carol" };
         _db.Profiles.Add(profile);
@@ -75,7 +75,7 @@ public sealed class ProfilePhotoRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateAsync_persists_sync_status()
+    public async Task UpdateAsync_ShouldPersistTheSyncStatus_WhenThePhotoIsMarkedSynced()
     {
         var profile = new Profile { Name = "Dave" };
         _db.Profiles.Add(profile);
@@ -131,7 +131,7 @@ public sealed class ProfileCameraLinkRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task UpsertAsync_creates_link_when_none_exists()
+    public async Task UpsertAsync_ShouldCreateTheLink_WhenNoneExists()
     {
         var (profile, camera) = await SeedProfileAndCameraAsync();
 
@@ -148,7 +148,7 @@ public sealed class ProfileCameraLinkRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task UpsertAsync_updates_enabled_when_link_already_exists()
+    public async Task UpsertAsync_ShouldUpdateEnabled_WhenTheLinkAlreadyExists()
     {
         var (profile, camera) = await SeedProfileAndCameraAsync();
 
@@ -161,7 +161,7 @@ public sealed class ProfileCameraLinkRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task UpsertAsync_enforces_unique_profile_camera_pair()
+    public async Task UpsertAsync_ShouldKeepASingleLink_WhenTheSameProfileAndCameraAreUpsertedTwice()
     {
         var (profile, camera) = await SeedProfileAndCameraAsync();
 
@@ -173,7 +173,7 @@ public sealed class ProfileCameraLinkRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteByProfileAndCameraAsync_removes_link()
+    public async Task DeleteByProfileAndCameraAsync_ShouldRemoveTheLink_WhenTheLinkExists()
     {
         var (profile, camera) = await SeedProfileAndCameraAsync();
         await _sut.UpsertAsync(new ProfileCameraLink { ProfileId = profile.Id, CameraId = camera.Id, Enabled = true });
@@ -185,7 +185,7 @@ public sealed class ProfileCameraLinkRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetByCameraIdAsync_returns_links_for_camera()
+    public async Task GetByCameraIdAsync_ShouldReturnEveryLinkOfTheCamera_WhenSeveralProfilesAreLinkedToIt()
     {
         var (profile1, camera) = await SeedProfileAndCameraAsync("Alice", "cam-1");
         var profile2 = new Profile { Name = "Bob" };

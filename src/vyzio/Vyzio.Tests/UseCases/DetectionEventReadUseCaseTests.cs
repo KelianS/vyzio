@@ -35,7 +35,7 @@ public abstract class DetectionReadTestBase
 public class GetRecentDetectionEventsUseCaseTests : DetectionReadTestBase
 {
     [Fact]
-    public async Task Execute_returns_what_Frigate_answers()
+    public async Task ExecuteAsync_ShouldReturnWhatFrigateAnswers_WhenRecentDetectionsAreAsked()
     {
         Events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>())
             .Returns([Detection("frigate-001")]);
@@ -47,7 +47,7 @@ public class GetRecentDetectionEventsUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task Execute_clamps_limit_before_querying_Frigate()
+    public async Task ExecuteAsync_ShouldClampTheLimitBeforeQueryingFrigate_WhenTheLimitIsTooHigh()
     {
         await new GetRecentDetectionEventsUseCase(Events, Projector()).ExecuteAsync(500);
 
@@ -60,7 +60,7 @@ public class GetRecentDetectionEventsUseCaseTests : DetectionReadTestBase
 public class GetProfileDetectionEventsUseCaseTests : DetectionReadTestBase
 {
     [Fact]
-    public async Task Execute_asks_Frigate_for_the_name_the_profile_bears()
+    public async Task ExecuteAsync_ShouldAskFrigateForTheNameTheProfileBears_WhenTheProfileExists()
     {
         var profile = new Profile { Name = "Alice" };
         Profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -77,7 +77,7 @@ public class GetProfileDetectionEventsUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task Execute_returns_nothing_when_the_profile_is_gone()
+    public async Task ExecuteAsync_ShouldReturnNothingWithoutQuerying_WhenTheProfileIsGone()
     {
         Profiles.GetByIdAsync("profile-404", Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
@@ -89,7 +89,7 @@ public class GetProfileDetectionEventsUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task Execute_throws_when_profile_id_is_blank()
+    public async Task ExecuteAsync_ShouldThrow_WhenTheProfileIdIsBlank()
     {
         var sut = new GetProfileDetectionEventsUseCase(Profiles, Events, Projector());
 
@@ -102,7 +102,7 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     private GetDetectionHistoryUseCase CreateSut() => new(Profiles, Events, Projector());
 
     [Fact]
-    public async Task Execute_offers_a_cursor_only_while_a_full_page_comes_back()
+    public async Task ExecuteAsync_ShouldOfferTheOldestMomentAsCursor_WhenAFullPageComesBack()
     {
         var oldest = DateTimeOffset.Parse("2026-05-10T08:00:00+00:00", CultureInfo.InvariantCulture);
         Events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>())
@@ -115,7 +115,7 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task Execute_stops_offering_a_cursor_on_the_last_page()
+    public async Task ExecuteAsync_ShouldOfferNoCursor_WhenThePageIsTheLast()
     {
         Events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>())
             .Returns([Detection("frigate-001")]);
@@ -126,7 +126,7 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task Execute_reads_the_cursor_as_the_moment_to_read_before()
+    public async Task ExecuteAsync_ShouldReadBeforeTheCursorMoment_WhenACursorIsGiven()
     {
         var cursor = DateTimeOffset.Parse("2026-05-10T08:00:00+00:00", CultureInfo.InvariantCulture);
 
@@ -139,7 +139,7 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task Execute_translates_a_profile_filter_into_the_name_Frigate_recognized()
+    public async Task ExecuteAsync_ShouldFilterOnTheNameFrigateRecognizes_WhenAProfileFilterIsGiven()
     {
         var profile = new Profile { Name = "Alice" };
         Profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);

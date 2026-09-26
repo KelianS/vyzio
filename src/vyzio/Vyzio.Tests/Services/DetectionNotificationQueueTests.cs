@@ -6,7 +6,7 @@ namespace Vyzio.Tests.Services;
 public class DetectionNotificationQueueTests
 {
     [Fact]
-    public async Task ReadAllAsync_hands_back_the_detections_in_order()
+    public async Task ReadAllAsync_ShouldHandBackTheDetectionsInOrder_WhenSeveralAreQueued()
     {
         var queue = new DetectionNotificationQueue();
         Assert.True(queue.TryEnqueue(Detection("evt-1")));
@@ -24,7 +24,7 @@ public class DetectionNotificationQueueTests
     }
 
     [Fact]
-    public void TryEnqueue_reports_a_drop_once_saturated()
+    public void TryEnqueue_ShouldReportADrop_WhenTheQueueIsAlreadyFull()
     {
         var queue = new DetectionNotificationQueue();
 

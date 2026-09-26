@@ -16,13 +16,13 @@ public class DiscoveryPortCatalogTests
     [InlineData(8800, SupportedProtocol.V380)]
     [InlineData(34567, SupportedProtocol.Dvrip)]
     [InlineData(443, SupportedProtocol.TapoKlap)]
-    public void FingerprintsForPort_offers_the_protocol_that_may_live_there(int port, SupportedProtocol expected)
+    public void FingerprintsForPort_ShouldOfferTheExpectedProtocol_WhenThePortConventionallyCarriesIt(int port, SupportedProtocol expected)
         => Assert.Contains(DiscoveryPortCatalog.FingerprintsForPort(port), f => f.Protocol == expected);
 
     // Port 80 is shared: a Tapo KLAP handshake and an ONVIF SOAP call are both worth attempting,
     // and only the passing one qualifies the host.
     [Fact]
-    public void FingerprintsForPort_offers_every_candidate_protocol_on_a_shared_port()
+    public void FingerprintsForPort_ShouldOfferBothOnvifAndTapoKlap_WhenThePortIsShared()
     {
         var protocols = DiscoveryPortCatalog.FingerprintsForPort(80).Select(f => f.Protocol).ToArray();
 
@@ -32,7 +32,7 @@ public class DiscoveryPortCatalogTests
 
     // A fingerprint on a port the sweep never opens is dead code: only scanned ports get probed.
     [Fact]
-    public void Every_fingerprint_port_is_swept()
+    public void Fingerprints_ShouldOnlyUseSweptPorts_WhenComparedWithTheScannedPorts()
     {
         var unswept = DiscoveryPortCatalog.Fingerprints
             .SelectMany(fingerprint => fingerprint.Ports)
@@ -49,10 +49,10 @@ public class DiscoveryPortCatalogTests
     [InlineData(8800)]
     [InlineData(8899)]
     [InlineData(34567)]
-    public void ServiceLabel_is_empty_for_camera_protocol_ports(int port)
+    public void ServiceLabel_ShouldBeEmpty_WhenThePortCarriesACameraProtocol(int port)
         => Assert.Equal(string.Empty, DiscoveryPortCatalog.ServiceLabel(port));
 
     [Fact]
-    public void ServiceLabel_is_empty_for_a_port_outside_the_catalog()
+    public void ServiceLabel_ShouldBeEmpty_WhenThePortIsOutsideTheCatalog()
         => Assert.Equal(string.Empty, DiscoveryPortCatalog.ServiceLabel(49152));
 }

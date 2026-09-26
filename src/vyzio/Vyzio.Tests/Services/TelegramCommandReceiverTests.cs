@@ -26,7 +26,7 @@ public class TelegramCommandReceiverTests
         => $$$"""{"update_id":{{{updateId}}},"message":{"chat":{"id":{{{chatId}}}},"text":"{{{text}}}"}}""";
 
     [Fact]
-    public async Task Reads_a_command_its_argument_and_the_conversation_it_came_from()
+    public async Task ReceiveAsync_ShouldReadTheCommandItsArgumentAndItsConversation_WhenASlashCommandArrives()
     {
         var handler = new RecordingHandler(Updates(Message(1, 4242, "/relier 123456")));
 
@@ -41,7 +41,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Reads_a_command_addressed_to_the_bot_by_name_in_a_group()
+    public async Task ReceiveAsync_ShouldReadTheCommand_WhenItIsAddressedToTheBotByNameInAGroup()
     {
         var handler = new RecordingHandler(Updates(Message(1, 7, "/maison@vyzio_bot")));
 
@@ -52,7 +52,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Reports_ordinary_conversation_and_undeclared_commands_as_understood_by_nobody()
+    public async Task ReceiveAsync_ShouldReportNoCommand_WhenTheMessageIsOrdinaryTextOrAnUndeclaredCommand()
     {
         var handler = new RecordingHandler(Updates(
             Message(1, 7, "bonjour"),
@@ -67,7 +67,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Acknowledges_what_it_read_so_the_next_poll_moves_on()
+    public async Task ReceiveAsync_ShouldAdvanceTheOffsetPastWhatItRead_WhenPollingAgain()
     {
         var handler = new RecordingHandler(
             Updates(Message(11, 7, "bonjour")),
@@ -82,7 +82,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Publishes_the_commands_in_the_grammar_of_the_channel()
+    public async Task PublishCommandsAsync_ShouldSetTheBotCommands_WhenPublishingTheDeclaredCommands()
     {
         var handler = new RecordingHandler("""{"ok":true}""");
 
@@ -94,7 +94,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Sends_nothing_at_all_when_the_answer_is_silence()
+    public async Task RespondAsync_ShouldSendNothing_WhenTheAnswerIsSilence()
     {
         var handler = new RecordingHandler();
 
@@ -105,7 +105,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Answers_in_the_conversation_that_asked()
+    public async Task RespondAsync_ShouldSendTheMessageToTheAskingConversation_WhenAnsweringWithText()
     {
         var handler = new RecordingHandler("""{"ok":true}""");
 
@@ -120,7 +120,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Turns_a_proposed_follow_up_into_a_button_that_carries_the_command()
+    public async Task RespondAsync_ShouldAddAButtonCarryingTheCommand_WhenTheAnswerProposesAFollowUp()
     {
         var handler = new RecordingHandler("""{"ok":true}""");
 
@@ -141,7 +141,7 @@ public class TelegramCommandReceiverTests
     }
 
     [Fact]
-    public async Task Reads_a_button_tap_as_the_command_it_carried_and_as_a_confirmation()
+    public async Task ReceiveAsync_ShouldReadTheCarriedCommandAsAConfirmationAndAnswerTheTap_WhenAButtonIsTapped()
     {
         var handler = new RecordingHandler(
             """{"ok":true,"result":[{"update_id":3,"callback_query":{"id":"c1","data":"relier|1|123456","message":{"chat":{"id":4242}}}}]}""");

@@ -49,7 +49,7 @@ public class PtzPositionCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_so_when_no_camera_can_even_move()
+    public async Task ExecuteAsync_ShouldSaySo_WhenNoCameraCanMove()
     {
         var still = Motorised("entree", "Entrée");
         still.PtzSupported = false;
@@ -60,7 +60,7 @@ public class PtzPositionCommandHandlerTests
     }
 
     [Fact]
-    public async Task Offers_the_positions_of_the_camera_rather_than_asking_one_to_spell_them()
+    public async Task ExecuteAsync_ShouldOfferTheSavedPositionsToTap_WhenOnlyTheCameraIsNamed()
     {
         var camera = Motorised("jardin", "Jardin");
         _presets.GetAllAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(
@@ -76,7 +76,7 @@ public class PtzPositionCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_when_the_camera_has_no_position_worth_going_to()
+    public async Task ExecuteAsync_ShouldSaySo_WhenTheCameraHasNoSavedPosition()
     {
         var camera = Motorised("jardin", "Jardin");
         _presets.GetAllAsync(camera.Id, Arg.Any<CancellationToken>()).Returns([]);
@@ -87,7 +87,7 @@ public class PtzPositionCommandHandlerTests
     }
 
     [Fact]
-    public async Task Understands_a_position_named_by_hand_as_well_as_one_that_was_tapped()
+    public async Task ExecuteAsync_ShouldUnderstandThePositionTypedByNameOrTapped_WhenTheMoveCannotHappen()
     {
         var camera = Motorised("jardin", "Jardin");
         _presets.GetAllAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(

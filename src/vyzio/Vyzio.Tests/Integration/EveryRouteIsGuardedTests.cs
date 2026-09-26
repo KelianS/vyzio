@@ -36,7 +36,7 @@ public class EveryRouteIsGuardedTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task No_route_answers_without_a_session_unless_it_is_a_named_exception()
+    public async Task ExposedRoutes_ShouldAnswerUnauthorized_WhenNoSessionIsSentToARouteOutsideTheNamedExceptions()
     {
         using var client = _factory.CreateClient();
         var unguarded = new List<string>();
@@ -57,7 +57,7 @@ public class EveryRouteIsGuardedTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public void Every_named_exception_still_exists()
+    public void AnonymousExceptions_ShouldEachMatchAnExposedRoute_WhenTheApiRoutesAreListed()
     {
         var exposed = ExposedRoutes()
             .SelectMany(route => new[] { route.Template, $"{route.Method} {route.Template}" })

@@ -36,7 +36,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public void A_channel_nobody_started_listening_on_says_so()
+    public void Execute_ShouldReportNotListening_WhenNobodyStartedListeningOnTheChannel()
     {
         var dto = new GetChannelListeningUseCase(Catalog(), new ChannelListenerHealth(TimeProvider.System))
             .Execute(NotificationChannel.Telegram);
@@ -47,7 +47,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public void An_interrupted_loop_reads_as_silent_and_says_why()
+    public void Execute_ShouldReportSilentWithTheReason_WhenTheLoopWasInterrupted()
     {
         var health = new ChannelListenerHealth(TimeProvider.System);
         health.Started(NotificationChannel.Telegram);
@@ -62,7 +62,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public void A_loop_that_comes_back_keeps_the_trace_of_the_interruption()
+    public void Started_ShouldKeepTheTraceOfTheInterruption_WhenTheLoopComesBack()
     {
         var health = new ChannelListenerHealth(TimeProvider.System);
         health.Interrupted(NotificationChannel.Telegram, "Network unreachable.");
@@ -77,7 +77,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public void Rounds_that_keep_coming_back_do_not_restart_the_clock()
+    public void Started_ShouldNotRestartTheClock_WhenTheLoopKeepsComingBack()
     {
         var health = new ChannelListenerHealth(TimeProvider.System);
         health.Started(NotificationChannel.Telegram);
@@ -89,7 +89,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public void A_channel_taken_down_on_purpose_stops_claiming_anything()
+    public void Stopped_ShouldStopClaimingToListen_WhenTheChannelIsTakenDownOnPurpose()
     {
         var health = new ChannelListenerHealth(TimeProvider.System);
         health.Started(NotificationChannel.Telegram);
@@ -99,7 +99,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public void A_channel_that_cannot_listen_has_nothing_to_show()
+    public void Execute_ShouldReturnNull_WhenTheChannelCannotListen()
     {
         var dto = new GetChannelListeningUseCase(Catalog(), new ChannelListenerHealth(TimeProvider.System))
             .Execute(NotificationChannel.Discord);
@@ -108,7 +108,7 @@ public class ChannelListeningTests
     }
 
     [Fact]
-    public async Task The_journal_of_a_channel_names_the_command_as_it_was_typed()
+    public async Task ExecuteAsync_ShouldNameTheCommandAsItWasTyped_WhenReadingTheChannelJournal()
     {
         var journal = Substitute.For<ICommandJournalRepository>();
         journal.GetRecentAsync(NotificationChannel.Telegram, Arg.Any<int>(), Arg.Any<CancellationToken>())

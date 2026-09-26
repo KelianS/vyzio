@@ -14,7 +14,7 @@ public class DetectionProfileResolverTests
     private DetectionProfileResolver CreateSut() => new(_profiles, _links);
 
     [Fact]
-    public async Task ResolveProfileIdAsync_returns_profile_when_linked_to_camera()
+    public async Task ResolveProfileIdAsync_ShouldReturnTheProfile_WhenItIsLinkedToTheCamera()
     {
         var profile = new Profile { Name = "Alice" };
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
@@ -25,7 +25,7 @@ public class DetectionProfileResolverTests
     }
 
     [Fact]
-    public async Task ResolveProfileIdAsync_returns_null_when_camera_not_in_active_links()
+    public async Task ResolveProfileIdAsync_ShouldReturnNull_WhenTheCameraIsNotAmongTheActiveLinks()
     {
         var profile = new Profile { Name = "Bob" };
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
@@ -36,7 +36,7 @@ public class DetectionProfileResolverTests
     }
 
     [Fact]
-    public async Task ResolveProfileIdAsync_returns_profile_when_it_has_no_links()
+    public async Task ResolveProfileIdAsync_ShouldReturnTheProfile_WhenItHasNoCameraLink()
     {
         // No link = recognized on every camera (ADR-15).
         var profile = new Profile { Name = "Carol" };
@@ -47,7 +47,7 @@ public class DetectionProfileResolverTests
     }
 
     [Fact]
-    public async Task ResolveProfileIdAsync_returns_null_when_no_profile_bears_that_name()
+    public async Task ResolveProfileIdAsync_ShouldReturnNull_WhenNoProfileBearsThatName()
     {
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([new Profile { Name = "Alice" }]);
 
@@ -55,7 +55,7 @@ public class DetectionProfileResolverTests
     }
 
     [Fact]
-    public async Task ResolveProfileIdAsync_returns_null_without_identity()
+    public async Task ResolveProfileIdAsync_ShouldReturnNullWithoutReadingProfiles_WhenThereIsNoIdentity()
     {
         Assert.Null(await CreateSut().ResolveProfileIdAsync(null, "cam-1"));
         await _profiles.DidNotReceive().GetAllAsync(Arg.Any<CancellationToken>());

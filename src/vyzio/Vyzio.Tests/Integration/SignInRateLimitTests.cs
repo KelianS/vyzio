@@ -19,7 +19,7 @@ public class SignInRateLimitTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Guessing_the_password_in_a_burst_stops_being_answered()
+    public async Task SignIn_ShouldAnswerTooManyRequests_WhenWrongPasswordsArriveInABurst()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest("un-mot-de-passe"));

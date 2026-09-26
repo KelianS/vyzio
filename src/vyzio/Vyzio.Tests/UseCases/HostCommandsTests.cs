@@ -9,14 +9,14 @@ namespace Vyzio.Tests.UseCases;
 public class HostCommandsTests
 {
     [Fact]
-    public void Serving_is_what_happens_when_no_command_was_asked_for()
+    public void Match_ShouldReturnNullSoTheApiServes_WhenNoCommandWasAskedFor()
     {
         Assert.Null(HostCommands.Match([]));
         Assert.Null(HostCommands.Match(["--urls", "http://+:8443"]));
     }
 
     [Fact]
-    public void Only_the_exact_command_is_a_command()
+    public void Match_ShouldRecognizeTheCommand_WhenTheArgumentsAreExactlyTheCommand()
     {
         Assert.Equal(HostCommands.ResetPassword, HostCommands.Match([HostCommands.ResetPassword]));
         Assert.Null(HostCommands.Match(["reset-passwords"]));

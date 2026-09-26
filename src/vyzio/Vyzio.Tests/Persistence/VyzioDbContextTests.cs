@@ -32,7 +32,7 @@ public sealed class VyzioDbContextTests : IDisposable
     }
 
     [Fact]
-    public void Deleting_an_account_closes_the_sessions_it_opened()
+    public void SaveChanges_ShouldDeleteTheAccountSessions_WhenTheAccountIsDeleted()
     {
         var account = new Account { PasswordHash = "hash" };
         _db.Accounts.Add(account);
@@ -46,7 +46,7 @@ public sealed class VyzioDbContextTests : IDisposable
     }
 
     [Fact]
-    public void Profile_can_be_created_and_retrieved()
+    public void SaveChanges_ShouldStoreTheProfileWithAnId_WhenAProfileIsAdded()
     {
         var profile = new Profile { Name = "Alice", Category = "household", AlertMode = "notify" };
         _db.Profiles.Add(profile);

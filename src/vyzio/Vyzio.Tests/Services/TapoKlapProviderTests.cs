@@ -37,21 +37,21 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public void Protocol_as_privacy_provider_is_TapoKlap()
+    public void Protocol_ShouldBeTapoKlap_WhenSeenAsAPrivacyProvider()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
         Assert.Equal(SupportedProtocol.TapoKlap, ((IPrivacyCapabilityProvider)provider).Protocol);
     }
 
     [Fact]
-    public void Protocol_as_ptz_provider_is_TapoKlap()
+    public void Protocol_ShouldBeTapoKlap_WhenSeenAsAPtzProvider()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
         Assert.Equal(SupportedProtocol.TapoKlap, ((IPtzCapabilityProvider)provider).Protocol);
     }
 
     [Fact]
-    public async Task ProbeAsync_returns_false_when_handshake1_fails()
+    public async Task ProbeAsync_ShouldReturnFalse_WhenTheFirstHandshakeIsRefused()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
 
@@ -61,7 +61,7 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_returns_false_when_handshake1_body_too_short()
+    public async Task ProbeAsync_ShouldReturnFalse_WhenTheFirstHandshakeBodyIsTooShort()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -74,7 +74,7 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public async Task SetPrivacyModeAsync_throws_when_authentication_fails()
+    public async Task SetPrivacyModeAsync_ShouldThrow_WhenAuthenticationFails()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
 
@@ -83,7 +83,7 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public async Task PtzMoveAsync_throws_when_authentication_fails()
+    public async Task PtzMoveAsync_ShouldThrow_WhenAuthenticationFails()
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
 
@@ -100,7 +100,7 @@ public class TapoKlapProviderTests
     [InlineData(PtzDirection.UpRight, 50, 50)]
     [InlineData(PtzDirection.DownLeft, -50, -50)]
     [InlineData(PtzDirection.DownRight, 50, -50)]
-    public void DirectionToVelocity_maps_all_directions(PtzDirection direction, int expectedX, int expectedY)
+    public void DirectionToVelocity_ShouldReturnTheMatchingXAndY_WhenMappingEachDirection(PtzDirection direction, int expectedX, int expectedY)
     {
         var (x, y) = TapoKlapProvider.DirectionToVelocity(direction, speed: 50);
         Assert.Equal(expectedX, x);
@@ -108,14 +108,14 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public void DirectionToVelocity_clamps_speed_to_100()
+    public void DirectionToVelocity_ShouldClampTheSpeedToOneHundred_WhenTheSpeedIsAboveIt()
     {
         var (x, _) = TapoKlapProvider.DirectionToVelocity(PtzDirection.Right, speed: 200);
         Assert.Equal(100, x);
     }
 
     [Fact]
-    public void DirectionToVelocity_clamps_speed_to_minimum_1()
+    public void DirectionToVelocity_ShouldClampTheSpeedToOne_WhenTheSpeedIsZero()
     {
         var (x, _) = TapoKlapProvider.DirectionToVelocity(PtzDirection.Right, speed: 0);
         Assert.Equal(1, x);

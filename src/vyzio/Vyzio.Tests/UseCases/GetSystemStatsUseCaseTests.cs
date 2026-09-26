@@ -21,7 +21,7 @@ public class GetSystemStatsUseCaseTests
     }
 
     [Fact]
-    public async Task Stats_report_a_configuration_written_but_not_taken_up_yet()
+    public async Task ExecuteAsync_ShouldReportPendingChanges_WhenAConfigurationIsWrittenButNotTakenUpYet()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _detectorPlanner.Plan(Arg.Any<int>()).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 5, FrigateHwAccel.None));
@@ -44,7 +44,7 @@ public class GetSystemStatsUseCaseTests
     };
 
     [Fact]
-    public async Task Detection_config_is_reported_when_frigate_is_active()
+    public async Task ExecuteAsync_ShouldReportTheDetectionConfig_WhenFrigateIsActive()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera()]);
         _detectorPlanner.Plan(1).Returns(new FrigateDetectorPlan(FrigateDetectorKind.Cpu, 3, FrigateHwAccel.None));
@@ -58,7 +58,7 @@ public class GetSystemStatsUseCaseTests
     }
 
     [Fact]
-    public async Task Detection_config_is_still_reported_when_frigate_is_unavailable()
+    public async Task ExecuteAsync_ShouldStillReportTheDetectionConfig_WhenFrigateIsUnavailable()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera()]);
         _detectorPlanner.Plan(1).Returns(new FrigateDetectorPlan(FrigateDetectorKind.EdgeTpu, 5, FrigateHwAccel.None));
@@ -73,7 +73,7 @@ public class GetSystemStatsUseCaseTests
     }
 
     [Fact]
-    public async Task Detection_config_only_counts_enabled_and_validated_cameras()
+    public async Task ExecuteAsync_ShouldPlanDetectionForEnabledValidatedCamerasOnly_WhenSomeAreDisabledOrDraft()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [

@@ -206,14 +206,14 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public void Protocol_is_Onvif()
+    public void Protocol_ShouldBeOnvif_WhenTheProviderIsCreated()
     {
         var (provider, _) = MakeProvider();
         Assert.Equal(SupportedProtocol.Onvif, provider.Protocol);
     }
 
     [Fact]
-    public async Task PtzMoveAsync_sends_GetProfiles_then_ContinuousMove()
+    public async Task PtzMoveAsync_ShouldSendAContinuousMoveOnTheReturnedProfile_WhenTheCameraListsAProfile()
     {
         var profilesXml = """
             <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
@@ -235,7 +235,7 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task PtzStopAsync_sends_Stop_command()
+    public async Task PtzStopAsync_ShouldSendAStopCommandLast_WhenTheCameraAnswers()
     {
         var (provider, requests) = MakeProvider();
 
@@ -254,7 +254,7 @@ public class OnvifPtzProviderTests
     [InlineData(PtzDirection.DownLeft, "-0.80", "-0.80")]
     [InlineData(PtzDirection.UpRight, "0.80", "0.80")]
     [InlineData(PtzDirection.DownRight, "0.80", "-0.80")]
-    public async Task PtzMoveAsync_maps_direction_to_correct_velocity(PtzDirection direction, string expectedPan, string expectedTilt)
+    public async Task PtzMoveAsync_ShouldSendTheMatchingPanAndTiltVelocity_WhenMovingInEachDirection(PtzDirection direction, string expectedPan, string expectedTilt)
     {
         var (provider, requests) = MakeProvider();
 
@@ -267,7 +267,7 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_returns_true_when_SOAP_responds_with_profile()
+    public async Task ProbeAsync_ShouldReturnTrue_WhenTheCameraAnswersWithAProfile()
     {
         var profilesXml = """
             <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
@@ -286,7 +286,7 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_sends_GetProfiles_and_GetConfigurationOptions()
+    public async Task ProbeAsync_ShouldAskForTheProfilesAndStillSucceed_WhenTheCameraReturnsNoProfile()
     {
         // OnvifPtzClient is resilient — uses default profile token on failure, so ProbeAsync
         // always returns true as long as no exception escapes GetFirstProfileTokenAsync.

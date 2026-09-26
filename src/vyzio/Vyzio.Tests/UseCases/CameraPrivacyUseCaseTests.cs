@@ -50,7 +50,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
         };
 
     [Fact]
-    public async Task Execute_calls_privacy_provider_and_sets_vendor_cut_when_strategy_is_hardware()
+    public async Task ExecuteAsync_ShouldCutTheLensThroughThePrivacyProvider_WhenTheStrategyIsHardware()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -214,7 +214,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_leaves_vendor_cut_false_when_strategy_is_software_blur()
+    public async Task ExecuteAsync_ShouldNotClaimALensCut_WhenTheStrategyIsSoftwareBlur()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.SoftwareBlur);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -228,7 +228,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_leaves_vendor_cut_false_when_hardware_binding_not_verified()
+    public async Task ExecuteAsync_ShouldRecordAnUnverifiedMissWithoutCutting_WhenTheHardwareBindingIsNotVerified()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -381,7 +381,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_always_triggers_frigate_reload()
+    public async Task ExecuteAsync_ShouldReloadTheDetectionConfig_WhenPrivacyIsToggledInSoftware()
     {
         var camera = MakeCamera();
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -392,7 +392,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -429,7 +429,7 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     };
 
     [Fact]
-    public async Task Execute_triggers_single_frigate_reload_for_entire_batch()
+    public async Task ExecuteAsync_ShouldReloadTheDetectionConfigOnce_WhenSeveralCamerasAreToggledTogether()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns([MakeCamera("cam1"), MakeCamera("cam2")]);
@@ -482,7 +482,7 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_sets_vendor_cut_for_hardware_cameras_with_verified_binding()
+    public async Task ExecuteAsync_ShouldCutEveryLens_WhenTheHardwareCamerasHaveAVerifiedBinding()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns([MakeCamera("cam1", PrivacyStrategy.Hardware), MakeCamera("cam2", PrivacyStrategy.Hardware)]);
@@ -531,7 +531,7 @@ public class SetCameraPrivacyStrategyUseCaseTests
     [InlineData("software_blur")]
     [InlineData("ptz_parking")]
     [InlineData("hardware")]
-    public async Task Execute_updates_strategy_on_valid_values(string strategy)
+    public async Task ExecuteAsync_ShouldSaveTheStrategy_WhenTheValueIsKnown(string strategy)
     {
         var camera = MakeCamera();
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -600,14 +600,14 @@ public class SetCameraPrivacyStrategyUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_throws_on_invalid_strategy()
+    public async Task ExecuteAsync_ShouldThrow_WhenTheStrategyIsUnknown()
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("invalid_strategy")));
     }
 
     [Fact]
-    public async Task Execute_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
