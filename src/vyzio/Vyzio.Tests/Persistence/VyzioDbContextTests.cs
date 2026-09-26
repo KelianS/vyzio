@@ -58,5 +58,21 @@ public sealed class VyzioDbContextTests : IDisposable
         Assert.NotEmpty(loaded.Id);
     }
 
+    [Fact]
+    public void SaveChanges_ShouldStoreTheValidationStateAsItsText_WhenACameraIsSaved()
+    {
+        _db.Cameras.Add(new Camera
+        {
+            Slug = "garage",
+            DisplayName = "Garage",
+            Host = "192.168.1.20",
+            FrigateCameraName = "garage",
+            ValidationState = CameraValidationState.PendingRemoval,
+        });
+        _db.SaveChanges();
+        _db.ChangeTracker.Clear();
 
+        Assert.Equal("pending_removal", _db.Database.SqlQueryRaw<string>("SELECT validation_state AS Value FROM cameras").Single());
+        Assert.Equal(CameraValidationState.PendingRemoval, _db.Cameras.Single().ValidationState);
+    }
 }
