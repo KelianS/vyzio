@@ -2,9 +2,7 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState } from './fixtures/fake_backend'
 
 test.describe('Personnes', () => {
-  test('user_When adding a person_Should land on their photos, where recognition starts', async ({
-    page,
-  }) => {
+  test('AddPersonView_ShouldOpenThePhotosOfThePerson_WhenTheUserAddsSomeone', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ profiles: [] }))
 
     await page.goto('/settings/detection/personnes')
@@ -25,7 +23,9 @@ test.describe('Personnes', () => {
     await expect(page.getByRole('link', { name: /Alice/ })).toBeVisible()
   })
 
-  test('user_When renaming a person_Should see the page follow the new name', async ({ page }) => {
+  test('PersonIdentityView_ShouldShowTheNewNameOnThePage_WhenTheUserRenamesThePerson', async ({
+    page,
+  }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({

@@ -1,14 +1,17 @@
+import { useEffect, useReducer } from 'react'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { ProfileCameraLink } from '../../domain/entities/profile_camera_link.entity'
 import { usePerson } from './person_context'
+import { buildPersonCamerasPresenter } from './person_cameras.presenter'
+import { personCamerasReducer } from './person_cameras.reducer'
+import { buildInitialPersonCamerasUido } from './person_cameras.uido'
 
 interface CameraValues {
   cameraIds: string[]
@@ -16,46 +19,50 @@ interface CameraValues {
 
 const DRAFT_LABELS: Record<keyof CameraValues, string> = { cameraIds: 'Caméras' }
 
-export function PersonCamerasPage() {
+export function PersonCamerasView() {
   const { person } = usePerson()
   const { profiles: container } = useAppContainer()
-  const links = useAsync(() => container.getProfileCameraLinks.execute(person.id), [person.id])
+  const { toast } = useToast()
+  const [uido, dispatch] = useReducer(
+    personCamerasReducer,
+    undefined,
+    buildInitialPersonCamerasUido,
+  )
+  const presenter = usePresenter(buildPersonCamerasPresenter, { container, dispatch, toast })
 
-  if (links.loading) return <SettingsPage>Chargement…</SettingsPage>
-  if (!links.data) return null
+  const personId = person.id
 
-  return <CameraLinksForm personId={person.id} links={links.data} reload={links.reload} />
+  useEffect(() => {
+    presenter.onLoad(personId)
+  }, [presenter, personId])
+
+  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (!uido.links) return null
+
+  return (
+    <CameraLinksForm
+      links={uido.links}
+      saving={uido.saving}
+      onSave={(cameraIds) => presenter.onSave(personId, cameraIds)}
+    />
+  )
 }
 
 function CameraLinksForm({
-  personId,
   links,
-  reload,
+  saving,
+  onSave,
 }: {
-  personId: string
   links: ProfileCameraLink[]
-  reload: () => void
+  saving: boolean
+  onSave: (cameraIds: string[]) => Promise<boolean>
 }) {
-  const { profiles: container } = useAppContainer()
-  const { toast } = useToast()
-
   const draft = useSettingsDraft<CameraValues>({
     saved: { cameraIds: links.filter((link) => link.enabled).map((link) => link.cameraId) },
     labels: DRAFT_LABELS,
   })
 
   useUnsavedChanges(draft.dirty)
-
-  const saving = useAsyncAction(
-    async () => container.setProfileCameraLinks.execute(personId, draft.values.cameraIds),
-    {
-      onSuccess: () => {
-        draft.accept()
-        toast('Caméras enregistrées.', 'success')
-        reload()
-      },
-    },
-  )
 
   return (
     <>
@@ -85,8 +92,10 @@ function CameraLinksForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
-        onSave={() => void saving.run()}
+        saving={saving}
+        onSave={async () => {
+          if (await onSave(draft.values.cameraIds)) draft.accept()
+        }}
         onDiscard={draft.discard}
       />
     </>

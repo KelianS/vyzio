@@ -56,28 +56,32 @@ const CameraConnectionView = lazy(() =>
     default: m.CameraConnectionView,
   })),
 )
-const PersonListPage = lazy(() =>
-  import('./presentation/profiles/person_list_page').then((m) => ({ default: m.PersonListPage })),
-)
-const AddPersonPage = lazy(() =>
-  import('./presentation/profiles/add_person_page').then((m) => ({ default: m.AddPersonPage })),
-)
-const PersonShell = lazy(() =>
-  import('./presentation/profiles/person_shell').then((m) => ({ default: m.PersonShell })),
-)
-const PersonIdentityPage = lazy(() =>
-  import('./presentation/profiles/person_identity_page').then((m) => ({
-    default: m.PersonIdentityPage,
+const PersonListView = lazy(() =>
+  import('./presentation/profiles/person_list.component').then((m) => ({
+    default: m.PersonListView,
   })),
 )
-const PersonPhotosPage = lazy(() =>
-  import('./presentation/profiles/person_photos_page').then((m) => ({
-    default: m.PersonPhotosPage,
+const AddPersonView = lazy(() =>
+  import('./presentation/profiles/add_person.component').then((m) => ({
+    default: m.AddPersonView,
   })),
 )
-const PersonCamerasPage = lazy(() =>
-  import('./presentation/profiles/person_cameras_page').then((m) => ({
-    default: m.PersonCamerasPage,
+const PersonView = lazy(() =>
+  import('./presentation/profiles/person.component').then((m) => ({ default: m.PersonView })),
+)
+const PersonIdentityView = lazy(() =>
+  import('./presentation/profiles/person_identity.component').then((m) => ({
+    default: m.PersonIdentityView,
+  })),
+)
+const PersonPhotosView = lazy(() =>
+  import('./presentation/profiles/person_photos.component').then((m) => ({
+    default: m.PersonPhotosView,
+  })),
+)
+const PersonCamerasView = lazy(() =>
+  import('./presentation/profiles/person_cameras.component').then((m) => ({
+    default: m.PersonCamerasView,
   })),
 )
 const NotificationChannelListPage = lazy(() =>
@@ -189,19 +193,19 @@ const router = createBrowserRouter([
           // Screens not reworked yet: they already carry a title, never a back link.
           // The marker goes away with their rework, not before - without it the page
           // would announce itself twice.
-          { path: 'detection/personnes', element: <PersonListPage /> },
+          { path: 'detection/personnes', element: <PersonListView /> },
           // Names the task, not the section.
-          { path: 'detection/personnes/ajout', element: <AddPersonPage />, handle: OWN_HEADER },
+          { path: 'detection/personnes/ajout', element: <AddPersonView />, handle: OWN_HEADER },
           {
             path: 'detection/personnes/:profileId',
-            element: <PersonShell />,
+            element: <PersonView />,
             // Carries the name of the open person, and their tabs.
             handle: OWN_HEADER,
             children: [
               { index: true, element: <Navigate to="identite" replace /> },
-              { path: 'identite', element: <PersonIdentityPage /> },
-              { path: 'photos', element: <PersonPhotosPage /> },
-              { path: 'cameras', element: <PersonCamerasPage /> },
+              { path: 'identite', element: <PersonIdentityView /> },
+              { path: 'photos', element: <PersonPhotosView /> },
+              { path: 'cameras', element: <PersonCamerasView /> },
             ],
           },
           { path: 'conservation', element: <ConservationPage /> },
