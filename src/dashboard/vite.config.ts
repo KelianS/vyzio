@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
           'src/**/*.d.ts', // ambient types, erased at build
           'src/domain/ports/**', // interfaces only, erased at build
         ],
-        // A floor that only rises: a change lifts it to what it reached, never lowers it.
+        // Rule in src/dashboard/CLAUDE.md, Tests.
         thresholds: { statements: 82, branches: 74, functions: 78, lines: 84 },
       },
     },

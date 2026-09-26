@@ -129,7 +129,7 @@ jobs:
             grep -m1 -o "$2=\"[0-9.]*\"" "$1" | tr -dc '0-9.' |
               awk '{ printf "%.1f", $1 * 100 }'
           }
-          below=$(awk -v p="$(rate backend.xml line-rate)" -v f="$BACKEND_FLOOR"             'BEGIN { print (p < f) ? "true" : "" }')
+          below=$(awk -v p="$(rate backend.xml line-rate)" -v f="$BACKEND_FLOOR" 'BEGIN { print (p < f) ? "true" : "" }')
           {
             echo '### Coverage'
             echo
