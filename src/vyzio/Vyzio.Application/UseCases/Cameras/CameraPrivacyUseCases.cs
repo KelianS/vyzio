@@ -8,16 +8,13 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Resolution is via CameraCapabilityBinding + ICapabilityProviderRegistry (ADR-22) — never
-// via VendorFamily/IVendorCameraAdapter. Hardware strategy requires Verified=true on the
-// HardwarePrivacy binding. PtzParking is inlined here: fetches the Ptz binding and calls
-// PtzGoToPresetAsync(1): preset 1 is the parking position by convention (ADR-25), saved from
-// the live view like any other preset.
+// Resolved through capability bindings, never the brand (ADR-22); parking and its return follow ADR-57.
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig,
+    IPtzPresetRepository presets,
     ILogger<ToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
@@ -27,7 +24,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
         // Asked before the entity changes: a camera that refuses leaves it as it was.
         var vendorCut = await PrivacyVendorAction.ApplyAsync(
-            camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+            camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
         camera.PrivacyVendorCut = vendorCut;
@@ -48,6 +45,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig,
+    IPtzPresetRepository presets,
     ILogger<BatchToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
@@ -65,7 +63,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
             {
                 // Asked before the entity changes: a camera that fails here keeps its saved state in the reload.
                 var vendorCut = await PrivacyVendorAction.ApplyAsync(
-                    camera, active, bindings, registry, logger ?? (ILogger)NullLogger.Instance, ct);
+                    camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
                 camera.PrivacyVendorCut = vendorCut;
@@ -100,6 +98,7 @@ internal static class PrivacyVendorAction
         bool active,
         ICameraCapabilityBindingRepository bindings,
         ICapabilityProviderRegistry registry,
+        IPtzPresetRepository presets,
         ILogger logger,
         CancellationToken ct)
     {
@@ -114,10 +113,17 @@ internal static class PrivacyVendorAction
                 break;
 
             case PrivacyStrategy.PtzParking:
-                if (active && await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
+                if (await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct) is { Verified: true } ptzBinding)
                 {
                     var ptz = registry.ResolvePtz(ptzBinding.Protocol);
-                    deviceCall = () => ptz.PtzGoToPresetAsync(camera, ptzBinding, presetId: 1, ct);
+                    var slot = active ? PtzPreset.ParkingSlot : PtzPreset.SurveillanceSlot;
+                    deviceCall = async () =>
+                    {
+                        // A slot never saved is a missing setup step, not the camera failing: support must read it so.
+                        if (!await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, slot, ct))
+                            logger.LogWarning("Privacy {State} on {CameraId}: no {Slot} position is saved, so the camera stays where it is.",
+                                active ? "on" : "off", camera.Id, PtzPreset.DefaultLabel(slot));
+                    };
                 }
                 break;
         }
@@ -129,15 +135,16 @@ internal static class PrivacyVendorAction
             await deviceCall();
             return camera.PrivacyStrategy == PrivacyStrategy.Hardware && active;
         }
-        // Only switching on is best effort; a lens left shut must not be shown as privacy off (SPECS 9.2).
-        catch (Exception ex) when (active)
+        // Best effort, except a lens left shut: it must not be shown as privacy off (SPECS 9.2, ADR-57).
+        catch (Exception ex) when (active || camera.PrivacyStrategy == PrivacyStrategy.PtzParking)
         {
             // A caller hanging up is not the camera failing; support must not read it as one.
             if (ex is OperationCanceledException && ct.IsCancellationRequested)
-                logger.LogInformation("Privacy on for {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.", camera.Id);
+                logger.LogInformation("Privacy {State} on {CameraId}: the caller left before the camera answered; Vyzio applies it regardless.",
+                    active ? "on" : "off", camera.Id);
             else
-                logger.LogWarning(ex, "Privacy on for {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
-                    camera.Id, camera.PrivacyStrategy);
+                logger.LogWarning(ex, "Privacy {State} on {CameraId}: the camera did not follow ({Strategy}); Vyzio applies it regardless.",
+                    active ? "on" : "off", camera.Id, camera.PrivacyStrategy);
             return false;
         }
     }

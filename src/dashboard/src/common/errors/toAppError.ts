@@ -16,6 +16,10 @@ const KNOWN_REFUSALS = new Map<string, string>([
     ApiErrorCode.ScheduleEmptyRange,
     'Le début et la fin sont à la même heure : choisissez deux heures différentes',
   ],
+  [
+    ApiErrorCode.ParkingPositionsMissing,
+    'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
+  ],
 ])
 
 // A camera's own answer is named by its code, never by a status a proxy in between also sends.

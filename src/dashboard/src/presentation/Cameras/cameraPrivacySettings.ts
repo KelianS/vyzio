@@ -3,13 +3,23 @@ import type { Camera } from '../../domain/entities/Camera'
 
 export type PrivacyStrategy = Camera['privacyStrategy']
 
+/** What the user has set up on the camera; null while it is not known. */
+export interface PrivacySetup {
+  readonly positionsSaved: boolean | null
+}
+
 interface StrategyDefinition {
   readonly value: PrivacyStrategy
   readonly label: string
   readonly explanation: string
   /** What the camera must be able to do for the strategy to make sense. */
   readonly available: (camera: Camera) => boolean
+  /** What the user must still do first, when a step they own is missing (ADR-57). */
+  readonly missingStep?: (setup: PrivacySetup) => string | null
 }
+
+const POSITIONS_FIRST =
+  'Pour orienter la caméra à l’écart, enregistrez d’abord ses positions Surveillance et Parking dans « Image et pilotage » : elle pivote vers la seconde, puis revient sur la première.'
 
 /**
  * The ways of no longer being filmed, from the weakest to the strongest.
@@ -37,8 +47,9 @@ const STRATEGIES: readonly StrategyDefinition[] = [
     value: 'ptz_parking',
     label: 'Orientation à l’écart',
     explanation:
-      'La caméra pivote vers un endroit sans intérêt et Vyzio cesse d’enregistrer. Elle reste joignable sur votre réseau local.',
+      'La caméra pivote vers sa position Parking et Vyzio cesse d’enregistrer, puis elle revient sur sa position Surveillance. Elle reste joignable sur votre réseau local.',
     available: (camera) => camera.ptzSupported,
+    missingStep: (setup) => (setup.positionsSaved === false ? POSITIONS_FIRST : null),
   },
   {
     value: 'hardware',
@@ -49,41 +60,40 @@ const STRATEGIES: readonly StrategyDefinition[] = [
   },
 ]
 
-function availableStrategies(camera: Camera): SettingOption<PrivacyStrategy>[] {
-  // Only what this camera can actually do is offered: showing a greyed option
-  // with no way to act on it would be one more opaque state.
-  return STRATEGIES.filter((strategy) => strategy.available(camera)).map((strategy) => ({
-    value: strategy.value,
-    label: strategy.label,
-  }))
-}
-
 function explanationOf(value: PrivacyStrategy): string {
   return STRATEGIES.find((strategy) => strategy.value === value)?.explanation ?? ''
 }
 
 export function buildPrivacySettings({
   camera,
+  setup,
   value,
   onChange,
 }: {
   camera: Camera
+  setup: PrivacySetup
   value: PrivacyStrategy
   onChange: (value: PrivacyStrategy) => void
 }): SettingDeclaration[] {
-  const options = availableStrategies(camera)
+  const possible = STRATEGIES.filter((strategy) => strategy.available(camera))
+  const missingSteps = possible.flatMap((strategy) => strategy.missingStep?.(setup) ?? [])
+  // Only what can be chosen now is offered; the one already chosen stays, so the value never vanishes.
+  const offered = possible.filter(
+    (strategy) => !strategy.missingStep?.(setup) || strategy.value === camera.privacyStrategy,
+  )
+  const options: SettingOption<PrivacyStrategy>[] = offered.map((strategy) => ({
+    value: strategy.value,
+    label: strategy.label,
+  }))
 
   return [
     {
       id: 'privacy-strategy',
       label: 'Quand vous coupez la surveillance',
       nature: { kind: 'choice', options },
-      help: STRATEGIES.filter((strategy) => strategy.available(camera))
-        .map((strategy) => `${strategy.label} — ${strategy.explanation}`)
-        .join('\n\n'),
-      // What the chosen option really guarantees stays visible without a gesture:
-      // it is a consequence, not an explanation (ADR-43).
-      consequence: explanationOf(value),
+      help: offered.map((strategy) => `${strategy.label} — ${strategy.explanation}`).join('\n\n'),
+      // What the chosen option guarantees, and a step still missing, stay visible without a gesture (ADR-43).
+      consequence: [explanationOf(value), ...missingSteps].join('\n\n'),
       value,
       onChange: (next) => onChange(next as PrivacyStrategy),
     },

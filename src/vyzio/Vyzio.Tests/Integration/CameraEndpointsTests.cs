@@ -83,6 +83,17 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task SetPrivacyStrategy_ShouldAnswerARefusalWithItsCode_WhenParkingHasNoSavedPositions()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PatchAsJsonAsync("/api/cameras/camera-1/privacy-strategy", new { strategy = "ptz_parking" });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("parking_positions_missing", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task GetCameraStatus_returns_not_found_for_unknown_camera()
     {
         using var client = _factory.CreateClient();

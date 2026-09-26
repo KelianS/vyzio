@@ -62,6 +62,18 @@ describe('toAppError', () => {
     expect(appErrorMessage(error)).toBe(sentence)
   })
 
+  it('toAppError_ShouldSayWhereToSaveThePositions_WhenParkingIsRefusedForLackOfThem', () => {
+    const error = toAppError(
+      failedCall(
+        409,
+        'PATCH /api/cameras/c/privacy-strategy · 409 · parking_positions_missing',
+        ApiErrorCode.ParkingPositionsMissing,
+      ),
+    )
+
+    expect(appErrorMessage(error)).toContain('positions Surveillance et Parking')
+  })
+
   it('toAppError_ShouldReadAsACameraRefusal_WhenTheApiNamesIt', () => {
     const error = toAppError(
       failedCall(502, 'POST /api/x · 502 · camera_refused', ApiErrorCode.CameraRefused),

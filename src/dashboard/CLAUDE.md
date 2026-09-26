@@ -92,6 +92,8 @@ from it. A screen never builds one, and never drops it.
 - **Showing an error in the render**: `<ErrorMessage error={error} />` (`common/components/`), which
   shows the sentence and its diagnostic line. A state that keeps a failure as text keeps
   `appErrorDiagnostic(error)` beside it and shows it with `<DiagnosticLine>`.
+  A read that failed uses `<ReadFailure error={error} onRetry={reload} />`, per
+  [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) § Errors.
 - **Testing the kind of an error**: `AppErrorKind` (never string literals).
 - **Special cases** (404 to null, multipart, logic on the status): `send()` in the repository, then
   `throw await httpErrorFrom(response, url, method)`, never `new Error()` nor a bare `fetch`.

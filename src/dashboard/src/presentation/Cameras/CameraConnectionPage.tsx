@@ -1,3 +1,4 @@
+import { useReloadCameraList } from './cameraListRead'
 import { useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/SettingsList'
@@ -11,7 +12,6 @@ import { useSurveillanceRefresh } from '../Surveillance/useSurveillanceRefresh'
 import { ConfirmModal } from '../../common/components/ConfirmModal'
 import { Button } from '../../common/ui/button'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
-import { useRootStore } from '../../infrastructure/store/rootStore'
 import type { Camera } from '../../domain/entities/Camera'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { HelpPanel } from '../../common/components/HelpPanel'
@@ -60,9 +60,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
     labels: DRAFT_LABELS,
   })
 
-  function reloadCameras() {
-    void useRootStore.getState().loadCameras(container.getCameras)
-  }
+  const reloadCameras = useReloadCameraList()
 
   useUnsavedChanges(draft.dirty)
 
