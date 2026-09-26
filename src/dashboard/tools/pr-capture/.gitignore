@@ -1,0 +1,4 @@
+# The capture scripts written for one pull request, and what they shoot, serve that review only.
+*
+!.gitignore
+!publish.ts

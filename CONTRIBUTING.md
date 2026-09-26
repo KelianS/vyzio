@@ -25,12 +25,28 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task front:build` / `task back:build` / `task build` | Build frontend / backend / both |
 | `task back:run` | Run the API locally outside docker |
 | `task docs:capture` | Regenerate the README screenshots from the e2e fixtures |
+| `task pr:capture` / `task pr:screenshots` | Shoot / publish the screenshots of a pull request |
 
 Docker commands run via `wsl docker compose ...` under the hood, since Docker is only reachable through WSL on Windows dev machines.
 
 ### Documentation screenshots
 
 `task docs:capture` drives the real production build against the e2e fake backend and writes the README images to `docs/assets`. Live tiles have nothing to show there: drop a `<camera-slug>.jpg` into `src/dashboard/tools/docs-capture/stills/` to fill them, which is git-ignored on purpose since those frames are footage of someone's home.
+
+### Pull request screenshots
+
+The rule is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Delivery gate. Write a
+`*.capture.ts` in `src/dashboard/tools/pr-capture/`, on the model of
+`tools/docs-capture/onboarding.capture.ts` (fake backend, phone viewport, a wait on what makes the
+screen recognisable), writing its images to `tools/pr-capture/out/`. The folder is git-ignored: a
+capture written for one review is not kept. Never use `docs-capture/stills` there.
+
+1. `task pr:capture` shoots the screens of the branch. For the *before* images, switch to `main`
+   (the ignored capture script stays in place), shoot, prefix the images with `before-`, and switch
+   back.
+2. `task pr:screenshots` pushes the images to the orphan `pr-screenshots` branch, one folder per
+   branch, and prints the Markdown to paste into the description. That branch never merges and
+   nothing in the product reads it.
 
 ### Dead code
 

@@ -72,6 +72,18 @@ tasks:
     cmds:
       - pnpm capture:docs
 
+  pr:capture:
+    desc: Shoots the pull request screenshots written in src/dashboard/tools/pr-capture
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm capture:pr
+
+  pr:screenshots:
+    desc: Publishes the pull request screenshots and prints the Markdown to paste
+    dir: '{{.DASHBOARD_DIR}}'
+    cmds:
+      - pnpm publish:pr {{.CLI_ARGS}}
+
   front:lint:
     desc: Lint le frontend (eslint)
     dir: '{{.DASHBOARD_DIR}}'

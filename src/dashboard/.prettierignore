@@ -9,3 +9,7 @@ test-results/
 # Vendored shadcn/ui primitives (ADR-42) — kept byte-identical to upstream so that
 # re-running the shadcn CLI produces no formatting noise, and an update stays reviewable.
 src/common/ui/
+
+# Capture scripts written for one pull request, git-ignored there; the publisher stays checked.
+tools/pr-capture/*
+!tools/pr-capture/publish.ts
