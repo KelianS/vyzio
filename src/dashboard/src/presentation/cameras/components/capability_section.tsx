@@ -1,42 +1,56 @@
-import { DiagnosticLine } from '../../common/components/error_message'
-import { scrubSecrets } from '../../common/errors/scrub_secrets'
+import { DiagnosticLine } from '../../../common/components/error_message'
+import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import type {
   CameraCapabilityBinding,
   Capability,
   SupportedProtocol,
-} from '../../domain/entities/camera_capability_binding.entity'
-import type { Camera } from '../../domain/entities/camera.entity'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
-import { useToast } from '../../common/components/toast'
-import { Badge } from '../../common/components/badge'
-import { ConfirmModal } from '../../common/components/confirm_modal'
-import { Button } from '../../common/ui/button'
-import { Input } from '../../common/ui/input'
-import { SettingRow } from '../../common/settings/setting_row'
-import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { cn } from '../../common/ui/utils'
+} from '../../../domain/entities/camera_capability_binding.entity'
+import type { Camera } from '../../../domain/entities/camera.entity'
+import { Badge } from '../../../common/components/badge'
+import { ConfirmModal } from '../../../common/components/confirm_modal'
+import { Button } from '../../../common/ui/button'
+import { Input } from '../../../common/ui/input'
+import { SettingRow } from '../../../common/settings/setting_row'
+import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
+import { cn } from '../../../common/ui/utils'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../common/ui/select'
-import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+} from '../../../common/ui/select'
+import { CAPABILITY_LABELS } from '../cameras.formatters'
+import { CapabilityTask } from '../camera_connection.uido'
+
+/** What the capability section asks of its screen. */
+interface CapabilityIntents {
+  onDetect: () => void
+  /** Resolves true when the camera answered through the protocol. */
+  onConfigure: (
+    capability: Capability,
+    protocol: SupportedProtocol,
+    configJson?: string,
+  ) => Promise<boolean>
+  onTogglePtz: () => Promise<void>
+  onSetPanInverted: (inverted: boolean) => void
+  onRemove: (capability: Capability) => Promise<void>
+  onOpenManual: () => void
+  onCloseManual: () => void
+  onConfigureManually: (capability: Capability, protocol: SupportedProtocol) => void
+}
 
 interface CapabilitySectionProps {
   camera: Camera
-  offline?: boolean
-  onReload?: () => void
-}
-
-const CAPABILITY_LABELS: Record<Capability, string> = {
-  ptz: 'PTZ',
-  hardware_privacy: 'Vie privée matérielle',
-  image_settings: 'Réglages image',
+  bindings: CameraCapabilityBinding[]
+  loading: boolean
+  detecting: boolean
+  pending: Partial<Record<Capability, CapabilityTask>>
+  manualFormOpen: boolean
+  manualConfiguring: boolean
+  intents: CapabilityIntents
 }
 
 const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
@@ -71,41 +85,43 @@ const IMAGE_SETTINGS_PROTOCOLS: { value: SupportedProtocol; label: string }[] = 
   { value: 'dvrip', label: 'DVRIP (ICSee / XMEye) — luminosité, contraste, saturation' },
 ]
 
-function protocolOptionsFor(capability: Capability) {
-  if (capability === 'ptz') return PTZ_PROTOCOLS
-  if (capability === 'image_settings') return IMAGE_SETTINGS_PROTOCOLS
-  return PRIVACY_PROTOCOLS
+const PROTOCOL_OPTIONS: Record<Capability, { value: SupportedProtocol; label: string }[]> = {
+  ptz: PTZ_PROTOCOLS,
+  hardware_privacy: PRIVACY_PROTOCOLS,
+  image_settings: IMAGE_SETTINGS_PROTOCOLS,
+}
+
+// PTZ is switched on and off and never removed; the other capabilities are removed instead.
+const SWITCHED_ON_AND_OFF: Record<Capability, boolean> = {
+  ptz: true,
+  hardware_privacy: false,
+  image_settings: false,
+}
+
+// V380 finds its camera by a device id, which the user types when discovery misses it.
+const ASKS_DEVICE_ID: Record<SupportedProtocol, boolean> = {
+  onvif: false,
+  dvrip: false,
+  tapo_klap: false,
+  v380: true,
+  rtsp: false,
 }
 
 const ALL_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
 
-export function CapabilitySection({ camera, offline, onReload }: CapabilitySectionProps) {
-  const { toast } = useToast()
-  const { getCameraCapabilities, detectCameraCapabilities } = useAppContainer().cameras
-  const [showManualForm, setShowManualForm] = useState(false)
-  const {
-    data: bindings,
-    loading,
-    reload,
-  } = useAsync(() => getCameraCapabilities.execute(camera.id), [camera.id])
-
-  const handleReload = () => {
-    reload()
-    onReload?.()
-  }
-
-  const detectAction = useAsyncAction(() => detectCameraCapabilities.execute(camera.id), {
-    onSuccess: () => {
-      toast('Détection terminée.', 'success')
-      handleReload()
-    },
-  })
-
-  // A capacity not already bound (preset or manual) can always be added by hand — even on a
-  // recognized vendor, since a preset only declares what Vyzio *expects*, not an exhaustive
-  // ceiling (e.g. an ICSee unit that also happens to speak ONVIF for image settings).
+export function CapabilitySection({
+  camera,
+  bindings,
+  loading,
+  detecting,
+  pending,
+  manualFormOpen,
+  manualConfiguring,
+  intents,
+}: CapabilitySectionProps) {
+  // A preset says what Vyzio expects, not a ceiling: any unbound capability can be added by hand.
   const availableCapabilities = ALL_CAPABILITIES.filter(
-    (c) => !bindings?.some((b) => b.capability === c),
+    (c) => !bindings.some((b) => b.capability === c),
   )
 
   if (loading) {
@@ -124,36 +140,25 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
         </div>
       )}
 
-      {offline && (
-        <p className="text-sm text-muted-foreground">
-          Caméra hors ligne — la détection sera disponible dès que la caméra sera joignable.
-        </p>
-      )}
-
       <ul className="divide-y divide-border">
-        {(bindings ?? []).map((b) => (
+        {bindings.map((b) => (
           <CapabilityRow
             key={b.capability}
             camera={camera}
             binding={b}
-            offline={offline}
-            onDone={handleReload}
-            onToast={toast}
+            task={pending[b.capability]}
+            intents={intents}
           />
         ))}
       </ul>
 
       {availableCapabilities.length > 0 &&
-        !offline &&
-        (showManualForm ? (
+        (manualFormOpen ? (
           <ManualCapabilityForm
-            cameraId={camera.id}
             availableCapabilities={availableCapabilities}
-            onDone={() => {
-              setShowManualForm(false)
-              handleReload()
-            }}
-            onCancel={() => setShowManualForm(false)}
+            configuring={manualConfiguring}
+            onConfigure={intents.onConfigureManually}
+            onCancel={intents.onCloseManual}
           />
         ) : (
           <Button
@@ -161,7 +166,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
             variant="outline"
             size="sm"
             className="self-start"
-            onClick={() => setShowManualForm(true)}
+            onClick={intents.onOpenManual}
           >
             <Plus aria-hidden="true" />
             Configurer une capacité manuellement
@@ -176,10 +181,10 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
           type="button"
           variant="ghost"
           size="sm"
-          disabled={detectAction.loading || offline}
-          onClick={() => detectAction.run()}
+          disabled={detecting}
+          onClick={intents.onDetect}
         >
-          {detectAction.loading ? 'Détection…' : 'Détecter les capacités'}
+          {detecting ? 'Détection…' : 'Détecter les capacités'}
         </Button>
       </div>
     </div>
@@ -203,104 +208,41 @@ function panInvertedSetting(
   }
 }
 
-// --- CapabilityRow ---
-
 interface CapabilityRowProps {
   camera: Camera
   binding: CameraCapabilityBinding
-  offline?: boolean
-  onDone: () => void
-  onToast: (msg: string, type: 'success' | 'error', diagnostic?: string) => void
+  task: CapabilityTask | undefined
+  intents: CapabilityIntents
 }
 
-function CapabilityRow({ camera, binding, offline, onDone, onToast }: CapabilityRowProps) {
-  const { configureCameraCapability, updateCamera, removeCameraCapability, setPtzPanInverted } =
-    useAppContainer().cameras
+function CapabilityRow({ camera, binding, task, intents }: CapabilityRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [editProtocol, setEditProtocol] = useState<SupportedProtocol>(binding.protocol)
   const [v380DeviceId, setV380DeviceId] = useState('')
 
-  const protocolOptions = protocolOptionsFor(binding.capability)
+  const configuring = task === CapabilityTask.Configure
+  const toggling = task === CapabilityTask.TogglePtz
+  const panSaving = task === CapabilityTask.SetPanInverted
+  const removing = task === CapabilityTask.Remove
 
-  const configureAction = useAsyncAction(
-    () =>
-      configureCameraCapability.execute(
-        camera.id,
-        binding.capability,
-        binding.isConfigured ? editProtocol : binding.protocol,
-        v380DeviceId ? JSON.stringify({ device_id: parseInt(v380DeviceId, 10) }) : undefined,
-      ),
-    {
-      onSuccess: (result) => {
-        if (result?.verified) {
-          setIsEditing(false)
-          onToast(`${CAPABILITY_LABELS[binding.capability]} — connexion réussie.`, 'success')
-        } else {
-          // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
-          onToast(
-            "Connexion échouée — vérifiez l'accès réseau et les identifiants.",
-            'error',
-            result?.lastError ? scrubSecrets(result.lastError) : undefined,
-          )
-        }
-        onDone()
-      },
-    },
-  )
+  async function configure() {
+    const verified = await intents.onConfigure(
+      binding.capability,
+      binding.isConfigured ? editProtocol : binding.protocol,
+      v380DeviceId ? JSON.stringify({ device_id: parseInt(v380DeviceId, 10) }) : undefined,
+    )
+    if (verified) setIsEditing(false)
+  }
 
   const ptzEnabled = camera.ptzSupported
-  const toggleAction = useAsyncAction(
-    () =>
-      updateCamera.execute(camera.id, {
-        displayName: camera.displayName,
-        host: camera.host,
-        port: camera.port,
-        username: camera.username ?? null,
-        password: null,
-        streamPath: camera.streamPath ?? null,
-        vendorFamily: camera.vendorFamily,
-        sourceType: camera.sourceType,
-        streamProtocol: camera.streamProtocol,
-        ptzSupported: !ptzEnabled,
-      }),
-    {
-      onSuccess: () => {
-        onToast(ptzEnabled ? 'PTZ désactivé.' : 'PTZ activé.', 'success')
-        onDone()
-      },
-    },
-  )
-
-  const panAction = useAsyncAction(
-    (inverted: boolean) => setPtzPanInverted.execute(camera.id, inverted),
-    {
-      onSuccess: (saved) => {
-        onToast(
-          saved.panInverted ? 'Gauche et droite inversés.' : 'Sens gauche et droite rétabli.',
-          'success',
-        )
-        onDone()
-      },
-    },
-  )
-
-  const removeAction = useAsyncAction(
-    () => removeCameraCapability.execute(camera.id, binding.capability),
-    {
-      onSuccess: () => {
-        onToast(`${CAPABILITY_LABELS[binding.capability]} retiré.`, 'success')
-        onDone()
-      },
-    },
-  )
-
   const isVerified = binding.verified
   const isConfigured = binding.isConfigured
+  const switchedOnAndOff = SWITCHED_ON_AND_OFF[binding.capability]
 
   const showV380IdInput =
-    binding.protocol === 'v380' &&
+    ASKS_DEVICE_ID[binding.protocol] &&
     !isVerified &&
     (binding.lastError?.includes('not found') ?? false)
 
@@ -322,7 +264,7 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             <span className="text-muted-foreground">Protocole</span>
             <Picker
               value={editProtocol}
-              options={protocolOptions}
+              options={PROTOCOL_OPTIONS[binding.capability]}
               onChange={(value) => setEditProtocol(value as SupportedProtocol)}
             />
           </label>
@@ -332,10 +274,10 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             type="button"
             variant="outline"
             size="sm"
-            disabled={configureAction.loading}
-            onClick={() => configureAction.run()}
+            disabled={configuring}
+            onClick={() => void configure()}
           >
-            {configureAction.loading ? 'Enregistrement…' : 'Enregistrer'}
+            {configuring ? 'Enregistrement…' : 'Enregistrer'}
           </Button>
           <Button
             type="button"
@@ -365,9 +307,7 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             />
           )}
         </div>
-        <div className="text-sm text-muted-foreground">
-          {PROTOCOL_LABELS[binding.protocol] ?? binding.protocol}
-        </div>
+        <div className="text-sm text-muted-foreground">{PROTOCOL_LABELS[binding.protocol]}</div>
         {!isVerified && binding.lastError && (
           // The camera's answer is support detail: a plain sentence leads (SPECS 1.5).
           <div className="text-sm text-destructive">
@@ -382,11 +322,7 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
         {/* Stored by Vyzio, not sent to the camera: it stays usable offline. */}
         {isConfigured && binding.panInverted !== null && (
           <SettingRow
-            setting={panInvertedSetting(
-              binding.panInverted,
-              panAction.loading,
-              (inverted) => void panAction.run(inverted),
-            )}
+            setting={panInvertedSetting(binding.panInverted, panSaving, intents.onSetPanInverted)}
           />
         )}
 
@@ -406,17 +342,17 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
               type="button"
               variant="outline"
               size="sm"
-              disabled={!v380DeviceId || configureAction.loading}
-              onClick={() => configureAction.run()}
+              disabled={!v380DeviceId || configuring}
+              onClick={() => void configure()}
             >
-              {configureAction.loading ? 'Envoi…' : 'Appliquer'}
+              {configuring ? 'Envoi…' : 'Appliquer'}
             </Button>
           </div>
         )}
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        {binding.capability === 'ptz' && isConfigured && (
+        {switchedOnAndOff && isConfigured && (
           <>
             <Badge tone={ptzEnabled ? 'ok' : 'neutral'}>{ptzEnabled ? 'Actif' : 'Inactif'}</Badge>
             {ptzEnabled ? (
@@ -425,7 +361,6 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
                 variant="outline"
                 size="sm"
                 className="border-destructive text-destructive hover:bg-destructive/10"
-                disabled={offline}
                 onClick={() => setConfirmDisable(true)}
               >
                 Désactiver
@@ -435,10 +370,10 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={toggleAction.loading || offline}
-                onClick={() => toggleAction.run()}
+                disabled={toggling}
+                onClick={() => void intents.onTogglePtz()}
               >
-                {toggleAction.loading ? '…' : 'Activer'}
+                {toggling ? '…' : 'Activer'}
               </Button>
             )}
           </>
@@ -448,24 +383,18 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
             type="button"
             variant="outline"
             size="sm"
-            disabled={configureAction.loading || offline}
-            onClick={() => configureAction.run()}
+            disabled={configuring}
+            onClick={() => void configure()}
           >
-            {configureAction.loading ? 'Configuration…' : 'Configurer'}
+            {configuring ? 'Configuration…' : 'Configurer'}
           </Button>
         )}
         {isConfigured && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={offline}
-            onClick={() => setIsEditing(true)}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
             Modifier
           </Button>
         )}
-        {isConfigured && binding.capability !== 'ptz' && (
+        {isConfigured && !switchedOnAndOff && (
           <Button
             type="button"
             variant="outline"
@@ -484,9 +413,9 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           body="Le panneau de contrôle PTZ sera masqué dans l'interface. La configuration reste sauvegardée et peut être réactivée à tout moment."
           confirmLabel="Désactiver"
           tone="warn"
-          loading={toggleAction.loading}
+          loading={toggling}
           onConfirm={async () => {
-            await toggleAction.run()
+            await intents.onTogglePtz()
             setConfirmDisable(false)
           }}
           onCancel={() => setConfirmDisable(false)}
@@ -499,9 +428,9 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
           body="La configuration de cette capacité sera supprimée. Vous pourrez la reconfigurer à tout moment."
           confirmLabel="Retirer"
           tone="danger"
-          loading={removeAction.loading}
+          loading={removing}
           onConfirm={async () => {
-            await removeAction.run()
+            await intents.onRemove(binding.capability)
             setConfirmRemove(false)
           }}
           onCancel={() => setConfirmRemove(false)}
@@ -511,44 +440,33 @@ function CapabilityRow({ camera, binding, offline, onDone, onToast }: Capability
   )
 }
 
-// --- ManualCapabilityForm ---
-
 interface ManualCapabilityFormProps {
-  cameraId: string
   availableCapabilities: Capability[]
-  onDone: () => void
+  configuring: boolean
+  onConfigure: (capability: Capability, protocol: SupportedProtocol) => void
   onCancel: () => void
 }
 
 function ManualCapabilityForm({
-  cameraId,
   availableCapabilities,
-  onDone,
+  configuring,
+  onConfigure,
   onCancel,
 }: ManualCapabilityFormProps) {
-  const { configureCameraCapability } = useAppContainer().cameras
   const [selectedCapability, setSelectedCapability] = useState<Capability>(availableCapabilities[0])
   const [selectedProtocol, setSelectedProtocol] = useState<SupportedProtocol>(
-    protocolOptionsFor(availableCapabilities[0])[0].value,
+    PROTOCOL_OPTIONS[availableCapabilities[0]][0].value,
   )
 
-  // Falls back to the first still-available capability when the current selection disappears
-  // (e.g. it just got configured elsewhere) — adjusted during render, not an effect.
+  // Falls back to the first capability still available when the selection disappears, during render.
   const [prevAvailableCapabilities, setPrevAvailableCapabilities] = useState(availableCapabilities)
   if (availableCapabilities !== prevAvailableCapabilities) {
     setPrevAvailableCapabilities(availableCapabilities)
     if (!availableCapabilities.includes(selectedCapability)) {
       setSelectedCapability(availableCapabilities[0])
-      setSelectedProtocol(protocolOptionsFor(availableCapabilities[0])[0].value)
+      setSelectedProtocol(PROTOCOL_OPTIONS[availableCapabilities[0]][0].value)
     }
   }
-
-  const protocolOptions = protocolOptionsFor(selectedCapability)
-
-  const configureAction = useAsyncAction(
-    () => configureCameraCapability.execute(cameraId, selectedCapability, selectedProtocol),
-    { onSuccess: () => onDone() },
-  )
 
   return (
     <div className="rounded-inset border border-border p-3">
@@ -565,7 +483,7 @@ function ManualCapabilityForm({
             onChange={(value) => {
               const cap = value as Capability
               setSelectedCapability(cap)
-              setSelectedProtocol(protocolOptionsFor(cap)[0].value)
+              setSelectedProtocol(PROTOCOL_OPTIONS[cap][0].value)
             }}
           />
         </label>
@@ -574,7 +492,7 @@ function ManualCapabilityForm({
           <span className="text-muted-foreground">Protocole</span>
           <Picker
             value={selectedProtocol}
-            options={protocolOptions}
+            options={PROTOCOL_OPTIONS[selectedCapability]}
             onChange={(value) => setSelectedProtocol(value as SupportedProtocol)}
           />
         </label>
@@ -583,18 +501,12 @@ function ManualCapabilityForm({
           type="button"
           variant="outline"
           size="sm"
-          disabled={configureAction.loading}
-          onClick={() => configureAction.run()}
+          disabled={configuring}
+          onClick={() => onConfigure(selectedCapability, selectedProtocol)}
         >
-          {configureAction.loading ? 'Configuration…' : 'Configurer'}
+          {configuring ? 'Configuration…' : 'Configurer'}
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={configureAction.loading}
-          onClick={onCancel}
-        >
+        <Button type="button" variant="ghost" size="sm" disabled={configuring} onClick={onCancel}>
           Annuler
         </Button>
       </div>

@@ -1,30 +1,25 @@
-import { useReloadCameraList } from './camera_list_read'
-import { useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
-import { useSurveillanceRefresh } from '../surveillance/use_surveillance_refresh'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Button } from '../../common/ui/button'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
-import { CapabilitySection } from './capability_section'
-
-interface ConnectionValues {
-  displayName: string
-  host: string
-  port: number
-  streamPath: string
-  username: string
-  password: string
-}
+import { CapabilitySection } from './components/capability_section'
+import {
+  buildCameraConnectionPresenter,
+  type ConnectionValues,
+} from './camera_connection.presenter'
+import { cameraConnectionReducer } from './camera_connection.reducer'
+import { buildInitialCameraConnectionUido } from './camera_connection.uido'
 
 const DRAFT_LABELS: Record<keyof ConnectionValues, string> = {
   displayName: 'Nom',
@@ -35,18 +30,28 @@ const DRAFT_LABELS: Record<keyof ConnectionValues, string> = {
   password: 'Mot de passe',
 }
 
-export function CameraConnectionPage() {
+export function CameraConnectionView() {
   const camera = useOutletContext<Camera>()
-
-  return <ConnectionForm camera={camera} />
-}
-
-function ConnectionForm({ camera }: { camera: Camera }) {
-  const { cameras: container } = useAppContainer()
+  const { cameras: container, hub: hubContainer } = useAppContainer()
   const { toast } = useToast()
-  const refreshSurveillance = useSurveillanceRefresh()
   const navigate = useNavigate()
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [uido, dispatch] = useReducer(
+    cameraConnectionReducer,
+    undefined,
+    buildInitialCameraConnectionUido,
+  )
+  const presenter = usePresenter(buildCameraConnectionPresenter, {
+    container,
+    hubContainer,
+    dispatch,
+    toast,
+  })
+
+  const cameraId = camera.id
+
+  useEffect(() => {
+    presenter.onLoad(cameraId)
+  }, [presenter, cameraId])
 
   const draft = useSettingsDraft<ConnectionValues>({
     saved: {
@@ -60,52 +65,7 @@ function ConnectionForm({ camera }: { camera: Camera }) {
     labels: DRAFT_LABELS,
   })
 
-  const reloadCameras = useReloadCameraList()
-
   useUnsavedChanges(draft.dirty)
-
-  const saving = useAsyncAction(
-    async () =>
-      container.updateCamera.execute(camera.id, {
-        displayName: draft.values.displayName,
-        host: draft.values.host,
-        port: draft.values.port,
-        streamPath: draft.values.streamPath.trim() || null,
-        username: draft.values.username.trim() || null,
-        // Empty means "leave unchanged", not "no password" — sending it blank would erase it.
-        password: draft.values.password.trim() ? draft.values.password : null,
-        vendorFamily: camera.vendorFamily,
-        sourceType: camera.sourceType,
-        streamProtocol: camera.streamProtocol,
-        ptzSupported: camera.ptzSupported,
-      }),
-    {
-      onSuccess: () => {
-        draft.accept()
-        toast('Connexion enregistrée.', 'success')
-        refreshSurveillance()
-        reloadCameras()
-      },
-    },
-  )
-
-  const verifying = useAsyncAction(async () => container.verifyCamera.execute(camera.id), {
-    onSuccess: (status) => {
-      toast(
-        status?.connected ? 'Caméra joignable.' : 'Caméra injoignable — vérifiez ces réglages.',
-        status?.connected ? 'success' : 'error',
-      )
-      reloadCameras()
-    },
-  })
-
-  const deleting = useAsyncAction(async () => container.deleteCamera.execute(camera.id), {
-    onSuccess: (result) => {
-      toast(result?.message ?? 'Caméra supprimée.', 'info')
-      reloadCameras()
-      void navigate('/settings/cameras')
-    },
-  })
 
   const declarations: SettingDeclaration[] = [
     {
@@ -167,27 +127,44 @@ function ConnectionForm({ camera }: { camera: Camera }) {
       <SettingsPage lede="Comment Vyzio joint cette caméra.">
         <SettingsList settings={declarations} />
 
-        {/* Verifier et supprimer sont des **actions** : elles agissent tout de
-            suite et n'ont donc rien a faire dans le brouillon. */}
+        {/* Verifying and deleting act at once: they have no place in the draft. */}
         <div className="mt-5 flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
-            disabled={verifying.loading}
-            onClick={() => void verifying.run()}
+            disabled={uido.verifying}
+            onClick={() => void presenter.onVerify(cameraId)}
           >
-            {verifying.loading ? 'Vérification…' : 'Vérifier la connexion'}
+            {uido.verifying ? 'Vérification…' : 'Vérifier la connexion'}
           </Button>
-          <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}>
+          <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
             Supprimer cette caméra
           </Button>
         </div>
 
-        {/* Section non encore reprise : configurer une capacite est une **action**
-            — elle teste une connexion et rend un resultat — pas une valeur. Elle
-            ne rentre donc pas telle quelle dans le cycle de brouillon. */}
+        {/* Configuring a capability tests a connection and returns a result: an action, not a draft value. */}
         <SettingsSection title="Capacités" lede="Ce que Vyzio a vérifié auprès de cette caméra.">
-          <CapabilitySection camera={camera} />
+          <CapabilitySection
+            camera={camera}
+            bindings={uido.bindings}
+            loading={uido.bindingsLoading}
+            detecting={uido.detecting}
+            pending={uido.pending}
+            manualFormOpen={uido.manualFormOpen}
+            manualConfiguring={uido.manualConfiguring}
+            intents={{
+              onDetect: () => void presenter.onDetect(cameraId),
+              onConfigure: (capability, protocol, configJson) =>
+                presenter.onConfigure(cameraId, capability, protocol, configJson),
+              onTogglePtz: () => presenter.onTogglePtz(camera),
+              onSetPanInverted: (inverted) => void presenter.onSetPanInverted(cameraId, inverted),
+              onRemove: (capability) => presenter.onRemove(cameraId, capability),
+              onOpenManual: presenter.onOpenManual,
+              onCloseManual: presenter.onCloseManual,
+              onConfigureManually: (capability, protocol) =>
+                void presenter.onConfigureManually(cameraId, capability, protocol),
+            }}
+          />
 
           <HelpPanel title="Le test échoue, que vérifier ?">
             <p>
@@ -212,23 +189,24 @@ function ConnectionForm({ camera }: { camera: Camera }) {
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
-        onSave={() => void saving.run()}
+        saving={uido.saving}
+        onSave={async () => {
+          if (await presenter.onSave(camera, draft.values)) draft.accept()
+        }}
         onDiscard={draft.discard}
       />
 
-      {confirmDelete && (
+      {uido.confirmDelete && (
         <ConfirmModal
           title={`Supprimer « ${camera.displayName} » ?`}
           body="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
           confirmLabel="Supprimer"
           tone="danger"
-          loading={deleting.loading}
+          loading={uido.deleting}
           onConfirm={async () => {
-            await deleting.run()
-            setConfirmDelete(false)
+            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
           }}
-          onCancel={() => setConfirmDelete(false)}
+          onCancel={presenter.onCancelDelete}
         />
       )}
     </>

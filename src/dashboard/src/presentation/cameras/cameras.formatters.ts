@@ -1,5 +1,12 @@
 import type { BadgeTone } from '../../common/components/badge'
 import type { Camera } from '../../domain/entities/camera.entity'
+import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
+
+export const CAPABILITY_LABELS: Record<Capability, string> = {
+  ptz: 'PTZ',
+  hardware_privacy: 'Vie privée matérielle',
+  image_settings: 'Réglages image',
+}
 
 export function formatCameraStatusLabel(status: string): string {
   switch (status) {

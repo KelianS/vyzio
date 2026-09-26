@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { CameraImageSettings } from '../../domain/entities/camera_image_settings.entity'
 import { makeCamera } from '../../testing/camera_fixture'
-import { makeImageSettingsBinding } from '../../testing/capability_binding_fixture'
+import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraImageView } from './camera_image.component'
@@ -58,7 +58,10 @@ describe('CameraImageView', () => {
 
   it('onLoad_ShouldHideSharpnessAndNightVision_WhenTheSettingsGoThroughDvrip', async () => {
     // Arrange
-    fakeNetwork({ [SETTINGS]: ok(settings), [BINDINGS]: ok([makeImageSettingsBinding('dvrip')]) })
+    fakeNetwork({
+      [SETTINGS]: ok(settings),
+      [BINDINGS]: ok([makeCapabilityBinding({ protocol: 'dvrip' })]),
+    })
 
     // Act
     renderScreen(<CameraImageView />, imageTab(imageCamera))

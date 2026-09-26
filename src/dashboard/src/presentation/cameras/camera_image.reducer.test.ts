@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { makeImageSettingsBinding } from '../../testing/capability_binding_fixture'
+import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { cameraImageReducer } from './camera_image.reducer'
 import { buildInitialCameraImageUido } from './camera_image.uido'
 
 describe('cameraImageReducer', () => {
   it.each([
-    { bindings: [makeImageSettingsBinding('dvrip')], writable: false },
-    { bindings: [makeImageSettingsBinding('onvif')], writable: true },
+    { bindings: [makeCapabilityBinding({ protocol: 'dvrip' })], writable: false },
+    { bindings: [makeCapabilityBinding({ protocol: 'onvif' })], writable: true },
     { bindings: [], writable: true },
   ])(
     'cameraImageReducer_ShouldOfferSharpnessAndNightVisionOnlyWhereWritable_WhenTheBindingsLoad (writable: $writable)',
