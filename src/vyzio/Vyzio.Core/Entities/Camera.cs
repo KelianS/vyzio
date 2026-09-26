@@ -89,8 +89,7 @@ public class Camera
     [Required, MaxLength(200)]
     public required string FrigateCameraName { get; set; }
 
-    [Required, MaxLength(50)]
-    public string ValidationState { get; set; } = "draft";
+    public CameraValidationState ValidationState { get; set; } = CameraValidationState.Draft;
 
     public bool IsEnabled { get; set; }
 

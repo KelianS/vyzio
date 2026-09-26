@@ -37,7 +37,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         StreamPath = streamPath,
         StreamProtocol = streamProtocol,
         IsEnabled = true,
-        ValidationState = "validated",
+        ValidationState = CameraValidationState.Validated,
         FrigateCameraName = slug.Replace('-', '_'),
     };
 

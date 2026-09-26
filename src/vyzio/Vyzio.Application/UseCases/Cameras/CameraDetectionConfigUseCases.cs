@@ -69,7 +69,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
         await cameras.UpdateAsync(camera, ct);
 
         var isLive = camera.IsEnabled
-            && string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase);
+            && camera.ValidationState == CameraValidationState.Validated;
 
         if (isLive)
         {

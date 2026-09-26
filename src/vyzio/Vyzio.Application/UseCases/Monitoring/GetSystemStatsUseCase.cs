@@ -33,7 +33,7 @@ public sealed class GetSystemStatsUseCase(
     private async Task<DetectionConfigDto> ResolveDetectionConfigAsync(CancellationToken ct)
     {
         var catalog = await cameras.GetAllAsync(ct);
-        var activeCount = catalog.Count(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase));
+        var activeCount = catalog.Count(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated);
         var plan = detectorPlanner.Plan(activeCount);
         return new DetectionConfigDto(SnakeCaseEnum.ToSnakeCase(plan.Kind), plan.Fps);
     }

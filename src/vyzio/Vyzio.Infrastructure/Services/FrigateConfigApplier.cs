@@ -136,7 +136,7 @@ public sealed class FrigateConfigApplier(
     {
         var validatedCameras = cameras
             .Where(camera => camera.IsEnabled)
-            .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .Where(camera => camera.ValidationState == CameraValidationState.Validated)
             .ToList();
 
         var plan = detectorPlanner.Plan(validatedCameras.Count);

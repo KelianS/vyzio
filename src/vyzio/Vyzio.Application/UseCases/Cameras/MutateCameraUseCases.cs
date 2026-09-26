@@ -59,7 +59,7 @@ public sealed class CreateCameraUseCase(
         // A new camera is something the surveillance has not taken up yet: without this the restart
         // trigger would stay hidden, and its absence claims everything saved is in service (ADR-44).
         var applicable = (await cameras.GetAllAsync(ct))
-            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
             .ToList();
         await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
@@ -273,7 +273,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         if (connectivityChanged)
         {
             camera.Status = "needs_attention";
-            camera.ValidationState = "draft";
+            camera.ValidationState = CameraValidationState.Draft;
             camera.IsEnabled = false;
             camera.LastReachabilityCheckAt = null;
             camera.LastSuccessfulFrameAt = null;
@@ -290,7 +290,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
 
         var catalog = await cameras.GetAllAsync(ct);
         var applicable = catalog
-            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
             .ToList();
         await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
@@ -315,12 +315,12 @@ public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfig
         }
 
         camera.IsEnabled = true;
-        camera.ValidationState = "validated";
+        camera.ValidationState = CameraValidationState.Validated;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         var catalog = await cameras.GetAllAsync(ct);
         var applicable = catalog
-            .Where(existing => string.Equals(existing.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .Where(existing => existing.ValidationState == CameraValidationState.Validated)
             .Where(existing => existing.Id != camera.Id)
             .Append(camera)
             .ToList();
@@ -330,7 +330,7 @@ public sealed class ApplyCameraUseCase(ICameraRepository cameras, IFrigateConfig
         if (!applyResult.Applied)
         {
             camera.Status = "config_error";
-            camera.ValidationState = "draft";
+            camera.ValidationState = CameraValidationState.Draft;
             camera.IsEnabled = false;
             await cameras.UpdateAsync(camera, ct);
 
@@ -361,14 +361,14 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfi
         }
 
         camera.IsEnabled = false;
-        camera.ValidationState = "pending_removal";
+        camera.ValidationState = CameraValidationState.PendingRemoval;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         await cameras.UpdateAsync(camera, ct);
 
         var catalog = await cameras.GetAllAsync(ct);
         var applicable = catalog
-            .Where(c => c.IsEnabled && string.Equals(c.ValidationState, "validated", StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
             .ToList();
         await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
 
@@ -382,12 +382,12 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
     {
         var catalog = await cameras.GetAllAsync(ct);
         var pendingRemovals = catalog
-            .Where(camera => string.Equals(camera.ValidationState, "pending_removal", StringComparison.OrdinalIgnoreCase))
+            .Where(camera => camera.ValidationState == CameraValidationState.PendingRemoval)
             .ToList();
 
         var applicable = catalog
-            .Where(camera => !string.Equals(camera.ValidationState, "pending_removal", StringComparison.OrdinalIgnoreCase))
-            .Where(camera => string.Equals(camera.ValidationState, "validated", StringComparison.OrdinalIgnoreCase)
+            .Where(camera => camera.ValidationState != CameraValidationState.PendingRemoval)
+            .Where(camera => camera.ValidationState == CameraValidationState.Validated
                 || string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase))
             .DistinctBy(camera => camera.Id)
             .ToList();
@@ -400,7 +400,7 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
         foreach (var camera in applicable)
         {
             camera.IsEnabled = true;
-            camera.ValidationState = "validated";
+            camera.ValidationState = CameraValidationState.Validated;
             camera.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
@@ -410,7 +410,7 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
             foreach (var camera in applicable)
             {
                 camera.IsEnabled = false;
-                camera.ValidationState = string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase) ? "draft" : camera.ValidationState;
+                camera.ValidationState = string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase) ? CameraValidationState.Draft : camera.ValidationState;
                 await cameras.UpdateAsync(camera, ct);
             }
 
@@ -459,7 +459,7 @@ internal static class CameraDraftFactory
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
             StreamProtocol = SnakeCaseEnum.TryFromSnakeCase<StreamProtocol>(request.StreamProtocol, out var streamProtocol) ? streamProtocol : StreamProtocol.Rtsp,
             Status = "needs_attention",
-            ValidationState = "draft",
+            ValidationState = CameraValidationState.Draft,
             IsEnabled = false,
             FrigateCameraName = slug.Replace('-', '_'),
             UpdatedAt = DateTimeOffset.UtcNow,

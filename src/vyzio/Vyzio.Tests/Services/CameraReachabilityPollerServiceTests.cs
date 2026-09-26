@@ -34,7 +34,7 @@ public class CameraReachabilityPollerServiceTests
         Host = "127.0.0.1",
         Port = port,
         Status = status,
-        ValidationState = "validated",
+        ValidationState = CameraValidationState.Validated,
     };
 
     private TaskCompletionSource<DateTimeOffset> SignalOnUpdate()

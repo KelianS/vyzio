@@ -41,7 +41,7 @@ public sealed record CameraDto(
         camera.StreamPath,
         SnakeCaseEnum.ToSnakeCase(camera.StreamProtocol),
         camera.Status,
-        camera.ValidationState,
+        SnakeCaseEnum.ToSnakeCase(camera.ValidationState),
         camera.IsEnabled,
         camera.LastSuccessfulFrameAt.HasValue,
         !string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase),
