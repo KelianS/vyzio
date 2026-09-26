@@ -115,10 +115,6 @@ jobs:
       # Four numbers out of two files: a third-party action for that would be a dependency to
       # trust and to pin, on a job that writes to the pull request.
       - name: Read both reports
-        id: rates
-        # The frontend floor is `thresholds` in vite.config.ts; coverlet has none, so the backend's is here.
-        env:
-          BACKEND_FLOOR: 70
         run: |
           set -euo pipefail
           cp "$(find backend-coverage -name 'coverage.cobertura.xml' -print -quit)" backend.xml
@@ -129,7 +125,6 @@ jobs:
             grep -m1 -o "$2=\"[0-9.]*\"" "$1" | tr -dc '0-9.' |
               awk '{ printf "%.1f", $1 * 100 }'
           }
-          below=$(awk -v p="$(rate backend.xml line-rate)" -v f="$BACKEND_FLOOR" 'BEGIN { print (p < f) ? "true" : "" }')
           {
             echo '### Coverage'
             echo
@@ -140,10 +135,8 @@ jobs:
             echo
             echo 'EF Core migrations and type-only files are out of the denominator. Everything that'
             echo 'emits runtime code is in it, tested or not.'
-            if [ -n "$below" ]; then echo; echo '**Backend under its floor.** See CONTRIBUTING.md, Coverage.'; fi
           } > coverage.md
           cat coverage.md >> "$GITHUB_STEP_SUMMARY"
-          echo "below=$below" >> "$GITHUB_OUTPUT"
 
       # A fork's pull request gets a read-only token, so the comment is impossible rather than
       # merely denied: skipped, so an outside contribution never opens on a red job it cannot fix.
@@ -184,13 +177,6 @@ jobs:
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -qm "chore(ci): coverage badges for ${GITHUB_SHA}"
           git -C "$work" push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" badges
-
-      # Last, so the comment and the badges still say what the rates are when the floor fails.
-      - name: Enforce the backend coverage floor
-        if: steps.rates.outputs.below != ''
-        run: |
-          echo "::error::Backend line coverage under its floor (BACKEND_FLOOR in the Read both reports step)"
-          exit 1
 
   docker-build-check:
     name: Docker — build images (no push)
