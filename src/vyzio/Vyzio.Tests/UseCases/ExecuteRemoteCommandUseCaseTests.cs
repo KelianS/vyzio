@@ -37,7 +37,7 @@ public class ExecuteRemoteCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Executes_the_handler_and_returns_its_answer()
+    public async Task ExecuteAsync_ShouldReturnTheHandlerAnswer_WhenAHandlerServesTheCommand()
     {
         var sut = Build(Handler(() => Task.FromResult(CommandResult.Text("Tout va bien", ["Aucune detection"]))));
 
@@ -47,7 +47,7 @@ public class ExecuteRemoteCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Journals_the_origin_the_command_and_the_outcome()
+    public async Task ExecuteAsync_ShouldJournalTheOriginTheCommandAndTheOutcome_WhenTheCommandSucceeds()
     {
         var sut = Build(Handler(() => Task.FromResult(CommandResult.Text("Tout va bien", []))));
 
@@ -61,7 +61,7 @@ public class ExecuteRemoteCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Journals_a_failure_and_answers_without_naming_internals()
+    public async Task ExecuteAsync_ShouldJournalTheFailureAndAnswerWithoutNamingInternals_WhenTheHandlerThrows()
     {
         var sut = Build(Handler(() => throw new InvalidOperationException("frigate is down")));
 
@@ -76,7 +76,7 @@ public class ExecuteRemoteCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Journals_a_command_no_handler_answers()
+    public async Task ExecuteAsync_ShouldJournalAFailure_WhenNoHandlerServesTheCommand()
     {
         var sut = Build();
 

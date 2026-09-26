@@ -42,11 +42,11 @@ public class PrivacyModeCommandHandlerTests
         confirmed);
 
     [Fact]
-    public void Declares_itself_as_needing_a_confirmation()
+    public void Descriptor_ShouldRequireAPairedAndConfirmedConversation_WhenThePrivacyCommandIsDescribed()
         => Assert.Equal(CommandAuthorization.PairedAndConfirmed, CreateSut().Descriptor.Authorization);
 
     [Fact]
-    public async Task Asks_before_masking_and_touches_nothing_yet()
+    public async Task ExecuteAsync_ShouldAskForConfirmationAndChangeNothing_WhenTheAnswerIsNotConfirmedYet()
     {
         var result = await CreateSut(Camera("entree", "Entrée")).ExecuteAsync(Ask("entree"));
 
@@ -56,7 +56,7 @@ public class PrivacyModeCommandHandlerTests
     }
 
     [Fact]
-    public async Task Masks_only_once_the_answer_was_confirmed()
+    public async Task ExecuteAsync_ShouldMaskTheCamera_WhenTheAnswerIsConfirmed()
     {
         var camera = Camera("entree", "Entrée");
 
@@ -68,7 +68,7 @@ public class PrivacyModeCommandHandlerTests
     }
 
     [Fact]
-    public async Task Offers_each_camera_and_says_where_it_stands_when_none_was_named()
+    public async Task ExecuteAsync_ShouldOfferEachCameraWithItsState_WhenNoCameraWasNamed()
     {
         var result = await CreateSut(Camera("entree", "Entrée"), Camera("jardin", "Jardin", privacy: true))
             .ExecuteAsync(Ask());

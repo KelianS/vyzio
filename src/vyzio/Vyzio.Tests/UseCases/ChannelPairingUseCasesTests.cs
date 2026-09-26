@@ -36,7 +36,7 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
-    public async Task Starting_a_pairing_issues_a_code_that_expires()
+    public async Task ExecuteAsync_ShouldIssueACodeThatExpires_WhenAPairingStarts()
     {
         var dto = await new StartChannelPairingUseCase(Catalog(), _pairings, Registry())
             .ExecuteAsync(NotificationChannel.Telegram);
@@ -51,7 +51,7 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
-    public async Task Starting_over_unlinks_the_conversation_that_was_paired()
+    public async Task ExecuteAsync_ShouldUnlinkThePairedConversation_WhenThePairingStartsOver()
     {
         var existing = new ChannelPairing
         {
@@ -68,7 +68,7 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
-    public async Task Starting_over_gives_the_new_code_its_own_allowance_of_wrong_tries()
+    public async Task ExecuteAsync_ShouldGiveTheNewCodeItsOwnAllowanceOfWrongTries_WhenThePairingStartsOver()
     {
         var existing = new ChannelPairing { Channel = NotificationChannel.Telegram, FailedAttempts = 4 };
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(existing);
@@ -79,7 +79,7 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
-    public async Task A_burnt_code_reads_as_nothing_linked_rather_than_as_a_code_to_wait_for()
+    public async Task ExecuteAsync_ShouldReadAsNotPairedRatherThanAsACodeToWaitFor_WhenTheCodeIsBurnt()
     {
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(
             new ChannelPairing { Channel = NotificationChannel.Telegram, FailedAttempts = ChannelPairing.AllowedAttempts });
@@ -91,14 +91,14 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
-    public async Task A_channel_that_cannot_listen_has_no_pairing_to_offer()
+    public async Task ExecuteAsync_ShouldOfferNoPairing_WhenTheChannelCannotListen()
     {
         Assert.Null(await new StartChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Discord));
         Assert.Null(await new GetChannelPairingUseCase(Catalog(), _pairings, Registry()).ExecuteAsync(NotificationChannel.Discord));
     }
 
     [Fact]
-    public async Task An_untouched_channel_reads_as_not_paired_and_never_leaks_the_conversation()
+    public async Task ExecuteAsync_ShouldReadAsNotPairedWithoutACode_WhenTheChannelWasNeverTouched()
     {
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>())
                  .Returns((ChannelPairing?)null);
@@ -110,7 +110,7 @@ public class ChannelPairingUseCasesTests
     }
 
     [Fact]
-    public async Task A_paired_channel_shows_when_it_was_linked_but_not_the_code()
+    public async Task ExecuteAsync_ShouldShowWhenItWasLinkedButNotTheCode_WhenTheChannelIsPaired()
     {
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(
             new ChannelPairing

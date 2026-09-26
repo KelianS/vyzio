@@ -11,7 +11,7 @@ namespace Vyzio.Tests.Services;
 public class RtspCameraVerifierTests
 {
     [Fact]
-    public async Task VerifyAsync_returns_needs_attention_when_rtsp_requires_authentication()
+    public async Task VerifyAsync_ShouldReportNeedsAttention_WhenTheRtspStreamRequiresAuthentication()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();

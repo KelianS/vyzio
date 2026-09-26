@@ -91,7 +91,7 @@ public class OnvifImageSettingsProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_returns_true_when_video_source_token_and_settings_resolve()
+    public async Task ProbeAsync_ShouldReturnTrue_WhenTheVideoSourceTokenAndItsSettingsResolve()
     {
         var (provider, _) = MakeProvider();
 
@@ -101,7 +101,7 @@ public class OnvifImageSettingsProviderTests
     }
 
     [Fact]
-    public async Task GetImageSettingsAsync_parses_video_source_token_from_child_element_not_attribute()
+    public async Task GetImageSettingsAsync_ShouldReadTheSettingsOfTheVideoSource_WhenItsTokenIsAChildElementRatherThanAnAttribute()
     {
         var (provider, requests) = MakeProvider();
 

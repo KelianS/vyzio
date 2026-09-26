@@ -54,7 +54,7 @@ public class GetHubOverviewUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_hub_overview_with_recent_events_profiles_and_notification_summary()
+    public async Task ExecuteAsync_ShouldSummarizeEventsProfilesAndNotificationsWithoutWarning_WhenAChannelWorks()
     {
         _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns(
         [
@@ -92,7 +92,7 @@ public class GetHubOverviewUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_adds_warning_when_no_channel_is_configured()
+    public async Task ExecuteAsync_ShouldAddAWarning_WhenNoChannelIsConfigured()
     {
         _events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns([]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);

@@ -20,7 +20,7 @@ public class NotifyDetectionUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_enriches_the_identity_before_dispatching()
+    public async Task ExecuteAsync_ShouldEnrichTheIdentityBeforeDispatching_WhenFrigateKnowsTheIdentity()
     {
         _eventReader.TryGetIdentityAsync("frigate-evt-201", Arg.Any<CancellationToken>()).Returns("Alice");
 
@@ -33,7 +33,7 @@ public class NotifyDetectionUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_keeps_the_realtime_payload_when_rest_enrichment_fails()
+    public async Task ExecuteAsync_ShouldDispatchTheRealtimePayload_WhenTheRestEnrichmentFails()
     {
         _eventReader.TryGetIdentityAsync("frigate-evt-202", Arg.Any<CancellationToken>())
             .Returns(Task.FromException<string?>(new HttpRequestException("Frigate unavailable")));

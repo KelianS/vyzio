@@ -17,7 +17,7 @@ public class IngestFrigateEventUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_queues_finished_event_without_notifying_inline()
+    public async Task ExecuteAsync_ShouldQueueTheDetectionWithoutNotifyingInline_WhenTheEventHasEnded()
     {
         var sut = CreateSut(["person"]);
 
@@ -38,7 +38,7 @@ public class IngestFrigateEventUseCaseTests
     [Theory]
     [InlineData("new")]
     [InlineData("update")]
-    public async Task ExecuteAsync_ignores_events_still_in_progress(string lifecycle)
+    public async Task ExecuteAsync_ShouldIgnoreTheEvent_WhenItIsStillInProgress(string lifecycle)
     {
         var sut = CreateSut(["person"]);
 
@@ -50,7 +50,7 @@ public class IngestFrigateEventUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ignores_filtered_labels()
+    public async Task ExecuteAsync_ShouldIgnoreTheEvent_WhenTheLabelIsFilteredOut()
     {
         var sut = CreateSut(["person"]);
 
@@ -61,7 +61,7 @@ public class IngestFrigateEventUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_reports_a_dropped_event_when_the_queue_is_saturated()
+    public async Task ExecuteAsync_ShouldReportTheEventAsDropped_WhenTheQueueIsSaturated()
     {
         _queue.TryEnqueue(Arg.Any<FrigateDetection>()).Returns(false);
         var sut = CreateSut(["person"]);

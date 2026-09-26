@@ -12,13 +12,13 @@ public class DvripPtzProviderTests
         new(new DvripClient(NullLogger<DvripClient>.Instance), NullLogger<DvripPtzProvider>.Instance);
 
     [Fact]
-    public void Protocol_is_Dvrip()
+    public void Protocol_ShouldBeDvrip_WhenTheProviderIsCreated()
     {
         Assert.Equal(SupportedProtocol.Dvrip, MakeProvider().Protocol);
     }
 
     [Fact]
-    public async Task ProbeAsync_returns_false_when_camera_unreachable()
+    public async Task ProbeAsync_ShouldReturnFalse_WhenTheCameraIsUnreachable()
     {
         var camera = new Camera
         {
@@ -48,25 +48,25 @@ public class DvripPtzProviderTests
     // implementation. Verified against a real ICSee camera (2026-07-15, Ret=100 on login);
     // the previous hex-nibble-pairing variant was rejected (Ret=203, "Password is incorrect").
     [Fact]
-    public void SofiaHash_produces_verified_value()
+    public void SofiaHash_ShouldMatchTheValueVerifiedOnARealCamera_WhenGivenAKnownPassword()
     {
         Assert.Equal("S8jyn9CB", DvripPtzProvider.SofiaHash("a4m3h5"));
     }
 
     [Fact]
-    public void SofiaHash_returns_8_chars()
+    public void SofiaHash_ShouldReturnEightCharacters_WhenGivenAPassword()
     {
         Assert.Equal(8, DvripPtzProvider.SofiaHash("any_password").Length);
     }
 
     [Fact]
-    public void SofiaHash_empty_password_returns_8_chars()
+    public void SofiaHash_ShouldReturnEightCharacters_WhenThePasswordIsEmpty()
     {
         Assert.Equal(8, DvripPtzProvider.SofiaHash(string.Empty).Length);
     }
 
     [Fact]
-    public void SofiaHash_uses_only_allowed_charset()
+    public void SofiaHash_ShouldUseOnlyAlphanumericCharacters_WhenThePasswordHasSymbols()
     {
         const string allowed = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         var result = DvripPtzProvider.SofiaHash("test_password_123!");
@@ -85,7 +85,7 @@ public class DvripPtzProviderTests
     [InlineData(PtzDirection.UpRight, "DirectionLeftUp")]
     [InlineData(PtzDirection.DownLeft, "DirectionRightDown")]
     [InlineData(PtzDirection.DownRight, "DirectionLeftDown")]
-    public void DirectionToCommand_maps_all_directions(PtzDirection direction, string expected)
+    public void DirectionToCommand_ShouldMirrorTheHorizontalAxis_WhenMappingEachDirection(PtzDirection direction, string expected)
     {
         Assert.Equal(expected, DvripPtzProvider.DirectionToCommand(direction));
     }
@@ -95,7 +95,7 @@ public class DvripPtzProviderTests
     // stop) silently makes the camera ignore the command entirely — this is the single most
     // regression-prone detail in this file, hence a dedicated test.
     [Fact]
-    public void BuildPtzPayload_move_uses_preset_zero()
+    public void BuildPtzPayload_ShouldUsePresetZero_WhenBuildingAMove()
     {
         var json = DvripPtzProvider.BuildPtzPayload("0x00000001", "DirectionRight", preset: 0, step: 5);
         var preset = JsonNode.Parse(json)?["OPPTZControl"]?["Parameter"]?["Preset"]?.GetValue<int>();
@@ -103,7 +103,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public void BuildPtzPayload_stop_uses_preset_minus_one()
+    public void BuildPtzPayload_ShouldUsePresetMinusOne_WhenBuildingAStop()
     {
         var json = DvripPtzProvider.BuildPtzPayload("0x00000001", "DirectionUp", preset: -1, step: 5);
         var preset = JsonNode.Parse(json)?["OPPTZControl"]?["Parameter"]?["Preset"]?.GetValue<int>();
@@ -111,7 +111,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public void BuildPtzPayload_has_no_action_or_point_field()
+    public void BuildPtzPayload_ShouldOmitActionAndPointAndStartThePattern_WhenBuildingACommand()
     {
         var json = DvripPtzProvider.BuildPtzPayload("0x00000001", "DirectionUp", preset: -1, step: 5);
         var node = JsonNode.Parse(json)!;

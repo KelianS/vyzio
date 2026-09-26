@@ -39,7 +39,7 @@ public class DetectionEventContractProjectorTests
             DateTimeOffset.Parse("2026-05-10T10:15:00+00:00", CultureInfo.InvariantCulture), HasClip: true, HasSnapshot: false);
 
     [Fact]
-    public async Task ToContract_names_the_camera_as_Vyzio_knows_it()
+    public async Task ToContractAsync_ShouldNameTheCameraAsVyzioKnowsIt_WhenTheCameraIsKnown()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
 
@@ -54,7 +54,7 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContract_falls_back_to_the_Frigate_name_when_Vyzio_no_longer_knows_the_camera()
+    public async Task ToContractAsync_ShouldFallBackToTheFrigateName_WhenVyzioNoLongerKnowsTheCamera()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
 
@@ -64,7 +64,7 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContract_resolves_the_profile_at_read_time()
+    public async Task ToContractAsync_ShouldResolveTheProfileAtReadTime_WhenTheIdentityMatchesAProfileWithoutCameraLinks()
     {
         var profile = new Profile { Name = "Alice" };
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
@@ -78,7 +78,7 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContract_leaves_the_profile_unresolved_when_the_camera_is_not_linked_to_it()
+    public async Task ToContractAsync_ShouldLeaveTheProfileUnresolved_WhenTheCameraIsNotLinkedToIt()
     {
         var profile = new Profile { Name = "Alice" };
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
@@ -93,7 +93,7 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContract_says_a_media_is_gone_once_past_what_the_camera_keeps()
+    public async Task ToContractAsync_ShouldMarkTheMediaExpired_WhenItIsOlderThanWhatTheCameraKeeps()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
         var detection = Detection("frigate-evt-001") with { OccurredAt = DateTimeOffset.UtcNow.AddDays(-20) };
@@ -104,7 +104,7 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContract_leaves_a_media_alive_within_the_camera_own_duration()
+    public async Task ToContractAsync_ShouldKeepTheMediaAlive_WhenTheCameraOwnDurationStillCoversIt()
     {
         var camera = FrontDoor();
         // The camera keeps longer than the installation: the expiry follows what applies to it.
@@ -118,7 +118,7 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContracts_preserves_event_order_for_downstream_consumers()
+    public async Task ToContractsAsync_ShouldPreserveTheEventOrder_WhenProjectingSeveralDetections()
     {
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
 

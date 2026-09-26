@@ -38,7 +38,7 @@ public class GetCameraImageSettingsUseCaseTests
     };
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -48,7 +48,7 @@ public class GetCameraImageSettingsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_binding_not_verified()
+    public async Task ExecuteAsync_ShouldReturnNullWithoutAskingTheCamera_WhenTheBindingIsNotVerified()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>()).Returns(MakeBinding(verified: false));
@@ -60,7 +60,7 @@ public class GetCameraImageSettingsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_dto_from_provider_when_verified()
+    public async Task ExecuteAsync_ShouldReturnWhatTheCameraReports_WhenTheBindingIsVerified()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(verified: true);
@@ -112,7 +112,7 @@ public class SetCameraImageSettingsUseCaseTests
     };
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_binding_not_verified()
+    public async Task ExecuteAsync_ShouldReturnNullWithoutAskingTheCamera_WhenTheBindingIsNotVerified()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>()).Returns(MakeBinding(verified: false));
@@ -125,7 +125,7 @@ public class SetCameraImageSettingsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_writes_then_returns_settings_read_back_from_camera()
+    public async Task ExecuteAsync_ShouldWriteThenReturnWhatTheCameraReadsBack_WhenTheBindingIsVerified()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(verified: true);

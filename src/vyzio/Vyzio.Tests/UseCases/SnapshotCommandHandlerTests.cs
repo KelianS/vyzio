@@ -37,7 +37,7 @@ public class SnapshotCommandHandlerTests
         camera is null ? null : new Dictionary<string, string> { [SnapshotCommandHandler.CameraParameter] = camera });
 
     [Fact]
-    public void Is_named_after_what_one_asks_for_not_after_the_code()
+    public void Descriptor_ShouldUseTheUserVerbWithOneCameraParameter_WhenTheSnapshotCommandIsDescribed()
     {
         var descriptor = CreateSut().Descriptor;
 
@@ -46,7 +46,7 @@ public class SnapshotCommandHandlerTests
     }
 
     [Fact]
-    public async Task Sends_the_frame_of_the_camera_that_was_named_accents_aside()
+    public async Task ExecuteAsync_ShouldSendTheFrameOfTheNamedCamera_WhenItIsNamedWithoutAccents()
     {
         _frames.TryGetLatestFrameAsync("entree", Arg.Any<CancellationToken>()).Returns(Frame);
 
@@ -57,7 +57,7 @@ public class SnapshotCommandHandlerTests
     }
 
     [Fact]
-    public async Task Takes_the_only_camera_when_there_is_nothing_to_choose_from()
+    public async Task ExecuteAsync_ShouldTakeTheOnlyCamera_WhenThereIsNothingToChooseFrom()
     {
         _frames.TryGetLatestFrameAsync("jardin", Arg.Any<CancellationToken>()).Returns(Frame);
 
@@ -67,7 +67,7 @@ public class SnapshotCommandHandlerTests
     }
 
     [Fact]
-    public async Task Asks_which_one_rather_than_guessing_when_several_could_answer()
+    public async Task ExecuteAsync_ShouldAskWhichCameraRatherThanGuess_WhenSeveralCouldAnswer()
     {
         var result = await CreateSut(Camera("entree", "Entrée"), Camera("jardin", "Jardin"))
             .ExecuteAsync(Ask());
@@ -78,7 +78,7 @@ public class SnapshotCommandHandlerTests
     }
 
     [Fact]
-    public async Task Names_the_cameras_it_knows_when_the_one_asked_for_is_not_among_them()
+    public async Task ExecuteAsync_ShouldOfferTheKnownCameras_WhenTheNamedCameraIsUnknown()
     {
         var result = await CreateSut(Camera("entree", "Entrée")).ExecuteAsync(Ask("garage"));
 
@@ -88,7 +88,7 @@ public class SnapshotCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_the_camera_is_in_privacy_mode_rather_than_sending_a_black_frame()
+    public async Task ExecuteAsync_ShouldSayPrivacyModeIsOnWithoutFetchingAFrame_WhenTheCameraIsInPrivacyMode()
     {
         var result = await CreateSut(Camera("entree", "Entrée", privacy: true)).ExecuteAsync(Ask("entree"));
 
@@ -98,7 +98,7 @@ public class SnapshotCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_it_cannot_see_rather_than_sending_nothing()
+    public async Task ExecuteAsync_ShouldSayItCannotSeeRatherThanStaySilent_WhenNoFrameIsAvailable()
     {
         _frames.TryGetLatestFrameAsync("entree", Arg.Any<CancellationToken>()).Returns((byte[]?)null);
 

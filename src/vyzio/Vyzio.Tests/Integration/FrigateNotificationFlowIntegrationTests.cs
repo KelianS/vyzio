@@ -95,7 +95,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_ignores_an_event_still_in_progress()
+    public async Task ExecuteAsync_ShouldIgnoreTheEventWithoutNotifying_WhenTheEventIsStillInProgress()
     {
         _eventReader.Identity = "Alice";
 
@@ -109,7 +109,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_sends_notification_with_clip_on_end()
+    public async Task ExecuteAsync_ShouldNotifyEveryChannelWithTheClip_WhenTheEventEndsWithAClip()
     {
         _eventReader.Identity = "Alice";
         _clipProvider.Clip = new MemoryStream(new byte[] { 1, 2, 3 });
@@ -129,7 +129,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_does_not_create_duplicate_notification_on_multiple_end_events()
+    public async Task ExecuteAsync_ShouldNotifyOncePerChannel_WhenTheSameEventEndsTwice()
     {
         _eventReader.Identity = "Alice";
 
@@ -142,7 +142,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_ignores_filtered_labels_without_notifying()
+    public async Task ExecuteAsync_ShouldIgnoreTheEventWithoutNotifying_WhenItsLabelIsFilteredOut()
     {
         var processed = await IngestAndNotifyAsync(Payload("frigate-ti-004", label: "cat", lifecycle: "end", topScore: 0.91f));
 

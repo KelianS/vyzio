@@ -72,7 +72,7 @@ public class SendDetectionNotificationUseCaseTests
     public SendDetectionNotificationUseCaseTests() => Configure(ActiveConfig());
 
     [Fact]
-    public async Task Execute_carries_clip_and_snapshot_when_both_available()
+    public async Task ExecuteAsync_ShouldCarryTheClipAndTheSnapshot_WhenBothAreAvailable()
     {
         var detection = CreateDetection();
         var clip = new MemoryStream([1, 2, 3]);
@@ -90,7 +90,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_carries_the_clip_alone_when_no_snapshot()
+    public async Task ExecuteAsync_ShouldCarryTheClipAlone_WhenThereIsNoSnapshot()
     {
         var clip = new MemoryStream([1, 2, 3]);
         _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(clip);
@@ -106,7 +106,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_falls_back_to_the_snapshot_when_the_clip_is_unavailable()
+    public async Task ExecuteAsync_ShouldFallBackToTheSnapshot_WhenTheClipIsUnavailable()
     {
         _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         var snapshot = new MemoryStream([1, 2, 3]);
@@ -122,7 +122,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_sends_text_only_when_no_media_at_all()
+    public async Task ExecuteAsync_ShouldSendTextOnly_WhenThereIsNoMediaAtAll()
     {
         _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
         _imageProvider.TryGetImageAsync(Arg.Any<string>(), FrigateEventImage.Snapshot, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
@@ -139,7 +139,7 @@ public class SendDetectionNotificationUseCaseTests
     // The completion bar of the channel generalization: one detection, every configured channel,
     // and nothing in the use case that names either of them (ADR-50).
     [Fact]
-    public async Task Execute_sends_the_same_detection_on_every_configured_channel()
+    public async Task ExecuteAsync_ShouldSendTheSameDetectionOnEveryChannel_WhenSeveralChannelsAreConfigured()
     {
         Configure(ActiveConfig(NotificationChannel.Telegram), ActiveConfig(NotificationChannel.Discord));
         _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
@@ -158,7 +158,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_never_hands_a_clip_to_a_channel_that_cannot_carry_video()
+    public async Task ExecuteAsync_ShouldNeverFetchOrHandAClip_WhenTheChannelCannotCarryVideo()
     {
         var textOnly = FakeSender(NotificationChannel.Discord, video: false, photo: false);
         Configure(ActiveConfig(NotificationChannel.Discord));
@@ -176,7 +176,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_duplicate_notifications_for_the_same_event()
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheEventWasAlreadyNotifiedOnTheChannel()
     {
         var detection = CreateDetection();
         _notifications.HasSentAsync(detection.EventId, NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(true);
@@ -189,7 +189,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_when_no_channel_is_configured()
+    public async Task ExecuteAsync_ShouldSendNothing_WhenNoChannelIsConfigured()
     {
         Configure();
 
@@ -201,7 +201,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_a_channel_missing_a_credential_it_declared()
+    public async Task ExecuteAsync_ShouldSkipTheChannel_WhenACredentialItDeclaresIsMissing()
     {
         Configure(new NotificationChannelConfig
         {
@@ -221,7 +221,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_when_the_channel_is_disabled()
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheChannelIsDisabled()
     {
         var config = ActiveConfig();
         config.IsEnabled = false;
@@ -235,7 +235,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_records_a_failed_notification_when_the_channel_refuses()
+    public async Task ExecuteAsync_ShouldRecordAFailedNotification_WhenTheChannelRefuses()
     {
         var detection = CreateDetection();
         _clipProvider.TryGetClipAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns((Stream?)null);
@@ -256,7 +256,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_skips_below_minimum_confidence()
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheConfidenceIsBelowTheMinimum()
     {
         var sent = await Build(_telegram).ExecuteAsync(CreateDetection(confidence: 0.5f));
 
@@ -273,7 +273,7 @@ public class SendDetectionNotificationUseCaseTests
     [InlineData(22, 6,  10, false)]
     [InlineData(null, 22, 10, true)]
     [InlineData(8, null, 10, true)]
-    public void IsWithinActiveHours_applies_schedule_correctly(int? from, int? to, int hour, bool expected)
+    public void IsWithinActiveHours_ShouldTellWhetherTheHourIsActive_WhenTheWindowIsPlainWrapsMidnightOrIsHalfSet(int? from, int? to, int hour, bool expected)
         => Assert.Equal(expected, SendDetectionNotificationUseCase.IsWithinActiveHours(hour, from, to));
 #pragma warning restore format
 
@@ -310,7 +310,7 @@ public class LabelRoutingTests
     [InlineData("car",    null,    "car")]
     [InlineData("car",    "Alice", "car")]
     [InlineData("dog",    null,    "dog")]
-    public void ResolveNotificationLabel_maps_correctly(string label, string? identity, string expected)
+    public void ResolveNotificationLabel_ShouldSplitPersonsByIdentityAndKeepOtherLabels_WhenMappingADetection(string label, string? identity, string expected)
         => Assert.Equal(expected, SendDetectionNotificationUseCase.ResolveNotificationLabel(label, identity));
 
     [Theory]
@@ -327,7 +327,7 @@ public class LabelRoutingTests
     // other labels
     [InlineData("car",    null,    new[] { "car" },                           true)]
     [InlineData("car",    null,    new[] { "person_unknown", "person_known" },false)]
-    public void IsLabelAllowed_routes_correctly(string label, string? identity, string[] allowed, bool expected)
+    public void IsLabelAllowed_ShouldAllowOnlyAResolvedLabelInTheSet_WhenRoutingADetection(string label, string? identity, string[] allowed, bool expected)
     {
         var allowedSet = new HashSet<string>(allowed, StringComparer.OrdinalIgnoreCase);
         Assert.Equal(expected, SendDetectionNotificationUseCase.IsLabelAllowed(label, identity, allowedSet));
@@ -359,7 +359,7 @@ public class DetectionMessageFormatterTests
         => $"{message.Headline} {string.Join(" ", message.Details)}";
 
     [Fact]
-    public void Format_all_fields_enabled_returns_all_parts()
+    public void Format_ShouldIncludeEveryPart_WhenEveryFieldIsEnabled()
     {
         var result = Flatten(_sut.Format(EventWith(identity: "Alice"), MessageFields.All));
         Assert.Contains("Alice detectee", result);
@@ -369,28 +369,28 @@ public class DetectionMessageFormatterTests
     }
 
     [Fact]
-    public void Format_without_camera_omits_camera_name()
+    public void Format_ShouldOmitTheCameraName_WhenTheCameraFieldIsDisabled()
     {
         var fields = MessageFields.All.Except([MessageField.Camera]).ToHashSet();
         Assert.DoesNotContain("front door", Flatten(_sut.Format(EventWith(), fields)));
     }
 
     [Fact]
-    public void Format_without_time_omits_time()
+    public void Format_ShouldOmitTheTime_WhenTheTimeFieldIsDisabled()
     {
         var fields = MessageFields.All.Except([MessageField.Time]).ToHashSet();
         Assert.DoesNotContain("08:30", Flatten(_sut.Format(EventWith(), fields)));
     }
 
     [Fact]
-    public void Format_without_confidence_omits_percentage()
+    public void Format_ShouldOmitThePercentage_WhenTheConfidenceFieldIsDisabled()
     {
         var fields = MessageFields.All.Except([MessageField.Confidence]).ToHashSet();
         Assert.DoesNotContain("%", Flatten(_sut.Format(EventWith(), fields)));
     }
 
     [Fact]
-    public void Format_without_label_uses_generic_subject()
+    public void Format_ShouldUseAGenericSubject_WhenTheLabelFieldIsDisabled()
     {
         var result = Flatten(_sut.Format(EventWith(), new HashSet<MessageField> { MessageField.Camera }));
         Assert.Contains("Detection", result);
@@ -398,7 +398,7 @@ public class DetectionMessageFormatterTests
     }
 
     [Fact]
-    public void Format_null_fields_defaults_to_all()
+    public void Format_ShouldIncludeEveryField_WhenNoFieldSetIsGiven()
     {
         var result = Flatten(_sut.Format(EventWith(identity: "Bob")));
         Assert.Contains("Bob detectee", result);
@@ -408,7 +408,7 @@ public class DetectionMessageFormatterTests
 
     // The message leaves the domain without markup: emphasis is the channel's business (ADR-50).
     [Fact]
-    public void Format_never_emits_markup()
+    public void Format_ShouldEmitNoMarkup_WhenTheHeadlineNamesAnIdentity()
     {
         var message = _sut.Format(EventWith(identity: "Alice"));
         Assert.DoesNotContain("<b>", message.Headline);
