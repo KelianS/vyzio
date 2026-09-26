@@ -1,0 +1,39 @@
+import type { AppError } from '../../common/errors/app_error'
+import type { CameraPrivacySchedule } from '../../domain/entities/camera_privacy_schedule.entity'
+
+/** The range being composed, before it is added to one camera or to all. */
+export interface ScheduleForm {
+  /** [0..6], 0 = Sunday. */
+  days: number[]
+  startTime: string
+  endTime: string
+}
+
+export interface CameraPrivacyUido {
+  /** Whether the Parking and Surveillance positions are saved; null while unknown or without PTZ. */
+  positionsSaved: boolean | null
+  presetsError: AppError | null
+  saving: boolean
+
+  schedules: CameraPrivacySchedule[]
+  schedulesLoading: boolean
+  form: ScheduleForm
+  adding: boolean
+  invalid: string | null
+  scheduleFailure: AppError | null
+}
+
+export function buildInitialCameraPrivacyUido(): CameraPrivacyUido {
+  return {
+    positionsSaved: null,
+    presetsError: null,
+    saving: false,
+
+    schedules: [],
+    schedulesLoading: true,
+    form: { days: [1, 2, 3, 4, 5], startTime: '22:00', endTime: '06:00' },
+    adding: false,
+    invalid: null,
+    scheduleFailure: null,
+  }
+}

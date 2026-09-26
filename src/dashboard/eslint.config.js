@@ -28,7 +28,6 @@ const PRESENTER_RULE_BACKLOG = [
   'src/presentation/access/access_gate.tsx',
   'src/presentation/cameras/camera_connection_page.tsx',
   'src/presentation/cameras/camera_image_page.tsx',
-  'src/presentation/cameras/camera_privacy_page.tsx',
   'src/presentation/cameras/capability_section.tsx',
   'src/presentation/cameras/camera_list_read.ts',
   'src/presentation/notifications/add_notification_channel_page.tsx',

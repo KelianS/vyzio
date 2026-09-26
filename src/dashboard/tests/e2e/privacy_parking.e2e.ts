@@ -12,7 +12,7 @@ const saved = (presetId: number) => ({
 
 // Turning away promises a move there and back: both positions come first (ADR-57).
 test.describe('Privacy parking', () => {
-  test('CameraPrivacyPage_ShouldWithholdParkingAndSayWhatUnlocksIt_WhenThePositionsAreNotSaved', async ({
+  test('CameraPrivacyView_ShouldWithholdParkingAndSayWhatUnlocksIt_WhenThePositionsAreNotSaved', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
@@ -31,7 +31,7 @@ test.describe('Privacy parking', () => {
     ).toBeVisible()
   })
 
-  test('CameraPrivacyPage_ShouldOfferParking_WhenBothPositionsAreSaved', async ({ page }) => {
+  test('CameraPrivacyView_ShouldOfferParking_WhenBothPositionsAreSaved', async ({ page }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
     state.ptz.presets = [saved(1), saved(2)]
     await installFakeBackend(page, state)
