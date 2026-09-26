@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildPrivacySettings } from './cameraPrivacySettings'
 import type { Camera } from '../../domain/entities/Camera'
-import { makeCamera } from './cameraFixture'
+import { makeCamera } from '../../testing/cameraFixture'
 import type { SettingDeclaration } from '../../common/settings/settingDeclaration'
 
 const POSITIONS_FIRST = 'enregistrez d’abord ses positions Surveillance et Parking'

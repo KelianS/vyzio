@@ -30,6 +30,14 @@ const DID_NOT_FOLLOW: Record<PrivacyMiss, boolean> = {
   [PrivacyMiss.Unconfirmed]: false,
 }
 
+/** Whether the strategy asks anything of the camera; a miss left under one that does not is stale and says nothing. */
+const ASKS_THE_CAMERA: Record<PrivacyStrategy, boolean> = {
+  [PrivacyStrategy.None]: false,
+  [PrivacyStrategy.SoftwareBlur]: false,
+  [PrivacyStrategy.PtzParking]: true,
+  [PrivacyStrategy.Hardware]: true,
+}
+
 /** What an accepted request did, per strategy; a strategy that asks nothing of the camera claims nothing. */
 const FOLLOWED: Record<PrivacyStrategy, PrivacyBadge> = {
   [PrivacyStrategy.None]: RECORDING_OFF,
@@ -43,7 +51,7 @@ const FOLLOWED: Record<PrivacyStrategy, PrivacyBadge> = {
   [PrivacyStrategy.Hardware]: RECORDING_OFF,
 }
 
-/** Only the strategies that ask something of the camera can miss; a stale miss under another says nothing. */
+/** The sentence per strategy; the ones that ask nothing of the camera are stopped by ASKS_THE_CAMERA first. */
 const UNVERIFIED: Record<PrivacyStrategy, string | null> = {
   [PrivacyStrategy.None]: null,
   [PrivacyStrategy.SoftwareBlur]: null,
@@ -71,7 +79,8 @@ export function privacyBadge(
   if (camera.privacyVendorCut)
     return { text: 'Coupure matérielle confirmée', tone: 'ok', kind: 'cut' }
   if (!camera.privacyModeActive) return null
-  if (camera.privacyMiss === null) return FOLLOWED[camera.privacyStrategy]
+  if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy])
+    return FOLLOWED[camera.privacyStrategy]
   return DID_NOT_FOLLOW[camera.privacyMiss]
     ? { text: 'La caméra n’a pas suivi, enregistrement désactivé', tone: 'warn', kind: 'missed' }
     : RECORDING_OFF
@@ -79,6 +88,7 @@ export function privacyBadge(
 
 /** What happened and what to do, for the camera's privacy screen (SPECS 1.5, 9.2); null when it followed. */
 export function privacyMissSentence(camera: PrivacyAnswer): string | null {
+  if (!ASKS_THE_CAMERA[camera.privacyStrategy]) return null
   const on = camera.privacyModeActive
   switch (camera.privacyMiss) {
     case null:

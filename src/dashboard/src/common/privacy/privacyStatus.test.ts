@@ -27,6 +27,16 @@ describe('privacyBadge', () => {
     )
   })
 
+  it('privacyBadge_ShouldClaimNoMiss_WhenTheMissBelongsToAStrategyThatAsksNothingOfTheCamera', () => {
+    expect(
+      privacyBadge({
+        ...parked,
+        privacyStrategy: PrivacyStrategy.SoftwareBlur,
+        privacyMiss: PrivacyMiss.CameraFailed,
+      })?.text,
+    ).toBe('Enregistrement désactivé')
+  })
+
   it('privacyBadge_ShouldShowNothing_WhenPrivacyIsOff', () => {
     expect(
       privacyBadge({ ...parked, privacyModeActive: false, privacyMiss: PrivacyMiss.CameraFailed }),

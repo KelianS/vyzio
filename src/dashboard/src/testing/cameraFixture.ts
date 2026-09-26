@@ -1,4 +1,4 @@
-import type { Camera } from '../../domain/entities/Camera'
+import type { Camera } from '../domain/entities/Camera'
 
 /** A camera as the screens read it, for tests; each test overrides only what it is about. */
 export function makeCamera(overrides: Partial<Camera> = {}): Camera {

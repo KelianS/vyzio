@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { CameraLiveThumbnail } from './CameraLiveThumbnail'
-import { makeCamera } from '../../presentation/Cameras/cameraFixture'
+import { makeCamera } from '../../testing/cameraFixture'
 import { PrivacyMiss, PrivacyStrategy, type Camera } from '../../domain/entities/Camera'
 
 const renderTile = (camera: Camera) =>

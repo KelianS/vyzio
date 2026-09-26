@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { PrivacyAnswerNotice } from './PrivacyAnswerNotice'
-import { makeCamera } from './cameraFixture'
+import { makeCamera } from '../../testing/cameraFixture'
 import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/Camera'
 
 describe('PrivacyAnswerNotice', () => {
