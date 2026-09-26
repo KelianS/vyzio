@@ -49,9 +49,11 @@ const MESSAGE_FIELD_OPTIONS = [
   { value: 'snapshot', label: 'Aperçu' },
 ] as const
 
+const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
   value: String(hour),
-  label: `${String(hour).padStart(2, '0')}:00`,
+  label: hourLabel(hour),
 }))
 
 /** Second level of the Notifications rubric: one channel, whichever it is (ADR-40, ADR-50). */
@@ -243,7 +245,7 @@ function ChannelForm({
         // A range ending before it starts crosses midnight — the common case, worth stating.
         consequence:
           draft.values.fromHour > draft.values.toHour
-            ? 'La plage passe minuit : les alertes s’arrêtent le lendemain matin.'
+            ? `La plage passe minuit : elle se termine le lendemain à ${hourLabel(draft.values.toHour)}.`
             : undefined,
         value: String(draft.values.toHour),
         onChange: (value) => draft.set('toHour', Number(value)),

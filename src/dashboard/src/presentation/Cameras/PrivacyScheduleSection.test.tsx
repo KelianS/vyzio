@@ -105,7 +105,9 @@ describe('PrivacyScheduleSection', () => {
       />,
     )
 
-    expect(await screen.findByText('Se termine le lendemain à 06:00.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('La plage passe minuit : elle se termine le lendemain à 06:00.'),
+    ).toBeInTheDocument()
   })
 
   it('PrivacyScheduleSection_ShouldNotAnnounceTheNextDay_WhenTheEndIsNotSet', async () => {
@@ -122,11 +124,11 @@ describe('PrivacyScheduleSection', () => {
         deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
       />,
     )
-    await screen.findByText('Se termine le lendemain à 06:00.')
+    await screen.findByText('La plage passe minuit : elle se termine le lendemain à 06:00.')
 
     await user.clear(screen.getByLabelText('Fin'))
 
-    expect(screen.queryByText(/Se termine le lendemain/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/passe minuit/)).not.toBeInTheDocument()
   })
 
   it('PrivacyScheduleSection_ShouldSayWhatToChange_WhenTheServerRefusesAnEmptyRange', async () => {

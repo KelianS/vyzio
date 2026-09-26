@@ -221,7 +221,9 @@ export function PrivacyScheduleSection({
         </div>
 
         {endsNextDay(startTime, endTime) && (
-          <p className="text-sm text-muted-foreground">Se termine le lendemain à {endTime}.</p>
+          <p className="text-sm text-muted-foreground">
+            La plage passe minuit : elle se termine le lendemain à {endTime}.
+          </p>
         )}
 
         {invalid && <p className="text-sm text-destructive">{invalid}</p>}
@@ -237,7 +239,7 @@ export function PrivacyScheduleSection({
               variant="outline"
               size="sm"
               disabled={adding}
-              title={`Appliquer ce planning aux ${allCameras.length} caméras`}
+              title={`Appliquer cette planification aux ${allCameras.length} caméras`}
               onClick={handleApplyToAll}
             >
               {adding ? 'Ajout…' : `Appliquer à toutes (${allCameras.length})`}

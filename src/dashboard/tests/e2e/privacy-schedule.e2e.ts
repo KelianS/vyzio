@@ -7,7 +7,9 @@ test.describe('Privacy schedule', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/vie-privee')
 
-    await expect(page.getByText('Se termine le lendemain à 06:00.')).toBeVisible()
+    await expect(
+      page.getByText('La plage passe minuit : elle se termine le lendemain à 06:00.'),
+    ).toBeVisible()
     await page.getByRole('button', { name: 'Ajouter à cette caméra' }).click()
 
     await expect(page.getByText('22:00 → 06:00 le lendemain')).toBeVisible()

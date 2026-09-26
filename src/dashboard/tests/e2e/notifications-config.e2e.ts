@@ -77,6 +77,23 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByRole('combobox', { name: 'À partir de' })).toBeVisible()
   })
 
+  test('NotificationChannelPage_ShouldSayWhenTheRangeEnds_WhenItCrossesMidnight', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState())
+    await page.goto('/settings/notifications/telegram')
+
+    await page.getByRole('switch', { name: 'Seulement à certaines heures' }).click()
+    await page.getByRole('combobox', { name: 'À partir de' }).click()
+    await page.getByRole('option', { name: '22:00' }).click()
+    await page.getByRole('combobox', { name: 'Jusqu’à' }).click()
+    await page.getByRole('option', { name: '07:00' }).click()
+
+    await expect(
+      page.getByText('La plage passe minuit : elle se termine le lendemain à 07:00.'),
+    ).toBeVisible()
+  })
+
   // The criterion for this step: unplugging the network must show in the settings,
   // or Vyzio looks broken when it is merely waiting (SPECS 5.4).
   test('user_When the channel stopped listening_Should read it, and why, where commands are set up', async ({
