@@ -1,18 +1,10 @@
-import { lazy, Suspense, useEffect } from 'react'
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
-import { AppHeader } from './common/components/app_header'
+import { lazy } from 'react'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { ToastProvider } from './common/components/toast'
-import { useSystemStatsPolling } from './infrastructure/store/use_system_stats_polling'
-import {
-  AppContainerProvider,
-  useAppContainer,
-} from './infrastructure/providers/app_container.context'
+import { AppContainerProvider } from './infrastructure/providers/app_container.context'
 import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/settings/settings.rubrics'
-import { RestartSurveillanceTrigger } from './presentation/surveillance/restart_surveillance_trigger.component'
-import { NavigationGuard } from './presentation/navigation/navigation_guard.component'
-import { AccessGate } from './presentation/access/access_gate'
-import { useCameraListFailureToast } from './presentation/cameras/camera_list_read'
-import { reloadCameraList } from './presentation/cameras/camera_list_reload'
+import { AccessGate } from './presentation/access/access_gate.component'
+import { AppShell } from './presentation/shell/app_shell.component'
 
 const HubView = lazy(() =>
   import('./presentation/hub/hub.component').then((m) => ({ default: m.HubView })),
@@ -99,44 +91,20 @@ const NotificationChannelView = lazy(() =>
     default: m.NotificationChannelView,
   })),
 )
-const ConservationPage = lazy(() =>
-  import('./presentation/settings/conservation_page').then((m) => ({
-    default: m.ConservationPage,
+const ConservationView = lazy(() =>
+  import('./presentation/settings/conservation.component').then((m) => ({
+    default: m.ConservationView,
   })),
 )
-const AccessPage = lazy(() =>
-  import('./presentation/settings/access_page').then((m) => ({ default: m.AccessPage })),
+const AccessView = lazy(() =>
+  import('./presentation/settings/access.component').then((m) => ({ default: m.AccessView })),
 )
-const SystemPage = lazy(() =>
-  import('./presentation/settings/system_page').then((m) => ({ default: m.SystemPage })),
+const SystemView = lazy(() =>
+  import('./presentation/settings/system.component').then((m) => ({ default: m.SystemView })),
 )
 const ExpertView = lazy(() =>
   import('./presentation/expert/expert.component').then((m) => ({ default: m.ExpertView })),
 )
-
-function AppShell() {
-  const { hub, cameras } = useAppContainer()
-  useSystemStatsPolling(hub.getSystemStats)
-  useCameraListFailureToast()
-
-  // The camera catalogue is state shared between screens, so it loads here rather
-  // than in whichever screen happened to need it first. Without that, opening the
-  // camera list directly would show it empty.
-  useEffect(() => {
-    reloadCameraList(cameras)
-  }, [cameras])
-
-  return (
-    <div className="grid min-w-0 max-w-full gap-6 pt-5 *:min-w-0">
-      <AppHeader trailing={<RestartSurveillanceTrigger />} />
-      {/* Unique garde de navigation : react-router n'en accepte qu'un. */}
-      <NavigationGuard />
-      <Suspense fallback={null}>
-        <Outlet />
-      </Suspense>
-    </div>
-  )
-}
 
 function Root() {
   return (
@@ -208,7 +176,7 @@ const router = createBrowserRouter([
               { path: 'cameras', element: <PersonCamerasView /> },
             ],
           },
-          { path: 'conservation', element: <ConservationPage /> },
+          { path: 'conservation', element: <ConservationView /> },
           { path: 'notifications', element: <NotificationChannelListView /> },
           // Names the task, not the section.
           {
@@ -222,8 +190,8 @@ const router = createBrowserRouter([
             element: <NotificationChannelView />,
             handle: OWN_HEADER,
           },
-          { path: 'acces', element: <AccessPage /> },
-          { path: 'systeme', element: <SystemPage /> },
+          { path: 'acces', element: <AccessView /> },
+          { path: 'systeme', element: <SystemView /> },
           { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
         ],
       },

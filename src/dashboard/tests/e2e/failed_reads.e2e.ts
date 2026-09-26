@@ -18,7 +18,7 @@ async function failRead(page: Page, path: string) {
 
 // A read that fails says so with its diagnostic line, never an empty or stale page (SPECS 1.5).
 test.describe('Failed reads', () => {
-  test('ConservationPage_ShouldShowTheFailure_WhenTheSettingsCannotBeRead', async ({ page }) => {
+  test('ConservationView_ShouldShowTheFailure_WhenTheSettingsCannotBeRead', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/settings/recording')
     await page.goto('/settings/conservation')
@@ -28,7 +28,7 @@ test.describe('Failed reads', () => {
     await expect(alert).toContainText('500')
   })
 
-  test('ConservationPage_ShouldShowTheSettings_WhenRetriedOnceTheServerAnswers', async ({
+  test('ConservationView_ShouldShowTheSettings_WhenRetriedOnceTheServerAnswers', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))

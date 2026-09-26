@@ -1,27 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { HelpPanel } from '../../common/components/help_panel'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+import { buildAccessPresenter } from './access.presenter'
+import { accessReducer } from './access.reducer'
+import { buildInitialAccessUido } from './access.uido'
 
 /** What one can do with their own access: change it, leave it, or take it back from every device (ADR-54). */
-export function AccessPage() {
-  const { access } = useAppContainer()
-  const [confirming, setConfirming] = useState(false)
+export function AccessView() {
+  const { access: container } = useAppContainer()
+  const { toast } = useToast()
+  const [uido, dispatch] = useReducer(accessReducer, undefined, buildInitialAccessUido)
+  const presenter = usePresenter(buildAccessPresenter, { container, dispatch, toast })
+
+  useEffect(() => {
+    presenter.onLoad()
+  }, [presenter])
 
   // Signing out makes the interface disappear: the door closes, it is not a screen to refresh.
-  const leaving = useAsyncAction(async () => access.signOut.execute(), {
-    onSuccess: () => window.location.reload(),
-  })
-
-  const leavingEverywhere = useAsyncAction(async () => access.signOutEverywhere.execute(), {
-    onSuccess: () => window.location.reload(),
-  })
+  async function leave(signOut: () => Promise<boolean>) {
+    if (await signOut()) window.location.reload()
+  }
 
   return (
     <SettingsPage lede="Qui peut ouvrir cette interface, et depuis quels appareils.">
@@ -29,14 +33,23 @@ export function AccessPage() {
         title="Mot de passe"
         lede="Le changer ferme toutes les sessions ouvertes ailleurs. Cet appareil reste connecté."
       >
-        <ChangePasswordForm />
+        <ChangePasswordForm
+          minLength={uido.minLength}
+          changing={uido.changing}
+          refused={uido.refused}
+          onChange={presenter.onChangePassword}
+        />
       </SettingsSection>
 
       <SettingsSection
         title="Cet appareil"
         lede="Cet appareil reste connecté plusieurs semaines sans redemander le mot de passe. Le déconnecter ne change rien aux autres."
       >
-        <Button variant="outline" disabled={leaving.loading} onClick={() => void leaving.run()}>
+        <Button
+          variant="outline"
+          disabled={uido.leaving}
+          onClick={() => void leave(presenter.onSignOut)}
+        >
           Se déconnecter
         </Button>
       </SettingsSection>
@@ -47,8 +60,8 @@ export function AccessPage() {
       >
         <Button
           variant="outline"
-          disabled={leavingEverywhere.loading}
-          onClick={() => setConfirming(true)}
+          disabled={uido.leavingEverywhere}
+          onClick={presenter.onAskSignOutEverywhere}
         >
           Déconnecter tous les appareils
         </Button>
@@ -67,45 +80,41 @@ export function AccessPage() {
         </HelpPanel>
       </SettingsSection>
 
-      {confirming && (
+      {uido.confirmEverywhere && (
         <ConfirmModal
           title="Déconnecter tous les appareils ?"
           body="Vous devrez saisir votre mot de passe à nouveau, ici comme ailleurs."
           confirmLabel="Déconnecter"
-          onCancel={() => setConfirming(false)}
-          onConfirm={async () => {
-            setConfirming(false)
-            await leavingEverywhere.run()
-          }}
+          onCancel={presenter.onCancelSignOutEverywhere}
+          onConfirm={() => leave(presenter.onSignOutEverywhere)}
         />
       )}
     </SettingsPage>
   )
 }
 
-function ChangePasswordForm() {
-  const { access } = useAppContainer()
-  const { toast } = useToast()
+function ChangePasswordForm({
+  minLength,
+  changing,
+  refused,
+  onChange,
+}: {
+  minLength: number | null
+  changing: boolean
+  refused: boolean
+  onChange: (current: string, next: string) => Promise<boolean>
+}) {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
-  const [refused, setRefused] = useState(false)
 
   // The minimum length has one home, the server: restating it here would let the two drift apart.
-  const state = useAsync(async () => access.getAccessState.execute(), [])
-  const minLength = state.data?.minimumPasswordLength
-  const tooShort = minLength !== undefined && next.length > 0 && next.length < minLength
+  const tooShort = minLength !== null && next.length > 0 && next.length < minLength
 
-  const changing = useAsyncAction(async () => access.changePassword.execute(current, next), {
-    onSuccess: (result) => {
-      if (result === 'wrong-password') {
-        setRefused(true)
-        return
-      }
-      setCurrent('')
-      setNext('')
-      toast('Mot de passe changé. Les autres appareils ont été déconnectés.', 'success')
-    },
-  })
+  async function change() {
+    if (!(await onChange(current, next))) return
+    setCurrent('')
+    setNext('')
+  }
 
   const incomplete = current.length === 0 || next.length === 0 || tooShort
 
@@ -114,9 +123,8 @@ function ChangePasswordForm() {
       className="max-w-sm space-y-4"
       onSubmit={(event) => {
         event.preventDefault()
-        if (changing.loading || incomplete) return
-        setRefused(false)
-        void changing.run()
+        if (changing || incomplete) return
+        void change()
       }}
     >
       <div className="space-y-2">
@@ -146,7 +154,7 @@ function ChangePasswordForm() {
           aria-invalid={tooShort}
           aria-describedby="new-password-hint"
         />
-        {minLength !== undefined && (
+        {minLength !== null && (
           <p id="new-password-hint" className="text-sm text-muted-foreground">
             Au moins {minLength} caractères.
           </p>
@@ -160,8 +168,8 @@ function ChangePasswordForm() {
         </p>
       )}
 
-      <Button type="submit" disabled={changing.loading || incomplete}>
-        {changing.loading ? 'Un instant…' : 'Changer le mot de passe'}
+      <Button type="submit" disabled={changing || incomplete}>
+        {changing ? 'Un instant…' : 'Changer le mot de passe'}
       </Button>
     </form>
   )

@@ -42,8 +42,8 @@ export default defineConfig(({ mode }) => {
           'src/**/*.d.ts', // ambient types, erased at build
           'src/domain/ports/**', // interfaces only, erased at build
         ],
-        // A floor that only rises: each screen migration lifts it to what it reached, up to 80%.
-        thresholds: { statements: 74, branches: 68, functions: 71, lines: 76 },
+        // A floor that only rises: a change lifts it to what it reached, never lowers it.
+        thresholds: { statements: 82, branches: 74, functions: 78, lines: 84 },
       },
     },
   }

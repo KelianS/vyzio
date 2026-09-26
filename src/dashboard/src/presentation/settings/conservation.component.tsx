@@ -1,18 +1,16 @@
+import { useEffect, useReducer } from 'react'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
-import { useSurveillanceRefresh } from '../surveillance/use_surveillance_refresh'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type {
   RecordingSettings,
   RecordingSettingsUpdate,
 } from '../../domain/entities/recording_settings.entity'
-import type { SaveRecordingSettings } from '../../domain/usecases/save_recording_settings.use_case'
 import {
   CONTINUOUS_DISK_WARNING,
   RETENTION_LABEL,
@@ -25,6 +23,9 @@ import {
 import { SettingsPage } from '../../common/settings/settings_page'
 import { RetentionHelp } from '../../common/recording/retention_help'
 import { ReadFailure } from '../../common/components/error_message'
+import { buildConservationPresenter } from './conservation.presenter'
+import { conservationReducer } from './conservation.reducer'
+import { buildInitialConservationUido } from './conservation.uido'
 
 // The save request is flat while reads are grouped by window; this bridges the two shapes.
 const FIELD_OF = {
@@ -40,38 +41,45 @@ const DRAFT_LABELS: Record<keyof RecordingSettingsUpdate, string> = {
 }
 
 /** Installation-wide retention (ADR-39), in the settings grammar (ADR-43) and draft cycle (ADR-41). */
-export function ConservationPage() {
+export function ConservationView() {
   // Still wired through the "cameras" container, a holdover from where this section used to live.
-  const { cameras: container } = useAppContainer()
-  const { data, loading, error, reload } = useAsync(
-    () => container.getRecordingSettings.execute(),
-    [],
-  )
+  const { cameras: container, hub: hubContainer } = useAppContainer()
+  const { toast } = useToast()
+  const [uido, dispatch] = useReducer(conservationReducer, undefined, buildInitialConservationUido)
+  const presenter = usePresenter(buildConservationPresenter, {
+    container,
+    hubContainer,
+    dispatch,
+    toast,
+  })
 
-  if (loading) return <SettingsPage>Chargement…</SettingsPage>
-  if (error)
+  useEffect(() => {
+    presenter.onLoad()
+  }, [presenter])
+
+  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.error)
     return (
       <SettingsPage>
-        <ReadFailure error={error} onRetry={reload} />
+        <ReadFailure error={uido.error} onRetry={presenter.onLoad} />
       </SettingsPage>
     )
-  if (!data) return null
+  if (!uido.settings) return null
 
-  return <ConservationForm settings={data} reload={reload} save={container.saveRecordingSettings} />
+  return (
+    <ConservationForm settings={uido.settings} saving={uido.saving} onSave={presenter.onSave} />
+  )
 }
 
 function ConservationForm({
   settings,
-  reload,
-  save,
+  saving,
+  onSave,
 }: {
   settings: RecordingSettings
-  reload: () => void
-  save: SaveRecordingSettings
+  saving: boolean
+  onSave: (values: RecordingSettingsUpdate) => Promise<boolean>
 }) {
-  const { toast } = useToast()
-  const refreshSurveillance = useSurveillanceRefresh()
-
   const draft = useSettingsDraft<RecordingSettingsUpdate>({
     saved: {
       continuousDays: settings.continuous.days,
@@ -82,15 +90,6 @@ function ConservationForm({
   })
 
   useUnsavedChanges(draft.dirty)
-
-  const saving = useAsyncAction(async () => save.execute(draft.values), {
-    onSuccess: () => {
-      draft.accept()
-      toast('Durées de conservation enregistrées.', 'success')
-      refreshSurveillance()
-      reload()
-    },
-  })
 
   const declarations: SettingDeclaration[] = RETENTION_ORDER.map((window) => {
     const field = FIELD_OF[window]
@@ -131,8 +130,10 @@ function ConservationForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
-        onSave={() => void saving.run()}
+        saving={saving}
+        onSave={async () => {
+          if (await onSave(draft.values)) draft.accept()
+        }}
         onDiscard={draft.discard}
       />
     </>

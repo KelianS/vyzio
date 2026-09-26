@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Button } from '../../common/ui/button'
-import { Input } from '../../common/ui/input'
+import { Button } from '../../../common/ui/button'
+import { Input } from '../../../common/ui/input'
 
 /**
  * The only screen seen without being in. It carries its help inline: there is no screen behind which
