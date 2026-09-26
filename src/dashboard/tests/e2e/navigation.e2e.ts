@@ -81,4 +81,20 @@ test.describe('Navigation', () => {
       await expect(page).toHaveURL(expected)
     }
   })
+
+  test('CameraShell_ShouldShowEveryTab_WhenOpenedOnAPhone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ cameras: [makeFakeCamera({ id: 'camera-1' })] }),
+    )
+
+    await page.goto('/settings/cameras/camera-1/detection')
+
+    const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
+    await expect(tabs.getByRole('link')).toHaveCount(5)
+    await expect(tabs.getByRole('link', { name: 'Connexion' })).toBeInViewport({ ratio: 1 })
+    // The name heads the camera's screens; its address lives on Connexion.
+    await expect(page.getByText('192.168.1.50:554')).toHaveCount(0)
+  })
 })

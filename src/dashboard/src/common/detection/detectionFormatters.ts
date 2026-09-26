@@ -42,11 +42,12 @@ export function formatEventTime(value: string): string {
 }
 
 export function formatEventTitle(event: DetectionEvent): string {
+  // The name alone: a participle would need the person's gender, which Vyzio does not hold.
   if (event.identity) {
-    return `${event.identity} detectee`
+    return event.identity
   }
 
-  return `Detection '${event.label}'`
+  return `Détection « ${event.label} »`
 }
 
 /** Where, when, and how sure - the certainty only shows when the engine gave one. */

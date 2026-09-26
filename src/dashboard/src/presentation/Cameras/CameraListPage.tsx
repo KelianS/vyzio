@@ -33,6 +33,7 @@ export function CameraListPage() {
               >
                 <span className="min-w-0">
                   <span className="block font-medium">{camera.displayName}</span>
+                  {/* Tells apart two cameras sharing a name, or the lenses of one device (SPECS 2.2). */}
                   <span className="block text-sm text-muted-foreground">
                     {formatCameraAddress(camera)}
                   </span>

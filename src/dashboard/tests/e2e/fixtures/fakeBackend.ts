@@ -430,7 +430,14 @@ export async function installFakeBackend(
         systemHealthy: true,
         recentEvents: state.detectionHistory.slice(0, 5),
         profiles: state.profiles,
-        notifications: { activeChannels: 0, sentCount: 0, lastSentAt: null },
+        // Counted from the channels set up, so the hub and the Notifications screen tell the same story.
+        notifications: {
+          activeChannels: Object.values(state.notificationChannels).filter(
+            (c) => c.isEnabled && c.isConfigured,
+          ).length,
+          sentCount: 0,
+          lastSentAt: null,
+        },
         warnings: [],
       })
     }

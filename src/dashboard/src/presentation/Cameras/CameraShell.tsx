@@ -5,7 +5,7 @@ import { useRootStore } from '../../infrastructure/store/rootStore'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import { ReadFailure } from '../../common/components/ErrorMessage'
 import { useReloadCameraList } from './cameraListRead'
-import { formatCameraAddress, formatCameraStatusLabel } from './cameras.formatters'
+import { formatCameraStatusLabel } from './cameras.formatters'
 
 /**
  * The third level of the tree: the pages of **one** camera (ADR-40).
@@ -70,7 +70,7 @@ export function CameraShell() {
         <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="font-serif text-3xl">{camera.displayName}</h1>
           <span className="text-sm text-muted-foreground">
-            {formatCameraAddress(camera)} · {formatCameraStatusLabel(camera.status)}
+            {formatCameraStatusLabel(camera.status)}
           </span>
         </div>
       </div>
@@ -79,7 +79,8 @@ export function CameraShell() {
           et l'on passe de l'une a l'autre, au lieu d'entrer et de ressortir. */}
       <nav
         aria-label="Réglages de la caméra"
-        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1"
+        // Wrapped, not scrolled, so every tab stays visible on a phone.
+        className="-mx-1 flex flex-wrap gap-1 px-1 pb-1"
       >
         {CAMERA_PAGES.map((page) => (
           <NavLink
