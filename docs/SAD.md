@@ -486,7 +486,8 @@ significantly.
 A monorepo under `src/`. The .NET backend is in hexagonal layers: `Vyzio.Core` (domain and interfaces),
 `Vyzio.Application` (use cases), `Vyzio.Infrastructure` (EF/SQLite, MQTT, protocol clients,
 `FrigateAdapter`), `Vyzio.Api` (ASP.NET Core and SignalR); the tests live in `Vyzio.Tests`. The frontend
-is `src/dashboard/` (React 19 and TypeScript, mirroring domain/application/infrastructure/ui). Setup,
+is `src/dashboard/` (React 19 and TypeScript; its layers and screen pattern:
+[`src/dashboard/CLAUDE.md`](../src/dashboard/CLAUDE.md)). Setup,
 tasks and the folder detail: [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ---
