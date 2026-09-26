@@ -43,6 +43,8 @@ interface CameraDto {
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
+  privacyMiss?: string | null
+  privacyMissDetail?: string | null
   ptzSupported: boolean
   privacyStrategy: string
   supportedProtocols: string[]
@@ -350,6 +352,8 @@ function mapCamera(camera: CameraDto): Camera {
     privacyModeActive: camera.privacyModeActive ?? false,
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
+    privacyMiss: (camera.privacyMiss ?? null) as Camera['privacyMiss'],
+    privacyMissDetail: camera.privacyMissDetail ?? null,
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: (camera.privacyStrategy || 'none') as Camera['privacyStrategy'],
     supportedProtocols: camera.supportedProtocols ?? [],

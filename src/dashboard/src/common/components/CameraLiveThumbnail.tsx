@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
-import { EyeOff, Lock, WifiOff } from 'lucide-react'
+import { Link } from 'react-router'
+import { EyeOff, Lock, TriangleAlert, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
+import { privacyMissLabel } from '../privacy/privacyStatus'
 import { cn } from '../ui/utils'
 import type { Camera } from '../../domain/entities/Camera'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
@@ -83,8 +85,8 @@ export function CameraLiveThumbnail({
             )}
             <span className="text-sm font-medium">
               {camera.privacyVendorCut
-                ? 'Caméra coupée — matériel'
-                : 'Caméra en pause — enregistrement désactivé'}
+                ? 'Coupure matérielle confirmée'
+                : 'Caméra en pause, enregistrement désactivé'}
             </span>
           </div>
         ) : deviceOffline ? (
@@ -152,6 +154,16 @@ export function CameraLiveThumbnail({
           </Button>
         )}
       </div>
+      {/* Outside the frame, which may be a button; the privacy screen says why (SPECS 9.2). */}
+      {camera.privacyMiss && (
+        <Link
+          to={`/settings/cameras/${camera.id}/vie-privee`}
+          className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
+        >
+          <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+          {privacyMissLabel(camera.privacyMiss)}
+        </Link>
+      )}
     </article>
   )
 }

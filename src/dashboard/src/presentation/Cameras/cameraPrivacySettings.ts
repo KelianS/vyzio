@@ -1,7 +1,5 @@
 import type { SettingDeclaration, SettingOption } from '../../common/settings/settingDeclaration'
-import type { Camera } from '../../domain/entities/Camera'
-
-export type PrivacyStrategy = Camera['privacyStrategy']
+import { PrivacyStrategy, type Camera } from '../../domain/entities/Camera'
 
 /** What the user has set up on the camera; null while it is not known. */
 export interface PrivacySetup {
@@ -31,20 +29,20 @@ const POSITIONS_FIRST =
  */
 const STRATEGIES: readonly StrategyDefinition[] = [
   {
-    value: 'none',
+    value: PrivacyStrategy.None,
     label: 'Aucun',
     explanation: 'La caméra filme et enregistre en permanence.',
     available: () => true,
   },
   {
-    value: 'software_blur',
+    value: PrivacyStrategy.SoftwareBlur,
     label: 'Arrêt logiciel',
     explanation:
       'Vyzio cesse d’enregistrer et d’analyser. La caméra continue de filmer et reste joignable sur votre réseau local.',
     available: () => true,
   },
   {
-    value: 'ptz_parking',
+    value: PrivacyStrategy.PtzParking,
     label: 'Orientation à l’écart',
     explanation:
       'La caméra pivote vers sa position Parking et Vyzio cesse d’enregistrer, puis elle revient sur sa position Surveillance. Elle reste joignable sur votre réseau local.',
@@ -52,7 +50,7 @@ const STRATEGIES: readonly StrategyDefinition[] = [
     missingStep: (setup) => (setup.positionsSaved === false ? POSITIONS_FIRST : null),
   },
   {
-    value: 'hardware',
+    value: PrivacyStrategy.Hardware,
     label: 'Coupure matérielle',
     explanation:
       'L’objectif est masqué dans la caméra elle-même. C’est la seule option où plus rien ne peut être filmé.',

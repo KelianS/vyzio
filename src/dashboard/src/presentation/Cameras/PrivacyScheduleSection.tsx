@@ -10,7 +10,9 @@ import type { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraP
 import type { CreateCameraPrivacySchedule } from '../../domain/usecases/CreateCameraPrivacySchedule'
 import type { DeleteCameraPrivacySchedule } from '../../domain/usecases/DeleteCameraPrivacySchedule'
 import { toastError, type AppError } from '../../common/errors/AppError'
-import { ErrorMessage } from '../../common/components/ErrorMessage'
+import { DiagnosticLine, ErrorMessage } from '../../common/components/ErrorMessage'
+import { scrubSecrets } from '../../common/errors/scrubSecrets'
+import { privacyBadge, privacyMissSentence } from '../../common/privacy/privacyStatus'
 import { toAppError } from '../../common/errors/toAppError'
 import { useToast } from '../../common/components/Toast'
 
@@ -133,21 +135,24 @@ export function PrivacyScheduleSection({
     }
   }
 
-  const privacyCut = camera.privacyVendorCut
-    ? { text: 'Coupure matérielle confirmée', icon: '🔒' }
-    : camera.privacyModeActive && camera.privacyStrategy === 'ptz_parking'
-      ? { text: 'Caméra orientée — enregistrement désactivé', icon: '🔇' }
-      : camera.privacyModeActive
-        ? { text: 'Enregistrement désactivé', icon: '🔇' }
-        : null
+  const badge = privacyBadge(camera)
+  const missSentence = privacyMissSentence(camera)
 
   return (
     // No own frame or title: the page already carries them.
     <section className="flex flex-col gap-4">
-      {privacyCut && (
-        <Badge tone={camera.privacyVendorCut ? 'ok' : 'neutral'} className="w-fit">
-          {privacyCut.icon} {privacyCut.text}
+      {badge && (
+        <Badge tone={badge.tone} className="w-fit">
+          {badge.icon} {badge.text}
         </Badge>
+      )}
+      {missSentence && (
+        <div role="status" className="text-sm">
+          <p>{missSentence}</p>
+          {camera.privacyMissDetail && (
+            <DiagnosticLine text={scrubSecrets(camera.privacyMissDetail)} />
+          )}
+        </div>
       )}
 
       {loading ? (

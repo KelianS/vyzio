@@ -54,6 +54,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             camera.Property(c => c.StreamProtocol).HasConversion<SnakeCaseEnumConverter<StreamProtocol>>();
             camera.Property(c => c.VendorFamily).HasConversion<NullableSnakeCaseEnumConverter<VendorFamily>>();
             camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
+            camera.Property(c => c.PrivacyMiss).HasConversion<NullableSnakeCaseEnumConverter<PrivacyMiss>>();
             camera.Property(c => c.PrivacyStrategy).HasConversion<SnakeCaseEnumConverter<PrivacyStrategy>>();
 
             camera.HasIndex(c => c.DeviceId)

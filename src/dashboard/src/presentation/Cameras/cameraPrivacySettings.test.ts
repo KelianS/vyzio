@@ -26,6 +26,8 @@ function camera(overrides: Partial<Camera> = {}): Camera {
     privacyModeActive: false,
     privacyModeSource: null,
     privacyVendorCut: false,
+    privacyMiss: null,
+    privacyMissDetail: null,
     ptzSupported: true,
     privacyStrategy: 'software_blur',
     supportedProtocols: [],

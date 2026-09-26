@@ -11,11 +11,11 @@ import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { useToast } from '../../common/components/Toast'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
 import { useRootStore } from '../../infrastructure/store/rootStore'
-import type { Camera } from '../../domain/entities/Camera'
+import type { Camera, PrivacyStrategy } from '../../domain/entities/Camera'
 import { SettingsPage, SettingsSection } from '../../common/settings/SettingsPage'
 import { HelpPanel } from '../../common/components/HelpPanel'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
-import { buildPrivacySettings, type PrivacyStrategy } from './cameraPrivacySettings'
+import { buildPrivacySettings } from './cameraPrivacySettings'
 
 const DRAFT_LABELS = { strategy: 'Quand vous coupez la surveillance' }
 

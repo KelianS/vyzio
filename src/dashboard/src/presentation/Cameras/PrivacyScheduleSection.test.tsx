@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
-import type { Camera } from '../../domain/entities/Camera'
+import { PrivacyMiss, PrivacyStrategy, type Camera } from '../../domain/entities/Camera'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
 import type { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraPrivacySchedules'
 import type { CreateCameraPrivacySchedule } from '../../domain/usecases/CreateCameraPrivacySchedule'
@@ -30,6 +30,8 @@ function makeCamera(overrides: Partial<Camera> = {}): Camera {
     privacyModeActive: false,
     privacyModeSource: null,
     privacyVendorCut: false,
+    privacyMiss: null,
+    privacyMissDetail: null,
     ptzSupported: false,
     privacyStrategy: 'software_blur',
     supportedProtocols: [],
@@ -183,6 +185,36 @@ describe('PrivacyScheduleSection', () => {
     )
 
     expect(await screen.findByText(/Coupure matérielle confirmée/)).toBeInTheDocument()
+  })
+
+  it('PrivacyScheduleSection_ShouldSayWhatHappenedAndShowTheDetail_WhenTheCameraDidNotFollow', async () => {
+    const getSchedules = {
+      execute: vi.fn().mockResolvedValue([]),
+    } as unknown as GetCameraPrivacySchedules
+
+    render(
+      <PrivacyScheduleSection
+        camera={makeCamera({
+          privacyModeActive: true,
+          privacyStrategy: PrivacyStrategy.PtzParking,
+          privacyMiss: PrivacyMiss.CameraFailed,
+          privacyMissDetail:
+            'privacy on, ptz_parking: CameraUnreachableException: ONVIF Ptz: no answer',
+        })}
+        cameraId="camera-1"
+        allCameras={[makeCamera()]}
+        getSchedules={getSchedules}
+        createSchedule={{ execute: vi.fn() } as unknown as CreateCameraPrivacySchedule}
+        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
+      />,
+    )
+
+    expect(
+      await screen.findByText(/La caméra n’a pas suivi, enregistrement désactivé/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /ne s’est pas tournée vers sa position Parking.*ONVIF Ptz: no answer/,
+    )
   })
 
   it('requires at least one day selected before adding a schedule', async () => {

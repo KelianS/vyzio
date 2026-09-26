@@ -22,6 +22,8 @@ export interface FakeCamera {
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
+  privacyMiss: string | null
+  privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: string
   supportedProtocols: string[]
@@ -85,6 +87,8 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     privacyModeActive: false,
     privacyModeSource: null,
     privacyVendorCut: false,
+    privacyMiss: null,
+    privacyMissDetail: null,
     ptzSupported: false,
     privacyStrategy: 'none',
     supportedProtocols: ['rtsp'],
