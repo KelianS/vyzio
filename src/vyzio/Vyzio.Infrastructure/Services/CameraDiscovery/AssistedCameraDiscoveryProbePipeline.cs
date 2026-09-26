@@ -74,7 +74,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "vendor_probe",
                 null,
                 "network_host",
-                $"Hote {host} present sur le reseau (repond au ping) mais aucun protocole camera connu ni indice constructeur identifie.",
+                $"Hôte {host} présent sur le réseau (répond au ping) mais aucun protocole caméra connu ni indice constructeur identifié.",
                 null,
                 null,
                 []))
@@ -538,8 +538,8 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 null,
                 "mac_vendor_probe",
                 isKnownVendor
-                    ? $"Equipement detecte via l'adresse MAC {macAddress}. Les services video ne repondent pas encore ou sont desactives."
-                    : $"Equipement present sur le reseau ({macAddress}) mais aucun protocole camera connu n'a repondu (RTSP/ONVIF/HTTP/DVRIP/V380/Tapo KLAP). Verifiez que l'acces local est active sur l'appareil, ou declarez-le manuellement.",
+                    ? $"Équipement détecté via l'adresse MAC {macAddress}. Les services vidéo ne répondent pas encore ou sont désactivés."
+                    : $"Équipement présent sur le réseau ({macAddress}) mais aucun protocole caméra connu n'a répondu (RTSP/ONVIF/HTTP/DVRIP/V380/Tapo KLAP). Vérifiez que l'accès local est activé sur l'appareil, ou déclarez-le manuellement.",
                 macAddress,
                 null,
                 isKnownVendor ? ["vendor_oui_match"] : []));
@@ -577,7 +577,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "vendor_probe",
                 null,
                 "hostname_probe",
-                $"Le nom reseau {hostName} ressemble a une camera.",
+                $"Le nom réseau {hostName} ressemble à une caméra.",
                 null,
                 hostName,
                 ["hostname_camera_hint"]));
@@ -692,7 +692,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "rtsp_manual",
                 null,
                 "tapo_klap_probe",
-                $"Protocole Tapo KLAP detecte sur {host}:{port}. Utilise par les cameras TP-Link Tapo (pilotage local).",
+                $"Protocole Tapo KLAP détecté sur {host}:{port}. Utilisé par les caméras TP-Link Tapo (pilotage local).",
                 macAddress,
                 null,
                 ["tapo_klap_detected"]);
@@ -1041,7 +1041,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "onvif",
                 null,
                 "onvif_unicast",
-                $"Endpoint ONVIF unicast detecte sur {host}:{port}. La camera peut etre integree meme sans interface web exploitable.",
+                $"Endpoint ONVIF unicast détecté sur {host}:{port}. La caméra peut être intégrée même sans interface web exploitable.",
                 null,
                 null,
                 ["onvif_detected"]);
@@ -1155,7 +1155,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "web_setup",
                 null,
                 "http_probe",
-                $"Interface web TP-Link Tapo detectee sur {host}:{port}. RTSP et ONVIF sont souvent desactives d'origine et a activer dans l'application Tapo.",
+                $"Interface web TP-Link Tapo détectée sur {host}:{port}. RTSP et ONVIF sont souvent désactivés d'origine et à activer dans l'application Tapo.",
                 null,
                 null,
                 ["http_camera_signature"]);
@@ -1170,7 +1170,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "onvif",
                 null,
                 "http_probe",
-                $"Service web camera detecte sur {host}:{port}. Un endpoint ONVIF semble present; finalisez ensuite l'activation video si necessaire.",
+                $"Service web caméra détecté sur {host}:{port}. Un endpoint ONVIF semble présent; finalisez ensuite l'activation vidéo si nécessaire.",
                 null,
                 null,
                 ["onvif_detected"]);
@@ -1185,7 +1185,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "web_setup",
                 null,
                 "http_probe",
-                $"Interface web camera detectee sur {host}:{port}. RTSP peut etre desactive d'origine; completez ensuite l'assistance de configuration.",
+                $"Interface web caméra détectée sur {host}:{port}. RTSP peut être désactivé d'origine; complétez ensuite l'assistance de configuration.",
                 null,
                 null,
                 ["http_camera_signature"]);
@@ -1200,7 +1200,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "web_setup",
                 null,
                 "http_service",
-                $"Service web generique detecte sur {host}:{port} (serveur: {server}). Ce signal seul ne suffit pas a qualifier une camera.",
+                $"Service web générique détecté sur {host}:{port} (serveur: {server}). Ce signal seul ne suffit pas à qualifier une caméra.",
                 null,
                 null,
                 ["http_service_detected"]);
@@ -1215,7 +1215,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 "web_setup",
                 null,
                 "http_service",
-                $"Service web generique detecte sur {host}:{port}. Ce signal seul ne suffit pas a qualifier une camera.",
+                $"Service web générique détecté sur {host}:{port}. Ce signal seul ne suffit pas à qualifier une caméra.",
                 null,
                 null,
                 ["http_service_detected"]);
@@ -1228,7 +1228,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             "web_setup",
             null,
             "http_service",
-            $"Service web generique detecte sur {host}:{port}. Ce signal seul ne suffit pas a qualifier une camera.",
+            $"Service web générique détecté sur {host}:{port}. Ce signal seul ne suffit pas à qualifier une caméra.",
             null,
             null,
             ["http_service_detected"]);
