@@ -14,7 +14,7 @@ public class CreateProfileUseCaseTests
     public CreateProfileUseCaseTests() => _sut = new CreateProfileUseCase(_repo);
 
     [Fact]
-    public async Task Execute_returns_dto_with_correct_fields()
+    public async Task ExecuteAsync_ShouldReturnTheRequestedFields_WhenTheProfileIsCreated()
     {
         var request = new CreateProfileRequest("Alice", "household", "notify");
 
@@ -26,7 +26,7 @@ public class CreateProfileUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_calls_repository_add_once()
+    public async Task ExecuteAsync_ShouldAddTheProfileOnce_WhenTheProfileIsCreated()
     {
         var request = new CreateProfileRequest("Bob");
 
@@ -36,7 +36,7 @@ public class CreateProfileUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_assigns_non_empty_id()
+    public async Task ExecuteAsync_ShouldAssignAnId_WhenTheProfileIsCreated()
     {
         var result = await _sut.ExecuteAsync(new CreateProfileRequest("Carol"));
 
@@ -52,7 +52,7 @@ public class GetProfileByIdUseCaseTests
     public GetProfileByIdUseCaseTests() => _sut = new GetProfileByIdUseCase(_repo);
 
     [Fact]
-    public async Task Execute_returns_dto_when_profile_exists()
+    public async Task ExecuteAsync_ShouldReturnTheProfile_WhenItExists()
     {
         var profile = new Profile { Name = "Alice" };
         _repo.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -64,7 +64,7 @@ public class GetProfileByIdUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_null_when_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheProfileDoesNotExist()
     {
         _repo.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
@@ -82,7 +82,7 @@ public class DeleteProfileUseCaseTests
     public DeleteProfileUseCaseTests() => _sut = new DeleteProfileUseCase(_repo);
 
     [Fact]
-    public async Task Execute_returns_true_and_deletes_when_found()
+    public async Task ExecuteAsync_ShouldDeleteAndReturnTrue_WhenTheProfileExists()
     {
         var profile = new Profile { Name = "Alice" };
         _repo.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -94,7 +94,7 @@ public class DeleteProfileUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_false_when_not_found()
+    public async Task ExecuteAsync_ShouldReturnFalseWithoutDeleting_WhenTheProfileDoesNotExist()
     {
         _repo.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
@@ -113,7 +113,7 @@ public class UpdateProfileUseCaseTests
     public UpdateProfileUseCaseTests() => _sut = new UpdateProfileUseCase(_repo);
 
     [Fact]
-    public async Task Execute_updates_and_returns_dto_when_found()
+    public async Task ExecuteAsync_ShouldSaveAndReturnTheUpdatedProfile_WhenTheProfileExists()
     {
         var profile = new Profile { Name = "Old" };
         _repo.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -128,7 +128,7 @@ public class UpdateProfileUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_null_when_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheProfileDoesNotExist()
     {
         _repo.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 

@@ -6,7 +6,7 @@ namespace Vyzio.Tests.UseCases;
 public class FrigateLabelFilterTests
 {
     [Fact]
-    public void Allows_all_labels_when_no_filter_is_configured()
+    public void Allows_ShouldAcceptEveryLabel_WhenNoFilterIsConfigured()
     {
         var filter = new FrigateLabelFilter();
 
@@ -15,7 +15,7 @@ public class FrigateLabelFilterTests
     }
 
     [Fact]
-    public void Allows_only_configured_labels_case_insensitively()
+    public void Allows_ShouldAcceptOnlyTheConfiguredLabelsIgnoringCase_WhenAFilterIsConfigured()
     {
         var filter = new FrigateLabelFilter(["Person", "car"]);
 
@@ -28,7 +28,7 @@ public class FrigateLabelFilterTests
 public class FrigateEventContractAdapterTests
 {
     [Fact]
-    public void TryDeserialize_reads_minimal_frigate_event_payload()
+    public void TryDeserialize_ShouldReadTheEnvelope_WhenThePayloadIsAMinimalFrigateEvent()
     {
         var sut = new FrigateEventContractAdapter(new FrigateLabelFilter(["person"]));
         var payload = """
@@ -56,7 +56,7 @@ public class FrigateEventContractAdapterTests
     }
 
     [Fact]
-    public void TryAdapt_projects_relevant_payload_to_consumed_contract()
+    public void TryAdapt_ShouldProjectThePayloadToTheConsumedContract_WhenTheLabelIsAllowed()
     {
         var sut = new FrigateEventContractAdapter(new FrigateLabelFilter(["person", "car"]));
         var envelope = new FrigateEventEnvelope(
@@ -88,7 +88,7 @@ public class FrigateEventContractAdapterTests
     }
 
     [Fact]
-    public void TryParseRelevantEvent_rejects_labels_outside_runtime_filter()
+    public void TryParseRelevantEvent_ShouldReject_WhenTheLabelIsOutsideTheRuntimeFilter()
     {
         var sut = new FrigateEventContractAdapter(new FrigateLabelFilter(["person"]));
         var payload = """
@@ -113,7 +113,7 @@ public class FrigateEventContractAdapterTests
     }
 
     [Fact]
-    public void TryAdapt_rejects_unsupported_frigate_event_types()
+    public void TryAdapt_ShouldReject_WhenTheEventTypeIsUnsupported()
     {
         var sut = new FrigateEventContractAdapter(new FrigateLabelFilter(["person"]));
         var envelope = new FrigateEventEnvelope(

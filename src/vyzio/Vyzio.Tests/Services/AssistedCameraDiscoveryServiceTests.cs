@@ -60,7 +60,7 @@ public class AssistedCameraDiscoveryServiceTests
     private static int PortOf(TcpListener listener) => ((IPEndPoint)listener.LocalEndpoint).Port;
 
     [Fact]
-    public async Task DiscoverAsync_returns_candidate_from_configured_probe_host()
+    public async Task DiscoverAsync_ShouldConfirmTheCameraFromRtsp_WhenTheConfiguredProbeHostAnswersDescribe()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -90,7 +90,7 @@ public class AssistedCameraDiscoveryServiceTests
     // CIDR enumeration reaches a live host, which is then enriched (here RTSP DESCRIBE finds a
     // usable path). 127.0.0.1/32 → 127.0.0.1, identified via ping (loopback).
     [Fact]
-    public async Task DiscoverAsync_returns_candidate_from_configured_cidr()
+    public async Task DiscoverAsync_ShouldConfirmTheCameraFromRtsp_WhenItsHostIsReachedThroughAConfiguredCidr()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -151,7 +151,7 @@ public class AssistedCameraDiscoveryServiceTests
     }, ct);
 
     [Fact]
-    public async Task DiscoverAsync_returns_http_candidate_with_tapo_hint()
+    public async Task DiscoverAsync_ShouldReturnALikelyTapoCamera_WhenTheWebPageCarriesATapoSignature()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -180,7 +180,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_returns_generic_http_service_as_device_unknown()
+    public async Task DiscoverAsync_ShouldReturnAnUnknownDevice_WhenTheWebPageHasNoCameraSignature()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -208,7 +208,7 @@ public class AssistedCameraDiscoveryServiceTests
     // which confirms the protocol, hence the ONVIF capability. Which ports carry that fingerprint
     // in production is the catalog's business, asserted in DiscoveryPortCatalogTests.
     [Fact]
-    public async Task DiscoverAsync_confirms_onvif_via_fingerprint_on_scanned_port()
+    public async Task DiscoverAsync_ShouldConfirmOnvif_WhenASweptPortPassesTheOnvifFingerprint()
     {
         using var listener = StartLoopbackListener();
         var onvifPort = PortOf(listener);
@@ -350,7 +350,7 @@ public class AssistedCameraDiscoveryServiceTests
     // A SOAP gateway with no ONVIF markers must NOT be confirmed as ONVIF: the fingerprint fails,
     // so the open port surfaces as an unidentified open port, device_unknown.
     [Fact]
-    public async Task DiscoverAsync_does_not_treat_generic_soap_gateway_as_onvif_camera()
+    public async Task DiscoverAsync_ShouldReportAnUnidentifiedPort_WhenAGenericSoapGatewayAnswersWithoutOnvifMarkers()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -391,7 +391,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_returns_candidate_from_hostname_hint_when_ports_are_disabled()
+    public async Task DiscoverAsync_ShouldReturnALikelyTapoCamera_WhenOnlyTheHostnameHintsAtIt()
     {
         var sut = Discovery(
             HermeticSettings(probeHosts: ["c200-camera-tapo.lan"]));
@@ -407,7 +407,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_returns_v380_candidate_from_hostname_hint_when_ports_are_disabled()
+    public async Task DiscoverAsync_ShouldReturnALikelyV380CameraWithItsVendorGuide_WhenOnlyTheHostnameHintsAtIt()
     {
         var sut = Discovery(HermeticSettings(
             probeHosts: ["v380pro-camera.lan"],
@@ -437,7 +437,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_returns_candidate_from_mv_hostname_prefix_when_ports_are_disabled()
+    public async Task DiscoverAsync_ShouldReturnALikelyCamera_WhenTheHostnameStartsWithTheMvPrefix()
     {
         var sut = Discovery(HermeticSettings(probeHosts: ["MV26970853"]));
 
@@ -450,7 +450,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_merges_candidates_for_same_host_and_keeps_best_match()
+    public async Task DiscoverAsync_ShouldMergeIntoTheBestMatch_WhenRtspAndWebSignalsComeFromTheSameHost()
     {
         using var rtspListener = StartLoopbackListener();
         var rtspPort = PortOf(rtspListener);
@@ -485,7 +485,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_orders_best_matches_first()
+    public async Task DiscoverAsync_ShouldListTheConfirmedCameraFirst_WhenAnotherHostIsOnlyLikely()
     {
         using var listener = StartLoopbackListener();
         var rtspPort = PortOf(listener);
@@ -514,7 +514,7 @@ public class AssistedCameraDiscoveryServiceTests
     // as device_unknown rather than vanish (this was the actual bug behind "plenty of devices are
     // still missing, not even shown as unidentified").
     [Fact]
-    public async Task DiscoverAsync_returns_network_host_baseline_for_identified_host_with_no_matching_signal()
+    public async Task DiscoverAsync_ShouldStillShowTheHostAsUnknown_WhenAnIdentifiedHostMatchesNoSignal()
     {
         var sut = Discovery(HermeticSettings());
 
@@ -530,7 +530,7 @@ public class AssistedCameraDiscoveryServiceTests
     // same host, however weak that detection is (regression guard for the priority ordering bug
     // found while implementing the fix above).
     [Fact]
-    public async Task DiscoverAsync_network_host_baseline_never_overrides_a_real_signal_for_same_host()
+    public async Task DiscoverAsync_ShouldKeepTheRealDetection_WhenTheSameHostAlsoHasTheBaselineSignal()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -570,7 +570,7 @@ public class AssistedCameraDiscoveryServiceTests
     // (0xFF magic reply) surfaces the host as a confirmed camera with a Port|Protocol enrichment
     // row. Same mechanism that lets V380 be detected on its own port.
     [Fact]
-    public async Task DiscoverAsync_port_sweep_confirms_camera_from_fingerprinted_port()
+    public async Task DiscoverAsync_ShouldConfirmTheCamera_WhenASweptPortPassesTheDvripFingerprint()
     {
         using var listener = StartLoopbackListener();
         var dvripPort = PortOf(listener);
@@ -615,7 +615,7 @@ public class AssistedCameraDiscoveryServiceTests
     // "unidentified open port" (this is the Tapo-isn't-V380 fix). Here a dumb listener never
     // completes the V380 handshake, so it must show up unidentified, not as V380.
     [Fact]
-    public async Task DiscoverAsync_port_sweep_shows_unidentified_open_port_when_fingerprint_fails()
+    public async Task DiscoverAsync_ShouldShowAnUnidentifiedOpenPort_WhenTheV380FingerprintFails()
     {
         using var listener = StartLoopbackListener();
         var v380Port = PortOf(listener);

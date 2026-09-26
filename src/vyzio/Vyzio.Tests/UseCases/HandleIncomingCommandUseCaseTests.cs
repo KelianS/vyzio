@@ -53,7 +53,7 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Answers_the_paired_conversation()
+    public async Task ExecuteAsync_ShouldAnswer_WhenTheConversationIsPaired()
     {
         Paired("conversation-1");
 
@@ -64,7 +64,7 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Leaves_a_stranger_with_nothing_but_a_line_in_the_journal()
+    public async Task ExecuteAsync_ShouldStaySilentAndJournalARejection_WhenAStrangerSendsACommand()
     {
         Paired("conversation-1");
 
@@ -79,7 +79,7 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Leaves_every_conversation_with_nothing_while_no_pairing_exists()
+    public async Task ExecuteAsync_ShouldStaySilent_WhenNoPairingExists()
     {
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>())
                  .Returns((ChannelPairing?)null);
@@ -88,7 +88,7 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Lets_an_unpaired_conversation_run_the_pairing_command()
+    public async Task ExecuteAsync_ShouldRunThePairingCommand_WhenTheConversationIsNotPaired()
     {
         _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>())
                  .Returns((ChannelPairing?)null);
@@ -101,7 +101,7 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Tells_the_paired_conversation_what_it_may_ask_when_it_says_something_else()
+    public async Task ExecuteAsync_ShouldTellWhatMayBeAskedWithoutJournaling_WhenThePairedConversationSaysSomethingElse()
     {
         Paired("conversation-1");
 
@@ -115,7 +115,7 @@ public class HandleIncomingCommandUseCaseTests
     }
 
     [Fact]
-    public async Task Says_nothing_to_a_stranger_who_says_something_it_does_not_understand()
+    public async Task ExecuteAsync_ShouldStaySilentWithoutJournaling_WhenAStrangerSaysSomethingThatIsNotACommand()
     {
         Paired("conversation-1");
 

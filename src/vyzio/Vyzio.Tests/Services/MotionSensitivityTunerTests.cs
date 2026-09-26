@@ -50,7 +50,7 @@ public class MotionSensitivityTunerTests
     private const int SamplesForCoverage = 145;
 
     [Fact]
-    public void No_decision_before_the_window_is_covered()
+    public void Evaluate_ShouldStayInWarmup_WhenTheWindowIsNotYetCovered()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -62,7 +62,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Quiet_night_does_not_undo_a_busy_day()
+    public void Evaluate_ShouldStepDown_WhenQuietNightsAlternateWithBusyDays()
     {
         // The regression this design exists for: sampled instantaneously, this camera would
         // desensitize by day and re-sensitize by night, forever.
@@ -75,7 +75,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Genuinely_quiet_camera_is_left_at_its_level()
+    public void Evaluate_ShouldSettleAtTheCurrentLevel_WhenTheCameraIsGenuinelyQuiet()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -86,7 +86,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Sustained_low_aggregate_steps_back_up()
+    public void Evaluate_ShouldStepBackUp_WhenTheAggregateStaysLow()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -96,7 +96,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Low_is_a_hard_floor()
+    public void Evaluate_ShouldStopAtTheBound_WhenABusyCameraIsAlreadyAtLow()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -107,7 +107,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void High_is_a_hard_ceiling()
+    public void Evaluate_ShouldStopAtTheBound_WhenAQuietCameraIsAlreadyAtHigh()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -117,7 +117,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Stepping_restarts_the_window_so_the_next_level_is_earned_afresh()
+    public void Evaluate_ShouldReturnToWarmup_WhenItHasJustStepped()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -130,7 +130,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Rate_limit_blocks_a_step_that_the_window_would_otherwise_allow()
+    public void Evaluate_ShouldBeRateLimited_WhenTheWindowRefillsBeforeTheStepIntervalElapses()
     {
         // Coverage shorter than the step interval, so the window refills while the rate limit
         // is still in force — otherwise MinimumWindowCoverage alone would hide it.
@@ -145,7 +145,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Samples_older_than_the_window_are_dropped()
+    public void Evaluate_ShouldAgeOutOldSamplesAndStepBackUp_WhenAFullWindowOfQuietFollowsBusySamples()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -167,7 +167,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Cameras_are_tracked_independently()
+    public void Evaluate_ShouldStayInWarmupForAnotherCamera_WhenOnlyTheFirstCameraHasCoverage()
     {
         var tuner = new MotionSensitivityTuner(Options());
 
@@ -178,7 +178,7 @@ public class MotionSensitivityTunerTests
     }
 
     [Fact]
-    public void Forget_clears_the_window()
+    public void Forget_ShouldClearTheWindow_WhenTheCameraWasAlmostCovered()
     {
         var tuner = new MotionSensitivityTuner(Options());
 

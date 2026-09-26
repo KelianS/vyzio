@@ -10,7 +10,7 @@ public sealed class FrigateMqttContractFixtureTests
     [Theory]
     [InlineData("mqtt/frigate-0.17/new_person.json", "frigate-evt-201", "new", "front_door", "person", true, true)]
     [InlineData("mqtt/frigate-0.17/update_car.json", "frigate-evt-202", "update", "driveway", "car", false, true)]
-    public void TryParseRelevantEvent_accepts_supported_frigate_payloads(
+    public void TryParseRelevantEvent_ShouldReturnTheConsumedEvent_WhenThePayloadHasASupportedFrigateShape(
         string fixturePath,
         string expectedEventId,
         string expectedLifecycle,
@@ -35,7 +35,7 @@ public sealed class FrigateMqttContractFixtureTests
     }
 
     [Fact]
-    public void TryParseRelevantEvent_rejects_unknown_payload_shapes_that_drop_required_fields()
+    public void TryParseRelevantEvent_ShouldRejectThePayload_WhenARequiredFieldIsMissing()
     {
         var sut = new FrigateEventContractAdapter(new FrigateLabelFilter(["person"]));
         var payload = FixtureLoader.LoadText("mqtt/frigate-0.17/missing_camera.json");
@@ -53,7 +53,7 @@ public sealed class FrigateRestContractFixtureTests
     [InlineData("rest/frigate-0.17/sub_label_string.json", "Alice")]
     [InlineData("rest/frigate-0.17/sub_label_array.json", "Bob")]
     [InlineData("rest/frigate-0.17/sub_label_missing.json", null)]
-    public async Task TryGetIdentityAsync_reads_supported_sub_label_shapes(string fixturePath, string? expectedIdentity)
+    public async Task TryGetIdentityAsync_ShouldReadTheIdentity_WhenTheSubLabelHasASupportedShape(string fixturePath, string? expectedIdentity)
     {
         using var httpClient = new HttpClient(new StubHttpMessageHandler(FixtureLoader.LoadText(fixturePath)))
         {
@@ -67,7 +67,7 @@ public sealed class FrigateRestContractFixtureTests
     }
 
     [Fact]
-    public async Task TryGetIdentityAsync_throws_on_non_success_status_so_breaking_rest_contracts_fail_fast()
+    public async Task TryGetIdentityAsync_ShouldThrow_WhenFrigateAnswersANonSuccessStatus()
     {
         using var httpClient = new HttpClient(new StubHttpMessageHandler("{}", HttpStatusCode.InternalServerError))
         {

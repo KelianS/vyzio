@@ -21,7 +21,7 @@ public class AddProfilePhotoUseCaseTests
             NullLogger<AddProfilePhotoUseCase>.Instance);
 
     [Fact]
-    public async Task ExecuteAsync_throws_when_profile_not_found()
+    public async Task ExecuteAsync_ShouldThrow_WhenTheProfileDoesNotExist()
     {
         _profiles.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
         var sut = CreateSut(Path.GetTempPath());
@@ -31,7 +31,7 @@ public class AddProfilePhotoUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_throws_when_image_empty()
+    public async Task ExecuteAsync_ShouldThrow_WhenTheImageIsEmpty()
     {
         var profile = new Profile { Name = "Alice" };
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -42,7 +42,7 @@ public class AddProfilePhotoUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_writes_file_and_adds_db_record()
+    public async Task ExecuteAsync_ShouldWriteTheFileAndRecordThePhoto_WhenTheProfileExists()
     {
         var profile = new Profile { Name = "Bob" };
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -62,7 +62,7 @@ public class AddProfilePhotoUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_syncs_to_frigate_and_marks_synced()
+    public async Task ExecuteAsync_ShouldUploadToFrigateAndMarkThePhotoSynced_WhenFrigateAccepts()
     {
         var profile = new Profile { Name = "Carol" };
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -82,7 +82,7 @@ public class AddProfilePhotoUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_does_not_fail_when_frigate_sync_throws()
+    public async Task ExecuteAsync_ShouldKeepThePhotoUnsyncedWithoutFailing_WhenTheFrigateUploadThrows()
     {
         var profile = new Profile { Name = "Dave" };
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -112,7 +112,7 @@ public class RemoveProfilePhotoUseCaseTests
             NullLogger<RemoveProfilePhotoUseCase>.Instance);
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_photo_not_found()
+    public async Task ExecuteAsync_ShouldReturnFalse_WhenThePhotoDoesNotExist()
     {
         _photos.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((ProfilePhoto?)null);
         var sut = CreateSut();
@@ -123,7 +123,7 @@ public class RemoveProfilePhotoUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_photo_belongs_to_different_profile()
+    public async Task ExecuteAsync_ShouldReturnFalse_WhenThePhotoBelongsToAnotherProfile()
     {
         var photo = new ProfilePhoto { ProfileId = "other-profile", Filename = "x.jpg" };
         _photos.GetByIdAsync(photo.Id, Arg.Any<CancellationToken>()).Returns(photo);
@@ -135,7 +135,7 @@ public class RemoveProfilePhotoUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_deletes_db_record_on_success()
+    public async Task ExecuteAsync_ShouldDeleteThePhotoRecordAndReturnTrue_WhenThePhotoBelongsToTheProfile()
     {
         var photo = new ProfilePhoto { ProfileId = "pid", Filename = "x.jpg", FrigateSynced = false };
         _photos.GetByIdAsync(photo.Id, Arg.Any<CancellationToken>()).Returns(photo);
@@ -159,7 +159,7 @@ public class SetCameraProfileLinksUseCaseTests
         => _sut = new SetCameraProfileLinksUseCase(_links, _profiles);
 
     [Fact]
-    public async Task ExecuteAsync_upserts_only_valid_profiles()
+    public async Task ExecuteAsync_ShouldLinkOnlyExistingProfiles_WhenTheRequestNamesAnUnknownProfile()
     {
         var p1 = new Profile { Name = "Alice" };
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([p1]);
@@ -178,7 +178,7 @@ public class SetCameraProfileLinksUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_removes_links_not_in_request()
+    public async Task ExecuteAsync_ShouldRemoveALink_WhenTheRequestNoLongerNamesItsProfile()
     {
         var p1 = new Profile { Name = "Alice" };
         var existingLink = new ProfileCameraLink { ProfileId = "old-profile", CameraId = "cam-1", Enabled = true };
@@ -203,7 +203,7 @@ public class CorrectDetectionIdentityUseCaseTests
         => _sut = new(_profiles, _identities);
 
     [Fact]
-    public async Task ExecuteAsync_clears_the_identity_in_Frigate_when_profileId_is_null()
+    public async Task ExecuteAsync_ShouldClearTheIdentityInFrigate_WhenNoProfileIsGiven()
     {
         _identities.TrySetIdentityAsync("evt-1", null, Arg.Any<CancellationToken>()).Returns(true);
 
@@ -214,7 +214,7 @@ public class CorrectDetectionIdentityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_writes_the_profile_name_Frigate_recognizes()
+    public async Task ExecuteAsync_ShouldWriteTheProfileNameFrigateRecognizes_WhenTheProfileExists()
     {
         var profile = new Profile { Name = "Alice" };
         _profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
@@ -227,7 +227,7 @@ public class CorrectDetectionIdentityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_profile_not_found()
+    public async Task ExecuteAsync_ShouldReturnFalseWithoutWriting_WhenTheProfileDoesNotExist()
     {
         _profiles.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
@@ -239,7 +239,7 @@ public class CorrectDetectionIdentityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_Frigate_refuses()
+    public async Task ExecuteAsync_ShouldReturnFalse_WhenFrigateRefuses()
     {
         _identities.TrySetIdentityAsync("evt-unknown", null, Arg.Any<CancellationToken>()).Returns(false);
 

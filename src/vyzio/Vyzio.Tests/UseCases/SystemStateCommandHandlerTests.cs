@@ -68,7 +68,7 @@ public class SystemStateCommandHandlerTests
         ]);
 
     [Fact]
-    public void Declares_itself_as_a_consultation_open_to_any_paired_conversation()
+    public void Descriptor_ShouldOpenAParameterlessConsultationToAnyPairedConversation_WhenTheSystemStateCommandIsDescribed()
     {
         var descriptor = CreateSut().Descriptor;
 
@@ -78,7 +78,7 @@ public class SystemStateCommandHandlerTests
     }
 
     [Fact]
-    public async Task Tells_the_latest_detection_without_naming_the_detection_engine()
+    public async Task ExecuteAsync_ShouldTellTheLatestDetectionWithoutNamingTheEngine_WhenARecentDetectionExists()
     {
         ConfigureWorkingChannel();
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
@@ -100,7 +100,7 @@ public class SystemStateCommandHandlerTests
     }
 
     [Fact]
-    public async Task Carries_the_warnings_of_the_home_screen()
+    public async Task ExecuteAsync_ShouldCarryTheHomeScreenWarnings_WhenNothingIsConfiguredOrDetected()
     {
         _channelConfigs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);

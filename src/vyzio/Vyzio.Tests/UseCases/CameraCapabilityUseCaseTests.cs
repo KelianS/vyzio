@@ -87,7 +87,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -97,7 +97,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_binding_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraHasNoBindingForTheCapability()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
@@ -108,7 +108,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task A_protocol_that_passes_its_probe_is_recorded_as_supported()
+    public async Task ExecuteAsync_ShouldRecordTheProtocolAsSupported_WhenItPassesItsProbe()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.ImageSettings, SupportedProtocol.Dvrip);
@@ -125,7 +125,7 @@ public class ProbeCameraCapabilityUseCaseTests
     // The cascade tries candidates until one answers; a candidate that failed proves nothing about
     // the camera and must not end up in the list (ADR-28).
     [Fact]
-    public async Task A_protocol_that_fails_its_probe_is_not_recorded()
+    public async Task ExecuteAsync_ShouldNotRecordTheProtocol_WhenItFailsItsProbe()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.ImageSettings, SupportedProtocol.Onvif);
@@ -140,7 +140,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_sets_verified_true_and_saves_when_probe_succeeds()
+    public async Task ExecuteAsync_ShouldMarkTheBindingVerifiedAndSaveIt_WhenTheProbeSucceeds()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.Ptz);
@@ -157,7 +157,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_sets_verified_false_and_saves_when_probe_returns_false()
+    public async Task ExecuteAsync_ShouldMarkTheBindingUnverifiedAndSaveIt_WhenTheProbeReturnsFalse()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.Ptz);
@@ -173,7 +173,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_sets_verified_false_with_error_when_probe_throws()
+    public async Task ExecuteAsync_ShouldMarkTheBindingUnverifiedWithTheError_WhenTheProbeThrows()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.Ptz);
@@ -190,7 +190,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_uses_privacy_provider_for_hardware_privacy_capability()
+    public async Task ExecuteAsync_ShouldProbeThroughThePrivacyProvider_WhenTheCapabilityIsHardwarePrivacy()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.HardwarePrivacy, SupportedProtocol.TapoKlap);
@@ -205,7 +205,7 @@ public class ProbeCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_uses_image_settings_provider_for_image_settings_capability()
+    public async Task ExecuteAsync_ShouldProbeThroughTheImageSettingsProvider_WhenTheCapabilityIsImageSettings()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.ImageSettings, SupportedProtocol.Onvif);
@@ -223,7 +223,7 @@ public class ProbeCameraCapabilityUseCaseTests
     // ADR-28 follow-up: OnvifImageSettingsProvider now lets CameraCommandException propagate instead
     // of swallowing it — this locks in that the real reason ends up in LastError, not a generic message.
     [Fact]
-    public async Task ExecuteAsync_surfaces_real_error_message_when_image_settings_probe_throws()
+    public async Task ExecuteAsync_ShouldSurfaceTheRealErrorMessage_WhenTheImageSettingsProbeThrows()
     {
         var camera = MakeCamera();
         var binding = MakeBinding(CameraCapability.ImageSettings, SupportedProtocol.Onvif);
@@ -267,7 +267,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     };
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -295,7 +295,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_throws_on_invalid_capability()
+    public async Task ExecuteAsync_ShouldThrow_WhenTheCapabilityIsUnknown()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
 
@@ -304,7 +304,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_throws_on_invalid_protocol()
+    public async Task ExecuteAsync_ShouldThrow_WhenTheProtocolIsUnknown()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
 
@@ -313,7 +313,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_creates_binding_saves_then_probes()
+    public async Task ExecuteAsync_ShouldCreateSaveThenProbeTheBinding_WhenNoBindingExistsYet()
     {
         var camera = MakeCamera();
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -333,7 +333,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_updates_existing_binding_protocol()
+    public async Task ExecuteAsync_ShouldSwitchTheBindingToTheNewProtocol_WhenABindingAlreadyExists()
     {
         var camera = MakeCamera();
         var existing = new CameraCapabilityBinding
@@ -372,7 +372,7 @@ public class ProbeCameraCapabilityUseCasePtzSupportedTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_sets_ptz_supported_when_ptz_probe_succeeds()
+    public async Task ExecuteAsync_ShouldMarkTheCameraPtzSupported_WhenThePtzProbeSucceeds()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = false };
         var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
@@ -387,11 +387,11 @@ public class ProbeCameraCapabilityUseCasePtzSupportedTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_does_not_update_camera_when_ptz_already_supported()
+    public async Task ExecuteAsync_ShouldNotUpdateTheCamera_WhenPtzIsAlreadySupportedAndProven()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = true };
         // Already proven too, otherwise the probe would legitimately write it (see
-        // A_protocol_that_passes_its_probe_is_recorded_as_supported).
+        // ExecuteAsync_ShouldRecordTheProtocolAsSupported_WhenItPassesItsProbe).
         camera.AddSupportedProtocol(SupportedProtocol.Onvif);
         var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -404,7 +404,7 @@ public class ProbeCameraCapabilityUseCasePtzSupportedTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_does_not_set_ptz_supported_when_probe_fails()
+    public async Task ExecuteAsync_ShouldNotMarkTheCameraPtzSupported_WhenThePtzProbeFails()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = false };
         var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
@@ -443,7 +443,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_does_nothing_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldSaveNoBinding_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -467,7 +467,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_seeds_preset_bindings_and_probes_each_for_known_vendor()
+    public async Task ExecuteAsync_ShouldSeedAndProbeEveryPresetBinding_WhenTheVendorIsKnown()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -493,7 +493,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_blind_probes_ptz_and_removes_binding_when_no_candidate_verifies_for_unlisted_camera()
+    public async Task ExecuteAsync_ShouldRemoveTheTentativePtzBinding_WhenNoBlindCandidateVerifiesOnAnUnlistedCamera()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -511,7 +511,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_keeps_ptz_binding_when_a_blind_candidate_verifies_for_unlisted_camera()
+    public async Task ExecuteAsync_ShouldKeepThePtzBinding_WhenABlindCandidateVerifiesOnAnUnlistedCamera()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null, PtzSupported = false };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -528,7 +528,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_tries_every_registered_protocol_in_order_for_unlisted_camera()
+    public async Task ExecuteAsync_ShouldTryEveryRegisteredProtocolInOrder_WhenTheCameraIsUnlisted()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -555,7 +555,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_blind_probes_image_settings_and_hardware_privacy_too_for_unlisted_camera()
+    public async Task ExecuteAsync_ShouldBlindProbeImageSettingsAndHardwarePrivacyToo_WhenTheCameraIsUnlisted()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -579,7 +579,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_skips_capability_with_no_registered_protocol_for_unlisted_camera()
+    public async Task ExecuteAsync_ShouldProbeNothing_WhenNoProtocolIsRegisteredForAnUnlistedCamera()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -593,7 +593,7 @@ public class SeedAndProbePresetsUseCaseTests
     // ADR-28: Icsee declares Ptz candidates [Onvif, Dvrip] in priority order — cascade must
     // try Onvif first and fall back to Dvrip only if Onvif fails to verify.
     [Fact]
-    public async Task ExecuteAsync_cascades_to_next_candidate_protocol_when_first_fails_to_verify()
+    public async Task ExecuteAsync_ShouldCascadeToTheNextCandidateProtocol_WhenTheFirstFailsToVerify()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
@@ -616,7 +616,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_never_overwrites_a_manually_configured_binding()
+    public async Task ExecuteAsync_ShouldNeverChangeTheProtocol_WhenTheBindingWasConfiguredManually()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
         var manual = new CameraCapabilityBinding
@@ -640,7 +640,7 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_does_not_reset_already_verified_binding_still_covered_by_preset()
+    public async Task ExecuteAsync_ShouldKeepTheVerifiedProtocol_WhenThePresetStillCoversIt()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
         var verified = new CameraCapabilityBinding
@@ -682,7 +682,7 @@ public class GetCameraCapabilitiesUseCaseTests
     };
 
     [Fact]
-    public async Task ExecuteAsync_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -692,7 +692,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_empty_list_when_no_bindings_and_no_vendor()
+    public async Task ExecuteAsync_ShouldReturnAnEmptyList_WhenTheCameraHasNoBindingAndNoVendor()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
@@ -704,7 +704,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_maps_non_preset_bindings_with_is_configured_true()
+    public async Task ExecuteAsync_ShouldMapBindingsAsConfiguredAndNotPreset_WhenTheCameraHasNoVendor()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([
@@ -720,7 +720,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_includes_preset_suggestion_when_no_binding_exists_yet()
+    public async Task ExecuteAsync_ShouldIncludeThePresetSuggestions_WhenNoBindingExistsYet()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(vendorFamily: VendorFamily.TplinkTapo));
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
@@ -735,7 +735,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_marks_existing_binding_as_preset_when_in_vendor_preset()
+    public async Task ExecuteAsync_ShouldMarkAnExistingBindingAsPreset_WhenTheVendorPresetListsIt()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(vendorFamily: VendorFamily.TplinkTapo));
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([
@@ -777,7 +777,7 @@ public class RemoveCameraCapabilityUseCaseTests
     };
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnFalse_WhenTheCameraDoesNotExist()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -788,7 +788,7 @@ public class RemoveCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_returns_false_when_binding_not_found()
+    public async Task ExecuteAsync_ShouldReturnFalse_WhenTheCameraHasNoBindingForTheCapability()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
@@ -800,7 +800,7 @@ public class RemoveCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_deletes_binding_and_returns_true_when_found()
+    public async Task ExecuteAsync_ShouldDeleteTheBindingAndReturnTrue_WhenTheBindingExists()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetAsync("cam1", CameraCapability.ImageSettings, Arg.Any<CancellationToken>())

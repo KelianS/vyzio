@@ -11,7 +11,7 @@ public class FrigateEventImageProviderTests
     [Theory]
     [InlineData(FrigateEventImage.Snapshot, "http://frigate:5000/api/events/evt-1/snapshot.jpg")]
     [InlineData(FrigateEventImage.Thumbnail, "http://frigate:5000/api/events/evt-1/thumbnail.jpg")]
-    public async Task TryGetImageAsync_reads_the_file_frigate_wrote_for_that_image(
+    public async Task TryGetImageAsync_ShouldFetchTheMatchingEventFile_WhenAskedForASnapshotOrAThumbnail(
         FrigateEventImage image, string expectedUrl)
     {
         var handler = new CapturingHandler();

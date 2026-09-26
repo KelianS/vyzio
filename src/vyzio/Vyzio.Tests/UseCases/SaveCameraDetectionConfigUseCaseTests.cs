@@ -62,7 +62,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     // The restart prompt only appears when something genuinely waits.
 
     [Fact]
-    public async Task A_save_that_changes_nothing_leaves_nothing_waiting_for_a_restart()
+    public async Task ExecuteAsync_ShouldLeaveNothingWaitingForARestart_WhenTheSaveChangesNothing()
     {
         var camera = GivenCamera();
         camera.DetectionLabelsJson = "[\"person\"]";
@@ -74,7 +74,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task A_save_that_changes_a_retention_override_makes_the_restart_wait()
+    public async Task ExecuteAsync_ShouldMarkARestartAsWaiting_WhenTheSaveChangesARetentionOverride()
     {
         var camera = GivenCamera();
         camera.DetectionLabelsJson = "[\"person\"]";
@@ -86,7 +86,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Choosing_a_stream_of_this_camera_stores_it_as_the_analysis_source()
+    public async Task ExecuteAsync_ShouldStoreTheStreamAsTheAnalysisSource_WhenTheStreamBelongsToTheCamera()
     {
         var camera = GivenCamera();
         AddStream(camera, 0, 2304, 1296);
@@ -100,7 +100,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task An_unknown_stream_id_falls_back_to_the_main_stream_rather_than_being_stored()
+    public async Task ExecuteAsync_ShouldFallBackToTheMainStreamWithoutStoringTheId_WhenTheStreamIdIsUnknown()
     {
         var camera = GivenCamera();
         var main = AddStream(camera, 0, 2304, 1296);
@@ -112,7 +112,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Clearing_the_choice_returns_analysis_to_the_default_light_stream()
+    public async Task ExecuteAsync_ShouldReturnAnalysisToTheDefaultLightStream_WhenTheStreamChoiceIsCleared()
     {
         var camera = GivenCamera();
         var main = AddStream(camera, 0);
@@ -126,7 +126,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Pinning_with_a_level_applies_it_immediately_without_a_restart()
+    public async Task ExecuteAsync_ShouldApplyTheLevelImmediatelyWithoutARestart_WhenTheSensitivityIsPinned()
     {
         var camera = GivenCamera();
 
@@ -140,7 +140,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Level_sent_while_unpinned_is_ignored_since_the_loop_owns_it()
+    public async Task ExecuteAsync_ShouldIgnoreTheLevel_WhenTheSensitivityIsNotPinned()
     {
         var camera = GivenCamera(MotionSensitivity.High);
 
@@ -152,7 +152,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Unpinning_hands_the_level_back_to_the_loop_without_changing_it()
+    public async Task ExecuteAsync_ShouldHandTheLevelBackToTheLoopUnchanged_WhenTheSensitivityIsUnpinned()
     {
         var camera = GivenCamera(MotionSensitivity.Medium, pinned: true);
 
@@ -163,7 +163,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Re_sending_the_current_level_does_not_republish()
+    public async Task ExecuteAsync_ShouldNotRepublish_WhenThePinnedLevelIsSentAgain()
     {
         var camera = GivenCamera(MotionSensitivity.Low, pinned: true);
 
@@ -174,7 +174,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task An_unrecognised_level_is_ignored_rather_than_failing_the_save()
+    public async Task ExecuteAsync_ShouldIgnoreTheLevelAndStillSave_WhenTheLevelIsUnrecognised()
     {
         var camera = GivenCamera(MotionSensitivity.High);
 
@@ -188,7 +188,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     // ── Retention overrides (ADR-39) ──
 
     [Fact]
-    public async Task A_camera_without_overrides_follows_the_installation()
+    public async Task ExecuteAsync_ShouldFollowTheInstallationRetention_WhenTheCameraHasNoOverride()
     {
         var camera = GivenCamera();
 
@@ -203,7 +203,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task An_override_wins_over_the_installation_value()
+    public async Task ExecuteAsync_ShouldLetTheOverrideWinOverTheInstallation_WhenARetentionIsOverridden()
     {
         var camera = GivenCamera();
 
@@ -221,7 +221,7 @@ public class SaveCameraDetectionConfigUseCaseTests
 
     // Zero is an answer, not an absent value — it must not collapse back to the installation.
     [Fact]
-    public async Task Zero_days_is_kept_as_an_override_rather_than_read_as_no_choice()
+    public async Task ExecuteAsync_ShouldKeepZeroAsAnOverride_WhenTheRetentionIsSetToZeroDays()
     {
         var camera = GivenCamera();
 
@@ -232,7 +232,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task Clearing_an_override_puts_the_camera_back_on_the_installation()
+    public async Task ExecuteAsync_ShouldPutTheCameraBackOnTheInstallation_WhenTheOverrideIsCleared()
     {
         var camera = GivenCamera();
         camera.MotionDaysOverride = 30;
@@ -244,7 +244,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task An_out_of_range_duration_is_clamped_rather_than_failing_the_save()
+    public async Task ExecuteAsync_ShouldClampTheDurationAndStillSave_WhenTheDurationIsOutOfRange()
     {
         var camera = GivenCamera();
 
@@ -256,7 +256,7 @@ public class SaveCameraDetectionConfigUseCaseTests
     }
 
     [Fact]
-    public async Task A_camera_that_is_not_live_is_not_pushed_to_frigate()
+    public async Task ExecuteAsync_ShouldPushNothingToFrigate_WhenTheCameraIsNotLive()
     {
         var camera = GivenCamera();
         camera.IsEnabled = false;

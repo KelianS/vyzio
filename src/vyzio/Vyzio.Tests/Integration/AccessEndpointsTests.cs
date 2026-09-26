@@ -28,7 +28,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_fresh_install_says_it_has_no_owner_yet()
+    public async Task GetAccessState_ShouldReportNoOwner_WhenTheInstallIsFresh()
     {
         using var client = _factory.CreateClient();
 
@@ -41,7 +41,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Creating_the_owner_opens_a_session_straight_away()
+    public async Task CreateAccount_ShouldOpenASessionStraightAway_WhenTheOwnerIsCreated()
     {
         using var client = _factory.CreateClient();
 
@@ -60,7 +60,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_second_owner_cannot_be_created()
+    public async Task CreateAccount_ShouldAnswerConflict_WhenAnOwnerAlreadyExists()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -71,7 +71,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_password_too_short_is_refused_before_anything_is_created()
+    public async Task CreateAccount_ShouldRefuseBeforeCreatingAnything_WhenThePasswordIsTooShort()
     {
         using var client = _factory.CreateClient();
 
@@ -83,7 +83,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Signing_in_needs_the_right_password()
+    public async Task SignIn_ShouldOpenASessionOnlyWithTheRightPassword_WhenAWrongOneIsTriedFirst()
     {
         using var owner = _factory.CreateClient();
         await owner.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -99,7 +99,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Signing_out_closes_the_session_it_was_holding()
+    public async Task SignOut_ShouldCloseTheSession_WhenTheDeviceHoldsOne()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -111,7 +111,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Signing_out_everywhere_closes_the_devices_that_were_left_open()
+    public async Task SignOutEverywhere_ShouldCloseTheOtherDevices_WhenTheyWereLeftOpen()
     {
         using var phone = _factory.CreateClient();
         await phone.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -128,7 +128,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task An_expired_session_stops_opening()
+    public async Task GetSession_ShouldAnswerUnauthorized_WhenTheSessionHasExpired()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -139,7 +139,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Changing_the_password_is_refused_without_the_current_one_and_keeps_the_session()
+    public async Task ChangePassword_ShouldRefuseAndKeepTheSession_WhenTheCurrentPasswordIsWrong()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -153,7 +153,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Changing_the_password_makes_the_new_one_the_only_one_that_opens()
+    public async Task ChangePassword_ShouldMakeTheNewPasswordTheOnlyOneThatOpens_WhenTheCurrentPasswordIsRight()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -172,7 +172,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task Changing_the_password_closes_the_other_devices_but_not_the_one_asking()
+    public async Task ChangePassword_ShouldCloseTheOtherDevicesButNotTheCaller_WhenSeveralDevicesAreSignedIn()
     {
         using var phone = _factory.CreateClient();
         await phone.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -189,7 +189,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_host_reset_reopens_the_first_run_screen_and_closes_every_device()
+    public async Task ResetFromHost_ShouldReopenTheFirstRunScreenAndCloseEveryDevice_WhenAnOwnerExists()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -207,7 +207,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_password_chosen_after_a_host_reset_keeps_the_same_account()
+    public async Task CreateAccount_ShouldKeepTheSameAccount_WhenAPasswordIsChosenAfterAHostReset()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -223,7 +223,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_reset_window_left_to_close_locks_the_install_instead_of_staying_open()
+    public async Task CloseResetWindow_ShouldLockTheInstall_WhenNoPasswordWasChosenDuringTheWindow()
     {
         using var client = _factory.CreateClient();
         await client.PostAsJsonAsync("/api/access/account", new PasswordRequest(Password));
@@ -243,7 +243,7 @@ public class AccessEndpointsTests : IClassFixture<AccessApiFactory>
     }
 
     [Fact]
-    public async Task A_cookie_that_matches_nothing_opens_nothing()
+    public async Task GetSession_ShouldAnswerUnauthorized_WhenTheCookieMatchesNoSession()
     {
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("Cookie", "vyzio_session=deadbeef");

@@ -142,7 +142,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task A_paired_phone_gets_the_state_of_the_home_and_a_stranger_gets_nothing()
+    public async Task ExecuteAsync_ShouldAnswerThePairedConversationAndRejectTheStranger_WhenBothAskForTheHomeState()
     {
         var code = await StartPairingAsync();
 
@@ -160,7 +160,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task A_stranger_who_guesses_wrong_stays_unheard()
+    public async Task ExecuteAsync_ShouldStaySilentAndLeaveThePairingUnclaimed_WhenAStrangerSendsAWrongCode()
     {
         await StartPairingAsync();
 
@@ -169,7 +169,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task An_ordinary_message_is_answered_with_the_catalogue_once_paired_and_never_before()
+    public async Task ExecuteAsync_ShouldAnswerAnOrdinaryMessageWithTheCatalogueOnlyOncePaired_WhenTheOwnerWritesBeforeAndAfterPairing()
     {
         var code = await StartPairingAsync();
 
@@ -181,7 +181,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task Revoking_the_pairing_puts_the_conversation_back_among_the_strangers()
+    public async Task ExecuteAsync_ShouldTreatTheConversationAsAStranger_WhenThePairingIsRevoked()
     {
         var code = await StartPairingAsync();
         await SayAsync(OwnerChat, $"/relier {code}");

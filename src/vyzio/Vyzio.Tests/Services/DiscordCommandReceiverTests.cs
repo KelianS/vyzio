@@ -36,7 +36,7 @@ public class DiscordCommandReceiverTests
         => new(handler, new FakeGateway(interactions), NullLogger<DiscordCommandReceiver>.Instance);
 
     [Fact]
-    public async Task Publishes_the_commands_as_application_commands_with_their_typed_parameters()
+    public async Task PublishCommandsAsync_ShouldRegisterApplicationCommandsWithTypedParameters_WhenTheApplicationIsDeducedFromTheBot()
     {
         var handler = new RecordingHandler();
 
@@ -51,7 +51,7 @@ public class DiscordCommandReceiverTests
     }
 
     [Fact]
-    public async Task Reads_a_command_its_argument_and_the_room_it_came_from()
+    public async Task ReceiveAsync_ShouldReadTheCommandItsArgumentAndItsRoomAndAcknowledgeIt_WhenASlashCommandArrives()
     {
         var handler = new RecordingHandler();
 
@@ -68,7 +68,7 @@ public class DiscordCommandReceiverTests
     }
 
     [Fact]
-    public async Task Reads_a_button_tap_as_the_command_it_carried_and_as_a_confirmation()
+    public async Task ReceiveAsync_ShouldReadTheCarriedCommandAsAConfirmation_WhenAButtonIsTapped()
     {
         var handler = new RecordingHandler();
 
@@ -81,7 +81,7 @@ public class DiscordCommandReceiverTests
     }
 
     [Fact]
-    public async Task Answers_where_the_command_was_typed_and_turns_a_follow_up_into_a_button()
+    public async Task RespondAsync_ShouldFillTheAcknowledgementAndTurnTheFollowUpIntoAButton_WhenAnsweringASlashCommand()
     {
         var handler = new RecordingHandler();
         var sut = CreateSut(handler, SlashCommand);
@@ -105,7 +105,7 @@ public class DiscordCommandReceiverTests
     }
 
     [Fact]
-    public async Task Leaves_nothing_at_all_behind_when_the_answer_is_silence()
+    public async Task RespondAsync_ShouldDeleteTheAcknowledgement_WhenTheAnswerIsSilence()
     {
         var handler = new RecordingHandler();
         var sut = CreateSut(handler, SlashCommand);
@@ -119,7 +119,7 @@ public class DiscordCommandReceiverTests
     }
 
     [Fact]
-    public async Task Answers_each_interaction_of_a_room_on_its_own_thread_when_two_arrive_at_once()
+    public async Task RespondAsync_ShouldAnswerEachInteractionOnItsOwnToken_WhenTwoArriveAtOnceInTheSameRoom()
     {
         var handler = new RecordingHandler();
         var sut = CreateSut(handler, SlashCommand, SecondSlashCommand);

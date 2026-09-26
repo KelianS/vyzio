@@ -100,13 +100,13 @@ public sealed class FrigateConfigApplierTests : IDisposable
     // The wait survives between a save and the user's restart, and only a real change starts it.
 
     [Fact]
-    public void Nothing_waits_before_anything_is_written()
+    public void HasPendingChanges_ShouldBeFalse_WhenNothingHasBeenWrittenYet()
     {
         Assert.False(BuildApplier().HasPendingChanges);
     }
 
     [Fact]
-    public async Task Writing_a_real_change_makes_the_restart_wait()
+    public async Task WriteConfigAsync_ShouldLeaveARestartPending_WhenTheConfigReallyChanged()
     {
         var applier = BuildApplier();
 
@@ -116,7 +116,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Writing_without_a_real_change_leaves_nothing_waiting()
+    public async Task WriteConfigAsync_ShouldLeaveNothingPending_WhenTheConfigDidNotChange()
     {
         var applier = BuildApplier();
 
@@ -126,7 +126,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Applying_the_config_clears_the_wait()
+    public async Task ApplyAsync_ShouldClearThePendingRestart_WhenAWrittenChangeIsApplied()
     {
         var applier = BuildApplier();
         var cameras = new[] { MakeValidatedCamera("front-door") };
@@ -138,7 +138,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Rtsp_only_cameras_produce_no_go2rtc_section()
+    public async Task ApplyAsync_ShouldEmitNoGo2rtcSection_WhenEveryCameraStreamsOverRtsp()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
 
@@ -147,7 +147,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Dvrip_camera_produces_go2rtc_section()
+    public async Task ApplyAsync_ShouldEmitAGo2rtcSection_WhenACameraStreamsOverDvrip()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567)]);
 
@@ -157,7 +157,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Dvrip_camera_ffmpeg_input_points_to_go2rtc_rtsp_bridge()
+    public async Task ApplyAsync_ShouldPointTheInputAtTheGo2rtcRtspBridge_WhenACameraStreamsOverDvrip()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567)]);
 
@@ -166,7 +166,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Mixed_cameras_only_dvrip_camera_listed_in_go2rtc_section()
+    public async Task ApplyAsync_ShouldBridgeOnlyTheDvripCamera_WhenRtspAndDvripCamerasAreMixed()
     {
         var yaml = await ApplyAndReadYamlAsync(
         [
@@ -182,7 +182,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Dvrip_camera_with_credentials_includes_credentials_in_go2rtc_url()
+    public async Task ApplyAsync_ShouldPutTheCredentialsInTheGo2rtcUrl_WhenADvripCameraHasCredentials()
     {
         var camera = MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567);
         camera.Username = "admin";
@@ -195,7 +195,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Privacy_camera_emits_enabled_false_in_frigate_config()
+    public async Task ApplyAsync_ShouldDisableTheCamera_WhenItsPrivacyModeIsActive()
     {
         var camera = MakeValidatedCamera("front-door");
         camera.PrivacyModeActive = true;
@@ -206,7 +206,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task EdgeTpu_detected_emits_edgetpu_detector()
+    public async Task ApplyAsync_ShouldEmitAnEdgeTpuDetector_WhenAnEdgeTpuIsDetected()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.EdgeTpu);
 
@@ -215,7 +215,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Openvino_detected_emits_onnx_detector_with_yolox_s_model()
+    public async Task ApplyAsync_ShouldEmitAnOnnxDetectorWithTheYoloxSModel_WhenOpenvinoIsDetected()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Openvino);
 
@@ -226,7 +226,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Cpu_detected_emits_native_cpu_detector_not_onnx()
+    public async Task ApplyAsync_ShouldEmitTheNativeCpuDetectorRatherThanOnnx_WhenOnlyTheCpuIsDetected()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")], FrigateDetectorKind.Cpu);
 
@@ -238,7 +238,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Intel_gpu_present_emits_vaapi_hardware_decoding()
+    public async Task ApplyAsync_ShouldEmitVaapiHardwareDecoding_WhenAnIntelGpuIsPresent()
     {
         var yaml = await ApplyAndReadYamlAsync(
             [MakeValidatedCamera("front-door")], hwAccel: FrigateHwAccel.Vaapi);
@@ -247,7 +247,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task No_gpu_emits_no_hardware_decoding_section()
+    public async Task ApplyAsync_ShouldEmitNoHardwareDecoding_WhenNoGpuIsPresent()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
 
@@ -255,7 +255,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Coral_host_with_an_intel_igpu_keeps_gpu_decoding()
+    public async Task ApplyAsync_ShouldKeepGpuDecoding_WhenACoralHostAlsoHasAnIntelIgpu()
     {
         // The classic Frigate build: inference on the Coral, decoding still on the iGPU.
         var yaml = await ApplyAndReadYamlAsync(
@@ -282,7 +282,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Single_stream_camera_keeps_one_input_carrying_both_roles()
+    public async Task ApplyAsync_ShouldEmitOneInputCarryingBothRoles_WhenTheCameraHasASingleStream()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
 
@@ -294,7 +294,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
 
     // Frigate downscales the detect image anyway, so the lighter stream is the default (ADR-38).
     [Fact]
-    public async Task A_sub_stream_carries_detection_by_default_without_any_user_choice()
+    public async Task ApplyAsync_ShouldDetectOnTheSubStream_WhenTheUserHasNotChosenADetectStream()
     {
         var camera = MakeValidatedCamera("front-door");
         AddStream(camera, 1, "/stream2", 640, 360);
@@ -308,7 +308,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Choosing_the_main_stream_puts_both_roles_back_on_it()
+    public async Task ApplyAsync_ShouldPutBothRolesOnTheMainStream_WhenTheUserChoosesItForDetection()
     {
         var camera = MakeValidatedCamera("front-door");
         AddStream(camera, 1, "/stream2", 640, 360);
@@ -321,7 +321,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Chosen_sub_stream_carries_detect_while_recording_stays_on_the_main_stream()
+    public async Task ApplyAsync_ShouldDetectOnTheSubStreamAndRecordOnTheMain_WhenTheUserChoosesTheSubStream()
     {
         var camera = MakeValidatedCamera("front-door");
         var sub = AddStream(camera, 1, "/stream2", 640, 360);
@@ -338,7 +338,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Detect_resolution_is_emitted_only_when_the_stream_reported_one()
+    public async Task ApplyAsync_ShouldEmitTheDetectResolutionOnlyIfKnown_WhenTheStreamDidOrDidNotReportItsSize()
     {
         var withSize = MakeValidatedCamera("front-door");
         withSize.MainStream!.Width = 640;
@@ -353,7 +353,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Dvrip_sub_stream_gets_its_own_go2rtc_bridge()
+    public async Task ApplyAsync_ShouldGiveTheSubStreamItsOwnGo2rtcBridge_WhenADvripCameraDetectsOnItsSubStream()
     {
         var camera = MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567);
         var sub = AddStream(camera, 1, "?channel=0&subtype=1");
@@ -375,7 +375,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     // The bug this fixes: only `record.enabled: true` was emitted, so Frigate's own defaults
     // (continuous.days: 0, motion.days: 0) applied and nothing was ever kept.
     [Fact]
-    public async Task Installation_retention_is_written_rather_than_left_to_frigate_defaults()
+    public async Task ApplyAsync_ShouldWriteEveryRetentionWindow_WhenTheInstallationSetsItsDurations()
     {
         var yaml = await ApplyAndReadYamlAsync(
             [MakeValidatedCamera("front-door")],
@@ -391,7 +391,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task A_camera_without_overrides_emits_no_record_block_of_its_own()
+    public async Task ApplyAsync_ShouldEmitNoCameraRecordBlock_WhenTheCameraHasNoOverride()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
 
@@ -401,7 +401,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task A_camera_override_is_emitted_alongside_the_installation_value()
+    public async Task ApplyAsync_ShouldRepeatOnlyTheOverriddenWindowUnderTheCamera_WhenTheCameraOverridesOneWindow()
     {
         var camera = MakeValidatedCamera("front-door");
         camera.ContinuousDaysOverride = 3;
@@ -418,7 +418,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task Snapshots_are_kept_as_long_as_the_clips_they_illustrate()
+    public async Task ApplyAsync_ShouldKeepSnapshotsAsLongAsTheEventClips_WhenTheCameraOverridesTheClipDuration()
     {
         var camera = MakeValidatedCamera("front-door");
         camera.EventClipDaysOverride = 3;
@@ -436,7 +436,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     // ADR-48: a camera that keeps nothing no longer exists — an enabled camera keeps at least a day
     // of event clips, and not wanting its video is said by disabling the camera itself.
     [Fact]
-    public async Task A_camera_asking_for_zero_event_clips_keeps_a_day_and_stays_recorded()
+    public async Task ApplyAsync_ShouldKeepADayAndStayRecorded_WhenACameraAsksForZeroEventClipDays()
     {
         var camera = MakeValidatedCamera("front-door");
         camera.ContinuousDaysOverride = 0;
@@ -453,7 +453,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task An_installation_asking_for_zero_event_clips_keeps_a_day_at_the_root()
+    public async Task ApplyAsync_ShouldKeepADayAtTheRoot_WhenTheInstallationAsksForZeroEventClipDays()
     {
         var yaml = await ApplyAndReadYamlAsync(
             [MakeValidatedCamera("front-door")],
@@ -482,7 +482,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [InlineData(MotionSensitivity.High, 10)]
     [InlineData(MotionSensitivity.Medium, 30)]
     [InlineData(MotionSensitivity.Low, 50)]
-    public async Task Motion_sensitivity_is_emitted_as_contour_area(MotionSensitivity sensitivity, int expectedContourArea)
+    public async Task ApplyAsync_ShouldEmitTheMatchingContourArea_WhenTheCameraHasAMotionSensitivity(MotionSensitivity sensitivity, int expectedContourArea)
     {
         var camera = MakeValidatedCamera("front-door");
         camera.MotionSensitivity = sensitivity;
@@ -493,7 +493,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task EdgeTpu_detected_does_not_scale_fps_with_camera_count()
+    public async Task ApplyAsync_ShouldKeepTheDetectFpsFixed_WhenAnEdgeTpuServesManyCameras()
     {
         var cameras = Enumerable.Range(0, 6)
             .Select(i => MakeValidatedCamera($"cam-{i}"))
@@ -510,7 +510,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [InlineData(4, 5, 1)]
     [InlineData(16, 1, 5)]
     [InlineData(1, 1, 1)]
-    public async Task Cpu_detector_scales_fps_by_core_count_and_camera_count_within_hard_bounds(int cpuCoreCount, int cameraCount, int expectedFps)
+    public async Task ApplyAsync_ShouldScaleTheDetectFpsWithinHardBounds_WhenTheCpuDetectorSharesItsCoresAcrossCameras(int cpuCoreCount, int cameraCount, int expectedFps)
     {
         var cameras = Enumerable.Range(0, cameraCount)
             .Select(i => MakeValidatedCamera($"cam-{i}"))

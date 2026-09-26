@@ -23,7 +23,7 @@ public class HubOverviewEndpointTests : IClassFixture<HubOverviewApiFactory>
     }
 
     [Fact]
-    public async Task GetOverview_returns_aggregated_hub_payload()
+    public async Task GetOverview_ShouldAggregateHealthDetectionsProfilesAndNotifications_WhenTheHubHasOneOfEach()
     {
         using var client = _factory.CreateClient();
 

@@ -20,7 +20,7 @@ public class GetCamerasUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_camera_dtos_with_status_projection()
+    public async Task ExecuteAsync_ShouldProjectEachCameraWithItsStatus_WhenACameraIsValidatedAndOnline()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -48,7 +48,7 @@ public class GetCamerasUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_includes_verified_capabilities_from_bindings()
+    public async Task ExecuteAsync_ShouldListTheVerifiedCapabilities_WhenTheCameraHasAVerifiedBinding()
     {
         var cameraId = "cam-1";
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
@@ -75,7 +75,7 @@ public class GetCameraStatusUseCaseTests
     public GetCameraStatusUseCaseTests() => _sut = new GetCameraStatusUseCase(_repo);
 
     [Fact]
-    public async Task Execute_returns_guidance_for_draft_camera()
+    public async Task ExecuteAsync_ShouldReturnGuidance_WhenTheCameraIsADraft()
     {
         var camera = new Camera
         {
@@ -99,7 +99,7 @@ public class GetCameraStatusUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_returns_null_when_camera_not_found()
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _repo.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -118,7 +118,7 @@ public class DiscoverCamerasUseCaseTests
     public DiscoverCamerasUseCaseTests() => _sut = new DiscoverCamerasUseCase(_discovery, _repo);
 
     [Fact]
-    public async Task Execute_returns_discovered_candidates()
+    public async Task ExecuteAsync_ShouldReturnTheDiscoveredCandidates_WhenNoCameraIsConfiguredYet()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
         _discovery.DiscoverAsync(null, Arg.Any<CancellationToken>()).Returns(
@@ -137,7 +137,7 @@ public class DiscoverCamerasUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_filters_out_already_configured_candidates()
+    public async Task ExecuteAsync_ShouldLeaveOutACandidate_WhenItIsAlreadyConfigured()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -165,7 +165,7 @@ public class DiscoverCamerasUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_refreshes_targeted_candidate_without_filtering_configured_endpoint()
+    public async Task ExecuteAsync_ShouldRefreshTheTargetedCandidateEvenIfConfigured_WhenAHostIsTargeted()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -204,7 +204,7 @@ public class GetVendorAssistanceUseCaseTests
     public GetVendorAssistanceUseCaseTests() => _sut = new GetVendorAssistanceUseCase(_vendorAssistance);
 
     [Fact]
-    public async Task Execute_returns_markdown_when_vendor_requires_rtsp_assistance()
+    public async Task ExecuteAsync_ShouldReturnTheMarkdown_WhenTheVendorNeedsRtspAssistance()
     {
         _vendorAssistance.GetAssistanceAsync("v380_pro", null, false, Arg.Any<CancellationToken>())
             .Returns(new VendorDocumentation("v380_pro", "# V380 PRO\n\nNotice RTSP de test."));
@@ -227,7 +227,7 @@ public class CreateCameraUseCaseTests
     public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier);
 
     [Fact]
-    public async Task Execute_creates_draft_camera_with_slug_and_defaults()
+    public async Task ExecuteAsync_ShouldCreateADisabledDraftWithASlug_WhenTheSlugIsFree()
     {
         _repo.GetBySlugAsync("front-door", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -243,7 +243,7 @@ public class CreateCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_enqueues_capability_probe_after_creation()
+    public async Task ExecuteAsync_ShouldQueueACapabilityProbe_WhenTheCameraIsCreated()
     {
         _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
@@ -253,7 +253,7 @@ public class CreateCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_marks_the_configuration_as_waiting_for_a_restart()
+    public async Task ExecuteAsync_ShouldMarkTheConfigurationAsWaitingForARestart_WhenTheCameraIsCreated()
     {
         _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
@@ -281,7 +281,7 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_updates_camera_status_from_verifier_result()
+    public async Task ExecuteAsync_ShouldSaveTheStatusTheVerifierReports_WhenTheCameraIsVerified()
     {
         var camera = new Camera
         {
@@ -329,7 +329,7 @@ public class VerifyCameraUseCaseTests
             .Returns([new EnumeratedScene("source0", streams)]);
 
     [Fact]
-    public async Task Verification_records_the_streams_the_camera_reports()
+    public async Task ExecuteAsync_ShouldRecordTheStreamsTheCameraReports_WhenTheCameraIsReachable()
     {
         var camera = GivenReachableCamera();
         GivenEnumeratedStreams(
@@ -345,7 +345,7 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Verification_refreshes_the_main_stream_size_when_both_addresses_agree()
+    public async Task ExecuteAsync_ShouldRefreshTheMainStreamSize_WhenBothAddressesAgree()
     {
         var camera = GivenReachableCamera("/stream1");
         GivenEnumeratedStreams(new EnumeratedStream("stream1", 640, 480, 12));
@@ -361,7 +361,7 @@ public class VerifyCameraUseCaseTests
     // A vendor alias: the camera answers on /stream1 but advertises a different address at 1080p.
     // Adopting that size would make Frigate upscale a stream that is not 1080p.
     [Fact]
-    public async Task An_advertised_size_is_refused_when_it_belongs_to_a_different_address()
+    public async Task ExecuteAsync_ShouldRefuseTheAdvertisedSize_WhenItBelongsToADifferentAddress()
     {
         var camera = GivenReachableCamera("/stream1");
         GivenEnumeratedStreams(
@@ -382,7 +382,7 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task A_sub_stream_that_disappeared_is_dropped_along_with_a_choice_pointing_at_it()
+    public async Task ExecuteAsync_ShouldDropTheSubStreamAndTheChoicePointingAtIt_WhenTheSubStreamDisappeared()
     {
         var camera = GivenReachableCamera();
         var sub = new CameraStream { CameraId = camera.Id, Ordinal = 1, Path = "/stream2" };
@@ -398,7 +398,7 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task A_successful_verification_records_the_transport_as_a_proven_protocol()
+    public async Task ExecuteAsync_ShouldRecordTheTransportAsAProvenProtocol_WhenTheVerificationSucceeds()
     {
         var camera = GivenReachableCamera();
 
@@ -408,7 +408,7 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task An_unreachable_camera_proves_nothing()
+    public async Task ExecuteAsync_ShouldRecordNoProvenProtocol_WhenTheCameraIsUnreachable()
     {
         var camera = GivenReachableCamera();
         _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
@@ -420,7 +420,7 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task An_unreachable_camera_keeps_the_streams_it_already_had()
+    public async Task ExecuteAsync_ShouldKeepTheStreamsItAlreadyHad_WhenTheCameraIsUnreachable()
     {
         var camera = GivenReachableCamera();
         _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
@@ -441,7 +441,7 @@ public class VerifyDraftCameraUseCaseTests
     public VerifyDraftCameraUseCaseTests() => _sut = new VerifyDraftCameraUseCase(_verifier);
 
     [Fact]
-    public async Task Execute_returns_status_projection_from_transient_camera_verification()
+    public async Task ExecuteAsync_ShouldProjectTheStatusOfATransientDraft_WhenTheCameraIsNotSavedYet()
     {
         _verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture)));
@@ -475,7 +475,7 @@ public class ApplyCameraUseCaseTests
     public ApplyCameraUseCaseTests() => _sut = new ApplyCameraUseCase(_repo, _applier);
 
     [Fact]
-    public async Task Execute_rejects_apply_when_camera_is_not_verified_online()
+    public async Task ExecuteAsync_ShouldRefuseToApply_WhenTheCameraIsNotVerifiedOnline()
     {
         var camera = new Camera
         {
@@ -499,7 +499,7 @@ public class ApplyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_marks_camera_validated_when_apply_succeeds()
+    public async Task ExecuteAsync_ShouldMarkTheCameraValidatedAndEnabled_WhenTheApplySucceeds()
     {
         var camera = new Camera
         {
@@ -538,7 +538,7 @@ public class DeleteCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_marks_camera_pending_removal_without_reapplying()
+    public async Task ExecuteAsync_ShouldMarkTheCameraPendingRemovalAndDisableIt_WhenAValidatedCameraIsDeleted()
     {
         var camera = new Camera
         {
@@ -576,7 +576,7 @@ public class UpdateCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_updates_display_name_without_resetting_verified_state()
+    public async Task ExecuteAsync_ShouldKeepTheCameraValidated_WhenOnlyTheDisplayNameChanges()
     {
         var camera = new Camera
         {
@@ -613,7 +613,7 @@ public class UpdateCameraUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_resets_camera_to_draft_when_stream_settings_change()
+    public async Task ExecuteAsync_ShouldResetTheCameraToDraft_WhenTheStreamSettingsChange()
     {
         var camera = new Camera
         {
@@ -659,7 +659,7 @@ public class ApplyCameraConfigurationUseCaseTests
     public ApplyCameraConfigurationUseCaseTests() => _sut = new ApplyCameraConfigurationUseCase(_repo, _applier);
 
     [Fact]
-    public async Task Execute_applies_all_online_or_validated_cameras()
+    public async Task ExecuteAsync_ShouldApplyAndValidateEveryCamera_WhenEachIsOnlineOrAlreadyValidated()
     {
         var onlineDraft = new Camera
         {

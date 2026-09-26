@@ -14,7 +14,7 @@ namespace Vyzio.Tests.Services;
 public class DvripImageSettingsProviderTests
 {
     [Fact]
-    public void FindIntProperty_finds_flat_property()
+    public void FindIntProperty_ShouldReturnTheValue_WhenThePropertyIsFlat()
     {
         var node = JsonNode.Parse("""{"Brightness": 62, "Contrast": 40}""");
 
@@ -22,7 +22,7 @@ public class DvripImageSettingsProviderTests
     }
 
     [Fact]
-    public void FindIntProperty_finds_property_nested_under_level_array()
+    public void FindIntProperty_ShouldReturnTheValue_WhenThePropertyIsNestedUnderALevelArray()
     {
         var node = JsonNode.Parse("""
             {"Level": [{"BeginTime": "0 00:00:00", "Brightness": 55, "Contrast": 48}]}
@@ -32,7 +32,7 @@ public class DvripImageSettingsProviderTests
     }
 
     [Fact]
-    public void FindIntProperty_returns_null_when_absent()
+    public void FindIntProperty_ShouldReturnNull_WhenThePropertyIsAbsent()
     {
         var node = JsonNode.Parse("""{"Contrast": 40}""");
 
@@ -40,7 +40,7 @@ public class DvripImageSettingsProviderTests
     }
 
     [Fact]
-    public void SetIntProperty_mutates_flat_property_in_place()
+    public void SetIntProperty_ShouldChangeOnlyThatProperty_WhenThePropertyIsFlat()
     {
         var node = JsonNode.Parse("""{"Brightness": 62, "Contrast": 40}""")!;
 
@@ -52,7 +52,7 @@ public class DvripImageSettingsProviderTests
     }
 
     [Fact]
-    public void SetIntProperty_mutates_every_entry_in_a_level_schedule_array()
+    public void SetIntProperty_ShouldChangeEveryEntry_WhenThePropertyLivesInALevelScheduleArray()
     {
         var node = JsonNode.Parse("""
             {"Level": [{"Brightness": 55}, {"Brightness": 60}]}
@@ -66,7 +66,7 @@ public class DvripImageSettingsProviderTests
     }
 
     [Fact]
-    public void SetIntProperty_returns_false_when_property_not_found_anywhere()
+    public void SetIntProperty_ShouldReturnFalse_WhenThePropertyIsNowhereInTheTree()
     {
         var node = JsonNode.Parse("""{"Contrast": 40}""")!;
 
@@ -76,7 +76,7 @@ public class DvripImageSettingsProviderTests
     }
 
     [Fact]
-    public void Protocol_is_Dvrip()
+    public void Protocol_ShouldBeDvrip_WhenTheProviderIsCreated()
     {
         var provider = new DvripImageSettingsProvider(new DvripClient(NullLogger<DvripClient>.Instance));
         Assert.Equal(SupportedProtocol.Dvrip, provider.Protocol);
@@ -85,7 +85,7 @@ public class DvripImageSettingsProviderTests
     // ADR-28/29: unlike DvripPtzProvider (which swallows and returns false), image settings
     // calls let DvripCallException propagate so the real reason ends up in LastError.
     [Fact]
-    public async Task GetImageSettingsAsync_throws_descriptive_exception_when_camera_unreachable()
+    public async Task GetImageSettingsAsync_ShouldThrowAnExceptionNamingTheHost_WhenTheCameraIsUnreachable()
     {
         var provider = new DvripImageSettingsProvider(new DvripClient(NullLogger<DvripClient>.Instance));
         var camera = new Camera { Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = "127.0.0.1" };

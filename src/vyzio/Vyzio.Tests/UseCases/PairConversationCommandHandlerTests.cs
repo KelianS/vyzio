@@ -21,7 +21,7 @@ public class PairConversationCommandHandlerTests
         => _pairings.GetByChannelAsync(NotificationChannel.Telegram, Arg.Any<CancellationToken>()).Returns(pairing);
 
     [Fact]
-    public async Task Links_the_conversation_when_the_code_is_the_one_the_settings_issued()
+    public async Task ExecuteAsync_ShouldLinkTheConversation_WhenTheCodeIsTheOneTheSettingsIssued()
     {
         var pairing = new ChannelPairing
         {
@@ -40,7 +40,7 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_nothing_at_all_on_a_wrong_code_and_counts_the_try()
+    public async Task ExecuteAsync_ShouldStaySilentAndCountTheTry_WhenTheCodeIsWrong()
     {
         var pairing = new ChannelPairing
         {
@@ -58,7 +58,7 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Burns_the_code_once_it_has_been_guessed_at_too_many_times()
+    public async Task ExecuteAsync_ShouldBurnTheCode_WhenItHasBeenGuessedAtTooManyTimes()
     {
         var pairing = new ChannelPairing
         {
@@ -81,7 +81,7 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_nothing_at_all_on_an_expired_code()
+    public async Task ExecuteAsync_ShouldStaySilentWithoutWriting_WhenTheCodeHasExpired()
     {
         Stored(new ChannelPairing
         {
@@ -98,7 +98,7 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Says_nothing_at_all_when_no_pairing_was_ever_started()
+    public async Task ExecuteAsync_ShouldStaySilent_WhenNoPairingWasEverStarted()
     {
         Stored(null);
 
@@ -106,7 +106,7 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Answers_a_conversation_that_is_already_linked()
+    public async Task ExecuteAsync_ShouldAnswerWithoutWriting_WhenTheConversationIsAlreadyLinked()
     {
         Stored(new ChannelPairing
         {
@@ -122,7 +122,7 @@ public class PairConversationCommandHandlerTests
     }
 
     [Fact]
-    public void Is_the_one_command_an_unpaired_conversation_may_run()
+    public void Descriptor_ShouldAuthorizeAnUnpairedConversationWithOneTextParameter_WhenThePairingCommandIsDescribed()
     {
         var descriptor = Sut().Descriptor;
 
