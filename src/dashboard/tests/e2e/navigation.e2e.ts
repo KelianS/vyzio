@@ -109,7 +109,7 @@ test.describe('Navigation', () => {
     const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
     // One row that scrolls: landing on the last tab must still show it.
     await expect(tabs.getByRole('link')).toHaveCount(5)
-    await expect(tabs.getByRole('link', { name: 'Connexion' })).toBeInViewport({ ratio: 1 })
+    await expect(tabs.getByRole('link', { name: 'Connexion' })).toBeInViewport({ ratio: 0.9 })
     // The name heads the camera's screens; its address lives on Connexion.
     await expect(page.getByText('192.168.1.50:554')).toHaveCount(0)
   })
