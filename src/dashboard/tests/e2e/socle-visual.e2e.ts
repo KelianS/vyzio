@@ -84,7 +84,7 @@ test.describe('Socle — typographie et surfaces', () => {
     // panel: laid on a light surface, they became invisible - and `toBeVisible()`
     // said nothing about it.
     await page.goto('/settings/cameras')
-    const badge = page.getByText('Connectee')
+    const badge = page.getByText('Connectée')
     await expect(badge).toBeVisible()
     expect(await contrastOf(badge)).toBeGreaterThan(3)
 

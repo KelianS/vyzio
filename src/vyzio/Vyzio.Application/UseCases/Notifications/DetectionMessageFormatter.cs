@@ -17,9 +17,10 @@ public sealed class DetectionMessageFormatter(TimeZoneInfo timeZone)
 
         var hasIdentity = !string.IsNullOrWhiteSpace(detection.Identity);
         var emoji = hasIdentity ? "🧑" : LabelEmoji(detection.Label);
+        // The name alone: a participle would need the person's gender, which Vyzio does not hold.
         var subject = hasIdentity
-            ? $"{detection.Identity} detectee"
-            : (enabledFields.Contains(MessageField.Label) ? $"Detection {detection.Label}" : "Detection");
+            ? detection.Identity!
+            : (enabledFields.Contains(MessageField.Label) ? $"Détection {detection.Label}" : "Détection");
 
         var details = new List<string>();
 

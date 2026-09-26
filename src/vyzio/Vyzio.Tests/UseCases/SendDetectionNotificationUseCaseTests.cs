@@ -151,7 +151,7 @@ public class SendDetectionNotificationUseCaseTests
         foreach (var sender in new[] { _telegram, _discord })
         {
             await sender.Received(1).SendAsync(
-                Arg.Is<OutgoingNotification>(n => n.Message.Headline.Contains("Alice detectee")),
+                Arg.Is<OutgoingNotification>(n => n.Message.Headline.Contains("Alice")),
                 Arg.Any<ChannelCredentials>(),
                 Arg.Any<CancellationToken>());
         }
@@ -362,7 +362,8 @@ public class DetectionMessageFormatterTests
     public void Format_all_fields_enabled_returns_all_parts()
     {
         var result = Flatten(_sut.Format(EventWith(identity: "Alice"), MessageFields.All));
-        Assert.Contains("Alice detectee", result);
+        Assert.Contains("Alice", result);
+        Assert.DoesNotContain("détecté", result);
         Assert.Contains("front door", result);
         Assert.Contains("08:30", result);
         Assert.Contains("82 %", result);
@@ -393,7 +394,7 @@ public class DetectionMessageFormatterTests
     public void Format_without_label_uses_generic_subject()
     {
         var result = Flatten(_sut.Format(EventWith(), new HashSet<MessageField> { MessageField.Camera }));
-        Assert.Contains("Detection", result);
+        Assert.Contains("Détection", result);
         Assert.DoesNotContain("person", result);
     }
 
@@ -401,7 +402,7 @@ public class DetectionMessageFormatterTests
     public void Format_null_fields_defaults_to_all()
     {
         var result = Flatten(_sut.Format(EventWith(identity: "Bob")));
-        Assert.Contains("Bob detectee", result);
+        Assert.Contains("Bob", result);
         Assert.Contains("front door", result);
         Assert.Contains("08:30", result);
     }

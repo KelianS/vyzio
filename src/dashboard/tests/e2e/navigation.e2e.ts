@@ -81,4 +81,36 @@ test.describe('Navigation', () => {
       await expect(page).toHaveURL(expected)
     }
   })
+
+  test('CameraShell_ShouldFadeTheTabsOut_WhenMoreAreHiddenOnAPhone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ cameras: [makeFakeCamera({ id: 'camera-1' })] }),
+    )
+
+    await page.goto('/settings/cameras/camera-1/detection')
+
+    await expect(page.getByRole('navigation', { name: 'Réglages de la caméra' })).toHaveCSS(
+      'mask-image',
+      /linear-gradient/,
+    )
+  })
+
+  test('CameraShell_ShouldBringTheCurrentTabIntoView_WhenOpenedOnAPhone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ cameras: [makeFakeCamera({ id: 'camera-1' })] }),
+    )
+
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
+    // One row that scrolls: landing on the last tab must still show it.
+    await expect(tabs.getByRole('link')).toHaveCount(5)
+    await expect(tabs.getByRole('link', { name: 'Connexion' })).toBeInViewport({ ratio: 0.9 })
+    // The name heads the camera's screens; its address lives on Connexion.
+    await expect(page.getByText('192.168.1.50:554')).toHaveCount(0)
+  })
 })

@@ -17,13 +17,13 @@ import type { Camera } from '../../domain/entities/Camera'
 import type { HubOverview } from '../../domain/entities/HubOverview'
 import type { SystemStats } from '../../domain/entities/SystemStats'
 import { DetectionList } from '../../common/detection/DetectionList'
-import { formatEventTime } from '../../common/detection/detectionFormatters'
 import { SystemMonitorPanel } from './SystemMonitorPanel'
 import { useReloadCameraList } from '../Cameras/cameraListRead'
 import { buildHubPresenter } from './Hub.Presenter'
 import { hubReducer } from './Hub.Reducer'
 import { buildInitialHubUido } from './Hub.Uido'
 import { privacyWording, type PrivacyRequest } from './privacyRequest'
+import { alertsSummary } from './alertsSummary'
 
 /** Home shows only the latest ones; the history shows the same ones, all of them. */
 const RECENT_EVENTS_MAX = 5
@@ -353,13 +353,7 @@ function HubOperational({
           <Card>
             <h2 className="font-serif text-2xl">Alertes</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {data.notifications.activeChannels > 0
-                ? `${data.notifications.sentCount} envoyée${data.notifications.sentCount > 1 ? 's' : ''}${
-                    data.notifications.lastSentAt
-                      ? ` · dernière à ${formatEventTime(data.notifications.lastSentAt)}`
-                      : ''
-                  }`
-                : 'Aucun canal configuré : Vyzio ne peut pas vous prévenir.'}
+              {alertsSummary(data.notifications)}
             </p>
             <div className="mt-4">
               <Button asChild variant="outline" size="sm">
