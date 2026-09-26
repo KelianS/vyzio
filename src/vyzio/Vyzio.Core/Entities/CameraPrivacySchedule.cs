@@ -5,6 +5,14 @@ using System.Text.Json;
 
 namespace Vyzio.Core.Entities;
 
+/// <summary>What the user must change for a schedule to be kept (SPECS 9.2).</summary>
+public enum PrivacyScheduleRefusal
+{
+    NoDay,
+    InvalidTime,
+    EmptyRange,
+}
+
 [Table("camera_privacy_schedules")]
 public class CameraPrivacySchedule
 {
@@ -26,7 +34,7 @@ public class CameraPrivacySchedule
     [Required, MaxLength(5)]
     public required string StartTime { get; set; }
 
-    // "HH:mm" — must be > StartTime (midnight crossing not supported; use two schedules)
+    // "HH:mm"; before StartTime, the range ends the next day (SPECS 9.2)
     [Required, MaxLength(5)]
     public required string EndTime { get; set; }
 
@@ -44,6 +52,31 @@ public class CameraPrivacySchedule
         }
     }
 
+    /// <summary>Why this schedule cannot be kept, or null when it can.</summary>
+    public static PrivacyScheduleRefusal? Check(IReadOnlyList<int> daysOfWeek, string startTime, string endTime)
+    {
+        if (daysOfWeek.Count == 0 || daysOfWeek.Any(d => d is < 0 or > 6)) return PrivacyScheduleRefusal.NoDay;
+        if (!TryParseTime(startTime, out var start) || !TryParseTime(endTime, out var end))
+            return PrivacyScheduleRefusal.InvalidTime;
+        return start == end ? PrivacyScheduleRefusal.EmptyRange : null;
+    }
+
+    private static bool TryParseTime(string value, out TimeSpan time) =>
+        TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out time);
+
     public TimeSpan GetStartTime() => TimeSpan.Parse(StartTime, CultureInfo.InvariantCulture);
     public TimeSpan GetEndTime() => TimeSpan.Parse(EndTime, CultureInfo.InvariantCulture);
+
+    /// <summary>Whether the range holds this moment; a range crossing midnight belongs to the day it starts.</summary>
+    public bool Covers(int dayOfWeek, TimeSpan time)
+    {
+        var start = GetStartTime();
+        var end = GetEndTime();
+        var days = GetDaysOfWeek();
+        if (start < end) return days.Contains(dayOfWeek) && time >= start && time < end;
+        if (start == end) return false;
+
+        var previousDay = (dayOfWeek + 6) % 7;
+        return (days.Contains(dayOfWeek) && time >= start) || (days.Contains(previousDay) && time < end);
+    }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { midnightRangeHint } from '../../common/settings/midnightRange'
 import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
@@ -14,6 +15,15 @@ import { toAppError } from '../../common/errors/toAppError'
 import { useToast } from '../../common/components/Toast'
 
 const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+
+const minutesOf = (time: string) => {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
+/** A range ending before it starts runs into the next day (SPECS 9.2); an unset time says nothing. */
+const endsNextDay = (start: string, end: string) =>
+  start !== '' && end !== '' && minutesOf(end) < minutesOf(start)
 
 interface PrivacyScheduleSectionProps {
   camera: Camera
@@ -151,6 +161,7 @@ export function PrivacyScheduleSection({
               <span className="min-w-0">{s.daysOfWeek.map((d) => DAY_LABELS[d]).join(', ')}</span>
               <span className="text-muted-foreground">
                 {s.startTime} → {s.endTime}
+                {endsNextDay(s.startTime, s.endTime) && ' le lendemain'}
               </span>
               {!s.enabled && <span className="text-muted-foreground">désactivé</span>}
               <Button
@@ -210,6 +221,10 @@ export function PrivacyScheduleSection({
           </label>
         </div>
 
+        {endsNextDay(startTime, endTime) && (
+          <p className="text-sm text-muted-foreground">{midnightRangeHint(endTime)}</p>
+        )}
+
         {invalid && <p className="text-sm text-destructive">{invalid}</p>}
         {failure && <ErrorMessage error={failure} />}
 
@@ -223,7 +238,7 @@ export function PrivacyScheduleSection({
               variant="outline"
               size="sm"
               disabled={adding}
-              title={`Appliquer ce planning aux ${allCameras.length} caméras`}
+              title={`Appliquer cette planification aux ${allCameras.length} caméras`}
               onClick={handleApplyToAll}
             >
               {adding ? 'Ajout…' : `Appliquer à toutes (${allCameras.length})`}

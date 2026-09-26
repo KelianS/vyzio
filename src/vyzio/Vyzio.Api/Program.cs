@@ -109,6 +109,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddExceptionHandler<Vyzio.Api.CameraCommandExceptionHandler>();
+builder.Services.AddExceptionHandler<Vyzio.Api.PrivacyScheduleExceptionHandler>();
 builder.Services.AddVyzioHealthChecks();
 builder.Services.AddSingleton<FrigateMqttConnection>();
 builder.Services.AddHostedService<FrigateMqttIngressService>();

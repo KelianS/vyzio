@@ -19,6 +19,9 @@ export const ApiErrorCode = {
   ParkingPositionsMissing: 'parking_positions_missing',
   CameraRefused: 'camera_refused',
   CameraUnreachable: 'camera_unreachable',
+  ScheduleNoDay: 'schedule_no_day',
+  ScheduleInvalidTime: 'schedule_invalid_time',
+  ScheduleEmptyRange: 'schedule_empty_range',
 } as const
 
 /** What support reads under the sentence (SPECS 1.5), and the code the API named, if any. */

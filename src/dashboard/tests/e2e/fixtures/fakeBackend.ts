@@ -223,6 +223,15 @@ export interface FakeBackendState {
   restartFails: boolean
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
+  privacySchedules: {
+    id: string
+    cameraId: string
+    enabled: boolean
+    daysOfWeek: number[]
+    startTime: string
+    endTime: string
+    createdAt: string
+  }[]
   profiles: {
     id: string
     name: string
@@ -283,6 +292,7 @@ export function createFakeBackendState(
     pendingChanges: false,
     restartFails: false,
     restartBreaks: false,
+    privacySchedules: [],
     profiles: [],
     notificationChannels: {},
     channelListening: {},
@@ -610,7 +620,34 @@ export async function installFakeBackend(
         return json(route, [])
       }
       if (rest === '/privacy/schedules' && method === 'GET') {
-        return json(route, [])
+        return json(
+          route,
+          state.privacySchedules.filter((s) => s.cameraId === cameraId),
+        )
+      }
+      if (rest === '/privacy/schedules' && method === 'POST') {
+        const body = route.request().postDataJSON() as {
+          daysOfWeek: number[]
+          startTime: string
+          endTime: string
+        }
+        // Like the real one: a range that crosses midnight is kept, an empty one is refused.
+        if (body.startTime === body.endTime) {
+          return json(
+            route,
+            { error: 'schedule_empty_range', message: 'Start and end are the same time.' },
+            400,
+          )
+        }
+        const schedule = {
+          id: `schedule-${state.privacySchedules.length + 1}`,
+          cameraId: cameraId!,
+          enabled: true,
+          ...body,
+          createdAt: new Date().toISOString(),
+        }
+        state.privacySchedules.push(schedule)
+        return json(route, schedule, 201)
       }
       if (rest === '/detection-config') {
         if (method === 'PUT') {

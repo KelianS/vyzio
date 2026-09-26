@@ -7,6 +7,7 @@ import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacyS
 import type { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraPrivacySchedules'
 import type { CreateCameraPrivacySchedule } from '../../domain/usecases/CreateCameraPrivacySchedule'
 import type { DeleteCameraPrivacySchedule } from '../../domain/usecases/DeleteCameraPrivacySchedule'
+import { HttpError } from '../../infrastructure/http/HttpError'
 
 function makeCamera(overrides: Partial<Camera> = {}): Camera {
   return {
@@ -87,7 +88,82 @@ describe('PrivacyScheduleSection', () => {
     )
 
     expect(await screen.findByText('Lun, Mar, Mer, Jeu, Ven')).toBeInTheDocument()
-    expect(screen.getByText('22:00 → 06:00')).toBeInTheDocument()
+    expect(screen.getByText('22:00 → 06:00 le lendemain')).toBeInTheDocument()
+  })
+
+  it('PrivacyScheduleSection_ShouldSayTheRangeEndsTheNextDay_WhenTheEndIsBeforeTheStart', async () => {
+    render(
+      <PrivacyScheduleSection
+        camera={makeCamera()}
+        cameraId="camera-1"
+        allCameras={[makeCamera()]}
+        getSchedules={
+          { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+        }
+        createSchedule={{ execute: vi.fn() } as unknown as CreateCameraPrivacySchedule}
+        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
+      />,
+    )
+
+    expect(
+      await screen.findByText('La plage passe minuit : elle se termine le lendemain à 06:00.'),
+    ).toBeInTheDocument()
+  })
+
+  it('PrivacyScheduleSection_ShouldNotAnnounceTheNextDay_WhenTheEndIsNotSet', async () => {
+    const user = userEvent.setup()
+    render(
+      <PrivacyScheduleSection
+        camera={makeCamera()}
+        cameraId="camera-1"
+        allCameras={[makeCamera()]}
+        getSchedules={
+          { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+        }
+        createSchedule={{ execute: vi.fn() } as unknown as CreateCameraPrivacySchedule}
+        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
+      />,
+    )
+    await screen.findByText('La plage passe minuit : elle se termine le lendemain à 06:00.')
+
+    await user.clear(screen.getByLabelText('Fin'))
+
+    expect(screen.queryByText(/passe minuit/)).not.toBeInTheDocument()
+  })
+
+  it('PrivacyScheduleSection_ShouldSayWhatToChange_WhenTheServerRefusesAnEmptyRange', async () => {
+    const createSchedule = {
+      execute: vi
+        .fn()
+        .mockRejectedValue(
+          new HttpError(
+            400,
+            '/api/cameras/camera-1/privacy/schedules',
+            'POST /api/cameras/camera-1/privacy/schedules 400 schedule_empty_range',
+            'schedule_empty_range',
+          ),
+        ),
+    } as unknown as CreateCameraPrivacySchedule
+    const user = userEvent.setup()
+    render(
+      <PrivacyScheduleSection
+        camera={makeCamera()}
+        cameraId="camera-1"
+        allCameras={[makeCamera()]}
+        getSchedules={
+          { execute: vi.fn().mockResolvedValue([]) } as unknown as GetCameraPrivacySchedules
+        }
+        createSchedule={createSchedule}
+        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
+      />,
+    )
+    await screen.findByText('Aucune planification configurée.')
+
+    await user.click(screen.getByRole('button', { name: /Ajouter/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Le début et la fin sont à la même heure : choisissez deux heures différentes',
+    )
   })
 
   it('shows a hardware privacy cut badge when the camera reports vendor cut', async () => {
@@ -169,7 +245,7 @@ describe('PrivacyScheduleSection', () => {
         endTime: '06:00',
       })
     })
-    expect(await screen.findByText('22:00 → 06:00')).toBeInTheDocument()
+    expect(await screen.findByText('22:00 → 06:00 le lendemain')).toBeInTheDocument()
   })
 
   it('only offers "apply to all" when there is more than one camera', async () => {
@@ -224,12 +300,12 @@ describe('PrivacyScheduleSection', () => {
       />,
     )
 
-    await screen.findByText('22:00 → 06:00')
+    await screen.findByText('22:00 → 06:00 le lendemain')
     await user.click(screen.getByTitle('Supprimer'))
 
     await waitFor(() => {
       expect(deleteSchedule.execute).toHaveBeenCalledWith('camera-1', 'schedule-1')
     })
-    expect(screen.queryByText('22:00 → 06:00')).not.toBeInTheDocument()
+    expect(screen.queryByText('22:00 → 06:00 le lendemain')).not.toBeInTheDocument()
   })
 })
