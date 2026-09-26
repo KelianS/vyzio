@@ -3,7 +3,7 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 
 // Vyzio does not guess which way a camera turns: the user swaps left and right on its PTZ (SPECS 11).
 test.describe('PTZ pan direction', () => {
-  test('CapabilitySection_ShouldSwapLeftAndRight_WhenTheUserTurnsTheSettingOn', async ({
+  test('CameraConnectionView_ShouldSwapLeftAndRight_WhenTheUserTurnsTheSettingOn', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })

@@ -51,9 +51,9 @@ const CameraImageView = lazy(() =>
     default: m.CameraImageView,
   })),
 )
-const CameraConnectionPage = lazy(() =>
-  import('./presentation/cameras/camera_connection_page').then((m) => ({
-    default: m.CameraConnectionPage,
+const CameraConnectionView = lazy(() =>
+  import('./presentation/cameras/camera_connection.component').then((m) => ({
+    default: m.CameraConnectionView,
   })),
 )
 const PersonListPage = lazy(() =>
@@ -180,7 +180,7 @@ const router = createBrowserRouter([
                   { path: 'conservation', element: <CameraConservationView /> },
                   { path: 'vie-privee', element: <CameraPrivacyView /> },
                   { path: 'image', element: <CameraImageView /> },
-                  { path: 'connexion', element: <CameraConnectionPage /> },
+                  { path: 'connexion', element: <CameraConnectionView /> },
                 ],
               },
             ],
