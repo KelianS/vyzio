@@ -1,21 +1,30 @@
+import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { useAsync } from '../../common/hooks/use_async'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { ALERT_MODE_LABELS, CATEGORY_LABELS } from './person_labels'
+import { buildPersonListPresenter } from './person_list.presenter'
+import { personListReducer } from './person_list.reducer'
+import { buildInitialPersonListUido } from './person_list.uido'
 
 /** First level of the Persons rubric: the list (ADR-40). Adding is its own task/page. */
-export function PersonListPage() {
+export function PersonListView() {
   const { profiles: container } = useAppContainer()
-  const people = useAsync(() => container.getProfiles.execute(), [])
+  const [uido, dispatch] = useReducer(personListReducer, undefined, buildInitialPersonListUido)
+  const presenter = usePresenter(buildPersonListPresenter, { container, dispatch })
+
+  useEffect(() => {
+    presenter.onLoad()
+  }, [presenter])
 
   return (
     <SettingsPage lede="Les personnes que Vyzio reconnaît, et ce qu’il en fait.">
-      {people.data && people.data.length > 0 ? (
+      {uido.people.length > 0 ? (
         <ul className="divide-y divide-border">
-          {people.data.map((person) => (
+          {uido.people.map((person) => (
             <li key={person.id}>
               <Link
                 to={`/settings/detection/personnes/${person.id}`}
@@ -37,7 +46,7 @@ export function PersonListPage() {
         </ul>
       ) : (
         <p className="py-3 text-muted-foreground">
-          {people.loading ? 'Chargement…' : 'Personne d’enregistrée pour l’instant.'}
+          {uido.loading ? 'Chargement…' : 'Personne d’enregistrée pour l’instant.'}
         </p>
       )}
 

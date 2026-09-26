@@ -1,10 +1,15 @@
+import { useEffect, useReducer } from 'react'
 import { Link, Outlet, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { TabBar } from '../../common/components/tab_bar'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { useAsync } from '../../common/hooks/use_async'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+import type { PersonContext } from './person_context'
 import { CATEGORY_LABELS } from './person_labels'
+import { buildPersonPresenter } from './person.presenter'
+import { personReducer } from './person.reducer'
+import { buildInitialPersonUido } from './person.uido'
 
 const PERSON_PAGES = [
   { slug: 'identite', label: 'Identité' },
@@ -13,13 +18,19 @@ const PERSON_PAGES = [
 ]
 
 /** Third level: pages of one person (ADR-40), mirroring the camera shell. */
-export function PersonShell() {
+export function PersonView() {
   const { profileId } = useParams()
   const { profiles: container } = useAppContainer()
-  const person = useAsync(() => container.getProfiles.execute(), [])
-  const found = person.data?.find((entry) => entry.id === profileId) ?? null
+  const [uido, dispatch] = useReducer(personReducer, undefined, buildInitialPersonUido)
+  const presenter = usePresenter(buildPersonPresenter, { container, dispatch })
 
-  if (person.loading) return <SettingsPage>Chargement…</SettingsPage>
+  useEffect(() => {
+    presenter.onLoad(profileId!)
+  }, [presenter, profileId])
+
+  const found = uido.person
+
+  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
 
   if (!found) {
     return (
@@ -60,7 +71,11 @@ export function PersonShell() {
         }))}
       />
 
-      <Outlet context={{ person: found, reload: person.reload }} />
+      <Outlet
+        context={
+          { person: found, reload: () => presenter.onLoad(profileId!) } satisfies PersonContext
+        }
+      />
     </div>
   )
 }

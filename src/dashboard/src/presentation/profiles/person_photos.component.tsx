@@ -1,64 +1,46 @@
-import { useRef, useState } from 'react'
+import { useEffect, useReducer, useRef } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Badge } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { usePerson } from './person_context'
+import { buildPersonPhotosPresenter } from './person_photos.presenter'
+import { personPhotosReducer } from './person_photos.reducer'
+import { buildInitialPersonPhotosUido } from './person_photos.uido'
 
 /** Below this, recognition misfires more than it recognizes. */
 const ADVISED_PHOTOS = 3
 
-export function PersonPhotosPage() {
+export function PersonPhotosView() {
   const { person } = usePerson()
   const { apiBaseUrl, profiles: container } = useAppContainer()
   const { toast } = useToast()
   const fileInput = useRef<HTMLInputElement>(null)
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
-  const [confirmResync, setConfirmResync] = useState(false)
+  const [uido, dispatch] = useReducer(personPhotosReducer, undefined, buildInitialPersonPhotosUido)
+  const presenter = usePresenter(buildPersonPhotosPresenter, { container, dispatch, toast })
 
-  const photos = useAsync(() => container.getProfilePhotos.execute(person.id), [person.id])
-  const count = photos.data?.length ?? 0
+  const personId = person.id
+  const count = uido.photos.length
 
-  const uploading = useAsyncAction(
-    async (file: File) => container.addProfilePhoto.execute(person.id, file),
-    {
-      onSuccess: () => {
-        toast('Photo ajoutée.', 'success')
-        photos.reload()
-      },
-    },
-  )
-
-  const removing = useAsyncAction(
-    async (photoId: string) => container.removeProfilePhoto.execute(person.id, photoId),
-    {
-      onSuccess: () => {
-        toast('Photo supprimée.', 'info')
-        photos.reload()
-      },
-    },
-  )
-
-  const resyncing = useAsyncAction(async () => container.resyncFaceLibrary.execute(), {
-    onSuccess: (synced) => toast(`${synced ?? 0} photo(s) reprise(s).`, 'success'),
-  })
+  useEffect(() => {
+    presenter.onLoad(personId)
+  }, [presenter, personId])
 
   return (
     <>
-      <SettingsPage lede={describeCoverage(count, photos.loading)}>
+      <SettingsPage lede={describeCoverage(count, uido.loading)}>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            disabled={uploading.loading}
+            disabled={uido.uploading}
             onClick={() => fileInput.current?.click()}
           >
-            {uploading.loading ? 'Envoi…' : 'Ajouter une photo'}
+            {uido.uploading ? 'Envoi…' : 'Ajouter une photo'}
           </Button>
           <input
             ref={fileInput}
@@ -68,14 +50,14 @@ export function PersonPhotosPage() {
             onChange={(event) => {
               const file = event.target.files?.[0]
               event.target.value = ''
-              if (file) void uploading.run(file)
+              if (file) void presenter.onUpload(personId, file)
             }}
           />
         </div>
 
         {count > 0 && (
           <ul className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-3">
-            {photos.data!.map((photo) => (
+            {uido.photos.map((photo) => (
               <li key={photo.id} className="relative">
                 <img
                   src={`${apiBaseUrl}/api/profiles/${person.id}/photos/${photo.filename}`}
@@ -94,7 +76,7 @@ export function PersonPhotosPage() {
                   size="icon"
                   aria-label={`Supprimer la photo ${photo.filename}`}
                   className="absolute top-1 right-1 bg-card/80"
-                  onClick={() => setConfirmDelete(photo.id)}
+                  onClick={() => presenter.onAskRemove(photo.id)}
                 >
                   <Trash2 aria-hidden="true" />
                 </Button>
@@ -103,7 +85,7 @@ export function PersonPhotosPage() {
           </ul>
         )}
 
-        {count === 0 && !photos.loading && (
+        {count === 0 && !uido.loading && (
           <p className="mt-5 text-muted-foreground">
             Des photos nettes, de face, sous plusieurs angles : c’est ce qui permet de la
             reconnaître.
@@ -114,15 +96,15 @@ export function PersonPhotosPage() {
           <Button
             type="button"
             variant="outline"
-            disabled={resyncing.loading}
-            onClick={() => setConfirmResync(true)}
+            disabled={uido.resyncing}
+            onClick={presenter.onAskResync}
           >
-            {resyncing.loading ? 'Reprise…' : 'Reprendre toutes les photos'}
+            {uido.resyncing ? 'Reprise…' : 'Reprendre toutes les photos'}
           </Button>
         </AdvancedFold>
       </SettingsPage>
 
-      {confirmDelete && (
+      {uido.confirmRemoveId && (
         <ConfirmModal
           title="Supprimer cette photo ?"
           body={
@@ -132,27 +114,21 @@ export function PersonPhotosPage() {
           }
           confirmLabel="Supprimer"
           tone="danger"
-          loading={removing.loading}
-          onConfirm={async () => {
-            await removing.run(confirmDelete)
-            setConfirmDelete(null)
-          }}
-          onCancel={() => setConfirmDelete(null)}
+          loading={uido.removing}
+          onConfirm={() => presenter.onRemove(personId, uido.confirmRemoveId!)}
+          onCancel={presenter.onCancelRemove}
         />
       )}
 
-      {confirmResync && (
+      {uido.confirmResync && (
         <ConfirmModal
           title="Reprendre toutes les photos ?"
           body="Toutes les photos de toutes les personnes sont réanalysées. Selon leur nombre, cela prend de quelques secondes à plusieurs minutes."
           confirmLabel="Reprendre"
           tone="confirm"
-          loading={resyncing.loading}
-          onConfirm={async () => {
-            await resyncing.run()
-            setConfirmResync(false)
-          }}
-          onCancel={() => setConfirmResync(false)}
+          loading={uido.resyncing}
+          onConfirm={presenter.onResync}
+          onCancel={presenter.onCancelResync}
         />
       )}
     </>

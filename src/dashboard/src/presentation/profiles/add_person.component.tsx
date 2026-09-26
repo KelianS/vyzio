@@ -1,36 +1,33 @@
-import { useState } from 'react'
+import { useReducer } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
 import { useToast } from '../../common/components/toast'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/profile.entity'
 import { ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './person_labels'
+import { buildAddPersonPresenter } from './add_person.presenter'
+import { addPersonReducer } from './add_person.reducer'
+import { buildInitialAddPersonUido } from './add_person.uido'
 
 /** Adding a person is one task, one page (ADR-40). */
-export function AddPersonPage() {
+export function AddPersonView() {
   const { profiles: container } = useAppContainer()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const [uido, dispatch] = useReducer(addPersonReducer, undefined, buildInitialAddPersonUido)
+  const presenter = usePresenter(buildAddPersonPresenter, { container, dispatch, toast })
+  const { name, category, alertMode } = uido.form
 
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState<ProfileCategory>('family')
-  const [alertMode, setAlertMode] = useState<ProfileAlertMode>('always')
-
-  const creating = useAsyncAction(
-    async () => container.createProfile.execute({ name: name.trim(), category, alertMode }),
-    {
-      onSuccess: (person) => {
-        toast(`« ${person!.name} » ajoutée.`, 'success')
-        // Photos are next: without them recognition can't do anything with this profile.
-        void navigate(`/settings/detection/personnes/${person!.id}/photos`)
-      },
-    },
-  )
+  async function add() {
+    const createdId = await presenter.onCreate(uido.form)
+    // Photos are next: without them recognition can't do anything with this profile.
+    if (createdId) void navigate(`/settings/detection/personnes/${createdId}/photos`)
+  }
 
   const declarations: SettingDeclaration[] = [
     {
@@ -38,14 +35,14 @@ export function AddPersonPage() {
       label: 'Nom',
       nature: { kind: 'text', placeholder: 'Alice' },
       value: name,
-      onChange: (value) => setName(value as string),
+      onChange: (value) => presenter.onNameChange(value as string),
     },
     {
       id: 'person-category',
       label: 'Lien avec vous',
       nature: { kind: 'choice', options: CATEGORY_OPTIONS },
       value: category,
-      onChange: (value) => setCategory(value as ProfileCategory),
+      onChange: (value) => presenter.onCategoryChange(value as ProfileCategory),
     },
     {
       id: 'person-alert',
@@ -53,7 +50,7 @@ export function AddPersonPage() {
       nature: { kind: 'choice', options: ALERT_MODE_OPTIONS },
       help: 'Sans alerte, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
       value: alertMode,
-      onChange: (value) => setAlertMode(value as ProfileAlertMode),
+      onChange: (value) => presenter.onAlertModeChange(value as ProfileAlertMode),
     },
   ]
 
@@ -74,12 +71,8 @@ export function AddPersonPage() {
         <SettingsList settings={declarations} />
 
         <div className="mt-5">
-          <Button
-            type="button"
-            disabled={creating.loading || !name.trim()}
-            onClick={() => void creating.run()}
-          >
-            {creating.loading ? 'Ajout…' : 'Ajouter'}
+          <Button type="button" disabled={uido.creating || !name.trim()} onClick={() => void add()}>
+            {uido.creating ? 'Ajout…' : 'Ajouter'}
           </Button>
         </div>
       </SettingsPage>
