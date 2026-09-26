@@ -102,6 +102,12 @@ French. **A new ADR is written in English**, like everything else.
    `delivery-reviewer` always, `framing-guardian` when the change alters behaviour, architecture or
    `docs/`, `product-guardian` when it touches what a user sees or walks through.
 3. Their blocking findings are fixed, not argued away in the pull request description.
+4. A change to what the interface shows carries its screenshots in the pull request description: the
+   screen after the change, and the same screen before it when an existing one changes, at the phone
+   width the interface is designed for ([SPECS](SPECS.md) 7.2). The owner validates the screen
+   without running the stack. They are shot on the fake backend of the e2e suite, never on a real
+   installation, so they carry no footage and no credential. How:
+   [`CONTRIBUTING.md`](../CONTRIBUTING.md) § Pull request screenshots.
 
 The agents are instructions, not hooks: the gate holds because it is followed. What is enforced is
 narrower: [`.claude/settings.json`](../.claude/settings.json) denies the assistant merging and

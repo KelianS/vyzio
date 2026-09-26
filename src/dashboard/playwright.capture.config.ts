@@ -3,10 +3,11 @@ import { defineConfig, devices } from '@playwright/test'
 const PORT = 4174
 const BASE_URL = `http://localhost:${PORT}`
 
-// Documentation screenshots are generated, not hand-taken: they are reproducible, they carry no
-// real installation's data, and they can be regenerated when a screen changes.
+// Screenshots are generated, not hand-taken: they are reproducible, they carry no real
+// installation's data, and they can be regenerated when a screen changes. The caller names the
+// folder: `tools/docs-capture` for the README, `tools/pr-capture` for a pull request.
 export default defineConfig({
-  testDir: './tools/docs-capture',
+  testDir: './tools',
   testMatch: '**/*.capture.ts',
   fullyParallel: false,
   workers: 1,

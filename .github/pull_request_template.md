@@ -15,6 +15,11 @@ Closes #
 
 <!-- What was actually run, with its result. An unrun check is not a check. -->
 
+## Screenshots
+
+<!-- Any change to what the interface shows: before and after, rule in docs/WORKFLOW.md section
+Delivery gate. Otherwise strike the heading through with the reason. -->
+
 ## Definition of done
 
 Tick what the diff actually shows. A line that does not apply is struck through with the reason on
