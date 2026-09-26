@@ -393,8 +393,6 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 
 > **En tant qu'utilisateur avec une caméra PTZ**, je veux définir la position de surveillance depuis l'interface en orientant la caméra manuellement puis en cliquant "Enregistrer", afin que Vyzio sache toujours où la ramener après le mode vie privée.
 
-> **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue live, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien.
-
 > **En tant qu'utilisateur**, je veux gérer plusieurs positions nommées pour ma caméra PTZ — au minimum une position de surveillance et une position de parking — afin de personnaliser les zones couvertes sans devoir repositionner la caméra manuellement à chaque usage.
 
 **Règles fonctionnelles :**
@@ -403,7 +401,6 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 - l'option `ptz_parking` n'est proposée que si la caméra supporte le PTZ — cette capacité doit être détectée automatiquement à l'onboarding et configurable manuellement — et ne peut être choisie qu'une fois les positions Surveillance (preset 1) et Parking (preset 2) enregistrées ; tant qu'elles ne le sont pas, l'interface dit de les enregistrer d'abord ;
 - le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue ;
 - l'utilisateur doit pouvoir définir la position de surveillance (preset "home") via des contrôles PTZ live dans l'interface — une fois orientée, il clique "Définir comme position de surveillance" ;
-- les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) — c'est le parcours d'usage quotidien ;
 - si une caméra PTZ est détectée à l'onboarding, le parcours d'ajout doit proposer une étape de configuration du mode vie privée et des positions Surveillance et Parking avant de terminer ;
 - lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers sa position Parking ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix ;
 - la gestion des positions PTZ expose au minimum 4 slots : **preset 1** (Surveillance — ramener la caméra vers la zone surveillée nominale), **preset 2** (Parking vie privée — position de stationnement lors de l'activation du mode vie privée), **presets 3 et 4** personnalisables par l'utilisateur ; les presets 1 et 2 ont des labels fixes, les presets 3 et 4 ont un label libre ;
@@ -440,9 +437,22 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 
 ---
 
-## 11. Perimetre MVP
+## 11. Pilotage PTZ
 
-### 11.1 Inclus dans le MVP
+> **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue live, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien.
+
+**Règles fonctionnelles :**
+
+- les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) : c'est le parcours d'usage quotidien ;
+- si la caméra est hors ligne, les contrôles sont suspendus avec un message explicite (cf. §2.2) ;
+- certaines caméras tournent à l'envers de la flèche pressée (leur firmware inverse le sens horizontal) : l'utilisateur peut inverser gauche et droite sur la capacité PTZ de la caméra ; Vyzio ne devine pas ce sens, et le réglage ne change ni le haut et le bas, ni les positions enregistrées ;
+- les positions enregistrées et leurs miniatures sont décrites en §9.3 et §9.4.
+
+---
+
+## 12. Perimetre MVP
+
+### 12.1 Inclus dans le MVP
 
 - ajout et gestion de cameras existantes ;
 - surveillance locale avec alertes sur evenements prioritaires ;
@@ -450,7 +460,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 - historique consultable et retention configurable ;
 - interface web unifiee pour les parcours principaux.
 
-### 11.2 Hors MVP initial
+### 12.2 Hors MVP initial
 
 - couverture exhaustive de tous les usages experts d'un NVR ;
 - exposition de chaque capacite avancee dans une UI Vyzio 100 % custom ;
@@ -459,7 +469,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 
 ---
 
-## 12. Criteres de succes produit
+## 13. Criteres de succes produit
 
 - un utilisateur non-tech doit pouvoir comprendre la promesse, installer le systeme et recevoir ses premieres alertes sans lire de documentation technique ;
 - le systeme doit rester utile meme sans connexion Internet ;

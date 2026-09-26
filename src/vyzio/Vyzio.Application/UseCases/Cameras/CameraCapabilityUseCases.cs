@@ -24,7 +24,7 @@ public sealed record CameraCapabilityBindingDto(
         binding.LastError,
         IsPreset: isPreset,
         IsConfigured: true,
-        // Only a PTZ binding has a direction to swap (SPECS 9.3).
+        // Only a PTZ binding has a direction to swap (SPECS 11).
         PanInverted: binding.Capability == CameraCapability.Ptz
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
             : null);

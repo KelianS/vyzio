@@ -186,7 +186,7 @@ export function CapabilitySection({ camera, offline, onReload }: CapabilitySecti
   )
 }
 
-/** The left and right swap of a camera that turns the other way (SPECS 9.3), in the settings grammar (ADR-43). */
+/** The left and right swap of a camera that turns the other way (SPECS 11), in the settings grammar (ADR-43). */
 function panInvertedSetting(
   inverted: boolean,
   saving: boolean,
