@@ -7,7 +7,8 @@ is left to bring in line.
 
 ## Layers (mandatory, enforced by lint)
 
-Dependencies point inward: `infrastructure -> domain <- presentation`. `common` is a shared kernel
+Dependencies point inward: `infrastructure -> domain <- presentation`, presentation reaching
+infrastructure only through its composition root and store (below). `common` is a shared kernel
 importable from anywhere, and may read `domain` types. The `boundaries/dependencies` rule of
 `eslint.config.js` enforces it; a lint error there means a wire crossed a layer, fixed by routing it
 through a port or the container, never by silencing the rule.
