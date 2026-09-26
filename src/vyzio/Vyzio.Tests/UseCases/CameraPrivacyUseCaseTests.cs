@@ -260,6 +260,22 @@ public class ToggleCameraPrivacyModeUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldRecordNoMiss_WhenPrivacyEndsOnACameraWhosePtzWasNeverVerified()
+    {
+        var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
+        camera.PrivacyModeActive = true;
+        camera.PrivacyMiss = PrivacyMiss.CapabilityUnverified;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns((CameraCapabilityBinding?)null);
+
+        await _sut.ExecuteAsync("cam1", active: false);
+
+        Assert.Null(camera.PrivacyMiss);
+        await _ptzProvider.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldParkOnTheParkingSlot_WhenTheCameraKeepsItsOwnPresets()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.PtzParking);
@@ -526,6 +542,34 @@ public class SetCameraPrivacyStrategyUseCaseTests
         Assert.Equal(strategy, result!.PrivacyStrategy);
         var expectedStrategy = Vyzio.Core.Common.SnakeCaseEnum.FromSnakeCase<PrivacyStrategy>(strategy);
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyStrategy == expectedStrategy), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldForgetTheLastMiss_WhenTheStrategyChanges()
+    {
+        var camera = MakeCamera();
+        camera.PrivacyStrategy = PrivacyStrategy.Hardware;
+        camera.PrivacyMiss = PrivacyMiss.CameraFailed;
+        camera.PrivacyMissDetail = "privacy on, hardware: CameraUnreachableException: DVRIP: no answer";
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        await _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("software_blur"));
+
+        Assert.Null(camera.PrivacyMiss);
+        Assert.Null(camera.PrivacyMissDetail);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheLastMiss_WhenTheSameStrategyIsSavedAgain()
+    {
+        var camera = MakeCamera();
+        camera.PrivacyStrategy = PrivacyStrategy.Hardware;
+        camera.PrivacyMiss = PrivacyMiss.CameraFailed;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        await _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("hardware"));
+
+        Assert.Equal(PrivacyMiss.CameraFailed, camera.PrivacyMiss);
     }
 
     [Theory]

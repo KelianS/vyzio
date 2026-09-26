@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router'
-import { EyeOff, Lock, TriangleAlert, WifiOff } from 'lucide-react'
+import { TriangleAlert, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
-import { privacyMissLabel } from '../privacy/privacyStatus'
+import { privacyBadge, privacyMissLabel } from '../privacy/privacyStatus'
+import { PrivacyStateIcon } from '../privacy/PrivacyStateIcon'
 import { cn } from '../ui/utils'
 import type { Camera } from '../../domain/entities/Camera'
 import type { FrigateStatus } from '../../domain/entities/SystemStats'
@@ -53,6 +54,8 @@ export function CameraLiveThumbnail({
     }
   }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
 
+  const privacy = privacyBadge(camera)
+
   function handleTogglePrivacy(event: MouseEvent) {
     event.stopPropagation()
     onTogglePrivacy?.(camera, !camera.privacyModeActive)
@@ -76,18 +79,11 @@ export function CameraLiveThumbnail({
             : undefined
         }
       >
-        {camera.privacyModeActive ? (
+        {camera.privacyModeActive && privacy ? (
+          // The same words as the privacy screen's badge: what the camera answered (SPECS 9.2).
           <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
-            {camera.privacyVendorCut ? (
-              <Lock className="size-5" aria-hidden="true" />
-            ) : (
-              <EyeOff className="size-5" aria-hidden="true" />
-            )}
-            <span className="text-sm font-medium">
-              {camera.privacyVendorCut
-                ? 'Coupure matérielle confirmée'
-                : 'Caméra en pause, enregistrement désactivé'}
-            </span>
+            <PrivacyStateIcon kind={privacy.kind} className="size-5" />
+            <span className="text-sm font-medium">{privacy.text}</span>
           </div>
         ) : deviceOffline ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">

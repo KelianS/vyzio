@@ -251,6 +251,12 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, I
                 || await presets.GetAsync(cameraId, PtzPreset.SurveillanceSlot, ct) is null))
             throw new ParkingPositionsMissingException();
 
+        // The last toggle's miss described the old strategy and would misname the new one (SPECS 9.2).
+        if (camera.PrivacyStrategy != strategy)
+        {
+            camera.PrivacyMiss = null;
+            camera.PrivacyMissDetail = null;
+        }
         camera.PrivacyStrategy = strategy;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);

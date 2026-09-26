@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { midnightRangeHint } from '../../common/settings/midnightRange'
-import { Badge } from '../../common/components/Badge'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
 import { cn } from '../../common/ui/utils'
@@ -10,9 +9,7 @@ import type { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraP
 import type { CreateCameraPrivacySchedule } from '../../domain/usecases/CreateCameraPrivacySchedule'
 import type { DeleteCameraPrivacySchedule } from '../../domain/usecases/DeleteCameraPrivacySchedule'
 import { toastError, type AppError } from '../../common/errors/AppError'
-import { DiagnosticLine, ErrorMessage } from '../../common/components/ErrorMessage'
-import { scrubSecrets } from '../../common/errors/scrubSecrets'
-import { privacyBadge, privacyMissSentence } from '../../common/privacy/privacyStatus'
+import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { toAppError } from '../../common/errors/toAppError'
 import { useToast } from '../../common/components/Toast'
 
@@ -28,7 +25,6 @@ const endsNextDay = (start: string, end: string) =>
   start !== '' && end !== '' && minutesOf(end) < minutesOf(start)
 
 interface PrivacyScheduleSectionProps {
-  camera: Camera
   cameraId: string
   allCameras: Camera[]
   getSchedules: GetCameraPrivacySchedules
@@ -37,7 +33,6 @@ interface PrivacyScheduleSectionProps {
 }
 
 export function PrivacyScheduleSection({
-  camera,
   cameraId,
   allCameras,
   getSchedules,
@@ -135,26 +130,9 @@ export function PrivacyScheduleSection({
     }
   }
 
-  const badge = privacyBadge(camera)
-  const missSentence = privacyMissSentence(camera)
-
   return (
     // No own frame or title: the page already carries them.
     <section className="flex flex-col gap-4">
-      {badge && (
-        <Badge tone={badge.tone} className="w-fit">
-          {badge.icon} {badge.text}
-        </Badge>
-      )}
-      {missSentence && (
-        <div role="status" className="text-sm">
-          <p>{missSentence}</p>
-          {camera.privacyMissDetail && (
-            <DiagnosticLine text={scrubSecrets(camera.privacyMissDetail)} />
-          )}
-        </div>
-      )}
-
       {loading ? (
         <p className="text-muted-foreground">Chargement…</p>
       ) : schedules.length === 0 ? (

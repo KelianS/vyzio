@@ -35,6 +35,16 @@ describe('privacyBadge', () => {
 })
 
 describe('privacyMissSentence', () => {
+  it('privacyMissSentence_ShouldSayNothing_WhenTheMissBelongsToAStrategyThatAsksNothingOfTheCamera', () => {
+    expect(
+      privacyMissSentence({
+        ...parked,
+        privacyStrategy: PrivacyStrategy.SoftwareBlur,
+        privacyMiss: PrivacyMiss.CameraFailed,
+      }),
+    ).toBeNull()
+  })
+
   it('privacyMissSentence_ShouldSayNothing_WhenTheCameraFollowed', () => {
     expect(privacyMissSentence(parked)).toBeNull()
   })
@@ -69,8 +79,11 @@ describe('privacyMissSentence', () => {
 })
 
 describe('privacyMissLabel', () => {
-  it('privacyMissLabel_ShouldNotBlameTheCamera_WhenItsAnswerDidNotArrive', () => {
-    expect(privacyMissLabel(PrivacyMiss.Unconfirmed)).toBe('Réponse de la caméra non reçue')
+  it('privacyMissLabel_ShouldNotBlameTheCamera_WhenTheRequestWasInterrupted', () => {
+    expect(privacyMissLabel(PrivacyMiss.Unconfirmed)).toBe('Demande interrompue')
+  })
+
+  it('privacyMissLabel_ShouldSayTheCameraDidNotFollow_WhenItFailed', () => {
     expect(privacyMissLabel(PrivacyMiss.CameraFailed)).toBe('La caméra n’a pas suivi')
   })
 })

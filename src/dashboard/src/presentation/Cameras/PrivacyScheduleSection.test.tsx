@@ -2,44 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PrivacyScheduleSection } from './PrivacyScheduleSection'
-import { PrivacyMiss, PrivacyStrategy, type Camera } from '../../domain/entities/Camera'
+import { makeCamera } from './cameraFixture'
 import type { CameraPrivacySchedule } from '../../domain/entities/CameraPrivacySchedule'
 import type { GetCameraPrivacySchedules } from '../../domain/usecases/GetCameraPrivacySchedules'
 import type { CreateCameraPrivacySchedule } from '../../domain/usecases/CreateCameraPrivacySchedule'
 import type { DeleteCameraPrivacySchedule } from '../../domain/usecases/DeleteCameraPrivacySchedule'
 import { HttpError } from '../../infrastructure/http/HttpError'
-
-function makeCamera(overrides: Partial<Camera> = {}): Camera {
-  return {
-    id: 'camera-1',
-    slug: 'front-door',
-    displayName: 'Front Door',
-    sourceType: 'rtsp_manual',
-    host: '192.168.1.10',
-    port: 554,
-    streamProtocol: 'rtsp',
-    status: 'online',
-    validationState: 'validated',
-    isEnabled: true,
-    previewAvailable: true,
-    needsAttention: false,
-    lastReachabilityCheckAt: null,
-    lastSuccessfulFrameAt: null,
-    frigateCameraName: 'front_door',
-    vendorFamily: null,
-    privacyModeActive: false,
-    privacyModeSource: null,
-    privacyVendorCut: false,
-    privacyMiss: null,
-    privacyMissDetail: null,
-    ptzSupported: false,
-    privacyStrategy: 'software_blur',
-    supportedProtocols: [],
-    connected: true,
-    verifiedCapabilities: [],
-    ...overrides,
-  }
-}
 
 function makeSchedule(overrides: Partial<CameraPrivacySchedule> = {}): CameraPrivacySchedule {
   return {
@@ -61,7 +29,6 @@ describe('PrivacyScheduleSection', () => {
     } as unknown as GetCameraPrivacySchedules
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={getSchedules}
@@ -80,7 +47,6 @@ describe('PrivacyScheduleSection', () => {
 
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={getSchedules}
@@ -96,7 +62,6 @@ describe('PrivacyScheduleSection', () => {
   it('PrivacyScheduleSection_ShouldSayTheRangeEndsTheNextDay_WhenTheEndIsBeforeTheStart', async () => {
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={
@@ -116,7 +81,6 @@ describe('PrivacyScheduleSection', () => {
     const user = userEvent.setup()
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={
@@ -149,7 +113,6 @@ describe('PrivacyScheduleSection', () => {
     const user = userEvent.setup()
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={
@@ -168,55 +131,6 @@ describe('PrivacyScheduleSection', () => {
     )
   })
 
-  it('shows a hardware privacy cut badge when the camera reports vendor cut', async () => {
-    const getSchedules = {
-      execute: vi.fn().mockResolvedValue([]),
-    } as unknown as GetCameraPrivacySchedules
-
-    render(
-      <PrivacyScheduleSection
-        camera={makeCamera({ privacyVendorCut: true })}
-        cameraId="camera-1"
-        allCameras={[makeCamera()]}
-        getSchedules={getSchedules}
-        createSchedule={{ execute: vi.fn() } as unknown as CreateCameraPrivacySchedule}
-        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
-      />,
-    )
-
-    expect(await screen.findByText(/Coupure matérielle confirmée/)).toBeInTheDocument()
-  })
-
-  it('PrivacyScheduleSection_ShouldSayWhatHappenedAndShowTheDetail_WhenTheCameraDidNotFollow', async () => {
-    const getSchedules = {
-      execute: vi.fn().mockResolvedValue([]),
-    } as unknown as GetCameraPrivacySchedules
-
-    render(
-      <PrivacyScheduleSection
-        camera={makeCamera({
-          privacyModeActive: true,
-          privacyStrategy: PrivacyStrategy.PtzParking,
-          privacyMiss: PrivacyMiss.CameraFailed,
-          privacyMissDetail:
-            'privacy on, ptz_parking: CameraUnreachableException: ONVIF Ptz: no answer',
-        })}
-        cameraId="camera-1"
-        allCameras={[makeCamera()]}
-        getSchedules={getSchedules}
-        createSchedule={{ execute: vi.fn() } as unknown as CreateCameraPrivacySchedule}
-        deleteSchedule={{ execute: vi.fn() } as unknown as DeleteCameraPrivacySchedule}
-      />,
-    )
-
-    expect(
-      await screen.findByText(/La caméra n’a pas suivi, enregistrement désactivé/),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      /ne s’est pas tournée vers sa position Parking.*ONVIF Ptz: no answer/,
-    )
-  })
-
   it('requires at least one day selected before adding a schedule', async () => {
     const getSchedules = {
       execute: vi.fn().mockResolvedValue([]),
@@ -226,7 +140,6 @@ describe('PrivacyScheduleSection', () => {
 
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={getSchedules}
@@ -258,7 +171,6 @@ describe('PrivacyScheduleSection', () => {
 
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={getSchedules}
@@ -287,7 +199,6 @@ describe('PrivacyScheduleSection', () => {
 
     const { rerender } = render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={getSchedules}
@@ -300,7 +211,6 @@ describe('PrivacyScheduleSection', () => {
 
     rerender(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera(), makeCamera({ id: 'camera-2' })]}
         getSchedules={getSchedules}
@@ -323,7 +233,6 @@ describe('PrivacyScheduleSection', () => {
 
     render(
       <PrivacyScheduleSection
-        camera={makeCamera()}
         cameraId="camera-1"
         allCameras={[makeCamera()]}
         getSchedules={getSchedules}

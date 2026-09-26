@@ -1,5 +1,5 @@
 import type { CameraDraftInput } from '../../domain/entities/CameraDraftInput'
-import type { Camera } from '../../domain/entities/Camera'
+import { PrivacyMiss, type Camera } from '../../domain/entities/Camera'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/CameraConfigurationApplyResult'
 import type { CameraStatus } from '../../domain/entities/CameraStatus'
 import type { DiscoveredCamera } from '../../domain/entities/DiscoveredCamera'
@@ -329,6 +329,13 @@ export class HttpCameraRepository implements CameraRepository {
   }
 }
 
+const PRIVACY_MISSES: readonly string[] = Object.values(PrivacyMiss)
+
+// A value this build does not know claims nothing rather than reaching a switch that has no case for it.
+function privacyMissOf(value: string | null | undefined): PrivacyMiss | null {
+  return value && PRIVACY_MISSES.includes(value) ? (value as PrivacyMiss) : null
+}
+
 function mapCamera(camera: CameraDto): Camera {
   return {
     id: camera.id,
@@ -352,7 +359,7 @@ function mapCamera(camera: CameraDto): Camera {
     privacyModeActive: camera.privacyModeActive ?? false,
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
-    privacyMiss: (camera.privacyMiss ?? null) as Camera['privacyMiss'],
+    privacyMiss: privacyMissOf(camera.privacyMiss),
     privacyMissDetail: camera.privacyMissDetail ?? null,
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: (camera.privacyStrategy || 'none') as Camera['privacyStrategy'],
