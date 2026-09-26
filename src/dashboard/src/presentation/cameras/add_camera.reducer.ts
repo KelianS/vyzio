@@ -161,5 +161,17 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
 
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }
+
+    case 'VENDOR_ASSISTANCE_STARTED':
+      return { ...state, vendorAssistance: { loading: true, markdown: null, error: null } }
+    case 'VENDOR_ASSISTANCE_SUCCEEDED':
+      return {
+        ...state,
+        vendorAssistance: { loading: false, markdown: action.markdown, error: null },
+      }
+    case 'VENDOR_ASSISTANCE_FAILED':
+      return { ...state, vendorAssistance: { loading: false, markdown: null, error: action.error } }
+    case 'VENDOR_ASSISTANCE_CLEARED':
+      return { ...state, vendorAssistance: { loading: false, markdown: null, error: null } }
   }
 }

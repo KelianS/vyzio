@@ -1,3 +1,4 @@
+import type { AppError } from '../../common/errors/app_error'
 import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 
@@ -37,6 +38,9 @@ export interface AddCameraUido {
   /** A failure: its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
+
+  /** The vendor's notice for the brand being added, when it has one. */
+  vendorAssistance: { loading: boolean; markdown: string | null; error: AppError | null }
 }
 
 export function buildInitialAddCameraUido(): AddCameraUido {
@@ -56,5 +60,7 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     message: null,
     error: null,
     confirmScan: false,
+
+    vendorAssistance: { loading: false, markdown: null, error: null },
   }
 }

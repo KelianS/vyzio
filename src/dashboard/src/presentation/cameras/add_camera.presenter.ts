@@ -1,9 +1,12 @@
+import type { ToastTone } from '../../common/components/toast'
 import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
+import type { HubContainer } from '../../infrastructure/providers/hub.container'
+import { refreshSurveillance } from '../surveillance/surveillance_refresh'
 import type { AddCameraAction } from './add_camera.actions'
 
 /** A failed call as the screen keeps it: its sentence and its diagnostic line. */
@@ -14,16 +17,20 @@ function failureOf(e: unknown): { message: string; diagnostic?: string } {
 
 export interface AddCameraPresenterContext {
   container: CamerasContainer
+  hubContainer: HubContainer
   dispatch: (action: AddCameraAction) => void
+  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
-export interface CreatedCamera {
-  id: string
-  displayName: string
-  guidance: string | null
-}
+export function buildAddCameraPresenter({
+  container,
+  hubContainer,
+  dispatch,
+  toast,
+}: AddCameraPresenterContext) {
+  // Only the latest request may answer: an earlier one would show another brand's notice.
+  let vendorRequest = 0
 
-export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresenterContext) {
   function reloadCameras() {
     void useRootStore.getState().loadCameras(container.getCameras)
   }
@@ -117,12 +124,12 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
       }
     },
 
-    /** Returns the created camera so the screen can navigate to it, or `null` on failure. */
+    /** Returns the created camera's id so the screen can open it, or `null` on failure. */
     async onCreate(
       dvripMode: boolean,
       verified: boolean,
       form: CameraDraftInput,
-    ): Promise<CreatedCamera | null> {
+    ): Promise<string | null> {
       if (!dvripMode && !verified) {
         dispatch({
           type: 'CREATE_FAILED',
@@ -136,8 +143,10 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
         // Post-create verification confirms the camera as the server saved it.
         const status = await container.verifyCamera.execute(created.id)
         reloadCameras()
+        refreshSurveillance(hubContainer)
         dispatch({ type: 'CREATE_SUCCEEDED' })
-        return { id: created.id, displayName: created.displayName, guidance: status.guidance }
+        toast(status.guidance ?? `« ${created.displayName} » ajoutée.`, 'success')
+        return created.id
       } catch (e) {
         dispatch({ type: 'CREATE_FAILED', ...failureOf(e) })
         return null
@@ -146,6 +155,33 @@ export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresen
 
     onConfirmScanSet(value: boolean) {
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
+    },
+
+    async onVendorAssistanceNeeded(
+      vendorFamily: string | null,
+      streamPath: string | null,
+      connected: boolean,
+    ): Promise<void> {
+      const request = ++vendorRequest
+      if (!vendorFamily) {
+        dispatch({ type: 'VENDOR_ASSISTANCE_CLEARED' })
+        return
+      }
+      dispatch({ type: 'VENDOR_ASSISTANCE_STARTED' })
+      try {
+        const assistance = await container.getVendorAssistance.execute({
+          vendorFamily,
+          streamPath,
+          connected,
+        })
+        if (request === vendorRequest) {
+          dispatch({ type: 'VENDOR_ASSISTANCE_SUCCEEDED', markdown: assistance?.markdown ?? null })
+        }
+      } catch (e) {
+        if (request === vendorRequest) {
+          dispatch({ type: 'VENDOR_ASSISTANCE_FAILED', error: toAppError(e) })
+        }
+      }
     },
   }
 }

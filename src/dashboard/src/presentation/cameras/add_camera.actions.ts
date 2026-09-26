@@ -1,3 +1,4 @@
+import type { AppError } from '../../common/errors/app_error'
 import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 
@@ -31,3 +32,7 @@ export type AddCameraAction =
   | { type: 'CREATE_SUCCEEDED' }
   | { type: 'CREATE_FAILED'; message: string; diagnostic?: string }
   | { type: 'CONFIRM_SCAN_SET'; value: boolean }
+  | { type: 'VENDOR_ASSISTANCE_STARTED' }
+  | { type: 'VENDOR_ASSISTANCE_SUCCEEDED'; markdown: string | null }
+  | { type: 'VENDOR_ASSISTANCE_FAILED'; error: AppError }
+  | { type: 'VENDOR_ASSISTANCE_CLEARED' }

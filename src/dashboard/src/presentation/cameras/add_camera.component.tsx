@@ -17,8 +17,6 @@ import type { SettingDeclaration } from '../../common/settings/setting_declarati
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
-import { useSurveillanceRefresh } from '../surveillance/use_surveillance_refresh'
-import { useVendorAssistance } from './use_vendor_assistance'
 import { resolveVendorLinkTarget } from './vendor_links'
 import {
   VENDOR_FAMILY_OPTIONS,
@@ -35,12 +33,16 @@ const DVRIP_SIGNAL = 'dvrip_port_detected'
 
 /** Adding a camera is one task, one page (ADR-40): find, fill in, verify, add — technical facts under "Advanced". */
 export function AddCameraView() {
-  const { cameras: container } = useAppContainer()
+  const { cameras: container, hub: hubContainer } = useAppContainer()
   const { toast } = useToast()
   const navigate = useNavigate()
-  const refreshSurveillance = useSurveillanceRefresh()
   const [uido, dispatch] = useReducer(addCameraReducer, undefined, buildInitialAddCameraUido)
-  const presenter = usePresenter(buildAddCameraPresenter, { container, dispatch })
+  const presenter = usePresenter(buildAddCameraPresenter, {
+    container,
+    hubContainer,
+    dispatch,
+    toast,
+  })
   const knownCameras = useRootStore((state) => state.cameras)
 
   const candidate =
@@ -60,12 +62,12 @@ export function AddCameraView() {
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
-  const vendorAssistance = useVendorAssistance(
-    container.getVendorAssistance,
-    uido.form.vendorFamily ?? null,
-    uido.form.streamPath,
-    uido.verification?.connected ?? false,
-  )
+  const vendorFamily = uido.form.vendorFamily ?? null
+  const connected = uido.verification?.connected ?? false
+  useEffect(() => {
+    void presenter.onVendorAssistanceNeeded(vendorFamily, uido.form.streamPath, connected)
+  }, [presenter, vendorFamily, uido.form.streamPath, connected])
+  const vendorAssistance = uido.vendorAssistance
 
   const busy = uido.discovering || uido.refreshing || uido.verifying || uido.creating
 
@@ -100,15 +102,12 @@ export function AddCameraView() {
   const canAdd = Boolean(uido.verification?.connected) || uido.dvripMode
 
   async function add() {
-    const created = await presenter.onCreate(
+    const createdId = await presenter.onCreate(
       uido.dvripMode,
       Boolean(uido.verification?.connected),
       uido.form,
     )
-    if (!created) return
-    refreshSurveillance()
-    toast(created.guidance ?? `« ${created.displayName} » ajoutée.`, 'success')
-    void navigate(`/settings/cameras/${created.id}/detection`)
+    if (createdId) void navigate(`/settings/cameras/${createdId}/detection`)
   }
 
   const declarations: SettingDeclaration[] = [
@@ -340,9 +339,7 @@ export function AddCameraView() {
           </SettingsSection>
         )}
 
-        {(vendorAssistance.loading ||
-          vendorAssistance.error ||
-          vendorAssistance.data?.markdown) && (
+        {(vendorAssistance.loading || vendorAssistance.error || vendorAssistance.markdown) && (
           <SettingsSection
             title={`Notice ${formatVendorFamily(uido.form.vendorFamily ?? null) ?? 'du constructeur'}`}
           >
@@ -351,7 +348,7 @@ export function AddCameraView() {
             ) : vendorAssistance.error ? (
               <ErrorMessage error={vendorAssistance.error} className="text-base" />
             ) : (
-              <VendorNotice markdown={vendorAssistance.data!.markdown} />
+              <VendorNotice markdown={vendorAssistance.markdown!} />
             )}
           </SettingsSection>
         )}

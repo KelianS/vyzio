@@ -2,7 +2,10 @@ import { useBlocker } from 'react-router'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import { RESTART_QUESTION, restartWording } from '../../common/surveillance/pending_restart'
-import { useRestartSurveillance } from '../surveillance/use_restart_surveillance'
+import { usePresenter } from '../../common/presenter/use_presenter'
+import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+import { buildRestartSurveillancePresenter } from '../surveillance/restart_surveillance.presenter'
+import { useRestartState } from '../surveillance/use_restart_state'
 
 const SETTINGS_ROOT = '/settings'
 
@@ -20,7 +23,12 @@ function isSettings(pathname: string) {
  */
 export function NavigationGuard() {
   const unsaved = useRootStore((state) => state.unsavedChanges)
-  const { pending, restarting, failure, restart } = useRestartSurveillance()
+  const { cameras: camerasContainer, hub: hubContainer } = useAppContainer()
+  const presenter = usePresenter(buildRestartSurveillancePresenter, {
+    camerasContainer,
+    hubContainer,
+  })
+  const { pending, restarting, failure } = useRestartState()
   const wording = restartWording(failure)
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -65,7 +73,7 @@ export function NavigationGuard() {
       loading={restarting}
       onConfirm={() => {
         // Not held during the restart: progress reads on the surveillance status (ADR-33).
-        void restart()
+        void presenter.onRestart()
         blocker.proceed?.()
       }}
       // Both answers let through: the gap is allowed, and the trigger stays in the header.

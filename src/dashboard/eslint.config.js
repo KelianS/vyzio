@@ -33,7 +33,6 @@ const PRESENTER_RULE_BACKLOG = [
   'src/presentation/cameras/camera_privacy_page.tsx',
   'src/presentation/cameras/capability_section.tsx',
   'src/presentation/cameras/camera_list_read.ts',
-  'src/presentation/cameras/use_vendor_assistance.ts',
   'src/presentation/notifications/add_notification_channel_page.tsx',
   'src/presentation/notifications/channel_pairing_section.tsx',
   'src/presentation/notifications/command_journal.tsx',
@@ -48,7 +47,6 @@ const PRESENTER_RULE_BACKLOG = [
   'src/presentation/profiles/person_shell.tsx',
   'src/presentation/settings/access_page.tsx',
   'src/presentation/settings/conservation_page.tsx',
-  'src/presentation/surveillance/use_restart_surveillance.ts',
   'src/presentation/surveillance/use_surveillance_refresh.ts',
 ]
 
