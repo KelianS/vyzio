@@ -74,8 +74,7 @@ export default defineConfig([
         typescript: { alwaysTryTypes: true },
       },
       'boundaries/elements': [
-        // Declared before `common`: the first matching pattern wins, and `src/common/ui/**` would
-        // otherwise fall under `src/common/**`.
+        // Before `common`: the first matching pattern wins, or `src/common/ui/**` would fall under it.
         { type: 'ui-primitive', pattern: 'src/common/ui/**' },
         { type: 'common', pattern: 'src/common/**' },
         { type: 'domain', pattern: 'src/domain/**' },
@@ -91,9 +90,7 @@ export default defineConfig([
       ],
     },
     rules: {
-      // The dependency rule: infrastructure -> domain <- presentation, with `common` a shared kernel.
-      // checkAllOrigins brings npm and Node packages under the same policies. The last matching
-      // policy wins, so they go from the most general to the most specific.
+      // Dependencies point inward, npm packages included; the last matching policy wins, so general first.
       'boundaries/dependencies': [
         'error',
         {
@@ -152,8 +149,7 @@ export default defineConfig([
               from: { element: { type: 'domain' }, file: { categories: 'test' } },
               allow: { to: { module: { origin: ['external', 'core'], source: 'vitest' } } },
             },
-            // Vendored shadcn/ui primitives (ADR-42) reach only each other and their npm packages:
-            // a business rule inside vendored code is what makes an upstream update risky.
+            // A business rule inside vendored primitives would make an upstream update risky (ADR-42).
             {
               from: { element: { types: 'ui-primitive' } },
               disallow: { to: { element: { types: { noneOf: ['ui-primitive'] } } } },
@@ -187,12 +183,10 @@ export default defineConfig([
     },
   },
   {
-    // A presenter calls the use cases; the screen's root component only builds its presenter.
+    // A presenter calls the use cases.
     files: [
       'src/presentation/*/*.Presenter.ts',
-      'src/presentation/*/*.Component.tsx',
       'src/presentation/*/*.presenter.ts',
-      'src/presentation/*/*.component.tsx',
       'src/common/presenter/**',
       ...PRESENTER_RULE_BACKLOG,
     ],
@@ -201,8 +195,15 @@ export default defineConfig([
     },
   },
   {
-    // Vendored shadcn/ui primitives (ADR-42): copied, not written here, and updated by regenerating
-    // them. Their upstream shape exports variants next to the component, which react-refresh forbids.
+    // A screen's root component takes the container only to build its presenter, never a use-case hook.
+    files: ['src/presentation/*/*.Component.tsx', 'src/presentation/*/*.component.tsx'],
+    ignores: PRESENTER_RULE_BACKLOG,
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [USE_CASE_ACCESS[1]] }],
+    },
+  },
+  {
+    // Vendored primitives export variants beside the component, as upstream does (ADR-42).
     files: ['src/common/ui/**/*.{ts,tsx}'],
     rules: {
       'react-refresh/only-export-components': 'off',

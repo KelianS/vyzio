@@ -2,6 +2,8 @@
 
 Loaded when you edit `src/dashboard`. Completes the root router [`../../CLAUDE.md`](../../CLAUDE.md).
 These are conventions: they hold for any screen, present or future, and name no screen in particular.
+Code written before a convention may not follow it yet: never take it as a model. The lint names what
+is left to bring in line.
 
 ## Layers (mandatory, enforced by lint)
 
@@ -15,7 +17,7 @@ through a port or the container, never by silencing the rule.
 - **infrastructure**: repositories implementing the domain ports, which do the HTTP themselves through
   `infrastructure/http/`; `providers/` (the composition root: one `*.container.ts` per feature,
   assembled in `app.container.ts`, manual wiring, no DI library); `store/` (zustand, only for state
-  shared across screens).
+  shared across screens, never duplicated as a screen's local state).
 - **presentation** reaches infrastructure only through `providers/` (`useAppContainer()`) and `store/`
   (`useRootStore()`), never a repository or an HTTP helper.
 - **common**: cross-cutting code only (shared components, the error pipeline, generic hooks). What only
@@ -54,7 +56,7 @@ migrate that only shrinks.
 
 ## Tests
 
-- Names follow the root convention: `{Method}_Should{DoSomething}_When{Condition}`.
+- Names follow the test name convention of the root [`CLAUDE.md`](../../CLAUDE.md).
 - Unit and integration tests read in **AAA**, with the comments written: `// Arrange`, `// Act`,
   `// Assert`, merged as `// Arrange & Act` when the setup is the action. E2E tests read top to bottom
   instead.
@@ -64,8 +66,8 @@ migrate that only shrinks.
   Declarative code (action creators, uido, containers) gets none.
 - No logic in a test (no loop, no condition, no computed expectation): `it.each` for one assertion over
   several inputs.
-- The coverage floor lives in `vite.config.ts`. A PR may raise it, never lower it, and never widens the
-  exclude list to meet it.
+- The coverage floor (`thresholds` in `vite.config.ts`) only rises: a PR may raise it, never lower it,
+  and never widens the exclude list to meet it.
 - E2E tests live in `tests/e2e/`, run against the production build, and cover the journeys a user
   walks through.
 
@@ -78,11 +80,12 @@ migrate that only shrinks.
 - **Styles**: Tailwind v4 only, with the [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) tokens defined
   in `src/index.css`. No literal colour or radius in a component.
 - A setting **is declared, it is not drawn** ([ADR-43](../../docs/adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)).
-- The end-of-page `Avancé` fold, a section's long-form help and a detection list each have one shared
-  component in `common/`. Reuse it, never rewrite a `<details>` or a second rendering (ADR-40, ADR-53).
+- The end-of-page `Avancé` fold, a section's long-form help, a detection list and a detection preview
+  each have one shared component in `common/`. Reuse it: never a rewritten `<details>`, a second
+  rendering, or a bare `<img>` that stays broken when surveillance restarts (ADR-40, ADR-53).
 - A feature's help is written in the screen, never in a markdown file
   ([ADR-53](../../docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
-- Keep screens light: a sentence that only repeats the title, or explains what a fold could hold, goes.
+- Keep screens light, per the [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) § Intent.
 
 ## Error handling (mandatory)
 
@@ -101,7 +104,8 @@ send / fetchJson -> HttpError | NetworkError (infrastructure) -> toAppError (com
   dispatches a `*_FAILED` action, shown through the reducer and uido, or calls
   `toastError(toast, error)` for an ephemeral notice. Never both for the same error.
 - In the render, an error is `<ErrorMessage error={error} />`, and a failed read is
-  `<ReadFailure error={error} onRetry={...} />`.
+  `<ReadFailure error={error} onRetry={...} />`. A state that keeps a failure as text keeps
+  `appErrorDiagnostic(error)` beside it and shows it with `<DiagnosticLine>`.
 - The kind of an error is tested through `AppErrorKind`, never a string literal.
 - Special cases (404 to null, multipart, logic on the status) use `send()` in the repository, then
   `throw await httpErrorFrom(response, url, method)`, never `new Error()` or a bare `fetch`.
