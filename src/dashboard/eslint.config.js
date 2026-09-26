@@ -6,50 +6,73 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import path from 'node:path'
 
 // Where presentation may reach inside infrastructure: the composition root and the shared store only.
 const INFRASTRUCTURE_ENTRY_POINTS = ['providers/**', 'store/**']
 
 // What only a presenter may call: the container, and the hooks that call a use case from a view.
 const CONTAINER_ACCESS = {
-  group: ['**/infrastructure/providers/AppContainerContext'],
+  group: ['**/infrastructure/providers/app_container.context'],
   message:
     'Only a presenter calls a use case: build one in the screen component, pass it the container.',
 }
 const USE_CASE_HOOKS = {
-  group: ['**/common/hooks/useAsync', '**/common/hooks/useAsyncAction'],
+  group: ['**/common/hooks/use_async', '**/common/hooks/use_async_action'],
   message: 'A use case is called from the screen presenter, not from the view.',
 }
 const USE_CASE_ACCESS = [CONTAINER_ACCESS, USE_CASE_HOOKS]
 
 // Files that still call use cases from the view. This list only shrinks: each screen migration removes its files.
 const PRESENTER_RULE_BACKLOG = [
-  'src/presentation/Access/AccessGate.tsx',
-  'src/presentation/Cameras/CameraConnectionPage.tsx',
-  'src/presentation/Cameras/CameraConservationPage.tsx',
-  'src/presentation/Cameras/CameraDetectionPage.tsx',
-  'src/presentation/Cameras/CameraImagePage.tsx',
-  'src/presentation/Cameras/CameraPrivacyPage.tsx',
-  'src/presentation/Cameras/CapabilitySection.tsx',
-  'src/presentation/Cameras/cameraListRead.ts',
-  'src/presentation/Cameras/useVendorAssistance.ts',
-  'src/presentation/Notifications/AddNotificationChannelPage.tsx',
-  'src/presentation/Notifications/ChannelPairingSection.tsx',
-  'src/presentation/Notifications/CommandJournal.tsx',
-  'src/presentation/Notifications/NotificationChannelListPage.tsx',
-  'src/presentation/Notifications/NotificationChannelPage.tsx',
-  'src/presentation/Notifications/NotificationLog.tsx',
-  'src/presentation/Profiles/AddPersonPage.tsx',
-  'src/presentation/Profiles/PersonCamerasPage.tsx',
-  'src/presentation/Profiles/PersonIdentityPage.tsx',
-  'src/presentation/Profiles/PersonListPage.tsx',
-  'src/presentation/Profiles/PersonPhotosPage.tsx',
-  'src/presentation/Profiles/PersonShell.tsx',
-  'src/presentation/Settings/AccessPage.tsx',
-  'src/presentation/Settings/ConservationPage.tsx',
-  'src/presentation/Surveillance/useRestartSurveillance.ts',
-  'src/presentation/Surveillance/useSurveillanceRefresh.ts',
+  'src/presentation/access/access_gate.tsx',
+  'src/presentation/cameras/camera_connection_page.tsx',
+  'src/presentation/cameras/camera_conservation_page.tsx',
+  'src/presentation/cameras/camera_detection_page.tsx',
+  'src/presentation/cameras/camera_image_page.tsx',
+  'src/presentation/cameras/camera_privacy_page.tsx',
+  'src/presentation/cameras/capability_section.tsx',
+  'src/presentation/cameras/camera_list_read.ts',
+  'src/presentation/cameras/use_vendor_assistance.ts',
+  'src/presentation/notifications/add_notification_channel_page.tsx',
+  'src/presentation/notifications/channel_pairing_section.tsx',
+  'src/presentation/notifications/command_journal.tsx',
+  'src/presentation/notifications/notification_channel_list_page.tsx',
+  'src/presentation/notifications/notification_channel_page.tsx',
+  'src/presentation/notifications/notification_log.tsx',
+  'src/presentation/profiles/add_person_page.tsx',
+  'src/presentation/profiles/person_cameras_page.tsx',
+  'src/presentation/profiles/person_identity_page.tsx',
+  'src/presentation/profiles/person_list_page.tsx',
+  'src/presentation/profiles/person_photos_page.tsx',
+  'src/presentation/profiles/person_shell.tsx',
+  'src/presentation/settings/access_page.tsx',
+  'src/presentation/settings/conservation_page.tsx',
+  'src/presentation/surveillance/use_restart_surveillance.ts',
+  'src/presentation/surveillance/use_surveillance_refresh.ts',
 ]
+
+// Every file and folder name is snake_case, dot-separated role suffixes included (`hub.presenter.ts`).
+const SNAKE_CASE_SEGMENT = /^[a-z0-9_]+(\.[a-z0-9_]+)*$/
+const fileNames = {
+  rules: {
+    'snake-case': {
+      meta: {
+        type: 'problem',
+        messages: { notSnakeCase: 'Name files and folders in snake_case: "{{segment}}".' },
+      },
+      create(context) {
+        return {
+          Program(node) {
+            const relative = path.relative(import.meta.dirname, context.filename)
+            const segment = relative.split(path.sep).find((s) => !SNAKE_CASE_SEGMENT.test(s))
+            if (segment) context.report({ node, messageId: 'notSnakeCase', data: { segment } })
+          },
+        }
+      },
+    },
+  },
+}
 
 export default defineConfig([
   globalIgnores(['dist', 'coverage']),
@@ -83,9 +106,9 @@ export default defineConfig([
       'boundaries/files': [
         {
           category: 'test',
-          pattern: ['**/*.test.{ts,tsx}', 'src/test-setup.ts', 'src/testing/**'],
+          pattern: ['**/*.test.{ts,tsx}', 'src/test_setup.ts', 'src/testing/**'],
         },
-        { category: 'app_root', pattern: ['src/App.tsx', 'src/main.tsx'] },
+        { category: 'app_root', pattern: ['src/app.tsx', 'src/main.tsx'] },
       ],
     },
     rules: {
@@ -184,7 +207,6 @@ export default defineConfig([
   {
     // A presenter calls the use cases.
     files: [
-      'src/presentation/*/*.Presenter.ts',
       'src/presentation/*/*.presenter.ts',
       'src/common/presenter/**',
       ...PRESENTER_RULE_BACKLOG,
@@ -195,10 +217,19 @@ export default defineConfig([
   },
   {
     // A screen's root component takes the container only to build its presenter, never a use-case hook.
-    files: ['src/presentation/*/*.Component.tsx', 'src/presentation/*/*.component.tsx'],
+    files: ['src/presentation/*/*.component.tsx'],
     ignores: PRESENTER_RULE_BACKLOG,
     rules: {
       'no-restricted-imports': ['error', { patterns: [USE_CASE_HOOKS] }],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
+    // Vendored primitives keep the names the registry generates (ADR-42).
+    ignores: ['src/common/ui/**'],
+    plugins: { 'file-names': fileNames },
+    rules: {
+      'file-names/snake-case': 'error',
     },
   },
   {

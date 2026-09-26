@@ -1,4 +1,4 @@
-import { HttpError, NetworkError, pathOf } from './HttpError'
+import { HttpError, NetworkError, pathOf } from './http_error'
 
 const CODE = /^[a-z][a-z0-9_]*$/
 

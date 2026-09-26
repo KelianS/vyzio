@@ -1,0 +1,151 @@
+import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/app_error'
+import { toAppError } from '../../common/errors/to_app_error'
+import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
+import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import { useRootStore } from '../../infrastructure/store/root.store'
+import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
+import type { AddCameraAction } from './add_camera.actions'
+
+/** A failed call as the screen keeps it: its sentence and its diagnostic line. */
+function failureOf(e: unknown): { message: string; diagnostic?: string } {
+  const error = toAppError(e)
+  return { message: appErrorMessage(error), diagnostic: appErrorDiagnostic(error) }
+}
+
+export interface AddCameraPresenterContext {
+  container: CamerasContainer
+  dispatch: (action: AddCameraAction) => void
+}
+
+export interface CreatedCamera {
+  id: string
+  displayName: string
+  guidance: string | null
+}
+
+export function buildAddCameraPresenter({ container, dispatch }: AddCameraPresenterContext) {
+  function reloadCameras() {
+    void useRootStore.getState().loadCameras(container.getCameras)
+  }
+
+  return {
+    onFormChanged(patch: Partial<CameraDraftInput>) {
+      dispatch({ type: 'FORM_UPDATED', patch })
+    },
+
+    onSelectManualEntry() {
+      dispatch({ type: 'MANUAL_ENTRY_SELECTED' })
+    },
+
+    /** Back to picking a camera, keeping the scan results. */
+    onClearSelection() {
+      dispatch({ type: 'SELECTION_CLEARED' })
+    },
+
+    onSelectCandidate(index: number, candidate: DiscoveredCamera) {
+      dispatch({ type: 'CANDIDATE_SELECTED', index, candidate })
+    },
+
+    onDvripModeToggle(enabled: boolean, candidate: DiscoveredCamera | null) {
+      dispatch({
+        type: 'DVRIP_MODE_TOGGLED',
+        enabled,
+        fallbackPort: candidate?.port ?? 554,
+        fallbackStreamPath: candidate?.streamPath ?? null,
+      })
+    },
+
+    async onDiscover(): Promise<void> {
+      dispatch({ type: 'DISCOVERY_STARTED' })
+      try {
+        const candidates = await container.discoverCameras.execute()
+        dispatch({
+          type: 'DISCOVERY_SUCCEEDED',
+          candidates,
+          message:
+            candidates.length > 0
+              ? `${candidates.length} caméra(s) trouvée(s).`
+              : 'Aucune caméra trouvée sur le réseau.',
+        })
+      } catch (e) {
+        dispatch({ type: 'DISCOVERY_FAILED', ...failureOf(e) })
+      }
+    },
+
+    async onRefreshCandidate(index: number, candidate: DiscoveredCamera): Promise<void> {
+      dispatch({ type: 'REFRESH_CANDIDATE_STARTED' })
+      try {
+        const candidates = await container.discoverCameras.execute({
+          host: candidate.host,
+          port: candidate.port,
+        })
+        const refreshed = candidates.find((c) => c.host === candidate.host)
+        if (!refreshed) {
+          dispatch({
+            type: 'REFRESH_CANDIDATE_NO_CHANGE',
+            message: 'Rien de nouveau : la caméra répond comme avant.',
+          })
+          return
+        }
+        dispatch({
+          type: 'REFRESH_CANDIDATE_SUCCEEDED',
+          index,
+          candidate: refreshed,
+          message: refreshed.streamPath
+            ? 'La caméra est maintenant joignable.'
+            : 'Informations mises à jour, mais la caméra n’est toujours pas joignable.',
+        })
+      } catch (e) {
+        dispatch({ type: 'REFRESH_CANDIDATE_FAILED', ...failureOf(e) })
+      }
+    },
+
+    async onVerifyDraft(form: CameraDraftInput): Promise<void> {
+      dispatch({ type: 'VERIFY_DRAFT_STARTED' })
+      try {
+        const status = await container.verifyDraftCamera.execute(form)
+        dispatch({
+          type: 'VERIFY_DRAFT_SUCCEEDED',
+          connected: status.connected,
+          guidance: status.guidance,
+          message: status.connected
+            ? (status.guidance ?? 'Caméra joignable. Vous pouvez l’ajouter.')
+            : (status.guidance ?? 'Caméra injoignable — vérifiez ces informations.'),
+        })
+      } catch (e) {
+        dispatch({ type: 'VERIFY_DRAFT_FAILED', ...failureOf(e) })
+      }
+    },
+
+    /** Returns the created camera so the screen can navigate to it, or `null` on failure. */
+    async onCreate(
+      dvripMode: boolean,
+      verified: boolean,
+      form: CameraDraftInput,
+    ): Promise<CreatedCamera | null> {
+      if (!dvripMode && !verified) {
+        dispatch({
+          type: 'CREATE_FAILED',
+          message: 'Vérifiez la connexion avant d’ajouter la caméra.',
+        })
+        return null
+      }
+      dispatch({ type: 'CREATE_STARTED' })
+      try {
+        const created = await container.createCamera.execute(form)
+        // Post-create verification confirms the camera as the server saved it.
+        const status = await container.verifyCamera.execute(created.id)
+        reloadCameras()
+        dispatch({ type: 'CREATE_SUCCEEDED' })
+        return { id: created.id, displayName: created.displayName, guidance: status.guidance }
+      } catch (e) {
+        dispatch({ type: 'CREATE_FAILED', ...failureOf(e) })
+        return null
+      }
+    },
+
+    onConfirmScanSet(value: boolean) {
+      dispatch({ type: 'CONFIRM_SCAN_SET', value })
+    },
+  }
+}

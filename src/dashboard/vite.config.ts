@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'jsdom',
-      setupFiles: ['./src/test-setup.ts'],
+      setupFiles: ['./src/test_setup.ts'],
       coverage: {
         provider: 'v8',
         reporter: ['text-summary', 'cobertura', 'lcov'],
@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
         // when it gets no test of its own.
         exclude: [
           'src/main.tsx', // bootstrap: mounts React, no logic
-          'src/test-setup.ts', // test harness, not shipped code
+          'src/test_setup.ts', // test harness, not shipped code
           'src/testing/**', // shared test fixtures, not shipped code
           'src/**/*.d.ts', // ambient types, erased at build
           'src/domain/ports/**', // interfaces only, erased at build

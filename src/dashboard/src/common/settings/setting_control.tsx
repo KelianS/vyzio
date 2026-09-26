@@ -1,0 +1,303 @@
+import { useMemo, useState } from 'react'
+import { ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { Switch } from '../ui/switch'
+import { Input } from '../ui/input'
+import { Checkbox } from '../ui/checkbox'
+import { Slider } from '../ui/slider'
+import { Button } from '../ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
+import { cn } from '../ui/utils'
+import {
+  VISIBLE_CHOICES_MAX,
+  type SettingDeclaration,
+  type SettingNature,
+} from './setting_declaration'
+
+/** Nature -> control (ADR-43): the only place this choice is made. */
+export function SettingControl({ setting }: { setting: SettingDeclaration }) {
+  const { nature } = setting
+
+  switch (nature.kind) {
+    case 'toggle':
+      return <ToggleControl setting={setting} />
+    case 'choice':
+      return <DropdownControl setting={setting} nature={nature} />
+    case 'multiChoice':
+      return <MultiChoiceControl setting={setting} nature={nature} />
+    case 'number':
+      return <NumberControl setting={setting} nature={nature} />
+    case 'range':
+      return <RangeControl setting={setting} nature={nature} />
+    case 'text':
+      return <TextControl setting={setting} nature={nature} />
+    case 'secret':
+      return <SecretControl setting={setting} nature={nature} />
+    default: {
+      // Exhaustiveness: a new nature without its control fails to compile.
+      const exhaustive: never = nature
+      return exhaustive
+    }
+  }
+}
+
+/** Dims the value while it's inherited from the level above (ADR-39). */
+function followingClass(setting: SettingDeclaration) {
+  return setting.provenance?.following ? 'text-muted-foreground' : undefined
+}
+
+function ToggleControl({ setting }: { setting: SettingDeclaration }) {
+  return (
+    <Switch
+      id={setting.id}
+      checked={setting.value === true}
+      disabled={setting.disabled}
+      onCheckedChange={(checked) => setting.onChange(checked)}
+    />
+  )
+}
+
+type Narrow<K extends SettingNature['kind']> = Extract<SettingNature, { kind: K }>
+
+function DropdownControl({
+  setting,
+  nature,
+}: {
+  setting: SettingDeclaration
+  nature: Narrow<'choice'>
+}) {
+  return (
+    <Select
+      value={String(setting.value)}
+      disabled={setting.disabled}
+      onValueChange={(value) => setting.onChange(value)}
+    >
+      <SelectTrigger id={setting.id} className={cn('w-full', followingClass(setting))}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {nature.options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function MultiChoiceControl({
+  setting,
+  nature,
+}: {
+  setting: SettingDeclaration
+  nature: Narrow<'multiChoice'>
+}) {
+  const selected = Array.isArray(setting.value) ? (setting.value as string[]) : []
+  const searchable = nature.options.length > VISIBLE_CHOICES_MAX
+  const [query, setQuery] = useState('')
+
+  const visible = useMemo(() => {
+    if (!searchable || query.trim() === '') return nature.options
+    const needle = query.trim().toLowerCase()
+    return nature.options.filter((option) => option.label.toLowerCase().includes(needle))
+  }, [nature.options, query, searchable])
+
+  function toggle(value: string, checked: boolean) {
+    setting.onChange(checked ? [...selected, value] : selected.filter((entry) => entry !== value))
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          id={setting.id}
+          type="button"
+          variant="outline"
+          role="combobox"
+          disabled={setting.disabled}
+          className={cn('w-full justify-between font-normal', followingClass(setting))}
+        >
+          {/* Un reglage se lit au repos : le controle dit son etat, pas la liste des options. */}
+          <span className="truncate">{summarise(nature.options, selected)}</span>
+          <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+
+      {/* Aucune validation propre : chaque case va au brouillon, que la barre enregistre (ADR-43). */}
+      <PopoverContent
+        align="start"
+        className="flex w-[var(--radix-popover-trigger-width)] flex-col gap-2 p-2"
+      >
+        {searchable && (
+          <Input
+            aria-label={`Filtrer ${setting.label.toLowerCase()}`}
+            placeholder="Filtrer…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        )}
+        <div
+          role="group"
+          aria-labelledby={`${setting.id}-label`}
+          className="flex max-h-64 flex-col gap-1.5 overflow-y-auto"
+        >
+          {visible.map((option) => (
+            <label
+              key={option.value}
+              className="flex cursor-pointer items-center gap-2 rounded-inset px-1 py-1 text-sm hover:bg-muted"
+            >
+              <Checkbox
+                checked={selected.includes(option.value)}
+                disabled={setting.disabled}
+                onCheckedChange={(checked) => toggle(option.value, checked === true)}
+              />
+              {option.label}
+            </label>
+          ))}
+          {visible.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat.</p>}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** Beyond that, the summary would vary in width, and the control column with it. */
+const SUMMARY_NAMES_MAX = 2
+
+/** The state of a multiple choice in one line: two names at most, then the count of the rest. */
+function summarise(options: Narrow<'multiChoice'>['options'], selected: string[]): string {
+  const chosen = options.filter((option) => selected.includes(option.value))
+  if (chosen.length === 0) return 'Aucune sélection'
+  if (chosen.length === options.length) return 'Tout'
+
+  const named = chosen
+    .slice(0, SUMMARY_NAMES_MAX)
+    .map((option) => option.label)
+    .join(', ')
+
+  const rest = chosen.length - SUMMARY_NAMES_MAX
+  return rest > 0 ? `${named} +${rest}` : named
+}
+
+function NumberControl({
+  setting,
+  nature,
+}: {
+  setting: SettingDeclaration
+  nature: Narrow<'number'>
+}) {
+  // Free typing while focused; otherwise "30" would fire "3" first and jump under the cursor.
+  const [typed, setTyped] = useState<string | null>(null)
+  const min = nature.min ?? 0
+  const max = nature.max
+
+  function commit() {
+    if (typed === null) return
+    const parsed = Number.parseInt(typed, 10)
+    setTyped(null)
+    if (Number.isNaN(parsed)) return
+    const clamped = Math.max(min, max === undefined ? parsed : Math.min(max, parsed))
+    if (clamped !== setting.value) setting.onChange(clamped)
+  }
+
+  return (
+    // The field fills the column like every other control: a width of its own, fitted to
+    // the number, broke the vertical alignment the fixed anatomy is after (ADR-43).
+    <div className="flex w-full items-center gap-2">
+      <Input
+        id={setting.id}
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        disabled={setting.disabled}
+        className={cn('w-full text-right tabular-nums', followingClass(setting))}
+        value={typed ?? String(setting.value)}
+        onChange={(event) => setTyped(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur()
+        }}
+      />
+      {/* L'unite appartient a la valeur, jamais au libelle. */}
+      {nature.unit && <span className="shrink-0 text-sm text-muted-foreground">{nature.unit}</span>}
+    </div>
+  )
+}
+
+function RangeControl({
+  setting,
+  nature,
+}: {
+  setting: SettingDeclaration
+  nature: Narrow<'range'>
+}) {
+  const current = typeof setting.value === 'number' ? setting.value : nature.min
+
+  return (
+    <div className="flex w-full items-center gap-3">
+      <Slider
+        id={setting.id}
+        aria-labelledby={`${setting.id}-label`}
+        className="min-w-32 flex-1"
+        min={nature.min}
+        max={nature.max}
+        step={nature.step ?? 1}
+        disabled={setting.disabled}
+        value={[current]}
+        onValueChange={([value]) => setting.onChange(value)}
+      />
+      {/* Un curseur seul empeche de viser et de se relire. */}
+      <span className="w-16 shrink-0 text-right text-sm tabular-nums">
+        {current} {nature.unit}
+      </span>
+    </div>
+  )
+}
+
+function TextControl({ setting, nature }: { setting: SettingDeclaration; nature: Narrow<'text'> }) {
+  return (
+    <Input
+      id={setting.id}
+      className={cn('w-full', followingClass(setting))}
+      placeholder={nature.placeholder}
+      disabled={setting.disabled}
+      value={String(setting.value ?? '')}
+      onChange={(event) => setting.onChange(event.target.value)}
+    />
+  )
+}
+
+function SecretControl({
+  setting,
+  nature,
+}: {
+  setting: SettingDeclaration
+  nature: Narrow<'secret'>
+}) {
+  const [revealed, setRevealed] = useState(false)
+
+  return (
+    <div className="flex w-full items-center gap-1">
+      <Input
+        id={setting.id}
+        type={revealed ? 'text' : 'password'}
+        className="w-full"
+        placeholder={nature.placeholder}
+        disabled={setting.disabled}
+        value={String(setting.value ?? '')}
+        onChange={(event) => setting.onChange(event.target.value)}
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={revealed ? 'Masquer' : 'Afficher'}
+        onClick={() => setRevealed((previous) => !previous)}
+      >
+        {revealed ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+      </Button>
+    </div>
+  )
+}

@@ -5,14 +5,14 @@ import {
   createFakeBackendState,
   makeFakeCamera,
   makeFakeDetectionEvent,
-} from './fixtures/fakeBackend'
+} from './fixtures/fake_backend'
 
 /**
  * WCAG 2.1 A/AA scan (axe-core) of every screen, populated with real content —
  * an empty screen hides the contrast and labelling defects that only show up
  * once badges, forms and lists actually render.
  *
- * Kept separate from `socle-visual.e2e.ts`: that test proves a specific,
+ * Kept separate from `socle_visual.e2e.ts`: that test proves a specific,
  * previously-broken contrast case stays fixed (with a before/after check);
  * this one sweeps every screen for whatever axe's ruleset can catch, seeded
  * or not.
