@@ -46,6 +46,9 @@ migrate that only shrinks.
 - A screen's sub-parts live in `<screen>/components/` as dumb components: they take state and intent
   callbacks as props, and never reach the container. A context may carry view state (a filter, an
   open panel) to avoid threading props, never a use case.
+- A panel that several screens open and that calls use cases of its own (an overlay, for instance)
+  is a screen of its own: the five files in its own folder, and the screens that open it render its
+  component.
 - A settings draft (`useSettingsDraft`) is view state: the component may hold it, the presenter saves
   it.
 

@@ -5,6 +5,8 @@ import { Button } from '../ui/button'
 import { privacyBadge, privacyMissLabel } from '../privacy/privacy_status'
 import { PrivacyStateIcon } from '../privacy/privacy_state_icon'
 import { cn } from '../ui/utils'
+import { liveFrameUrl, liveWaitMessage } from './live_frame'
+import { LiveWaitVeil } from './live_wait_veil'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
 
@@ -26,9 +28,7 @@ export function CameraLiveThumbnail({
   onExpand,
   onTogglePrivacy,
 }: CameraLiveThumbnailProps) {
-  const [imgSrc, setImgSrc] = useState(
-    () => `${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`,
-  )
+  const [imgSrc, setImgSrc] = useState(() => liveFrameUrl(apiBaseUrl, camera.id))
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
@@ -45,7 +45,7 @@ export function CameraLiveThumbnail({
   useEffect(() => {
     if (!camera.privacyModeActive && camera.connected) {
       intervalRef.current = setInterval(() => {
-        setImgSrc(`${apiBaseUrl}/api/cameras/${camera.id}/live/latest.jpg?t=${Date.now()}`)
+        setImgSrc(liveFrameUrl(apiBaseUrl, camera.id))
       }, 1000)
     }
 
@@ -54,6 +54,7 @@ export function CameraLiveThumbnail({
     }
   }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
 
+  const waitMessage = liveWaitMessage(frigateStatus, imageError)
   const privacy = privacyBadge(camera)
   const missLabel = privacyMissLabel(camera)
 
@@ -102,16 +103,8 @@ export function CameraLiveThumbnail({
               onError={() => setImageError(true)}
               onLoad={() => setImageError(false)}
             />
-            {(frigateStatus === 'restarting' || imageError) && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-inverse/90">
-                <span
-                  className="size-6 animate-spin rounded-full border-2 border-surface-inverse-foreground/30 border-t-surface-inverse-foreground"
-                  aria-hidden="true"
-                />
-                <span className="text-sm text-surface-inverse-foreground">
-                  {frigateStatus === 'restarting' ? 'Redémarrage en cours…' : 'Reconnexion…'}
-                </span>
-              </div>
+            {waitMessage && (
+              <LiveWaitVeil message={waitMessage} className="bg-surface-inverse/90" />
             )}
           </>
         )}

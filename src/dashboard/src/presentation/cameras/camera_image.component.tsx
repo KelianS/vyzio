@@ -1,28 +1,32 @@
-import type { ReactNode } from 'react'
+import { useEffect, useReducer, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
+import { Overlay } from '../../common/components/overlay'
 import { useToast } from '../../common/components/toast'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { useRootStore } from '../../infrastructure/store/root.store'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraImageSettings,
   IrCutMode,
 } from '../../domain/entities/camera_image_settings.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { PtzCalibrationSection } from './ptz_calibration_section'
+import { LiveView } from '../live_view/live_view.component'
+import { PtzCalibrationSection } from './components/ptz_calibration_section'
+import { buildCameraImagePresenter } from './camera_image.presenter'
+import { cameraImageReducer } from './camera_image.reducer'
+import { buildInitialCameraImageUido } from './camera_image.uido'
 
+// Beyond the basics: offered only where writing it is confirmed (ADR-29).
 const ADJUSTMENTS = [
-  { key: 'brightness', label: 'Luminosité' },
-  { key: 'contrast', label: 'Contraste' },
-  { key: 'saturation', label: 'Saturation' },
-  { key: 'sharpness', label: 'Netteté' },
+  { key: 'brightness', label: 'Luminosité', beyondBasics: false },
+  { key: 'contrast', label: 'Contraste', beyondBasics: false },
+  { key: 'saturation', label: 'Saturation', beyondBasics: false },
+  { key: 'sharpness', label: 'Netteté', beyondBasics: true },
 ] as const
 
 const IR_CUT_OPTIONS = [
@@ -40,10 +44,40 @@ const DRAFT_LABELS: Record<keyof CameraImageSettings, string> = {
 }
 
 /** The only page carrying two subjects (image and control): splitting them in two frames duplicated the tab title. */
-export function CameraImagePage() {
+export function CameraImageView() {
   const camera = useOutletContext<Camera>()
+  const { cameras: container } = useAppContainer()
+  const { toast } = useToast()
+  const [uido, dispatch] = useReducer(cameraImageReducer, undefined, buildInitialCameraImageUido)
+  const presenter = usePresenter(buildCameraImagePresenter, { container, dispatch, toast })
+
+  const cameraId = camera.id
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
-  const pilotage = camera.ptzSupported ? <PilotageSection camera={camera} /> : null
+  const ptzSupported = camera.ptzSupported
+
+  useEffect(() => {
+    presenter.onLoad(cameraId, { imageSettings: hasImageSettings, ptz: ptzSupported })
+  }, [presenter, cameraId, hasImageSettings, ptzSupported])
+
+  const pilotage = ptzSupported ? (
+    <SettingsSection title="Pilotage" lede="Calibration et positions enregistrées.">
+      <PtzCalibrationSection
+        loading={uido.ptzLoading}
+        error={uido.ptzError}
+        calibrated={uido.calibrated}
+        currentPosition={uido.currentPosition}
+        onOpenLiveView={presenter.onOpenLiveView}
+      />
+      {uido.liveViewOpen && (
+        <Overlay
+          label={`Pilotage : ${camera.displayName}`}
+          onClose={() => presenter.onCloseLiveView(cameraId)}
+        >
+          <LiveView cameraId={cameraId} label={camera.displayName} ptzSupported />
+        </Overlay>
+      )}
+    </SettingsSection>
+  ) : null
 
   if (!hasImageSettings) {
     return (
@@ -57,72 +91,45 @@ export function CameraImagePage() {
     )
   }
 
-  return <ImageAdjustments camera={camera}>{pilotage}</ImageAdjustments>
-}
-
-function ImageAdjustments({ camera, children }: { camera: Camera; children: ReactNode }) {
-  const { cameras: container } = useAppContainer()
-  const settings = useAsync(() => container.getCameraImageSettings.execute(camera.id), [camera.id])
-  const bindings = useAsync(() => container.getCameraCapabilities.execute(camera.id), [camera.id])
-
   // Control does not depend on these settings: it stays on screen while they load, failure included.
-  if (settings.loading) return <SettingsPage>Chargement…{children}</SettingsPage>
-  if (settings.error || !settings.data) return <SettingsPage>{children}</SettingsPage>
+  if (uido.settingsLoading) return <SettingsPage>Chargement…{pilotage}</SettingsPage>
+  if (!uido.settings) return <SettingsPage>{pilotage}</SettingsPage>
 
   return (
     <ImageForm
-      camera={camera}
-      settings={settings.data}
-      // Sharpness/night vision not confirmed writable over DVRIP (ADR-29): do not offer them silently.
-      writableBeyondBasics={
-        bindings.data?.find((binding) => binding.capability === 'image_settings')?.protocol !==
-        'dvrip'
-      }
-      reload={settings.reload}
+      settings={uido.settings}
+      writableBeyondBasics={uido.writableBeyondBasics}
+      saving={uido.saving}
+      onSave={(values) => presenter.onSave(cameraId, values)}
     >
-      {children}
+      {pilotage}
     </ImageForm>
   )
 }
 
 function ImageForm({
-  camera,
   settings,
   writableBeyondBasics,
-  reload,
+  saving,
+  onSave,
   children,
 }: {
-  camera: Camera
   settings: CameraImageSettings
   writableBeyondBasics: boolean
-  reload: () => void
+  saving: boolean
+  onSave: (values: CameraImageSettings) => Promise<boolean>
   children: ReactNode
 }) {
-  const { cameras: container } = useAppContainer()
-  const { toast } = useToast()
-
   const draft = useSettingsDraft<CameraImageSettings>({ saved: settings, labels: DRAFT_LABELS })
 
   useUnsavedChanges(draft.dirty)
 
-  const saving = useAsyncAction(
-    async () => container.setCameraImageSettings.execute(camera.id, draft.values),
-    {
-      onSuccess: () => {
-        draft.accept()
-        toast('Réglages d’image enregistrés.', 'success')
-        reload()
-      },
-    },
-  )
-
   const declarations: SettingDeclaration[] = ADJUSTMENTS.filter(
-    (adjustment) => adjustment.key !== 'sharpness' || writableBeyondBasics,
+    (adjustment) => !adjustment.beyondBasics || writableBeyondBasics,
   ).map((adjustment) => ({
     id: `image-${adjustment.key}`,
     label: adjustment.label,
-    // A bounded value with a continuous meaning: a slider **and** a number, to be
-    // able to aim and to re-read oneself (ADR-43).
+    // A bounded value with a continuous meaning: a slider and a number, to aim and to re-read (ADR-43).
     nature: { kind: 'range', unit: '%', min: 0, max: 100 },
     value: draft.values[adjustment.key],
     onChange: (value) => draft.set(adjustment.key, value as number),
@@ -148,32 +155,12 @@ function ImageForm({
 
       <SettingsDraftBar
         changes={draft.changes}
-        saving={saving.loading}
-        onSave={() => void saving.run()}
+        saving={saving}
+        onSave={async () => {
+          if (await onSave(draft.values)) draft.accept()
+        }}
         onDiscard={draft.discard}
       />
     </>
-  )
-}
-
-function PilotageSection({ camera }: { camera: Camera }) {
-  const { apiBaseUrl, cameras: container } = useAppContainer()
-  const systemStats = useRootStore((s) => s.systemStats)
-
-  return (
-    <SettingsSection title="Pilotage" lede="Calibration et positions enregistrées.">
-      <PtzCalibrationSection
-        cameraId={camera.id}
-        cameraLabel={camera.displayName}
-        apiBaseUrl={apiBaseUrl}
-        frigateStatus={systemStats?.status ?? 'active'}
-        getPtzPresets={container.getPtzPresets}
-        ptzCalibrate={container.ptzCalibrate}
-        ptzStep={container.ptzStep}
-        ptzGoToPreset={container.ptzGoToPreset}
-        ptzSaveCurrentAsPreset={container.ptzSaveCurrentAsPreset}
-        capturePtzPresetThumbnail={container.capturePtzPresetThumbnail}
-      />
-    </SettingsSection>
   )
 }
