@@ -52,7 +52,7 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityB
     }
 }
 
-// Sets whether left and right are swapped for a camera that turns the other way (SPECS 9.3).
+// Sets whether left and right are swapped for a camera that turns the other way (SPECS 11).
 public sealed class SetPtzPanInvertedUseCase(ICameraCapabilityBindingRepository bindings)
 {
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, bool inverted, CancellationToken ct = default)
@@ -97,7 +97,7 @@ public sealed class PtzSavePresetUseCase(
 
         var provider = registry.ResolvePtz(binding.Protocol);
 
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
         {
             await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
             // Held by the camera under the slot's token; the row lets Vyzio know the slot is saved (ADR-57).
@@ -162,7 +162,7 @@ internal static class PtzPresetMove
         CancellationToken ct)
     {
         var cameraId = camera.Id;
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
         {
             await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
         }
@@ -233,7 +233,7 @@ public sealed class GetPtzPresetsUseCase(
         if (binding is not { Verified: true })
             return (list, true, null);
 
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
             return (list, true, null);
 
         var pos = registry.ResolvePtz(binding.Protocol).GetVirtualPosition(cameraId);
@@ -255,7 +255,7 @@ public sealed class PtzCalibrateUseCase(
 
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson)) return true; // nothing to do
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets)) return true; // nothing to do
 
         var provider = registry.ResolvePtz(binding.Protocol);
         await provider.PtzHomingStepsAsync(camera, binding, ct);
@@ -287,20 +287,5 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, I
         await cameras.UpdateAsync(camera, ct);
 
         return CameraDto.From(camera);
-    }
-}
-
-// Shared helper: reads SupportsNativePresets from binding ConfigJson (ADR-25).
-file static class PtzPresetHelper
-{
-    internal static bool SupportsNativePresets(string? configJson)
-    {
-        if (string.IsNullOrEmpty(configJson)) return false;
-        try
-        {
-            using var doc = JsonDocument.Parse(configJson);
-            return doc.RootElement.TryGetProperty("supports_native_presets", out var prop) && prop.GetBoolean();
-        }
-        catch { return false; }
     }
 }

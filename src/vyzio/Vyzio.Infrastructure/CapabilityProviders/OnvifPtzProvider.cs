@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.VendorAdapters;
@@ -55,27 +56,15 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
 
     private static void PersistNativePresetsFlag(CameraCapabilityBinding binding, bool supportsNativePresets)
     {
-        Dictionary<string, JsonElement> config;
         try
         {
-            config = string.IsNullOrEmpty(binding.ConfigJson)
-                ? []
-                : JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(binding.ConfigJson) ?? [];
+            binding.ConfigJson = BindingConfig.With(binding.ConfigJson, BindingConfig.SupportsNativePresets, supportsNativePresets);
         }
-        catch { config = []; }
-
-        using var ms = new System.IO.MemoryStream();
-        using var writer = new Utf8JsonWriter(ms);
-        writer.WriteStartObject();
-        foreach (var (key, value) in config.Where(k => k.Key != "supports_native_presets"))
+        catch (JsonException)
         {
-            writer.WritePropertyName(key);
-            value.WriteTo(writer);
+            // An unreadable config holds nothing worth keeping; the probe writes a fresh one (ADR-25).
+            binding.ConfigJson = BindingConfig.With(null, BindingConfig.SupportsNativePresets, supportsNativePresets);
         }
-        writer.WriteBoolean("supports_native_presets", supportsNativePresets);
-        writer.WriteEndObject();
-        writer.Flush();
-        binding.ConfigJson = System.Text.Encoding.UTF8.GetString(ms.ToArray());
     }
 
     public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
