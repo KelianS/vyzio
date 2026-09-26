@@ -24,6 +24,7 @@ import { PtzGoToPreset } from '../../domain/usecases/PtzGoToPreset'
 import { PtzSaveCurrentAsPreset } from '../../domain/usecases/PtzSaveCurrentAsPreset'
 import { PtzStep } from '../../domain/usecases/PtzStep'
 import { RemoveCameraCapability } from '../../domain/usecases/RemoveCameraCapability'
+import { SetPtzPanInverted } from '../../domain/usecases/SetPtzPanInverted'
 import { SaveCameraDetectionConfig } from '../../domain/usecases/SaveCameraDetectionConfig'
 import { SetCameraImageSettings } from '../../domain/usecases/SetCameraImageSettings'
 import { SetPrivacyStrategy } from '../../domain/usecases/SetPrivacyStrategy'
@@ -56,6 +57,7 @@ export interface CamerasContainer {
   configureCameraCapability: ConfigureCameraCapability
   probeCameraCapability: ProbeCameraCapability
   removeCameraCapability: RemoveCameraCapability
+  setPtzPanInverted: SetPtzPanInverted
   detectCameraCapabilities: DetectCameraCapabilities
   getCameraImageSettings: GetCameraImageSettings
   setCameraImageSettings: SetCameraImageSettings
@@ -98,6 +100,7 @@ export function makeCamerasContainer(
     configureCameraCapability: new ConfigureCameraCapability(cameraRepository),
     probeCameraCapability: new ProbeCameraCapability(cameraRepository),
     removeCameraCapability: new RemoveCameraCapability(cameraRepository),
+    setPtzPanInverted: new SetPtzPanInverted(cameraRepository),
     detectCameraCapabilities: new DetectCameraCapabilities(cameraRepository),
     getCameraImageSettings: new GetCameraImageSettings(cameraRepository),
     setCameraImageSettings: new SetCameraImageSettings(cameraRepository),

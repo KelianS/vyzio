@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text.Json;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
@@ -31,7 +32,7 @@ internal static class V380DeviceIdBootstrap
     {
         var discoveredId = client.GetCachedDeviceId(host);
         if (discoveredId.HasValue)
-            binding.ConfigJson = JsonSerializer.Serialize(new { device_id = discoveredId.Value });
+            binding.ConfigJson = BindingConfig.With(binding.ConfigJson, BindingConfig.DeviceId, discoveredId.Value);
     }
 
     public static bool TryReadDeviceId(string? configJson, out uint deviceId)

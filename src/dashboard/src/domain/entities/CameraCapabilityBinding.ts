@@ -10,4 +10,6 @@ export interface CameraCapabilityBinding {
   lastError: string | null
   isPreset: boolean
   isConfigured: boolean
+  /** Whether left and right are swapped; null for a capability that does not move (SPECS 11). */
+  panInverted: boolean | null
 }

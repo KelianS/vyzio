@@ -306,6 +306,13 @@ export class HttpCameraRepository implements CameraRepository {
     await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`)
   }
 
+  async setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding> {
+    return putJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/ptz/pan-inverted`,
+      { inverted },
+    )
+  }
+
   async detectCapabilities(cameraId: string): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
   }

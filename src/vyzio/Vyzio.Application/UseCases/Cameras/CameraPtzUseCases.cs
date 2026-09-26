@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -46,9 +45,40 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityB
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
         var provider = registry.ResolvePtz(binding.Protocol);
-        await provider.PtzStepAsync(camera, binding, direction, Math.Clamp(request.Speed, 1, 100), ct);
+        var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
+        await provider.PtzStepAsync(camera, binding, pressed, Math.Clamp(request.Speed, 1, 100), ct);
         return true;
     }
+}
+
+// Sets whether left and right are swapped for a camera that turns the other way (SPECS 11).
+public sealed class SetPtzPanInvertedUseCase(ICameraCapabilityBindingRepository bindings)
+{
+    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, bool inverted, CancellationToken ct = default)
+    {
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { } binding) return null;
+
+        binding.ConfigJson = BindingConfig.With(binding.ConfigJson, BindingConfig.PanInverted, inverted);
+        await bindings.SaveAsync(binding, ct);
+        return CameraCapabilityBindingDto.From(binding);
+    }
+}
+
+// The swap happens where the user presses, never in a provider: saved positions replay in the camera's own frame.
+internal static class PtzPanDirection
+{
+    public static bool IsInverted(string? configJson) => BindingConfig.ReadBool(configJson, BindingConfig.PanInverted);
+
+    public static PtzDirection AsPressed(PtzDirection direction, bool inverted) => !inverted ? direction : direction switch
+    {
+        PtzDirection.Left => PtzDirection.Right,
+        PtzDirection.Right => PtzDirection.Left,
+        PtzDirection.UpLeft => PtzDirection.UpRight,
+        PtzDirection.UpRight => PtzDirection.UpLeft,
+        PtzDirection.DownLeft => PtzDirection.DownRight,
+        PtzDirection.DownRight => PtzDirection.DownLeft,
+        _ => direction,
+    };
 }
 
 public sealed class PtzSavePresetUseCase(
@@ -66,7 +96,7 @@ public sealed class PtzSavePresetUseCase(
 
         var provider = registry.ResolvePtz(binding.Protocol);
 
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
         {
             await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
             // Held by the camera under the slot's token; the row lets Vyzio know the slot is saved (ADR-57).
@@ -131,7 +161,7 @@ internal static class PtzPresetMove
         CancellationToken ct)
     {
         var cameraId = camera.Id;
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
         {
             await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
         }
@@ -202,7 +232,7 @@ public sealed class GetPtzPresetsUseCase(
         if (binding is not { Verified: true })
             return (list, true, null);
 
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson))
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
             return (list, true, null);
 
         var pos = registry.ResolvePtz(binding.Protocol).GetVirtualPosition(cameraId);
@@ -224,7 +254,7 @@ public sealed class PtzCalibrateUseCase(
 
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        if (PtzPresetHelper.SupportsNativePresets(binding.ConfigJson)) return true; // nothing to do
+        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets)) return true; // nothing to do
 
         var provider = registry.ResolvePtz(binding.Protocol);
         await provider.PtzHomingStepsAsync(camera, binding, ct);
@@ -256,20 +286,5 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, I
         await cameras.UpdateAsync(camera, ct);
 
         return CameraDto.From(camera);
-    }
-}
-
-// Shared helper: reads SupportsNativePresets from binding ConfigJson (ADR-25).
-file static class PtzPresetHelper
-{
-    internal static bool SupportsNativePresets(string? configJson)
-    {
-        if (string.IsNullOrEmpty(configJson)) return false;
-        try
-        {
-            using var doc = JsonDocument.Parse(configJson);
-            return doc.RootElement.TryGetProperty("supports_native_presets", out var prop) && prop.GetBoolean();
-        }
-        catch { return false; }
     }
 }

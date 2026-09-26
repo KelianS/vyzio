@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.CapabilityProviders;
@@ -296,6 +297,42 @@ public class OnvifPtzProviderTests
         Assert.True(result);
         var bodies = await ReadBodies(requests);
         Assert.Contains(bodies, b => b.Contains("GetProfiles"));
+    }
+
+    private const string ProfileWithOnePresetXml = """
+        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+          <s:Body>
+            <trt:GetProfilesResponse xmlns:trt="http://www.onvif.org/ver10/media/wsdl">
+              <trt:Profiles token="profile_1"/>
+              <tptz:Preset xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl" token="1"/>
+            </trt:GetProfilesResponse>
+          </s:Body>
+        </s:Envelope>
+        """;
+
+    [Fact]
+    public async Task ProbeAsync_ShouldKeepThePanSwap_WhenItRecordsNativePresets()
+    {
+        var (provider, _) = MakeProvider(responseBody: ProfileWithOnePresetXml);
+        var binding = MakeBinding();
+        binding.ConfigJson = """{"pan_inverted":true}""";
+
+        await provider.ProbeAsync(MakeCamera(), binding);
+
+        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
+        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldWriteAFreshConfig_WhenTheStoredOneIsUnreadable()
+    {
+        var (provider, _) = MakeProvider(responseBody: ProfileWithOnePresetXml);
+        var binding = MakeBinding();
+        binding.ConfigJson = "not json";
+
+        await provider.ProbeAsync(MakeCamera(), binding);
+
+        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
     private static async Task<List<string>> ReadBodies(List<HttpRequestMessage> requests)
