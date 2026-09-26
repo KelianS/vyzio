@@ -8,7 +8,7 @@ import {
 } from './fixtures/fake_backend'
 
 /**
- * WCAG 2.1 A/AA scan (axe-core) of every screen, populated with real content —
+ * WCAG 2.1 A/AA scan (axe-core) of every screen, populated with real content:
  * an empty screen hides the contrast and labelling defects that only show up
  * once badges, forms and lists actually render.
  *
@@ -30,7 +30,7 @@ function describeViolations(violations: { id: string; help: string; nodes: { htm
     .join('\n\n')
 }
 
-test.describe('Accessibilite — WCAG 2.1 A/AA', () => {
+test.describe('Accessibility, WCAG 2.1 A/AA', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(
       page,
@@ -66,29 +66,29 @@ test.describe('Accessibilite — WCAG 2.1 A/AA', () => {
     )
   })
 
-  const routes: [string, string][] = [
-    ['/', 'Accueil'],
-    ['/history', 'Historique'],
-    ['/settings', 'Reglages'],
-    ['/settings/cameras', 'Cameras — liste'],
-    ['/settings/cameras/ajout', 'Cameras — ajout'],
-    ['/settings/cameras/camera-1/detection', 'Camera — detection'],
-    ['/settings/cameras/camera-1/conservation', 'Camera — conservation'],
-    ['/settings/cameras/camera-1/vie-privee', 'Camera — vie privee'],
-    ['/settings/cameras/camera-1/image', 'Camera — image'],
-    ['/settings/cameras/camera-1/connexion', 'Camera — connexion'],
-    ['/settings/conservation', 'Conservation (installation)'],
-    ['/settings/notifications', 'Notifications'],
-    ['/settings/detection/personnes', 'Personnes — liste'],
-    ['/settings/detection/personnes/ajout', 'Personnes — ajout'],
-    ['/settings/detection/personnes/profile-1/identite', 'Personne — identite'],
-    ['/settings/detection/personnes/profile-1/photos', 'Personne — photos'],
-    ['/settings/detection/personnes/profile-1/cameras', 'Personne — cameras'],
-    ['/settings/systeme', 'Systeme'],
+  const routes = [
+    '/',
+    '/history',
+    '/settings',
+    '/settings/cameras',
+    '/settings/cameras/ajout',
+    '/settings/cameras/camera-1/detection',
+    '/settings/cameras/camera-1/conservation',
+    '/settings/cameras/camera-1/vie-privee',
+    '/settings/cameras/camera-1/image',
+    '/settings/cameras/camera-1/connexion',
+    '/settings/conservation',
+    '/settings/notifications',
+    '/settings/detection/personnes',
+    '/settings/detection/personnes/ajout',
+    '/settings/detection/personnes/profile-1/identite',
+    '/settings/detection/personnes/profile-1/photos',
+    '/settings/detection/personnes/profile-1/cameras',
+    '/settings/systeme',
   ]
 
-  for (const [path, label] of routes) {
-    test(`a11y_When on ${label}_Should have no WCAG A/AA violation`, async ({ page }) => {
+  for (const path of routes) {
+    test(`Screen_ShouldPassTheWcagScan_WhenFilledWithContent (${path})`, async ({ page }) => {
       await page.goto(path)
       // Settled network, not a fixed delay: a still-loading page under-reports.
       await page.waitForLoadState('networkidle')

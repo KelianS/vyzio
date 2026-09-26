@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState } from './fixtures/fake_backend'
 
-test.describe('Personnes', () => {
+test.describe('People', () => {
   test('AddPersonView_ShouldOpenThePhotosOfThePerson_WhenTheUserAddsSomeone', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ profiles: [] }))
 

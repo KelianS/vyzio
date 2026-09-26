@@ -3,7 +3,7 @@ import { CreateCamera } from './create_camera.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('CreateCamera', () => {
-  it('delegates creation to the camera repository', async () => {
+  it('execute_ShouldCreateTheCameraThroughTheRepository_WhenCalled', async () => {
     const created = {
       id: 'camera-1',
       slug: 'front-door',

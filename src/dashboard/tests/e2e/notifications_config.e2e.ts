@@ -5,7 +5,7 @@ import {
   makeFakeChannel,
 } from './fixtures/fake_backend'
 
-test.describe('Notifications — les canaux', () => {
+test.describe('NotificationChannelView', () => {
   test('NotificationChannelView_ShouldWarnBeforeDataLeaves_WhenTheUserEnablesAChannel', async ({
     page,
   }) => {

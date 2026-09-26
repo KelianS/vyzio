@@ -47,8 +47,8 @@ async function contrastOf(locator: Locator): Promise<number> {
  * lost silently: nothing breaks, everything just starts looking like a bare page. This
  * test holds it.
  */
-test.describe('Socle — typographie et surfaces', () => {
-  test('socle_When Tailwind preflight is active_Should keep headings, controls and surfaces', async ({
+test.describe('Base styles', () => {
+  test('BaseStyles_ShouldKeepHeadingsControlsAndSurfaces_WhenTailwindPreflightIsActive', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))

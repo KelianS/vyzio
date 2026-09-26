@@ -3,7 +3,7 @@ import { UpdateCamera } from './update_camera.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('UpdateCamera', () => {
-  it('updates a configured camera through the repository', async () => {
+  it('execute_ShouldUpdateTheCameraThroughTheRepository_WhenCalled', async () => {
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),

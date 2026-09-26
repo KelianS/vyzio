@@ -5,7 +5,7 @@ import {
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
-test.describe('Historique — filtres', () => {
+test.describe('DetectionHistoryView filters', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(
       page,
@@ -27,7 +27,7 @@ test.describe('Historique — filtres', () => {
     await page.getByRole('button', { name: 'Filtrer' }).click()
   })
 
-  test('user_When filtering by detection type_Should narrow the list', async ({ page }) => {
+  test('DetectionHistoryView_ShouldNarrowTheList_WhenTheUserFiltersByType', async ({ page }) => {
     await expect(page.getByText(/front door/)).toBeVisible()
     await expect(page.getByText(/garage/)).toBeVisible()
 
@@ -38,15 +38,13 @@ test.describe('Historique — filtres', () => {
     await expect(page.getByText(/front door/)).toHaveCount(0)
   })
 
-  test('user_When a filter matches nothing_Should be told the filters are the reason', async ({
-    page,
-  }) => {
+  test('DetectionHistoryView_ShouldBlameTheFilters_WhenTheyMatchNothing', async ({ page }) => {
     await page.getByLabel('Caméra').fill('cave')
 
     await expect(page.getByText('Aucune détection avec ces filtres.')).toBeVisible()
   })
 
-  test('user_When a filter is active_Should be offered a way back to everything', async ({
+  test('DetectionHistoryView_ShouldOfferAWayBackToEverything_WhenAFilterIsActive', async ({
     page,
   }) => {
     // Nothing to reset as long as nothing is filtered.

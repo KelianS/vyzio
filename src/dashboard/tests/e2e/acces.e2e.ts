@@ -6,8 +6,8 @@ import { installFakeBackend, createFakeBackendState, FAKE_PASSWORD } from './fix
  * they say is the only help available at that moment.
  */
 
-test.describe('Première ouverture', () => {
-  test('user_When the install has no password yet_Should be asked to choose one before anything else', async ({
+test.describe('First opening', () => {
+  test('AccessGate_ShouldAskForAPasswordBeforeAnythingElse_WhenTheInstallationHasNone', async ({
     page,
   }) => {
     const state = createFakeBackendState({ access: { installed: false, signedIn: false } })
@@ -25,7 +25,7 @@ test.describe('Première ouverture', () => {
     await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
   })
 
-  test('user_When the chosen password is too short_Should be told before submitting it', async ({
+  test('AccessGate_ShouldSayTheMinimumAndWithholdSubmit_WhenTheChosenPasswordIsTooShort', async ({
     page,
   }) => {
     await installFakeBackend(
@@ -41,8 +41,8 @@ test.describe('Première ouverture', () => {
   })
 })
 
-test.describe('Connexion', () => {
-  test('user_When the password is wrong_Should be told next to the field, and able to try again', async ({
+test.describe('Sign-in', () => {
+  test('AccessGate_ShouldSayItBesideTheFieldAndLetTheUserRetry_WhenThePasswordIsWrong', async ({
     page,
   }) => {
     await installFakeBackend(
@@ -66,8 +66,8 @@ test.describe('Connexion', () => {
   })
 })
 
-test.describe('Changer son mot de passe', () => {
-  test('user_When the current password is wrong_Should be refused without losing the session', async ({
+test.describe('Password change', () => {
+  test('AccessView_ShouldRefuseAndKeepTheSession_WhenTheCurrentPasswordIsWrong', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())
@@ -82,9 +82,7 @@ test.describe('Changer son mot de passe', () => {
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toHaveCount(0)
   })
 
-  test('user_When the password is changed_Should be the new one that unlocks afterwards', async ({
-    page,
-  }) => {
+  test('AccessView_ShouldLetOnlyTheNewPasswordUnlock_WhenThePasswordChanges', async ({ page }) => {
     const state = createFakeBackendState()
     await installFakeBackend(page, state)
 
@@ -109,8 +107,8 @@ test.describe('Changer son mot de passe', () => {
   })
 })
 
-test.describe('Mot de passe oublie', () => {
-  test('user_When the host removed the password_Should be asked for a new one and told nothing was lost', async ({
+test.describe('Forgotten password', () => {
+  test('AccessGate_ShouldAskForANewPasswordAndSayNothingWasLost_WhenTheHostRemovedIt', async ({
     page,
   }) => {
     await installFakeBackend(
@@ -135,10 +133,8 @@ test.describe('Mot de passe oublie', () => {
   })
 })
 
-test.describe('Fin de session', () => {
-  test('user_When the session ends while a screen is open_Should be brought back and told so', async ({
-    page,
-  }) => {
+test.describe('Session end', () => {
+  test('AccessGate_ShouldLockAndSaySo_WhenTheSessionEndsWhileAScreenIsOpen', async ({ page }) => {
     const state = createFakeBackendState()
     await installFakeBackend(page, state)
 
@@ -149,7 +145,7 @@ test.describe('Fin de session', () => {
     state.access = { ...state.access, signedIn: false }
 
     // Nothing is clicked on purpose: the status poll notices within its own interval, which is the
-    // stronger promise — the screen does not wait for the user to walk into a closed door.
+    // stronger promise: the screen does not wait for the user to walk into a closed door.
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible({
       timeout: 12_000,
     })
@@ -157,9 +153,7 @@ test.describe('Fin de session', () => {
     await expect(page.getByText('Votre session a pris fin.')).toBeVisible()
   })
 
-  test('user_When signing out from the settings_Should land back on the locked screen', async ({
-    page,
-  }) => {
+  test('AccessView_ShouldLeadBackToTheLockedScreen_WhenTheUserSignsOut', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
 
     await page.goto('/settings/acces')
@@ -168,7 +162,7 @@ test.describe('Fin de session', () => {
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
   })
 
-  test('user_When cutting off every device_Should confirm first, then be locked out too', async ({
+  test('AccessView_ShouldConfirmThenLockThisDeviceToo_WhenTheUserSignsOutEveryDevice', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())

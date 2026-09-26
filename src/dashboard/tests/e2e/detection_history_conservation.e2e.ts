@@ -13,8 +13,8 @@ import {
 const anHourBefore = (moment: Date, hours: number) =>
   new Date(moment.getTime() - hours * 3_600_000).toISOString()
 
-test.describe('Historique — conservation', () => {
-  test('user_When a detection is older than what is kept_Should be told, not shown a broken image', async ({
+test.describe('DetectionHistoryView retention', () => {
+  test('DetectionHistoryView_ShouldSayTheMediaIsErased_WhenTheDetectionIsPastRetention', async ({
     page,
   }) => {
     await installFakeBackend(
@@ -38,7 +38,7 @@ test.describe('Historique — conservation', () => {
     await expect(page.getByRole('button', { name: 'Vidéo' })).toHaveCount(0)
   })
 
-  test('user_When a detection is still kept_Should be able to open its preview', async ({
+  test('DetectionHistoryView_ShouldOfferThePreviewAndVideo_WhenTheDetectionIsStillKept', async ({
     page,
   }) => {
     await installFakeBackend(
@@ -55,8 +55,8 @@ test.describe('Historique — conservation', () => {
   })
 })
 
-test.describe('Historique — remonter le temps', () => {
-  test('user_When more detections remain_Should reach the older ones without a page number', async ({
+test.describe('DetectionHistoryView older pages', () => {
+  test('DetectionHistoryView_ShouldAddTheOlderDetections_WhenTheUserAsksForMore', async ({
     page,
   }) => {
     const now = new Date()
@@ -83,7 +83,7 @@ test.describe('Historique — remonter le temps', () => {
     await expect(page.getByRole('button', { name: 'Voir plus ancien' })).toHaveCount(0)
   })
 
-  test('user_When the whole history fits on one page_Should not be offered more', async ({
+  test('DetectionHistoryView_ShouldNotOfferMore_WhenTheWholeHistoryFitsOnOnePage', async ({
     page,
   }) => {
     await installFakeBackend(

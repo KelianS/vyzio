@@ -18,7 +18,7 @@ const event: DetectionEvent = {
 }
 
 describe('DetectionList', () => {
-  it('affiche le recadrage dans la tuile et ouvre le plan large', () => {
+  it('DetectionList_ShouldShowTheCropAndOpenTheWideShot_WhenTheUserOpensThePreview', () => {
     const onOpenMedia = vi.fn()
     render(<DetectionList events={[event]} apiBaseUrl="http://api" onOpenMedia={onOpenMedia} />)
 
@@ -35,7 +35,7 @@ describe('DetectionList', () => {
     )
   })
 
-  it('dit qu’un média expiré est effacé, sans rien à cliquer', () => {
+  it('DetectionList_ShouldSayTheMediaIsErasedWithNothingToClick_WhenItExpired', () => {
     const expired = { ...event, hasClip: true, mediaExpired: true }
     render(<DetectionList events={[expired]} apiBaseUrl="http://api" onOpenMedia={vi.fn()} />)
 
