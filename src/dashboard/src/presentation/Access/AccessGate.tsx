@@ -4,7 +4,6 @@ import { useAsync } from '../../common/hooks/useAsync'
 import { useAsyncAction } from '../../common/hooks/useAsyncAction'
 import { ErrorMessage } from '../../common/components/ErrorMessage'
 import { useAppContainer } from '../../infrastructure/providers/AppContainerContext'
-import { onSessionLost } from '../../infrastructure/http/sessionLost'
 import { PasswordScreen } from './PasswordScreen'
 
 /**
@@ -28,7 +27,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
   }, [reload])
 
   // A session can end while a screen is open: the answer lands on whichever call happens next.
-  useEffect(() => onSessionLost(() => setExpired(true)), [])
+  useEffect(() => access.onSessionLost(() => setExpired(true)), [access])
 
   if (gate.loading) return null
 
