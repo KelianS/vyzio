@@ -11,17 +11,16 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 const INFRASTRUCTURE_ENTRY_POINTS = ['providers/**', 'store/**']
 
 // What only a presenter may call: the container, and the hooks that call a use case from a view.
-const USE_CASE_ACCESS = [
-  {
-    group: ['**/infrastructure/providers/AppContainerContext'],
-    message:
-      'Only a presenter calls a use case: build one in the screen component, pass it the container.',
-  },
-  {
-    group: ['**/common/hooks/useAsync', '**/common/hooks/useAsyncAction'],
-    message: 'A use case is called from the screen presenter, not from the view.',
-  },
-]
+const CONTAINER_ACCESS = {
+  group: ['**/infrastructure/providers/AppContainerContext'],
+  message:
+    'Only a presenter calls a use case: build one in the screen component, pass it the container.',
+}
+const USE_CASE_HOOKS = {
+  group: ['**/common/hooks/useAsync', '**/common/hooks/useAsyncAction'],
+  message: 'A use case is called from the screen presenter, not from the view.',
+}
+const USE_CASE_ACCESS = [CONTAINER_ACCESS, USE_CASE_HOOKS]
 
 // Files that still call use cases from the view. This list only shrinks: each screen migration removes its files.
 const PRESENTER_RULE_BACKLOG = [
@@ -199,7 +198,7 @@ export default defineConfig([
     files: ['src/presentation/*/*.Component.tsx', 'src/presentation/*/*.component.tsx'],
     ignores: PRESENTER_RULE_BACKLOG,
     rules: {
-      'no-restricted-imports': ['error', { patterns: [USE_CASE_ACCESS[1]] }],
+      'no-restricted-imports': ['error', { patterns: [USE_CASE_HOOKS] }],
     },
   },
   {
