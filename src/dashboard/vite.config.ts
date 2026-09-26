@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       setupFiles: ['./src/test_setup.ts'],
+      // A test that fakes the network hands the real `fetch` back when it ends.
+      unstubGlobals: true,
       coverage: {
         provider: 'v8',
         reporter: ['text-summary', 'cobertura', 'lcov'],
@@ -41,7 +43,7 @@ export default defineConfig(({ mode }) => {
           'src/domain/ports/**', // interfaces only, erased at build
         ],
         // A floor that only rises: each screen migration lifts it to what it reached, up to 80%.
-        thresholds: { statements: 27, branches: 23, functions: 25, lines: 27 },
+        thresholds: { statements: 42, branches: 43, functions: 39, lines: 43 },
       },
     },
   }
