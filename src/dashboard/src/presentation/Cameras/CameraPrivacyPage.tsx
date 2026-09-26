@@ -88,7 +88,7 @@ export function CameraPrivacyPage() {
               ne se défait qu’à la main.
             </p>
             <p>
-              Une plage peut passer minuit : 22:00–06:00 commence le soir des jours choisis et se
+              Une plage peut passer minuit : 22:00 → 06:00 commence le soir des jours choisis et se
               termine le lendemain à 06:00.
             </p>
             <p>
