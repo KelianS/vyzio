@@ -116,9 +116,9 @@ jobs:
       # trust and to pin, on a job that writes to the pull request.
       - name: Read both reports
         id: rates
+        # The frontend floor is `thresholds` in vite.config.ts; coverlet has none, so the backend's is here.
         env:
-          BACKEND_FLOOR: 64
-          FRONTEND_FLOOR: 15
+          BACKEND_FLOOR: 70
         run: |
           set -euo pipefail
           cp "$(find backend-coverage -name 'coverage.cobertura.xml' -print -quit)" backend.xml
@@ -129,21 +129,18 @@ jobs:
             grep -m1 -o "$2=\"[0-9.]*\"" "$1" | tr -dc '0-9.' |
               awk '{ printf "%.1f", $1 * 100 }'
           }
-          below=''
-          under() { awk -v p="$1" -v f="$2" 'BEGIN { exit !(p < f) }'; }
-          under "$(rate backend.xml line-rate)" "$BACKEND_FLOOR" && below="$below backend"
-          under "$(rate frontend.xml line-rate)" "$FRONTEND_FLOOR" && below="$below frontend"
+          below=$(awk -v p="$(rate backend.xml line-rate)" -v f="$BACKEND_FLOOR"             'BEGIN { print (p < f) ? "true" : "" }')
           {
             echo '### Coverage'
             echo
-            echo '| | Lines | Floor | Branches |'
-            echo '|---|---:|---:|---:|'
-            echo "| Backend | $(rate backend.xml line-rate)% | $BACKEND_FLOOR% | $(rate backend.xml branch-rate)% |"
-            echo "| Frontend | $(rate frontend.xml line-rate)% | $FRONTEND_FLOOR% | $(rate frontend.xml branch-rate)% |"
+            echo '| | Lines | Branches |'
+            echo '|---|---:|---:|'
+            echo "| Backend | $(rate backend.xml line-rate)% | $(rate backend.xml branch-rate)% |"
+            echo "| Frontend | $(rate frontend.xml line-rate)% | $(rate frontend.xml branch-rate)% |"
             echo
             echo 'EF Core migrations and type-only files are out of the denominator. Everything that'
             echo 'emits runtime code is in it, tested or not.'
-            if [ -n "$below" ]; then echo; echo "**Under its floor:$below.** See CONTRIBUTING.md, Coverage."; fi
+            if [ -n "$below" ]; then echo; echo '**Backend under its floor.** See CONTRIBUTING.md, Coverage.'; fi
           } > coverage.md
           cat coverage.md >> "$GITHUB_STEP_SUMMARY"
           echo "below=$below" >> "$GITHUB_OUTPUT"
@@ -188,11 +185,11 @@ jobs:
               commit -qm "chore(ci): coverage badges for ${GITHUB_SHA}"
           git -C "$work" push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" badges
 
-      # Last, so the comment and the badges still say what the rates are when a floor fails.
-      - name: Enforce the coverage floors
+      # Last, so the comment and the badges still say what the rates are when the floor fails.
+      - name: Enforce the backend coverage floor
         if: steps.rates.outputs.below != ''
         run: |
-          echo "::error::Line coverage under its floor:${{ steps.rates.outputs.below }} (floors in the Read both reports step)"
+          echo "::error::Backend line coverage under its floor (BACKEND_FLOOR in the Read both reports step)"
           exit 1
 
   docker-build-check:
