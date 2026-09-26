@@ -8,8 +8,8 @@ import {
   useAppContainer,
 } from './infrastructure/providers/app_container.context'
 import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/settings/settings.rubrics'
-import { RestartSurveillanceTrigger } from './presentation/surveillance/restart_surveillance_trigger'
-import { NavigationGuard } from './presentation/navigation/navigation_guard'
+import { RestartSurveillanceTrigger } from './presentation/surveillance/restart_surveillance_trigger.component'
+import { NavigationGuard } from './presentation/navigation/navigation_guard.component'
 import { AccessGate } from './presentation/access/access_gate'
 import {
   useCameraListFailureToast,

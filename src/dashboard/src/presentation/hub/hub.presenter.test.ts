@@ -6,6 +6,7 @@ import { buildHubPresenter } from './hub.presenter'
 
 describe('buildHubPresenter', () => {
   it('onTogglePrivacy_ShouldReloadTheCamerasAndReportTheFailure_WhenTheBatchFails', async () => {
+    // Arrange
     const getCameras = { execute: vi.fn().mockResolvedValue([]) }
     const camerasContainer = {
       getCameras,
@@ -31,12 +32,14 @@ describe('buildHubPresenter', () => {
       toast,
     })
 
+    // Act
     await presenter.onTogglePrivacy({
       cameraIds: ['cam1', 'cam2'],
       active: false,
       cameraLabel: null,
     })
 
+    // Assert
     expect(getCameras.execute).toHaveBeenCalled()
     expect(dispatch).toHaveBeenCalledWith({ type: 'PRIVACY_TOGGLE_FAILED' })
     expect(toast).toHaveBeenCalledWith(expect.any(String), 'error', expect.any(String))

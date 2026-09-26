@@ -64,7 +64,8 @@ migrate that only shrinks.
   `// Assert`, merged as `// Arrange & Act` when the setup is the action. E2E tests read top to bottom
   instead.
 - **Every screen has `<screen>.integration.test.tsx`**: the real view in a real container, faking only
-  the network, including one failure path that asserts the sentence the user reads.
+  the network, including one failure path that asserts the sentence the user reads. `renderScreen`
+  and `fakeNetwork` in `src/testing/` do the mounting and the faking.
 - Unit tests go where a decision lives: reducers, validations, a formatter or mapper with a branch.
   Declarative code (action creators, uido, containers) gets none.
 - No logic in a test (no loop, no condition, no computed expectation): `it.each` for one assertion over
