@@ -3,7 +3,7 @@ import { GetHubOverview } from './get_hub_overview.use_case'
 import type { HubRepository } from '../ports/hub.port'
 
 describe('GetHubOverview', () => {
-  it('delegates overview loading to the hub repository', async () => {
+  it('execute_ShouldLoadTheOverviewFromTheRepository_WhenCalled', async () => {
     const overview = {
       systemHealthy: true,
       recentEvents: [],

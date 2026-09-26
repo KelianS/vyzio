@@ -6,8 +6,8 @@ import { HelpPanel } from './help_panel'
  * These tests cover the ADR-53 decision: the third level of help is **folded by default**,
  * and it only opens by itself where the task is not done yet.
  */
-describe('Panneau « En savoir plus » — troisieme niveau d’aide', () => {
-  it('panel_When nothing says otherwise_Should stay folded', () => {
+describe('HelpPanel', () => {
+  it('HelpPanel_ShouldStayFolded_WhenNothingSaysOtherwise', () => {
     render(
       <HelpPanel title="Où trouver ces informations ?">
         <p>Écrivez à BotFather.</p>
@@ -20,7 +20,7 @@ describe('Panneau « En savoir plus » — troisieme niveau d’aide', () => {
     expect(screen.getByText('Écrivez à BotFather.')).not.toBeVisible()
   })
 
-  it('panel_When the task it explains is not done_Should open by itself', () => {
+  it('HelpPanel_ShouldOpenByItself_WhenTheTaskItExplainsIsNotDone', () => {
     render(
       <HelpPanel title="Où trouver ces informations ?" defaultOpen>
         <p>Écrivez à BotFather.</p>

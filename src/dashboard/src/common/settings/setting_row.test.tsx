@@ -27,14 +27,14 @@ function declare(overrides: Partial<SettingDeclaration>): SettingDeclaration {
  * the value determines the control, and the author of a screen has no hold on it.
  * If one of them turns false, it is the grammar that drifted.
  */
-describe('Grammaire des réglages — le contrôle se déduit de la nature', () => {
-  it('toggle_When declared_Should render a switch', () => {
+describe('SettingRow control', () => {
+  it('SettingRow_ShouldRenderASwitch_WhenTheNatureIsToggle', () => {
     render(<SettingRow setting={declare({ nature: { kind: 'toggle' }, value: true })} />)
     expect(screen.getByRole('switch')).toBeChecked()
   })
 
   it.each([2, 4, 9])(
-    'choice_When exclusive with %i options_Should always be a dropdown',
+    'SettingRow_ShouldRenderADropdown_WhenTheChoiceIsExclusive (%i options)',
     (count) => {
       // A segmented control with long labels overflows and breaks the shared control
       // column, which is precisely what makes a page scannable.
@@ -47,7 +47,7 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
     },
   )
 
-  it('multiChoice_When at rest_Should summarise the state on a single line', async () => {
+  it('SettingRow_ShouldSummariseTheStateOnOneLine_WhenAMultiChoiceIsAtRest', async () => {
     // A setting reads at rest: a list of boxes shows the options, never the state -
     // and it eats the height of the page on the way.
     render(
@@ -70,16 +70,19 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
   it.each([
     { value: [] as string[], summary: 'Aucune sélection' },
     { value: options(3).map((option) => option.value), summary: 'Tout' },
-  ])('multiChoice_When $summary_Should say so rather than count', ({ value, summary }) => {
-    render(
-      <SettingRow
-        setting={declare({ nature: { kind: 'multiChoice', options: options(3) }, value })}
-      />,
-    )
-    expect(screen.getByRole('combobox')).toHaveTextContent(summary)
-  })
+  ])(
+    'SettingRow_ShouldSaySoRatherThanCount_WhenAMultiChoiceHoldsNoneOrAll ($summary)',
+    ({ value, summary }) => {
+      render(
+        <SettingRow
+          setting={declare({ nature: { kind: 'multiChoice', options: options(3) }, value })}
+        />,
+      )
+      expect(screen.getByRole('combobox')).toHaveTextContent(summary)
+    },
+  )
 
-  it('multiChoice_When more than seven options_Should offer a filter inside the panel', async () => {
+  it('SettingRow_ShouldOfferAFilterInThePanel_WhenAMultiChoiceHasMoreThanSevenOptions', async () => {
     render(
       <SettingRow
         setting={declare({ nature: { kind: 'multiChoice', options: options(8) }, value: [] })}
@@ -92,7 +95,7 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
     expect(screen.getAllByRole('checkbox')).toHaveLength(1)
   })
 
-  it('number_When given a unit_Should place it beside the control, never in the label', () => {
+  it('SettingRow_ShouldPlaceTheUnitBesideTheControl_WhenANumberHasAUnit', () => {
     render(
       <SettingRow
         setting={declare({
@@ -109,8 +112,8 @@ describe('Grammaire des réglages — le contrôle se déduit de la nature', () 
   })
 })
 
-describe('Grammaire des réglages — anatomie de la ligne', () => {
-  it('help_When declared_Should stay behind an explicit trigger rather than take up room', async () => {
+describe('SettingRow anatomy', () => {
+  it('SettingRow_ShouldKeepTheHelpBehindATrigger_WhenHelpIsDeclared', async () => {
     render(<SettingRow setting={declare({ help: 'Explication longue.' })} />)
 
     expect(screen.queryByText('Explication longue.')).not.toBeInTheDocument()
@@ -119,12 +122,12 @@ describe('Grammaire des réglages — anatomie de la ligne', () => {
     expect(await screen.findByText('Explication longue.')).toBeInTheDocument()
   })
 
-  it('consequence_When declared_Should stay visible with no gesture, unlike help', () => {
+  it('SettingRow_ShouldShowTheConsequenceWithNoGesture_WhenOneIsDeclared', () => {
     render(<SettingRow setting={declare({ consequence: 'Compter 1 à 3 Go par jour.' })} />)
     expect(screen.getByText('Compter 1 à 3 Go par jour.')).toBeInTheDocument()
   })
 
-  it('provenance_When the value is inherited_Should offer nothing to undo', () => {
+  it('SettingRow_ShouldOfferNothingToUndo_WhenTheValueIsInherited', () => {
     render(
       <SettingRow
         setting={declare({
@@ -146,7 +149,7 @@ describe('Grammaire des réglages — anatomie de la ligne', () => {
     expect(screen.getByRole('spinbutton').className).toContain('text-muted-foreground')
   })
 
-  it('provenance_When the value is the level’s own_Should name what the undo restores', async () => {
+  it('SettingRow_ShouldNameWhatTheUndoRestores_WhenTheValueIsTheLevelsOwn', async () => {
     const onRevert = vi.fn()
     render(
       <SettingRow
@@ -174,8 +177,8 @@ describe('Grammaire des réglages — anatomie de la ligne', () => {
   })
 })
 
-describe('Grammaire des réglages — saisie numérique', () => {
-  it('number_When typing_Should only commit on leaving the field', async () => {
+describe('SettingRow number entry', () => {
+  it('SettingRow_ShouldCommitOnlyOnLeavingTheField_WhenTheUserTypesANumber', async () => {
     const onChange = vi.fn()
     render(
       <SettingRow
@@ -192,7 +195,7 @@ describe('Grammaire des réglages — saisie numérique', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith(30)
   })
 
-  it('number_When the typed value exceeds the maximum_Should clamp it', async () => {
+  it('SettingRow_ShouldClampTheNumber_WhenTheTypedValueExceedsTheMaximum', async () => {
     const onChange = vi.fn()
     render(
       <SettingRow
@@ -212,7 +215,7 @@ describe('Grammaire des réglages — saisie numérique', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith(365)
   })
 
-  it('number_When the value is unchanged_Should not fire a save', async () => {
+  it('SettingRow_ShouldNotSave_WhenTheNumberIsUnchanged', async () => {
     const onChange = vi.fn()
     render(
       <SettingRow

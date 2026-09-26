@@ -17,7 +17,7 @@ const CAMERA_TABS = [
   ['connexion', 'Connexion'],
 ] as const
 
-test.describe('Hiérarchie — une page se nomme une fois', () => {
+test.describe('A page is named once', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(
       page,
@@ -28,7 +28,7 @@ test.describe('Hiérarchie — une page se nomme une fois', () => {
   })
 
   for (const [slug, label] of CAMERA_TABS) {
-    test(`camera_When opening the ${slug} tab_Should not repeat the tab name as a heading`, async ({
+    test(`CamerasView_ShouldNotRepeatTheTabNameAsAHeading_WhenTheTabOpens (${slug})`, async ({
       page,
     }) => {
       await page.goto(`/settings/cameras/camera-1/${slug}`)
@@ -43,7 +43,7 @@ test.describe('Hiérarchie — une page se nomme une fois', () => {
     })
   }
 
-  test('camera_When opening a camera_Should be named by the camera, not by its rubric', async ({
+  test('CamerasView_ShouldBeNamedByTheCameraWithOneBackLink_WhenACameraOpensOnAPhone', async ({
     page,
   }) => {
     // On a small screen the section menu goes away: all that is left are the
@@ -60,9 +60,7 @@ test.describe('Hiérarchie — une page se nomme une fois', () => {
     await expect(page.getByRole('link', { name: 'Réglages', exact: true })).toHaveCount(1)
   })
 
-  test('rubric_When opening a rubric page on a phone_Should still be named once', async ({
-    page,
-  }) => {
+  test('SettingsView_ShouldNameTheRubricOnce_WhenItOpensOnAPhone', async ({ page }) => {
     // The section menu gives way to the page: without this title, the screen
     // would have nothing left to name itself.
     await page.setViewportSize({ width: 390, height: 844 })

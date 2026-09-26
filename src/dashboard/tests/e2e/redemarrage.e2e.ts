@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 // Restarting is the user's act (ADR-44): saving interrupts nothing, and the question is only asked on the way out.
-test.describe('Redémarrage de la surveillance', () => {
+test.describe('Surveillance restart', () => {
   const trigger = (name = /Appliquer les changements/) => ({ name })
 
-  test('user_When nothing was changed_Should not be offered a restart at all', async ({ page }) => {
+  test('RestartSurveillanceTrigger_ShouldStayHidden_WhenNothingChanged', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/conservation')
 
@@ -13,7 +13,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(page.getByRole('button', trigger())).toHaveCount(0)
   })
 
-  test('user_When saving a setting_Should be offered a restart, without anything being interrupted', async ({
+  test('RestartSurveillanceTrigger_ShouldAppearWithoutInterrupting_WhenTheUserSavesASetting', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -30,7 +30,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(page.getByRole('button', trigger())).toBeVisible()
   })
 
-  test('user_When restarting from the header_Should confirm, then see the wait clear', async ({
+  test('RestartSurveillanceTrigger_ShouldConfirmThenClear_WhenTheUserRestarts', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -48,7 +48,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(page.getByRole('button', trigger())).toHaveCount(0)
   })
 
-  test('user_When the restart fails_Should keep saying so instead of forgetting it', async ({
+  test('RestartSurveillanceTrigger_ShouldKeepSayingItFailed_WhenTheRestartFails', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -73,7 +73,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(failed).toBeVisible()
   })
 
-  test('user_ShouldSeeWhatSupportNeedsUnderTheSentence_WhenTheServerBreaksOnTheRestart', async ({
+  test('RestartSurveillanceTrigger_ShouldShowWhatSupportNeeds_WhenTheServerBreaksOnTheRestart', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -93,7 +93,7 @@ test.describe('Redémarrage de la surveillance', () => {
     await expect(dialog).toContainText('trace 00-e2e-01')
   })
 
-  test('user_When moving between two settings pages_Should not be asked anything', async ({
+  test('NavigationGuard_ShouldAskNothing_WhenTheUserMovesBetweenSettingsPages', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -112,7 +112,7 @@ test.describe('Redémarrage de la surveillance', () => {
     ['/settings/conservation', 'a settings page'],
     ['/settings/cameras/camera-1/detection', 'a camera page'],
   ]) {
-    test(`user_When leaving the settings from ${where}_Should be asked, and let through either way`, async ({
+    test(`NavigationGuard_ShouldAskAndLetThroughEitherWay_WhenTheUserLeavesTheSettings (${where})`, async ({
       page,
     }) => {
       const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -133,7 +133,7 @@ test.describe('Redémarrage de la surveillance', () => {
     })
   }
 
-  test('user_When a page has unsaved edits_Should be asked about those first', async ({ page }) => {
+  test('NavigationGuard_ShouldAskAboutUnsavedEditsFirst_WhenAPageHasSome', async ({ page }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.pendingChanges = true
     await installFakeBackend(page, state)

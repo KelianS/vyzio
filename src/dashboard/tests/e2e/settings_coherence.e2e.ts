@@ -10,17 +10,17 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
  * human read-through.
  */
 
-const SETTINGS_ROUTES: [string, string][] = [
-  ['/settings/cameras/camera-1/detection', 'Camera — detection'],
-  ['/settings/cameras/camera-1/conservation', 'Camera — conservation'],
-  ['/settings/cameras/camera-1/vie-privee', 'Camera — vie privee'],
-  ['/settings/cameras/camera-1/image', 'Camera — image'],
-  ['/settings/cameras/camera-1/connexion', 'Camera — connexion'],
-  ['/settings/conservation', 'Conservation (installation)'],
+const SETTINGS_ROUTES = [
+  '/settings/cameras/camera-1/detection',
+  '/settings/cameras/camera-1/conservation',
+  '/settings/cameras/camera-1/vie-privee',
+  '/settings/cameras/camera-1/image',
+  '/settings/cameras/camera-1/connexion',
+  '/settings/conservation',
   // The settings are in the channel, not in the list leading to it.
-  ['/settings/notifications/telegram', 'Notifications — Telegram'],
-  ['/settings/notifications/discord', 'Notifications — Discord'],
-  ['/settings/detection/personnes/profile-1/identite', 'Personne — identite'],
+  '/settings/notifications/telegram',
+  '/settings/notifications/discord',
+  '/settings/detection/personnes/profile-1/identite',
 ]
 
 interface FieldMeasure {
@@ -90,36 +90,34 @@ function seedBackend(page: Page) {
   )
 }
 
-test.describe('Coherence des ecrans de reglages', () => {
+test.describe('Settings screens coherence', () => {
   test.beforeEach(async ({ page }) => {
     await seedBackend(page)
     await page.setViewportSize({ width: 1280, height: 900 })
   })
 
-  test('colonne_When a field renders on any screen_Should fill its control column', async ({
-    page,
-  }) => {
+  test('SettingRow_ShouldFillItsControlColumn_WhenRenderedOnAnyScreen', async ({ page }) => {
     // A field that does not fill its column breaks the vertical alignment of the values,
     // and the page stops being scannable - which is what the fixed anatomy aimed at (ADR-43).
-    for (const [path, label] of SETTINGS_ROUTES) {
+    for (const path of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 
       const measures = await fieldMeasures(page)
-      expect(measures.length, `${label} ne declare aucun reglage`).toBeGreaterThan(0)
+      expect(measures.length, `${path} declares no setting`).toBeGreaterThan(0)
 
       // 2px of tolerance: sub-pixel rounding, not lost space.
       const short = measures.filter((field) => field.column - field.filled > 2)
-      expect(short, `${label} : champs plus courts que leur colonne`).toEqual([])
+      expect(short, `${path}: fields shorter than their column`).toEqual([])
     }
   })
 
-  test('hierarchie_When a page groups its settings_Should set section titles apart from labels', async ({
+  test('SettingsSection_ShouldSetItsTitleApartFromLabels_WhenAPageGroupsItsSettings', async ({
     page,
   }) => {
     // A section title and a setting label rendered alike make a page where everything
     // sits at the same level: the sections then separate nothing.
-    for (const [path, label] of SETTINGS_ROUTES) {
+    for (const path of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 
@@ -138,24 +136,19 @@ test.describe('Coherence des ecrans de reglages', () => {
 
       const biggestLabel = Math.max(...labels.map((entry) => entry.size))
       for (const title of titles) {
-        expect(title.serif, `${label} : « ${title.text} » n'est pas dans le serif des titres`).toBe(
-          true,
-        )
+        expect(title.serif, `${path}: "${title.text}" is not in the heading serif`).toBe(true)
         expect(
           title.size,
-          `${label} : « ${title.text} » a la taille d'un libelle de reglage`,
+          `${path}: "${title.text}" is the size of a setting label`,
         ).toBeGreaterThan(biggestLabel)
       }
     }
   })
 
-  const FOLD_ROUTES: [string, string][] = [
-    ['/settings/systeme', 'Systeme'],
-    ['/settings/detection/personnes/profile-1/photos', 'Personne — photos'],
-  ]
+  const FOLD_ROUTES = ['/settings/systeme', '/settings/detection/personnes/profile-1/photos']
 
-  for (const [path, label] of FOLD_ROUTES) {
-    test(`repli_When "Avance" appears on ${label}_Should be a closed fold`, async ({ page }) => {
+  for (const path of FOLD_ROUTES) {
+    test(`AdvancedFold_ShouldBeClosed_WhenThePageOpens (${path})`, async ({ page }) => {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 

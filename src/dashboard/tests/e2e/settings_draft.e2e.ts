@@ -5,13 +5,13 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
  * The two-step editing cycle (ADR-41), checked end to end: editing has no effect,
  * confirming is a single gesture, and an edited page is not left silently.
  */
-test.describe('Réglages — cycle d’édition', () => {
+test.describe('Settings editing cycle', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/conservation')
   })
 
-  test('user_When editing a value_Should see what changed, with nothing saved yet', async ({
+  test('SettingsDraftBar_ShouldNameTheChangeWithNothingSaved_WhenTheUserEditsAValue', async ({
     page,
   }) => {
     const bar = page.getByRole('region', { name: 'Modifications en attente' })
@@ -34,7 +34,7 @@ test.describe('Réglages — cycle d’édition', () => {
     await expect(page.getByRole('spinbutton').nth(1)).toHaveValue('7')
   })
 
-  test('user_When discarding_Should return the page to its last saved state', async ({ page }) => {
+  test('SettingsDraftBar_ShouldRestoreTheSavedState_WhenTheUserDiscards', async ({ page }) => {
     const motion = page.getByRole('spinbutton').nth(1)
     await motion.fill('30')
     await motion.blur()
@@ -45,9 +45,7 @@ test.describe('Réglages — cycle d’édition', () => {
     await expect(page.getByRole('region', { name: 'Modifications en attente' })).toBeHidden()
   })
 
-  test('user_When saving_Should persist in a single gesture and clear the draft', async ({
-    page,
-  }) => {
+  test('SettingsDraftBar_ShouldPersistInOneGesture_WhenTheUserSaves', async ({ page }) => {
     const motion = page.getByRole('spinbutton').nth(1)
     await motion.fill('30')
     await motion.blur()
@@ -62,7 +60,7 @@ test.describe('Réglages — cycle d’édition', () => {
     await expect(page.getByRole('spinbutton').nth(1)).toHaveValue('30')
   })
 
-  test('user_When leaving a modified page_Should be asked before losing the changes', async ({
+  test('NavigationGuard_ShouldAskBeforeLosingTheEdits_WhenTheUserLeavesAnEditedPage', async ({
     page,
   }) => {
     const motion = page.getByRole('spinbutton').nth(1)

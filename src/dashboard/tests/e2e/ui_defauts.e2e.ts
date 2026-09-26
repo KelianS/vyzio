@@ -11,10 +11,8 @@ import {
  * being fixed.
  */
 
-test.describe('Mettre une caméra en pause', () => {
-  test('user_When pausing one camera_Should confirm, wait, then say it happened', async ({
-    page,
-  }) => {
+test.describe('Camera pause', () => {
+  test('HubView_ShouldConfirmThenSayItHappened_WhenTheUserPausesACamera', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
@@ -33,7 +31,7 @@ test.describe('Mettre une caméra en pause', () => {
   })
 })
 
-test.describe('Vue live', () => {
+test.describe('LiveView', () => {
   test('LiveView_ShouldCloseWithAVisibleCross_WhenTheUserViewsACameraLive', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
@@ -68,7 +66,7 @@ test.describe('Vue live', () => {
   })
 })
 
-test.describe('Positions PTZ, depuis la vue live', () => {
+test.describe('LiveView PTZ positions', () => {
   async function openLive(
     page: Page,
     ptz: Partial<ReturnType<typeof createFakeBackendState>['ptz']> = {},
@@ -136,7 +134,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
   })
 })
 
-test.describe('Historique', () => {
+test.describe('DetectionHistoryView', () => {
   async function openHistory(page: Page) {
     await installFakeBackend(
       page,
@@ -147,7 +145,9 @@ test.describe('Historique', () => {
     await page.goto('/history')
   }
 
-  test('user_When opening history_Should see detections, filters folded away', async ({ page }) => {
+  test('DetectionHistoryView_ShouldShowDetectionsWithFiltersFolded_WhenOpened', async ({
+    page,
+  }) => {
     await openHistory(page)
 
     await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
@@ -158,7 +158,7 @@ test.describe('Historique', () => {
     await expect(page.getByRole('region', { name: 'Filtres' })).toBeVisible()
   })
 
-  test('user_When comparing history to home_Should see the same detection rows', async ({
+  test('DetectionHistoryView_ShouldShowTheThumbnailAndSummary_WhenItListsDetections', async ({
     page,
   }) => {
     await openHistory(page)
@@ -171,7 +171,7 @@ test.describe('Historique', () => {
     await expect(page.getByText(/front door · .* · 92 % de certitude/).first()).toBeVisible()
   })
 
-  test('user_When a detection carries no identity_Should not be asked who it was', async ({
+  test('DetectionHistoryView_ShouldOfferIdentifyingOnlyPeople_WhenADetectionCarriesNoIdentity', async ({
     page,
   }) => {
     await installFakeBackend(

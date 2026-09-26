@@ -6,13 +6,15 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
  * taken out of the old screen: the use case still existed, no interface called it
  * any more. This journey keeps the door open.
  */
-test.describe('Caméra — connexion', () => {
+test.describe('CameraConnectionView', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connexion')
   })
 
-  test('user_When renaming a camera_Should save it through the draft cycle', async ({ page }) => {
+  test('CameraConnectionView_ShouldSaveTheNameThroughTheDraft_WhenTheUserRenamesTheCamera', async ({
+    page,
+  }) => {
     const name = page.getByRole('textbox', { name: 'Nom' })
     await expect(name).toHaveValue('Porte d’entrée')
 
@@ -28,7 +30,7 @@ test.describe('Caméra — connexion', () => {
     await expect(page.getByRole('heading', { name: 'Portail' })).toBeVisible()
   })
 
-  test('user_When deleting a camera_Should confirm first, then land back on the list', async ({
+  test('CameraConnectionView_ShouldConfirmThenLandOnTheList_WhenTheUserDeletesTheCamera', async ({
     page,
   }) => {
     await page.getByRole('button', { name: 'Supprimer cette caméra' }).click()

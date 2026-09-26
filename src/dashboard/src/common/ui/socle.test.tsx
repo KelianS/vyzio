@@ -10,8 +10,8 @@ import { cn } from './utils'
  * consume the semantic token layer, they expose the ARIA roles every screen test
  * will lean on, and `cn` arbitrates class conflicts.
  */
-describe('Socle de composants', () => {
-  it('primitive_When rendered_Should expose an ARIA role and consume theme tokens', () => {
+describe('UI foundation', () => {
+  it('Button_ShouldUseTheThemeTokens_WhenRendered', () => {
     render(<Button>Enregistrer</Button>)
 
     const button = screen.getByRole('button', { name: 'Enregistrer' })
@@ -21,17 +21,17 @@ describe('Socle de composants', () => {
     expect(button.className).toContain('text-primary-foreground')
   })
 
-  it('primitive_When given an interactive role_Should be reachable by role', () => {
+  it('Switch_ShouldBeReachableByRole_WhenGivenALabel', () => {
     render(<Switch aria-label="Enregistrement continu" />)
 
     expect(screen.getByRole('switch', { name: 'Enregistrement continu' })).toBeInTheDocument()
   })
 
-  it('cn_When two classes target the same aspect_Should keep the last one', () => {
+  it('cn_ShouldKeepTheLastClass_WhenTwoTargetTheSameAspect', () => {
     expect(cn('rounded-sm', 'rounded-lg')).toBe('rounded-lg')
   })
 
-  it('cn_When a conditional class is inactive_Should drop it', () => {
+  it('cn_ShouldDropTheClass_WhenItsConditionIsFalse', () => {
     const invalid = false
     expect(cn('bg-primary', invalid && 'bg-destructive')).toBe('bg-primary')
   })

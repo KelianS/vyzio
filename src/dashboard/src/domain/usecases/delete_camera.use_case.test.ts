@@ -3,7 +3,7 @@ import { DeleteCamera } from './delete_camera.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('DeleteCamera', () => {
-  it('delegates deletion to the camera repository', async () => {
+  it('execute_ShouldDeleteTheCameraThroughTheRepository_WhenCalled', async () => {
     const result = {
       deleted: true,
       message: 'Camera "Front Door" deleted.',

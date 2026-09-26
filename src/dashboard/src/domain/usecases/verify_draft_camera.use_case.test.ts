@@ -3,7 +3,7 @@ import { VerifyDraftCamera } from './verify_draft_camera.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('VerifyDraftCamera', () => {
-  it('delegates draft verification to the camera repository', async () => {
+  it('execute_ShouldVerifyTheDraftThroughTheRepository_WhenCalled', async () => {
     const status = {
       cameraId: 'draft-camera',
       displayName: 'Front Door',

@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
-test.describe('Accueil — couper la surveillance', () => {
-  test('user_When cutting every camera_Should confirm, then see the page say so', async ({
+test.describe('HubView privacy', () => {
+  test('HubView_ShouldConfirmThenSaySurveillanceIsCut_WhenTheUserCutsEveryCamera', async ({
     page,
   }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon', isEnabled: true })

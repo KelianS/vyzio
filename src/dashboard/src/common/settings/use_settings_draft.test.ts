@@ -19,14 +19,14 @@ function setup(saved: Values = { continuousDays: 0, motionDays: 7 }) {
  * These tests cover the ADR-41 decision: editing has no effect, and the draft
  * must say **what** changed.
  */
-describe('Brouillon de page', () => {
-  it('draft_When nothing was touched_Should be clean', () => {
+describe('useSettingsDraft', () => {
+  it('useSettingsDraft_ShouldBeClean_WhenNothingWasTouched', () => {
     const { result } = setup()
     expect(result.current.dirty).toBe(false)
     expect(result.current.changes).toEqual([])
   })
 
-  it('draft_When a value is edited_Should show it without touching what was saved', () => {
+  it('useSettingsDraft_ShouldShowTheEditAndKeepTheSavedValue_WhenAValueIsEdited', () => {
     const { result } = setup()
 
     act(() => result.current.set('motionDays', 30))
@@ -37,7 +37,7 @@ describe('Brouillon de page', () => {
     expect(result.current.dirty).toBe(true)
   })
 
-  it('draft_When several values are edited_Should name each of them', () => {
+  it('useSettingsDraft_ShouldNameEachChange_WhenSeveralValuesAreEdited', () => {
     const { result } = setup()
 
     act(() => result.current.set('motionDays', 30))
@@ -49,7 +49,7 @@ describe('Brouillon de page', () => {
     ])
   })
 
-  it('draft_When an edit returns to the saved value_Should stop counting as a change', () => {
+  it('useSettingsDraft_ShouldStopCountingTheChange_WhenAnEditReturnsToTheSavedValue', () => {
     const { result } = setup()
 
     act(() => result.current.set('motionDays', 30))
@@ -60,7 +60,7 @@ describe('Brouillon de page', () => {
     expect(result.current.changes).toEqual([])
   })
 
-  it('draft_When two keys carry the same setting_Should count it once', () => {
+  it('useSettingsDraft_ShouldCountTheSettingOnce_WhenTwoKeysCarryIt', () => {
     const { result } = renderHook(() =>
       useSettingsDraft<{ level: string; pinned: boolean }>({
         saved: { level: 'medium', pinned: false },
@@ -78,7 +78,7 @@ describe('Brouillon de page', () => {
     expect(result.current.changes).toEqual([{ key: 'level', label: 'Sensibilité' }])
   })
 
-  it('draft_When discarded_Should return the page to its last saved state', () => {
+  it('useSettingsDraft_ShouldReturnToTheSavedState_WhenDiscarded', () => {
     const { result } = setup()
 
     act(() => result.current.set('motionDays', 30))
@@ -88,7 +88,7 @@ describe('Brouillon de page', () => {
     expect(result.current.dirty).toBe(false)
   })
 
-  it('draft_When saved values arrive from the server_Should follow them for untouched fields', () => {
+  it('useSettingsDraft_ShouldFollowTheServerForUntouchedFields_WhenSavedValuesArrive', () => {
     const { result, rerender } = setup()
 
     act(() => result.current.set('motionDays', 30))
@@ -100,7 +100,7 @@ describe('Brouillon de page', () => {
     expect(result.current.values.continuousDays).toBe(3)
   })
 
-  it('draft_When accepted after a save_Should be clean again', () => {
+  it('useSettingsDraft_ShouldBeCleanAgain_WhenAcceptedAfterASave', () => {
     const { result, rerender } = setup()
 
     act(() => result.current.set('motionDays', 30))

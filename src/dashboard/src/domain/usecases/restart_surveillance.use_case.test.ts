@@ -3,7 +3,7 @@ import { RestartSurveillance } from './restart_surveillance.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('RestartSurveillance', () => {
-  it('delegates the installation-wide restart to the camera repository', async () => {
+  it('execute_ShouldApplyTheConfigurationThroughTheRepository_WhenCalled', async () => {
     const result = {
       applied: true,
       message: 'Configuration appliquee pour 2 cameras.',

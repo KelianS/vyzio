@@ -63,8 +63,8 @@ function build(cfg: DetectionConfig, vals = values(), set: Setter = vi.fn()) {
   }
 }
 
-describe('Réglages de détection d’une caméra', () => {
-  it('labels_When the camera reports what it can detect_Should offer only those', () => {
+describe('buildDetectionSettings', () => {
+  it('buildDetectionSettings_ShouldOfferOnlyTheReportedLabels_WhenTheCameraReportsSome', () => {
     const { settings } = build(config({ availableLabels: ['person', 'dog'] }))
     const labels = settings.find((setting) => setting.id === 'detection-labels')!
 
@@ -72,7 +72,7 @@ describe('Réglages de détection d’une caméra', () => {
     expect(optionsOf(labels).map((option) => option.value)).toEqual(['person', 'dog'])
   })
 
-  it('labels_When the camera reports nothing_Should fall back to the full catalogue', () => {
+  it('buildDetectionSettings_ShouldOfferTheFullCatalogue_WhenTheCameraReportsNoLabel', () => {
     const { settings } = build(config({ availableLabels: [] }))
     const labels = settings.find((setting) => setting.id === 'detection-labels')!
     const options = optionsOf(labels)
@@ -82,7 +82,7 @@ describe('Réglages de détection d’une caméra', () => {
     expect(options).toHaveLength(3)
   })
 
-  it('sensitivity_When nothing is pinned_Should read as automatic', () => {
+  it('buildDetectionSettings_ShouldReadAsAutomatic_WhenNoSensitivityIsPinned', () => {
     const { settings } = build(config(), values({ motionSensitivityPinned: false }))
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
@@ -96,7 +96,7 @@ describe('Réglages de détection d’une caméra', () => {
     ])
   })
 
-  it('sensitivity_When a level is chosen_Should stop the automatic adjustment', () => {
+  it('buildDetectionSettings_ShouldPinTheLevel_WhenTheUserChoosesOne', () => {
     const set = vi.fn()
     const { settings } = build(config(), values(), set)
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
@@ -108,7 +108,7 @@ describe('Réglages de détection d’une caméra', () => {
     expect(set).toHaveBeenCalledWith('motionSensitivityPinned', true)
   })
 
-  it('sensitivity_When returning to automatic_Should keep the level reached', () => {
+  it('buildDetectionSettings_ShouldKeepTheLevelReached_WhenTheUserReturnsToAutomatic', () => {
     const set = vi.fn()
     const { settings } = build(
       config(),
@@ -124,7 +124,7 @@ describe('Réglages de détection d’une caméra', () => {
     expect(set).toHaveBeenCalledExactlyOnceWith('motionSensitivityPinned', false)
   })
 
-  it('sensitivity_Whatever the state_Should say what applies, without a gesture', () => {
+  it('buildDetectionSettings_ShouldSayWhatApplies_WhenSensitivityIsAutomaticOrPinned', () => {
     const auto = build(config()).settings.find((s) => s.id === 'detection-sensitivity')!
     expect(auto.consequence).toContain('corrige seul')
 
@@ -135,13 +135,13 @@ describe('Réglages de détection d’une caméra', () => {
     expect(pinned.consequence).toContain('moindre mouvement')
   })
 
-  it('stream_When the camera serves only one_Should not offer a choice', () => {
+  it('buildDetectionSettings_ShouldOfferNoStreamChoice_WhenTheCameraServesOnlyOne', () => {
     const { settings } = build(config({ streams: [STREAMS[0]] }))
     // A single stream leaves nothing to arbitrate (ADR-38).
     expect(settings.find((setting) => setting.id === 'detection-stream')).toBeUndefined()
   })
 
-  it('stream_When several are served_Should describe each by what the camera reported', () => {
+  it('buildDetectionSettings_ShouldDescribeEachStreamByItsPixels_WhenSeveralAreServed', () => {
     const { settings } = build(config())
     const stream = settings.find((setting) => setting.id === 'detection-stream')!
     const options = optionsOf(stream)

@@ -11,7 +11,7 @@ describe('DetectionThumbnail', () => {
     vi.useRealTimers()
   })
 
-  it('montre un chargement tant que l’aperçu n’est pas arrivé', () => {
+  it('DetectionThumbnail_ShouldShowALoaderAndHideTheImage_WhenThePreviewHasNotArrived', () => {
     render(<DetectionThumbnail src="/api/detection-events/e1/snapshot" />)
 
     expect(screen.getByRole('status', { name: 'Chargement de l’aperçu' })).toBeInTheDocument()
@@ -19,7 +19,7 @@ describe('DetectionThumbnail', () => {
     expect(screen.getByRole('presentation')).toHaveClass('invisible')
   })
 
-  it('retente de lui-même après un échec, sans recharger la page', () => {
+  it('DetectionThumbnail_ShouldRetryWithANewAddress_WhenThePreviewFails', () => {
     render(<DetectionThumbnail src="/api/detection-events/e1/snapshot" />)
     const image = screen.getByRole('presentation')
 
@@ -36,7 +36,7 @@ describe('DetectionThumbnail', () => {
     expect(screen.getByRole('status', { name: 'Chargement de l’aperçu' })).toBeInTheDocument()
   })
 
-  it('laisse redemander la main une fois les essais épuisés', () => {
+  it('DetectionThumbnail_ShouldOfferARetryButton_WhenEveryAttemptFailed', () => {
     render(<DetectionThumbnail src="/api/detection-events/e1/snapshot" />)
 
     // Three spaced attempts, then the failure is settled.
@@ -50,7 +50,7 @@ describe('DetectionThumbnail', () => {
     ).toBeInTheDocument()
   })
 
-  it('efface l’échec quand l’aperçu finit par arriver', () => {
+  it('DetectionThumbnail_ShouldShowThePreview_WhenItFinallyLoads', () => {
     render(<DetectionThumbnail src="/api/detection-events/e1/snapshot" />)
 
     fireEvent.load(screen.getByRole('presentation'))

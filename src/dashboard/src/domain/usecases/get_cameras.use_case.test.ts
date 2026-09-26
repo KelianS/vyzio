@@ -3,7 +3,7 @@ import { GetCameras } from './get_cameras.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('GetCameras', () => {
-  it('delegates camera loading to the camera repository', async () => {
+  it('execute_ShouldLoadTheCamerasFromTheRepository_WhenCalled', async () => {
     const cameras = [
       {
         id: 'camera-1',

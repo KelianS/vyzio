@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
-test.describe('Cameras — ajout', () => {
-  test('user_When finding and adding a camera_Should land on its settings', async ({ page }) => {
+test.describe('AddCameraView', () => {
+  test('AddCameraView_ShouldLandOnTheCameraSettings_WhenTheUserFindsAndAddsACamera', async ({
+    page,
+  }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
 
     await page.goto('/settings/cameras/ajout')
@@ -28,9 +30,7 @@ test.describe('Cameras — ajout', () => {
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })
 
-  test('user_When the network yields nothing_Should still be able to type the address', async ({
-    page,
-  }) => {
+  test('AddCameraView_ShouldOfferManualEntry_WhenNoSearchHasRun', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
     await page.goto('/settings/cameras/ajout')
 
@@ -40,7 +40,7 @@ test.describe('Cameras — ajout', () => {
     await expect(page.getByRole('textbox', { name: 'Adresse' })).toBeVisible()
   })
 
-  test('user_When choosing a camera_Should see the list fold away, and be able to reopen it', async ({
+  test('AddCameraView_ShouldFoldTheListAndLetItReopen_WhenTheUserChoosesACamera', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
@@ -66,7 +66,7 @@ test.describe('Cameras — ajout', () => {
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
   })
 
-  test('user_When a camera is already in the catalogue_Should not be offered again', async ({
+  test('AddCameraView_ShouldNotOfferTheCameraAgain_WhenItIsAlreadyInTheCatalogue', async ({
     page,
   }) => {
     // Same host as the camera found by the search.

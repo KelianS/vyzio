@@ -3,7 +3,7 @@ import { DiscoverCameras } from './discover_cameras.use_case'
 import type { CameraRepository } from '../ports/camera.port'
 
 describe('DiscoverCameras', () => {
-  it('delegates discovery to the camera repository', async () => {
+  it('execute_ShouldDiscoverThroughTheRepository_WhenNoHostIsGiven', async () => {
     const candidates = [
       {
         displayName: 'Driveway',
@@ -43,7 +43,7 @@ describe('DiscoverCameras', () => {
     expect(repository.discover).toHaveBeenCalledOnce()
   })
 
-  it('passes a targeted refresh request to the camera repository', async () => {
+  it('execute_ShouldPassTheTargetToTheRepository_WhenAHostIsGiven', async () => {
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),

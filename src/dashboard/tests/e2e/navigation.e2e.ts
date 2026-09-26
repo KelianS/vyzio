@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 test.describe('Navigation', () => {
-  test('user_When visiting the app_Should reach every screen from the header without errors', async ({
+  test('AppShell_ShouldReachEveryScreenWithoutErrors_WhenTheUserFollowsTheMenus', async ({
     page,
   }) => {
     const consoleErrors: string[] = []
@@ -64,9 +64,7 @@ test.describe('Navigation', () => {
     )
   })
 
-  test('user_When following a link to an old address_Should land on the new one', async ({
-    page,
-  }) => {
+  test('AppShell_ShouldRedirectToTheNewAddress_WhenTheUserFollowsAnOldLink', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
 
     // A bookmark or a kept link must not fall into the void because the tree
