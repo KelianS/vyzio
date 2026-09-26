@@ -8,7 +8,6 @@ import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Overlay } from '../../common/components/overlay'
 import { CameraLiveThumbnail } from '../../common/components/camera_live_thumbnail'
-import { LiveFeedModal } from '../../common/components/live_feed_modal'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -17,6 +16,7 @@ import type { Camera } from '../../domain/entities/camera.entity'
 import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
+import { LiveView } from '../live_view/live_view.component'
 import { SystemMonitorPanel } from './system_monitor_panel'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
@@ -85,18 +85,10 @@ export function HubView() {
       {modalMedia && (
         <Overlay label="Aperçu" onClose={() => setModalMedia(null)}>
           {modalMedia.type === 'live' ? (
-            <LiveFeedModal
+            <LiveView
               cameraId={modalMedia.cameraId}
-              apiBaseUrl={apiBaseUrl}
               label={modalMedia.label}
               ptzSupported={modalMedia.ptzSupported}
-              frigateStatus={systemStats?.status ?? 'active'}
-              ptzStep={camerasContainer.ptzStep}
-              ptzGoToPreset={camerasContainer.ptzGoToPreset}
-              getPtzPresets={camerasContainer.getPtzPresets}
-              ptzSaveCurrentAsPreset={camerasContainer.ptzSaveCurrentAsPreset}
-              capturePtzPresetThumbnail={camerasContainer.capturePtzPresetThumbnail}
-              ptzCalibrate={camerasContainer.ptzCalibrate}
             />
           ) : modalMedia.type === 'image' ? (
             <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />

@@ -34,9 +34,7 @@ test.describe('Mettre une caméra en pause', () => {
 })
 
 test.describe('Vue live', () => {
-  test('user_When viewing a camera live_Should be able to close with a visible cross', async ({
-    page,
-  }) => {
+  test('LiveView_ShouldCloseWithAVisibleCross_WhenTheUserViewsACameraLive', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
@@ -54,9 +52,7 @@ test.describe('Vue live', () => {
     await expect(overlay).toBeHidden()
   })
 
-  test('user_When the stream is unavailable_Should see waiting, never a broken image', async ({
-    page,
-  }) => {
+  test('LiveView_ShouldShowAWaitNeverABrokenImage_WhenTheStreamIsUnavailable', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
     // What a surveillance restart does: the image does not arrive.
@@ -88,9 +84,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
     return state
   }
 
-  test('user_When no position is saved yet_Should save the first one with a plain tap', async ({
-    page,
-  }) => {
+  test('LiveView_ShouldSaveTheFirstPositionWithAPlainTap_WhenNoneIsSavedYet', async ({ page }) => {
     const state = await openLive(page)
 
     // The long press is the overwrite gesture; there is nothing to overwrite.
@@ -100,9 +94,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
     expect(state.ptz.presets).toHaveLength(1)
   })
 
-  test('user_When going to a position_Should be told, and see where the camera stands', async ({
-    page,
-  }) => {
+  test('LiveView_ShouldAcknowledgeAndMarkThePosition_WhenTheUserGoesToIt', async ({ page }) => {
     await openLive(page, {
       presets: [
         {
@@ -117,7 +109,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
       currentPosition: { x: 0, y: 0 },
     })
 
-    const tile = page.getByTitle(/Surveillance — appui/)
+    const tile = page.getByTitle(/^Surveillance \(appui/)
     await expect(tile).toHaveAttribute('aria-pressed', 'false')
 
     await tile.click()
@@ -127,7 +119,7 @@ test.describe('Positions PTZ, depuis la vue live', () => {
     await expect(tile).toHaveAttribute('aria-pressed', 'true')
   })
 
-  test('user_When the camera has no reference_Should be told why, and able to fix it there', async ({
+  test('LiveView_ShouldSayWhyAndOfferACalibration_WhenTheCameraHasNoReference', async ({
     page,
   }) => {
     const state = await openLive(page, { calibrated: false, currentPosition: null })
