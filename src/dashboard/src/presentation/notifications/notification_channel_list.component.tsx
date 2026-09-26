@@ -1,19 +1,32 @@
+import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
 import { Badge } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { useAsync } from '../../common/hooks/use_async'
+import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { NotificationChannelSummary } from '../../domain/entities/notification_channel_config.entity'
+import { buildNotificationChannelListPresenter } from './notification_channel_list.presenter'
+import { notificationChannelListReducer } from './notification_channel_list.reducer'
+import { buildInitialNotificationChannelListUido } from './notification_channel_list.uido'
 
 /** First level of the Notifications rubric: the channels in place. Adding one is its own task/page. */
-export function NotificationChannelListPage() {
+export function NotificationChannelListView() {
   const { notifications: container } = useAppContainer()
-  const channels = useAsync(() => container.listNotificationChannels.execute(), [])
+  const [uido, dispatch] = useReducer(
+    notificationChannelListReducer,
+    undefined,
+    buildInitialNotificationChannelListUido,
+  )
+  const presenter = usePresenter(buildNotificationChannelListPresenter, { container, dispatch })
 
-  const configured = (channels.data ?? []).filter((channel) => channel.isConfigured)
-  const remaining = (channels.data ?? []).length - configured.length
+  useEffect(() => {
+    presenter.onLoad()
+  }, [presenter])
+
+  const configured = uido.channels.filter((channel) => channel.isConfigured)
+  const remaining = uido.channels.length - configured.length
 
   return (
     <SettingsPage lede="Par où Vyzio vous prévient quand il détecte quelque chose.">
@@ -43,7 +56,7 @@ export function NotificationChannelListPage() {
         </ul>
       ) : (
         <p className="py-3 text-muted-foreground">
-          {channels.loading
+          {uido.loading
             ? 'Chargement…'
             : 'Aucun canal pour l’instant : vous n’êtes prévenu que dans l’interface.'}
         </p>

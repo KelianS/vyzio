@@ -1,9 +1,7 @@
 import { RotateCw } from 'lucide-react'
-import { Button } from '../../common/ui/button'
-import { cn } from '../../common/ui/utils'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import type { NotificationChannelName } from '../../domain/entities/notification_channel_config.entity'
+import { Button } from '../../../common/ui/button'
+import { cn } from '../../../common/ui/utils'
+import type { NotificationLogEntry } from '../../../domain/entities/notification_channel_config.entity'
 
 const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -11,28 +9,27 @@ const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
 })
 
 /** What Vyzio actually sent — the only proof the channel works outside of a manual test. */
-export function NotificationLog({ channel }: { channel: NotificationChannelName }) {
-  const { notifications: container } = useAppContainer()
-  const log = useAsync(() => container.getNotificationLog.execute(channel), [channel])
-
+export function NotificationLog({
+  entries,
+  loading,
+  onRefresh,
+}: {
+  entries: NotificationLogEntry[]
+  loading: boolean
+  onRefresh: () => void
+}) {
   return (
     <div>
       <div className="mb-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={log.loading}
-          onClick={log.reload}
-        >
-          <RotateCw className={cn(log.loading && 'animate-spin')} aria-hidden="true" />
+        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={onRefresh}>
+          <RotateCw className={cn(loading && 'animate-spin')} aria-hidden="true" />
           Actualiser
         </Button>
       </div>
 
-      {log.data && log.data.length > 0 ? (
+      {entries.length > 0 ? (
         <ul className="divide-y divide-border text-sm">
-          {log.data.map((entry) => (
+          {entries.map((entry) => (
             <li
               key={`${entry.sentAt}-${entry.status}`}
               className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
@@ -51,7 +48,7 @@ export function NotificationLog({ channel }: { channel: NotificationChannelName 
         </ul>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {log.loading ? 'Chargement…' : 'Aucun envoi pour l’instant.'}
+          {loading ? 'Chargement…' : 'Aucun envoi pour l’instant.'}
         </p>
       )}
     </div>

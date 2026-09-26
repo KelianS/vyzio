@@ -1,12 +1,10 @@
 import { RotateCw } from 'lucide-react'
-import { Button } from '../../common/ui/button'
-import { cn } from '../../common/ui/utils'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+import { Button } from '../../../common/ui/button'
+import { cn } from '../../../common/ui/utils'
 import type {
+  CommandJournalEntry,
   CommandOutcome,
-  NotificationChannelName,
-} from '../../domain/entities/notification_channel_config.entity'
+} from '../../../domain/entities/notification_channel_config.entity'
 
 const formatReceivedAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -21,28 +19,27 @@ const OUTCOME: Record<CommandOutcome, { label: string; muted: boolean }> = {
 }
 
 /** What the channel was asked and how it ended -- the trace SPECS 5.4 requires. */
-export function CommandJournal({ channel }: { channel: NotificationChannelName }) {
-  const { notifications: container } = useAppContainer()
-  const journal = useAsync(() => container.getCommandJournal.execute(channel), [channel])
-
+export function CommandJournal({
+  entries,
+  loading,
+  onRefresh,
+}: {
+  entries: CommandJournalEntry[]
+  loading: boolean
+  onRefresh: () => void
+}) {
   return (
     <div>
       <div className="mb-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={journal.loading}
-          onClick={journal.reload}
-        >
-          <RotateCw className={cn(journal.loading && 'animate-spin')} aria-hidden="true" />
+        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={onRefresh}>
+          <RotateCw className={cn(loading && 'animate-spin')} aria-hidden="true" />
           Actualiser
         </Button>
       </div>
 
-      {journal.data && journal.data.length > 0 ? (
+      {entries.length > 0 ? (
         <ul className="divide-y divide-border text-sm">
-          {journal.data.map((entry) => {
+          {entries.map((entry) => {
             const outcome = OUTCOME[entry.outcome]
             return (
               <li
@@ -64,7 +61,7 @@ export function CommandJournal({ channel }: { channel: NotificationChannelName }
         </ul>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {journal.loading ? 'Chargement…' : 'Aucune commande reçue pour l’instant.'}
+          {loading ? 'Chargement…' : 'Aucune commande reçue pour l’instant.'}
         </p>
       )}
     </div>

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { NotificationChannelName } from '../../domain/entities/notification_channel_config.entity'
-import { CHANNEL_SETUP } from './channel_setup'
+import type { NotificationChannelName } from '../../../domain/entities/notification_channel_config.entity'
+import { CHANNEL_SETUP } from '../channel_setup'
 
 /** `code` and [label](url), the only two marks a setup step needs. */
 const MARKS = /(`[^`]+`|\[[^\]]+\]\([^)]+\))/g

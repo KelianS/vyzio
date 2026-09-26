@@ -1,0 +1,238 @@
+import type { ToastTone } from '../../common/components/toast'
+import { toastError } from '../../common/errors/app_error'
+import { scrubSecrets } from '../../common/errors/scrub_secrets'
+import { toAppError } from '../../common/errors/to_app_error'
+import { latestOnly } from '../../common/presenter/latest_only'
+import type {
+  NotificationChannelConfig,
+  NotificationChannelName,
+} from '../../domain/entities/notification_channel_config.entity'
+import type { NotificationsContainer } from '../../infrastructure/providers/notifications.container'
+import type { NotificationChannelAction } from './notification_channel.actions'
+import { toSaveRequest, type NotificationValues } from './notification_settings'
+
+export interface NotificationChannelPresenterContext {
+  container: NotificationsContainer
+  dispatch: (action: NotificationChannelAction) => void
+  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+}
+
+export function buildNotificationChannelPresenter({
+  container,
+  dispatch,
+  toast,
+}: NotificationChannelPresenterContext) {
+  // Moving to another channel keeps the page mounted: only the latest read may answer.
+  const nextConfigRead = latestOnly()
+  const nextPairingRead = latestOnly()
+  const nextListeningRead = latestOnly()
+  const nextLogRead = latestOnly()
+  const nextJournalRead = latestOnly()
+
+  function readConfig(channel: NotificationChannelName) {
+    const isLatest = nextConfigRead()
+    dispatch({ type: 'CONFIG_STARTED' })
+    container.getNotificationChannelConfig
+      .execute(channel)
+      .then((config) => {
+        if (isLatest()) dispatch({ type: 'CONFIG_LOADED', config })
+      })
+      // An unread channel still reads as a missing one.
+      .catch(() => {
+        if (isLatest()) dispatch({ type: 'CONFIG_LOADED', config: null })
+      })
+  }
+
+  function readLabels() {
+    container.getNotificationLabels
+      .execute()
+      .then((labels) => dispatch({ type: 'LABELS_LOADED', labels }))
+      // Unread labels still leave the trigger choice empty.
+      .catch(() => dispatch({ type: 'LABELS_LOADED', labels: [] }))
+  }
+
+  function readPairing(channel: NotificationChannelName) {
+    const isLatest = nextPairingRead()
+    dispatch({ type: 'PAIRING_STARTED' })
+    container.getChannelPairing
+      .execute(channel)
+      .then((pairing) => {
+        if (isLatest()) dispatch({ type: 'PAIRING_LOADED', pairing })
+      })
+      // An unread pairing still reads as no conversation linked.
+      .catch(() => {
+        if (isLatest()) dispatch({ type: 'PAIRING_LOADED', pairing: null })
+      })
+  }
+
+  function readListening(channel: NotificationChannelName) {
+    const isLatest = nextListeningRead()
+    dispatch({ type: 'LISTENING_STARTED' })
+    container.getChannelListening
+      .execute(channel)
+      .then((listening) => {
+        if (isLatest()) dispatch({ type: 'LISTENING_LOADED', listening })
+      })
+      // An unread listening state still shows no badge.
+      .catch(() => {
+        if (isLatest()) dispatch({ type: 'LISTENING_LOADED', listening: null })
+      })
+  }
+
+  function readLog(channel: NotificationChannelName) {
+    const isLatest = nextLogRead()
+    dispatch({ type: 'LOG_STARTED' })
+    container.getNotificationLog
+      .execute(channel)
+      .then((log) => {
+        if (isLatest()) dispatch({ type: 'LOG_LOADED', log })
+      })
+      // An unread log still reads as nothing sent.
+      .catch(() => {
+        if (isLatest()) dispatch({ type: 'LOG_LOADED', log: [] })
+      })
+  }
+
+  function readJournal(channel: NotificationChannelName) {
+    const isLatest = nextJournalRead()
+    dispatch({ type: 'JOURNAL_STARTED' })
+    container.getCommandJournal
+      .execute(channel)
+      .then((journal) => {
+        if (isLatest()) dispatch({ type: 'JOURNAL_LOADED', journal })
+      })
+      // An unread journal still reads as no command received.
+      .catch(() => {
+        if (isLatest()) dispatch({ type: 'JOURNAL_LOADED', journal: [] })
+      })
+  }
+
+  async function save(config: NotificationChannelConfig, values: NotificationValues) {
+    dispatch({ type: 'SAVE_STARTED' })
+    try {
+      await container.saveNotificationChannelConfig.execute(
+        config.channel,
+        toSaveRequest(values, config.credentials),
+      )
+      toast('Notifications enregistrées.', 'success')
+      readConfig(config.channel)
+      return true
+    } catch (e) {
+      toastError(toast, toAppError(e))
+      return false
+    } finally {
+      dispatch({ type: 'SAVE_FINISHED' })
+    }
+  }
+
+  return {
+    onLoad(channel: NotificationChannelName) {
+      readConfig(channel)
+      readLabels()
+    },
+
+    /** Reads what the page shows below the settings, once the channel is known. */
+    onOpen(channel: NotificationChannelName, acceptsCommands: boolean) {
+      readLog(channel)
+      if (!acceptsCommands) return
+      readPairing(channel)
+      readListening(channel)
+      readJournal(channel)
+    },
+
+    /** Resolves true once saved, so the view clears its draft; enabling asks first and resolves false. */
+    async onSave(config: NotificationChannelConfig, values: NotificationValues) {
+      if (values.enabled && !config.isEnabled) {
+        dispatch({ type: 'ENABLE_ASKED' })
+        return false
+      }
+      return save(config, values)
+    },
+    async onConfirmEnable(config: NotificationChannelConfig, values: NotificationValues) {
+      const saved = await save(config, values)
+      dispatch({ type: 'ENABLE_CLOSED' })
+      return saved
+    },
+    onCancelEnable() {
+      dispatch({ type: 'ENABLE_CLOSED' })
+    },
+
+    async onTest(channel: NotificationChannelName) {
+      dispatch({ type: 'TEST_STARTED' })
+      try {
+        const result = await container.testNotificationChannel.execute(channel)
+        if (result.success) toast('Message envoyé : le canal fonctionne.', 'success')
+        else
+          toast(
+            'Échec de l’envoi.',
+            'error',
+            scrubSecrets(result.errorMessage ?? 'no reason given'),
+          )
+        readConfig(channel)
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'TEST_FINISHED' })
+      }
+    },
+
+    onAskRemove() {
+      dispatch({ type: 'REMOVE_ASKED' })
+    },
+    onCancelRemove() {
+      dispatch({ type: 'REMOVE_CANCELLED' })
+    },
+    /** Resolves true once removed, so the view leaves for the channel list. */
+    async onRemove(channel: NotificationChannelName) {
+      dispatch({ type: 'REMOVE_STARTED' })
+      try {
+        await container.deleteNotificationChannel.execute(channel)
+        toast('Canal supprimé.', 'info')
+        return true
+      } catch (e) {
+        toastError(toast, toAppError(e))
+        return false
+      } finally {
+        dispatch({ type: 'REMOVE_FINISHED' })
+      }
+    },
+
+    onRefreshPairing(channel: NotificationChannelName) {
+      readPairing(channel)
+      readListening(channel)
+    },
+    async onStartPairing(channel: NotificationChannelName) {
+      dispatch({ type: 'START_PAIRING_STARTED' })
+      try {
+        await container.startChannelPairing.execute(channel)
+        readPairing(channel)
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'START_PAIRING_FINISHED' })
+      }
+    },
+    onAskRevoke() {
+      dispatch({ type: 'REVOKE_ASKED' })
+    },
+    onCancelRevoke() {
+      dispatch({ type: 'REVOKE_CANCELLED' })
+    },
+    async onRevoke(channel: NotificationChannelName) {
+      dispatch({ type: 'REVOKE_STARTED' })
+      try {
+        await container.revokeChannelPairing.execute(channel)
+        toast('La conversation ne peut plus commander votre installation.', 'info')
+        dispatch({ type: 'REVOKE_CANCELLED' })
+        readPairing(channel)
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'REVOKE_FINISHED' })
+      }
+    },
+
+    onRefreshLog: readLog,
+    onRefreshJournal: readJournal,
+  }
+}

@@ -1,18 +1,12 @@
-import { useState } from 'react'
 import { RotateCw } from 'lucide-react'
-import { Button } from '../../common/ui/button'
-import { cn } from '../../common/ui/utils'
-import { ConfirmModal } from '../../common/components/confirm_modal'
-import { useAsync } from '../../common/hooks/use_async'
-import { useAsyncAction } from '../../common/hooks/use_async_action'
-import { useToast } from '../../common/components/toast'
-import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { Badge } from '../../common/components/badge'
+import { Button } from '../../../common/ui/button'
+import { cn } from '../../../common/ui/utils'
+import { ConfirmModal } from '../../../common/components/confirm_modal'
+import { Badge } from '../../../common/components/badge'
 import type {
   ChannelListening,
   ChannelPairing,
-  NotificationChannelName,
-} from '../../domain/entities/notification_channel_config.entity'
+} from '../../../domain/entities/notification_channel_config.entity'
 
 const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
@@ -22,60 +16,58 @@ const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
  * settings are the only place Vyzio knows it is really the owner talking (ADR-50).
  */
 export function ChannelPairingSection({
-  channel,
   displayName,
+  pairing,
+  pairingLoading,
+  listening,
+  listeningLoading,
+  starting,
+  confirmRevoke,
+  revoking,
+  onStart,
+  onAskRevoke,
+  onCancelRevoke,
+  onRevoke,
+  onRefresh,
 }: {
-  channel: NotificationChannelName
   displayName: string
+  pairing: ChannelPairing | null
+  pairingLoading: boolean
+  listening: ChannelListening | null
+  listeningLoading: boolean
+  starting: boolean
+  confirmRevoke: boolean
+  revoking: boolean
+  onStart: () => void
+  onAskRevoke: () => void
+  onCancelRevoke: () => void
+  onRevoke: () => void
+  onRefresh: () => void
 }) {
-  const { notifications: container } = useAppContainer()
-  const { toast } = useToast()
-  const [confirmRevoke, setConfirmRevoke] = useState(false)
-
-  const pairing = useAsync(() => container.getChannelPairing.execute(channel), [channel])
-  const listening = useAsync(() => container.getChannelListening.execute(channel), [channel])
-
-  const starting = useAsyncAction(() => container.startChannelPairing.execute(channel), {
-    onSuccess: () => pairing.reload(),
-  })
-
-  const revoking = useAsyncAction(() => container.revokeChannelPairing.execute(channel), {
-    onSuccess: () => {
-      toast('La conversation ne peut plus commander votre installation.', 'info')
-      setConfirmRevoke(false)
-      pairing.reload()
-    },
-  })
-
-  if (pairing.loading && !pairing.data) {
+  if (pairingLoading && !pairing) {
     return <p className="text-sm text-muted-foreground">Chargement…</p>
   }
 
-  const status = pairing.data?.status ?? 'not_paired'
+  const status = pairing?.status ?? 'not_paired'
 
   return (
     <>
       <div className="flex flex-col gap-4">
-        {listening.data && <ListeningStatus state={listening.data} />}
+        {listening && <ListeningStatus state={listening} />}
 
         {status === 'awaiting_conversation' ? (
-          <AwaitingConversation pairing={pairing.data!} displayName={displayName} />
+          <AwaitingConversation pairing={pairing!} displayName={displayName} />
         ) : (
-          <p className="text-sm text-muted-foreground">{describe(status, pairing.data ?? null)}</p>
+          <p className="text-sm text-muted-foreground">{describe(status, pairing)}</p>
         )}
 
         <div className="flex flex-wrap gap-2">
           {status === 'paired' ? (
-            <Button type="button" variant="destructive" onClick={() => setConfirmRevoke(true)}>
+            <Button type="button" variant="destructive" onClick={onAskRevoke}>
               Couper le lien
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={starting.loading}
-              onClick={() => void starting.run()}
-            >
+            <Button type="button" variant="outline" disabled={starting} onClick={onStart}>
               {status === 'awaiting_conversation'
                 ? 'Générer un autre code'
                 : 'Relier une conversation'}
@@ -86,14 +78,11 @@ export function ChannelPairingSection({
             type="button"
             variant="outline"
             size="sm"
-            disabled={pairing.loading || listening.loading}
-            onClick={() => {
-              pairing.reload()
-              listening.reload()
-            }}
+            disabled={pairingLoading || listeningLoading}
+            onClick={onRefresh}
           >
             <RotateCw
-              className={cn((pairing.loading || listening.loading) && 'animate-spin')}
+              className={cn((pairingLoading || listeningLoading) && 'animate-spin')}
               aria-hidden="true"
             />
             Actualiser
@@ -107,9 +96,9 @@ export function ChannelPairingSection({
           body="Elle ne pourra plus rien demander à votre installation. Les alertes, elles, continuent d’arriver."
           confirmLabel="Couper le lien"
           tone="danger"
-          loading={revoking.loading}
-          onConfirm={() => void revoking.run()}
-          onCancel={() => setConfirmRevoke(false)}
+          loading={revoking}
+          onConfirm={onRevoke}
+          onCancel={onCancelRevoke}
         />
       )}
     </>

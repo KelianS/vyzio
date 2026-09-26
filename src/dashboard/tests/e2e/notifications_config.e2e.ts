@@ -6,7 +6,7 @@ import {
 } from './fixtures/fake_backend'
 
 test.describe('Notifications — les canaux', () => {
-  test('user_When configuring and enabling a channel_Should be warned before data leaves', async ({
+  test('NotificationChannelView_ShouldWarnBeforeDataLeaves_WhenTheUserEnablesAChannel', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())
@@ -37,7 +37,7 @@ test.describe('Notifications — les canaux', () => {
 
   // The bar for this step: a second channel is configured with the same screen, built
   // on what it declares, and with a how-to of its own (ADR-50, ADR-52).
-  test('user_When adding a second channel_Should get the same screen with that channel instructions', async ({
+  test('NotificationChannelView_ShouldShowThatChannelInstructions_WhenTheUserAddsASecondOne', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())
@@ -61,7 +61,7 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByRole('link', { name: /Discord/ })).toBeVisible()
   })
 
-  test('user_When nothing is configured_Should not be able to send a test', async ({ page }) => {
+  test('NotificationChannelView_ShouldKeepTheTestOff_WhenNothingIsConfigured', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/notifications/telegram')
 
@@ -70,7 +70,7 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByRole('button', { name: 'Envoyer un message de test' })).toBeDisabled()
   })
 
-  test('user_When restricting hours_Should only then be asked which ones', async ({ page }) => {
+  test('NotificationChannelView_ShouldAskWhichHours_WhenTheUserRestrictsThem', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/notifications/telegram')
 
@@ -81,7 +81,7 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByRole('combobox', { name: 'À partir de' })).toBeVisible()
   })
 
-  test('NotificationChannelPage_ShouldSayWhenTheRangeEnds_WhenItCrossesMidnight', async ({
+  test('NotificationChannelView_ShouldSayWhenTheRangeEnds_WhenItCrossesMidnight', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState())
@@ -100,7 +100,7 @@ test.describe('Notifications — les canaux', () => {
 
   // The criterion for this step: unplugging the network must show in the settings,
   // or Vyzio looks broken when it is merely waiting (SPECS 5.4).
-  test('user_When the channel stopped listening_Should read it, and why, where commands are set up', async ({
+  test('NotificationChannelView_ShouldSayItStoppedListeningAndWhy_WhenTheLoopFell', async ({
     page,
   }) => {
     await installFakeBackend(
@@ -140,7 +140,7 @@ test.describe('Notifications — les canaux', () => {
     await expect(page.getByText('Ignoré — conversation non reliée')).toBeVisible()
   })
 
-  test('user_When the channel is listening_Should be told so plainly', async ({ page }) => {
+  test('NotificationChannelView_ShouldSayItListens_WhenTheLoopRuns', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({
