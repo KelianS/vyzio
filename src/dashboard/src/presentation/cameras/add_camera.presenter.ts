@@ -1,12 +1,13 @@
 import type { ToastTone } from '../../common/components/toast'
 import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
+import { latestOnly } from '../../common/presenter/latest_only'
 import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
-import { useRootStore } from '../../infrastructure/store/root.store'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { refreshSurveillance } from '../surveillance/surveillance_refresh'
+import { reloadCameraList } from './camera_list_reload'
 import type { AddCameraAction } from './add_camera.actions'
 
 /** A failed call as the screen keeps it: its sentence and its diagnostic line. */
@@ -29,11 +30,7 @@ export function buildAddCameraPresenter({
   toast,
 }: AddCameraPresenterContext) {
   // Only the latest request may answer: an earlier one would show another brand's notice.
-  let vendorRequest = 0
-
-  function reloadCameras() {
-    void useRootStore.getState().loadCameras(container.getCameras)
-  }
+  const nextVendorRequest = latestOnly()
 
   return {
     onFormChanged(patch: Partial<CameraDraftInput>) {
@@ -142,7 +139,7 @@ export function buildAddCameraPresenter({
         const created = await container.createCamera.execute(form)
         // Post-create verification confirms the camera as the server saved it.
         const status = await container.verifyCamera.execute(created.id)
-        reloadCameras()
+        reloadCameraList(container)
         refreshSurveillance(hubContainer)
         dispatch({ type: 'CREATE_SUCCEEDED' })
         toast(status.guidance ?? `« ${created.displayName} » ajoutée.`, 'success')
@@ -162,7 +159,7 @@ export function buildAddCameraPresenter({
       streamPath: string | null,
       connected: boolean,
     ): Promise<void> {
-      const request = ++vendorRequest
+      const isLatest = nextVendorRequest()
       if (!vendorFamily) {
         dispatch({ type: 'VENDOR_ASSISTANCE_CLEARED' })
         return
@@ -174,11 +171,11 @@ export function buildAddCameraPresenter({
           streamPath,
           connected,
         })
-        if (request === vendorRequest) {
+        if (isLatest()) {
           dispatch({ type: 'VENDOR_ASSISTANCE_SUCCEEDED', markdown: assistance?.markdown ?? null })
         }
       } catch (e) {
-        if (request === vendorRequest) {
+        if (isLatest()) {
           dispatch({ type: 'VENDOR_ASSISTANCE_FAILED', error: toAppError(e) })
         }
       }

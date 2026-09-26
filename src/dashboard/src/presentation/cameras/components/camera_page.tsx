@@ -1,19 +1,13 @@
-import { Link, Outlet, useParams } from 'react-router'
+import { Link, Outlet } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
-import { TabBar } from '../../common/components/tab_bar'
-import { useRootStore } from '../../infrastructure/store/root.store'
-import { SettingsPage } from '../../common/settings/settings_page'
-import { ReadFailure } from '../../common/components/error_message'
-import { useReloadCameraList } from './camera_list_read'
-import { formatCameraStatusLabel } from './cameras.formatters'
+import { TabBar } from '../../../common/components/tab_bar'
+import { SettingsPage } from '../../../common/settings/settings_page'
+import { ReadFailure } from '../../../common/components/error_message'
+import type { AppError } from '../../../common/errors/app_error'
+import type { Camera } from '../../../domain/entities/camera.entity'
+import { formatCameraStatusLabel } from '../cameras.formatters'
 
-/**
- * The third level of the tree: the pages of **one** camera (ADR-40).
- *
- * Every page has a twin at installation level, or the other way round - setting a
- * camera means opening the same screen one notch lower. That is what makes the
- * override model of ADR-39 readable without explaining it.
- */
+// The pages of one camera, each the twin of an installation page one notch lower (ADR-39, ADR-40).
 const CAMERA_PAGES = [
   { slug: 'detection', label: 'Détection' },
   { slug: 'conservation', label: 'Conservation' },
@@ -22,13 +16,17 @@ const CAMERA_PAGES = [
   { slug: 'connexion', label: 'Connexion' },
 ]
 
-export function CameraShell() {
-  const { cameraId } = useParams()
-  const camera = useRootStore((state) => state.cameras.find((entry) => entry.id === cameraId))
-  const loading = useRootStore((state) => state.camerasLoading)
-  const error = useRootStore((state) => state.camerasError)
-  const reload = useReloadCameraList()
-
+export function CameraPage({
+  camera,
+  loading,
+  error,
+  onRetry,
+}: {
+  camera: Camera | undefined
+  loading: boolean
+  error: AppError | null
+  onRetry: () => void
+}) {
   if (!camera && loading) return <SettingsPage>Chargement…</SettingsPage>
 
   // An unread list says nothing about this camera: "not found" would be a false answer.
@@ -36,7 +34,7 @@ export function CameraShell() {
     return (
       <SettingsPage>
         <h1 className="font-serif text-3xl">Cette caméra ne s’affiche pas</h1>
-        <ReadFailure error={error} onRetry={reload} className="mt-3" />
+        <ReadFailure error={error} onRetry={onRetry} className="mt-3" />
         <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">
           Revenir à la liste des caméras
         </Link>
@@ -46,8 +44,7 @@ export function CameraShell() {
 
   if (!camera) {
     return (
-      // This route announces that it carries its own header: with no camera to name,
-      // the failure has to do it, or the page would stay anonymous.
+      // The route carries its own header: with no camera to name, the failure names the page.
       <SettingsPage>
         <h1 className="font-serif text-3xl">Caméra introuvable</h1>
         <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">

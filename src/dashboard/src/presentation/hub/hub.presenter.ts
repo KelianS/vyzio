@@ -3,7 +3,7 @@ import { toAppError } from '../../common/errors/to_app_error'
 import type { ToastTone } from '../../common/components/toast'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
-import { useRootStore } from '../../infrastructure/store/root.store'
+import { reloadCameraList } from '../cameras/camera_list_reload'
 import type { HubAction } from './hub.actions'
 import { privacyWording, type PrivacyRequest } from './privacy_request'
 
@@ -20,9 +20,7 @@ export function buildHubPresenter({
   dispatch,
   toast,
 }: HubPresenterContext) {
-  function reloadCameras() {
-    void useRootStore.getState().loadCameras(camerasContainer.getCameras)
-  }
+  const reloadCameras = () => reloadCameraList(camerasContainer)
 
   return {
     onMount() {
@@ -33,6 +31,8 @@ export function buildHubPresenter({
         .then((data) => dispatch({ type: 'LOAD_SUCCEEDED', data }))
         .catch((e: unknown) => dispatch({ type: 'LOAD_FAILED', error: toAppError(e) }))
     },
+
+    onReloadCameras: reloadCameras,
 
     onPrivacyPendingSet(request: PrivacyRequest | null) {
       dispatch({ type: 'PRIVACY_PENDING_SET', request })

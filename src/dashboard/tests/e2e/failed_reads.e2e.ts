@@ -43,7 +43,7 @@ test.describe('Failed reads', () => {
     await expect(page.getByRole('alert')).toHaveCount(0)
   })
 
-  test('CameraConservationPage_ShouldShowTheFailure_WhenTheCameraSettingsCannotBeRead', async ({
+  test('CameraConservationView_ShouldShowTheFailure_WhenTheCameraSettingsCannotBeRead', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -70,7 +70,7 @@ test.describe('Failed reads', () => {
     await expect(page.getByText('Ajouter une caméra')).toHaveCount(0)
   })
 
-  test('CameraListPage_ShouldShowTheFailureAndWithholdAdding_WhenTheCamerasCannotBeRead', async ({
+  test('CamerasView_ShouldShowTheFailureAndWithholdAdding_WhenTheCamerasCannotBeRead', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -84,7 +84,7 @@ test.describe('Failed reads', () => {
     await expect(page.getByRole('link', { name: 'Ajouter une caméra' })).toHaveCount(0)
   })
 
-  test('CameraShell_ShouldShowTheFailureRatherThanNotFound_WhenTheCamerasCannotBeRead', async ({
+  test('CamerasView_ShouldShowTheFailureRatherThanNotFound_WhenTheCamerasCannotBeRead', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))

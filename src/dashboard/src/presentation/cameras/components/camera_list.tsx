@@ -1,23 +1,29 @@
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
-import { Badge } from '../../common/components/badge'
-import { Button } from '../../common/ui/button'
-import { useRootStore } from '../../infrastructure/store/root.store'
-import { SettingsPage } from '../../common/settings/settings_page'
-import { ReadFailure } from '../../common/components/error_message'
-import { useReloadCameraList } from './camera_list_read'
+import { Badge } from '../../../common/components/badge'
+import { Button } from '../../../common/ui/button'
+import { SettingsPage } from '../../../common/settings/settings_page'
+import { ReadFailure } from '../../../common/components/error_message'
+import type { AppError } from '../../../common/errors/app_error'
+import type { Camera } from '../../../domain/entities/camera.entity'
 import {
   formatCameraAddress,
   formatCameraStatusLabel,
   formatStatusTone,
-} from './cameras.formatters'
+} from '../cameras.formatters'
 
-/** First level of the Cameras rubric: the list. Adding a camera is its own task/page. */
-export function CameraListPage() {
-  const cameras = useRootStore((state) => state.cameras)
-  const loading = useRootStore((state) => state.camerasLoading)
-  const error = useRootStore((state) => state.camerasError)
-  const reload = useReloadCameraList()
+/** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
+export function CameraList({
+  cameras,
+  loading,
+  error,
+  onRetry,
+}: {
+  cameras: Camera[]
+  loading: boolean
+  error: AppError | null
+  onRetry: () => void
+}) {
   // An unread list is not an empty one: adding would invite duplicating cameras that exist.
   const unread = error !== null && cameras.length === 0
 
@@ -49,7 +55,7 @@ export function CameraListPage() {
           ))}
         </ul>
       ) : unread ? (
-        <ReadFailure error={error} onRetry={reload} className="py-3" />
+        <ReadFailure error={error} onRetry={onRetry} className="py-3" />
       ) : (
         <p className="py-3 text-muted-foreground">
           {loading ? 'Chargement…' : 'Aucune caméra pour l’instant.'}

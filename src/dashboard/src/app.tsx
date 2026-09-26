@@ -11,10 +11,8 @@ import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/settings/settings.ru
 import { RestartSurveillanceTrigger } from './presentation/surveillance/restart_surveillance_trigger.component'
 import { NavigationGuard } from './presentation/navigation/navigation_guard.component'
 import { AccessGate } from './presentation/access/access_gate'
-import {
-  useCameraListFailureToast,
-  useReloadCameraList,
-} from './presentation/cameras/camera_list_read'
+import { useCameraListFailureToast } from './presentation/cameras/camera_list_read'
+import { reloadCameraList } from './presentation/cameras/camera_list_reload'
 
 const HubView = lazy(() =>
   import('./presentation/hub/hub.component').then((m) => ({ default: m.HubView })),
@@ -30,20 +28,17 @@ const SettingsView = lazy(() =>
 const AddCameraView = lazy(() =>
   import('./presentation/cameras/add_camera.component').then((m) => ({ default: m.AddCameraView })),
 )
-const CameraListPage = lazy(() =>
-  import('./presentation/cameras/camera_list_page').then((m) => ({ default: m.CameraListPage })),
+const CamerasView = lazy(() =>
+  import('./presentation/cameras/cameras.component').then((m) => ({ default: m.CamerasView })),
 )
-const CameraShell = lazy(() =>
-  import('./presentation/cameras/camera_shell').then((m) => ({ default: m.CameraShell })),
-)
-const CameraDetectionPage = lazy(() =>
-  import('./presentation/cameras/camera_detection_page').then((m) => ({
-    default: m.CameraDetectionPage,
+const CameraDetectionView = lazy(() =>
+  import('./presentation/cameras/camera_detection.component').then((m) => ({
+    default: m.CameraDetectionView,
   })),
 )
-const CameraConservationPage = lazy(() =>
-  import('./presentation/cameras/camera_conservation_page').then((m) => ({
-    default: m.CameraConservationPage,
+const CameraConservationView = lazy(() =>
+  import('./presentation/cameras/camera_conservation.component').then((m) => ({
+    default: m.CameraConservationView,
   })),
 )
 const CameraPrivacyPage = lazy(() =>
@@ -114,8 +109,7 @@ const ExpertView = lazy(() =>
 )
 
 function AppShell() {
-  const { hub } = useAppContainer()
-  const loadCameras = useReloadCameraList()
+  const { hub, cameras } = useAppContainer()
   useSystemStatsPolling(hub.getSystemStats)
   useCameraListFailureToast()
 
@@ -123,8 +117,8 @@ function AppShell() {
   // than in whichever screen happened to need it first. Without that, opening the
   // camera list directly would show it empty.
   useEffect(() => {
-    loadCameras()
-  }, [loadCameras])
+    reloadCameraList(cameras)
+  }, [cameras])
 
   return (
     <div className="grid min-w-0 max-w-full gap-6 pt-5 *:min-w-0">
@@ -167,21 +161,26 @@ const router = createBrowserRouter([
         path: '/settings',
         element: <SettingsView />,
         children: [
-          { path: 'cameras', element: <CameraListPage /> },
           // Names the task, not the section.
           { path: 'cameras/ajout', element: <AddCameraView />, handle: OWN_HEADER },
+          // One screen: the list, then the camera the route names, with its tabs.
           {
-            path: 'cameras/:cameraId',
-            element: <CameraShell />,
-            // Carries the name of the open camera, and its tabs.
-            handle: OWN_HEADER,
+            path: 'cameras',
+            element: <CamerasView />,
             children: [
-              { index: true, element: <Navigate to="detection" replace /> },
-              { path: 'detection', element: <CameraDetectionPage /> },
-              { path: 'conservation', element: <CameraConservationPage /> },
-              { path: 'vie-privee', element: <CameraPrivacyPage /> },
-              { path: 'image', element: <CameraImagePage /> },
-              { path: 'connexion', element: <CameraConnectionPage /> },
+              {
+                path: ':cameraId',
+                // Carries the name of the open camera, and its tabs.
+                handle: OWN_HEADER,
+                children: [
+                  { index: true, element: <Navigate to="detection" replace /> },
+                  { path: 'detection', element: <CameraDetectionView /> },
+                  { path: 'conservation', element: <CameraConservationView /> },
+                  { path: 'vie-privee', element: <CameraPrivacyPage /> },
+                  { path: 'image', element: <CameraImagePage /> },
+                  { path: 'connexion', element: <CameraConnectionPage /> },
+                ],
+              },
             ],
           },
           { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
