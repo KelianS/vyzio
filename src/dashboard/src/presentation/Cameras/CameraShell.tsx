@@ -1,6 +1,6 @@
-import { Link, NavLink, Outlet, useParams } from 'react-router'
+import { Link, Outlet, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
-import { cn } from '../../common/ui/utils'
+import { TabBar } from '../../common/components/TabBar'
 import { useRootStore } from '../../infrastructure/store/rootStore'
 import { SettingsPage } from '../../common/settings/SettingsPage'
 import { ReadFailure } from '../../common/components/ErrorMessage'
@@ -75,31 +75,14 @@ export function CameraShell() {
         </div>
       </div>
 
-      {/* Onglets plutot qu'une liste : a ce niveau les pages sont peu nombreuses
-          et l'on passe de l'une a l'autre, au lieu d'entrer et de ressortir. */}
-      <nav
-        aria-label="Réglages de la caméra"
-        // Wrapped, not scrolled, so every tab stays visible on a phone.
-        className="-mx-1 flex flex-wrap gap-1 px-1 pb-1"
-      >
-        {CAMERA_PAGES.map((page) => (
-          <NavLink
-            key={page.slug}
-            to={`/settings/cameras/${camera.id}/${page.slug}`}
-            className={({ isActive }) =>
-              cn(
-                'shrink-0 rounded-lg px-3 py-2 text-sm transition-colors',
-                'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                isActive
-                  ? 'bg-card font-medium shadow-xs'
-                  : 'text-muted-foreground hover:bg-card/60',
-              )
-            }
-          >
-            {page.label}
-          </NavLink>
-        ))}
-      </nav>
+      {/* Tabs rather than a list: few pages at this level, and one moves between them. */}
+      <TabBar
+        label="Réglages de la caméra"
+        tabs={CAMERA_PAGES.map((page) => ({
+          to: `/settings/cameras/${camera.id}/${page.slug}`,
+          label: page.label,
+        }))}
+      />
 
       <Outlet context={camera} />
     </div>
