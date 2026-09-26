@@ -4,6 +4,7 @@ import type { CameraRepository } from '../ports/camera.port'
 
 describe('CreateCamera', () => {
   it('execute_ShouldCreateTheCameraThroughTheRepository_WhenCalled', async () => {
+    // Arrange
     const created = {
       id: 'camera-1',
       slug: 'front-door',
@@ -48,7 +49,11 @@ describe('CreateCamera', () => {
       detectionPreset: 'person_default',
     }
 
-    await expect(useCase.execute(input)).resolves.toEqual(created)
+    // Act
+    const result = await useCase.execute(input)
+
+    // Assert
+    expect(result).toEqual(created)
     expect(repository.create).toHaveBeenCalledWith(input)
   })
 })

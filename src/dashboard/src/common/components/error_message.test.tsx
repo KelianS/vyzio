@@ -5,12 +5,14 @@ import { ErrorMessage } from './error_message'
 
 describe('ErrorMessage', () => {
   it('ErrorMessage_ShouldShowTheSentenceAndTheDiagnosticLine_WhenTheErrorCarriesOne', () => {
+    // Arrange & Act
     render(
       <ErrorMessage
         error={{ kind: AppErrorKind.Server, status: 500, diagnostic: 'GET /api/hub · 500' }}
       />,
     )
 
+    // Assert
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Vyzio a rencontré une erreur, réessayez dans un instant',
     )
@@ -18,8 +20,10 @@ describe('ErrorMessage', () => {
   })
 
   it('ErrorMessage_ShouldShowTheSentenceAlone_WhenTheErrorCarriesNoDiagnostic', () => {
+    // Arrange & Act
     render(<ErrorMessage error={{ kind: AppErrorKind.NotFound }} />)
 
+    // Assert
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Élément introuvable : il a peut-être été supprimé',
     )

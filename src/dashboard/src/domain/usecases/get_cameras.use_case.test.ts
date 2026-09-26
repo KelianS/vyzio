@@ -4,6 +4,7 @@ import type { CameraRepository } from '../ports/camera.port'
 
 describe('GetCameras', () => {
   it('execute_ShouldLoadTheCamerasFromTheRepository_WhenCalled', async () => {
+    // Arrange
     const cameras = [
       {
         id: 'camera-1',
@@ -40,7 +41,11 @@ describe('GetCameras', () => {
 
     const useCase = new GetCameras(repository as unknown as CameraRepository)
 
-    await expect(useCase.execute()).resolves.toEqual(cameras)
+    // Act
+    const result = await useCase.execute()
+
+    // Assert
+    expect(result).toEqual(cameras)
     expect(repository.getAll).toHaveBeenCalledOnce()
   })
 })

@@ -12,8 +12,10 @@ import { cn } from './utils'
  */
 describe('UI foundation', () => {
   it('Button_ShouldUseTheThemeTokens_WhenRendered', () => {
+    // Arrange & Act
     render(<Button>Enregistrer</Button>)
 
+    // Assert
     const button = screen.getByRole('button', { name: 'Enregistrer' })
     // Colours go through the semantic tokens, never through a literal value:
     // that is what guarantees the dark theme by construction.
@@ -22,17 +24,29 @@ describe('UI foundation', () => {
   })
 
   it('Switch_ShouldBeReachableByRole_WhenGivenALabel', () => {
+    // Arrange & Act
     render(<Switch aria-label="Enregistrement continu" />)
 
+    // Assert
     expect(screen.getByRole('switch', { name: 'Enregistrement continu' })).toBeInTheDocument()
   })
 
   it('cn_ShouldKeepTheLastClass_WhenTwoTargetTheSameAspect', () => {
-    expect(cn('rounded-sm', 'rounded-lg')).toBe('rounded-lg')
+    // Arrange & Act
+    const classes = cn('rounded-sm', 'rounded-lg')
+
+    // Assert
+    expect(classes).toBe('rounded-lg')
   })
 
   it('cn_ShouldDropTheClass_WhenItsConditionIsFalse', () => {
+    // Arrange
     const invalid = false
-    expect(cn('bg-primary', invalid && 'bg-destructive')).toBe('bg-primary')
+
+    // Act
+    const classes = cn('bg-primary', invalid && 'bg-destructive')
+
+    // Assert
+    expect(classes).toBe('bg-primary')
   })
 })

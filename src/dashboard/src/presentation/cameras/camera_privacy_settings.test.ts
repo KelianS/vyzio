@@ -26,36 +26,46 @@ function offered(setting: SettingDeclaration): string[] {
 
 describe('buildPrivacySettings', () => {
   it('buildPrivacySettings_ShouldOfferParking_WhenBothPositionsAreSaved', () => {
+    // Arrange & Act
     const setting = strategyOf(camera(), true)
 
+    // Assert
     expect(offered(setting)).toContain('ptz_parking')
     expect(setting.consequence).not.toContain(POSITIONS_FIRST)
   })
 
   it('buildPrivacySettings_ShouldWithholdParkingAndSayWhatUnlocksIt_WhenAPositionIsMissing', () => {
+    // Arrange & Act
     const setting = strategyOf(camera(), false)
 
+    // Assert
     expect(offered(setting)).not.toContain('ptz_parking')
     expect(setting.consequence).toContain(POSITIONS_FIRST)
   })
 
   it('buildPrivacySettings_ShouldKeepParkingAndSayWhatIsMissing_WhenItIsAlreadyChosenWithoutPositions', () => {
+    // Arrange & Act
     const setting = strategyOf(camera({ privacyStrategy: 'ptz_parking' }), false)
 
+    // Assert
     expect(offered(setting)).toContain('ptz_parking')
     expect(setting.consequence).toContain(POSITIONS_FIRST)
   })
 
   it('buildPrivacySettings_ShouldNotLockParking_WhenThePositionsAreNotKnownYet', () => {
+    // Arrange & Act
     const setting = strategyOf(camera(), null)
 
+    // Assert
     expect(offered(setting)).toContain('ptz_parking')
     expect(setting.consequence).not.toContain(POSITIONS_FIRST)
   })
 
   it('buildPrivacySettings_ShouldSayNothingAboutParking_WhenTheCameraCannotMove', () => {
+    // Arrange & Act
     const setting = strategyOf(camera({ ptzSupported: false }), false)
 
+    // Assert
     expect(offered(setting)).not.toContain('ptz_parking')
     expect(setting.consequence).not.toContain('Parking')
   })

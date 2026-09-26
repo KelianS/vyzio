@@ -3,8 +3,10 @@ import { midnightRangeHint } from './midnight_range'
 
 describe('midnightRangeHint', () => {
   it('midnightRangeHint_ShouldNameTheEndTime_WhenTheRangeCrossesMidnight', () => {
-    expect(midnightRangeHint('06:00')).toBe(
-      'La plage passe minuit : elle se termine le lendemain à 06:00.',
-    )
+    // Arrange & Act
+    const hint = midnightRangeHint('06:00')
+
+    // Assert
+    expect(hint).toBe('La plage passe minuit : elle se termine le lendemain à 06:00.')
   })
 })

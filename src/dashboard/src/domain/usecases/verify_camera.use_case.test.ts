@@ -4,6 +4,7 @@ import type { CameraRepository } from '../ports/camera.port'
 
 describe('VerifyCamera', () => {
   it('execute_ShouldVerifyTheCameraThroughTheRepository_WhenCalled', async () => {
+    // Arrange
     const status = {
       cameraId: 'camera-1',
       displayName: 'Front Door',
@@ -33,7 +34,11 @@ describe('VerifyCamera', () => {
 
     const useCase = new VerifyCamera(repository as unknown as CameraRepository)
 
-    await expect(useCase.execute('camera-1')).resolves.toEqual(status)
+    // Act
+    const result = await useCase.execute('camera-1')
+
+    // Assert
+    expect(result).toEqual(status)
     expect(repository.verify).toHaveBeenCalledWith('camera-1')
   })
 })

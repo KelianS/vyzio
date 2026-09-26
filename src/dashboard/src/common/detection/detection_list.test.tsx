@@ -18,17 +18,26 @@ const event: DetectionEvent = {
 }
 
 describe('DetectionList', () => {
-  it('DetectionList_ShouldShowTheCropAndOpenTheWideShot_WhenTheUserOpensThePreview', () => {
-    const onOpenMedia = vi.fn()
-    render(<DetectionList events={[event]} apiBaseUrl="http://api" onOpenMedia={onOpenMedia} />)
+  it('DetectionList_ShouldShowTheCrop_WhenTheEventHasAPreview', () => {
+    // Arrange & Act
+    render(<DetectionList events={[event]} apiBaseUrl="http://api" onOpenMedia={vi.fn()} />)
 
+    // Assert
     expect(screen.getByRole('presentation')).toHaveAttribute(
       'src',
       'http://api/api/detection-events/evt-1/thumbnail',
     )
+  })
 
+  it('DetectionList_ShouldOpenTheWideShot_WhenTheUserOpensThePreview', () => {
+    // Arrange
+    const onOpenMedia = vi.fn()
+    render(<DetectionList events={[event]} apiBaseUrl="http://api" onOpenMedia={onOpenMedia} />)
+
+    // Act
     fireEvent.click(screen.getByRole('button', { name: /Voir l’aperçu/ }))
 
+    // Assert
     expect(onOpenMedia).toHaveBeenCalledWith(
       'image',
       'http://api/api/detection-events/evt-1/snapshot',
@@ -36,9 +45,11 @@ describe('DetectionList', () => {
   })
 
   it('DetectionList_ShouldSayTheMediaIsErasedWithNothingToClick_WhenItExpired', () => {
+    // Arrange & Act
     const expired = { ...event, hasClip: true, mediaExpired: true }
     render(<DetectionList events={[expired]} apiBaseUrl="http://api" onOpenMedia={vi.fn()} />)
 
+    // Assert
     expect(screen.getByText(/au-delà de la durée de conservation/i)).toBeInTheDocument()
     expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()

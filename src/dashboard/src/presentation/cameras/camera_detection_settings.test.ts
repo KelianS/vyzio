@@ -65,27 +65,33 @@ function build(cfg: DetectionConfig, vals = values(), set: Setter = vi.fn()) {
 
 describe('buildDetectionSettings', () => {
   it('buildDetectionSettings_ShouldOfferOnlyTheReportedLabels_WhenTheCameraReportsSome', () => {
+    // Arrange & Act
     const { settings } = build(config({ availableLabels: ['person', 'dog'] }))
     const labels = settings.find((setting) => setting.id === 'detection-labels')!
 
+    // Assert
     expect(labels.nature).toMatchObject({ kind: 'multiChoice' })
     expect(optionsOf(labels).map((option) => option.value)).toEqual(['person', 'dog'])
   })
 
   it('buildDetectionSettings_ShouldOfferTheFullCatalogue_WhenTheCameraReportsNoLabel', () => {
+    // Arrange & Act
     const { settings } = build(config({ availableLabels: [] }))
     const labels = settings.find((setting) => setting.id === 'detection-labels')!
     const options = optionsOf(labels)
 
+    // Assert
     // Better to offer everything than nothing: a camera silent about its capabilities
     // must not deprive the user of the setting.
     expect(options).toHaveLength(3)
   })
 
   it('buildDetectionSettings_ShouldReadAsAutomatic_WhenNoSensitivityIsPinned', () => {
+    // Arrange & Act
     const { settings } = build(config(), values({ motionSensitivityPinned: false }))
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
+    // Assert
     // "Auto" is a value of the setting, not a side switch.
     expect(sensitivity.value).toBe('auto')
     expect(optionsOf(sensitivity).map((option) => option.value)).toEqual([
@@ -97,18 +103,22 @@ describe('buildDetectionSettings', () => {
   })
 
   it('buildDetectionSettings_ShouldPinTheLevel_WhenTheUserChoosesOne', () => {
+    // Arrange
     const set = vi.fn()
     const { settings } = build(config(), values(), set)
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
+    // Act
     sensitivity.onChange('low')
 
+    // Assert
     // One gesture carries both facts: choosing a level *is* pinning it.
     expect(set).toHaveBeenCalledWith('motionSensitivity', 'low')
     expect(set).toHaveBeenCalledWith('motionSensitivityPinned', true)
   })
 
   it('buildDetectionSettings_ShouldKeepTheLevelReached_WhenTheUserReturnsToAutomatic', () => {
+    // Arrange
     const set = vi.fn()
     const { settings } = build(
       config(),
@@ -117,35 +127,50 @@ describe('buildDetectionSettings', () => {
     )
     const sensitivity = settings.find((setting) => setting.id === 'detection-sensitivity')!
 
+    // Act
     sensitivity.onChange('auto')
 
+    // Assert
     // Going back to automatic has to exist - that was the gap - and it does not
     // reset the level: it becomes the starting point again.
     expect(set).toHaveBeenCalledExactlyOnceWith('motionSensitivityPinned', false)
   })
 
-  it('buildDetectionSettings_ShouldSayWhatApplies_WhenSensitivityIsAutomaticOrPinned', () => {
+  it('buildDetectionSettings_ShouldSayItAdjustsItself_WhenSensitivityIsAutomatic', () => {
+    // Arrange & Act
     const auto = build(config()).settings.find((s) => s.id === 'detection-sensitivity')!
-    expect(auto.consequence).toContain('corrige seul')
 
+    // Assert
+    expect(auto.consequence).toContain('corrige seul')
+  })
+
+  it('buildDetectionSettings_ShouldSayWhatGetsReported_WhenSensitivityIsPinned', () => {
+    // Arrange & Act
     const pinned = build(
       config(),
       values({ motionSensitivity: 'high', motionSensitivityPinned: true }),
     ).settings.find((s) => s.id === 'detection-sensitivity')!
+
+    // Assert
     expect(pinned.consequence).toContain('moindre mouvement')
   })
 
   it('buildDetectionSettings_ShouldOfferNoStreamChoice_WhenTheCameraServesOnlyOne', () => {
+    // Arrange & Act
     const { settings } = build(config({ streams: [STREAMS[0]] }))
+
+    // Assert
     // A single stream leaves nothing to arbitrate (ADR-38).
     expect(settings.find((setting) => setting.id === 'detection-stream')).toBeUndefined()
   })
 
   it('buildDetectionSettings_ShouldDescribeEachStreamByItsPixels_WhenSeveralAreServed', () => {
+    // Arrange & Act
     const { settings } = build(config())
     const stream = settings.find((setting) => setting.id === 'detection-stream')!
     const options = optionsOf(stream)
 
+    // Assert
     // Never an invented tier name: the real pixels, and the rank only as a
     // complement.
     expect(options[0].label).toContain('1920 × 1080')

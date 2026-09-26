@@ -26,8 +26,10 @@ describe('Toast', () => {
   afterEach(() => vi.useRealTimers())
 
   it('toast_ShouldShowTheDiagnosticLineUnderTheSentence_WhenAnErrorCarriesOne', () => {
+    // Arrange & Act
     showToast('error', 'POST /api/cameras/c/ptz/move · 502 Bad Gateway · camera_refused')
 
+    // Assert
     expect(screen.getByText('La caméra a refusé la commande')).toBeInTheDocument()
     expect(
       screen.getByText('POST /api/cameras/c/ptz/move · 502 Bad Gateway · camera_refused'),
@@ -35,26 +37,35 @@ describe('Toast', () => {
   })
 
   it('toast_ShouldStayUntilDismissed_WhenItCarriesADiagnosticLine', () => {
+    // Arrange
     showToast('error', 'GET /api/hub · 500')
 
+    // Act
     act(() => vi.advanceTimersByTime(60_000))
 
+    // Assert
     expect(screen.getByText('La caméra a refusé la commande')).toBeInTheDocument()
   })
 
   it('toast_ShouldCloseByItself_WhenItCarriesNoDiagnosticLine', () => {
+    // Arrange
     showToast('error')
 
+    // Act
     act(() => vi.advanceTimersByTime(4_000))
 
+    // Assert
     expect(screen.queryByText('La caméra a refusé la commande')).not.toBeInTheDocument()
   })
 
   it('toast_ShouldShowItOnce_WhenTheSameFailureIsRaisedTwice', () => {
+    // Arrange
     showToast('error', 'GET /api/hub · 500')
 
+    // Act
     act(() => screen.getByRole('button', { name: 'go' }).click())
 
+    // Assert
     expect(screen.getAllByText('La caméra a refusé la commande')).toHaveLength(1)
   })
 })

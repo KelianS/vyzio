@@ -3,10 +3,18 @@ import { formatCameraStatusLabel } from './cameras.formatters'
 
 describe('formatCameraStatusLabel', () => {
   it('formatCameraStatusLabel_ShouldWriteItInFrenchWithItsAccents_WhenTheCameraIsOnline', () => {
-    expect(formatCameraStatusLabel('online')).toBe('Connectée')
+    // Arrange & Act
+    const label = formatCameraStatusLabel('online')
+
+    // Assert
+    expect(label).toBe('Connectée')
   })
 
   it('formatCameraStatusLabel_ShouldAskToCheck_WhenTheStatusIsUnknown', () => {
-    expect(formatCameraStatusLabel('something_new')).toBe('À vérifier')
+    // Arrange & Act
+    const label = formatCameraStatusLabel('something_new')
+
+    // Assert
+    expect(label).toBe('À vérifier')
   })
 })

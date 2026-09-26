@@ -4,6 +4,7 @@ import type { CameraRepository } from '../ports/camera.port'
 
 describe('UpdateCamera', () => {
   it('execute_ShouldUpdateTheCameraThroughTheRepository_WhenCalled', async () => {
+    // Arrange
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
@@ -35,6 +36,8 @@ describe('UpdateCamera', () => {
     }
 
     const useCase = new UpdateCamera(repository as unknown as CameraRepository)
+
+    // Act
     const result = await useCase.execute('camera-1', {
       displayName: 'Entry',
       host: '192.168.1.10',
@@ -46,6 +49,7 @@ describe('UpdateCamera', () => {
       vendorFamily: null,
     })
 
+    // Assert
     expect(result.displayName).toBe('Entry')
     expect(repository.update).toHaveBeenCalledWith(
       'camera-1',
