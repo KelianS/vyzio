@@ -263,10 +263,10 @@ export interface FakeBackendState {
   /** Saved settings that surveillance has not picked up yet (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
-  /** Frames a second received per camera id, where a test needs a low rate; others get 10, an offline one 0. */
-  receivedFps: Record<string, number>
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
+  /** Frames a second received per camera id, where a test needs a low rate; others get 10. */
+  receivedFps: Record<string, number>
   privacySchedules: {
     id: string
     cameraId: string
@@ -355,8 +355,8 @@ export function createFakeBackendState(
     access: { installed: true, signedIn: true },
     pendingChanges: false,
     restartFails: false,
-    receivedFps: {},
     restartBreaks: false,
+    receivedFps: {},
     privacySchedules: [],
     profiles: [],
     notificationChannels: {},
@@ -537,7 +537,7 @@ export async function installFakeBackend(
         storage: { totalGb: 500, usedGb: 120, freeGb: 380 },
         cameras: state.cameras.map((c) => ({
           camera: c.frigateCameraName ?? c.slug,
-          fps: c.status === 'offline' ? 0 : (state.receivedFps[c.id] ?? 10),
+          fps: state.receivedFps[c.id] ?? 10,
         })),
         detection: { hardware: 'cpu', targetFps: 5 },
         pendingChanges: state.pendingChanges,

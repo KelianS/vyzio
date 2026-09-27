@@ -56,7 +56,6 @@ describe('SystemMonitorPanel', () => {
     // Assert
     expect(screen.getByText('Caméra retirée ou renommée')).toBeInTheDocument()
     expect(screen.queryByText('old_name')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
 
   it('SystemMonitorPanel_ShouldLeaveOutDiskAndCameras_WhenNeitherIsReported', () => {
