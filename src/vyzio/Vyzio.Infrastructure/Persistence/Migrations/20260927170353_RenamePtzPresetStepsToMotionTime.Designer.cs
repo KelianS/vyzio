@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20260927151613_RenamePtzPresetStepsToMotionTime")]
+    [Migration("20260927170353_RenamePtzPresetStepsToMotionTime")]
     partial class RenamePtzPresetStepsToMotionTime
     {
         /// <inheritdoc />
@@ -134,10 +134,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("password");
 
-                    b.Property<int>("Port")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("port");
-
                     b.Property<string>("PrivacyMiss")
                         .HasColumnType("TEXT")
                         .HasColumnName("privacy_miss");
@@ -164,10 +160,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("privacy_vendor_cut");
 
-                    b.Property<string>("ProtocolEndpointsJson")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("protocol_endpoints_json");
-
                     b.Property<bool>("PtzSupported")
                         .HasColumnType("INTEGER")
                         .HasColumnName("ptz_supported");
@@ -189,15 +181,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("status");
-
-                    b.Property<string>("StreamProtocol")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("stream_protocol");
-
-                    b.Property<string>("SupportedProtocolsJson")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("supported_protocols_json");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT")
@@ -340,6 +323,76 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("idx_privacy_schedules_camera");
 
                     b.ToTable("camera_privacy_schedules", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraProtocol", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CameraId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("camera_id");
+
+                    b.Property<DateTime?>("CheckedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("checked_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<uint?>("DeviceId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("device_id");
+
+                    b.Property<string>("Endpoint")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("endpoint");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_error");
+
+                    b.Property<string>("Password")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password");
+
+                    b.Property<int?>("Port")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("port");
+
+                    b.Property<string>("Protocol")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("protocol");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("username");
+
+                    b.HasKey("Id")
+                        .HasName("pk_camera_protocols");
+
+                    b.HasIndex("CameraId", "Protocol")
+                        .IsUnique()
+                        .HasDatabaseName("ux_camera_protocols_camera_protocol");
+
+                    b.ToTable("camera_protocols", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.CameraStream", b =>
@@ -859,7 +912,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Vyzio.Core.Entities.CameraCapabilityBinding", b =>
                 {
                     b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
-                        .WithMany()
+                        .WithMany("Capabilities")
                         .HasForeignKey("CameraId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -876,6 +929,18 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_camera_privacy_schedules_cameras_camera_id");
+
+                    b.Navigation("Camera");
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraProtocol", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
+                        .WithMany("Protocols")
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_camera_protocols_cameras_camera_id");
 
                     b.Navigation("Camera");
                 });
@@ -937,6 +1002,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Vyzio.Core.Entities.Camera", b =>
                 {
+                    b.Navigation("Capabilities");
+
+                    b.Navigation("Protocols");
+
                     b.Navigation("Streams");
                 });
 

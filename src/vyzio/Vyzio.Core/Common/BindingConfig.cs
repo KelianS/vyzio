@@ -7,7 +7,6 @@ namespace Vyzio.Core.Common;
 public static class BindingConfig
 {
     public const string PanInverted = "pan_inverted";
-    public const string DeviceId = "device_id";
     public const string SupportsNativePresets = "supports_native_presets";
 
     public static bool ReadBool(string? configJson, string key)

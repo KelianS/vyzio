@@ -9,9 +9,12 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
 {
     public async Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
     {
-        if (camera.StreamProtocol == StreamProtocol.Dvrip)
+        switch (camera.StreamBinding?.Protocol)
         {
-            return await VerifyDvripAsync(camera, ct);
+            case null:
+                return NoStreamProtocol();
+            case SupportedProtocol.Dvrip:
+                return await VerifyDvripAsync(camera, ct);
         }
 
         var checkedAt = time.GetUtcNow();
@@ -22,7 +25,7 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
             using var expiry = new CancellationTokenSource(TimeSpan.FromSeconds(3), time);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
-            await client.ConnectAsync(camera.Host, camera.Port, timeout.Token);
+            await client.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Rtsp), timeout.Token);
             var probeResult = await ProbeRtspAsync(client, camera, timeout.Token);
 
             return probeResult switch
@@ -70,7 +73,7 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
             using var client = new TcpClient();
             using var expiry = new CancellationTokenSource(TimeSpan.FromSeconds(5), time);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
-            await client.ConnectAsync(camera.Host, camera.Port, timeout.Token);
+            await client.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), timeout.Token);
             return new CameraVerificationResult(
                 true,
                 true,
@@ -90,6 +93,16 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
                 null);
         }
     }
+
+    // A camera whose stream protocol was never chosen has nothing to verify yet (ADR-61).
+    private CameraVerificationResult NoStreamProtocol()
+        => new(
+            false,
+            false,
+            "needs_attention",
+            "Aucun protocole n'est choisi pour le flux video de cette camera.",
+            time.GetUtcNow(),
+            null);
 
     private static async Task<RtspProbeResult> ProbeRtspAsync(TcpClient client, Camera camera, CancellationToken ct)
     {
@@ -124,17 +137,18 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
 
     private static string BuildRtspUri(Camera camera)
     {
-        var builder = new UriBuilder("rtsp", camera.Host, camera.Port);
+        var builder = new UriBuilder("rtsp", camera.Host, camera.PortOf(SupportedProtocol.Rtsp));
 
-        if (!string.IsNullOrWhiteSpace(camera.StreamPath))
+        if (camera.MainStream?.Path is { Length: > 0 } path)
         {
-            builder.Path = camera.StreamPath!.TrimStart('/');
+            builder.Path = path.TrimStart('/');
         }
 
-        if (!string.IsNullOrWhiteSpace(camera.Username))
+        var account = camera.CredentialsFor(SupportedProtocol.Rtsp);
+        if (!string.IsNullOrWhiteSpace(account.Username))
         {
-            builder.UserName = camera.Username;
-            builder.Password = camera.Password ?? string.Empty;
+            builder.UserName = account.Username;
+            builder.Password = account.Password ?? string.Empty;
         }
 
         return builder.Uri.ToString();

@@ -6,11 +6,7 @@ import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import {
-  formatCameraAddress,
-  formatCameraStatusLabel,
-  formatStatusTone,
-} from '../cameras.formatters'
+import { formatCameraStatusLabel, formatStatusTone } from '../cameras.formatters'
 
 /** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
 export function CameraList({
@@ -40,9 +36,7 @@ export function CameraList({
                 <span className="min-w-0">
                   <span className="block font-medium">{camera.displayName}</span>
                   {/* Tells apart two cameras sharing a name, or the lenses of one device (SPECS 2.2). */}
-                  <span className="block text-sm text-muted-foreground">
-                    {formatCameraAddress(camera)}
-                  </span>
+                  <span className="block text-sm text-muted-foreground">{camera.host}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
                   <Badge tone={formatStatusTone(camera)}>

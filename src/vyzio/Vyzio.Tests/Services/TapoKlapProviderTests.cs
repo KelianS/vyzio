@@ -20,7 +20,6 @@ public class TapoKlapProviderTests
         FrigateCameraName = "cam1",
         DisplayName = "Tapo Cam",
         Host = "192.168.1.50",
-        Port = 554,
         Username = "admin",
         Password = "secret",
     };
@@ -52,6 +51,27 @@ public class TapoKlapProviderTests
     {
         var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
         Assert.Equal(SupportedProtocol.TapoKlap, ((IPtzCapabilityProvider)provider).Protocol);
+    }
+
+    [Fact]
+    public async Task CheckLoginAsync_ShouldHandshakeOnTheKlapPortOfTheRow_WhenItIsNotTheUsualOne()
+    {
+        // Arrange
+        Uri? asked = null;
+        var provider = MakeProvider(new StubHttpHandler(request =>
+        {
+            asked = request.RequestUri;
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+        }));
+        var camera = MakeCamera();
+        camera.EnsureProtocol(SupportedProtocol.TapoKlap).Port = 8080;
+
+        // Act
+        var answer = await provider.CheckLoginAsync(camera, TimeProvider.System, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ProtocolStatus.Refused, answer.Status);
+        Assert.Equal(8080, asked!.Port);
     }
 
     [Fact]

@@ -55,5 +55,49 @@ export function cameraConnectionReducer(
       return { ...state, manualConfiguring: true }
     case 'MANUAL_FINISHED':
       return { ...state, manualConfiguring: false }
+
+    case 'PROTOCOLS_STARTED':
+      return { ...state, protocolsLoading: true, protocolsError: null }
+    case 'PROTOCOLS_LOADED':
+      return { ...state, protocolsLoading: false, protocols: action.protocols }
+    // An unread list is not an empty one: no box would claim the camera speaks nothing.
+    case 'PROTOCOLS_FAILED':
+      return { ...state, protocolsLoading: false, protocols: [], protocolsError: action.error }
+    case 'PROTOCOL_CHECK_STARTED':
+      return { ...state, checking: { ...state.checking, [action.protocol]: true } }
+    // The answer replaces its own box and leaves the others as they were read.
+    case 'PROTOCOL_CHECKED':
+      return {
+        ...state,
+        protocols: state.protocols.map((entry) =>
+          entry.protocol === action.protocol.protocol ? action.protocol : entry,
+        ),
+      }
+    case 'PROTOCOL_CHECK_FINISHED': {
+      const checking = { ...state.checking }
+      delete checking[action.protocol]
+      return { ...state, checking }
+    }
+
+    case 'PROTOCOL_SEARCH_STARTED':
+      return { ...state, searchingProtocols: true }
+    case 'PROTOCOL_SEARCH_FINISHED':
+      return { ...state, searchingProtocols: false }
+
+    case 'PROTOCOL_FORM_OPENED':
+      return { ...state, protocolFormOpen: true }
+    case 'PROTOCOL_FORM_CLOSED':
+      return { ...state, protocolFormOpen: false }
+    case 'PROTOCOL_ADD_STARTED':
+      return { ...state, addingProtocol: true }
+    case 'PROTOCOL_ADD_FINISHED':
+      return { ...state, addingProtocol: false }
+    case 'PROTOCOL_REMOVE_STARTED':
+      return { ...state, removing: { ...state.removing, [action.protocol]: true } }
+    case 'PROTOCOL_REMOVE_FINISHED': {
+      const removing = { ...state.removing }
+      delete removing[action.protocol]
+      return { ...state, removing }
+    }
   }
 }

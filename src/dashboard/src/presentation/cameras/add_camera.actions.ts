@@ -1,9 +1,9 @@
 import type { AppError } from '../../common/errors/app_error'
-import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
+import type { AddCameraForm } from './add_camera.uido'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 
 export type AddCameraAction =
-  | { type: 'FORM_UPDATED'; patch: Partial<CameraDraftInput> }
+  | { type: 'FORM_UPDATED'; patch: Partial<AddCameraForm> }
   | { type: 'MANUAL_ENTRY_SELECTED' }
   | { type: 'SELECTION_CLEARED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }

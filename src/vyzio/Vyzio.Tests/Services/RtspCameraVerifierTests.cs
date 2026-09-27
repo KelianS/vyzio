@@ -11,6 +11,21 @@ namespace Vyzio.Tests.Services;
 public class RtspCameraVerifierTests
 {
     [Fact]
+    public async Task VerifyAsync_ShouldReportNotConnected_WhenTheStreamHasNoProtocolYet()
+    {
+        // Arrange
+        var sut = new RtspCameraVerifier(new FakeTimeProvider());
+        var camera = new Camera { Slug = "porch", FrigateCameraName = "porch", DisplayName = "Porch", Host = "127.0.0.1" };
+
+        // Act
+        var result = await sut.VerifyAsync(camera);
+
+        // Assert
+        Assert.False(result.Connected);
+        Assert.Equal("needs_attention", result.Status);
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldReportNeedsAttention_WhenTheRtspStreamRequiresAuthentication()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -38,9 +53,7 @@ public class RtspCameraVerifierTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "127.0.0.1",
-            Port = port,
-            StreamPath = "/stream1",
-        }).ObservedAsync();
+        }.WithStream(SupportedProtocol.Rtsp, port, "/stream1")).ObservedAsync();
 
         await serverTask;
 

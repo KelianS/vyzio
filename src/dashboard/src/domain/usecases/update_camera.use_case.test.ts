@@ -41,10 +41,8 @@ describe('UpdateCamera', () => {
     const result = await useCase.execute('camera-1', {
       displayName: 'Entry',
       host: '192.168.1.10',
-      port: 554,
       username: null,
       password: null,
-      streamPath: '/Streaming/Channels/101',
       sourceType: 'rtsp_manual',
       vendorFamily: null,
     })

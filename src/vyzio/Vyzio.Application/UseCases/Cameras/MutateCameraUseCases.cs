@@ -13,7 +13,8 @@ public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryServ
         var target = request?.ToTarget();
         var candidates = await discoveryService.DiscoverAsync(target, ct);
         var configuredEndpoints = (await cameras.GetAllAsync(ct))
-            .Select(camera => BuildEndpointKey(camera.Host, camera.Port))
+            .Where(camera => camera.StreamBinding is not null)
+            .Select(camera => BuildEndpointKey(camera.Host, camera.PortOf(camera.StreamBinding!.Protocol)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return candidates
@@ -38,7 +39,8 @@ public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAs
 public sealed class CreateCameraUseCase(
     ICameraRepository cameras,
     ICameraCapabilityOnboardingQueue onboardingQueue,
-    IFrigateConfigApplier frigateConfigApplier)
+    IFrigateConfigApplier frigateConfigApplier,
+    ICapabilityProviderRegistry registry)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
     {
@@ -48,7 +50,7 @@ public sealed class CreateCameraUseCase(
         var baseSlug = CameraDraftFactory.Slugify(request.DisplayName);
         var slug = await EnsureUniqueSlugAsync(baseSlug, ct);
 
-        var camera = BuildCameraDraft(request, slug);
+        var camera = CameraDraftFactory.Build(request, slug, registry.GetRegisteredProtocols(CameraCapability.Stream));
 
         await cameras.AddAsync(camera, ct);
 
@@ -58,10 +60,7 @@ public sealed class CreateCameraUseCase(
 
         // A new camera is something the surveillance has not taken up yet: without this the restart
         // trigger would stay hidden, and its absence claims everything saved is in service (ADR-44).
-        var applicable = (await cameras.GetAllAsync(ct))
-            .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
-            .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
+        await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
 
         return CameraDto.From(camera);
     }
@@ -80,23 +79,19 @@ public sealed class CreateCameraUseCase(
         return slug;
     }
 
-    internal static Camera BuildCameraDraft(CreateCameraRequest request, string slug)
-        => CameraDraftFactory.Build(request, slug);
-
-
 }
 
-public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier)
+public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier, CameraProtocolCheck protocolCheck, ICapabilityProviderRegistry registry)
 {
     public async Task<CameraStatusDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(request.DisplayName);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Host);
 
-        var camera = CameraDraftFactory.Build(request, "draft-camera");
+        var camera = CameraDraftFactory.Build(request, "draft-camera", registry.GetRegisteredProtocols(CameraCapability.Stream));
         camera.Id = "draft-camera";
 
-        var result = await verifier.VerifyAsync(camera, ct);
+        var (result, _) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, run: null, ct);
         camera.Status = result.Status;
         camera.LastReachabilityCheckAt = result.CheckedAt;
         camera.LastSuccessfulFrameAt = result.LastSuccessfulFrameAt;
@@ -108,10 +103,13 @@ public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier)
 
 public sealed class VerifyCameraUseCase(
     ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
     ICameraVerifier verifier,
-    ICameraStreamEnumerator streamEnumerator)
+    ICameraStreamEnumerator streamEnumerator,
+    CameraProtocolCheck protocolCheck)
 {
-    public async Task<CameraStatusDto?> ExecuteAsync(string id, CancellationToken ct = default)
+    // run: the protocol answers already heard in this gesture, so detection asks the stream's protocol once (ADR-61).
+    public async Task<CameraStatusDto?> ExecuteAsync(string id, ProtocolCheckRun? run = null, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(id, ct);
         if (camera is null)
@@ -119,23 +117,26 @@ public sealed class VerifyCameraUseCase(
             return null;
         }
 
-        var result = await verifier.VerifyAsync(camera, ct);
+        var (result, detail) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, run, ct);
         camera.Status = result.Status;
         camera.LastReachabilityCheckAt = result.CheckedAt;
         camera.LastSuccessfulFrameAt = result.LastSuccessfulFrameAt;
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
+        // The verification is the stream capability's probe; its reason is kept like any capability's (ADR-61).
+        var stream = await bindings.GetAsync(camera.Id, CameraCapability.Stream, ct);
+        if (stream is not null)
+        {
+            stream.Verified = result.PreviewAvailable;
+            stream.VerifiedAt = result.CheckedAt;
+            stream.LastError = result.PreviewAvailable ? null : detail;
+            await bindings.SaveAsync(stream, ct);
+        }
+
         // Verification is the one moment the camera is known reachable, so it is where Vyzio asks
         // what it actually serves (ADR-38) — no extra user action, no extra round of connections.
         if (result.Connected)
         {
-            // A transport that just carried a successful verification is proven, exactly like a
-            // capability protocol that answered its probe. Capability probes alone would never
-            // record the transport, since Stream has no probe of its own (ADR-32).
-            camera.AddSupportedProtocol(camera.StreamProtocol == StreamProtocol.Dvrip
-                ? SupportedProtocol.Dvrip
-                : SupportedProtocol.Rtsp);
-
             await SyncStreamsAsync(camera, ct);
         }
 
@@ -229,25 +230,17 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         }
 
         var normalizedHost = request.Host.Trim();
-        var normalizedPort = request.Port > 0 ? request.Port : 554;
         var normalizedUsername = CameraDraftFactory.NormalizeOptional(request.Username);
-        var normalizedStreamPath = CameraDraftFactory.NormalizeStreamPath(request.StreamPath);
         var normalizedVendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var parsedVendorFamily)
             ? parsedVendorFamily
             : (VendorFamily?)null;
         var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
-        var normalizedStreamProtocol = SnakeCaseEnum.TryFromSnakeCase<StreamProtocol>(request.StreamProtocol, out var parsedStreamProtocol)
-            ? parsedStreamProtocol
-            : camera.StreamProtocol;
         var normalizedPassword = request.Password is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
 
         var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
-            || camera.Port != normalizedPort
             || !string.Equals(camera.Username, normalizedUsername, StringComparison.Ordinal)
-            || !string.Equals(camera.StreamPath, normalizedStreamPath, StringComparison.Ordinal)
             || !string.Equals(camera.SourceType, normalizedSourceType, StringComparison.Ordinal)
             || camera.VendorFamily != normalizedVendorFamily
-            || camera.StreamProtocol != normalizedStreamProtocol
             || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
 
         var normalizedDisplayName = request.DisplayName.Trim();
@@ -258,12 +251,9 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         }
 
         camera.Host = normalizedHost;
-        camera.Port = normalizedPort;
         camera.Username = normalizedUsername;
-        camera.SetMainStreamPath(normalizedStreamPath);
         camera.SourceType = normalizedSourceType;
         camera.VendorFamily = normalizedVendorFamily;
-        camera.StreamProtocol = normalizedStreamProtocol;
 
         if (normalizedPassword is not null)
         {
@@ -272,11 +262,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
 
         if (connectivityChanged)
         {
-            camera.Status = "needs_attention";
-            camera.ValidationState = CameraValidationState.Draft;
-            camera.IsEnabled = false;
-            camera.LastReachabilityCheckAt = null;
-            camera.LastSuccessfulFrameAt = null;
+            CameraConnectionChange.Apply(camera);
         }
 
         if (request.PtzSupported.HasValue)
@@ -287,12 +273,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         camera.UpdatedAt = DateTimeOffset.UtcNow;
 
         await cameras.UpdateAsync(camera, ct);
-
-        var catalog = await cameras.GetAllAsync(ct);
-        var applicable = catalog
-            .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
-            .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
+        await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
 
         return CameraDto.From(camera);
     }
@@ -443,21 +424,56 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
     }
 }
 
+// The stream is a capability like the others: its protocol must answer with its account before the stream is verified (ADR-61).
+internal static class StreamVerification
+{
+    // Detail is what support reads: the protocol's own reason when the protocol failed, the verifier's otherwise.
+    public static async Task<(CameraVerificationResult Result, string Detail)> RunAsync(
+        Camera camera, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, ProtocolCheckRun? run, CancellationToken ct)
+    {
+        if (camera.StreamBinding is not { } stream)
+        {
+            var unbound = await verifier.VerifyAsync(camera, ct);
+            return (unbound, unbound.Guidance);
+        }
+
+        var protocol = await protocolCheck.CheckAsync(camera, stream.Protocol, run, ct);
+        var checkedAt = protocol.CheckedAt ?? DateTimeOffset.UtcNow;
+        switch (protocol.Status)
+        {
+            case ProtocolStatus.Answers:
+                var verified = await verifier.VerifyAsync(camera, ct);
+                return (verified, verified.Guidance);
+            case ProtocolStatus.Refused:
+                return (new CameraVerificationResult(true, false, "needs_attention",
+                    "La camera refuse le compte pour son flux. Verifiez l'identifiant et le mot de passe, puis relancez la verification.",
+                    checkedAt, null), protocol.LastError ?? string.Empty);
+            default:
+                return (new CameraVerificationResult(false, false, "offline",
+                    "Camera injoignable sur le port de son flux. Verifiez l'adresse et le port, puis relancez la verification.",
+                    checkedAt, null), protocol.LastError ?? string.Empty);
+        }
+    }
+}
+
 internal static class CameraDraftFactory
 {
-    public static Camera Build(CreateCameraRequest request, string slug)
+    // streamProtocols: the transports with a registered stream provider, the ones go2rtc and Frigate take (ADR-19, ADR-32).
+    public static Camera Build(CreateCameraRequest request, string slug, IReadOnlyList<SupportedProtocol> streamProtocols)
     {
+        if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(request.Stream.Protocol, out var streamProtocol)
+            || !streamProtocols.Contains(streamProtocol))
+            throw new ArgumentException($"Invalid stream protocol '{request.Stream.Protocol}'.");
+
         var camera = new Camera
         {
             Slug = slug,
             DisplayName = request.DisplayName.Trim(),
             Host = request.Host.Trim(),
-            Port = request.Port > 0 ? request.Port : 554,
             Username = NormalizeOptional(request.Username),
             Password = NormalizeOptional(request.Password),
             VendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var vendorFamily) ? vendorFamily : null,
             SourceType = string.IsNullOrWhiteSpace(request.SourceType) ? "rtsp_manual" : request.SourceType.Trim(),
-            StreamProtocol = SnakeCaseEnum.TryFromSnakeCase<StreamProtocol>(request.StreamProtocol, out var streamProtocol) ? streamProtocol : StreamProtocol.Rtsp,
             Status = "needs_attention",
             ValidationState = CameraValidationState.Draft,
             IsEnabled = false,
@@ -465,9 +481,20 @@ internal static class CameraDraftFactory
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        // A camera is born with its main stream: the path given at onboarding is that stream's,
-        // not a column of the camera (ADR-38).
-        camera.SetMainStreamPath(NormalizeStreamPath(request.StreamPath));
+        // A camera is born with its stream capability: the protocol that carries it, how to reach
+        // that protocol, and the main path when the stream goes over RTSP (ADR-38, ADR-61).
+        camera.Capabilities.Add(new CameraCapabilityBinding
+        {
+            CameraId = camera.Id,
+            Capability = CameraCapability.Stream,
+            Protocol = streamProtocol,
+            ManuallyConfigured = true,
+        });
+        var protocol = camera.EnsureProtocol(streamProtocol);
+        protocol.Port = request.Stream.Port is > 0 && request.Stream.Port != ProtocolPorts.Usual(streamProtocol)
+            ? request.Stream.Port
+            : null;
+        camera.SetMainStreamPath(NormalizeStreamPath(request.Stream.Path));
         return camera;
     }
 

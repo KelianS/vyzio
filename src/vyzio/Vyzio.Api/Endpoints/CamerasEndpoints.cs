@@ -10,8 +10,9 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Endpoints;
 
-// Request type for capability endpoints
-file sealed record ConfigureCameraCapabilityRequest(string Protocol, string? ConfigJson);
+// Request types for capability and protocol endpoints (ADR-61)
+file sealed record ConfigureCameraCapabilityRequest(string Protocol);
+file sealed record StreamPathApiRequest(string? Path);
 
 // Request types for privacy endpoints
 file sealed record TogglePrivacyRequest(bool Active);
@@ -55,8 +56,15 @@ public static class CamerasEndpoints
 
         group.MapPost("/", async (CreateCameraRequest request, CreateCameraUseCase useCase, CancellationToken ct) =>
         {
-            var dto = await useCase.ExecuteAsync(request, ct);
-            return Results.Created($"/api/cameras/{dto.Id}", dto);
+            try
+            {
+                var dto = await useCase.ExecuteAsync(request, ct);
+                return Results.Created($"/api/cameras/{dto.Id}", dto);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = "invalid_camera", message = ex.Message });
+            }
         });
 
         group.MapPut("/{id}", async (string id, UpdateCameraRequest request, UpdateCameraUseCase useCase, CancellationToken ct) =>
@@ -66,7 +74,16 @@ public static class CamerasEndpoints
         });
 
         group.MapPost("/verify-draft", async (CreateCameraRequest request, VerifyDraftCameraUseCase useCase, CancellationToken ct) =>
-            Results.Ok(await useCase.ExecuteAsync(request, ct)));
+        {
+            try
+            {
+                return Results.Ok(await useCase.ExecuteAsync(request, ct));
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = "invalid_camera", message = ex.Message });
+            }
+        });
 
         group.MapGet("/{id}/status", async (string id, GetCameraStatusUseCase useCase, CancellationToken ct) =>
         {
@@ -76,7 +93,7 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/verify", async (string id, VerifyCameraUseCase useCase, CancellationToken ct) =>
         {
-            var status = await useCase.ExecuteAsync(id, ct);
+            var status = await useCase.ExecuteAsync(id, ct: ct);
             return status is null ? Results.NotFound() : Results.Ok(status);
         });
 
@@ -269,13 +286,23 @@ public static class CamerasEndpoints
         {
             try
             {
-                var binding = await useCase.ExecuteAsync(id, new Vyzio.Application.UseCases.Cameras.ConfigureCameraCapabilityRequest(capability, request.Protocol, request.ConfigJson), ct);
+                var binding = await useCase.ExecuteAsync(id, new Vyzio.Application.UseCases.Cameras.ConfigureCameraCapabilityRequest(capability, request.Protocol), ct);
                 return binding is null ? Results.NotFound() : Results.Ok(binding);
+            }
+            catch (ProtocolNotOnCameraException ex)
+            {
+                return Results.Conflict(new { error = "protocol_not_on_camera", message = ex.Message });
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(new { error = "invalid_capability_request", message = ex.Message });
             }
+        });
+
+        group.MapPut("/{id}/capabilities/stream/path", async (string id, StreamPathApiRequest request, SetStreamPathUseCase useCase, CancellationToken ct) =>
+        {
+            var binding = await useCase.ExecuteAsync(id, request.Path, ct);
+            return binding is null ? Results.NotFound() : Results.Ok(binding);
         });
 
         group.MapPut("/{id}/capabilities/ptz/pan-inverted", async (string id, PtzPanInvertedApiRequest request, SetPtzPanInvertedUseCase useCase, CancellationToken ct) =>
@@ -293,8 +320,15 @@ public static class CamerasEndpoints
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
                 return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
 
-            var removed = await useCase.ExecuteAsync(id, cap, ct);
-            return removed ? Results.NoContent() : Results.NotFound();
+            try
+            {
+                var removed = await useCase.ExecuteAsync(id, cap, ct);
+                return removed ? Results.NoContent() : Results.NotFound();
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = "stream_not_removable", message = ex.Message });
+            }
         });
 
         group.MapPost("/{id}/capabilities/{capability}/probe", async (
@@ -307,7 +341,7 @@ public static class CamerasEndpoints
                 return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
 
             // The gesture after changing something on the camera: re-resolve, never trust the cache (ADR-56).
-            var result = await useCase.ExecuteAsync(id, cap, rediscoverEndpoints: true, ct);
+            var result = await useCase.ExecuteAsync(id, cap, rediscoverEndpoints: true, ct: ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
@@ -321,6 +355,74 @@ public static class CamerasEndpoints
             if (camera is null) return Results.NotFound();
             await useCase.ExecuteAsync(id, ct);
             return Results.NoContent();
+        });
+
+        // Protocols (ADR-61): how each one is reached, and whether it answers.
+        group.MapGet("/{id}/protocols", async (string id, GetCameraProtocolsUseCase useCase, CancellationToken ct) =>
+        {
+            var list = await useCase.ExecuteAsync(id, ct);
+            return list is null ? Results.NotFound() : Results.Ok(list);
+        });
+
+        group.MapPost("/{id}/protocols", async (string id, AddCameraProtocolRequest request, AddCameraProtocolUseCase useCase, CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(id, request, ct);
+            return result.Outcome switch
+            {
+                AddProtocolOutcome.Added => Results.Ok(result.Protocol),
+                AddProtocolOutcome.CameraNotFound => Results.NotFound(),
+                AddProtocolOutcome.UnknownProtocol => Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {request.Protocol}" }),
+                AddProtocolOutcome.AlreadySpoken => Results.Conflict(new { error = "protocol_exists", message = $"The camera already speaks {request.Protocol}." }),
+                _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
+            };
+        });
+
+        // Level 2 alone: the candidate protocols that answer are added, no capability is touched (ADR-61 d).
+        group.MapPost("/{id}/protocols/search", async (string id, SearchCameraProtocolsUseCase useCase, CancellationToken ct) =>
+        {
+            var list = await useCase.ExecuteAsync(id, ct);
+            return list is null ? Results.NotFound() : Results.Ok(list);
+        });
+
+        group.MapDelete("/{id}/protocols/{protocol}", async (string id, string protocol, RemoveCameraProtocolUseCase useCase, CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
+                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+
+            return await useCase.ExecuteAsync(id, parsed, ct) switch
+            {
+                RemoveProtocolOutcome.Removed => Results.NoContent(),
+                RemoveProtocolOutcome.NotFound => Results.NotFound(),
+                RemoveProtocolOutcome.InUse => Results.Conflict(new { error = "protocol_in_use", message = $"A capability goes through {protocol}." }),
+                var other => throw new InvalidOperationException($"Unhandled outcome {other}."),
+            };
+        });
+
+        group.MapPut("/{id}/protocols/{protocol}", async (
+            string id,
+            string protocol,
+            UpdateCameraProtocolRequest request,
+            UpdateCameraProtocolUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
+                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+
+            var result = await useCase.ExecuteAsync(id, parsed, request, ct);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
+        group.MapPost("/{id}/protocols/{protocol}/check", async (
+            string id,
+            string protocol,
+            CheckCameraProtocolUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
+                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+
+            var result = await useCase.ExecuteAsync(id, parsed, ct);
+            return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
         // Image settings (ADR-27) — read/write live on the camera, nothing persisted on Vyzio's side.

@@ -47,8 +47,7 @@ public class OnvifPtzCascadeTests
         var resolver = new OnvifEndpointResolver(factory, TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance);
         var onvif = new OnvifClient(factory, resolver, TimeProvider.System, NullLogger<OnvifClient>.Instance);
         _registry.ResolvePtz(SupportedProtocol.Onvif).Returns(new OnvifPtzProvider(onvif, new PtzMoveRunner(TimeProvider.System, NullLogger<PtzMoveRunner>.Instance), NullLogger<OnvifPtzProvider>.Instance));
-        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache);
-        return new SeedAndProbePresetsUseCase(_cameras, _bindings, probe, _registry, _endpointCache);
+        return CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache);
     }
 
     [Fact]

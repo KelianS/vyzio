@@ -1,5 +1,5 @@
 import type { AppError } from '../../common/errors/app_error'
-import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
+import type { StreamProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 
 /** What's being added: a discovered camera, or a manually typed address (ADR-40). */
@@ -7,7 +7,20 @@ type AddCameraSelection =
   /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
 
-export const emptyCameraDraft: CameraDraftInput = {
+/** The add form as the user fills it, flat; the stream fields become the camera's stream capability (ADR-61). */
+export interface AddCameraForm {
+  displayName: string
+  host: string
+  port: number
+  username: string | null
+  password: string | null
+  streamPath: string | null
+  vendorFamily?: string | null
+  sourceType: string
+  streamProtocol: StreamProtocol
+}
+
+export const emptyCameraDraft: AddCameraForm = {
   displayName: '',
   host: '',
   port: 554,
@@ -21,7 +34,7 @@ export const emptyCameraDraft: CameraDraftInput = {
 
 export interface AddCameraUido {
   selection: AddCameraSelection
-  form: CameraDraftInput
+  form: AddCameraForm
   /** Fallback when the standard stream is unreachable (ICSee and similar). */
   dvripMode: boolean
 

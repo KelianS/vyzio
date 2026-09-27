@@ -3,6 +3,7 @@ import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/app_err
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
+import type { AddCameraForm } from './add_camera.uido'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
@@ -14,6 +15,19 @@ import type { AddCameraAction } from './add_camera.actions'
 function failureOf(e: unknown): { message: string; diagnostic?: string } {
   const error = toAppError(e)
   return { message: appErrorMessage(error), diagnostic: appErrorDiagnostic(error) }
+}
+
+/** The form as the camera is born: its access, and its stream over the protocol the form chose (ADR-61). */
+function draftOf(form: AddCameraForm): CameraDraftInput {
+  return {
+    displayName: form.displayName,
+    host: form.host,
+    username: form.username,
+    password: form.password,
+    vendorFamily: form.vendorFamily,
+    sourceType: form.sourceType,
+    stream: { protocol: form.streamProtocol, port: form.port, path: form.streamPath },
+  }
 }
 
 export interface AddCameraPresenterContext {
@@ -33,7 +47,7 @@ export function buildAddCameraPresenter({
   const nextVendorRequest = latestOnly()
 
   return {
-    onFormChanged(patch: Partial<CameraDraftInput>) {
+    onFormChanged(patch: Partial<AddCameraForm>) {
       dispatch({ type: 'FORM_UPDATED', patch })
     },
 
@@ -104,10 +118,10 @@ export function buildAddCameraPresenter({
       }
     },
 
-    async onVerifyDraft(form: CameraDraftInput): Promise<void> {
+    async onVerifyDraft(form: AddCameraForm): Promise<void> {
       dispatch({ type: 'VERIFY_DRAFT_STARTED' })
       try {
-        const status = await container.verifyDraftCamera.execute(form)
+        const status = await container.verifyDraftCamera.execute(draftOf(form))
         dispatch({
           type: 'VERIFY_DRAFT_SUCCEEDED',
           connected: status.connected,
@@ -125,7 +139,7 @@ export function buildAddCameraPresenter({
     async onCreate(
       dvripMode: boolean,
       verified: boolean,
-      form: CameraDraftInput,
+      form: AddCameraForm,
     ): Promise<string | null> {
       if (!dvripMode && !verified) {
         dispatch({
@@ -136,7 +150,7 @@ export function buildAddCameraPresenter({
       }
       dispatch({ type: 'CREATE_STARTED' })
       try {
-        const created = await container.createCamera.execute(form)
+        const created = await container.createCamera.execute(draftOf(form))
         // Post-create verification confirms the camera as the server saved it.
         const status = await container.verifyCamera.execute(created.id)
         reloadCameraList(container)

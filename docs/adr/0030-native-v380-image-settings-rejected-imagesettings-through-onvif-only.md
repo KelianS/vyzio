@@ -1,6 +1,7 @@
 # ADR-30 — Réglages image V380 natif : écarté, `ImageSettings` via ONVIF uniquement
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)
+> (l'ID V380 est rangé sur le protocole V380).
 
 ## Contexte
 

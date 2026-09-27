@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
         services.AddScoped<ICameraStreamEnumerator, CameraStreamEnumerator>();
+        services.AddScoped<ICameraProtocolProbe, CameraProtocolProbe>();
         services.AddSingleton<IFrigateRestartTracker, FrigateRestartTracker>();
         services.AddSingleton<IHardwareAccelerationDetector, HardwareAccelerationDetector>();
         services.AddSingleton<IFrigateDetectorPlanner, FrigateDetectorPlanner>();

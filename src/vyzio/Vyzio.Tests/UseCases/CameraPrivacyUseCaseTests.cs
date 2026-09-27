@@ -35,7 +35,6 @@ public class ToggleCameraPrivacyModeUseCaseTests
         FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
-        Port = 554,
         PrivacyStrategy = strategy,
     };
 
@@ -432,7 +431,6 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
         FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "192.168.1.10",
-        Port = 554,
         PrivacyStrategy = strategy,
     };
 

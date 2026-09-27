@@ -75,6 +75,25 @@ public sealed class OnvifEndpointResolverTests
     }
 
     [Fact]
+    public async Task ResolveAsync_ShouldSearchOnlyThePortSetOnTheOnvifRow_WhenTheUserSetOne()
+    {
+        // Arrange
+        var (resolver, calls) = MakeResolver((url, _) =>
+            url.Port == 2020 && url.AbsolutePath == "/onvif/service"
+                ? Soap(DateAndTimeAnswer)
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+        var camera = MakeCamera();
+        camera.EnsureProtocol(SupportedProtocol.Onvif).Port = 2020;
+
+        // Act
+        var endpoint = await resolver.ResolveAsync(camera, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(endpoint);
+        Assert.All(calls, url => Assert.Equal(2020, url.Port));
+    }
+
+    [Fact]
     public async Task ResolveAsync_ShouldAddressEveryServiceAtTheDeviceUrl_WhenTheCameraAnnouncesNoXAddr()
     {
         var (resolver, _) = MakeResolver((url, _) =>

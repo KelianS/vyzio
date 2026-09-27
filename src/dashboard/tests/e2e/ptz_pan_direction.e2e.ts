@@ -10,6 +10,12 @@ test.describe('PTZ pan direction', () => {
     state.ptzBinding = { protocol: 'onvif', configJson: '{"supports_native_presets":true}' }
     await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/connexion')
+    // The swap is a setting of the orientation card, behind its Options fold (DESIGN SYSTEM § Capability cards).
+    const orientation = page
+      .getByRole('list', { name: 'Capacités' })
+      .getByRole('listitem')
+      .filter({ hasText: 'Orientation' })
+    await orientation.getByText('Options').click()
 
     const setting = page.getByRole('switch', { name: /Inverser gauche et droite/ })
     await expect(setting).not.toBeChecked()

@@ -16,6 +16,8 @@ export interface SettingsDraft<T> {
   readonly dirty: boolean
   readonly changes: readonly DraftChange[]
   readonly set: <K extends keyof T>(key: K, value: T[K]) => void
+  /** Drops one setting's edit, so it follows the saved value again, even once that is re-read. */
+  readonly revert: (key: keyof T) => void
   /** Reverts the page to its last saved state. */
   readonly discard: () => void
   /** Clears the draft after a successful save. */
@@ -58,6 +60,14 @@ export function useSettingsDraft<T extends object>({
     setEdits((previous) => ({ ...previous, [key]: value }))
   }, [])
 
+  const revert = useCallback((key: keyof T) => {
+    setEdits((previous) => {
+      const next = { ...previous }
+      delete next[key]
+      return next
+    })
+  }, [])
+
   const discard = useCallback(() => setEdits({}), [])
   const accept = useCallback(() => setEdits({}), [])
 
@@ -67,6 +77,7 @@ export function useSettingsDraft<T extends object>({
     dirty: changes.length > 0,
     changes,
     set,
+    revert,
     discard,
     accept,
   }

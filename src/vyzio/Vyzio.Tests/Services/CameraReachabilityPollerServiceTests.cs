@@ -25,17 +25,16 @@ public class CameraReachabilityPollerServiceTests
         _time,
         NullLogger<CameraReachabilityPollerService>.Instance);
 
-    private static Camera ValidatedCamera(int port, string status) => new()
+    private static Camera ValidatedCamera(int port, string status) => new Camera
     {
         Id = "cam-1",
         Slug = "cam-1",
         DisplayName = "Entrée",
         FrigateCameraName = "entree",
         Host = "127.0.0.1",
-        Port = port,
         Status = status,
         ValidationState = CameraValidationState.Validated,
-    };
+    }.WithStream(SupportedProtocol.Rtsp, port);
 
     private TaskCompletionSource<DateTimeOffset> SignalOnUpdate()
     {
@@ -67,6 +66,33 @@ public class CameraReachabilityPollerServiceTests
         // Assert
         Assert.Equal("offline", camera.Status);
         Assert.InRange(camera.LastReachabilityCheckAt!.Value, Start, _time.GetUtcNow());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSayTheCameraNeedsAttention_WhenItsStreamHasNoProtocol()
+    {
+        // Arrange
+        var camera = new Camera
+        {
+            Id = "cam-2",
+            Slug = "cam-2",
+            DisplayName = "Garage",
+            FrigateCameraName = "garage",
+            Host = "127.0.0.1",
+            Status = "online",
+            ValidationState = CameraValidationState.Validated,
+        };
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        var updated = SignalOnUpdate();
+        var sut = CreateSut();
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await _time.AdvanceUntilAsync(updated.Task, Step);
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal("needs_attention", camera.Status);
     }
 
     [Fact]

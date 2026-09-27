@@ -16,6 +16,7 @@ const WRITES_BEYOND_BASICS: Record<SupportedProtocol, boolean> = {
 }
 
 const IS_IMAGE_SETTINGS: Record<Capability, boolean> = {
+  stream: false,
   ptz: false,
   hardware_privacy: false,
   image_settings: true,

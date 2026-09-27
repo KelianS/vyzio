@@ -9,12 +9,7 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // Each step sends one 16-byte PTZ packet on the stream connection (~100ms movement).
 // Continuous move is not supported — the protocol requires a persistent stream loop for
 // sustained movement, which is not implemented here (step-based PTZ is sufficient, ADR-22).
-//
-// Device ID bootstrap order (ProbeAsync):
-//   1. Persisted ConfigJson {"device_id": ...} — fastest, no network.
-//   2. ONVIF GetDeviceInformation serial bytes[2..5] BE — works from Docker bridge (TCP only).
-//   3. V380 UDP NVDEVSEARCH — fallback for environments without ONVIF on port 8899.
-// After a successful probe, the device ID is persisted back to ConfigJson by the use case layer.
+// The device id comes from V380DeviceIdBootstrap (docs/design/camera-connection.md).
 internal sealed class V380PtzProvider(
     V380Client client,
     OnvifClient onvif,
@@ -47,14 +42,13 @@ internal sealed class V380PtzProvider(
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        await V380DeviceIdBootstrap.PreloadAsync(camera, binding, client, onvif, ct);
+        await V380DeviceIdBootstrap.PreloadAsync(camera, client, onvif, ct);
 
         var success = await client.ProbeAsync(camera, ct);
 
         // Persist the discovered deviceId so future PTZ commands work without discovery.
-        // (The use case layer calls binding.SaveAsync after ProbeAsync returns.)
         if (success)
-            V380DeviceIdBootstrap.PersistIfDiscovered(binding, client, camera.Host);
+            V380DeviceIdBootstrap.PersistIfDiscovered(camera, client);
 
         return success;
     }
@@ -73,8 +67,7 @@ internal sealed class V380PtzProvider(
     // Sends one step packet; V380 has no continuous move without a persistent stream loop.
     private async Task StepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, CancellationToken ct)
     {
-        if (V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var storedId))
-            client.PreloadDeviceId(camera.Host, storedId);
+        V380DeviceIdBootstrap.PreloadStored(camera, client);
 
         try
         {
