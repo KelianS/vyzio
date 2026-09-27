@@ -18,7 +18,7 @@ references these ADRs rather than copying them.
 | [ADR-06](0006-database-sqlite.md) | Database: SQLite | Accepted |
 | [ADR-07](0007-api-asp-net-core.md) | API: ASP.NET Core | Accepted |
 | [ADR-08](0008-dashboard-react-and-typescript.md) | Dashboard: React + TypeScript | Accepted |
-| [ADR-09](0009-notifications-telegram-first-plus-fcm-and-alternative-channels.md) | Notifications: Telegram (primary) + FCM + alternative channels | Accepted |
+| [ADR-09](0009-notifications-telegram-first-plus-fcm-and-alternative-channels.md) | Notifications: Telegram (primary) + FCM + alternative channels | Accepted, amended by ADR-63 (hour ranges) |
 | [ADR-10](0010-authentication-jwt-and-bcrypt.md) | Authentication: JWT + bcrypt | Accepted |
 | [ADR-11](0011-non-technical-ux-strategy-simplified-vyzio-hub-plus-advanced-frigate.md) | Non-technical UX strategy: simplified Vyzio Hub + advanced Frigate | Accepted |
 | [ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md) | Camera management driven by Vyzio, applied to Frigate | Accepted |

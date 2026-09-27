@@ -2,7 +2,9 @@
 
 > Status: Accepted
 >
-> Amends [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md)
+> Amends [ADR-09](0009-notifications-telegram-first-plus-fcm-and-alternative-channels.md) on the
+> hour ranges it places in the delivery rules model, which become muting rules;
+> [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md)
 > on its per-camera schedule table, endpoints and evaluation, which this rule model replaces;
 > [ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)
 > on its settings tree, which gains the `Horaires` rubric while `Notifications` loses its hours;
