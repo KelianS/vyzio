@@ -1,13 +1,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Vyzio.Application.UseCases.Scheduling;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Evaluates active privacy schedules every minute and activates/deactivates cameras accordingly.
-// Rule: manual source takes priority — the scheduler never overrides a manual activation.
+// Evaluates the privacy rules every minute; a manual activation is never overridden (ADR-20, ADR-63).
 public sealed class PrivacySchedulerService(
     IServiceScopeFactory scopeFactory,
     TimeZoneInfo timeZone,
@@ -41,31 +41,19 @@ public sealed class PrivacySchedulerService(
     private async Task EvaluateSchedulesAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
-        var privacyRepo = scope.ServiceProvider.GetRequiredService<ICameraPrivacyRepository>();
+        var ruleRepo = scope.ServiceProvider.GetRequiredService<IScheduleRuleRepository>();
         var cameraRepo = scope.ServiceProvider.GetRequiredService<ICameraRepository>();
         var toggleUseCase = scope.ServiceProvider.GetRequiredService<ToggleCameraPrivacyModeUseCase>();
 
         var now = TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone);
-        var currentDay = (int)now.DayOfWeek;
-        var currentTime = now.TimeOfDay;
-
-        var schedules = await privacyRepo.GetAllActiveSchedulesAsync(ct);
+        var rules = await ruleRepo.GetByKindAsync(ScheduleRuleKind.Privacy, ct);
         var cameras = await cameraRepo.GetAllAsync(ct);
-
-        // Group active schedules by camera to determine per-camera desired state
-        var desiredActive = cameras.ToDictionary(c => c.Id, _ => false);
-
-        foreach (var schedule in schedules)
-        {
-            if (schedule.Covers(currentDay, currentTime))
-                desiredActive[schedule.CameraId] = true;
-        }
 
         foreach (var camera in cameras)
         {
             try
             {
-                await ApplyScheduleAsync(toggleUseCase, camera, desiredActive.TryGetValue(camera.Id, out var v) && v, ct);
+                await ApplyScheduleAsync(toggleUseCase, camera, ScheduleRuleCoverage.Covers(rules, camera.Id, now), ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {

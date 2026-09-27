@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Vyzio.Application.UseCases.Scheduling;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -18,6 +20,7 @@ public sealed class SendDetectionNotificationUseCase(
     INotificationRepository notifications,
     INotificationChannelCatalog catalog,
     INotificationChannelConfigRepository channelConfigs,
+    IScheduleRuleRepository scheduleRules,
     IFrigateEventImageProvider imageProvider,
     IFrigateClipProvider clipProvider,
     DetectionMessageFormatter formatter,
@@ -44,18 +47,20 @@ public sealed class SendDetectionNotificationUseCase(
         }
 
         var configs = await channelConfigs.GetAllAsync(ct);
+        var muteRules = await scheduleRules.GetByKindAsync(ScheduleRuleKind.MuteNotifications, ct);
         var sentSomewhere = false;
 
         foreach (var config in configs)
         {
-            if (await SendOnAsync(config, detection, ct))
+            if (await SendOnAsync(config, muteRules, detection, ct))
                 sentSomewhere = true;
         }
 
         return sentSomewhere;
     }
 
-    private async Task<bool> SendOnAsync(NotificationChannelConfig config, FrigateDetection detection, CancellationToken ct)
+    private async Task<bool> SendOnAsync(
+        NotificationChannelConfig config, IReadOnlyList<ScheduleRule> muteRules, FrigateDetection detection, CancellationToken ct)
     {
         var sender = catalog.SenderFor(config.Channel);
         if (sender is null)
@@ -65,7 +70,7 @@ public sealed class SendDetectionNotificationUseCase(
             return false;
         }
 
-        if (!await ShouldNotifyAsync(config, sender.Descriptor, detection, ct))
+        if (!await ShouldNotifyAsync(config, sender.Descriptor, muteRules, detection, ct))
             return false;
 
         var enabledFields = MessageFields.Parse(config.MessageFieldsJson);
@@ -102,6 +107,7 @@ public sealed class SendDetectionNotificationUseCase(
     private async Task<bool> ShouldNotifyAsync(
         NotificationChannelConfig config,
         NotificationChannelDescriptor descriptor,
+        IReadOnlyList<ScheduleRule> muteRules,
         FrigateDetection detection,
         CancellationToken ct)
     {
@@ -120,11 +126,12 @@ public sealed class SendDetectionNotificationUseCase(
             return false;
         }
 
-        var localHour = TimeZoneInfo.ConvertTime(detection.OccurredAt, timeZone).Hour;
-        if (!IsWithinActiveHours(localHour, config.ActiveFromHour, config.ActiveToHour))
+        // Dropped, never delayed: a muted range is a choice, not an outage (ADR-63).
+        var localMoment = TimeZoneInfo.ConvertTime(detection.OccurredAt, timeZone);
+        if (ScheduleRuleCoverage.Covers(muteRules, SnakeCaseEnum.ToSnakeCase(config.Channel), localMoment))
         {
-            logger.LogDebug("{Channel} skipped for event {EventId}: hour={Hour} outside [{From}-{To}]",
-                config.Channel, detection.EventId, localHour, config.ActiveFromHour, config.ActiveToHour);
+            logger.LogDebug("{Channel} skipped for event {EventId}: muted by a scheduled range at {Moment}",
+                config.Channel, detection.EventId, localMoment);
             return false;
         }
 
@@ -236,21 +243,5 @@ public sealed class SendDetectionNotificationUseCase(
     {
         var notificationLabel = ResolveNotificationLabel(label, identity);
         return allowedLabels.Contains(notificationLabel, StringComparer.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Returns false only when both bounds are defined and <paramref name="localHour"/> falls outside them.
-    /// Handles overnight ranges (e.g. from=22, to=6).
-    /// </summary>
-    internal static bool IsWithinActiveHours(int localHour, int? fromHour, int? toHour)
-    {
-        if (fromHour is null || toHour is null) return true;
-
-        // Same-day range: 08:00 → 22:00
-        if (fromHour <= toHour)
-            return localHour >= fromHour && localHour < toHour;
-
-        // Overnight range: 22:00 → 06:00
-        return localHour >= fromHour || localHour < toHour;
     }
 }

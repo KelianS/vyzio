@@ -8,7 +8,7 @@ namespace Vyzio.Infrastructure.Persistence;
 public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContext(options)
 {
     public DbSet<Camera> Cameras => Set<Camera>();
-    public DbSet<CameraPrivacySchedule> CameraPrivacySchedules => Set<CameraPrivacySchedule>();
+    public DbSet<ScheduleRule> ScheduleRules => Set<ScheduleRule>();
     public DbSet<CameraCapabilityBinding> CameraCapabilityBindings => Set<CameraCapabilityBinding>();
     public DbSet<CameraStream> CameraStreams => Set<CameraStream>();
     public DbSet<PtzPreset> PtzPresets => Set<PtzPreset>();
@@ -27,15 +27,19 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     {
         ConfigureSqliteDateTimeOffsets(modelBuilder);
 
-        modelBuilder.Entity<CameraPrivacySchedule>(schedule =>
+        modelBuilder.Entity<ScheduleRule>(rule =>
         {
-            schedule.HasOne(s => s.Camera)
-                    .WithMany()
-                    .HasForeignKey(s => s.CameraId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            rule.Property(r => r.Kind).HasConversion<SnakeCaseEnumConverter<ScheduleRuleKind>>().HasMaxLength(50);
+            rule.HasIndex(r => r.Kind).HasDatabaseName("idx_schedule_rules_kind");
+            rule.HasMany(r => r.Targets)
+                .WithOne()
+                .HasForeignKey(t => t.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
-            schedule.HasIndex(s => new { s.CameraId, s.Enabled })
-                    .HasDatabaseName("idx_privacy_schedules_camera");
+        modelBuilder.Entity<ScheduleRuleTarget>(target =>
+        {
+            target.HasKey(t => new { t.RuleId, t.TargetId });
         });
 
         modelBuilder.Entity<Camera>(camera =>

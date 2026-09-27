@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
 
         // Repository implementations (ports → adapters)
         services.AddScoped<ICameraRepository, CameraRepository>();
-        services.AddScoped<ICameraPrivacyRepository, CameraPrivacyRepository>();
+        services.AddScoped<IScheduleRuleRepository, ScheduleRuleRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IProfilePhotoRepository, ProfilePhotoRepository>();
         services.AddScoped<IProfileCameraLinkRepository, ProfileCameraLinkRepository>();

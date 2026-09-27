@@ -137,28 +137,6 @@ public static class CamerasEndpoints
         group.MapPost("/privacy/batch-toggle", async (BatchTogglePrivacyRequest request, BatchToggleCameraPrivacyModeUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(request.CameraIds, request.Active, ct)));
 
-        // Privacy schedules
-        group.MapGet("/{id}/privacy/schedules", async (string id, GetCameraPrivacySchedulesUseCase useCase, CancellationToken ct) =>
-            Results.Ok(await useCase.ExecuteAsync(id, ct)));
-
-        group.MapPost("/{id}/privacy/schedules", async (string id, CreatePrivacyScheduleRequest request, CreateCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
-        {
-            var dto = await useCase.ExecuteAsync(id, request, ct);
-            return dto is null ? Results.NotFound() : Results.Created($"/api/cameras/{id}/privacy/schedules/{dto.Id}", dto);
-        });
-
-        group.MapPatch("/{id}/privacy/schedules/{scheduleId}", async (string id, string scheduleId, UpdatePrivacyScheduleRequest request, UpdateCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
-        {
-            var dto = await useCase.ExecuteAsync(scheduleId, request, ct);
-            return dto is null ? Results.NotFound() : Results.Ok(dto);
-        });
-
-        group.MapDelete("/{id}/privacy/schedules/{scheduleId}", async (string id, string scheduleId, DeleteCameraPrivacyScheduleUseCase useCase, CancellationToken ct) =>
-        {
-            var deleted = await useCase.ExecuteAsync(scheduleId, ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
-        });
-
         // PTZ control — single step endpoint handles both tap (durationMs=80) and hold (chained calls)
         group.MapPost("/{id}/ptz/step", async (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
         {
