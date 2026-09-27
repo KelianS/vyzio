@@ -227,6 +227,7 @@ CameraConfigWriter (.NET)         -> Generates frigate.yml: cameras, detection l
 CameraStreamEnumerator (.NET)     -> Enumerates a camera's streams and their resolution (ADR-38), through ONVIF or protocol convention
 OnvifEndpointResolver (.NET)      -> Finds where a camera serves ONVIF, port and path, asked of the device (ADR-56)
 MotionSensitivityTuner (.NET)     -> Per-camera sensitivity self-tuning loop (ADR-35), applied live over MQTT
+Schedule rules (.NET)             -> The house's scheduled rules, one model for every type; each type's consumer reads it (ADR-63)
 API (ASP.NET Core)                -> REST + SignalR + authenticated Frigate proxy
 Dashboard / Hub (React + TS)      -> Guided consumer UI: viewing and a settings tree (ADR-40), a single editing cycle (ADR-41), the shadcn/ui foundation (ADR-42)
 ```
@@ -296,6 +297,8 @@ read, never keeping a copy (ADR-49).
 | `Camera` | A camera: **one scene**, connection, status, privacy mode, detected protocols (ADR-38) | <- `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
 | `CameraStream` | A camera's video access point: quality, path, measured resolution (ADR-38) | -> `Camera` |
 | `CameraCapabilityBinding` | An optional capability (PTZ, hardware privacy, image) decoupled from the brand, **tested and never declarative** (ADR-22/24/28) | -> `Camera` |
+| `ScheduleRule` | A scheduled rule of the house: a **type**, a weekly range (days, start, end in the installation's clock) and targets; the type declares what the targets are and what the range does to them (ADR-63) | <- `ScheduleRuleTarget` |
+| `ScheduleRuleTarget` | One thing a rule targets, a camera or a channel as its type declares; no foreign key, so a target that disappears simply stops being targeted (ADR-63) | -> `ScheduleRule` |
 | `RecordingSettings` | The installation's retention durations, overridable per camera (ADR-39) | singleton |
 | `Notification` | A per-channel send for one event, anchored on the Frigate id. **The only fact persisted about a detection**: the detections themselves are not stored (ADR-49) | |
 | `ChannelPairing` | A conversation allowed to issue commands on a channel, revocable; any other origin is ignored (ADR-50) | -> the channel's config |
@@ -303,8 +306,8 @@ read, never keeping a copy (ADR-49).
 | `Account` | One human access to the installation: hashed password and **role**. Exactly one account and one role are populated today; the axis exists from the first migration because it cannot be retrofitted (ADR-54) | <- `Session` |
 | `Session` | An access opened from a device, referenced by an opaque cookie; revocable one at a time or all at once (ADR-54) | -> `Account` |
 
-Secondary entities (PTZ positions, privacy schedules, image settings, notification channel
-configuration) are in the entities folder.
+Secondary entities (PTZ positions, image settings, notification channel configuration) are in the
+entities folder.
 
 **Data invariants** (architecture constraints, not column detail):
 - Vyzio stores **no biometric embedding and no frame**, only business metadata and the Frigate

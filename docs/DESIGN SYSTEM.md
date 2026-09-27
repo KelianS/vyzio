@@ -154,6 +154,39 @@ test, so its button says `Configurer`, never `Enregistrer`.
 The connection details are declared settings and follow the draft; the camera's name is its identity,
 not a capability, and stays at the top of the page.
 
+### Calendar and range editor
+
+The `Horaires` rubric is the house's calendar ([SPECS](SPECS.md) 7.3,
+[ADR-63](adr/0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md)). It has two
+screens, whatever the number of rule types:
+
+- **The week** reads day by day, Monday first, one block per day, never seven columns: at phone
+  width a column holds no readable time. A day lists its ranges in time order, each as one row:
+  **type icon and name** · *times* · *targets*, the whole row opening the range. A range crossing
+  midnight shows under its own day with `le lendemain`, and its tail under the next day as
+  `jusqu'a 06:00, depuis la veille`. A day without a range says `Rien de prevu` in secondary text. The
+  targets are named, two at most then a count, a target that no longer exists left out; a rule left
+  with none says so in place of the names.
+- **The range editor** is one page for every type, `Ajouter une plage` or the range itself. Its
+  fields are declared settings ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)):
+  the **type** (an exclusive choice, fixed once created), whose effect line is its consequence,
+  visible without a gesture; the **targets** the type declares (a multiple choice of cameras or of
+  channels); the **days** (a multiple choice, Monday first, the same order as the week); **start**
+  and **end** (the `time` nature), the end carrying the midnight sentence as its consequence. An
+  existing range follows the editing cycle (§ Editing cycle); a new one is added by its `Ajouter`
+  button, as a person is. Deleting one asks for a confirmation that names its type and targets. The
+  editor's lede says that the times are the house's and that a range already under way takes effect
+  within the minute.
+
+A type is told apart by its **icon and its name**, never by colour alone. Its name and effect line are
+the type's own words (§ UX vocabulary, Scheduled ranges), the same in the week, the editor and on the
+cameras and channels.
+
+A camera or a channel does not list its ranges: one line outside its settings list says how many of
+its type apply (`2 plages « Vie privee » s'appliquent`, `Aucune plage « Sans notification » ne
+s'applique`) and links to `Horaires`. When the rules could
+not be read, that line is the failed read (§ Errors), never `Aucune plage`.
+
 ### Help: three levels, not a manual
 
 How to use a feature lives **in the screen that carries it**, never in a document alongside
@@ -220,7 +253,8 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 ([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
 
 - Viewing: `Accueil`, `Direct`, `Historique`.
-- Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`, `Systeme`).
+- Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`,
+  `Horaires`, `Acces`, `Systeme`).
 - The end-of-page fold is called `Avance`. It is not a mode to switch on: it is a position.
 - The in-card fold of figures for support is called `Details techniques` (§ Technical details).
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
@@ -232,6 +266,19 @@ What Vyzio sends to a channel is a **`notification`**, and sending it is **`noti
 `Notifications` section that configures it. One notion, one word: `alerte`, `prevenir` and `signaler`
 are not used for it. A person is `notifie`; a channel sends `notifications`; a setting says
 `Me notifier`.
+
+### Scheduled ranges
+
+A time range of the calendar is a **`plage`**, the rubric that holds them is **`Horaires`**. Each type
+has one name and one effect line, used everywhere:
+
+| Type | Name | Effect line |
+| --- | --- | --- |
+| Privacy | `Vie privee` | `Aucun enregistrement, aucune detection, aucune notification.` |
+| Notifications muted | `Sans notification` | `Filme et enregistre, mais n'envoie aucune notification.` |
+
+`Couper` stays the word of privacy mode and `Silence` the word of the spacing between repeated
+notifications: neither names a notification range.
 
 ### Capabilities
 

@@ -29,7 +29,7 @@ references these ADRs rather than copying them.
 | [ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md) | Event clip access: an authenticated streaming Vyzio proxy | Accepted |
 | [ADR-18](0018-continuous-recording-enabled-per-camera-in-the-generated-frigate-config.md) | Continuous recording: enabled per camera in the generated Frigate config | Superseded by ADR-39 (retention, activation) |
 | [ADR-19](0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md) | dvrip/XMEye protocol: go2rtc as a fallback gateway, transparent to Frigate | Accepted |
-| [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md) | Privacy mode: vendor API first, Frigate `enabled: false` fallback, `IVendorCameraAdapter` as the shared building block | Accepted |
+| [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md) | Privacy mode: vendor API first, Frigate `enabled: false` fallback, `IVendorCameraAdapter` as the shared building block | Accepted, amended by ADR-63 (schedules) |
 | [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) | PTZ parking and a generic ONVIF adapter: a layered strategy for privacy mode | Accepted, amended by ADR-56, ADR-57 and ADR-62 |
 | [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md) | Camera capability catalogue: brand/protocol decoupling, vendor presets and manual onboarding | Accepted, amended by ADR-56 |
 | [ADR-23](0023-camera-reachability-monitoring-periodic-tcp-polling-independent-of-frigate.md) | Camera reachability monitoring: periodic TCP polling, independent of Frigate | Accepted |
@@ -49,17 +49,17 @@ references these ADRs rather than copying them.
 | [ADR-37](0037-hardware-video-decoding-preset-vaapi-chosen-quicksync-deferred.md) | Hardware video decoding: `preset-vaapi` chosen, QuickSync deferred (no known per-camera codec) | Accepted |
 | [ADR-38](0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md) | Camera stream model: one stream = one quality, one target = one camera, separate `detect`/`record` roles | Accepted |
 | [ADR-39](0039-global-settings-overridable-per-camera-applied-to-recording-retention.md) | Global settings overridable per camera, applied to recording retention | Accepted (the zero-retention and shutdown-on-zero behaviour for event clips was withdrawn by ADR-48) |
-| [ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md) | Information architecture: viewing apart from configuring, a two-level settings tree | Accepted |
+| [ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md) | Information architecture: viewing apart from configuring, a two-level settings tree | Accepted, amended by ADR-63 (the `Horaires` rubric) |
 | [ADR-41](0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md) | Settings edit cycle: an explicit draft, and saving means applying | Accepted (the "saving means applying" part was replaced by ADR-44) |
 | [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md) | Interface component foundation: shadcn/ui on Radix and Tailwind, design system tokens as the single source | Accepted |
-| [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md) | Settings grammar: a setting is declared, it is not drawn | Accepted (the long-help redirect to `docs/user/` was replaced by ADR-53) |
+| [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md) | Settings grammar: a setting is declared, it is not drawn | Accepted (the long-help redirect to `docs/user/` was replaced by ADR-53; the `time` nature added by ADR-63) |
 | [ADR-44](0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md) | Surveillance restart: an explicit user act, grouped and deferred | Accepted |
 | [ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md) | PTZ positions configured from the live view, never from settings | Accepted (calibration and the creation gesture were withdrawn by ADR-46) |
 | [ADR-46](0046-all-ptz-control-in-the-live-view-calibration-included.md) | All PTZ control in the live view, calibration included | Accepted |
 | [ADR-47](0047-detection-history-an-index-reconciled-against-frigate-not-a-standalone-memory.md) | Detection history: an index reconciled against Frigate, not a standalone memory | Superseded by ADR-49 |
 | [ADR-48](0048-one-day-minimum-retention-retention-is-tuned-not-turned-off.md) | One-day minimum retention: retention is tuned, not turned off | Accepted |
 | [ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md) | Vyzio does not persist detections: history is Frigate's list, enriched on read | Accepted |
-| [ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md) | The messaging channel becomes bidirectional: a channel-agnostic command layer | Accepted |
+| [ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md) | The messaging channel becomes bidirectional: a channel-agnostic command layer | Accepted, amended by ADR-63 (channel hours) |
 | [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md) | Remote access to the interface: a NetBird overlay network, guided by Vyzio but operated by the user | Accepted |
 | [ADR-52](0052-the-inbound-direction-uses-the-channels-native-bot-credentials-declared-per-direction.md) | The inbound direction uses the channel's native bot: credentials declared per direction | Accepted |
 | [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) | User documentation lives in the interface: three levels of help | Accepted |
@@ -67,6 +67,7 @@ references these ADRs rather than copying them.
 | [ADR-55](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |
 | [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) | Privacy parking goes to the Parking slot, and back to Surveillance | Accepted |
-| [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted |
+| [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted, amended by ADR-63 (channel hours) |
 | [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) | PTZ positions are resolved above the protocol, providers only move | Accepted |
 | [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) | Privacy strategy: no "none" value, software stop by default | Accepted |
+| [ADR-63](0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md) | A scheduled rule is a type, a target set and a weekly range, planned in one calendar | Accepted |
