@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
+import { localPort } from './playwright.port'
 
-const PORT = 4173
-// vite preview only binds the IPv6 loopback (::1) in this environment, not 127.0.0.1 — use
+const PORT = localPort('E2E_PORT', 41000, import.meta.dirname)
+// vite preview only binds the IPv6 loopback (::1) in this environment, not 127.0.0.1: use
 // "localhost" so both the readiness probe and the tests resolve to a host it actually listens on.
 const BASE_URL = `http://localhost:${PORT}`
 
