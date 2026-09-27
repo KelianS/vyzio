@@ -105,7 +105,7 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
     detect.id !== lineup.recordStreamId &&
     streamLineState(detect) === StreamLineState.Failed
   if (detectFails)
-    return 'Le flux de détection ne répond pas : la détection est interrompue. Relancez sa vérification ou donnez la détection à un autre flux, dans les options.'
+    return 'Le flux de détection ne répond pas : la détection est interrompue. Relancez sa vérification ou donnez la détection à un autre flux, dans « Options ».'
   if (lineup.detectsOnRecordingStream) return 'La détection passe par le flux d’enregistrement.'
   return null
 }

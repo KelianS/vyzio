@@ -952,7 +952,7 @@ export async function installFakeBackend(
           id: `stream-${state.streams.length + 1}`,
           ordinal: Math.max(...state.streams.map((stream) => stream.ordinal)) + 1,
           protocol: body.protocol,
-          path: body.secondary ? '?channel=0&subtype=1' : body.path,
+          path: body.secondary ? 'secondary' : body.path,
           width: null,
           height: null,
           fps: null,

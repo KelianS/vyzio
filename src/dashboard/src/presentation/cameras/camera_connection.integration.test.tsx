@@ -1192,6 +1192,33 @@ describe('CameraConnectionView', () => {
     )
   })
 
+  it('onAddStream_ShouldAskForTheSecondaryQuality_WhenTheStreamGoesOverDvrip', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([dvripStream]),
+      [PROTOCOLS]: ok([dvrip]),
+      [STREAMS]: ok(makeStreamLineup([makeCameraStream({ protocol: 'dvrip', path: null })])),
+      'POST /api/cameras/camera-1/streams': ok(twoStreams),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux ajouté.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/camera-1/streams',
+        body: { protocol: 'dvrip', path: null, role: 'none', secondary: true },
+      }),
+    )
+  })
+
   it('onRemoveStream_ShouldKeepTheLine_WhenTheRemovalFails', async () => {
     // Arrange
     connectionNetwork({

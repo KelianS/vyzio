@@ -64,6 +64,21 @@ public class CameraStreamUseCaseTests
     }
 
     [Fact]
+    public async Task Add_ShouldAskForTheSecondaryStreamByItsQuery_WhenADvripStreamIsTheSecondaryOne()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+
+        // Act
+        await AddUseCase().ExecuteAsync(camera.Id, new AddCameraStreamRequest("dvrip", "ignored", "none", Secondary: true));
+
+        // Assert
+        var added = camera.Streams.Single(stream => stream.Protocol == SupportedProtocol.Dvrip);
+        Assert.Equal(CameraStream.DvripSecondaryQuery, added.Path);
+    }
+
+    [Fact]
     public async Task Add_ShouldCheckTheStreamAtOnceAndRewriteTheConfiguration_WhenItTakesARole()
     {
         // Arrange

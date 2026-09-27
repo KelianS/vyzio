@@ -46,7 +46,7 @@ public class CameraStream
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // XMEye extra-stream selector, verified on real hardware (see the CPU profiling investigation).
+    // XMEye extra-stream selector, verified on real hardware (ADR-38).
     public const string DvripSecondaryQuery = "?channel=0&subtype=1";
 
     public bool HasKnownResolution => Width is > 0 && Height is > 0;
