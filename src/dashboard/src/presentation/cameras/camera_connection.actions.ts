@@ -34,3 +34,9 @@ export type CameraConnectionAction =
   | { type: 'PROTOCOL_CHECK_STARTED'; protocol: SupportedProtocol }
   | { type: 'PROTOCOL_CHECKED'; protocol: CameraProtocol }
   | { type: 'PROTOCOL_CHECK_FINISHED'; protocol: SupportedProtocol }
+  | { type: 'PROTOCOL_FORM_OPENED' }
+  | { type: 'PROTOCOL_FORM_CLOSED' }
+  | { type: 'PROTOCOL_ADD_STARTED' }
+  | { type: 'PROTOCOL_ADD_FINISHED' }
+  | { type: 'PROTOCOL_REMOVE_STARTED'; protocol: SupportedProtocol }
+  | { type: 'PROTOCOL_REMOVE_FINISHED'; protocol: SupportedProtocol }

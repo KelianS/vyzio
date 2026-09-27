@@ -13,7 +13,7 @@ const box: ProtocolValues = {
   port: 554,
   shownPort: 554,
   handPort: null,
-  ownAccount: true,
+  specificAccount: true,
   username: ' viewer ',
   password: '',
   deviceId: '',
@@ -27,7 +27,7 @@ describe('connectionValuesOf', () => {
         protocol: 'v380',
         effectivePort: 8800,
         deviceId: 26970853,
-        hasOwnAccount: true,
+        hasSpecificAccount: true,
         username: 'viewer',
       }),
     ]
@@ -40,7 +40,7 @@ describe('connectionValuesOf', () => {
       port: 8800,
       shownPort: 8800,
       handPort: null,
-      ownAccount: true,
+      specificAccount: true,
       username: 'viewer',
       password: '',
       deviceId: '26970853',
@@ -65,7 +65,7 @@ describe('connectionValuesOf', () => {
 })
 
 describe('protocolInputOf', () => {
-  it('protocolInputOf_ShouldSendTheTrimmedAccountAndKeepThePassword_WhenTheOwnAccountIsOnAndNoPasswordTyped', () => {
+  it('protocolInputOf_ShouldSendTheTrimmedAccountAndKeepThePassword_WhenTheSpecificAccountIsOnAndNoPasswordTyped', () => {
     // Arrange & Act
     const input = protocolInputOf(box)
 
@@ -89,9 +89,9 @@ describe('protocolInputOf', () => {
     expect(input.port).toBe(8554)
   })
 
-  it('protocolInputOf_ShouldDropTheOwnAccount_WhenItIsSwitchedOff', () => {
+  it('protocolInputOf_ShouldDropTheSpecificAccount_WhenItIsSwitchedOff', () => {
     // Arrange & Act
-    const input = protocolInputOf({ ...box, ownAccount: false, password: 'typed' })
+    const input = protocolInputOf({ ...box, specificAccount: false, password: 'typed' })
 
     // Assert
     expect(input.username).toBeNull()

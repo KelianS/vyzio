@@ -17,15 +17,23 @@ export interface CameraProtocol {
   port: number | null
   /** The port Vyzio dials; null for ONVIF until the camera said where it answers. */
   effectivePort: number | null
-  /** The protocol's own account, overriding the camera's; its password never leaves the server. */
+  /** The protocol's specific account, overriding the camera's; its password never leaves the server. */
   username: string | null
-  hasOwnAccount: boolean
+  hasSpecificAccount: boolean
   /** The number V380 addresses the camera by. */
   deviceId: number | null
   /** Null until the camera was asked. */
   status: ProtocolStatus | null
   checkedAt: string | null
   lastError: string | null
+}
+
+/** A protocol added to a camera: its port (null: the usual one) and an optional specific account. */
+export interface CameraProtocolAddition {
+  protocol: SupportedProtocol
+  port: number | null
+  username: string | null
+  password: string | null
 }
 
 /** What the screen sends back for one protocol: a null password keeps the saved one. */

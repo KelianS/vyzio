@@ -363,7 +363,7 @@ describe('CameraConnectionView', () => {
     expect(await box.findByText('Refuse l’accès')).toBeInTheDocument()
     expect(
       box.getByText(
-        'La caméra refuse le compte : vérifiez celui de la caméra, ou le compte propre de ce protocole.',
+        'La caméra refuse le compte : vérifiez celui de la caméra, ou le compte spécifique de ce protocole.',
       ),
     ).toBeVisible()
     expect(box.getByText('RTSP: refused the account (401 Unauthorized).')).toBeVisible()
@@ -372,7 +372,7 @@ describe('CameraConnectionView', () => {
     )
   })
 
-  it('onSave_ShouldSaveTheProtocolPortAndItsOwnAccount_WhenTheUserChangesThem', async () => {
+  it('onSave_ShouldSaveTheProtocolPortAndItsSpecificAccount_WhenTheUserChangesThem', async () => {
     // Arrange
     const network = connectionNetwork({
       [BINDINGS]: ok([rtspStream]),
@@ -387,7 +387,7 @@ describe('CameraConnectionView', () => {
     await userEvent.clear(box.getByLabelText('Port'))
     await userEvent.type(box.getByLabelText('Port'), '8554')
     await userEvent.tab()
-    await userEvent.click(box.getByRole('switch', { name: 'Compte propre' }))
+    await userEvent.click(box.getByRole('switch', { name: 'Compte spécifique' }))
     await userEvent.type(box.getByLabelText('Identifiant'), 'viewer')
     await userEvent.type(box.getByLabelText('Mot de passe'), 'test-secret')
 
@@ -714,7 +714,8 @@ describe('CameraConnectionView', () => {
       'DELETE /api/cameras/camera-1/capabilities/image_settings': ok(),
     })
     renderScreen(<CameraConnectionView />, connectionTab())
-    await userEvent.click(await screen.findByRole('button', { name: 'Retirer' }))
+    const image = await cardOf('Réglages image')
+    await userEvent.click(image.getByRole('button', { name: 'Retirer' }))
 
     // Act
     await userEvent.click(
@@ -727,6 +728,110 @@ describe('CameraConnectionView', () => {
       expect.objectContaining({
         route: 'DELETE /api/cameras/camera-1/capabilities/image_settings',
       }),
+    )
+  })
+
+  it('onLoad_ShouldOfferToAddACapabilityRightAfterTheCardsOutsideAnyFold_WhenOneIsLeftToAdd', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzCapability]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Assert
+    const add = await screen.findByRole('button', { name: 'Ajouter une capacité' })
+    expect(add.closest('details')).toBeNull()
+  })
+
+  it('onLoad_ShouldPointAtTheCardsOptions_WhenEveryCapabilityAlreadyHasItsCard', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([
+        rtspStream,
+        { ...ptzCapability, verified: false },
+        makeCapabilityBinding({ capability: 'hardware_privacy', protocol: 'tapo_klap' }),
+        makeCapabilityBinding({ capability: 'image_settings', protocol: 'onvif' }),
+      ]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'Chaque capacité a déjà sa carte : pour en joindre une autrement, ouvrez ses options.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).not.toBeInTheDocument()
+  })
+
+  it('onAddProtocol_ShouldAddTheProtocolAndCheckItAtOnce_WhenTheUserFillsTheForm', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'POST /api/cameras/camera-1/protocols': ok(
+        protocolRow({ protocol: 'onvif', port: 2020, effectivePort: 2020 }),
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await userEvent.click(await screen.findByText('Avancé'))
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter un protocole' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un protocole' }))
+    await userEvent.type(form.getByRole('spinbutton', { name: 'Port' }), '2020')
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Protocole ajouté.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/camera-1/protocols',
+        body: { protocol: 'onvif', port: 2020, username: null, password: null },
+      }),
+    )
+  })
+
+  it('onLoad_ShouldRefuseToRemoveAProtocolWithThePlainReason_WhenACapabilityGoesThroughIt', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await userEvent.click(await screen.findByText('Avancé'))
+
+    // Assert
+    const box = await protocolBox('RTSP')
+    expect(box.getByRole('button', { name: 'Retirer' })).toBeDisabled()
+    expect(
+      box.getByText(
+        'Flux vidéo passe par ce protocole : changez d’abord le sien dans ses options.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onRemoveProtocol_ShouldRemoveTheProtocol_WhenNoCapabilityUsesItAndTheUserConfirms', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [PROTOCOLS]: ok([rtsp, protocolRow({ protocol: 'onvif', effectivePort: 2020 })]),
+      'DELETE /api/cameras/camera-1/protocols/onvif': ok(),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await userEvent.click(await screen.findByText('Avancé'))
+    const box = await protocolBox('ONVIF')
+    await userEvent.click(box.getByRole('button', { name: 'Retirer' }))
+
+    // Act
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Retirer' }),
+    )
+
+    // Assert
+    expect(await screen.findByText('Protocole retiré.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: 'DELETE /api/cameras/camera-1/protocols/onvif' }),
     )
   })
 

@@ -78,5 +78,21 @@ export function cameraConnectionReducer(
       delete checking[action.protocol]
       return { ...state, checking }
     }
+
+    case 'PROTOCOL_FORM_OPENED':
+      return { ...state, protocolFormOpen: true }
+    case 'PROTOCOL_FORM_CLOSED':
+      return { ...state, protocolFormOpen: false }
+    case 'PROTOCOL_ADD_STARTED':
+      return { ...state, addingProtocol: true }
+    case 'PROTOCOL_ADD_FINISHED':
+      return { ...state, addingProtocol: false }
+    case 'PROTOCOL_REMOVE_STARTED':
+      return { ...state, removing: { ...state.removing, [action.protocol]: true } }
+    case 'PROTOCOL_REMOVE_FINISHED': {
+      const removing = { ...state.removing }
+      delete removing[action.protocol]
+      return { ...state, removing }
+    }
   }
 }

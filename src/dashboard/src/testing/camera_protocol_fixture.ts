@@ -7,7 +7,7 @@ export function makeCameraProtocol(overrides: Partial<CameraProtocol> = {}): Cam
     port: null,
     effectivePort: 554,
     username: null,
-    hasOwnAccount: false,
+    hasSpecificAccount: false,
     deviceId: null,
     status: 'answers',
     checkedAt: null,

@@ -60,9 +60,9 @@ test.describe('CameraConnectionView', () => {
   })
 })
 
-// Each connection detail sits on its level: the stream's path in its card options, a port and an own account in its protocol box (ADR-61).
+// Each connection detail sits on its level: the stream's path in its card options, a port and a specific account in its protocol box (ADR-61).
 test.describe('CameraConnectionView three levels', () => {
-  test('CameraConnectionView_ShouldSaveThePortAndOwnAccountOfAProtocol_WhenTheUserEditsItsBox', async ({
+  test('CameraConnectionView_ShouldSaveThePortAndSpecificAccountOfAProtocol_WhenTheUserEditsItsBox', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -76,7 +76,7 @@ test.describe('CameraConnectionView three levels', () => {
     const klap = page.getByRole('listitem', { name: 'Tapo KLAP' })
 
     await klap.getByRole('spinbutton', { name: 'Port' }).fill('8080')
-    await klap.getByRole('switch', { name: 'Compte propre' }).click()
+    await klap.getByRole('switch', { name: 'Compte spécifique' }).click()
     await klap.getByRole('textbox', { name: 'Identifiant' }).fill('compte-cloud')
 
     const bar = page.getByRole('region', { name: 'Modifications en attente' })
@@ -86,7 +86,41 @@ test.describe('CameraConnectionView three levels', () => {
     await bar.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(bar).toBeHidden()
     await expect(klap.getByRole('spinbutton', { name: 'Port' })).toHaveValue('8080')
-    await expect(klap.getByRole('switch', { name: 'Compte propre' })).toBeChecked()
+    await expect(klap.getByRole('switch', { name: 'Compte spécifique' })).toBeChecked()
+  })
+
+  test('CameraConnectionView_ShouldAddThenRemoveAProtocol_WhenNoCapabilityGoesThroughIt', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.locator('summary', { hasText: 'Avancé' }).click()
+
+    await page.getByRole('button', { name: 'Ajouter un protocole' }).click()
+    const form = page.getByRole('group', { name: 'Ajouter un protocole' })
+    await form.getByRole('button', { name: 'Ajouter et vérifier' }).click()
+    await expect(page.getByText('Protocole ajouté.')).toBeVisible()
+
+    const onvif = page.getByRole('listitem', { name: 'ONVIF' })
+    await expect(onvif).toContainText('Répond')
+    await expect(
+      page.getByRole('listitem', { name: 'RTSP' }).getByRole('button', { name: 'Retirer' }),
+    ).toBeDisabled()
+
+    await onvif.getByRole('button', { name: 'Retirer' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Retirer' }).click()
+    await expect(page.getByText('Protocole retiré.')).toBeVisible()
+    await expect(onvif).toHaveCount(0)
+  })
+
+  test('CameraConnectionView_ShouldOfferToAddACapabilityAfterTheCards_WhenOneIsLeftToAdd', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    await page.getByRole('button', { name: 'Ajouter une capacité' }).click()
+    await expect(page.getByText('Configurer manuellement')).toBeVisible()
   })
 
   test('CameraConnectionView_ShouldSaveTheStreamPathThroughTheDraft_WhenTheUserChangesItInTheStreamOptions', async ({

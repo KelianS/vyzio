@@ -36,6 +36,10 @@ export interface CameraConnectionUido {
   protocolsError: AppError | null
   /** The protocols whose « Vérifier » is running. */
   checking: Partial<Record<SupportedProtocol, true>>
+  /** The protocols being removed. */
+  removing: Partial<Record<SupportedProtocol, true>>
+  protocolFormOpen: boolean
+  addingProtocol: boolean
 }
 
 export function buildInitialCameraConnectionUido(): CameraConnectionUido {
@@ -58,5 +62,8 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     protocolsLoading: true,
     protocolsError: null,
     checking: {},
+    removing: {},
+    protocolFormOpen: false,
+    addingProtocol: false,
   }
 }

@@ -9,6 +9,7 @@ import type {
   Capability,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
+import type { CameraProtocolAddition } from '../../domain/entities/camera_protocol.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { refreshSurveillance } from '../surveillance/surveillance_refresh'
@@ -284,6 +285,41 @@ export function buildCameraConnectionPresenter({
         toastError(toast, toAppError(e))
       } finally {
         dispatch({ type: 'PROTOCOL_CHECK_FINISHED', protocol })
+      }
+    },
+
+    onOpenProtocolForm() {
+      dispatch({ type: 'PROTOCOL_FORM_OPENED' })
+    },
+    onCloseProtocolForm() {
+      dispatch({ type: 'PROTOCOL_FORM_CLOSED' })
+    },
+
+    /** Adds a protocol and checks it at once; the new box then says whether it answers. */
+    async onAddProtocol(cameraId: string, addition: CameraProtocolAddition) {
+      dispatch({ type: 'PROTOCOL_ADD_STARTED' })
+      try {
+        await container.addCameraProtocol.execute(cameraId, addition)
+        toast('Protocole ajouté.', 'success')
+        dispatch({ type: 'PROTOCOL_FORM_CLOSED' })
+        readProtocols(cameraId, true)
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'PROTOCOL_ADD_FINISHED' })
+      }
+    },
+
+    async onRemoveProtocol(cameraId: string, protocol: SupportedProtocol) {
+      dispatch({ type: 'PROTOCOL_REMOVE_STARTED', protocol })
+      try {
+        await container.removeCameraProtocol.execute(cameraId, protocol)
+        toast('Protocole retiré.', 'success')
+        readProtocols(cameraId, true)
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'PROTOCOL_REMOVE_FINISHED', protocol })
       }
     },
 

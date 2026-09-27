@@ -32,7 +32,7 @@ export interface FakeProtocol {
   port: number | null
   effectivePort: number | null
   username: string | null
-  hasOwnAccount: boolean
+  hasSpecificAccount: boolean
   deviceId: number | null
   status: 'answers' | 'refused' | 'unreachable' | null
   checkedAt: string | null
@@ -45,7 +45,7 @@ export function makeFakeProtocol(overrides: Partial<FakeProtocol> = {}): FakePro
     port: null,
     effectivePort: 554,
     username: null,
-    hasOwnAccount: false,
+    hasSpecificAccount: false,
     deviceId: null,
     status: 'answers',
     checkedAt: '2026-01-01T00:00:00Z',
@@ -736,11 +736,35 @@ export async function installFakeBackend(
       if (rest === '/protocols' && method === 'GET') {
         return json(route, state.protocols)
       }
+      if (rest === '/protocols' && method === 'POST') {
+        // Like the real one: a protocol is added once, then checked at once.
+        const name = postData?.protocol as string
+        if (state.protocols.some((p) => p.protocol === name)) {
+          return json(route, { error: 'protocol_exists' }, 409)
+        }
+        const username = (postData?.username as string | null) ?? null
+        const added = makeFakeProtocol({
+          protocol: name,
+          port: (postData?.port as number | null) ?? null,
+          effectivePort: (postData?.port as number | null) ?? null,
+          username,
+          hasSpecificAccount: username !== null,
+        })
+        state.protocols.push(added)
+        return json(route, added)
+      }
       const protocolMatch = rest?.match(/^\/protocols\/([^/]+)(\/check)?$/)
       if (protocolMatch) {
         const [, name, check] = protocolMatch
         const entry = state.protocols.find((p) => p.protocol === name)
         if (!entry) return json(route, { message: 'not found' }, 404)
+        if (!check && method === 'DELETE') {
+          // Like the real one: a protocol a capability goes through stays.
+          const used = [state.streamBinding.protocol, state.ptzBinding?.protocol].includes(name)
+          if (used) return json(route, { error: 'protocol_in_use' }, 409)
+          state.protocols = state.protocols.filter((p) => p.protocol !== name)
+          return route.fulfill({ status: 204 })
+        }
         if (check && method === 'POST') {
           entry.checkedAt = new Date().toISOString()
           return json(route, entry)
@@ -750,7 +774,7 @@ export async function installFakeBackend(
           entry.port = (postData?.port as number | null) ?? null
           entry.effectivePort = entry.port ?? entry.effectivePort
           entry.username = username
-          entry.hasOwnAccount = username !== null
+          entry.hasSpecificAccount = username !== null
           entry.deviceId = (postData?.deviceId as number | null) ?? null
           entry.status = null
           state.pendingChanges = true

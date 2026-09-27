@@ -89,7 +89,7 @@ const PROTOCOL_FAILURE_LINES: Record<ProtocolStatus, string | null> = {
   unreachable:
     'La caméra ne répond pas sur ce port : vérifiez qu’elle est allumée et que ce protocole est activé sur elle.',
   refused:
-    'La caméra refuse le compte : vérifiez celui de la caméra, ou le compte propre de ce protocole.',
+    'La caméra refuse le compte : vérifiez celui de la caméra, ou le compte spécifique de ce protocole.',
   answers: null,
 }
 

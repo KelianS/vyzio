@@ -15,7 +15,7 @@ export interface ProtocolValues {
   /** What the box showed when read, and the port set by hand then: an untouched port sends back only the latter. */
   shownPort: number | null
   handPort: number | null
-  ownAccount: boolean
+  specificAccount: boolean
   username: string
   password: string
   deviceId: string
@@ -48,7 +48,7 @@ const EMPTY_BOX: ProtocolValues = {
   port: null,
   shownPort: null,
   handPort: null,
-  ownAccount: false,
+  specificAccount: false,
   username: '',
   password: '',
   deviceId: '',
@@ -60,7 +60,7 @@ function boxOf(entry: CameraProtocol | undefined): ProtocolValues {
     port: entry.effectivePort,
     shownPort: entry.effectivePort,
     handPort: entry.port,
-    ownAccount: entry.hasOwnAccount,
+    specificAccount: entry.hasSpecificAccount,
     username: entry.username ?? '',
     password: '',
     deviceId: entry.deviceId === null ? '' : String(entry.deviceId),
@@ -90,14 +90,14 @@ export function connectionValuesOf(
   }
 }
 
-/** What a box sends: its own account only while it is switched on, an empty password keeping the saved one. */
+/** What a box sends: its specific account only while it is switched on, an empty password keeping the saved one. */
 export function protocolInputOf(box: ProtocolValues): CameraProtocolInput {
   const deviceId = Number.parseInt(box.deviceId, 10)
   return {
     // An ONVIF port found by asking the camera is not one the user set: sent back, it would pin the search.
     port: box.port === box.shownPort ? box.handPort : box.port,
-    username: box.ownAccount ? box.username.trim() || null : null,
-    password: box.ownAccount && box.password ? box.password : null,
+    username: box.specificAccount ? box.username.trim() || null : null,
+    password: box.specificAccount && box.password ? box.password : null,
     deviceId: Number.isNaN(deviceId) ? null : deviceId,
   }
 }
@@ -106,7 +106,7 @@ export function protocolInputOf(box: ProtocolValues): CameraProtocolInput {
 export function sameBox(left: ProtocolValues, right: ProtocolValues): boolean {
   return (
     left.port === right.port &&
-    left.ownAccount === right.ownAccount &&
+    left.specificAccount === right.specificAccount &&
     left.username === right.username &&
     left.password === right.password &&
     left.deviceId === right.deviceId

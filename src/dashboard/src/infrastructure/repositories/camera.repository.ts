@@ -5,6 +5,7 @@ import type {
 import { PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraProtocol,
+  CameraProtocolAddition,
   CameraProtocolInput,
 } from '../../domain/entities/camera_protocol.entity'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/camera_configuration_apply_result.entity'
@@ -341,6 +342,17 @@ export class HttpCameraRepository implements CameraRepository {
       `${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/${protocol}`,
       input,
     )
+  }
+
+  async addProtocol(cameraId: string, addition: CameraProtocolAddition): Promise<CameraProtocol> {
+    return postJson<CameraProtocol>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/protocols`,
+      addition,
+    )
+  }
+
+  async removeProtocol(cameraId: string, protocol: SupportedProtocol): Promise<void> {
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/${protocol}`)
   }
 
   async checkProtocol(cameraId: string, protocol: SupportedProtocol): Promise<CameraProtocol> {

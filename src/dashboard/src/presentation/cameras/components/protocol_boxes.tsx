@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
+import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Badge } from '../../../common/components/badge'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
@@ -21,15 +23,19 @@ const ASKS_DEVICE_ID: Record<SupportedProtocol, boolean> = {
   rtsp: false,
 }
 
-/** The protocols the camera speaks, one box each: state, port, own account, its own check (DESIGN SYSTEM § Capability cards). */
+/** The protocols the camera speaks, one box each: state, port, specific account, its own check (DESIGN SYSTEM § Capability cards). */
 export function ProtocolBoxes({
   protocols,
   loading,
   readError,
   values,
   checking,
+  removing,
+  usedBy,
+  edited,
   onChange,
   onCheck,
+  onRemove,
   onRetryRead,
 }: {
   protocols: CameraProtocol[]
@@ -38,8 +44,14 @@ export function ProtocolBoxes({
   /** Each box as the page's draft holds it (ADR-41). */
   values: (protocol: SupportedProtocol) => ProtocolValues
   checking: Partial<Record<SupportedProtocol, true>>
+  removing: Partial<Record<SupportedProtocol, true>>
+  /** The titles of the capabilities that go through a protocol: while any does, it stays. */
+  usedBy: (protocol: SupportedProtocol) => string[]
+  /** Whether a box holds unsaved edits, which removing it would silently drop. */
+  edited: (protocol: SupportedProtocol) => boolean
   onChange: (protocol: SupportedProtocol, patch: Partial<ProtocolValues>) => void
   onCheck: (protocol: SupportedProtocol) => void
+  onRemove: (protocol: SupportedProtocol) => Promise<void>
   onRetryRead: () => void
 }) {
   if (loading) return <p className="text-muted-foreground">Chargement…</p>
@@ -60,27 +72,47 @@ export function ProtocolBoxes({
           entry={entry}
           values={values(entry.protocol)}
           checking={checking[entry.protocol] === true}
+          removing={removing[entry.protocol] === true}
+          removalBlocker={removalBlocker(usedBy(entry.protocol), edited(entry.protocol))}
           onChange={(patch) => onChange(entry.protocol, patch)}
           onCheck={() => onCheck(entry.protocol)}
+          onRemove={() => onRemove(entry.protocol)}
         />
       ))}
     </ul>
   )
 }
 
+/** Why a protocol cannot be removed now, in plain words; null when it can. */
+function removalBlocker(capabilities: string[], edited: boolean): string | null {
+  if (capabilities.length === 1)
+    return `${capabilities[0]} passe par ce protocole : changez d’abord le sien dans ses options.`
+  if (capabilities.length > 1)
+    return `${capabilities.join(' et ')} passent par ce protocole : changez d’abord le leur dans leurs options.`
+  if (edited) return 'Enregistrez ou annulez d’abord vos modifications de ce protocole.'
+  return null
+}
+
 function ProtocolBox({
   entry,
   values,
   checking,
+  removing,
+  removalBlocker,
   onChange,
   onCheck,
+  onRemove,
 }: {
   entry: CameraProtocol
   values: ProtocolValues
   checking: boolean
+  removing: boolean
+  removalBlocker: string | null
   onChange: (patch: Partial<ProtocolValues>) => void
   onCheck: () => void
+  onRemove: () => Promise<void>
 }) {
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const id = `protocol-${entry.protocol}`
   const settings: SettingDeclaration[] = []
 
@@ -107,15 +139,15 @@ function ProtocolBox({
   }
 
   settings.push({
-    id: `${id}-own-account`,
-    label: 'Compte propre',
+    id: `${id}-specific-account`,
+    label: 'Compte spécifique',
     nature: { kind: 'toggle' },
     help: 'Pour une caméra qui demande un autre compte par ce seul moyen, comme le compte cloud Tapo pour la coupure matérielle. Il n’est présenté qu’à la caméra, sur votre réseau.',
-    value: values.ownAccount,
-    onChange: (value) => onChange({ ownAccount: value as boolean }),
+    value: values.specificAccount,
+    onChange: (value) => onChange({ specificAccount: value as boolean }),
   })
 
-  if (values.ownAccount) {
+  if (values.specificAccount) {
     settings.push(
       {
         id: `${id}-username`,
@@ -127,8 +159,8 @@ function ProtocolBox({
       {
         id: `${id}-password`,
         label: 'Mot de passe',
-        nature: { kind: 'secret', placeholder: entry.hasOwnAccount ? 'Inchangé' : '' },
-        help: entry.hasOwnAccount
+        nature: { kind: 'secret', placeholder: entry.hasSpecificAccount ? 'Inchangé' : '' },
+        help: entry.hasSpecificAccount
           ? 'Laissez vide pour conserver le mot de passe actuel.'
           : undefined,
         value: values.password,
@@ -159,11 +191,37 @@ function ProtocolBox({
       <div className="mt-2">
         <SettingsList settings={settings} />
       </div>
-      <div className="mt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="sm" disabled={checking} onClick={onCheck}>
           {checking ? 'Vérification…' : 'Vérifier'}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="border-destructive text-destructive hover:bg-destructive/10"
+          disabled={removalBlocker !== null || removing}
+          onClick={() => setConfirmRemove(true)}
+        >
+          Retirer
+        </Button>
       </div>
+      {removalBlocker && <p className="mt-2 text-sm text-muted-foreground">{removalBlocker}</p>}
+
+      {confirmRemove && (
+        <ConfirmModal
+          title={`Retirer ${PROTOCOL_LABELS[entry.protocol]} ?`}
+          body="Vyzio oublie comment joindre la caméra par ce protocole, son port et son compte spécifique. Vous pourrez l’ajouter à nouveau."
+          confirmLabel="Retirer"
+          tone="danger"
+          loading={removing}
+          onConfirm={async () => {
+            await onRemove()
+            setConfirmRemove(false)
+          }}
+          onCancel={() => setConfirmRemove(false)}
+        />
+      )}
     </li>
   )
 }

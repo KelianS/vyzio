@@ -1,5 +1,9 @@
 import type { CameraDraftInput, CameraUpdateInput } from '../entities/camera_draft_input.entity'
-import type { CameraProtocol, CameraProtocolInput } from '../entities/camera_protocol.entity'
+import type {
+  CameraProtocol,
+  CameraProtocolAddition,
+  CameraProtocolInput,
+} from '../entities/camera_protocol.entity'
 import type { Camera } from '../entities/camera.entity'
 import type { CameraStatus } from '../entities/camera_status.entity'
 import type { CameraPrivacySchedule } from '../entities/camera_privacy_schedule.entity'
@@ -93,6 +97,8 @@ export interface CameraRepository {
     input: CameraProtocolInput,
   ): Promise<CameraProtocol>
   checkProtocol(cameraId: string, protocol: SupportedProtocol): Promise<CameraProtocol>
+  addProtocol(cameraId: string, addition: CameraProtocolAddition): Promise<CameraProtocol>
+  removeProtocol(cameraId: string, protocol: SupportedProtocol): Promise<void>
   // Image settings (ADR-27) — read/written live on the camera, nothing persisted by Vyzio.
   getImageSettings(cameraId: string): Promise<CameraImageSettings>
   setImageSettings(cameraId: string, settings: CameraImageSettings): Promise<CameraImageSettings>

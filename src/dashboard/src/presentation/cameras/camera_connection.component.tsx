@@ -16,13 +16,14 @@ import { SettingsPage, SettingsSection } from '../../common/settings/settings_pa
 import { HelpPanel } from '../../common/components/help_panel'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { CapabilitySection } from './components/capability_section'
-import { ManualCapability } from './components/manual_capability_form'
+import { AddProtocol } from './components/add_protocol_form'
 import { ProtocolBoxes } from './components/protocol_boxes'
 import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraConnectionPresenter } from './camera_connection.presenter'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido } from './camera_connection.uido'
 import { streamBindingOf } from './capability_state'
+import { CAPABILITY_LABELS } from './cameras.formatters'
 import {
   ALL_PROTOCOLS,
   connectionValuesOf,
@@ -160,6 +161,8 @@ export function CameraConnectionView() {
             verifyingStream={uido.verifying}
             testsSuspended={testsSuspended}
             pending={uido.pending}
+            manualFormOpen={uido.manualFormOpen}
+            manualConfiguring={uido.manualConfiguring}
             streamPath={streamPath}
             intents={{
               onRetryRead: () => presenter.onLoad(cameraId),
@@ -171,6 +174,10 @@ export function CameraConnectionView() {
               onTogglePtz: () => presenter.onTogglePtz(camera),
               onSetPanInverted: (inverted) => void presenter.onSetPanInverted(cameraId, inverted),
               onRemove: (capability) => presenter.onRemove(cameraId, capability),
+              onOpenManual: presenter.onOpenManual,
+              onCloseManual: presenter.onCloseManual,
+              onConfigureManually: (capability, protocol) =>
+                void presenter.onConfigureManually(cameraId, capability, protocol),
             }}
           />
 
@@ -209,22 +216,30 @@ export function CameraConnectionView() {
               readError={uido.protocolsError}
               values={(protocol) => draft.values[protocolKey(protocol)]}
               checking={uido.checking}
+              removing={uido.removing}
+              usedBy={(protocol) =>
+                uido.bindings
+                  .filter((b) => b.isConfigured && b.protocol === protocol)
+                  .map((b) => CAPABILITY_LABELS[b.capability])
+              }
+              edited={(protocol) =>
+                draft.values[protocolKey(protocol)] !== draft.saved[protocolKey(protocol)]
+              }
               onChange={setProtocol}
               onCheck={(protocol) => void presenter.onCheckProtocol(cameraId, protocol)}
+              onRemove={(protocol) => presenter.onRemoveProtocol(cameraId, protocol)}
               onRetryRead={() => presenter.onLoad(cameraId)}
             />
-            <ManualCapability
-              bindings={uido.bindings}
-              bindingsRead={!uido.bindingsLoading && !uido.bindingsError}
-              open={uido.manualFormOpen}
-              configuring={uido.manualConfiguring}
-              testsSuspended={testsSuspended}
-              onOpen={presenter.onOpenManual}
-              onClose={presenter.onCloseManual}
-              onConfigure={(capability, protocol) =>
-                void presenter.onConfigureManually(cameraId, capability, protocol)
-              }
-            />
+            {!uido.protocolsLoading && !uido.protocolsError && (
+              <AddProtocol
+                protocols={uido.protocols}
+                open={uido.protocolFormOpen}
+                adding={uido.addingProtocol}
+                onOpen={presenter.onOpenProtocolForm}
+                onClose={presenter.onCloseProtocolForm}
+                onAdd={(addition) => void presenter.onAddProtocol(cameraId, addition)}
+              />
+            )}
           </div>
 
           <HelpPanel title="Un protocole ne répond pas, que vérifier ?">

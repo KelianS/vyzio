@@ -123,4 +123,21 @@ describe('cameraConnectionReducer', () => {
     // Assert
     expect(next.checking).toEqual({ v380: true })
   })
+
+  it('cameraConnectionReducer_ShouldFreeOnlyThatProtocol_WhenItsRemovalFinishes', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      removing: { onvif: true, v380: true } as const,
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'PROTOCOL_REMOVE_FINISHED',
+      protocol: 'onvif',
+    })
+
+    // Assert
+    expect(next.removing).toEqual({ v380: true })
+  })
 })

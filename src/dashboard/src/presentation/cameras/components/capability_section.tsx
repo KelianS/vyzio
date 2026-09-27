@@ -36,6 +36,7 @@ import {
 } from '../capability_state'
 import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
+import { ManualCapability } from './manual_capability_form'
 
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
@@ -48,6 +49,9 @@ interface CapabilityIntents {
   onTogglePtz: () => Promise<void>
   onSetPanInverted: (inverted: boolean) => void
   onRemove: (capability: Capability) => Promise<void>
+  onOpenManual: () => void
+  onCloseManual: () => void
+  onConfigureManually: (capability: Capability, protocol: SupportedProtocol) => void
 }
 
 interface CapabilitySectionProps {
@@ -61,6 +65,8 @@ interface CapabilitySectionProps {
   /** Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2). */
   testsSuspended: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
+  manualFormOpen: boolean
+  manualConfiguring: boolean
   /** The stream's main path, a declared setting that follows the page's draft (ADR-41). */
   streamPath: SettingDeclaration
   intents: CapabilityIntents
@@ -85,6 +91,8 @@ export function CapabilitySection({
   verifyingStream,
   testsSuspended,
   pending,
+  manualFormOpen,
+  manualConfiguring,
   streamPath,
   intents,
 }: CapabilitySectionProps) {
@@ -128,6 +136,18 @@ export function CapabilitySection({
           subject="Les capacités de cette caméra n’ont pas pu être lues."
         />
       )}
+
+      {/* Adding a capability closes the list: it is a capability's own action (DESIGN SYSTEM § Capability cards). */}
+      <ManualCapability
+        bindings={bindings}
+        bindingsRead={read}
+        open={manualFormOpen}
+        configuring={manualConfiguring}
+        testsSuspended={testsSuspended}
+        onOpen={intents.onOpenManual}
+        onClose={intents.onCloseManual}
+        onConfigure={intents.onConfigureManually}
+      />
 
       {testsSuspended && <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>}
 

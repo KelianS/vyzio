@@ -36,7 +36,14 @@ export function ManualCapability({
 }) {
   // A preset says what Vyzio expects, not a ceiling: any unbound capability can be added by hand.
   const available = ADDABLE_CAPABILITIES.filter((c) => !bindings.some((b) => b.capability === c))
-  if (!bindingsRead || available.length === 0) return null
+  if (!bindingsRead) return null
+  // A capability that already has its card changes its protocol there, failing or not.
+  if (available.length === 0)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Chaque capacité a déjà sa carte : pour en joindre une autrement, ouvrez ses options.
+      </p>
+    )
 
   return open ? (
     <ManualCapabilityForm
