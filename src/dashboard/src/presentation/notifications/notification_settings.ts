@@ -41,24 +41,24 @@ const CREDENTIAL_COPY: Record<
   telegram: {
     bot_token: {
       label: 'Token du bot',
-      help: 'Le token donné par BotFather à la création du bot. Laissez vide pour conserver celui déjà enregistré.',
+      help: 'Laissez vide pour conserver celui déjà enregistré.',
       placeholder: '123456:ABC…',
     },
     chat_id: {
       label: 'Identifiant de conversation',
-      help: 'Le numéro de la conversation qui recevra les notifications et répondra à vos commandes.',
+      help: 'Le numéro de la conversation qui recevra les notifications.',
       placeholder: '123456789',
     },
   },
   discord: {
     bot_token: {
       label: 'Token du bot',
-      help: 'Le token donné par l’onglet Bot de votre application Discord. Laissez vide pour conserver celui déjà enregistré.',
+      help: 'Laissez vide pour conserver celui déjà enregistré.',
       placeholder: 'MTIzNDU2…',
     },
     chat_id: {
       label: 'Identifiant du salon',
-      help: 'Le numéro du salon qui recevra les notifications et répondra à vos commandes.',
+      help: 'Le numéro du salon qui recevra les notifications.',
       placeholder: '123456789012345678',
     },
   },

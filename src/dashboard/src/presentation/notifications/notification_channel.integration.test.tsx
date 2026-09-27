@@ -38,6 +38,8 @@ const LISTENING_NOW = {
   interruptedAt: null,
   reason: null,
 }
+const LISTENING_STOPPED = { ...LISTENING_NOW, listening: false }
+const PAIRED = makePairing({ status: 'paired' })
 
 function channelAt(slug: string) {
   return { path: '/settings/notifications/:channel', url: `/settings/notifications/${slug}` }
@@ -285,7 +287,7 @@ describe('NotificationChannelView', () => {
     expect(
       screen.getByText('Vyzio n’a pas pu lire si une conversation est reliée à ce canal.'),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/Aucune conversation ne peut commander/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sans elle, le bot ne répond à personne/)).not.toBeInTheDocument()
   })
 
   it('onRetryPairing_ShouldShowTheLink_WhenTheSecondReadSucceeds', async () => {
@@ -304,9 +306,62 @@ describe('NotificationChannelView', () => {
     ).toBeInTheDocument()
   })
 
-  it('onOpen_ShouldSayTheListeningIsUnknownWhereTheBadgeGoes_WhenItCannotBeRead', async () => {
+  it('onOpen_ShouldOfferOnlyTheLink_WhenNoConversationIsLinked', async () => {
+    // Arrange
+    fakeNetwork({ ...commandRoutes(), [LISTENING]: ok(LISTENING_STOPPED) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'Reliez une conversation pour lui parler depuis votre téléphone : sans elle, le bot ne répond à personne.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Relier une conversation' })).toBeInTheDocument()
+    expect(screen.queryByText('N’écoute plus')).not.toBeInTheDocument()
+    expect(screen.queryByText(/ce qui se passe chez vous/)).not.toBeInTheDocument()
+    // The two left belong to the sent log and the command journal, under Avancé.
+    expect(screen.getAllByRole('button', { name: 'Actualiser' })).toHaveLength(2)
+  })
+
+  it('onOpen_ShouldKeepQuietAboutTheListening_WhenItCannotBeReadAndNoConversationIsLinked', async () => {
     // Arrange
     fakeNetwork({ ...commandRoutes(), [LISTENING]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByRole('button', { name: 'Relier une conversation' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Impossible de savoir si le canal est à l’écoute.'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheChannelStoppedListening_WhenACodeAwaitsItsConversation', async () => {
+    // Arrange
+    fakeNetwork({
+      ...commandRoutes(
+        makePairing({ status: 'awaiting_conversation', instruction: '/lier 123456' }),
+      ),
+      [LISTENING]: ok(LISTENING_STOPPED),
+    })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByText('N’écoute plus')).toBeInTheDocument()
+    expect(screen.getByText('/lier 123456')).toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheListeningIsUnknownWhereTheBadgeGoes_WhenItCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...commandRoutes(PAIRED), [LISTENING]: failure(500) })
 
     // Act
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
@@ -323,7 +378,7 @@ describe('NotificationChannelView', () => {
 
   it('onRetryListening_ShouldShowTheBadge_WhenTheSecondReadSucceeds', async () => {
     // Arrange
-    const network = fakeNetwork({ ...commandRoutes(), [LISTENING]: failure(500) })
+    const network = fakeNetwork({ ...commandRoutes(PAIRED), [LISTENING]: failure(500) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
     await screen.findByText('Impossible de savoir si le canal est à l’écoute.')
     network.answer(LISTENING, ok(LISTENING_NOW))
@@ -337,7 +392,7 @@ describe('NotificationChannelView', () => {
 
   it('onRefreshPairing_ShouldKeepTheBadgeAndSayWhy_WhenTheListeningRereadFails', async () => {
     // Arrange
-    const network = fakeNetwork({ ...commandRoutes(), [LISTENING]: ok(LISTENING_NOW) })
+    const network = fakeNetwork({ ...commandRoutes(PAIRED), [LISTENING]: ok(LISTENING_NOW) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
     const badge = await screen.findByText('À l’écoute')
     network.answer(LISTENING, failure(500))

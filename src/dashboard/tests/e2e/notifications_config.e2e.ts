@@ -107,6 +107,7 @@ test.describe('NotificationChannelView', () => {
       page,
       createFakeBackendState({
         notificationChannels: { telegram: makeFakeChannel('telegram') },
+        channelPairing: { telegram: { status: 'paired', pairedAt: null } },
         channelListening: {
           telegram: {
             listening: false,
@@ -140,11 +141,29 @@ test.describe('NotificationChannelView', () => {
     await expect(page.getByText('Ignoré : conversation non reliée')).toBeVisible()
   })
 
+  // Nothing linked yet: a stopped loop is no failure, a command gets no answer anyway (SPECS 5.4).
+  test('NotificationChannelView_ShouldOfferOnlyTheLink_WhenNoConversationIsLinked', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        notificationChannels: { telegram: makeFakeChannel('telegram') },
+      }),
+    )
+
+    await page.goto('/settings/notifications/telegram')
+
+    await expect(page.getByRole('button', { name: 'Relier une conversation' })).toBeVisible()
+    await expect(page.getByText('N’écoute plus')).toHaveCount(0)
+  })
+
   test('NotificationChannelView_ShouldSayItListens_WhenTheLoopRuns', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({
         notificationChannels: { telegram: makeFakeChannel('telegram') },
+        channelPairing: { telegram: { status: 'paired', pairedAt: null } },
         channelListening: {
           telegram: {
             listening: true,
