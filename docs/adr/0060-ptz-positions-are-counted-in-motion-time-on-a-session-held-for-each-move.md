@@ -104,12 +104,14 @@ than claim it arrived, as ADR-59 d) says.
   moves, whatever the distance. How precisely a saved position is found again is measured on the
   hardware.
 - The interface drives every press in three calls, start, signal and stop. The shortest press moves
-  the camera for the minimum time: finer framing than that comes from the recall, not the joystick.
+  the camera for the minimum time, so that minimum also sets the finest framing the joystick gives.
+- A stop names no press: on quick successive presses, a stop that reaches the server after the next
+  start ends that next press, which then moves for the minimum time only.
 - A DVRIP move reuses one logged-in connection; its commands go out in order and their answers are
   matched in order.
 - Over ONVIF and Tapo, the move and the stop of a short press or a timed move are two HTTP requests
   the wire does not order: a camera that handled the stop first would turn to its limit. The
   hardware test checks it.
-- The V380 moves as before: the same packet for a short press, repeated while held, the same homing length and
-  margin. It still opens its stream per packet.
+- The V380 moves as before: the same packet for a short press, repeated while held, the same homing
+  length and margin. It still opens its stream per packet.
 - Positions saved before this change were counted in steps and are to be saved again.
