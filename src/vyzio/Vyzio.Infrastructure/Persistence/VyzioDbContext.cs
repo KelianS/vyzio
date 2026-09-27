@@ -116,6 +116,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             binding.Property(b => b.Capability).HasConversion<SnakeCaseEnumConverter<CameraCapability>>();
             binding.Property(b => b.Protocol).HasConversion<SnakeCaseEnumConverter<SupportedProtocol>>();
+            binding.Property(b => b.Status).HasConversion<SnakeCaseEnumConverter<CapabilityStatus>>();
         });
 
         modelBuilder.Entity<PtzPreset>(preset =>

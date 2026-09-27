@@ -25,10 +25,13 @@ internal sealed class DvripImageSettingsProvider(DvripClient dvrip) : IImageSett
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
 
-    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    // The brightness read back is the proof (ADR-66).
+    public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var config = await dvrip.ConfigGetAsync(camera, VideoColorConfigName, ct);
-        return FindIntProperty(config, "Brightness") is not null;
+        return FindIntProperty(config, "Brightness") is not null
+            ? CapabilityProof.Proven()
+            : CapabilityProof.Missing($"DVRIP: {camera.Host} returned no Brightness in '{VideoColorConfigName}'.");
     }
 
     public async Task<CameraImageSettings?> GetImageSettingsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)

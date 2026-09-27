@@ -13,9 +13,11 @@ public sealed record CameraCapabilityBindingDto(
     string? LastError,
     bool IsPreset,
     bool IsConfigured,
+    string Status,
     bool? PanInverted = null,
     string? StreamPath = null,
-    bool? NativePositions = null)
+    bool? NativePositions = null,
+    DateTimeOffset? ConfirmedAt = null)
 {
     public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, Camera? camera = null, bool isPreset = false) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
@@ -26,6 +28,8 @@ public sealed record CameraCapabilityBindingDto(
         binding.LastError,
         IsPreset: isPreset,
         IsConfigured: true,
+        // Verified says whether it is usable, Status why (ADR-66).
+        Status: SnakeCaseEnum.ToSnakeCase(binding.Status),
         // Only a PTZ binding has a direction to swap (SPECS 11).
         PanInverted: binding.Capability == CameraCapability.Ptz
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
@@ -33,7 +37,8 @@ public sealed record CameraCapabilityBindingDto(
         // The stream's main path is its own setting (ADR-61).
         StreamPath: binding.Capability == CameraCapability.Stream ? camera?.MainStream?.Path : null,
         // Whether the camera keeps the positions itself or Vyzio counts them (ADR-64).
-        NativePositions: binding.Capability == CameraCapability.Ptz ? PtzPositionTier.IsNative(binding) : null);
+        NativePositions: binding.Capability == CameraCapability.Ptz ? PtzPositionTier.IsNative(binding) : null,
+        ConfirmedAt: binding.ConfirmedAt);
 
     public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, SupportedProtocol protocol) => new(
         SnakeCaseEnum.ToSnakeCase(capability),
@@ -43,11 +48,11 @@ public sealed record CameraCapabilityBindingDto(
         VerifiedAt: null,
         LastError: null,
         IsPreset: true,
-        IsConfigured: false);
+        IsConfigured: false,
+        Status: SnakeCaseEnum.ToSnakeCase(CapabilityStatus.Failed));
 }
 
-// Executes a real connectivity/capability check (ADR-22) — Verified is only ever set as a
-// result of this call, never declaratively.
+// Executes a real check (ADR-22): the protocol answers, then the capability's read-only proof (ADR-66).
 public sealed class ProbeCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -93,42 +98,36 @@ public sealed class ProbeCameraCapabilityUseCase(
             return null;
         }
 
-        bool verified;
-        string? error = null;
         var protocol = await protocolCheck.CheckAsync(camera, binding.Protocol, run, ct);
         if (!protocol.Answers)
         {
             // A protocol that is silent or refuses the account fails the capability with its own reason (ADR-61).
-            verified = false;
-            error = protocol.LastError;
+            CapabilityVerdict.Fail(binding, protocol.LastError);
         }
         else
         {
             try
             {
-                verified = capability switch
+                var proof = capability switch
                 {
-                    CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
-                    CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
-                    CameraCapability.ImageSettings => await registry.ResolveImageSettings(binding.Protocol).ProbeAsync(camera, binding, ct),
-                    _ => false,
+                    CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProveAsync(camera, binding, ct),
+                    CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProveAsync(camera, binding, ct),
+                    CameraCapability.ImageSettings => await registry.ResolveImageSettings(binding.Protocol).ProveAsync(camera, binding, ct),
+                    _ => throw new ArgumentOutOfRangeException(nameof(capability), capability, "No proof for this capability."),
                 };
+                CapabilityVerdict.Apply(binding, proof);
             }
             catch (Exception ex)
             {
-                verified = false;
-                error = ex.Message;
+                CapabilityVerdict.Fail(binding, ex.Message);
             }
         }
 
-        binding.Verified = verified;
         binding.VerifiedAt = DateTimeOffset.UtcNow;
-        binding.LastError = verified ? null : error;
         await bindings.SaveAsync(binding, ct);
 
         // A2: PTZ probe success → activate the PTZ panel without manual intervention.
-        if (capability == CameraCapability.Ptz && verified && !camera.PtzSupported)
-            camera.PtzSupported = true;
+        CapabilityVerdict.ShowPtzPanel(camera, binding);
 
         // The protocol row and what a provider found (ONVIF address, V380 device id) are saved with the camera.
         await cameras.UpdateAsync(camera, ct);
@@ -193,8 +192,10 @@ public sealed class ConfigureCameraCapabilityUseCase(
         binding.Protocol = protocol;
         // The swap is the user's; what the former protocol found about the camera (native presets) is not.
         binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, null, BindingConfig.PanInverted);
-        binding.Verified = false;
+        binding.Status = CapabilityStatus.Failed;
         binding.LastError = null;
+        // The user's confirmation held for the former protocol only (ADR-66).
+        if (protocolChanged) binding.ConfirmedAt = null;
         binding.ManuallyConfigured = true;
 
         await bindings.SaveAsync(binding, ct);

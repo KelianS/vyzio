@@ -40,17 +40,17 @@ internal sealed class V380PtzProvider(
     // 23 packets, plus the calibration margin: the 25 that cover the whole pan/tilt range at about 650 ms each.
     public TimeSpan FullRange => 23 * PacketLength;
 
-    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    // Finds the device id the moves need; V380 has no read that shows a head, so the user confirms (ADR-66).
+    public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         await V380DeviceIdBootstrap.PreloadAsync(camera, client, onvif, ct);
 
-        var success = await client.ProbeAsync(camera, ct);
+        if (!await client.ProbeAsync(camera, ct))
+            throw new CameraUnreachableException($"V380: {camera.Host} did not answer with its device number.");
 
         // Persist the discovered deviceId so future PTZ commands work without discovery.
-        if (success)
-            V380DeviceIdBootstrap.PersistIfDiscovered(camera, client);
-
-        return success;
+        V380DeviceIdBootstrap.PersistIfDiscovered(camera, client);
+        return CapabilityProof.Unprovable();
     }
 
     // Nothing opened ahead: the camera sets how far a packet moves, so the stream opened per packet does not change it (ADR-60).
