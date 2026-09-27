@@ -7,11 +7,13 @@ export function personPhotosReducer(
 ): PersonPhotosUido {
   switch (action.type) {
     case 'LOAD_STARTED':
-      return { ...state, loading: true }
+      return { ...state, loading: true, error: null }
     case 'LOAD_SUCCEEDED':
       return { ...state, loading: false, photos: action.photos }
     case 'LOAD_FAILED':
-      return { ...state, loading: false, photos: [] }
+      return { ...state, loading: false, photos: [], error: action.error }
+    case 'RELOAD_FAILED':
+      return { ...state, loading: false }
 
     case 'UPLOAD_STARTED':
       return { ...state, uploading: true }

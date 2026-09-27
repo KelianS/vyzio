@@ -31,6 +31,34 @@ describe('PersonPhotosView', () => {
     ).toBeInTheDocument()
   })
 
+  it('onLoad_ShouldSayWhyAndForSupportRatherThanNoPhoto_WhenTheGalleryCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ [PHOTOS]: failure(500) })
+
+    // Act
+    renderScreen(<PersonPhotosView />, PHOTOS_TAB)
+
+    // Assert
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
+    expect(alert).toHaveTextContent('GET /api/profiles/person-1/photos · 500')
+    expect(screen.queryByText(/Aucune photo/)).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldShowThePhotos_WhenTheRetryReadsTheGallery', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PHOTOS]: failure(500) })
+    renderScreen(<PersonPhotosView />, PHOTOS_TAB)
+    await screen.findByRole('alert')
+    network.answer(PHOTOS, ok([makeProfilePhoto()]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByRole('listitem')).toHaveTextContent('Prise en compte')
+  })
+
   it('onLoad_ShouldShowEachPhotoAndWhetherItCounts_WhenThePersonHasSome', async () => {
     // Arrange
     fakeNetwork({ [PHOTOS]: ok([makeProfilePhoto({ frigateSynced: false })]) })
@@ -102,6 +130,26 @@ describe('PersonPhotosView', () => {
     // Assert
     expect(await screen.findByText('Photo supprimée.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(expect.objectContaining({ route: REMOVE }))
+  })
+
+  it('onRemove_ShouldKeepTheGalleryAndSayWhy_WhenTheReloadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PHOTOS]: ok([makeProfilePhoto()]), [REMOVE]: ok() })
+    renderScreen(<PersonPhotosView />, PHOTOS_TAB)
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Supprimer la photo alice-1.jpg' }),
+    )
+    network.answer(PHOTOS, failure(500))
+
+    // Act
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Supprimer' }),
+    )
+
+    // Assert
+    expect(await screen.findByText(/GET \/api\/profiles\/person-1\/photos · 500/)).toBeVisible()
+    expect(screen.getByRole('listitem')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 
   it('onResync_ShouldSayHowManyPhotosWereTakenBack_WhenTheUserConfirms', async () => {

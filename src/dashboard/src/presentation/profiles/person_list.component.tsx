@@ -2,6 +2,7 @@ import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
 import { Button } from '../../common/ui/button'
+import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -22,7 +23,10 @@ export function PersonListView() {
 
   return (
     <SettingsPage lede="Les personnes que Vyzio reconnaît, et ce qu’il en fait.">
-      {uido.people.length > 0 ? (
+      {uido.error ? (
+        // An unread list is not an empty one: "nobody yet" would be false.
+        <ReadFailure error={uido.error} onRetry={presenter.onLoad} className="py-3" />
+      ) : uido.people.length > 0 ? (
         <ul className="divide-y divide-border">
           {uido.people.map((person) => (
             <li key={person.id}>

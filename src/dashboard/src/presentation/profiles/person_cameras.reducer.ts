@@ -7,13 +7,15 @@ export function personCamerasReducer(
 ): PersonCamerasUido {
   switch (action.type) {
     case 'LOAD_STARTED':
-      return { ...state, loading: true }
+      return { ...state, loading: true, error: null }
     case 'LOAD_SUCCEEDED':
       return { ...state, loading: false, links: action.links }
     case 'LOAD_FAILED':
-      return { ...state, loading: false, links: null }
+      return { ...state, loading: false, links: null, error: action.error }
     case 'SAVE_STARTED':
       return { ...state, saving: true }
+    case 'SAVE_SUCCEEDED':
+      return { ...state, links: action.links }
     case 'SAVE_FINISHED':
       return { ...state, saving: false }
   }

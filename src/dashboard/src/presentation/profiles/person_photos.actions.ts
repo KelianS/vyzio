@@ -1,9 +1,11 @@
+import type { AppError } from '../../common/errors/app_error'
 import type { ProfilePhoto } from '../../domain/entities/profile_photo.entity'
 
 export type PersonPhotosAction =
   | { type: 'LOAD_STARTED' }
   | { type: 'LOAD_SUCCEEDED'; photos: ProfilePhoto[] }
-  | { type: 'LOAD_FAILED' }
+  | { type: 'LOAD_FAILED'; error: AppError }
+  | { type: 'RELOAD_FAILED' }
   | { type: 'UPLOAD_STARTED' }
   | { type: 'UPLOAD_FINISHED' }
   | { type: 'REMOVE_ASKED'; photoId: string }

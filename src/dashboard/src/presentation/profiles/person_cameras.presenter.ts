@@ -31,9 +31,8 @@ export function buildPersonCamerasPresenter({
       .then((links) => {
         if (isLatest()) dispatch({ type: 'LOAD_SUCCEEDED', links })
       })
-      // An unread list still leaves the tab blank.
-      .catch(() => {
-        if (isLatest()) dispatch({ type: 'LOAD_FAILED' })
+      .catch((e: unknown) => {
+        if (isLatest()) dispatch({ type: 'LOAD_FAILED', error: toAppError(e) })
       })
   }
 
@@ -46,9 +45,10 @@ export function buildPersonCamerasPresenter({
     async onSave(personId: string, cameraIds: string[]) {
       dispatch({ type: 'SAVE_STARTED' })
       try {
-        await container.setProfileCameraLinks.execute(personId, cameraIds)
+        // The save answers the links it kept: no second read that could fail under the form.
+        const links = await container.setProfileCameraLinks.execute(personId, cameraIds)
+        dispatch({ type: 'SAVE_SUCCEEDED', links })
         toast('Caméras enregistrées.', 'success')
-        load(personId)
         return true
       } catch (e) {
         toastError(toast, toAppError(e))

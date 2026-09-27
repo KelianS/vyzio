@@ -87,6 +87,38 @@ describe('PersonCamerasView', () => {
     ).toBeInTheDocument()
   })
 
+  it('onLoad_ShouldSayWhyAndForSupport_WhenTheCameraLinksCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: failure(500) })
+
+    // Act
+    renderScreen(<PersonCamerasView />, CAMERAS_TAB)
+    await readTheCameraList()
+
+    // Assert
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
+    expect(alert).toHaveTextContent('GET /api/profiles/person-1/camera-links · 500')
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldOfferTheCameras_WhenTheRetryReadsTheLinks', async () => {
+    // Arrange
+    const network = fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: failure(500) })
+    renderScreen(<PersonCamerasView />, CAMERAS_TAB)
+    await readTheCameraList()
+    await screen.findByRole('alert')
+    network.answer(LINKS, ok([frontDoor]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      await screen.findByRole('combobox', { name: 'Me notifier seulement sur' }),
+    ).toHaveTextContent('Entrée')
+  })
+
   it('onLoad_ShouldOfferEveryCameraUnticked_WhenThePersonIsLinkedToNone', async () => {
     // Arrange
     fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: ok([]) })
@@ -169,6 +201,50 @@ describe('PersonCamerasView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: SAVE, body: { cameraIds: ['camera-1'] } }),
     )
+  })
+
+  it('onSave_ShouldShowTheSavedChoiceWithoutReadingAgain_WhenTheSaveSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [CAMERAS]: ok(installed),
+      [LINKS]: ok([]),
+      [SAVE]: ok([frontDoor]),
+    })
+    renderScreen(<PersonCamerasView />, CAMERAS_TAB)
+    await readTheCameraList()
+    await tickTheFrontDoor()
+    network.answer(LINKS, failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText('Caméras enregistrées.')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Me notifier seulement sur' })).toHaveTextContent(
+      'Entrée',
+    )
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldStillSayWhyThereIsNoChoice_WhenThePersonIsNeverSignalledAndTheLinksFail', async () => {
+    // Arrange
+    fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: failure(500) })
+    const silenced = {
+      ...CAMERAS_TAB,
+      outletContext: { person: makeProfile({ alertMode: 'never' }), reload: () => undefined },
+    }
+
+    // Act
+    renderScreen(<PersonCamerasView />, silenced)
+    await readTheCameraList()
+
+    // Assert
+    expect(
+      await screen.findByText(
+        /Aucune notification n’est envoyée pour le passage de cette personne/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('onSave_ShouldSayWhyAndForSupport_WhenTheSaveFails', async () => {

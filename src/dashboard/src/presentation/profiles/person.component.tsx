@@ -2,6 +2,7 @@ import { useEffect, useReducer } from 'react'
 import { Link, Outlet, useParams } from 'react-router'
 import { ChevronLeft } from 'lucide-react'
 import { TabBar } from '../../common/components/tab_bar'
+import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -31,6 +32,26 @@ export function PersonView() {
   const found = uido.person
 
   if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+
+  // An unread list says nothing about this person: "not found" would be a false answer.
+  if (uido.error) {
+    return (
+      <SettingsPage>
+        <h1 className="font-serif text-3xl">Cette personne ne s’affiche pas</h1>
+        <ReadFailure
+          error={uido.error}
+          onRetry={() => presenter.onLoad(profileId!)}
+          className="mt-3"
+        />
+        <Link
+          to="/settings/detection/personnes"
+          className="mt-3 inline-block underline underline-offset-2"
+        >
+          Revenir à la liste
+        </Link>
+      </SettingsPage>
+    )
+  }
 
   if (!found) {
     return (
