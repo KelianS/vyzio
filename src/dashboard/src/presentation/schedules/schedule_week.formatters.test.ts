@@ -158,7 +158,10 @@ describe('entryTimes', () => {
     [{ rule: makeRule(), tail: false }, '22:00 → 06:00 le lendemain'],
     [{ rule: makeRule(), tail: true }, 'jusqu’à 06:00, depuis la veille'],
     [{ rule: makeRule({ startTime: '08:00', endTime: '12:00' }), tail: false }, '08:00 → 12:00'],
-    [{ rule: makeRule({ startTime: '20:00', endTime: '00:00' }), tail: false }, '20:00 → minuit'],
+    [
+      { rule: makeRule({ startTime: '20:00', endTime: '00:00' }), tail: false },
+      '20:00 → 00:00 le lendemain',
+    ],
   ])('entryTimes_ShouldSayWhenTheRangeRuns_WhenTheWeekShowsIt %#', (entry, expected) => {
     // Act
     const times = entryTimes(entry)
