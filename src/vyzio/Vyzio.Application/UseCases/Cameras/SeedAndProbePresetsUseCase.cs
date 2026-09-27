@@ -112,18 +112,29 @@ public sealed class SeedAndProbePresetsUseCase(
         await cameras.UpdateAsync(camera, ct);
 
         var binding = new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Stream };
+        var verified = false;
         foreach (var protocol in answering)
         {
-            binding.Protocol = protocol;
-            binding.Verified = false;
-            binding.LastError = null;
-            await bindings.SaveAsync(binding, ct);
-
-            var result = await probe.ExecuteAsync(cameraId, CameraCapability.Stream, run: run, ct: ct);
-            if (result?.Verified == true) break;
+            verified = await TryStreamAsync(binding, protocol, run, ct);
+            if (verified) break;
         }
 
+        // With no stream check passing, the stream stays on the first protocol that answered, with its reason.
+        if (!verified && answering.Count > 1)
+            await TryStreamAsync(binding, answering[0], run, ct);
+
         await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+    }
+
+    private async Task<bool> TryStreamAsync(CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
+    {
+        binding.Protocol = protocol;
+        binding.Verified = false;
+        binding.LastError = null;
+        await bindings.SaveAsync(binding, ct);
+
+        var result = await probe.ExecuteAsync(binding.CameraId, CameraCapability.Stream, run: run, ct: ct);
+        return result?.Verified == true;
     }
 
     // The rows list what the camera speaks, not what Vyzio tried (ADR-61).

@@ -431,6 +431,7 @@ public class ConfigureCameraCapabilityUseCaseTests
 
         // Assert
         Assert.Equal("dvrip", result!.Protocol);
+        await _ptzProvider.Received(1).ProbeAsync(Arg.Any<Camera>(), existing, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -837,6 +838,32 @@ public class SeedAndProbePresetsUseCaseTests
 
         // Assert
         Assert.Equal(SupportedProtocol.Rtsp, stream!.Protocol);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheStreamOnTheFirstAnsweringProtocol_WhenNoStreamCheckPasses()
+    {
+        // Arrange
+        var verifier = Substitute.For<ICameraVerifier>();
+        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+            .Returns(new CameraVerificationResult(true, false, "needs_attention", "No image.", DateTimeOffset.UnixEpoch, null));
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, verifier: verifier);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        CameraCapabilityBinding? stream = null;
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(_ => stream);
+        _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Stream), Arg.Any<CancellationToken>()))
+            .Do(call => stream = call.Arg<CameraCapabilityBinding>());
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Rtsp, stream!.Protocol);
+        Assert.False(stream.Verified);
+        Assert.Equal("No image.", stream.LastError);
     }
 
     [Fact]

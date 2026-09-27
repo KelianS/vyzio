@@ -29,7 +29,8 @@ internal static class CapabilityTestUseCases
         ICameraCapabilityBindingRepository bindings,
         ICapabilityProviderRegistry registry,
         ICameraProtocolEndpointCache endpointCache,
-        ICameraProtocolProbe? protocols = null)
+        ICameraProtocolProbe? protocols = null,
+        ICameraVerifier? verifier = null)
     {
         var check = new CameraProtocolCheck(protocols ?? AnsweringProbe(), TimeProvider.System);
         return new(
@@ -38,7 +39,7 @@ internal static class CapabilityTestUseCases
             registry,
             endpointCache,
             check,
-            new VerifyCameraUseCase(cameras, bindings, OnlineVerifier(), NothingEnumerated(), check));
+            new VerifyCameraUseCase(cameras, bindings, verifier ?? OnlineVerifier(), NothingEnumerated(), check));
     }
 
     private static ICameraVerifier OnlineVerifier()
@@ -61,13 +62,14 @@ internal static class CapabilityTestUseCases
         ICameraCapabilityBindingRepository bindings,
         ICapabilityProviderRegistry registry,
         ICameraProtocolEndpointCache endpointCache,
-        ICameraProtocolProbe? protocols = null)
+        ICameraProtocolProbe? protocols = null,
+        ICameraVerifier? verifier = null)
     {
         var answers = protocols ?? AnsweringProbe();
         return new(
             cameras,
             bindings,
-            Probe(cameras, bindings, registry, endpointCache, answers),
+            Probe(cameras, bindings, registry, endpointCache, answers, verifier),
             registry,
             endpointCache,
             new DetectionPlan(registry),
