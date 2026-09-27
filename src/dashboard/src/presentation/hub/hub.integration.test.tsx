@@ -209,7 +209,7 @@ describe('HubView', () => {
     expect(card.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
 
-  it('SurveillanceCard_ShouldNameTheCameraOnOneLineAndKeepTheDetailsClosed_WhenAnOnlineCameraLags', async () => {
+  it('SurveillanceCard_ShouldKeepTheDetailsClosedAndSayNothing_WhenAnOnlineCameraSendsFewImages', async () => {
     // Arrange
     fakeNetwork({
       'GET /api/hub/overview': ok(overview),
@@ -224,13 +224,7 @@ describe('HubView', () => {
 
     // Assert
     const card = within(screen.getByRole('region', { name: 'Surveillance' }))
-    expect(card.getByText(/Trop peu d’images reçues de/)).toHaveTextContent(
-      'Trop peu d’images reçues de Front Door.',
-    )
-    expect(card.getByRole('link', { name: 'Front Door' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-1/connexion',
-    )
     expect(card.getByText('0,4')).not.toBeVisible()
+    expect(card.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
 })

@@ -39,80 +39,15 @@ describe('SystemMonitorPanel', () => {
     )
   })
 
-  it('SystemMonitorPanel_ShouldLinkTheCameraOnOneLineAndKeepTheDetailsClosed_WhenACameraFallsBehind', () => {
+  it('SystemMonitorPanel_ShouldKeepTheDetailsClosedAndTheFigureNeutral_WhenACameraSendsFewImages', () => {
     // Arrange & Act
     renderPanel({ ...running, cameras: [{ camera: 'front_door', fps: 0.5 }] })
 
     // Assert
-    expect(screen.getByText(/Trop peu d’images reçues de/)).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Porte d’entrée' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-1/connexion',
-    )
     expect(screen.getByText('0,5')).not.toBeVisible()
-    expect(screen.getByText('0,5')).toHaveClass('text-destructive')
+    expect(screen.getByText('0,5')).not.toHaveClass('text-destructive')
+    expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
-
-  it('SystemMonitorPanel_ShouldNameEveryLaggingCameraOnTheSameLine_WhenSeveralFallBehind', () => {
-    // Arrange
-    const two = [
-      makeCamera({ id: 'camera-1', frigateCameraName: 'front_door', displayName: 'Porte' }),
-      makeCamera({ id: 'camera-2', frigateCameraName: 'garden', displayName: 'Jardin' }),
-    ]
-
-    // Act
-    render(
-      <MemoryRouter>
-        <SystemMonitorPanel
-          stats={{
-            ...running,
-            cameras: [
-              { camera: 'front_door', fps: 0.5 },
-              { camera: 'garden', fps: 0.2 },
-            ],
-          }}
-          cameras={two}
-        />
-      </MemoryRouter>,
-    )
-
-    // Assert
-    expect(screen.getByText(/Trop peu d’images reçues de/)).toHaveTextContent(
-      'Trop peu d’images reçues de Porte et Jardin.',
-    )
-    expect(screen.getByRole('link', { name: 'Jardin' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-2/connexion',
-    )
-  })
-
-  it.each([
-    { privacyModeActive: true },
-    { isEnabled: false },
-    { status: 'offline' },
-    { status: 'degraded' },
-  ])(
-    'SystemMonitorPanel_ShouldKeepTheDetailsClosedAndCalm_WhenTheSilentCameraIsPausedOrNotOnline (%o)',
-    (pause) => {
-      // Arrange
-      const paused = [makeCamera({ frigateCameraName: 'front_door', ...pause })]
-
-      // Act
-      render(
-        <MemoryRouter>
-          <SystemMonitorPanel
-            stats={{ ...running, cameras: [{ camera: 'front_door', fps: 0 }] }}
-            cameras={paused}
-          />
-        </MemoryRouter>,
-      )
-
-      // Assert
-      expect(screen.getByText('0,0')).not.toBeVisible()
-      expect(screen.getByText('0,0')).not.toHaveClass('text-destructive')
-      expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
-    },
-  )
 
   it('SystemMonitorPanel_ShouldSayTheCameraWasRemovedOrRenamed_WhenVyzioDoesNotKnowIt', () => {
     // Arrange & Act
