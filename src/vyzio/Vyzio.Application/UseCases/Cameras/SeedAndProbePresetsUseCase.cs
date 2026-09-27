@@ -18,11 +18,10 @@ public sealed class SeedAndProbePresetsUseCase(
     ProbeCameraCapabilityUseCase probe,
     ICapabilityProviderRegistry registry,
     ICameraProtocolEndpointCache endpointCache,
-    CameraProtocolCheck protocolCheck)
+    DetectionPlan detectionPlan,
+    CameraProtocolSearch protocolSearch,
+    IFrigateConfigApplier frigateConfigApplier)
 {
-    private static readonly CameraCapability[] BlindProbeCapabilities =
-        [CameraCapability.Ptz, CameraCapability.HardwarePrivacy, CameraCapability.ImageSettings];
-
     public async Task ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
@@ -31,18 +30,16 @@ public sealed class SeedAndProbePresetsUseCase(
         // "Look at this camera again": forget once for the whole cascade, not per candidate (ADR-56).
         CameraEndpointForgetting.Forget(camera, endpointCache);
 
-        var preset = camera.VendorFamily is { } vf ? VendorCapabilityPresets.GetByVendorFamily(vf) : null;
-        var plan = preset is not null
-            ? preset.DefaultBindings.Select(b => (b.Capability, b.Protocols, DeleteIfUnverified: false)).ToList()
-            : BlindProbeCapabilities
-                .Select(capability => (Capability: capability, Protocols: registry.GetRegisteredProtocols(capability), DeleteIfUnverified: true))
-                .Where(step => step.Protocols.Count > 0)
-                .ToList();
-
+        // Both levels in order: the protocols first, then the capabilities over those that answer (ADR-61 d).
         var run = new ProtocolCheckRun();
-        foreach (var protocol in plan.SelectMany(step => step.Protocols).Distinct())
-            await protocolCheck.CheckAsync(camera, protocol, run, ct);
+        await protocolSearch.RunAsync(camera, run, ct);
         await cameras.UpdateAsync(camera, ct);
+
+        // A camera without a stream reads "to configure": detection binds it, never moves it (ADR-61 b).
+        if (await bindings.GetAsync(cameraId, CameraCapability.Stream, ct) is null)
+            await BindStreamAsync(cameraId, registry.GetRegisteredProtocols(CameraCapability.Stream), run, ct);
+
+        var plan = detectionPlan.StepsFor(camera);
 
         foreach (var (capability, protocols, deleteIfUnverified) in plan)
             await SeedAndProbeCapabilityAsync(cameraId, capability, protocols, deleteIfUnverified, run, ct);
@@ -99,6 +96,34 @@ public sealed class SeedAndProbePresetsUseCase(
 
         if (deleteIfUnverified && result?.Verified != true)
             await bindings.DeleteAsync(cameraId, capability, ct);
+    }
+
+    // The first stream protocol that answers and whose stream check passes, in the registry's order (ADR-61 b).
+    private async Task BindStreamAsync(string cameraId, IReadOnlyList<SupportedProtocol> candidates, ProtocolCheckRun run, CancellationToken ct)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return;
+
+        var answering = candidates.Where(protocol => Answers(camera, protocol)).ToList();
+        if (answering.Count == 0) return;
+
+        // A stream bound is a connection change, like a stream protocol chosen by hand.
+        CameraConnectionChange.Apply(camera);
+        await cameras.UpdateAsync(camera, ct);
+
+        var binding = new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Stream };
+        foreach (var protocol in answering)
+        {
+            binding.Protocol = protocol;
+            binding.Verified = false;
+            binding.LastError = null;
+            await bindings.SaveAsync(binding, ct);
+
+            var result = await probe.ExecuteAsync(cameraId, CameraCapability.Stream, run: run, ct: ct);
+            if (result?.Verified == true) break;
+        }
+
+        await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
     }
 
     // The rows list what the camera speaks, not what Vyzio tried (ADR-61).

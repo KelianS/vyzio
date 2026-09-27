@@ -303,14 +303,19 @@ public class ConfigureCameraCapabilityUseCaseTests
         _sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), probe);
     }
 
-    private static Camera MakeCamera() => new()
+    private static Camera MakeCamera(params SupportedProtocol[] protocols)
     {
-        Id = "cam1",
-        Slug = "cam1",
-        FrigateCameraName = "cam1",
-        DisplayName = "cam1",
-        Host = "192.168.1.10",
-    };
+        var camera = new Camera
+        {
+            Id = "cam1",
+            Slug = "cam1",
+            FrigateCameraName = "cam1",
+            DisplayName = "cam1",
+            Host = "192.168.1.10",
+        };
+        foreach (var protocol in protocols) camera.EnsureProtocol(protocol);
+        return camera;
+    }
 
     [Fact]
     public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
@@ -325,7 +330,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldKeepTheLeftRightSwap_WhenPtzIsReconfigured()
     {
-        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(SupportedProtocol.Onvif));
         var existing = new CameraCapabilityBinding
         {
             CameraId = "cam1",
@@ -353,7 +358,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     public async Task ExecuteAsync_ShouldSendTheCameraBackToBeChecked_WhenTheStreamMovesToAnotherProtocol()
     {
         // Arrange
-        var camera = MakeCamera().WithStream(SupportedProtocol.Rtsp);
+        var camera = MakeCamera(SupportedProtocol.Dvrip).WithStream(SupportedProtocol.Rtsp);
         camera.ValidationState = CameraValidationState.Validated;
         camera.IsEnabled = true;
         camera.Status = "online";
@@ -367,7 +372,6 @@ public class ConfigureCameraCapabilityUseCaseTests
         // Assert
         Assert.Equal(SupportedProtocol.Dvrip, camera.StreamBinding!.Protocol);
         Assert.Equal(CameraValidationState.Draft, camera.ValidationState);
-        Assert.NotNull(camera.Protocol(SupportedProtocol.Dvrip));
     }
 
     [Fact]
@@ -384,17 +388,49 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldListTheChosenProtocolOnTheCamera_WhenACapabilityIsConfigured()
+    public async Task ExecuteAsync_ShouldRefuseWithoutSavingAnything_WhenTheCameraDoesNotHaveTheProtocol()
     {
         // Arrange
-        var camera = MakeCamera();
+        var camera = MakeCamera(SupportedProtocol.Onvif);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        var act = () => _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "dvrip"));
+
+        // Assert
+        var refusal = await Assert.ThrowsAsync<ProtocolNotOnCameraException>(act);
+        Assert.Equal(SupportedProtocol.Dvrip, refusal.Protocol);
+        Assert.Null(camera.Protocol(SupportedProtocol.Dvrip));
+        await _bindings.DidNotReceive().SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCreateNoProtocolRow_WhenACapabilityIsConfiguredOnOneOfTheCameraProtocols()
+    {
+        // Arrange
+        var camera = MakeCamera(SupportedProtocol.Dvrip);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
 
         // Act
         await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "dvrip"));
 
         // Assert
-        Assert.NotNull(camera.Protocol(SupportedProtocol.Dvrip));
+        Assert.Single(camera.Protocols);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldTestTheCapabilityAgain_WhenItsCurrentProtocolHasNoRow()
+    {
+        // Arrange
+        var existing = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Dvrip };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(existing);
+
+        // Act
+        var result = await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "dvrip"));
+
+        // Assert
+        Assert.Equal("dvrip", result!.Protocol);
     }
 
     [Fact]
@@ -409,7 +445,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldCreateSaveThenProbeTheBinding_WhenNoBindingExistsYet()
     {
-        var camera = MakeCamera();
+        var camera = MakeCamera(SupportedProtocol.Onvif);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         // First GetAsync (Configure) → null; second (Probe) → the newly created binding
         var createdBinding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
@@ -429,7 +465,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldSwitchTheBindingToTheNewProtocol_WhenABindingAlreadyExists()
     {
-        var camera = MakeCamera();
+        var camera = MakeCamera(SupportedProtocol.Onvif);
         var existing = new CameraCapabilityBinding
         {
             CameraId = "cam1",
@@ -752,6 +788,95 @@ public class SeedAndProbePresetsUseCaseTests
         // Assert
         Assert.Equal(SupportedProtocol.Dvrip, stored!.Protocol);
         await _ptzProvider.Received(1).ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCreateTheAnsweringRowsAndBindTheStreamAndCapabilities_WhenTheCameraHasNoProtocol()
+    {
+        // Arrange
+        var answers = Substitute.For<ICameraProtocolProbe>();
+        answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
+        answers.ProbeAsync(Arg.Any<Camera>(), SupportedProtocol.Dvrip, Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Answers());
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        var stored = new Dictionary<CameraCapability, CameraCapabilityBinding>();
+        _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>())
+            .Returns(call => stored.GetValueOrDefault(call.Arg<CameraCapability>()));
+        _bindings.When(b => b.SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()))
+            .Do(call => stored[call.Arg<CameraCapabilityBinding>().Capability] = call.Arg<CameraCapabilityBinding>());
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns(_ => stored.Values.ToList());
+        _ptzProvider.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        // Act
+        await sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Dvrip, stored[CameraCapability.Stream].Protocol);
+        Assert.True(stored[CameraCapability.Stream].Verified);
+        Assert.Equal(SupportedProtocol.Dvrip, stored[CameraCapability.Ptz].Protocol);
+        Assert.Equal([SupportedProtocol.Dvrip], camera.Protocols.Select(entry => entry.Protocol));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldBindTheStreamToRtspFirst_WhenBothStreamProtocolsAnswer()
+    {
+        // Arrange
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        CameraCapabilityBinding? stream = null;
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(_ => stream);
+        _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Stream), Arg.Any<CancellationToken>()))
+            .Do(call => stream = call.Arg<CameraCapabilityBinding>());
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await _sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Rtsp, stream!.Protocol);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLeaveTheStreamToConfigure_WhenNoStreamProtocolAnswers()
+    {
+        // Arrange
+        var answers = Substitute.For<ICameraProtocolProbe>();
+        answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await sut.ExecuteAsync("cam1");
+
+        // Assert
+        await _bindings.DidNotReceive().SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Stream), Arg.Any<CancellationToken>());
+        Assert.Empty(camera.Protocols);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNeverMoveTheStream_WhenTheCameraAlreadyHasOne()
+    {
+        // Arrange
+        var answers = CapabilityTestUseCases.AnsweringProbe();
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" }.WithStream(SupportedProtocol.Dvrip);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([camera.StreamBinding!]);
+
+        // Act
+        await sut.ExecuteAsync("cam1");
+
+        // Assert
+        await _bindings.DidNotReceive().SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Stream), Arg.Any<CancellationToken>());
+        Assert.Equal(SupportedProtocol.Dvrip, camera.StreamBinding!.Protocol);
     }
 
     [Fact]

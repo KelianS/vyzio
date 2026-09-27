@@ -77,6 +77,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<RemoveCameraCapabilityUseCase>();
         services.AddScoped<SeedAndProbePresetsUseCase>();
         services.AddScoped<CameraProtocolCheck>();
+        services.AddScoped<DetectionPlan>();
+        services.AddScoped<CameraProtocolSearch>();
+        services.AddScoped<SearchCameraProtocolsUseCase>();
         services.AddScoped<GetCameraProtocolsUseCase>();
         services.AddScoped<CheckCameraProtocolUseCase>();
         services.AddScoped<UpdateCameraProtocolUseCase>();

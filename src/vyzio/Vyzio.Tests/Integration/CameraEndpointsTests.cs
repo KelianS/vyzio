@@ -78,6 +78,20 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task ConfigureCapability_ShouldRefuseWithItsCode_WhenTheCameraDoesNotHaveTheProtocol()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/cameras/camera-1/capabilities/ptz", new { protocol = "dvrip" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("protocol_not_on_camera", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AddProtocol_ShouldRefuseItTwiceAndRemoveIt_WhenNoCapabilityUsesIt()
     {
         // Arrange

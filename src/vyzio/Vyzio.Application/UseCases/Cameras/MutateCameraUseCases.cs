@@ -91,7 +91,7 @@ public sealed class VerifyDraftCameraUseCase(ICameraVerifier verifier, CameraPro
         var camera = CameraDraftFactory.Build(request, "draft-camera", registry.GetRegisteredProtocols(CameraCapability.Stream));
         camera.Id = "draft-camera";
 
-        var (result, _) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, ct);
+        var (result, _) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, run: null, ct);
         camera.Status = result.Status;
         camera.LastReachabilityCheckAt = result.CheckedAt;
         camera.LastSuccessfulFrameAt = result.LastSuccessfulFrameAt;
@@ -108,7 +108,8 @@ public sealed class VerifyCameraUseCase(
     ICameraStreamEnumerator streamEnumerator,
     CameraProtocolCheck protocolCheck)
 {
-    public async Task<CameraStatusDto?> ExecuteAsync(string id, CancellationToken ct = default)
+    // run: the protocol answers already heard in this gesture, so detection asks the stream's protocol once (ADR-61).
+    public async Task<CameraStatusDto?> ExecuteAsync(string id, ProtocolCheckRun? run = null, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(id, ct);
         if (camera is null)
@@ -116,7 +117,7 @@ public sealed class VerifyCameraUseCase(
             return null;
         }
 
-        var (result, detail) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, ct);
+        var (result, detail) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, run, ct);
         camera.Status = result.Status;
         camera.LastReachabilityCheckAt = result.CheckedAt;
         camera.LastSuccessfulFrameAt = result.LastSuccessfulFrameAt;
@@ -428,7 +429,7 @@ internal static class StreamVerification
 {
     // Detail is what support reads: the protocol's own reason when the protocol failed, the verifier's otherwise.
     public static async Task<(CameraVerificationResult Result, string Detail)> RunAsync(
-        Camera camera, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, CancellationToken ct)
+        Camera camera, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, ProtocolCheckRun? run, CancellationToken ct)
     {
         if (camera.StreamBinding is not { } stream)
         {
@@ -436,7 +437,7 @@ internal static class StreamVerification
             return (unbound, unbound.Guidance);
         }
 
-        var protocol = await protocolCheck.CheckAsync(camera, stream.Protocol, run: null, ct);
+        var protocol = await protocolCheck.CheckAsync(camera, stream.Protocol, run, ct);
         var checkedAt = protocol.CheckedAt ?? DateTimeOffset.UtcNow;
         switch (protocol.Status)
         {

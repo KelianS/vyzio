@@ -70,6 +70,11 @@ internal static class CapabilityTestUseCases
             Probe(cameras, bindings, registry, endpointCache, answers),
             registry,
             endpointCache,
-            new CameraProtocolCheck(answers, TimeProvider.System));
+            new DetectionPlan(registry),
+            Search(registry, answers),
+            Substitute.For<IFrigateConfigApplier>());
     }
+
+    public static CameraProtocolSearch Search(ICapabilityProviderRegistry registry, ICameraProtocolProbe? protocols = null)
+        => new(new DetectionPlan(registry), new CameraProtocolCheck(protocols ?? AnsweringProbe(), TimeProvider.System));
 }

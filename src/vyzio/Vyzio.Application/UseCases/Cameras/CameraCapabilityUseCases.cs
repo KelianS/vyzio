@@ -65,7 +65,7 @@ public sealed class ProbeCameraCapabilityUseCase(
         // The stream verification is the stream capability's probe (ADR-61).
         if (capability == CameraCapability.Stream)
         {
-            if (await verifyStream.ExecuteAsync(cameraId, ct) is null) return null;
+            if (await verifyStream.ExecuteAsync(cameraId, run, ct) is null) return null;
             var camera = await cameras.GetByIdAsync(cameraId, ct);
             var stream = await bindings.GetAsync(cameraId, capability, ct);
             return stream is null ? null : CameraCapabilityBindingDto.From(stream, camera);
@@ -146,11 +146,18 @@ internal static class CameraEndpointForgetting
 
 public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol);
 
+// A capability goes through a protocol the camera has; another one is added first (ADR-61 d).
+public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
+    : Exception($"The camera has no {protocol} protocol: add it first.")
+{
+    public SupportedProtocol Protocol { get; } = protocol;
+}
+
 // Manual onboarding for non-listed cameras, or manual override on a recognized vendor
 // (SPECS §2.3): creates/updates a binding then immediately probes it — a binding is never
 // offered as activatable on declaration alone. Marks the binding ManuallyConfigured so
 // SeedAndProbePresetsUseCase never silently reverts this choice back to the vendor preset (ADR-28).
-// Any protocol may be chosen, answering or not: a sleeping camera stays configurable (ADR-61).
+// One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-61 d).
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -172,6 +179,8 @@ public sealed class ConfigureCameraCapabilityUseCase(
 
         var existing = await bindings.GetAsync(cameraId, capability, ct);
         var protocolChanged = existing?.Protocol != protocol;
+        if (protocolChanged && camera.Protocol(protocol) is null)
+            throw new ProtocolNotOnCameraException(protocol);
         var binding = existing ?? new CameraCapabilityBinding
         {
             CameraId = cameraId,
@@ -187,8 +196,6 @@ public sealed class ConfigureCameraCapabilityUseCase(
 
         await bindings.SaveAsync(binding, ct);
 
-        // The chosen protocol is one the camera speaks from now on, listed with the others.
-        camera.EnsureProtocol(protocol);
         var streamMoved = capability == CameraCapability.Stream && protocolChanged;
         if (streamMoved) CameraConnectionChange.Apply(camera);
         await cameras.UpdateAsync(camera, ct);

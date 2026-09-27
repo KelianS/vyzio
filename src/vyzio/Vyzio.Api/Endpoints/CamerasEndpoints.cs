@@ -93,7 +93,7 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/verify", async (string id, VerifyCameraUseCase useCase, CancellationToken ct) =>
         {
-            var status = await useCase.ExecuteAsync(id, ct);
+            var status = await useCase.ExecuteAsync(id, ct: ct);
             return status is null ? Results.NotFound() : Results.Ok(status);
         });
 
@@ -280,6 +280,10 @@ public static class CamerasEndpoints
                 var binding = await useCase.ExecuteAsync(id, new Vyzio.Application.UseCases.Cameras.ConfigureCameraCapabilityRequest(capability, request.Protocol), ct);
                 return binding is null ? Results.NotFound() : Results.Ok(binding);
             }
+            catch (ProtocolNotOnCameraException ex)
+            {
+                return Results.Conflict(new { error = "protocol_not_on_camera", message = ex.Message });
+            }
             catch (ArgumentException ex)
             {
                 return Results.BadRequest(new { error = "invalid_capability_request", message = ex.Message });
@@ -362,6 +366,13 @@ public static class CamerasEndpoints
                 AddProtocolOutcome.AlreadySpoken => Results.Conflict(new { error = "protocol_exists", message = $"The camera already speaks {request.Protocol}." }),
                 _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
             };
+        });
+
+        // Level 2 alone: the candidate protocols that answer are added, no capability is touched (ADR-61 d).
+        group.MapPost("/{id}/protocols/search", async (string id, SearchCameraProtocolsUseCase useCase, CancellationToken ct) =>
+        {
+            var list = await useCase.ExecuteAsync(id, ct);
+            return list is null ? Results.NotFound() : Results.Ok(list);
         });
 
         group.MapDelete("/{id}/protocols/{protocol}", async (string id, string protocol, RemoveCameraProtocolUseCase useCase, CancellationToken ct) =>

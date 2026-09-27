@@ -438,3 +438,79 @@ public class RemoveCameraProtocolUseCaseTests
         Assert.Equal(RemoveProtocolOutcome.NotFound, outcome);
     }
 }
+
+public class SearchCameraProtocolsUseCaseTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolProbe _answers = Substitute.For<ICameraProtocolProbe>();
+    private readonly SearchCameraProtocolsUseCase _sut;
+
+    public SearchCameraProtocolsUseCaseTests()
+    {
+        _registry.GetRegisteredProtocols(Arg.Any<CameraCapability>()).Returns([]);
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        _answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
+        _sut = new SearchCameraProtocolsUseCase(
+            _cameras,
+            Substitute.For<ICameraProtocolEndpointCache>(),
+            CapabilityTestUseCases.Search(_registry, _answers),
+            new GetCameraProtocolsUseCase(_cameras));
+    }
+
+    private static Camera MakeCamera() => new()
+    {
+        Id = "cam1",
+        Slug = "cam1",
+        FrigateCameraName = "cam1",
+        DisplayName = "cam1",
+        Host = "192.168.1.10",
+        VendorFamily = VendorFamily.Icsee,
+    };
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("x", Arg.Any<CancellationToken>()).Returns((Camera?)null);
+
+        // Act
+        var result = await _sut.ExecuteAsync("x");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAddOnlyTheAnsweringCandidatesAndBindNothing_WhenTheCameraHasNoProtocol()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _answers.ProbeAsync(Arg.Any<Camera>(), SupportedProtocol.Dvrip, Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Answers());
+
+        // Act
+        var result = await _sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(["dvrip"], result!.Select(entry => entry.Protocol));
+        Assert.Empty(camera.Capabilities);
+        await _answers.Received(1).ProbeAsync(camera, SupportedProtocol.Rtsp, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepAndUpdateAProtocolTheCameraHad_WhenItNoLongerAnswers()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        camera.EnsureProtocol(SupportedProtocol.V380).Status = ProtocolStatus.Answers;
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        await _sut.ExecuteAsync("cam1");
+
+        // Assert
+        var v380 = Assert.Single(camera.Protocols);
+        Assert.Equal(ProtocolStatus.Unreachable, v380.Status);
+    }
+}
