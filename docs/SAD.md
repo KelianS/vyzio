@@ -295,10 +295,10 @@ read, never keeping a copy (ADR-49).
 | `Profile` | A recognised person or animal: category plus alert mode | <- `ProfilePhoto`, `ProfileCameraLink` |
 | `ProfilePhoto` | A reference photo synced to Frigate (ADR-13) | -> `Profile` |
 | `ProfileCameraLink` | The cameras a person is signalled on; none means every camera (ADR-58) | -> `Profile`, `Camera` |
-| `Camera` | A camera: **one scene**, its identity and access (name, address, account), status, privacy mode (ADR-38, ADR-61) | <- `CameraProtocol`, `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
+| `Camera` | A camera: **one scene**, its identity and access (name, address, account), status, privacy mode (ADR-38, ADR-61) | <- `CameraProtocol`, `CameraCapabilityBinding`, `ProfileCameraLink` |
 | `CameraProtocol` | A protocol the camera speaks: how to reach it (port, address, device id, an optional specific account overriding the camera's) and whether it answers (ADR-61) | -> `Camera` |
-| `CameraStream` | A quality of the video stream capability: path, measured resolution (ADR-38) | -> `Camera` |
-| `CameraCapabilityBinding` | A capability (video stream, PTZ, hardware privacy, image) decoupled from the brand, bound to one protocol, **tested and never declarative** (ADR-22/24/28/61) | -> `Camera` |
+| `CameraStream` | A quality of the video stream capability: protocol, path, measured resolution, role, on or off, last check (ADR-38, ADR-65) | -> `CameraCapabilityBinding` |
+| `CameraCapabilityBinding` | A capability (video stream, PTZ, hardware privacy, image) decoupled from the brand, bound to one protocol, **tested and never declarative** (ADR-22/24/28/61) | -> `Camera`, <- `CameraStream` |
 | `ScheduleRule` | A scheduled rule of the house: a **type**, a weekly range (days, start, end in the installation's clock) and targets; the type declares what the targets are and what the range does to them (ADR-63) | <- `ScheduleRuleTarget` |
 | `ScheduleRuleTarget` | One thing a rule targets, a camera or a channel as its type declares; no foreign key, so a target that disappears simply stops being targeted (ADR-63) | -> `ScheduleRule` |
 | `RecordingSettings` | The installation's retention durations, overridable per camera (ADR-39) | singleton |

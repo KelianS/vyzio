@@ -181,9 +181,23 @@ detail once:
   through the protocol or while its box has unsaved edits.
 - **The stream's way out** names both places: the address and account in `Avance`, the protocol and
   path in the stream card's `Options`.
+- **The stream lines** ([ADR-65](adr/0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md)):
+  the stream stays one card with one pill, the camera status. Its state line adds one sentence when
+  detection is not covered as chosen: detection runs on the recording stream since no stream holds
+  that role, or the detection stream failed its check. In its `Options`, after the protocol choice and
+  the main path, a `Flux` list shows one line per stream: its quality (the measured resolution and
+  frame rate, else its rank, ADR-38), its protocol name and path, its role as a choice
+  (`Enregistrement`, `Detection`, `Enregistrement et detection`, `Aucun`; the default is said as such,
+  the consequence names what the role changes), its own pill (the capability pills, `Desactive` for a
+  line switched off, `Pas encore verifie` before its first check) with the diagnostic line of a failure,
+  then its actions: `Verifier`, `Desactiver` or `Activer`, `Supprimer` with a confirmation. The stream
+  that records keeps `Desactiver` and `Supprimer` disabled, with the plain reason next to them. `Ajouter
+  un flux` closes the list: a protocol among the camera's stream protocols, a path, a role, checked at
+  once.
 
 Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
-protocol choice, adding a capability or a protocol and removing a protocol are actions.
+protocol choice, adding a capability or a protocol and removing a protocol are actions, and so is
+every change on a stream line (its role, its switch, its removal, adding one).
 
 ### Calendar and range editor
 
