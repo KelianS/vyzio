@@ -3,15 +3,12 @@ import { BatchToggleCameraPrivacyMode } from '../../domain/usecases/batch_toggle
 import { CapturePtzPresetThumbnail } from '../../domain/usecases/capture_ptz_preset_thumbnail.use_case'
 import { ConfigureCameraCapability } from '../../domain/usecases/configure_camera_capability.use_case'
 import { CreateCamera } from '../../domain/usecases/create_camera.use_case'
-import { CreateCameraPrivacySchedule } from '../../domain/usecases/create_camera_privacy_schedule.use_case'
 import { DeleteCamera } from '../../domain/usecases/delete_camera.use_case'
-import { DeleteCameraPrivacySchedule } from '../../domain/usecases/delete_camera_privacy_schedule.use_case'
 import { DetectCameraCapabilities } from '../../domain/usecases/detect_camera_capabilities.use_case'
 import { DiscoverCameras } from '../../domain/usecases/discover_cameras.use_case'
 import { GetCameraCapabilities } from '../../domain/usecases/get_camera_capabilities.use_case'
 import { GetCameraDetectionConfig } from '../../domain/usecases/get_camera_detection_config.use_case'
 import { GetCameraImageSettings } from '../../domain/usecases/get_camera_image_settings.use_case'
-import { GetCameraPrivacySchedules } from '../../domain/usecases/get_camera_privacy_schedules.use_case'
 import { GetCameras } from '../../domain/usecases/get_cameras.use_case'
 import { GetDetectionLabels } from '../../domain/usecases/get_detection_labels.use_case'
 import { GetRecordingSettings } from '../../domain/usecases/get_recording_settings.use_case'
@@ -49,9 +46,6 @@ export interface CamerasContainer {
   deleteCamera: DeleteCamera
   toggleCameraPrivacyMode: ToggleCameraPrivacyMode
   batchToggleCameraPrivacyMode: BatchToggleCameraPrivacyMode
-  getCameraPrivacySchedules: GetCameraPrivacySchedules
-  createCameraPrivacySchedule: CreateCameraPrivacySchedule
-  deleteCameraPrivacySchedule: DeleteCameraPrivacySchedule
   setPrivacyStrategy: SetPrivacyStrategy
   getCameraCapabilities: GetCameraCapabilities
   configureCameraCapability: ConfigureCameraCapability
@@ -92,9 +86,6 @@ export function makeCamerasContainer(
     deleteCamera: new DeleteCamera(cameraRepository),
     toggleCameraPrivacyMode: new ToggleCameraPrivacyMode(cameraRepository),
     batchToggleCameraPrivacyMode: new BatchToggleCameraPrivacyMode(cameraRepository),
-    getCameraPrivacySchedules: new GetCameraPrivacySchedules(cameraRepository),
-    createCameraPrivacySchedule: new CreateCameraPrivacySchedule(cameraRepository),
-    deleteCameraPrivacySchedule: new DeleteCameraPrivacySchedule(cameraRepository),
     setPrivacyStrategy: new SetPrivacyStrategy(cameraRepository),
     getCameraCapabilities: new GetCameraCapabilities(cameraRepository),
     configureCameraCapability: new ConfigureCameraCapability(cameraRepository),

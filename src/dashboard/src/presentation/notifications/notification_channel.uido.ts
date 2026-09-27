@@ -1,5 +1,6 @@
 import type { AppError } from '../../common/errors/app_error'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
+import type { ScheduleRule } from '../../domain/entities/schedule_rule.entity'
 import type {
   ChannelListening,
   ChannelPairing,
@@ -15,6 +16,9 @@ export interface NotificationChannelUido {
   labels: DetectionLabel[]
   labelsLoading: boolean
   labelsError: AppError | null
+  /** The house's rules, to count those muting this channel; null while unread. */
+  rules: ScheduleRule[] | null
+  rulesError: AppError | null
   saving: boolean
   /** Enabling sends images off the local network: asked once, at save. */
   confirmEnable: boolean
@@ -48,6 +52,8 @@ export function buildInitialNotificationChannelUido(): NotificationChannelUido {
     labels: [],
     labelsLoading: true,
     labelsError: null,
+    rules: null,
+    rulesError: null,
     saving: false,
     confirmEnable: false,
     testing: false,

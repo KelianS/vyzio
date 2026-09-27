@@ -62,11 +62,14 @@ describe('toAppError', () => {
       ApiErrorCode.ScheduleEmptyRange,
       'Le début et la fin sont à la même heure : choisissez deux heures différentes',
     ],
+    [ApiErrorCode.ScheduleNoTarget, 'Choisissez au moins une caméra ou un canal pour cette plage'],
+    [
+      ApiErrorCode.ScheduleUnknownTarget,
+      'Une caméra ou un canal choisi n’existe plus : revoyez la liste, puis enregistrez de nouveau',
+    ],
   ])('toAppError_ShouldSayWhatToChange_WhenTheScheduleIsRefusedWith %s', (code, sentence) => {
     // Arrange & Act
-    const error = toAppError(
-      failedCall(400, `POST /api/cameras/c/privacy/schedules · 400 · ${code}`, code),
-    )
+    const error = toAppError(failedCall(400, `POST /api/schedules · 400 · ${code}`, code))
 
     // Assert
     expect(appErrorMessage(error)).toBe(sentence)

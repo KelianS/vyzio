@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { makeChannelConfig, makePairing } from '../../testing/notification_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
+import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
 import { NotificationChannelView } from './notification_channel.component'
 
 const SETTINGS = 'GET /api/notifications/settings/telegram'
@@ -17,6 +18,7 @@ const START_PAIRING = 'POST /api/notifications/settings/telegram/pairing'
 const REVOKE = 'DELETE /api/notifications/settings/telegram/pairing'
 const LISTENING = 'GET /api/notifications/settings/telegram/listening'
 const COMMANDS = 'GET /api/notifications/settings/telegram/commands'
+const RULES = 'GET /api/schedules'
 
 const PERSON = { value: 'person', displayName: 'Personne', emoji: '🧍' }
 const FAILED_SEND = {
@@ -41,13 +43,25 @@ const LISTENING_NOW = {
 const LISTENING_STOPPED = { ...LISTENING_NOW, listening: false }
 const PAIRED = makePairing({ status: 'paired' })
 
+function muteRule(id: string, targetIds: string[]): ScheduleRule {
+  return {
+    id,
+    kind: ScheduleRuleKind.MuteNotifications,
+    targetIds,
+    daysOfWeek: [1],
+    startTime: '09:00',
+    endTime: '12:00',
+    createdAt: '2026-01-01T00:00:00Z',
+  }
+}
+
 function channelAt(slug: string) {
   return { path: '/settings/notifications/:channel', url: `/settings/notifications/${slug}` }
 }
 
 // What every channel page reads, with the channel's settings given.
 function channelRoutes(config = makeChannelConfig()) {
-  return { [SETTINGS]: ok(config), [LABELS]: ok([]), [LOG]: ok([]) }
+  return { [SETTINGS]: ok(config), [LABELS]: ok([]), [LOG]: ok([]), [RULES]: ok([]) }
 }
 
 // A channel that answers commands also reads its pairing, its listening and its journal.
@@ -61,6 +75,61 @@ function commandRoutes(pairing = makePairing()) {
 }
 
 describe('NotificationChannelView', () => {
+  it('onOpen_ShouldCountTheRangesMutingThisChannelAndLinkToTheCalendar_WhenSomeTargetIt', async () => {
+    // Arrange
+    fakeNetwork({
+      ...channelRoutes(),
+      [RULES]: ok([
+        muteRule('here', ['telegram', 'discord']),
+        muteRule('also', ['telegram']),
+        muteRule('elsewhere', ['discord']),
+      ]),
+    })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText('2 plages « Sans notification » s’appliquent'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Voir les horaires' })).toHaveAttribute(
+      'href',
+      '/settings/horaires',
+    )
+    expect(screen.queryByText('Seulement à certaines heures')).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheRangesCouldNotBeRead_WhenTheirReadFails', async () => {
+    // Arrange
+    fakeNetwork({ ...channelRoutes(), [RULES]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByText('Les horaires n’ont pas pu être lus.')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Aucune plage « Sans notification » ne s’applique'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('onRetryRules_ShouldCountTheRanges_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...channelRoutes(), [RULES]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByText('Les horaires n’ont pas pu être lus.')
+    network.answer(RULES, ok([]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Aucune plage « Sans notification » ne s’applique'),
+    ).toBeInTheDocument()
+  })
+
   it('NotificationChannelView_ShouldSayTheChannelIsMissing_WhenTheAddressNamesNone', async () => {
     // Arrange
     fakeNetwork({ [LABELS]: ok([]) })

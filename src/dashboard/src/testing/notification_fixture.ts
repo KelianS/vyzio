@@ -41,8 +41,6 @@ export function makeChannelConfig(
     acceptsCommands: false,
     minimumConfidence: 0.75,
     allowedLabels: ['person'],
-    activeFromHour: null,
-    activeToHour: null,
     messageFields: ['camera', 'time'],
     mediaMode: 'photo',
     cooldownMinutes: null,

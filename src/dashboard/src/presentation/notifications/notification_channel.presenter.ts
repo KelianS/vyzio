@@ -8,6 +8,7 @@ import type {
   NotificationChannelName,
 } from '../../domain/entities/notification_channel_config.entity'
 import type { NotificationsContainer } from '../../infrastructure/providers/notifications.container'
+import type { SchedulesContainer } from '../../infrastructure/providers/schedules.container'
 import type { NotificationChannelAction } from './notification_channel.actions'
 import { toSaveRequest, type NotificationValues } from './notification_settings'
 
@@ -15,12 +16,14 @@ type OnFailure = (error: AppError) => void
 
 export interface NotificationChannelPresenterContext {
   container: NotificationsContainer
+  schedulesContainer: SchedulesContainer
   dispatch: (action: NotificationChannelAction) => void
   toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
 export function buildNotificationChannelPresenter({
   container,
+  schedulesContainer,
   dispatch,
   toast,
 }: NotificationChannelPresenterContext) {
@@ -31,6 +34,7 @@ export function buildNotificationChannelPresenter({
   const nextLabelsRead = latestOnly()
   const nextLogRead = latestOnly()
   const nextJournalRead = latestOnly()
+  const nextRulesRead = latestOnly()
 
   // A first read fails in place; a reread under data already shown keeps it and toasts.
   const keepShown =
@@ -63,6 +67,19 @@ export function buildNotificationChannelPresenter({
       })
       .catch((e: unknown) => {
         if (isLatest()) dispatch({ type: 'LABELS_FAILED', error: toAppError(e) })
+      })
+  }
+
+  function readRules() {
+    const isLatest = nextRulesRead()
+    dispatch({ type: 'RULES_STARTED' })
+    schedulesContainer.listScheduleRules
+      .execute()
+      .then((rules) => {
+        if (isLatest()) dispatch({ type: 'RULES_LOADED', rules })
+      })
+      .catch((e: unknown) => {
+        if (isLatest()) dispatch({ type: 'RULES_FAILED', error: toAppError(e) })
       })
   }
 
@@ -154,10 +171,12 @@ export function buildNotificationChannelPresenter({
       readLabels()
     },
     onRetryLabels: readLabels,
+    onRetryRules: readRules,
 
     /** Reads what the page shows below the settings, once the channel is known. */
     onOpen(channel: NotificationChannelName, acceptsCommands: boolean) {
       readLog(channel, logInPlace)
+      readRules()
       if (!acceptsCommands) return
       readPairing(channel, pairingInPlace)
       readListening(channel, listeningInPlace)

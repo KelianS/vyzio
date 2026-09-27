@@ -28,6 +28,14 @@ export function notificationChannelReducer(
     case 'LABELS_FAILED':
       return { ...state, labelsLoading: false, labels: [], labelsError: action.error }
 
+    case 'RULES_STARTED':
+      return { ...state, rules: null, rulesError: null }
+    case 'RULES_LOADED':
+      return { ...state, rules: action.rules }
+    // Unread rules must not pass for "no range" (DESIGN SYSTEM § Errors).
+    case 'RULES_FAILED':
+      return { ...state, rules: null, rulesError: action.error }
+
     case 'SAVE_STARTED':
       return { ...state, saving: true }
     case 'SAVE_FINISHED':
