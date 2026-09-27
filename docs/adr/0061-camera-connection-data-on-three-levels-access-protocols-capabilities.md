@@ -58,7 +58,7 @@ A camera's connection data sits on the wrong level:
    V380, Tapo KLAP), unique per camera. Each says how to reach the protocol and whether it answers:
    its port (empty means the protocol's usual one; for ONVIF, the one asked of the camera), the
    ONVIF device service address (moved from ADR-56 d), the V380 device id (moved from the PTZ
-   binding), an optional account of its own that **overrides** the camera's for that protocol alone,
+   binding), an optional specific account that **overrides** the camera's for that protocol alone,
    and the result of its last check.
 3. **Capabilities, the `CameraCapabilityBinding` rows**: video stream, orientation, hardware cut,
    image settings. Each picks one protocol and carries its own settings.
@@ -102,11 +102,13 @@ order. `ManuallyConfigured` keeps its meaning. A manual choice may name any prot
 (a sleeping battery camera must stay configurable): it is saved, and its test says when the protocol
 does not answer. After detection, a protocol row that could not be reached, that no capability uses and
 that holds nothing the user entered is dropped: the rows list what the camera speaks, not what Vyzio
-tried. A protocol that refused the account is kept: the camera speaks it.
+tried. A protocol that refused the account is kept: the camera speaks it. Once the camera exists, the
+user adds a protocol (checked at once) and removes one; a protocol a capability goes through is never
+removed, whatever the number of capabilities or streams bound to it.
 
 **e) One account resolution.** Every client asks the camera for the account of the protocol it speaks,
-and gets the protocol's own account when one is set, the camera's otherwise. No client reads the
-camera's account directly. The own account is used only to talk to the camera on the local network,
+and gets the protocol's specific account when one is set, the camera's otherwise. No client reads the
+camera's account directly. The specific account is used only to talk to the camera on the local network,
 like the camera's.
 
 **f) Frigate reads the stream from its binding**: the transport from the stream binding, the port and

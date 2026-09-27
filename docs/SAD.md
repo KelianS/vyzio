@@ -295,7 +295,7 @@ read, never keeping a copy (ADR-49).
 | `ProfilePhoto` | A reference photo synced to Frigate (ADR-13) | -> `Profile` |
 | `ProfileCameraLink` | The cameras a person is signalled on; none means every camera (ADR-58) | -> `Profile`, `Camera` |
 | `Camera` | A camera: **one scene**, its identity and access (name, address, account), status, privacy mode (ADR-38, ADR-61) | <- `CameraProtocol`, `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
-| `CameraProtocol` | A protocol the camera speaks: how to reach it (port, address, device id, an optional account of its own overriding the camera's) and whether it answers (ADR-61) | -> `Camera` |
+| `CameraProtocol` | A protocol the camera speaks: how to reach it (port, address, device id, an optional specific account overriding the camera's) and whether it answers (ADR-61) | -> `Camera` |
 | `CameraStream` | A quality of the video stream capability: path, measured resolution (ADR-38) | -> `Camera` |
 | `CameraCapabilityBinding` | A capability (video stream, PTZ, hardware privacy, image) decoupled from the brand, bound to one protocol, **tested and never declarative** (ADR-22/24/28/61) | -> `Camera` |
 | `RecordingSettings` | The installation's retention durations, overridable per camera (ADR-39) | singleton |

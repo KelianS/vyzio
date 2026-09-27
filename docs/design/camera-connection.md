@@ -16,7 +16,7 @@
 | Level | Entity | Holds | Written by |
 |---|---|---|---|
 | Identity and access | `Camera` | name, host, account | onboarding, the Connexion page |
-| Protocols | `CameraProtocol`, one per camera and protocol | port, ONVIF address, V380 device id, own account, last check (reach and login) | onboarding (the stream's protocol), protocol checks, detection, the Connexion page |
+| Protocols | `CameraProtocol`, one per camera and protocol | port, ONVIF address, V380 device id, specific account, last check (reach and login) | onboarding (the stream's protocol), protocol checks, detection, the Connexion page (added, edited, removed) |
 | Capabilities | `CameraCapabilityBinding`, one per camera and capability | chosen protocol, settings, last test | onboarding (the stream), detection, manual configuration |
 
 The streams of ADR-38 (`CameraStream`) are the stream capability's settings; they are keyed by camera,
@@ -30,10 +30,10 @@ protocol's usual port, whose single home is `ProtocolPorts` in Core. ONVIF has n
 address is asked of the camera ([`onvif.md`](onvif.md)); a port set on the ONVIF row narrows the
 search to that port.
 
-**Account.** `Camera.CredentialsFor(protocol)` returns the protocol's own account when its row has a
+**Account.** `Camera.CredentialsFor(protocol)` returns the protocol's specific account when its row has a
 user name, the camera's otherwise. Every client (RTSP verifier, Frigate generation, `OnvifClient`,
 `OnvifEndpointResolver`, `DvripClient`, `V380Client`, `TapoKlapProvider`) goes through it; none reads
-`Camera.Username` itself. The own account exists for the protocol that authenticates elsewhere, such as
+`Camera.Username` itself. The specific account exists for the protocol that authenticates elsewhere, such as
 KLAP on a Tapo, which takes the Tapo cloud account while RTSP and ONVIF take the local one. It is
 only ever presented to the camera on the local network.
 
@@ -95,6 +95,14 @@ protocol with a registered provider:
 The stream is not part of the cascade. A manual choice (`ConfigureCameraCapabilityUseCase`) is not
 filtered: it is saved whatever the protocol, then tested, and a protocol that does not answer with its
 account fails the test with its reason.
+
+## Adding and removing a protocol
+
+`AddCameraProtocolUseCase` creates the row of a protocol the camera does not have yet, with its port
+(empty: the usual one) and an optional specific account, then checks it at once. A protocol the camera
+already has is refused (`protocol_exists`). `RemoveCameraProtocolUseCase` drops a row only when no
+binding goes through its protocol, streams included, and refuses otherwise (`protocol_in_use`);
+removing ONVIF also forgets its cached address.
 
 ## The stream
 

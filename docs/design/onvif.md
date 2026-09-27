@@ -152,6 +152,6 @@ protocol whatever the verdict (ADR-28).
 ## Authentication
 
 WS-Security `UsernameToken` with `PasswordDigest`: `SHA1(nonce + created + password)`, base64. The
-account is the one `Camera.CredentialsFor(Onvif)` resolves: the ONVIF row's own account when set, the
+account is the one `Camera.CredentialsFor(Onvif)` resolves: the ONVIF row's specific account when set, the
 camera's otherwise ([`camera-connection.md`](camera-connection.md)). No vendor cloud account is
 involved.

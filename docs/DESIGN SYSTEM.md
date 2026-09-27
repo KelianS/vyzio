@@ -150,18 +150,26 @@ detail once:
 - **Each capability**: its title, state and check are visible; its **protocol choice and its settings**
   sit behind the card's own `Options` fold, closed by default. The protocol is chosen by its name
   there, and changing it runs its test, so its button says `Configurer`, never `Enregistrer`. Every
-  protocol of the capability is offered, answering or not: a sleeping camera stays configurable.
+  protocol of the capability is offered, answering or not: a sleeping camera stays configurable. A
+  capability that already has a card, even a failing one, changes its protocol there.
+- **`Ajouter une capacite`** closes the list of cards: adding a capability is a capability's action.
+  It opens the manual set-up of SPECS 2.3 (the capability, then its protocol by name, then an
+  immediate test). When every capability has its card, the place says so and points at the cards'
+  `Options`.
 - **The page's `Avance` fold**: the camera's access (address, account), then one box per protocol the
   camera speaks, with its state pill (`Repond`, `Refuse l'acces` when the account or the device number
-  is turned down, `Ne repond pas`, `Pas encore verifie`), its port, its
-  optional own account and its own `Verifier`; then the manual set-up of SPECS 2.3. A protocol check
-  goes through no capability, so it is never suspended by a failing stream. The own account says it
-  is only presented to the camera, on the local network.
+  is turned down, `Ne repond pas`, `Pas encore verifie`), its port, its optional
+  `Compte specifique` and its own `Verifier`, then `Retirer`; then `Ajouter un protocole` (a protocol
+  the camera does not have yet, its port, the usual one when left empty, an optional
+  `Compte specifique`, checked at once). A protocol check goes through no capability, so it is never
+  suspended by a failing stream. The specific account says it is only presented to the camera, on the
+  local network. `Retirer` is refused, with the plain reason next to it, while a capability goes
+  through the protocol or while its box has unsaved edits.
 - **The stream's way out** names both places: the address and account in `Avance`, the protocol and
   path in the stream card's `Options`.
 
 Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
-protocol choice or a manual set-up is an action.
+protocol choice, adding a capability or a protocol and removing a protocol are actions.
 
 ### Help: three levels, not a manual
 
@@ -247,8 +255,8 @@ are not used for it. A person is `notifie`; a channel sends `notifications`; a s
 A capability card is titled by what the camera does, in the words the rest of the product already
 uses for it: `Flux video` (the stream), `Orientation` (the motorised head), `Coupure materielle`
 (the hardware privacy cut, as on the privacy screen), `Reglages image`. A protocol name (`RTSP`,
-`ONVIF`, `DVRIP`...) appears only where a protocol is chosen or reached, the page's `Avance` fold and
-each card's `Options` fold, and in the diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that
+`ONVIF`, `DVRIP`...) appears only where a protocol is chosen or reached, the page's `Avance` fold,
+each card's `Options` fold and the form that adds a capability, and in the diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that
 names protocols or ports sits in the `Avance` fold; the help next to the cards stays in plain words.
 
 ### Editing cycle
