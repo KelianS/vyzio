@@ -99,5 +99,28 @@ export function cameraConnectionReducer(
       delete removing[action.protocol]
       return { ...state, removing }
     }
+
+    case 'STREAMS_STARTED':
+      return { ...state, streamsLoading: true, streamsError: null }
+    case 'STREAMS_LOADED':
+      return { ...state, streamsLoading: false, streams: action.streams }
+    // An unread lineup is not an empty one: no line may claim the camera serves nothing.
+    case 'STREAMS_FAILED':
+      return { ...state, streamsLoading: false, streams: null, streamsError: action.error }
+    case 'STREAM_TASK_STARTED':
+      return { ...state, streamTasks: { ...state.streamTasks, [action.streamId]: action.task } }
+    case 'STREAM_TASK_FINISHED': {
+      const streamTasks = { ...state.streamTasks }
+      delete streamTasks[action.streamId]
+      return { ...state, streamTasks }
+    }
+    case 'STREAM_FORM_OPENED':
+      return { ...state, streamFormOpen: true }
+    case 'STREAM_FORM_CLOSED':
+      return { ...state, streamFormOpen: false }
+    case 'STREAM_ADD_STARTED':
+      return { ...state, addingStream: true }
+    case 'STREAM_ADD_FINISHED':
+      return { ...state, addingStream: false }
   }
 }

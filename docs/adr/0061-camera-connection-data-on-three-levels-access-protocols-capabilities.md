@@ -1,6 +1,6 @@
 # ADR-61: A camera's connection data on three levels: access, protocols, capabilities
 
-> Status: Accepted
+> Status: Accepted, amended by [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) (streams under the stream binding)
 >
 > Amends [ADR-19](0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md) and
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)

@@ -1,0 +1,49 @@
+import type { StreamProtocol } from './camera_capability_binding.entity'
+
+/** What a stream serves; one enabled stream records, at most one detects (ADR-65). */
+export const StreamRole = {
+  None: 'none',
+  Record: 'record',
+  Detect: 'detect',
+  RecordAndDetect: 'record_and_detect',
+} as const
+
+export type StreamRole = (typeof StreamRole)[keyof typeof StreamRole]
+
+/** A stream of the camera, a line under its video stream card (ADR-38, ADR-65). */
+export interface CameraStream {
+  id: string
+  /** 0 is the most detailed as enumerated; the interface shows the measured size, never a tier name. */
+  ordinal: number
+  protocol: StreamProtocol
+  path: string | null
+  /** Null when the protocol reported no exact size: the interface says so rather than guess. */
+  width: number | null
+  height: number | null
+  fps: number | null
+  role: StreamRole
+  enabled: boolean
+  verified: boolean
+  /** Null until the stream was checked. */
+  checkedAt: string | null
+  lastError: string | null
+}
+
+/** Every stream of a camera, with the roles resolved by the server. */
+export interface CameraStreamLineup {
+  streams: CameraStream[]
+  recordStreamId: string | null
+  /** The analysed stream: the detect stream, else the recording one. */
+  detectStreamId: string | null
+  /** No stream holds the detect role: detection runs on the recording stream (ADR-65 c). */
+  detectsOnRecordingStream: boolean
+}
+
+/** A stream declared by hand: its protocol, its path over RTSP or its quality over DVRIP, its role. */
+export interface CameraStreamAddition {
+  protocol: StreamProtocol
+  path: string | null
+  role: StreamRole
+  /** Over DVRIP, the secondary stream rather than the main one; the server knows how to ask for it (ADR-38). */
+  secondary: boolean
+}

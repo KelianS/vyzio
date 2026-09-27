@@ -150,6 +150,7 @@ test.describe('CameraConnectionView three levels', () => {
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.streamBinding = { protocol: 'dvrip', streamPath: null, lastError: null }
+    state.streams = state.streams.map((stream) => ({ ...stream, protocol: 'dvrip', path: null }))
     state.protocols = [makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 })]
     await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/connexion')
@@ -159,6 +160,45 @@ test.describe('CameraConnectionView three levels', () => {
 
     await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')
     await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
+  })
+})
+
+// Each stream is a line of the stream card, with its role and its own state (ADR-65).
+test.describe('CameraConnectionView stream lines', () => {
+  test('CameraConnectionView_ShouldDetectOnTheRecordingStreamAndSaySo_WhenTheUserDisablesTheDetectStream', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByText('Options').click()
+    const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
+    await expect(sub.getByRole('combobox', { name: 'Rôle' })).toContainText('Détection')
+
+    await sub.getByRole('button', { name: 'Désactiver' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Désactiver' }).click()
+
+    await expect(sub.getByText('Désactivé')).toBeVisible()
+    await expect(stream.getByText('La détection passe par le flux d’enregistrement.')).toBeVisible()
+  })
+
+  test('CameraConnectionView_ShouldKeepRecordingOnOneStream_WhenTheUserGivesItToAnother', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByText('Options').click()
+    const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
+    const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
+    await expect(main.getByRole('button', { name: 'Supprimer' })).toBeDisabled()
+
+    await sub.getByRole('combobox', { name: 'Rôle' }).click()
+    await page.getByRole('option', { name: 'Enregistrement et détection' }).click()
+
+    await expect(main.getByRole('combobox', { name: 'Rôle' })).toContainText('Aucun')
+    await expect(main.getByRole('button', { name: 'Supprimer' })).toBeEnabled()
+    await expect(sub.getByRole('button', { name: 'Supprimer' })).toBeDisabled()
   })
 })
 

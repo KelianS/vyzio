@@ -5,8 +5,9 @@
 > levels), [ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
 > (capabilities decoupled from the brand), [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)
 > (detection cascade), [ADR-19](../adr/0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md)
-> (DVRIP through go2rtc) and [ADR-38](../adr/0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md)
-> (streams). ONVIF has its own TAD, [`onvif.md`](onvif.md).
+> (DVRIP through go2rtc), [ADR-38](../adr/0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md)
+> (streams) and [ADR-65](../adr/0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md)
+> (a role and a check per stream). ONVIF has its own TAD, [`onvif.md`](onvif.md).
 > Home of the code: `Vyzio.Core/Entities/` (`Camera`, `CameraProtocol`, `CameraCapabilityBinding`,
 > `CameraStream`), `Vyzio.Application/UseCases/Cameras/`, `Vyzio.Infrastructure/CapabilityProviders/`,
 > `Vyzio.Infrastructure/VendorAdapters/`, `Vyzio.Infrastructure/Services/CameraProtocolProbe.cs`.
@@ -19,9 +20,10 @@
 | Protocols | `CameraProtocol`, one per camera and protocol | port, ONVIF address, V380 device id, specific account, last check (reach and login) | onboarding (the stream's protocol), protocol checks, detection, the Connexion page (added, edited, removed) |
 | Capabilities | `CameraCapabilityBinding`, one per camera and capability | chosen protocol, settings, last test | onboarding (the stream), detection, manual configuration |
 
-The streams of ADR-38 (`CameraStream`) are the stream capability's settings; they are keyed by camera,
-which has one stream binding. `CameraRepository` loads a camera with its streams, protocols and
-bindings: a provider reaches its protocol's port and account through the camera it is handed.
+The streams (`CameraStream`) are rows under the stream binding (ADR-65); `Camera.Streams` reads them
+through `Camera.StreamBinding`, empty while the camera has none. `CameraRepository` loads a camera with
+its protocols and bindings, the stream binding with its streams: a provider reaches its protocol's port
+and account through the camera it is handed.
 
 ## Reaching a protocol
 
@@ -64,8 +66,8 @@ checked alone (`CheckCameraProtocolUseCase`), whatever the stream's state.
 Protocol tests cover reach and login (`CameraProtocolProbeTests`, `CameraProtocolUseCaseTests`);
 capability tests cover the binding (`CameraCapabilityUseCaseTests`).
 
-The reachability poller (ADR-23) knocks on the `EffectivePort` of the stream binding's protocol, and
-skips a camera that has no stream binding.
+The reachability poller (ADR-23) knocks on the `EffectivePort` of the recording stream's protocol
+(ADR-65), and skips a camera that has no stream binding.
 
 ## Testing a capability
 
@@ -127,11 +129,40 @@ removing ONVIF also forgets its cached address.
 
 | Moment | What happens |
 |---|---|
-| Onboarding | The camera is created with its stream binding (RTSP or DVRIP, as discovery or the user chose), its protocol row (port from the form) and its main stream (path from the form, over RTSP) |
-| Verification | The stream's protocol is checked first; then the verifier reads the transport from the binding, the port and account from the protocol row; success records the streams the camera serves (ADR-38) |
-| Protocol or path changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again |
-| Frigate generation | `FrigateConfigApplier` builds the input from the binding's protocol: an RTSP URL, or a `dvrip://` source handed to go2rtc (ADR-19) |
+| Onboarding | The camera is created with its stream binding (RTSP or DVRIP, as discovery or the user chose), its protocol row (port from the form) and its main stream (path from the form, over RTSP), which records and detects |
+| Verification | The stream's protocol is checked first; then every enabled stream is checked (below); the camera status follows the recording stream |
+| Protocol or main path changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. A protocol change also replaces the streams by one main stream over the new protocol, recording and detecting, and clears `StreamsFoundAt` |
+| Frigate generation | `FrigateConfigApplier` builds one input for the recording stream and, when it differs, one for the analysed stream, each from its own stream's protocol: an RTSP URL, or a `dvrip://` source handed to go2rtc (ADR-19) |
 
 A camera without a stream binding is verified as not connected, stays out of the generated
 configuration, and lists its stream as not configured (`GetCameraCapabilitiesUseCase`) until its
 protocol is chosen.
+
+## The streams
+
+**Roles.** `CameraStream.Role` is `none`, `record`, `detect` or `record_and_detect`. `StreamLineup`
+(Core) is the one place that changes roles and switches, and holds the guard: exactly one enabled
+stream records. Giving a role takes it from the stream that had it; the recording stream cannot be
+disabled, removed or lose its record role (`stream_records`); a disabled stream holds no role and
+cannot take one (`stream_disabled`). `Camera.RecordStream` is the enabled stream that records;
+`Camera.DetectStream` is the enabled stream that detects, otherwise the recording stream
+(`Camera.DetectsOnRecordingStream`).
+
+**Found once.** `VerifyCameraUseCase` asks `ICameraStreamEnumerator` once the camera answers. While the
+binding has not found its streams yet (`CameraCapabilityBinding.StreamsFoundAt` empty), the enumerated
+streams are added, and the date is set. The defaults (the most detailed records, the lightest detects,
+a single one does both) apply only to a lineup still as onboarding left it; roles the user gave before
+are kept. Afterwards only the measured size of a stream whose path matches is
+refreshed (the main stream's size only when its path matches, ADR-38); nothing is added or removed.
+
+**Checks.** `StreamVerification` checks each enabled stream's own protocol, once per gesture however
+many streams go through it, then asks `ICameraVerifier` about that stream: over RTSP
+an `OPTIONS` on its path, over DVRIP its port. Each stream records `Verified`, `CheckedAt` and
+`LastError`; the recording stream's result is the camera's and the binding's. `CheckCameraStreamUseCase`
+checks one stream alone.
+
+**Per stream use cases** (`CameraStreamUseCases.cs`): list, add (a protocol among the camera's rows
+that can carry a stream, a path over RTSP or, over DVRIP, the secondary stream stored as
+`CameraStream.DvripSecondaryQuery`, a role; checked at once), change the role, enable or disable, remove,
+check. Each answers with the whole list, since a role change moves roles across streams, and a change
+that touches what Frigate reads rewrites the generated configuration.

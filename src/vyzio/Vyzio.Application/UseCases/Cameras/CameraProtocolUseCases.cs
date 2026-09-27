@@ -191,7 +191,7 @@ public sealed class RemoveCameraProtocolUseCase(ICameraRepository cameras, ICame
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera?.Protocol(protocol) is not { } entry) return RemoveProtocolOutcome.NotFound;
 
-        if (camera.Capabilities.Any(b => b.Protocol == protocol)) return RemoveProtocolOutcome.InUse;
+        if (camera.GoesThrough(protocol)) return RemoveProtocolOutcome.InUse;
 
         // Removing ONVIF drops both halves of where it answered (ADR-56).
         if (protocol == SupportedProtocol.Onvif) endpointCache.Forget(camera.Id);

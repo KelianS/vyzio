@@ -131,6 +131,8 @@ public sealed class SeedAndProbePresetsUseCase(
         binding.Protocol = protocol;
         binding.Verified = false;
         binding.LastError = null;
+        // A stream bound by detection starts as onboarding leaves one: a main stream, found out at its check (ADR-65).
+        StreamLineup.ResetTo(binding, protocol, mainPath: null);
         await bindings.SaveAsync(binding, ct);
 
         var result = await probe.ExecuteAsync(binding.CameraId, CameraCapability.Stream, run: run, ct: ct);
@@ -143,9 +145,8 @@ public sealed class SeedAndProbePresetsUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return;
 
-        var used = (await bindings.GetByCameraAsync(cameraId, ct)).Select(b => b.Protocol).ToHashSet();
         var silent = camera.Protocols
-            .Where(entry => entry.Status == ProtocolStatus.Unreachable && !used.Contains(entry.Protocol) && !entry.HoldsUserData)
+            .Where(entry => entry.Status == ProtocolStatus.Unreachable && !camera.GoesThrough(entry.Protocol) && !entry.HoldsUserData)
             .ToList();
         if (silent.Count == 0) return;
 

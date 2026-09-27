@@ -12,7 +12,6 @@ export function detectionConfigUpdate(
     labels: config.labels,
     motionSensitivity: config.motionSensitivity,
     motionSensitivityPinned: config.motionSensitivityPinned,
-    detectStreamId: config.detectStreamId,
     continuousDaysOverride: config.retention.continuous.override,
     motionDaysOverride: config.retention.motion.override,
     eventClipDaysOverride: config.retention.eventClip.override,

@@ -45,18 +45,10 @@ public class SaveCameraDetectionConfigUseCaseTests
     private static SaveCameraDetectionConfigRequest Request(
         string? sensitivity = null,
         bool pinned = false,
-        string? detectStreamId = null,
         int? continuousDays = null,
         int? motionDays = null,
         int? eventClipDays = null)
-        => new(["person"], sensitivity, pinned, detectStreamId, continuousDays, motionDays, eventClipDays);
-
-    private static CameraStream AddStream(Camera camera, int ordinal, int? width = null, int? height = null)
-    {
-        var stream = new CameraStream { CameraId = camera.Id, Ordinal = ordinal, Width = width, Height = height };
-        camera.Streams.Add(stream);
-        return stream;
-    }
+        => new(["person"], sensitivity, pinned, continuousDays, motionDays, eventClipDays);
 
     // The restart prompt only appears when something genuinely waits.
 
@@ -82,46 +74,6 @@ public class SaveCameraDetectionConfigUseCaseTests
 
         await _configApplier.Received(1).WriteConfigAsync(
             Arg.Any<IReadOnlyList<Camera>>(), true, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldStoreTheStreamAsTheAnalysisSource_WhenTheStreamBelongsToTheCamera()
-    {
-        var camera = GivenCamera();
-        AddStream(camera, 0, 2304, 1296);
-        var sub = AddStream(camera, 1, 640, 360);
-
-        var dto = await _sut.ExecuteAsync(camera.Id, Request(detectStreamId: sub.Id));
-
-        Assert.Equal(sub.Id, camera.DetectStreamId);
-        Assert.Equal(sub.Id, dto!.DetectStreamId);
-        Assert.Equal(2, dto.Streams.Count);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldFallBackToTheMainStreamWithoutStoringTheId_WhenTheStreamIdIsUnknown()
-    {
-        var camera = GivenCamera();
-        var main = AddStream(camera, 0, 2304, 1296);
-
-        var dto = await _sut.ExecuteAsync(camera.Id, Request(detectStreamId: "gone"));
-
-        Assert.Null(camera.DetectStreamId);
-        Assert.Equal(main.Id, dto!.DetectStreamId);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldReturnAnalysisToTheDefaultLightStream_WhenTheStreamChoiceIsCleared()
-    {
-        var camera = GivenCamera();
-        var main = AddStream(camera, 0);
-        var sub = AddStream(camera, 1);
-        camera.DetectStreamId = main.Id;
-
-        var dto = await _sut.ExecuteAsync(camera.Id, Request(detectStreamId: null));
-
-        Assert.Null(camera.DetectStreamId);
-        Assert.Equal(sub.Id, dto!.DetectStreamId);
     }
 
     [Fact]

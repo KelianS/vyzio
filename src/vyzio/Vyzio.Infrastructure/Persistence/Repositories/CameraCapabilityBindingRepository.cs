@@ -33,6 +33,7 @@ public sealed class CameraCapabilityBindingRepository(VyzioDbContext db) : ICame
             existing.ManuallyConfigured = binding.ManuallyConfigured;
             existing.VerifiedAt = binding.VerifiedAt;
             existing.LastError = binding.LastError;
+            existing.StreamsFoundAt = binding.StreamsFoundAt;
             existing.UpdatedAt = binding.UpdatedAt;
         }
 

@@ -39,13 +39,13 @@ internal static class CapabilityTestUseCases
             registry,
             endpointCache,
             check,
-            new VerifyCameraUseCase(cameras, bindings, verifier ?? OnlineVerifier(), NothingEnumerated(), check));
+            new VerifyCameraUseCase(cameras, bindings, verifier ?? OnlineVerifier(), NothingEnumerated(), check, TimeProvider.System));
     }
 
     private static ICameraVerifier OnlineVerifier()
     {
         var verifier = Substitute.For<ICameraVerifier>();
-        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>())
             .Returns(new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch));
         return verifier;
     }

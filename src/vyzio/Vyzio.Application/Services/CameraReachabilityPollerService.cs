@@ -51,8 +51,10 @@ internal sealed class CameraReachabilityPollerService(
         {
             if (ct.IsCancellationRequested) break;
 
-            // Without a stream protocol there is nothing to watch: the status says so rather than keep its last word (ADR-61).
-            var port = camera.StreamBinding is { } stream ? camera.PortOf(stream.Protocol) : (int?)null;
+            // Without a stream protocol there is nothing to watch (ADR-61); the status follows the recording stream (ADR-65).
+            var port = camera.StreamBinding is { } stream
+                ? camera.PortOf(camera.RecordStream?.Protocol ?? stream.Protocol)
+                : (int?)null;
             var newStatus = port is { } streamPort ? await ProbeAsync(camera.Host, streamPort, ct) : "needs_attention";
 
             if (!string.Equals(camera.Status, newStatus, StringComparison.Ordinal))

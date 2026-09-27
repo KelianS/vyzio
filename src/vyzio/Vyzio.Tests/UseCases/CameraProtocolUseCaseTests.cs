@@ -426,6 +426,22 @@ public class RemoveCameraProtocolUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldRefuse_WhenAStreamGoesThroughTheProtocol()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+        StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Dvrip, CameraStream.DvripSecondaryQuery, StreamRole.Detect);
+
+        // Act
+        var outcome = await _sut.ExecuteAsync("cam1", SupportedProtocol.Dvrip);
+
+        // Assert
+        Assert.Equal(RemoveProtocolOutcome.InUse, outcome);
+        Assert.NotNull(camera.Protocol(SupportedProtocol.Dvrip));
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldSayNotFound_WhenTheCameraDoesNotSpeakTheProtocol()
     {
         // Arrange

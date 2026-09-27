@@ -1,6 +1,6 @@
 # ADR-38 — Modèle de flux caméra : un flux = une qualité, rôles `detect` / `record` séparés
 
-> Statut : Accepté
+> Statut : Accepté, amendé par [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) (un rôle et une vérification par flux, flux trouvés une fois puis laissés à l'utilisateur)
 
 ## Contexte
 

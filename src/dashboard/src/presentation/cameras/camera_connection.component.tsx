@@ -166,6 +166,26 @@ export function CameraConnectionView() {
             manualFormOpen={uido.manualFormOpen}
             manualConfiguring={uido.manualConfiguring}
             streamPath={streamPath}
+            streams={{
+              lineup: uido.streams,
+              loading: uido.streamsLoading,
+              readError: uido.streamsError,
+              tasks: uido.streamTasks,
+              formOpen: uido.streamFormOpen,
+              adding: uido.addingStream,
+              intents: {
+                onRetryRead: () => presenter.onLoad(cameraId),
+                onSetRole: (streamId, role) =>
+                  void presenter.onSetStreamRole(cameraId, streamId, role),
+                onSetEnabled: (streamId, enabled) =>
+                  presenter.onSetStreamEnabled(cameraId, streamId, enabled),
+                onRemove: (streamId) => presenter.onRemoveStream(cameraId, streamId),
+                onCheck: (streamId) => void presenter.onCheckStream(cameraId, streamId),
+                onOpenForm: presenter.onOpenStreamForm,
+                onCloseForm: presenter.onCloseStreamForm,
+                onAdd: (addition) => void presenter.onAddStream(cameraId, addition),
+              },
+            }}
             intents={{
               onRetryRead: () => presenter.onLoad(cameraId),
               onDetect: () => void presenter.onDetect(cameraId),

@@ -190,6 +190,10 @@ public sealed class ConfigureCameraCapabilityUseCase(
             Capability = capability,
         };
 
+        // A new stream protocol replaces the streams by one main stream, to be found again over it (ADR-65 e).
+        if (capability == CameraCapability.Stream && protocolChanged)
+            StreamLineup.ResetTo(binding, protocol, camera.MainStream?.Path);
+
         binding.Protocol = protocol;
         // The swap is the user's; what the former protocol found about the camera (native presets) is not.
         binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, null, BindingConfig.PanInverted);

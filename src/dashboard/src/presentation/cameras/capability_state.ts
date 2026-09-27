@@ -60,7 +60,7 @@ const PROTOCOL_STATE_PILLS: Record<ProtocolStatus, { label: string; tone: BadgeT
   unreachable: { label: 'Ne répond pas', tone: 'danger' },
 }
 
-const UNCHECKED_PILL: { label: string; tone: BadgeTone } = {
+export const UNCHECKED_PILL: { label: string; tone: BadgeTone } = {
   label: 'Pas encore vérifié',
   tone: 'neutral',
 }

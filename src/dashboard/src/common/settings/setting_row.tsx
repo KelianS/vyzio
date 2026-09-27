@@ -1,6 +1,6 @@
-import { HelpCircle, Undo2 } from 'lucide-react'
+import { Undo2 } from 'lucide-react'
 import { Button } from '../ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
+import { HelpTrigger } from '../components/help_trigger'
 import { cn } from '../ui/utils'
 import { SettingControl } from './setting_control'
 import type { SettingDeclaration } from './setting_declaration'
@@ -26,7 +26,9 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
           {setting.label}
         </label>
 
-        {setting.help && <HelpTrigger label={setting.label} help={setting.help} />}
+        {setting.help && (
+          <HelpTrigger question={`À quoi sert « ${setting.label} » ?`} help={setting.help} />
+        )}
       </div>
 
       {/* Repere de la colonne de controle : son alignement est verifie d'un ecran a l'autre (ADR-43). */}
@@ -83,27 +85,5 @@ function RevertButton({
     >
       <Undo2 aria-hidden="true" />
     </Button>
-  )
-}
-
-/** Help behind an explicit trigger, never hover-only — unreachable by touch. */
-function HelpTrigger({ label, help }: { label: string; help: string }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6 shrink-0 text-muted-foreground hover:text-foreground"
-          aria-label={`À quoi sert « ${label} » ?`}
-        >
-          <HelpCircle aria-hidden="true" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent side="top" className="max-w-80 text-sm">
-        {help}
-      </PopoverContent>
-    </Popover>
   )
 }
