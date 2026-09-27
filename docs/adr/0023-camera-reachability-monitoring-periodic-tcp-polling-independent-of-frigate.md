@@ -1,6 +1,7 @@
 # ADR-23 — Surveillance de joignabilité des caméras : polling TCP périodique indépendant de Frigate
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)
+> (le port sondé est celui du protocole du flux).
 
 ## Contexte
 

@@ -132,20 +132,36 @@ setting on one, takes its place without a page or a layout of its own:
   verified or last worked, or, when it failed, a plain sentence with the way out, and the diagnostic
   line under it when the failure carries one (§ Errors).
 - **The settings** of the capability are declared rows ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)),
-  inside its card, never on the live view.
+  inside its card, behind its `Options` fold, never on the live view.
 - **The actions** close the card, in one row: the check (`Verifier`) first, then what the capability
   itself allows (`Activer` / `Desactiver`, `Retirer`, or `Configurer` while it is not set up). A check
   or a configuration runs a real test and returns a result: it is an **action**, never a draft value
   ([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md)). While the
-  stream fails, the other checks are suspended and the page says why ([SPECS](SPECS.md) 2.2).
+  stream fails, the other checks are suspended and the page says why ([SPECS](SPECS.md) 2.2). A
+  capability whose protocol does not answer says so in its state line, in plain words, with the way
+  out (wake the camera, check it is plugged in); one whose protocol refuses the account points at the
+  account; any other failure offers the check again or another way to reach it.
 
-**How** Vyzio reaches each capability is not on the card. The protocol of each capability and the
-stream's connection details (address, port, account) sit in the page's `Avance` fold, one row per
-capability in the same layout (title, protocol, then `Modifier` where the protocol can be changed;
-the stream's row is read-only), next to the manual set-up of SPECS 2.3. Changing a protocol runs its
-test, so its button says `Configurer`, never `Enregistrer`.
-The connection details are declared settings and follow the draft; the camera's name is its identity,
-not a capability, and stays at the top of the page.
+The page shows a camera's connection data on its three levels
+([ADR-61](adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)), each
+detail once:
+
+- **Identity**: the camera's name, at the top of the page, outside any card.
+- **Each capability**: its title, state and check are visible; its **protocol choice and its settings**
+  sit behind the card's own `Options` fold, closed by default. The protocol is chosen by its name
+  there, and changing it runs its test, so its button says `Configurer`, never `Enregistrer`. Every
+  protocol of the capability is offered, answering or not: a sleeping camera stays configurable.
+- **The page's `Avance` fold**: the camera's access (address, account), then one box per protocol the
+  camera speaks, with its state pill (`Repond`, `Refuse l'acces` when the account or the device number
+  is turned down, `Ne repond pas`, `Pas encore verifie`), its port, its
+  optional own account and its own `Verifier`; then the manual set-up of SPECS 2.3. A protocol check
+  goes through no capability, so it is never suspended by a failing stream. The own account says it
+  is only presented to the camera, on the local network.
+- **The stream's way out** names both places: the address and account in `Avance`, the protocol and
+  path in the stream card's `Options`.
+
+Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
+protocol choice or a manual set-up is an action.
 
 ### Help: three levels, not a manual
 
@@ -231,9 +247,9 @@ are not used for it. A person is `notifie`; a channel sends `notifications`; a s
 A capability card is titled by what the camera does, in the words the rest of the product already
 uses for it: `Flux video` (the stream), `Orientation` (the motorised head), `Coupure materielle`
 (the hardware privacy cut, as on the privacy screen), `Reglages image`. A protocol name (`RTSP`,
-`ONVIF`, `DVRIP`...) appears only in the `Avance` fold, which carries the manual path, and in the
-diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that names protocols or ports sits in that
-fold too; the help next to the cards stays in plain words.
+`ONVIF`, `DVRIP`...) appears only where a protocol is chosen or reached, the page's `Avance` fold and
+each card's `Options` fold, and in the diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that
+names protocols or ports sits in the `Avance` fold; the help next to the cards stays in plain words.
 
 ### Editing cycle
 

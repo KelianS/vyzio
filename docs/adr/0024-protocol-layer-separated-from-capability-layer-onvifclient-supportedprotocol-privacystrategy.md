@@ -1,6 +1,7 @@
 # ADR-24 — Séparation couche protocole / couche fonctionnelle : `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy`
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md)
+> et par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) (`Camera.SupportedProtocols`, ID V380).
 
 ## Contexte
 
