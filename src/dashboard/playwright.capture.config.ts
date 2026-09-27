@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
+import { localPort } from './playwright.port'
 
-const PORT = 4174
+const PORT = localPort('CAPTURE_PORT', 42000, import.meta.dirname)
 const BASE_URL = `http://localhost:${PORT}`
 
 // Generated on the fake backend, never hand-taken, so they carry no installation's data; the caller names the folder.

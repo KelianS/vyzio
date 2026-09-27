@@ -56,9 +56,7 @@ if (shots.length === 0) {
   process.exit(1)
 }
 
-ensureBranch()
-for (const shot of shots.sort()) {
-  const target = `${folder}/${encodeURIComponent(shot)}`
+const upload = (target: string, content: string) => {
   const existing = ghUnlessMissing([
     `repos/${repo}/contents/${target}?ref=${BRANCH}`,
     '--jq',
@@ -67,9 +65,27 @@ for (const shot of shots.sort()) {
   gh(['-X', 'PUT', `repos/${repo}/contents/${target}`], {
     message: `chore: screenshot ${target}`,
     branch: BRANCH,
-    content: fs.readFileSync(path.join(OUT, shot)).toString('base64'),
+    content,
     ...(existing ? { sha: existing.trim() } : {}),
   })
+}
+
+// Another branch publishing at the same moment moves the head and GitHub answers 409: try again.
+const uploadRetrying = (target: string, content: string, attemptsLeft = 5): void => {
+  try {
+    upload(target, content)
+  } catch (error) {
+    const conflict = String((error as { stderr?: string }).stderr).includes('HTTP 409')
+    if (!conflict || attemptsLeft <= 1) throw error
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000)
+    uploadRetrying(target, content, attemptsLeft - 1)
+  }
+}
+
+ensureBranch()
+for (const shot of shots.sort()) {
+  const target = `${folder}/${encodeURIComponent(shot)}`
+  uploadRetrying(target, fs.readFileSync(path.join(OUT, shot)).toString('base64'))
   // Printed ready to paste into the pull request description.
   console.log(`![${shot}](https://raw.githubusercontent.com/${repo}/${BRANCH}/${target})`)
 }

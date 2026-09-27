@@ -48,6 +48,10 @@ capture written for one review is not kept. Never use `docs-capture/stills` ther
    branch, and prints the Markdown to paste into the description. That branch never merges and
    nothing in the product reads it.
 
+The e2e suite and the captures each serve the build on a port derived from the checkout's folder,
+so several worktrees run them side by side, each on its own server. Two folders can rarely land on
+the same port: `E2E_PORT` and `CAPTURE_PORT` pin one.
+
 ### Dead code
 
 `task front:knip` reports every frontend file, export and dependency that nothing reaches, and CI
