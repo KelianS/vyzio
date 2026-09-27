@@ -85,8 +85,8 @@ sensor, so nothing is filmed at all. Where a camera offers no such thing, Vyzio 
 to the parking position you saved, stops recording at the same time, and turns it back afterwards.
 
 Nothing in that table is taken on trust: a capability is probed on the camera itself before Vyzio
-offers it, and a failed probe hides that one control without affecting the others. The list grows
-one brand at a time, and the full detail, protocol by protocol, is in
+offers it, and one that fails its probe is never offered as available, without affecting the others.
+The list grows one brand at a time, and the full detail, protocol by protocol, is in
 [`src/vyzio/vendors/README.md`](src/vyzio/vendors/README.md).
 
 ---

@@ -111,6 +111,13 @@ In practice, `SettingsPage` is a surface **without a title**; `SettingsSection` 
 page only when that page covers several subjects, and the title then names something other than the
 page. A section title that repeats the page title is the sign that one more page was needed.
 
+**An option that cannot be chosen yet stays in the list.** It is greyed and not selectable, with the
+reason and the way out on a second, quieter line under its label (`text-xs text-muted-foreground`):
+what is missing, and the screen where it is fixed. It is never removed: an option that vanishes
+teaches nothing, while a greyed one says that it exists and what it takes. The saved value is the
+exception: when it can no longer act, it stays choosable, so the draft can always come back to it,
+and the consequence under the control gives its reason in place of an effect it cannot deliver.
+
 **A section title is a title, a setting label is not.** The first is in the heading serif, the second in
 the body weight: rendered at the same size in the same face, they give a page where everything sits at
 one level and the sections no longer separate anything.
