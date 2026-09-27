@@ -51,6 +51,7 @@ enough, and that is what made a section heading and its summary nearly indisting
 | --- | --- |
 | Page title | `font-serif text-3xl` |
 | Section or heading title | `font-serif text-2xl` |
+| Card title (a capability card) | `font-serif text-lg` |
 | Setting label, list entry | `font-medium` (16px) |
 | Secondary text, summary, help | `text-sm text-muted-foreground` |
 
@@ -114,6 +115,38 @@ page. A section title that repeats the page title is the sign that one more page
 the body weight: rendered at the same size in the same face, they give a page where everything sits at
 one level and the sections no longer separate anything.
 
+### Capability cards
+
+What Vyzio has checked on a camera ([SPECS](SPECS.md) 2.3) reads as a list of **capability cards**,
+one per capability, the video stream first: it is the capability every other one depends on. Every
+card follows one anatomy, whatever the capability or its protocol, so a new capability, or a new
+setting on one, takes its place without a page or a layout of its own:
+
+**title** · *state pill* · *state line* · *settings* · **actions**
+
+- **The title is the plain name** of what the camera does (§ UX vocabulary, Capabilities), never a
+  protocol or a technical acronym.
+- **The state pill** says where the capability stands; it is a state, so a pill (§ Shape rule). The
+  stream's pill is the camera status itself, the words the camera header shows: one fact, one name.
+- **The state line** justifies the pill (principle 4) and says what to do next: when it was last
+  verified or last worked, or, when it failed, a plain sentence with the way out, and the diagnostic
+  line under it when the failure carries one (§ Errors).
+- **The settings** of the capability are declared rows ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)),
+  inside its card, never on the live view.
+- **The actions** close the card, in one row: the check (`Verifier`) first, then what the capability
+  itself allows (`Activer` / `Desactiver`, `Retirer`, or `Configurer` while it is not set up). A check
+  or a configuration runs a real test and returns a result: it is an **action**, never a draft value
+  ([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md)). While the
+  stream fails, the other checks are suspended and the page says why ([SPECS](SPECS.md) 2.2).
+
+**How** Vyzio reaches each capability is not on the card. The protocol of each capability and the
+stream's connection details (address, port, account) sit in the page's `Avance` fold, one row per
+capability in the same layout (title, protocol, then `Modifier` where the protocol can be changed;
+the stream's row is read-only), next to the manual set-up of SPECS 2.3. Changing a protocol runs its
+test, so its button says `Configurer`, never `Enregistrer`.
+The connection details are declared settings and follow the draft; the camera's name is its identity,
+not a capability, and stays at the top of the page.
+
 ### Help: three levels, not a manual
 
 How to use a feature lives **in the screen that carries it**, never in a document alongside
@@ -168,6 +201,15 @@ What Vyzio sends to a channel is a **`notification`**, and sending it is **`noti
 `Notifications` section that configures it. One notion, one word: `alerte`, `prevenir` and `signaler`
 are not used for it. A person is `notifie`; a channel sends `notifications`; a setting says
 `Me notifier`.
+
+### Capabilities
+
+A capability card is titled by what the camera does, in the words the rest of the product already
+uses for it: `Flux video` (the stream), `Orientation` (the motorised head), `Coupure materielle`
+(the hardware privacy cut, as on the privacy screen), `Reglages image`. A protocol name (`RTSP`,
+`ONVIF`, `DVRIP`...) appears only in the `Avance` fold, which carries the manual path, and in the
+diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that names protocols or ports sits in that
+fold too; the help next to the cards stays in plain words.
 
 ### Editing cycle
 
