@@ -65,8 +65,9 @@ export function PersonCamerasView() {
     return (
       <SettingsPage>
         <p className="text-muted-foreground">
-          Vous n’êtes jamais prévenu du passage de cette personne. Pour choisir des caméras, réglez
-          « {ALERT_MODE_FIELD_LABEL} » sur « {ALERT_MODE_LABELS.always} » dans Identité.
+          Aucune notification n’est envoyée pour le passage de cette personne. Pour choisir des
+          caméras, réglez « {ALERT_MODE_FIELD_LABEL} » sur « {ALERT_MODE_LABELS.always} » dans
+          Identité.
         </p>
       </SettingsPage>
     )
@@ -109,7 +110,7 @@ function CameraLinksForm({
             settings={[
               {
                 id: 'person-cameras',
-                label: 'Me prévenir seulement sur',
+                label: 'Me notifier seulement sur',
                 nature: {
                   kind: 'multiChoice',
                   emptySummary: 'Toutes les caméras',

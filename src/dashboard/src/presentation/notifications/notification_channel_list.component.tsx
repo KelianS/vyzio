@@ -6,7 +6,7 @@ import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import type { NotificationChannelSummary } from '../../domain/entities/notification_channel_config.entity'
+import { sendingSentence } from './channel_status'
 import { buildNotificationChannelListPresenter } from './notification_channel_list.presenter'
 import { notificationChannelListReducer } from './notification_channel_list.reducer'
 import { buildInitialNotificationChannelListUido } from './notification_channel_list.uido'
@@ -41,7 +41,7 @@ export function NotificationChannelListView() {
                 <span className="min-w-0">
                   <span className="block font-medium">{channel.displayName}</span>
                   <span className="block text-sm text-muted-foreground">
-                    {describeChannel(channel)}
+                    {sendingSentence(channel.isEnabled)}
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
@@ -58,7 +58,7 @@ export function NotificationChannelListView() {
         <p className="py-3 text-muted-foreground">
           {uido.loading
             ? 'Chargement…'
-            : 'Aucun canal pour l’instant : vous n’êtes prévenu que dans l’interface.'}
+            : 'Aucun canal pour l’instant : aucune notification n’est envoyée, les détections restent dans l’historique.'}
         </p>
       )}
 
@@ -74,10 +74,4 @@ export function NotificationChannelListView() {
       )}
     </SettingsPage>
   )
-}
-
-function describeChannel(channel: NotificationChannelSummary): string {
-  return channel.isEnabled
-    ? 'Les alertes sont envoyées.'
-    : 'Configuré, mais aucune alerte n’est envoyée.'
 }

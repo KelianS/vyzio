@@ -48,7 +48,7 @@ export function AddPersonView() {
       id: 'person-alert',
       label: ALERT_MODE_FIELD_LABEL,
       nature: { kind: 'choice', options: ALERT_MODE_OPTIONS },
-      help: 'Sans alerte, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
+      help: 'Sans notification, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
       value: alertMode,
       onChange: (value) => presenter.onAlertModeChange(value as ProfileAlertMode),
     },

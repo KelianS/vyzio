@@ -7,7 +7,7 @@ describe('privacyWording', () => {
       request: { cameraIds: ['c1', 'c2'], active: true, cameraLabel: null },
       wording: {
         title: 'Couper toutes les caméras ?',
-        body: 'Plus rien n’est enregistré ni signalé tant que vous ne les rallumez pas.',
+        body: 'Plus rien n’est enregistré, détecté ni notifié tant que vous ne les rallumez pas.',
         confirmLabel: 'Tout couper',
         done: 'Caméras coupées.',
       },
@@ -16,7 +16,7 @@ describe('privacyWording', () => {
       request: { cameraIds: ['c1'], active: true, cameraLabel: 'Salon' },
       wording: {
         title: 'Mettre « Salon » en pause ?',
-        body: 'Plus rien n’est enregistré ni signalé par cette caméra tant que vous ne la rallumez pas.',
+        body: 'Plus rien n’est enregistré, détecté ni notifié par cette caméra tant que vous ne la rallumez pas.',
         confirmLabel: 'Mettre en pause',
         done: 'Salon est en pause.',
       },
@@ -25,7 +25,7 @@ describe('privacyWording', () => {
       request: { cameraIds: ['c1', 'c2'], active: false, cameraLabel: null },
       wording: {
         title: 'Reprendre la surveillance ?',
-        body: 'Les caméras recommencent à enregistrer et à vous signaler ce qu’elles voient.',
+        body: 'Les caméras recommencent à enregistrer, et les notifications reprennent.',
         confirmLabel: 'Reprendre',
         done: 'Surveillance reprise.',
       },
@@ -34,7 +34,7 @@ describe('privacyWording', () => {
       request: { cameraIds: ['c1'], active: false, cameraLabel: 'Salon' },
       wording: {
         title: 'Reprendre la surveillance ?',
-        body: 'Cette caméra recommence à enregistrer et à vous signaler ce qu’elle voit.',
+        body: 'Cette caméra recommence à enregistrer, et ses notifications reprennent.',
         confirmLabel: 'Reprendre',
         done: 'Salon est de nouveau surveillée.',
       },

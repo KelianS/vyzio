@@ -18,7 +18,7 @@ describe('PersonListView', () => {
 
     // Assert
     const person = await screen.findByRole('link', { name: /Alice/ })
-    expect(person).toHaveTextContent('Famille · Ne rien signaler')
+    expect(person).toHaveTextContent('Famille · Ne pas me notifier')
     expect(person).toHaveAttribute('href', '/settings/detection/personnes/person-1')
   })
 

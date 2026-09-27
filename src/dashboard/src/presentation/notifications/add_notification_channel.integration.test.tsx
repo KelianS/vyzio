@@ -29,7 +29,7 @@ describe('AddNotificationChannelView', () => {
     // Assert
     const discord = await screen.findByRole('link', { name: /Discord/ })
     expect(discord).toHaveTextContent(
-      'Ce canal envoie des alertes, mais ne répond pas aux questions.',
+      'Ce canal envoie des notifications, mais ne répond pas aux questions.',
     )
     expect(screen.queryByRole('link', { name: /Telegram/ })).not.toBeInTheDocument()
   })

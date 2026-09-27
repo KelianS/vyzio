@@ -21,6 +21,7 @@ import {
   type MediaMode,
   type NotificationChannelConfig,
 } from '../../domain/entities/notification_channel_config.entity'
+import { sendingSentence } from './channel_status'
 import { NotificationLog } from './components/notification_log'
 import { CommandJournal } from './components/command_journal'
 import { ChannelPairingSection } from './components/channel_pairing_section'
@@ -142,7 +143,7 @@ function ChannelForm({
   const channelSettings: SettingDeclaration[] = [
     {
       id: 'channel-enabled',
-      label: `Alertes ${config.displayName}`,
+      label: `Notifications ${config.displayName}`,
       nature: { kind: 'toggle' },
       consequence: `Photos, vidéos et noms de caméras transitent par les serveurs de ${config.displayName} : ces images quittent votre réseau.`,
       value: draft.values.enabled,
@@ -168,7 +169,7 @@ function ChannelForm({
   const when: SettingDeclaration[] = [
     {
       id: 'channel-labels',
-      label: 'Ce qui déclenche une alerte',
+      label: 'Ce qui déclenche une notification',
       nature: {
         kind: 'multiChoice',
         options: labels.map((label) => ({
@@ -184,7 +185,7 @@ function ChannelForm({
       id: 'channel-confidence',
       label: 'Certitude minimale',
       nature: { kind: 'range', unit: '%', min: 50, max: 99 },
-      help: 'En dessous, la détection n’est pas notifiée. Trop bas, vous recevrez des fausses alertes ; trop haut, des détections réelles passeront sous silence.',
+      help: 'En dessous, la détection n’est pas notifiée. Trop bas, vous recevrez de fausses notifications ; trop haut, des détections réelles passeront sous silence.',
       value: draft.values.minimumConfidence,
       onChange: (value) => draft.set('minimumConfidence', value as number),
     },
@@ -223,9 +224,9 @@ function ChannelForm({
 
   when.push({
     id: 'channel-cooldown-on',
-    label: 'Espacer les alertes répétées',
+    label: 'Espacer les notifications répétées',
     nature: { kind: 'toggle' },
-    help: 'Sans cela, une personne qui reste dans le champ peut déclencher plusieurs alertes de suite.',
+    help: 'Sans cela, une personne qui reste dans le champ peut déclencher plusieurs notifications de suite.',
     value: draft.values.limitRepeats,
     onChange: (value) => draft.set('limitRepeats', value as boolean),
   })
@@ -233,7 +234,7 @@ function ChannelForm({
   if (draft.values.limitRepeats) {
     when.push({
       id: 'channel-cooldown',
-      label: 'Silence après une alerte',
+      label: 'Silence après une notification',
       nature: { kind: 'number', unit: 'minutes', min: 1, max: 60 },
       value: draft.values.cooldownMinutes,
       onChange: (value) => draft.set('cooldownMinutes', value as number),
@@ -347,16 +348,16 @@ function ChannelForm({
                 <p>
                   Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
                   Un code cesse de valoir passé quelques minutes, ou après plusieurs essais
-                  infructueux — dans les deux cas, générez-en un autre ici.
+                  infructueux : dans les deux cas, générez-en un autre ici.
                 </p>
               </HelpPanel>
             </SettingsSection>
           )}
 
-          <SettingsSection title="Quand prévenir">
+          <SettingsSection title="Quand notifier">
             <SettingsList settings={when} />
 
-            <HelpPanel title="Pourquoi une alerte n’est-elle pas partie ?">
+            <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
               <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>le canal est activé et entièrement renseigné ;</li>
@@ -367,9 +368,10 @@ function ChannelForm({
                 <li>l’événement ne lui a pas déjà été envoyé.</li>
               </ul>
               <p>
-                Les alertes ont besoin d’Internet : sans connexion, Vyzio continue de détecter et
-                d’enregistrer chez vous, mais rien ne part. <em>Derniers envois</em>, dans le repli{' '}
-                <em>Avancé</em>, montre ce qui est réellement parti et l’erreur en cas d’échec.
+                Les notifications ont besoin d’Internet : sans connexion, Vyzio continue de détecter
+                et d’enregistrer chez vous, mais rien ne part. <em>Derniers envois</em>, dans le
+                repli <em>Avancé</em>, montre ce qui est réellement parti et l’erreur en cas
+                d’échec.
               </p>
             </HelpPanel>
           </SettingsSection>
@@ -409,7 +411,7 @@ function ChannelForm({
 
       {uido.confirmEnable && (
         <ConfirmModal
-          title={`Envoyer les alertes par ${config.displayName} ?`}
+          title={`Envoyer les notifications par ${config.displayName} ?`}
           body={`Les photos, vidéos et noms de caméras seront transmis aux serveurs de ${config.displayName}, qui en aura connaissance. Vos données ne resteront plus strictement chez vous.`}
           confirmLabel="Activer"
           cancelLabel="Annuler"
@@ -425,7 +427,7 @@ function ChannelForm({
       {uido.confirmRemove && (
         <ConfirmModal
           title={`Supprimer le canal ${config.displayName} ?`}
-          body="Les informations de connexion seront effacées. Vous ne recevrez plus d’alertes par ce canal tant qu’il n’est pas reconfiguré."
+          body="Les informations de connexion seront effacées. Vous ne recevrez plus de notifications par ce canal tant qu’il n’est pas reconfiguré."
           confirmLabel="Supprimer"
           tone="danger"
           loading={uido.removing}
@@ -444,6 +446,5 @@ function ChannelForm({
 /** Channel status in one sentence, right where it's configured. */
 function describeChannel(config: NotificationChannelConfig): string {
   if (!config.isConfigured) return 'Pas encore configuré.'
-  if (!config.isEnabled) return 'Configuré, mais aucune alerte n’est envoyée.'
-  return 'Les alertes sont envoyées.'
+  return sendingSentence(config.isEnabled)
 }

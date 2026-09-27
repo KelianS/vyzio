@@ -18,7 +18,7 @@ test.describe('HubView privacy', () => {
 
     // The cost is said beforehand: nothing more is recorded nor reported.
     const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toContainText('Plus rien n’est enregistré ni signalé')
+    await expect(dialog).toContainText('Plus rien n’est enregistré, détecté ni notifié')
     await dialog.getByRole('button', { name: 'Tout couper' }).click()
 
     await expect(page.getByRole('heading', { name: 'Surveillance coupée' })).toBeVisible()

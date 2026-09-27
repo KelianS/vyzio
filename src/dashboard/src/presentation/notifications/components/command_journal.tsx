@@ -15,7 +15,7 @@ const OUTCOME: Record<CommandOutcome, { label: string; muted: boolean }> = {
   succeeded: { label: 'Répondu', muted: true },
   failed: { label: 'Échec', muted: false },
   // Said as is: it is the only sign that another conversation is knocking at the door (ADR-50).
-  rejected: { label: 'Ignoré — conversation non reliée', muted: false },
+  rejected: { label: 'Ignoré : conversation non reliée', muted: false },
 }
 
 /** What the channel was asked and how it ended -- the trace SPECS 5.4 requires. */

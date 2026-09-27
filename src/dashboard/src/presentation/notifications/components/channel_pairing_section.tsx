@@ -12,7 +12,7 @@ const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
 
 /**
- * Which conversation may command this installation — started here and nowhere else, because the
+ * Which conversation may command this installation, started here and nowhere else, because the
  * settings are the only place Vyzio knows it is really the owner talking (ADR-50).
  */
 export function ChannelPairingSection({
@@ -93,7 +93,7 @@ export function ChannelPairingSection({
       {confirmRevoke && (
         <ConfirmModal
           title="Couper le lien avec cette conversation ?"
-          body="Elle ne pourra plus rien demander à votre installation. Les alertes, elles, continuent d’arriver."
+          body="Elle ne pourra plus rien demander à votre installation. Les notifications, elles, continuent d’arriver."
           confirmLabel="Couper le lien"
           tone="danger"
           loading={revoking}
@@ -138,7 +138,7 @@ function ListeningStatus({ state }: { state: ChannelListening }) {
       <p className="text-sm text-muted-foreground">
         {state.reason
           ? // The failure is said in the channel's own words: paraphrasing loses the only clue we have.
-            `Vos commandes restent sans réponse jusqu’à ce qu’elle reprenne — Vyzio réessaie tout seul. Raison signalée : ${state.reason}`
+            `Vos commandes restent sans réponse jusqu’à ce qu’elle reprenne : Vyzio réessaie tout seul. Raison signalée : ${state.reason}`
           : 'Le canal doit être activé et enregistré pour répondre à vos commandes.'}
       </p>
     </div>

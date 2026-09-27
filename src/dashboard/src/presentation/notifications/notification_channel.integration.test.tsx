@@ -56,9 +56,11 @@ describe('NotificationChannelView', () => {
       [SAVE]: ok(makeChannelConfig()),
     })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Alertes Telegram/ }))
+    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
-    const question = screen.getByRole('alertdialog', { name: 'Envoyer les alertes par Telegram ?' })
+    const question = screen.getByRole('alertdialog', {
+      name: 'Envoyer les notifications par Telegram ?',
+    })
 
     // Act
     await userEvent.click(within(question).getByRole('button', { name: 'Activer' }))
@@ -74,7 +76,7 @@ describe('NotificationChannelView', () => {
     // Arrange
     fakeNetwork({ ...channelRoutes(), [SAVE]: failure(500) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Alertes Telegram/ }))
+    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -82,7 +84,7 @@ describe('NotificationChannelView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByText(/PUT \/api\/notifications\/settings\/telegram · 500/)).toBeVisible()
-    expect(screen.getByRole('switch', { name: /Alertes Telegram/ })).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: /Notifications Telegram/ })).not.toBeChecked()
   })
 
   it('onTest_ShouldSayTheSendFailedAndShowWhy_WhenTheChannelRefuses', async () => {

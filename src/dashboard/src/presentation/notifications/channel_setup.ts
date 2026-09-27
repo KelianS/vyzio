@@ -1,7 +1,7 @@
 import type { NotificationChannelName } from '../../domain/entities/notification_channel_config.entity'
 
 /**
- * The install checklist of a channel, in its own words — the only place a channel is named. It ends
+ * The install checklist of a channel, in its own words, the only place a channel is named. It ends
  * inside Vyzio, on the pairing: a channel that alerts but answers nothing is a half-installed one.
  *
  * A step body is plain text with two marks the renderer understands: `code` for what is typed or
@@ -39,7 +39,7 @@ export const CHANNEL_SETUP: Record<NotificationChannelName, ChannelSetup> = {
       },
       {
         title: 'Reliez la conversation',
-        body: 'Sans elle, le bot alerte mais ne répond à personne. La section `Commander depuis la conversation`, plus bas, donne un code et la commande à lui envoyer.',
+        body: 'Sans elle, le bot envoie les notifications mais ne répond à personne. La section `Commander depuis la conversation`, plus bas, donne un code et la commande à lui envoyer.',
       },
     ],
   },
@@ -56,7 +56,7 @@ export const CHANNEL_SETUP: Record<NotificationChannelName, ChannelSetup> = {
       },
       {
         title: 'Relevez l’identifiant du salon',
-        body: 'Dans Discord : `Paramètres utilisateur` › `Avancés` › activez `Mode développeur`. Puis, sur votre serveur, clic droit sur le salon qui recevra les alertes › `Copier l’identifiant du salon`, à recopier dans `Identifiant du salon`. Tous ceux qui y ont accès verront les images.',
+        body: 'Dans Discord : `Paramètres utilisateur` › `Avancés` › activez `Mode développeur`. Puis, sur votre serveur, clic droit sur le salon qui recevra les notifications › `Copier l’identifiant du salon`, à recopier dans `Identifiant du salon`. Tous ceux qui y ont accès verront les images.',
       },
       {
         title: 'Vérifiez',
@@ -64,7 +64,7 @@ export const CHANNEL_SETUP: Record<NotificationChannelName, ChannelSetup> = {
       },
       {
         title: 'Reliez le salon',
-        body: 'Sans lui, le bot alerte mais ne répond à personne. La section `Commander depuis la conversation`, plus bas, donne un code et la commande à lui envoyer.',
+        body: 'Sans lui, le bot envoie les notifications mais ne répond à personne. La section `Commander depuis la conversation`, plus bas, donne un code et la commande à lui envoyer.',
       },
     ],
   },

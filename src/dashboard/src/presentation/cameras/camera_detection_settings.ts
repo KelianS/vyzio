@@ -13,7 +13,7 @@ export type DetectionUpdate = Omit<
   'continuousDaysOverride' | 'motionDaysOverride' | 'eventClipDaysOverride'
 >
 
-/** "Auto" is a value of the same setting, not a side switch (ADR-35) — auto-tune and a pinned level are exclusive answers to one question. */
+/** "Auto" is a value of the same setting, not a side switch (ADR-35): auto-tune and a pinned level are exclusive answers to one question. */
 const AUTO = 'auto'
 
 const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
@@ -29,9 +29,9 @@ const SENSITIVITY_HELP =
 
 const SENSITIVITY_CONSEQUENCE: Record<MotionSensitivity | typeof AUTO, string> = {
   auto: 'Vyzio suit ce que voit la caméra et corrige seul le niveau.',
-  high: 'Le moindre mouvement est signalé, y compris la pluie ou un feuillage.',
+  high: 'Le moindre mouvement est détecté, y compris la pluie ou un feuillage.',
   medium: 'Les petits mouvements sont ignorés.',
-  low: 'Seuls les mouvements francs sont retenus — pour une scène très animée.',
+  low: 'Seuls les mouvements francs sont retenus, pour une scène très animée.',
 }
 
 const STREAM_HELP =
@@ -41,7 +41,7 @@ const STREAM_HELP =
 function streamConsequence(stream: CameraStream | undefined, total: number): string | undefined {
   if (stream === undefined) return undefined
   if (stream.ordinal === 0 && total > 1) return 'Cette caméra occupera davantage le boîtier.'
-  return 'Les visages éloignés risquent de ne plus être reconnus, et les images d’alerte seront moins nettes.'
+  return 'Les visages éloignés risquent de ne plus être reconnus, et les images des notifications seront moins nettes.'
 }
 
 export const DETECTION_DRAFT_LABELS: Record<keyof DetectionUpdate, string> = {
@@ -65,9 +65,9 @@ function describeStream(stream: CameraStream, total: number): string {
 
   const suffix =
     stream.ordinal === 0
-      ? ' — la plus détaillée'
+      ? ', la plus détaillée'
       : stream.ordinal === total - 1
-        ? ' — la plus légère'
+        ? ', la plus légère'
         : ''
 
   return parts.join(' · ') + suffix
@@ -102,7 +102,7 @@ export function buildDetectionSettings({
           label: `${label.emoji} ${label.displayName}`,
         })),
       },
-      help: 'Vyzio ne signale que ce qui est coché. Décocher une catégorie ne supprime rien de ce qui a déjà été enregistré.',
+      help: 'Vyzio ne détecte que ce qui est coché. Décocher une catégorie ne supprime rien de ce qui a déjà été enregistré.',
       value: values.labels,
       onChange: (value) => set('labels', value as string[]),
     },
@@ -127,7 +127,7 @@ export function buildDetectionSettings({
     },
   ]
 
-  // Only shown with more than one stream (ADR-38) — a single stream leaves nothing to choose.
+  // Only shown with more than one stream (ADR-38): a single stream leaves nothing to choose.
   if (config.streams.length > 1) {
     declarations.push({
       id: 'detection-stream',
