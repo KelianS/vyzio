@@ -122,10 +122,13 @@ export function StreamLines({
         </p>
         <p>Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait.</p>
         <p>
-          Changer de protocole remplace la liste par le flux principal de ce protocole : Vyzio
-          retrouve les autres flux à la vérification suivante, mais pas ceux ajoutés à la main.
+          Après un changement de protocole, Vyzio retrouve les flux que la caméra signale à la
+          vérification suivante. « Ajouter un flux » sert pour un flux qu’elle ne signale pas.
         </p>
-        <p>« Ajouter un flux » sert pour un flux que la caméra n’a pas signalé.</p>
+        <p>
+          Une caméra qui ne donne pas les dimensions de ses flux les voit nommés « Flux principal »
+          ou « Flux secondaire » plutôt qu’avec un chiffre faux.
+        </p>
       </HelpPanel>
     </div>
   )

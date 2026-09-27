@@ -9,7 +9,7 @@ import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
 import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
-import { RECORDING_STREAM_KEPT, ROLE_CONSEQUENCES } from './stream_lines'
+import { RECORDING_STREAM_KEPT, ROLE_CONSEQUENCES, STREAM_FAILED } from './stream_lines'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const UPDATE = 'PUT /api/cameras/camera-1'
@@ -1111,6 +1111,27 @@ describe('CameraConnectionView', () => {
     const sub = await streamLine('640 × 360 · 10 img/s')
     expect(sub.getByRole('combobox', { name: 'Rôle' })).toHaveTextContent('Détection')
     expect(sub.getByText('Fonctionne')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheLineFailedWithItsDiagnostic_WhenAStreamFailedItsCheck', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(
+        makeStreamLineup([recording, { ...detecting, verified: false, lastError: 'timeout' }], {
+          detectStreamId: 'sub',
+        }),
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    const sub = await streamLine('640 × 360 · 10 img/s')
+    expect(sub.getByText(STREAM_FAILED)).toBeInTheDocument()
+    expect(sub.getByText(/timeout/)).toBeInTheDocument()
   })
 
   it('onAskStreamReach_ShouldNameTheProtocolAndPath_WhenTheUserOpensTheTooltip', async () => {

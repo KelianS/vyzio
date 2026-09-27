@@ -93,7 +93,7 @@ describe('stream_lines', () => {
     [makeCameraStream({ protocol: 'rtsp', path: '/stream1' }), true, 'Par RTSP.'],
     [makeCameraStream({ protocol: 'dvrip', path: null }), false, 'Par DVRIP.'],
   ])(
-    'streamReach_ShouldNameTheProtocolAndAnUnshownPath_WhenTheStreamIsAsGiven',
+    'streamReach_ShouldNameThePathToo_WhenItIsNotShownAsItsOwnSetting',
     (stream, pathShown, expected) => {
       // Arrange & Act
       const reach = streamReach(stream, pathShown)

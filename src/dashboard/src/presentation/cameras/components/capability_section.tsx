@@ -241,7 +241,7 @@ function StreamCard({
             {binding.isConfigured && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Changer de protocole remplace la liste des flux.
+                  Changer de protocole remplace la liste des flux, y compris ceux ajoutés à la main.
                 </p>
                 <StreamLines
                   lineup={streams.lineup}
