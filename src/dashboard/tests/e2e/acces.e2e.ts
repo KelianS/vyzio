@@ -172,6 +172,8 @@ test.describe('Session end', () => {
 
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Déconnecter tous les appareils ?')
+    // The cost is read at the moment of deciding, not in a paragraph above the button.
+    await expect(dialog).toContainText('celui-ci compris')
     await dialog.getByRole('button', { name: 'Déconnecter' }).click()
 
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
