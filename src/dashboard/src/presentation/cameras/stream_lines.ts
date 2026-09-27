@@ -7,6 +7,7 @@ import {
   type CameraStreamLineup,
 } from '../../domain/entities/camera_stream.entity'
 import { CAPABILITY_STATE_PILLS, UNCHECKED_PILL } from './capability_state'
+import { PROTOCOL_LABELS } from './protocol_labels'
 
 /** Where a stream line stands, its pill (DESIGN SYSTEM § Capability cards, stream lines). */
 export const StreamLineState = {
@@ -47,28 +48,27 @@ export const ROLE_LABELS: Record<StreamRole, string> = {
   record_and_detect: 'Enregistrement et détection',
 }
 
-// What each role changes, visible without a gesture (ADR-43); the analysed image also feeds the thumbnail and notifications.
+// What each role changes, the role's tooltip (ADR-53, two sentences at most); the analysed image also feeds the thumbnail and notifications.
 export const ROLE_CONSEQUENCES: Record<StreamRole, string> = {
   none: 'Ce flux reste prêt, sans servir.',
   record: 'Vos enregistrements sont faits sur ce flux : plus il est détaillé, plus ils sont nets.',
   detect:
-    'Vyzio analyse ce flux et en tire la vignette et les images des notifications : plus léger, il libère le boîtier ; plus détaillé, il reconnaît mieux les visages éloignés.',
+    'Vyzio analyse ce flux et en tire la vignette et les images des notifications. Plus léger, il soulage le boîtier ; plus détaillé, il reconnaît mieux les visages éloignés.',
   record_and_detect:
     'Ce flux sert aux enregistrements et à l’analyse, donc aussi à la vignette et aux images des notifications.',
 }
 
-/** The default, said as such (SPECS 2.2): Vyzio downscales the analysed image anyway. */
-export const ROLES_DEFAULT =
-  'Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio réduit de toute façon l’image avant de l’analyser. Donner un rôle à un flux le retire à celui qui l’avait.'
-
 export const RECORDING_STREAM_KEPT =
-  'Ce flux enregistre : confiez l’enregistrement à un autre flux d’abord.'
+  'Ce flux enregistre : confiez l’enregistrement à un autre flux avant de le désactiver ou de le supprimer.'
 
-/** A failed line's way out; the recording stream cannot be switched off, so it is sent to another stream instead. */
-export function streamFailureLine(records: boolean): string {
-  return records
-    ? 'Ce flux ne répond pas : relancez sa vérification, ou confiez l’enregistrement à un autre flux.'
-    : 'Ce flux ne répond pas : relancez sa vérification, ou désactivez-le.'
+export const STREAM_FAILED = 'Ce flux ne répond pas.'
+
+/** How Vyzio reaches a stream, its quality's tooltip; a path shown as its own setting is not repeated. */
+export function streamReach(stream: CameraStream, pathShown: boolean): string {
+  const protocol = PROTOCOL_LABELS[stream.protocol]
+  return ASKS_STREAM_PATH[stream.protocol] && stream.path && !pathShown
+    ? `Par ${protocol}, chemin ${stream.path}.`
+    : `Par ${protocol}.`
 }
 
 const ALL_ROLES: readonly StreamRole[] = [
@@ -104,8 +104,7 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
     detect !== undefined &&
     detect.id !== lineup.recordStreamId &&
     streamLineState(detect) === StreamLineState.Failed
-  if (detectFails)
-    return 'Le flux de détection ne répond pas : la détection est interrompue. Relancez sa vérification ou donnez la détection à un autre flux, dans « Options ».'
+  if (detectFails) return 'La détection est interrompue : son flux ne répond pas.'
   if (lineup.detectsOnRecordingStream) return 'La détection passe par le flux d’enregistrement.'
   return null
 }

@@ -9,7 +9,7 @@ import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
 import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
-import { RECORDING_STREAM_KEPT } from './stream_lines'
+import { RECORDING_STREAM_KEPT, ROLE_CONSEQUENCES } from './stream_lines'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const UPDATE = 'PUT /api/cameras/camera-1'
@@ -1111,7 +1111,34 @@ describe('CameraConnectionView', () => {
     const sub = await streamLine('640 × 360 · 10 img/s')
     expect(sub.getByRole('combobox', { name: 'Rôle' })).toHaveTextContent('Détection')
     expect(sub.getByText('Fonctionne')).toBeInTheDocument()
-    expect(sub.getByText('RTSP · /stream2')).toBeInTheDocument()
+  })
+
+  it('onAskStreamReach_ShouldNameTheProtocolAndPath_WhenTheUserOpensTheTooltip', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }))
+
+    // Assert
+    expect(await screen.findByText('Par RTSP, chemin /stream2.')).toBeInTheDocument()
+  })
+
+  it('onAskRole_ShouldSayWhatTheRoleChanges_WhenTheUserOpensTheTooltip', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Que change ce rôle ?' }))
+
+    // Assert
+    expect(await screen.findByText(ROLE_CONSEQUENCES.detect)).toBeInTheDocument()
   })
 
   it('onLoad_ShouldLockDisableAndRemove_WhenTheStreamRecords', async () => {
@@ -1126,7 +1153,22 @@ describe('CameraConnectionView', () => {
     const main = await streamLine('1920 × 1080 · 15 img/s')
     expect(main.getByRole('button', { name: 'Désactiver' })).toBeDisabled()
     expect(main.getByRole('button', { name: 'Supprimer' })).toBeDisabled()
-    expect(main.getByText(RECORDING_STREAM_KEPT)).toBeInTheDocument()
+  })
+
+  it('onAskWhyKept_ShouldSendRecordingElsewhereFirst_WhenTheStreamRecords', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+
+    // Act
+    await userEvent.click(
+      main.getByRole('button', { name: 'Pourquoi ce flux ne peut-il pas être désactivé ?' }),
+    )
+
+    // Assert
+    expect(await screen.findByText(RECORDING_STREAM_KEPT)).toBeInTheDocument()
   })
 
   it('onSetStreamRole_ShouldSendTheRole_WhenTheUserGivesDetectionToTheRecordingStream', async () => {
@@ -1200,7 +1242,7 @@ describe('CameraConnectionView', () => {
     // Assert
     const card = await cardOf('Flux vidéo')
     expect(
-      await card.findByText(/Le flux de détection ne répond pas : la détection est interrompue\./),
+      await card.findByText('La détection est interrompue : son flux ne répond pas.'),
     ).toBeInTheDocument()
   })
 

@@ -241,8 +241,7 @@ function StreamCard({
             {binding.isConfigured && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Changer de protocole remplace les flux par le flux principal de ce protocole ;
-                  Vyzio retrouve les autres à la vérification suivante.
+                  Changer de protocole remplace la liste des flux.
                 </p>
                 <StreamLines
                   lineup={streams.lineup}

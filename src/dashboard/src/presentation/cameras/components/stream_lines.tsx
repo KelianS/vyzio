@@ -3,6 +3,8 @@ import { Plus } from 'lucide-react'
 import { Badge } from '../../../common/components/badge'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
+import { HelpPanel } from '../../../common/components/help_panel'
+import { HelpTrigger } from '../../../common/components/help_trigger'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import { SettingRow } from '../../../common/settings/setting_row'
@@ -19,20 +21,19 @@ import {
 import { DESTRUCTIVE_OUTLINE } from '../cameras.formatters'
 import { StreamTask } from '../camera_connection.uido'
 import type { ProtocolOption } from '../protocol_labels'
-import { PROTOCOL_LABELS } from '../protocol_labels'
 import {
   ASKS_STREAM_PATH,
   DVRIP_QUALITIES,
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
   ROLE_LABELS,
-  ROLES_DEFAULT,
+  STREAM_FAILED,
   STREAM_LINE_PILLS,
   StreamLineState,
   roleOptions,
-  streamFailureLine,
   streamLineState,
   streamQuality,
+  streamReach,
 } from '../stream_lines'
 import { Picker } from './protocol_choice'
 
@@ -75,7 +76,6 @@ export function StreamLines({
   return (
     <div className="flex flex-col gap-3">
       <h4 className="font-medium">Flux</h4>
-      <p className="text-sm text-muted-foreground">{ROLES_DEFAULT}</p>
       {loading && <p className="text-muted-foreground">Chargement…</p>}
       {readError && (
         <ReadFailure
@@ -109,6 +109,18 @@ export function StreamLines({
           onAdd={intents.onAdd}
         />
       )}
+      <HelpPanel title="Comment les flux se partagent-ils le travail ?">
+        <p>
+          Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio
+          réduit de toute façon l’image avant de l’analyser.
+        </p>
+        <p>Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait.</p>
+        <p>
+          Changer de protocole remplace la liste par le flux principal de ce protocole : Vyzio
+          retrouve les autres flux à la vérification suivante, mais pas ceux ajoutés à la main.
+        </p>
+        <p>« Ajouter un flux » sert pour un flux que la caméra n’a pas signalé.</p>
+      </HelpPanel>
     </div>
   )
 }
@@ -131,36 +143,40 @@ function StreamLine({
   const state = streamLineState(stream)
   const records = stream.id === lineup.recordStreamId
   const quality = streamQuality(stream)
-  const where =
-    ASKS_STREAM_PATH[stream.protocol] && stream.path && !mainPath
-      ? `${PROTOCOL_LABELS[stream.protocol]} · ${stream.path}`
-      : PROTOCOL_LABELS[stream.protocol]
 
   return (
     <li aria-label={quality} className="rounded-inset border border-border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-medium">{quality}</p>
+        <div className="flex items-center gap-1">
+          <p className="font-medium">{quality}</p>
+          <HelpTrigger
+            question="Comment Vyzio reçoit-il ce flux ?"
+            help={streamReach(stream, mainPath !== null)}
+          />
+        </div>
         <Badge tone={STREAM_LINE_PILLS[state].tone}>{STREAM_LINE_PILLS[state].label}</Badge>
       </div>
-      <p className="text-sm text-muted-foreground">{where}</p>
       {mainPath && <SettingRow setting={mainPath} />}
       {state === StreamLineState.Failed && (
         <div className="text-sm text-destructive">
-          <p>{streamFailureLine(records)}</p>
+          <p>{STREAM_FAILED}</p>
           {stream.lastError && <DiagnosticLine text={scrubSecrets(stream.lastError)} />}
         </div>
       )}
       {stream.enabled && (
         <div className="mt-2 flex flex-col gap-1 text-sm">
-          <label className="flex flex-col gap-1">
-            <span className="text-muted-foreground">Rôle</span>
-            <Picker
-              value={stream.role}
-              options={roleOptions(stream, lineup)}
-              onChange={(value) => intents.onSetRole(stream.id, value as StreamRole)}
-            />
-          </label>
-          <p className="text-muted-foreground">{ROLE_CONSEQUENCES[stream.role]}</p>
+          <div className="flex items-center gap-1">
+            <span id={`${stream.id}-role`} className="text-muted-foreground">
+              Rôle
+            </span>
+            <HelpTrigger question="Que change ce rôle ?" help={ROLE_CONSEQUENCES[stream.role]} />
+          </div>
+          <Picker
+            labelledBy={`${stream.id}-role`}
+            value={stream.role}
+            options={roleOptions(stream, lineup)}
+            onChange={(value) => intents.onSetRole(stream.id, value as StreamRole)}
+          />
         </div>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -207,13 +223,18 @@ function StreamLine({
         >
           Supprimer
         </Button>
+        {records && (
+          <HelpTrigger
+            question="Pourquoi ce flux ne peut-il pas être désactivé ?"
+            help={RECORDING_STREAM_KEPT}
+          />
+        )}
       </div>
-      {records && <p className="mt-1 text-sm text-muted-foreground">{RECORDING_STREAM_KEPT}</p>}
 
       {confirmDisable && (
         <ConfirmModal
           title="Désactiver ce flux ?"
-          body="Vyzio cesse de s’en servir et de le vérifier. Il reste dans la liste et se réactive à tout moment."
+          body="Vyzio cesse de s’en servir et de le vérifier. Il reste dans la liste."
           confirmLabel="Désactiver"
           tone="warn"
           loading={task === StreamTask.Toggle}
@@ -227,7 +248,7 @@ function StreamLine({
       {confirmRemove && (
         <ConfirmModal
           title="Supprimer ce flux ?"
-          body="Il quitte la liste et ne revient pas de lui-même. Vous pourrez le déclarer à nouveau avec « Ajouter un flux »."
+          body="Il quitte la liste et ne revient pas de lui-même."
           confirmLabel="Supprimer"
           tone="danger"
           loading={task === StreamTask.Remove}
@@ -345,9 +366,6 @@ function AddStreamForm({
           </Button>
         </div>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Pour un flux que la caméra n’a pas signalé. Vyzio vérifie aussitôt qu’il répond.
-      </p>
     </div>
   )
 }

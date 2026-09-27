@@ -6,6 +6,7 @@ import {
   streamCoverageLine,
   streamLineState,
   streamQuality,
+  streamReach,
 } from './stream_lines'
 
 const recording = makeCameraStream({ role: 'record' })
@@ -70,7 +71,7 @@ describe('stream_lines', () => {
     [makeStreamLineup([recording, detecting], { detectStreamId: 'sub' }), null],
     [
       makeStreamLineup([recording, { ...detecting, verified: false }], { detectStreamId: 'sub' }),
-      'Le flux de détection ne répond pas : la détection est interrompue. Relancez sa vérification ou donnez la détection à un autre flux, dans « Options ».',
+      'La détection est interrompue : son flux ne répond pas.',
     ],
     [
       makeStreamLineup([recording], { detectsOnRecordingStream: true }),
@@ -84,6 +85,21 @@ describe('stream_lines', () => {
 
       // Assert
       expect(line).toBe(expected)
+    },
+  )
+
+  it.each([
+    [makeCameraStream({ protocol: 'rtsp', path: '/stream2' }), false, 'Par RTSP, chemin /stream2.'],
+    [makeCameraStream({ protocol: 'rtsp', path: '/stream1' }), true, 'Par RTSP.'],
+    [makeCameraStream({ protocol: 'dvrip', path: null }), false, 'Par DVRIP.'],
+  ])(
+    'streamReach_ShouldNameTheProtocolAndAnUnshownPath_WhenTheStreamIsAsGiven',
+    (stream, pathShown, expected) => {
+      // Arrange & Act
+      const reach = streamReach(stream, pathShown)
+
+      // Assert
+      expect(reach).toBe(expected)
     },
   )
 })

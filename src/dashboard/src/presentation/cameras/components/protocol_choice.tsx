@@ -62,14 +62,17 @@ export function Picker({
   value,
   options,
   onChange,
+  labelledBy,
 }: {
   value: string
   options: readonly { value: string; label: string }[]
   onChange: (value: string) => void
+  /** The id of a visible name kept outside a wrapping label, e.g. one followed by a help trigger. */
+  labelledBy?: string
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger size="sm" className="w-full">
+      <SelectTrigger size="sm" className="w-full" aria-labelledby={labelledBy}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
