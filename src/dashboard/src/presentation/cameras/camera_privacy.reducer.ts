@@ -4,7 +4,7 @@ import {
   type PtzPreset,
 } from '../../domain/entities/ptz_preset.entity'
 import type { CameraPrivacyAction } from './camera_privacy.actions'
-import type { CameraPrivacyUido } from './camera_privacy.uido'
+import { EMPTY_SCHEDULE_FORM, type CameraPrivacyUido } from './camera_privacy.uido'
 
 // Parking needs both positions: it pivots to one and comes back to the other (ADR-57).
 function positionsSaved(presets: PtzPreset[]): boolean {
@@ -47,6 +47,19 @@ export function cameraPrivacyReducer(
     case 'SCHEDULES_READ_FAILED':
       return { ...state, schedulesLoading: false, schedules: [], schedulesError: action.error }
 
+    // An earlier delete's failure must not read as the add's.
+    case 'SCHEDULE_FORM_OPENED':
+      return { ...state, formOpen: true, scheduleFailure: null }
+    // Closing drops what was composed, like any abandonment returns to the saved state.
+    case 'SCHEDULE_FORM_CLOSED':
+      return {
+        ...state,
+        formOpen: false,
+        form: EMPTY_SCHEDULE_FORM,
+        invalid: null,
+        scheduleFailure: null,
+      }
+
     case 'DAY_TOGGLED': {
       const { days } = state.form
       const toggled = days.includes(action.day)
@@ -73,6 +86,7 @@ export function cameraPrivacyReducer(
       return {
         ...state,
         schedules: state.schedules.filter((schedule) => schedule.id !== action.scheduleId),
+        scheduleFailure: null,
       }
   }
 }

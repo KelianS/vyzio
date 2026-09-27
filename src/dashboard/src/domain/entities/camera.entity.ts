@@ -11,7 +11,6 @@ export type PrivacyMiss = (typeof PrivacyMiss)[keyof typeof PrivacyMiss]
 
 /** How a camera stops filming when privacy mode is on (SPECS 9.3). */
 export const PrivacyStrategy = {
-  None: 'none',
   SoftwareBlur: 'software_blur',
   PtzParking: 'ptz_parking',
   Hardware: 'hardware',

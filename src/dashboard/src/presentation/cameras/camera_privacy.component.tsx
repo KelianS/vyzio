@@ -14,13 +14,13 @@ import { SettingsPage, SettingsSection } from '../../common/settings/settings_pa
 import { HelpPanel } from '../../common/components/help_panel'
 import { PrivacyScheduleSection } from './components/privacy_schedule_section'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
-import { buildPrivacySettings } from './camera_privacy_settings'
+import { buildPrivacySettings, STRATEGY_LABEL } from './camera_privacy_settings'
 import { POSITIONS_UNREAD } from './cameras.formatters'
 import { buildCameraPrivacyPresenter } from './camera_privacy.presenter'
 import { cameraPrivacyReducer } from './camera_privacy.reducer'
 import { buildInitialCameraPrivacyUido } from './camera_privacy.uido'
 
-const DRAFT_LABELS = { strategy: 'Quand vous coupez la surveillance' }
+const DRAFT_LABELS = { strategy: STRATEGY_LABEL }
 
 export function CameraPrivacyView() {
   const camera = useOutletContext<Camera>()
@@ -72,11 +72,14 @@ export function CameraPrivacyView() {
             loading={uido.schedulesLoading}
             readError={uido.schedulesError}
             onRetryRead={() => presenter.onRetrySchedules(camera.id)}
+            formOpen={uido.formOpen}
             form={uido.form}
             adding={uido.adding}
             invalid={uido.invalid}
             failure={uido.scheduleFailure}
             cameraCount={allCameras.length}
+            onOpenForm={presenter.onOpenScheduleForm}
+            onCloseForm={presenter.onCloseScheduleForm}
             onToggleDay={presenter.onToggleDay}
             onStartTimeChange={presenter.onStartTimeChange}
             onEndTimeChange={presenter.onEndTimeChange}
