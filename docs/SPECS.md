@@ -237,7 +237,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - un canal qui ne sait pas recevoir reste un canal de notification a part entiere ; l'interface doit le dire avant l'activation, et ne jamais laisser croire qu'on pourra lui parler ;
 - un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
 - l'utilisateur doit pouvoir consulter la trace des commandes recues et de leur issue ;
-- l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet.
+- des qu'une conversation est reliee ou en cours de liaison, l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet. Tant qu'aucune ne l'est, une commande reste sans reponse de toute facon.
 
 ---
 

@@ -339,10 +339,7 @@ function ChannelForm({
           </SettingsSection>
 
           {config.acceptsCommands && (
-            <SettingsSection
-              title="Commander depuis la conversation"
-              lede="Reliez une conversation à votre installation pour lui demander, depuis votre téléphone, ce qui se passe chez vous."
-            >
+            <SettingsSection title="Commander depuis la conversation">
               {uido.pairingError ? (
                 <ReadFailure
                   error={uido.pairingError}

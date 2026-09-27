@@ -13,6 +13,14 @@ import type {
 const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
 
+// Until linking starts, a command gets no answer anyway: the listening state would teach nothing (SPECS 5.4).
+const IN_USE: Record<ChannelPairing['status'], boolean> = {
+  not_paired: false,
+  expired: false,
+  awaiting_conversation: true,
+  paired: true,
+}
+
 /**
  * Which conversation may command this installation, started here and nowhere else, because the
  * settings are the only place Vyzio knows it is really the owner talking (ADR-50).
@@ -55,18 +63,19 @@ export function ChannelPairingSection({
   }
 
   const status = pairing?.status ?? 'not_paired'
+  const inUse = IN_USE[status]
 
   return (
     <>
       <div className="flex flex-col gap-4">
-        {listeningError ? (
+        {inUse && listeningError ? (
           // A linked conversation proves nothing: an unread listening state is said, never left blank (SPECS 5.4).
           <div className="flex flex-col gap-1">
             <p className="text-sm">Impossible de savoir si le canal est à l’écoute.</p>
             <ReadFailure error={listeningError} onRetry={onRetryListening} />
           </div>
         ) : (
-          listening && <ListeningStatus state={listening} />
+          inUse && listening && <ListeningStatus state={listening} />
         )}
 
         {status === 'awaiting_conversation' ? (
@@ -88,19 +97,21 @@ export function ChannelPairingSection({
             </Button>
           )}
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={pairingLoading || listeningLoading}
-            onClick={onRefresh}
-          >
-            <RotateCw
-              className={cn((pairingLoading || listeningLoading) && 'animate-spin')}
-              aria-hidden="true"
-            />
-            Actualiser
-          </Button>
+          {inUse && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pairingLoading || listeningLoading}
+              onClick={onRefresh}
+            >
+              <RotateCw
+                className={cn((pairingLoading || listeningLoading) && 'animate-spin')}
+                aria-hidden="true"
+              />
+              Actualiser
+            </Button>
+          )}
         </div>
       </div>
 
@@ -188,9 +199,9 @@ function describe(status: ChannelPairing['status'], pairing: ChannelPairing | nu
   switch (status) {
     case 'not_paired':
       // Without this sentence, silence in the face of a command passes for a failure.
-      return 'Aucune conversation ne peut commander votre installation : tant qu’aucune n’est reliée, une commande envoyée au bot reste sans réponse. Reliez-en une pour lui parler.'
+      return 'Reliez une conversation pour lui parler depuis votre téléphone : sans elle, le bot ne répond à personne.'
     case 'expired':
-      return 'Le code précédent a expiré sans être utilisé : tant qu’aucune conversation n’est reliée, une commande reste sans réponse.'
+      return 'Le code précédent a expiré sans être utilisé : sans conversation reliée, le bot ne répond à personne.'
     case 'paired':
       return pairing?.pairedAt
         ? `Une conversation est reliée depuis le ${formatDate.format(new Date(pairing.pairedAt))}.`

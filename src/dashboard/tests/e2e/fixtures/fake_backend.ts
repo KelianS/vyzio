@@ -117,6 +117,11 @@ interface FakeChannelListening {
   reason: string | null
 }
 
+interface FakeChannelPairing {
+  status: 'not_paired' | 'awaiting_conversation' | 'paired' | 'expired'
+  pairedAt: string | null
+}
+
 interface FakeCommandJournalEntry {
   id: string
   verb: string
@@ -259,6 +264,8 @@ export interface FakeBackendState {
   notificationChannels: Record<string, FakeChannelConfig>
   /** The state of a channel's incoming loop, and the trace of what was asked of it (ADR-52). */
   channelListening: Record<string, FakeChannelListening>
+  /** A linked conversation, where a test needs one; none means nothing is linked. */
+  channelPairing: Record<string, FakeChannelPairing>
   commandJournal: Record<string, FakeCommandJournalEntry[]>
   /** The cameras each person is restricted to, by profile id; none means every camera. */
   profileCameraLinks: Record<string, string[]>
@@ -316,6 +323,7 @@ export function createFakeBackendState(
     profiles: [],
     notificationChannels: {},
     channelListening: {},
+    channelPairing: {},
     commandJournal: {},
     profileCameraLinks: {},
     detectionHistory: [],
@@ -913,15 +921,16 @@ export async function installFakeBackend(
         return json(route, state.commandJournal[channel] ?? [])
       }
       if (subject === 'pairing') {
-        // No pairing is simulated: the screen must hold on the barest state.
-        if (method === 'DELETE') return json(route, true)
+        if (method === 'DELETE') {
+          delete state.channelPairing[channel]
+          return json(route, true)
+        }
         return json(route, {
           channel,
-          status: 'not_paired',
           code: null,
           instruction: null,
           codeExpiresAt: null,
-          pairedAt: null,
+          ...(state.channelPairing[channel] ?? { status: 'not_paired', pairedAt: null }),
         })
       }
     }
