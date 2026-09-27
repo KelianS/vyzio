@@ -21,6 +21,9 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
     SupportedProtocol IPrivacyCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
     SupportedProtocol IPtzCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
 
+    // Estimate, unmeasured on Tapo pan-tilt hardware like the move itself (ADR-59).
+    public int FullRangeSteps => 60;
+
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => await AuthenticateAsync(camera, ct) is not null;
 
@@ -65,6 +68,17 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         var command = new { method = "motorMove", @params = new { x = 0, y = 0 } };
         await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
     }
+
+    // A move then a stop; how far it goes is one round trip to the camera.
+    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    {
+        await PtzMoveAsync(camera, binding, direction, speed, ct);
+        await PtzStopAsync(camera, binding, ct);
+        return true;
+    }
+
+    public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => Task.FromResult<(float Pan, float Tilt)?>(null);
 
     // No presets over KLAP; a Tapo reaches its saved positions over ONVIF instead (ADR-56, ADR-57).
     public Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)

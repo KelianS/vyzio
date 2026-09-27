@@ -155,6 +155,29 @@ describe('LiveView', () => {
     expect(screen.queryByText(/pas de position de référence/)).not.toBeInTheDocument()
   })
 
+  it('onCalibrate_ShouldSayWhyAndNeverClaimSuccess_WhenTheCameraTookNoStep', async () => {
+    // Arrange
+    fakeNetwork({
+      [PRESETS]: presetsRead({ calibrated: false }),
+      [CALIBRATE]: failure(
+        502,
+        'camera_refused',
+        'PTZ homing over Dvrip: the camera took none of the 60 steps toward its limit.',
+      ),
+    })
+    renderLiveView()
+    await screen.findByText(/pas de position de référence/)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Calibrer maintenant' }))
+
+    // Assert
+    expect(await screen.findByText('La caméra a refusé la commande')).toBeInTheDocument()
+    expect(screen.getByText(/took none of the 60 steps/)).toBeVisible()
+    expect(screen.queryByText(/Caméra calibrée/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Calibrer maintenant' })).toBeEnabled()
+  })
+
   it('onOpen_ShouldSayWhyAndForSupport_WhenThePositionsCannotBeRead', async () => {
     // Arrange
     fakeNetwork({ [PRESETS]: failure(500) })

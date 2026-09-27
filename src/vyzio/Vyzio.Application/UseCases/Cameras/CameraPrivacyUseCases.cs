@@ -16,6 +16,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig,
     IPtzPresetRepository presets,
+    PtzManagedPositions positions,
     ILogger<ToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
@@ -25,7 +26,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
         // Asked before the entity changes: a camera that refuses leaves it as it was.
         var answer = await PrivacyVendorAction.ApplyAsync(
-            camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
+            camera, active, bindings, registry, presets, positions, logger ?? (ILogger)NullLogger.Instance, ct);
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
         answer.ApplyTo(camera);
@@ -47,6 +48,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfig,
     IPtzPresetRepository presets,
+    PtzManagedPositions positions,
     ILogger<BatchToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
@@ -64,7 +66,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
             {
                 // Asked before the entity changes: a camera that fails here keeps its saved state in the reload.
                 var answer = await PrivacyVendorAction.ApplyAsync(
-                    camera, active, bindings, registry, presets, logger ?? (ILogger)NullLogger.Instance, ct);
+                    camera, active, bindings, registry, presets, positions, logger ?? (ILogger)NullLogger.Instance, ct);
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
                 answer.ApplyTo(camera);
@@ -115,6 +117,7 @@ internal static class PrivacyVendorAction
         ICameraCapabilityBindingRepository bindings,
         ICapabilityProviderRegistry registry,
         IPtzPresetRepository presets,
+        PtzManagedPositions positions,
         ILogger logger,
         CancellationToken ct)
     {
@@ -143,7 +146,7 @@ internal static class PrivacyVendorAction
                 var slot = active ? PtzPreset.ParkingSlot : PtzPreset.SurveillanceSlot;
                 deviceCall = async () =>
                 {
-                    if (await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, presets, slot, ct))
+                    if (await PtzPresetMove.GoToAsync(camera, ptzBinding, ptz, positions, presets, slot, ct))
                         return PrivacyCameraAnswer.Followed;
                     // A slot never saved is a missing setup step, not the camera failing: support must read it so.
                     logger.LogWarning("Privacy {State} on {CameraId}: no {Slot} position is saved, so the camera stays where it is.",

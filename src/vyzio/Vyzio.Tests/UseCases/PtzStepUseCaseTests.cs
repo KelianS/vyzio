@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Common;
@@ -46,7 +47,7 @@ public class PtzStepUseCaseTests
         var binding = PtzBinding.With("""{"supports_native_presets":true,"pan_inverted":true}""");
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
 
-        await new PtzStepUseCase(_cameras, _bindings, _registry).ExecuteAsync("cam1", new PtzMoveRequest(pressed));
+        await new PtzStepUseCase(_cameras, _bindings, _registry, new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)).ExecuteAsync("cam1", new PtzMoveRequest(pressed));
 
         await _provider.Received(1).PtzStepAsync(_camera, binding, sent, Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
@@ -60,7 +61,7 @@ public class PtzStepUseCaseTests
         var binding = PtzBinding.With(configJson);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
 
-        await new PtzStepUseCase(_cameras, _bindings, _registry).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
+        await new PtzStepUseCase(_cameras, _bindings, _registry, new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
 
         await _provider.Received(1).PtzStepAsync(_camera, binding, PtzDirection.Left, Arg.Any<int>(), Arg.Any<CancellationToken>());
     }

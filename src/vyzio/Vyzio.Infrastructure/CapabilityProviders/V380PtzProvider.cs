@@ -18,15 +18,8 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 internal sealed class V380PtzProvider(
     V380Client client,
     OnvifClient onvif,
-    V380PtzPositionTracker positionTracker,
     ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
-    // Safe fallback homing steps when virtual position is unknown (ADR-25 Branch B).
-    // Real cost per step: auth ~100ms + connect ~30ms + 5 warmup frames ~330ms + 200ms drain ≈ 650ms.
-    // 25 steps ≈ 16 s, which covers the full V380 pan/tilt range from any starting position.
-    private const int HomingSteps = 25;
-    // Extra steps beyond estimated clearance — safety net for occasional dropped packets only.
-    private const int HomingMargin = 2;
     // 16-byte PTZ binary packets (opcode 0xAA). Pan/tilt are uint16 LE: neutral=1000.
     // Direction mapping confirmed by physical testing — inverted from prsyahmi/v380 source labels:
     //   pan:  1002 (0x03EA) = RIGHT on screen, 1001 (0x03E9) = LEFT
@@ -45,6 +38,9 @@ internal sealed class V380PtzProvider(
 
     public SupportedProtocol Protocol => SupportedProtocol.V380;
 
+    // About 650 ms a step (auth, connect, warm-up frames, drain): 25 steps, 16 s, cover the whole pan/tilt range.
+    public int FullRangeSteps => 25;
+
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         await V380DeviceIdBootstrap.PreloadAsync(camera, binding, client, onvif, ct);
@@ -59,10 +55,8 @@ internal sealed class V380PtzProvider(
         return success;
     }
 
-    // Sends a single PTZ step packet. Real cost ≈ 650 ms/step (auth + connect + warmup frames + 200 ms drain).
-    // Overrides the default Move+Stop fallback — V380 has no persistent session concept here.
-    // Also updates the virtual position tracker for Branch B preset management (ADR-25).
-    public async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    // Sends one step packet; V380 has no continuous move without a persistent stream loop.
+    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
         if (V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
@@ -70,51 +64,20 @@ internal sealed class V380PtzProvider(
         try
         {
             await client.SendStreamCommandAsync(camera, DirectionToPacket(direction).ToArray(), ct);
-            // Update virtual position if homing has already established the origin.
-            if (positionTracker.Get(camera.Id) is not null)
-            {
-                var (dx, dy) = DirectionToDelta(direction);
-                positionTracker.Update(camera.Id, dx, dy);
-            }
+            return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.LogWarning(ex, "V380 PTZ step failed for {Camera}.", camera.DisplayName);
+            // V380Client raises InvalidOperationException when the camera rejects its login or has no known device ID.
+            throw ex is InvalidOperationException
+                ? new CameraCommandRefusedException($"V380 PTZ step on {camera.Host}: {ex.Message}", ex)
+                : new CameraUnreachableException($"V380 PTZ step on {camera.Host}: {ex.Message}", ex);
         }
     }
 
-    // Branch B (ADR-25): returns the virtual step position from home for this camera.
-    public (int StepsX, int StepsY)? GetVirtualPosition(string cameraId)
-        => positionTracker.Get(cameraId) is { } pos ? (pos.X, pos.Y) : null;
-
-    // Branch B (ADR-25): sends UpLeft packets to reach the mechanical limit, then resets virtual position.
-    // When the current virtual position is known, only sends max(X,Y) + HomingMargin steps —
-    // UpLeft decrements both axes simultaneously so max(X,Y) suffices to clear both.
-    // Falls back to HomingSteps (200) when position is unknown (first calibration after restart).
-    public async Task PtzHomingStepsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-    {
-        if (V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var storedId))
-            client.PreloadDeviceId(camera.Host, storedId);
-
-        var current = positionTracker.Get(camera.Id);
-        var steps = current is { } pos
-            ? Math.Max(pos.X, pos.Y) + HomingMargin
-            : HomingSteps;
-
-        logger.LogInformation("V380 homing started for {Camera} ({Steps} steps UpLeft, position was {Pos}).",
-            camera.DisplayName, steps, current?.ToString() ?? "unknown");
-        var packet = UpLeft.ToArray();
-        for (var i = 0; i < steps; i++)
-        {
-            try { await client.SendStreamCommandAsync(camera, packet, ct); }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "V380 homing step {Step}/{Total} failed for {Camera}.", i + 1, steps, camera.DisplayName);
-            }
-        }
-        positionTracker.Set(camera.Id, 0, 0);
-        logger.LogInformation("V380 homing complete for {Camera}. Virtual position reset to (0, 0).", camera.DisplayName);
-    }
+    public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => Task.FromResult<(float Pan, float Tilt)?>(null);
 
     // V380 step-based PTZ: each packet causes a bounded micro-movement; there is no
     // continuous move mode without a persistent background stream loop.
@@ -131,19 +94,6 @@ internal sealed class V380PtzProvider(
         => Task.CompletedTask;
 
 #pragma warning disable format // Aligned as a table so each row reads against the others.
-    private static (int dx, int dy) DirectionToDelta(PtzDirection direction) => direction switch
-    {
-        PtzDirection.Up        => ( 0, -1),
-        PtzDirection.Down      => ( 0,  1),
-        PtzDirection.Left      => (-1,  0),
-        PtzDirection.Right     => ( 1,  0),
-        PtzDirection.UpLeft    => (-1, -1),
-        PtzDirection.UpRight   => ( 1, -1),
-        PtzDirection.DownLeft  => (-1,  1),
-        PtzDirection.DownRight => ( 1,  1),
-        _                      => ( 0,  0),
-    };
-
     private static ReadOnlySpan<byte> DirectionToPacket(PtzDirection direction) => direction switch
     {
         PtzDirection.Up        => Up,

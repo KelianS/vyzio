@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -22,7 +23,7 @@ public class PrivacyModeCommandHandlerTests
         return new PrivacyModeCommandHandler(
             new GetCamerasUseCase(_cameras, _bindings),
             new ToggleCameraPrivacyModeUseCase(
-                _cameras, _bindings, Substitute.For<ICapabilityProviderRegistry>(), _frigate, Substitute.For<IPtzPresetRepository>()));
+                _cameras, _bindings, Substitute.For<ICapabilityProviderRegistry>(), _frigate, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)));
     }
 
     private static Camera Camera(string slug, string displayName, bool privacy = false) => new()

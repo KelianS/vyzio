@@ -15,24 +15,19 @@ public sealed class ParkingPositionsMissingException : InvalidOperationException
         : base("Save the camera's Surveillance (preset 1) and Parking (preset 2) positions before choosing ptz_parking.") { }
 }
 
-// Thrown by PtzSavePresetUseCase when Branch B position tracking has not been calibrated
-// (PtzCalibrateUseCase not yet called this session).
+// Thrown when Vyzio keeps the positions and the camera has not been homed since the service started (ADR-59).
 public sealed class PtzNotCalibratedException : InvalidOperationException
 {
     public PtzNotCalibratedException()
         : base("PTZ position not calibrated. Call POST /ptz/calibrate first to establish reference.") { }
 }
 
-// Resolution is via the camera's verified Ptz binding + ICapabilityProviderRegistry (ADR-22)
-// — never via VendorFamily/IVendorCameraAdapter. No binding, or a binding that hasn't been
-// probed successfully, means PTZ is not offered — consistent with "never activate on
-// declaration alone" (SPECS §2.3).
-//
-// Step: delegates to provider.PtzStepAsync which uses ONVIF RelativeMove when supported.
-// RelativeMove sends a precise fraction of the pan/tilt range and the camera stops itself —
-// no Stop command needed, no network-latency overshoot. Providers that don't support
-// RelativeMove fall back to the default Move+Stop in IPtzCapabilityProvider.
-public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry)
+// Resolved through the camera's verified Ptz binding, never the brand (ADR-22); every step is counted (ADR-59).
+public sealed class PtzStepUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
+    PtzManagedPositions positions)
 {
     public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
     {
@@ -46,7 +41,7 @@ public sealed class PtzStepUseCase(ICameraRepository cameras, ICameraCapabilityB
 
         var provider = registry.ResolvePtz(binding.Protocol);
         var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
-        await provider.PtzStepAsync(camera, binding, pressed, Math.Clamp(request.Speed, 1, 100), ct);
+        await positions.StepAsync(camera, binding, provider, pressed, Math.Clamp(request.Speed, 1, 100), ct);
         return true;
     }
 }
@@ -85,7 +80,8 @@ public sealed class PtzSavePresetUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
-    IPtzPresetRepository presets)
+    IPtzPresetRepository presets,
+    PtzManagedPositions positions)
 {
     public async Task<bool> ExecuteAsync(string cameraId, int presetId, CancellationToken ct = default)
     {
@@ -111,9 +107,8 @@ public sealed class PtzSavePresetUseCase(
         }
         else
         {
-            // Branch B (ADR-25): position must be calibrated before saving (call PtzCalibrateUseCase first).
-            // Auto-homing here would destroy the user's current position and save (0,0) instead.
-            if (provider.GetVirtualPosition(cameraId) is not { } pos)
+            // Homing here would throw away the framing the user just aimed at (ADR-46).
+            if (positions.Current(cameraId) is not { } pos)
                 throw new PtzNotCalibratedException();
 
             await presets.UpsertAsync(new PtzPreset
@@ -122,8 +117,8 @@ public sealed class PtzSavePresetUseCase(
                 PresetId = presetId,
                 Label = PtzPreset.DefaultLabel(presetId),
                 Native = false,
-                StepsX = pos.StepsX,
-                StepsY = pos.StepsY,
+                StepsX = pos.X,
+                StepsY = pos.Y,
             }, ct);
         }
 
@@ -135,7 +130,8 @@ public sealed class PtzGoToPresetUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
-    IPtzPresetRepository presets)
+    IPtzPresetRepository presets,
+    PtzManagedPositions positions)
 {
     public async Task<bool> ExecuteAsync(string cameraId, int presetId, CancellationToken ct = default)
     {
@@ -144,11 +140,11 @@ public sealed class PtzGoToPresetUseCase(
 
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        return await PtzPresetMove.GoToAsync(camera, binding, registry.ResolvePtz(binding.Protocol), presets, presetId, ct);
+        return await PtzPresetMove.GoToAsync(camera, binding, registry.ResolvePtz(binding.Protocol), positions, presets, presetId, ct);
     }
 }
 
-// One way to reach a saved position, whether the camera keeps it or Vyzio does (ADR-25).
+// One way to reach a saved position, whether the camera keeps it or Vyzio does (ADR-57, ADR-59).
 internal static class PtzPresetMove
 {
     // False when Vyzio keeps the positions and this one was never saved.
@@ -156,49 +152,20 @@ internal static class PtzPresetMove
         Camera camera,
         CameraCapabilityBinding binding,
         IPtzCapabilityProvider provider,
+        PtzManagedPositions positions,
         IPtzPresetRepository presets,
         int presetId,
         CancellationToken ct)
     {
-        var cameraId = camera.Id;
         if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
         {
             await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
-        }
-        else
-        {
-            // Branch B (ADR-25): go directly using the delta from current virtual position when known.
-            // Homing is only needed when position is unknown (restart before calibration).
-            var preset = await presets.GetAsync(cameraId, presetId, ct);
-            if (preset is null) return false;
-
-            var targetX = preset.StepsX ?? 0;
-            var targetY = preset.StepsY ?? 0;
-
-            if (provider.GetVirtualPosition(cameraId) is { } current)
-            {
-                var dx = targetX - current.StepsX;
-                var dy = targetY - current.StepsY;
-
-                var dirX = dx > 0 ? PtzDirection.Right : PtzDirection.Left;
-                for (var i = 0; i < Math.Abs(dx); i++)
-                    await provider.PtzStepAsync(camera, binding, dirX, 50, ct);
-
-                var dirY = dy > 0 ? PtzDirection.Down : PtzDirection.Up;
-                for (var i = 0; i < Math.Abs(dy); i++)
-                    await provider.PtzStepAsync(camera, binding, dirY, 50, ct);
-            }
-            else
-            {
-                // Position unknown: home to (0,0) then replay to target.
-                await provider.PtzHomingStepsAsync(camera, binding, ct);
-                for (var i = 0; i < targetX; i++)
-                    await provider.PtzStepAsync(camera, binding, PtzDirection.Right, 50, ct);
-                for (var i = 0; i < targetY; i++)
-                    await provider.PtzStepAsync(camera, binding, PtzDirection.Down, 50, ct);
-            }
+            return true;
         }
 
+        if (await presets.GetAsync(camera.Id, presetId, ct) is not { } preset) return false;
+
+        await positions.GoToAsync(camera, binding, provider, preset.StepsX ?? 0, preset.StepsY ?? 0, ct);
         return true;
     }
 }
@@ -219,11 +186,11 @@ public sealed class GetPtzPositionUseCase(ICameraRepository cameras, ICameraCapa
     }
 }
 
-// Returns all configured PTZ presets for a camera, plus calibration state and current position (ADR-25).
+// Returns all configured PTZ presets for a camera, plus calibration state and current position (ADR-59).
 public sealed class GetPtzPresetsUseCase(
     IPtzPresetRepository presets,
     ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry)
+    PtzManagedPositions positions)
 {
     public async Task<(IReadOnlyList<PtzPreset> Presets, bool Calibrated, (int X, int Y)? Position)> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -235,17 +202,17 @@ public sealed class GetPtzPresetsUseCase(
         if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
             return (list, true, null);
 
-        var pos = registry.ResolvePtz(binding.Protocol).GetVirtualPosition(cameraId);
-        return (list, pos is not null, pos is { } p ? (p.StepsX, p.StepsY) : null);
+        var pos = positions.Current(cameraId);
+        return (list, pos is not null, pos);
     }
 }
 
-// Branch B calibration: sends homing steps to establish the (0,0) reference position (ADR-25).
-// Must be called before PtzSavePresetUseCase when SupportsNativePresets is false.
+// Homes a camera whose positions Vyzio keeps; never claims a calibration the camera did not do (ADR-59).
 public sealed class PtzCalibrateUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    PtzManagedPositions positions)
 {
     public async Task<bool> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -256,8 +223,7 @@ public sealed class PtzCalibrateUseCase(
 
         if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets)) return true; // nothing to do
 
-        var provider = registry.ResolvePtz(binding.Protocol);
-        await provider.PtzHomingStepsAsync(camera, binding, ct);
+        await positions.HomeAsync(camera, binding, registry.ResolvePtz(binding.Protocol), ct);
         return true;
     }
 }

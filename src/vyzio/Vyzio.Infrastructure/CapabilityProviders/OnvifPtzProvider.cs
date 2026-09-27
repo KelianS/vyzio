@@ -22,6 +22,9 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
 {
     public SupportedProtocol Protocol => SupportedProtocol.Onvif;
 
+    // A relative step at replay speed is 1/80 of the normalized [-1, 1] range; the rest is margin.
+    public int FullRangeSteps => 90;
+
     // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid
     // a GetProfiles round-trip before every PTZ command (main source of step overshoot).
     private readonly ConcurrentDictionary<string, string> _profileCache = new();
@@ -98,7 +101,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         await onvif.SetPresetAsync(camera, token, presetId, ct);
     }
 
-    public async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
         var caps = await GetPtzCapabilitiesAsync(camera, ct);
@@ -107,7 +110,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         if (!await stepLock.WaitAsync(TimeSpan.FromMilliseconds(300), ct))
         {
             logger.LogDebug("ONVIF step skipped for {Camera}: previous step in progress.", camera.DisplayName);
-            return;
+            return false;
         }
 
         try
@@ -125,6 +128,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
                 try { await Task.Delay(stepMs, ct); }
                 finally { await onvif.StopAsync(camera, token, ct); }
             }
+            return true;
         }
         finally
         {
