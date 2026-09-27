@@ -65,6 +65,20 @@ describe('ConservationView', () => {
     expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(10)
   })
 
+  it('onLoad_ShouldSayWhatCouldNotBeRead_WhenTheDurationsCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: failure(500) })
+
+    // Act
+    renderScreen(<ConservationView />, CONSERVATION)
+
+    // Assert
+    expect(
+      await screen.findByText('Les durées de conservation n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('GET /api/settings/recording · 500')
+  })
+
   it('onRetry_ShouldShowTheDurations_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ [SETTINGS]: failure(500) })

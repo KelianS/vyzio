@@ -61,7 +61,10 @@ describe('CameraDetectionView', () => {
     renderScreen(<CameraDetectionView />, DETECTION_TAB)
 
     // Assert
-    const alert = await screen.findByRole('alert')
+    expect(
+      await screen.findByText('Les réglages de détection de cette caméra n’ont pas pu être lus.'),
+    ).toBeInTheDocument()
+    const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(alert).toHaveTextContent('GET /api/cameras/camera-1/detection-config · 500')
   })
@@ -102,6 +105,69 @@ describe('CameraDetectionView', () => {
     expect(await screen.findByRole('combobox', { name: 'Ce qui est détecté' })).toHaveTextContent(
       '🧍 Personne',
     )
+  })
+
+  it('onSave_ShouldKeepTheSavedSettingsOnScreen_WhenTheSettingsCannotBeReadAnyMore', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()),
+      'GET /api/detection-labels/camera': ok(labels),
+      'PUT /api/cameras/camera-1/detection-config': ok(
+        makeDetectionConfig({ labels: ['person', 'car'] }),
+      ),
+      'GET /api/system/stats': ok(null),
+    })
+    renderScreen(<CameraDetectionView />, DETECTION_TAB)
+    await addCarsToWhatIsDetected()
+    network.answer('GET /api/cameras/camera-1/detection-config', failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText('Réglages de détection enregistrés.')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Ce qui est détecté' })).toHaveTextContent('Tout')
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheCameraIsGoneAndReadTheListAgain_WhenTheCameraNoLongerExists', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/cameras/camera-1/detection-config': failure(404),
+      'GET /api/detection-labels/camera': ok(labels),
+      'GET /api/cameras': ok([]),
+    })
+
+    // Act
+    renderScreen(<CameraDetectionView />, DETECTION_TAB)
+
+    // Assert
+    expect(
+      await screen.findByText('Cette caméra est introuvable : elle a peut-être été supprimée.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Revenir à la liste des caméras' })).toBeVisible()
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/cameras' }))
+  })
+
+  it('onSave_ShouldSayTheCameraIsGone_WhenTheSaveAnswersThatItNoLongerExists', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()),
+      'GET /api/detection-labels/camera': ok(labels),
+      'PUT /api/cameras/camera-1/detection-config': failure(404),
+      'GET /api/cameras': ok([]),
+    })
+    renderScreen(<CameraDetectionView />, DETECTION_TAB)
+    await addCarsToWhatIsDetected()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Cette caméra est introuvable : elle a peut-être été supprimée.'),
+    ).toBeInTheDocument()
   })
 
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {

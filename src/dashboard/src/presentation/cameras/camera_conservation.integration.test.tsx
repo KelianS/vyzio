@@ -73,9 +73,77 @@ describe('CameraConservationView', () => {
     renderScreen(<CameraConservationView />, CONSERVATION_TAB)
 
     // Assert
-    const alert = await screen.findByRole('alert')
+    expect(
+      await screen.findByText('Les durées de conservation de cette caméra n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(alert).toHaveTextContent('GET /api/cameras/camera-1/detection-config · 500')
+  })
+
+  it('onSave_ShouldKeepTheSavedDurationsOnScreen_WhenTheSettingsCannotBeReadAnyMore', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()),
+      'PUT /api/cameras/camera-1/detection-config': ok(
+        makeDetectionConfig({
+          retention: {
+            ...makeDetectionConfig().retention,
+            motion: { override: 10, installation: 7, effective: 10 },
+          },
+        }),
+      ),
+      'GET /api/system/stats': ok(null),
+    })
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+    await setMotionToTenDays()
+    network.answer('GET /api/cameras/camera-1/detection-config', failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText('Durées de conservation enregistrées.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(10)
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheCameraIsGoneAndReadTheListAgain_WhenTheCameraNoLongerExists', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/cameras/camera-1/detection-config': failure(404),
+      'GET /api/cameras': ok([]),
+    })
+
+    // Act
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+
+    // Assert
+    expect(
+      await screen.findByText('Cette caméra est introuvable : elle a peut-être été supprimée.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Revenir à la liste des caméras' })).toBeVisible()
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/cameras' }))
+  })
+
+  it('onSave_ShouldSayTheCameraIsGone_WhenTheSaveAnswersThatItNoLongerExists', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()),
+      'PUT /api/cameras/camera-1/detection-config': failure(404),
+      'GET /api/cameras': ok([]),
+    })
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+    await setMotionToTenDays()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Cette caméra est introuvable : elle a peut-être été supprimée.'),
+    ).toBeInTheDocument()
   })
 
   it('onRetry_ShouldShowTheDurations_WhenTheSecondReadSucceeds', async () => {

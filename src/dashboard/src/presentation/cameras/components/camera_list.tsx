@@ -55,7 +55,12 @@ export function CameraList({
           ))}
         </ul>
       ) : unread ? (
-        <ReadFailure error={error} onRetry={onRetry} className="py-3" />
+        <ReadFailure
+          error={error}
+          onRetry={onRetry}
+          subject="La liste de vos caméras n’a pas pu être lue."
+          className="py-3"
+        />
       ) : (
         <p className="py-3 text-muted-foreground">
           {loading ? 'Chargement…' : 'Aucune caméra pour l’instant.'}

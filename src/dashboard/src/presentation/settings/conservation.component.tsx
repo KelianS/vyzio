@@ -61,7 +61,11 @@ export function ConservationView() {
   if (uido.error)
     return (
       <SettingsPage>
-        <ReadFailure error={uido.error} onRetry={presenter.onLoad} />
+        <ReadFailure
+          error={uido.error}
+          onRetry={presenter.onLoad}
+          subject="Les durées de conservation n’ont pas pu être lues."
+        />
       </SettingsPage>
     )
   if (!uido.settings) return null

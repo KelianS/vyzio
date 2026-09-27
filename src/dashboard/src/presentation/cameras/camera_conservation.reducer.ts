@@ -12,9 +12,13 @@ export function cameraConservationReducer(
       return { ...state, loading: false, config: action.config }
     case 'LOAD_FAILED':
       return { ...state, loading: false, error: action.error }
+    case 'CAMERA_GONE':
+      return { ...state, loading: false, config: null }
 
     case 'SAVE_STARTED':
       return { ...state, saving: true }
+    case 'SAVE_SUCCEEDED':
+      return { ...state, config: action.config }
     case 'SAVE_FINISHED':
       return { ...state, saving: false }
   }

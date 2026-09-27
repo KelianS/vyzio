@@ -21,6 +21,7 @@ import {
 import { SettingsPage } from '../../common/settings/settings_page'
 import { RetentionHelp } from '../../common/recording/retention_help'
 import { ReadFailure } from '../../common/components/error_message'
+import { CameraNotFound } from './components/camera_not_found'
 import {
   buildCameraConservationPresenter,
   type RetentionOverrides,
@@ -59,10 +60,19 @@ export function CameraConservationView() {
   if (uido.error)
     return (
       <SettingsPage>
-        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(cameraId!)} />
+        <ReadFailure
+          error={uido.error}
+          onRetry={() => presenter.onLoad(cameraId!)}
+          subject="Les durées de conservation de cette caméra n’ont pas pu être lues."
+        />
       </SettingsPage>
     )
-  if (!uido.config) return null
+  if (!uido.config)
+    return (
+      <SettingsPage>
+        <CameraNotFound within="tab" />
+      </SettingsPage>
+    )
   const config = uido.config
 
   return (

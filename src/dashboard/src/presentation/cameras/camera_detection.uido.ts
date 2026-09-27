@@ -3,6 +3,7 @@ import type { DetectionConfig } from '../../domain/entities/detection_config.ent
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 
 export interface CameraDetectionUido {
+  /** Null once loaded means the camera no longer exists. */
   config: DetectionConfig | null
   /** The whole catalogue; the camera narrows it to what it reports detecting. */
   labels: DetectionLabel[]

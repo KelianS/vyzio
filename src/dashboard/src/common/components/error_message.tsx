@@ -24,14 +24,18 @@ export function ErrorMessage({ error, className }: { error: AppError; className?
 export function ReadFailure({
   error,
   onRetry,
+  subject,
   className,
 }: {
   error: AppError
   onRetry: () => void
+  /** What could not be read, said first when nothing around the failure names it (DESIGN SYSTEM § Errors). */
+  subject?: string
   className?: string
 }) {
   return (
     <div className={cn('flex flex-col items-start gap-3', className)}>
+      {subject && <p>{subject}</p>}
       <ErrorMessage error={error} />
       <Button type="button" variant="outline" size="sm" onClick={onRetry}>
         Réessayer

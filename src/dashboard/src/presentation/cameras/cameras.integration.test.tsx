@@ -49,6 +49,7 @@ describe('CamerasView', () => {
     await readTheCameraList()
 
     // Assert
+    expect(screen.getByText('La liste de vos caméras n’a pas pu être lue.')).toBeInTheDocument()
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(alert).toHaveTextContent('GET /api/cameras · 500')
