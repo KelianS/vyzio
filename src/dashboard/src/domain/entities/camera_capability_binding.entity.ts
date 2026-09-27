@@ -22,4 +22,6 @@ export interface CameraCapabilityBinding {
   panInverted: boolean | null
   /** The stream's main path, its own setting; null for any other capability (ADR-61). */
   streamPath: string | null
+  /** Whether the camera keeps its positions itself, else Vyzio counts them; null for any other capability (ADR-64). */
+  nativePositions: boolean | null
 }

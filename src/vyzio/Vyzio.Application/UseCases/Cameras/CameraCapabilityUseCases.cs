@@ -14,7 +14,8 @@ public sealed record CameraCapabilityBindingDto(
     bool IsPreset,
     bool IsConfigured,
     bool? PanInverted = null,
-    string? StreamPath = null)
+    string? StreamPath = null,
+    bool? NativePositions = null)
 {
     public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, Camera? camera = null, bool isPreset = false) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
@@ -30,7 +31,9 @@ public sealed record CameraCapabilityBindingDto(
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
             : null,
         // The stream's main path is its own setting (ADR-61).
-        StreamPath: binding.Capability == CameraCapability.Stream ? camera?.MainStream?.Path : null);
+        StreamPath: binding.Capability == CameraCapability.Stream ? camera?.MainStream?.Path : null,
+        // Whether the camera keeps the positions itself or Vyzio counts them (ADR-64).
+        NativePositions: binding.Capability == CameraCapability.Ptz ? PtzPositionTier.IsNative(binding) : null);
 
     public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, SupportedProtocol protocol) => new(
         SnakeCaseEnum.ToSnakeCase(capability),

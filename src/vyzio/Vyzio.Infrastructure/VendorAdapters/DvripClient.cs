@@ -3,7 +3,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -14,14 +13,11 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 // message (same rationale as CameraCommandException, ADR-28 follow-up).
 public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
 
-// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client — binary framing over TCP port 34567,
-// JSON payloads. Covers ICSee, Annke, Sannce, Zosi and other XMEye-chipset cameras.
-// Wire format and command codes confirmed against real hardware —
-// see docs/investigations/icsee_dvrip_privacy.md. Registered as Singleton: stateless.
-internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger)
+// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client, singleton and stateless: how it is used is in docs/design/dvrip.md.
+internal sealed class DvripClient(TimeProvider time)
 {
     private const int LoginCmd = 1000;
-    private const int ConfigGetCmd = 1042;
+    internal const int ConfigGetCmd = 1042;
     // 1040, not 1044 — confirmed against the python-dvr reference client's set_info()
     // (2026-07-15); 1044 was a transcription error in an earlier investigation note.
     private const int ConfigSetCmd = 1040;
@@ -75,31 +71,7 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
         }
     }
 
-    // True if login succeeds — used as the connectivity probe (no side effect on the camera).
-    public async Task<bool> TryLoginAsync(Camera camera, CancellationToken ct)
-    {
-        try
-        {
-            using var tcp = new TcpClient();
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromSeconds(3));
-            await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), timeout.Token);
-            using var stream = tcp.GetStream();
-            var (sessionId, _, _) = await LoginAsync(stream, camera, timeout.Token);
-            return sessionId is not null;
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, "DVRIP login probe failed for {Camera}.", camera.DisplayName);
-            return false;
-        }
-    }
-
-    // ConfigManager.getConfig (cmd 1042) — returns the raw config node for configName
-    // (e.g. "AVEnc.VideoColor.[0]"), or throws DvripCallException with the real reason.
-    // Bounded to 5s total (connect + login + request + response) — unlike TryLoginAsync's own
-    // 3s connect timeout, this covers the whole exchange so a stalled/unresponsive camera fails
-    // fast instead of hanging on the caller's (potentially unbounded) cancellation token.
+    // ConfigManager.getConfig (cmd 1042): the raw config node for configName, bounded to 5 s for the whole exchange, or a DvripCallException with the reason.
     public async Task<JsonNode?> ConfigGetAsync(Camera camera, string configName, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);

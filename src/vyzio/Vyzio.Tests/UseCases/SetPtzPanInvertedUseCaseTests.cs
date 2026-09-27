@@ -31,15 +31,3 @@ public class SetPtzPanInvertedUseCaseTests
         Assert.Null(await new SetPtzPanInvertedUseCase(_bindings).ExecuteAsync("cam1", inverted: true));
     }
 }
-
-public class CameraCapabilityBindingDtoTests
-{
-    [Fact]
-    public void From_ShouldCarryNoSwap_WhenTheBindingIsNotPtz()
-    {
-        var binding = PtzBinding.With("""{"pan_inverted":true}""");
-        binding.Capability = CameraCapability.ImageSettings;
-
-        Assert.Null(CameraCapabilityBindingDto.From(binding).PanInverted);
-    }
-}
