@@ -462,6 +462,7 @@ function streamBindingOf(binding: FakeBackendState['streamBinding']) {
     isConfigured: configured,
     panInverted: null,
     streamPath: binding.streamPath,
+    nativePositions: null,
   }
 }
 
@@ -521,6 +522,9 @@ function ptzBindingOf(binding: { protocol: string; configJson: string | null }) 
     panInverted:
       (JSON.parse(binding.configJson ?? '{}') as { pan_inverted?: boolean }).pan_inverted ?? false,
     streamPath: null,
+    nativePositions:
+      (JSON.parse(binding.configJson ?? '{}') as { supports_native_presets?: boolean })
+        .supports_native_presets ?? false,
   }
 }
 

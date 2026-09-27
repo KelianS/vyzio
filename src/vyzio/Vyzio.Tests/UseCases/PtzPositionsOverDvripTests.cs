@@ -7,10 +7,11 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// A DVRIP camera never confirms native presets, so its positions go through the ones Vyzio keeps (ADR-59).
+// A DVRIP camera's positions go through its native presets once the probe confirms them, through the ones Vyzio keeps otherwise (ADR-59).
 public class PtzPositionsOverDvripTests
 {
     private static readonly TimeSpan FullRange = TimeSpan.FromSeconds(6);
+    private const string NativePresetsConfig = """{"supports_native_presets":true}""";
 
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
@@ -117,5 +118,104 @@ public class PtzPositionsOverDvripTests
         await _dvripMotion.Received(1).MoveForAsync(PtzDirection.Right, Arg.Any<int>(), TimeSpan.FromMilliseconds(300), Arg.Any<CancellationToken>());
         await _dvripMotion.Received(1).MoveForAsync(PtzDirection.Down, Arg.Any<int>(), TimeSpan.FromMilliseconds(100), Arg.Any<CancellationToken>());
         await _dvrip.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStoreThePositionInTheCameraWithoutCalibration_WhenTheCameraKeepsNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+
+        // Act
+        var saved = await new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.SurveillanceSlot);
+
+        // Assert
+        Assert.True(saved);
+        await _dvrip.Received(1).PtzSavePresetAsync(_camera, _binding, PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>());
+        await _presets.Received(1).UpsertAsync(Arg.Is<PtzPreset>(p => p.PresetId == PtzPreset.SurveillanceSlot && p.Native), Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRecallThePositionStoredInTheCamera_WhenTheCameraKeepsNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, Native = true });
+
+        // Act
+        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+
+        // Assert
+        Assert.True(reached);
+        await _dvrip.Received(1).PtzGoToPresetAsync(_camera, _binding, PtzPreset.ParkingSlot, Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenThePositionWasCountedBeforeTheCameraKeptNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 300, TiltMs = 100 });
+
+        // Act
+        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+
+        // Assert
+        Assert.False(reached);
+        await _dvrip.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenThePositionWasStoredInTheCameraBeforeItLostNativePresets()
+    {
+        // Arrange
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, Native = true });
+        await Calibrate();
+        _dvripMotion.ClearReceivedCalls();
+
+        // Act
+        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+
+        // Assert
+        Assert.False(reached);
+        await _dvripMotion.DidNotReceive().MoveForAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldListOnlyThePositionsTheCameraKeeps_WhenTheCameraKeepsNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        _presets.GetAllAsync("cam1", Arg.Any<CancellationToken>()).Returns([
+            new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.SurveillanceSlot, Native = true },
+            new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 300, TiltMs = 100 },
+        ]);
+
+        // Act
+        var (presets, _, _) = await new GetPtzPresetsUseCase(_presets, _bindings, _positions).ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal([PtzPreset.SurveillanceSlot], presets.Select(preset => preset.PresetId));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReportTheCameraCalibratedWithoutHoming_WhenTheCameraKeepsNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+
+        // Act
+        var calibrated = await IsCalibrated();
+
+        // Assert
+        Assert.True(calibrated);
+        await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 }

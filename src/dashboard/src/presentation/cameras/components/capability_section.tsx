@@ -298,6 +298,11 @@ function StreamCard({
   )
 }
 
+/** Where a camera's positions are kept, and what it costs when Vyzio keeps them (SPECS 9.3). */
+const POSITIONS_IN_CAMERA = 'Cette caméra garde elle-même ses positions enregistrées.'
+const POSITIONS_KEPT_BY_VYZIO =
+  'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue live.'
+
 /** The left and right swap of a camera that turns the other way (SPECS 11), in the settings grammar (ADR-43). */
 function panInvertedSetting(
   inverted: boolean,
@@ -484,6 +489,11 @@ function BindingCard({
                     intents.onSetPanInverted,
                   )}
                 />
+              )}
+              {binding.isConfigured && binding.nativePositions !== null && (
+                <p className="text-sm text-muted-foreground">
+                  {binding.nativePositions ? POSITIONS_IN_CAMERA : POSITIONS_KEPT_BY_VYZIO}
+                </p>
               )}
             </>
           )

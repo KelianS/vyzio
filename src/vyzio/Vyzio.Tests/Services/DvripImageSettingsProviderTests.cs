@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Nodes;
-using Microsoft.Extensions.Logging.Abstractions;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.VendorAdapters;
@@ -78,7 +77,7 @@ public class DvripImageSettingsProviderTests
     [Fact]
     public void Protocol_ShouldBeDvrip_WhenTheProviderIsCreated()
     {
-        var provider = new DvripImageSettingsProvider(new DvripClient(TimeProvider.System, NullLogger<DvripClient>.Instance));
+        var provider = new DvripImageSettingsProvider(new DvripClient(TimeProvider.System));
         Assert.Equal(SupportedProtocol.Dvrip, provider.Protocol);
     }
 
@@ -87,7 +86,7 @@ public class DvripImageSettingsProviderTests
     [Fact]
     public async Task GetImageSettingsAsync_ShouldThrowAnExceptionNamingTheHost_WhenTheCameraIsUnreachable()
     {
-        var provider = new DvripImageSettingsProvider(new DvripClient(TimeProvider.System, NullLogger<DvripClient>.Instance));
+        var provider = new DvripImageSettingsProvider(new DvripClient(TimeProvider.System));
         var camera = new Camera { Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = "127.0.0.1" };
         var binding = new CameraCapabilityBinding { CameraId = "cam", Capability = CameraCapability.ImageSettings, Protocol = SupportedProtocol.Dvrip };
 

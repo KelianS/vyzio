@@ -675,6 +675,44 @@ describe('CameraConnectionView', () => {
     )
   })
 
+  it('onLoad_ShouldSayTheCameraKeepsItsPositions_WhenItStoresThemItself', async () => {
+    // Arrange
+    connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, onvif]),
+      [BINDINGS]: ok([{ ...ptzCapability, nativePositions: true }]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Act
+    const orientation = await optionsOf('Orientation')
+
+    // Assert
+    expect(
+      orientation.getByText('Cette caméra garde elle-même ses positions enregistrées.'),
+    ).toBeVisible()
+    expect(orientation.queryByText(/calibrez-la/)).toBeNull()
+  })
+
+  it('onLoad_ShouldSayVyzioKeepsThePositionsAndToCalibrate_WhenTheCameraCannotStoreThem', async () => {
+    // Arrange
+    connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, onvif]),
+      [BINDINGS]: ok([{ ...ptzCapability, nativePositions: false }]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Act
+    const orientation = await optionsOf('Orientation')
+
+    // Assert
+    expect(
+      orientation.getByText(
+        'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue live.',
+      ),
+    ).toBeVisible()
+    expect(orientation.queryByText(/garde elle-même/)).toBeNull()
+  })
+
   it('onConfigure_ShouldBeSuspendedWithTheReasonNearby_WhenTheStreamFails', async () => {
     // Arrange
     connectionNetwork({ [PROTOCOLS]: ok([rtsp, klap]), [BINDINGS]: ok([privacyToConfigure]) })

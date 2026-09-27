@@ -26,7 +26,7 @@ public sealed class CameraProtocolProbeTests
         return new CameraProtocolProbe(
             resolver,
             onvif,
-            new DvripClient(TimeProvider.System, NullLogger<DvripClient>.Instance),
+            new DvripClient(TimeProvider.System),
             new V380Client(NullLogger<V380Client>.Instance),
             new TapoKlapProvider(factory, new PtzMoveRunner(TimeProvider.System, NullLogger<PtzMoveRunner>.Instance), NullLogger<TapoKlapProvider>.Instance),
             new FakeTimeProvider(),
