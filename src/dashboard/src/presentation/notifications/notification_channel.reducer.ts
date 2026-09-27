@@ -1,17 +1,32 @@
 import type { NotificationChannelAction } from './notification_channel.actions'
-import type { NotificationChannelUido } from './notification_channel.uido'
+import {
+  buildInitialNotificationChannelUido,
+  type NotificationChannelUido,
+} from './notification_channel.uido'
 
 export function notificationChannelReducer(
   state: NotificationChannelUido,
   action: NotificationChannelAction,
 ): NotificationChannelUido {
   switch (action.type) {
+    // Nothing read for another channel may stay on screen for this one.
+    case 'CHANNEL_OPENED':
+      return buildInitialNotificationChannelUido()
     case 'CONFIG_STARTED':
-      return { ...state, configLoading: true }
+      return { ...state, configLoading: true, configError: null }
     case 'CONFIG_LOADED':
       return { ...state, configLoading: false, config: action.config }
+    case 'CONFIG_FAILED':
+      return { ...state, configLoading: false, config: null, configError: action.error }
+    // A reread after a save or a test keeps the settings shown; the failure goes to a toast.
+    case 'CONFIG_REFRESH_FAILED':
+      return { ...state, configLoading: false }
+    case 'LABELS_STARTED':
+      return { ...state, labelsLoading: true, labelsError: null }
     case 'LABELS_LOADED':
       return { ...state, labelsLoading: false, labels: action.labels }
+    case 'LABELS_FAILED':
+      return { ...state, labelsLoading: false, labels: [], labelsError: action.error }
 
     case 'SAVE_STARTED':
       return { ...state, saving: true }
@@ -37,13 +52,26 @@ export function notificationChannelReducer(
 
     // A reload keeps what is shown until the answer comes.
     case 'PAIRING_STARTED':
-      return { ...state, pairingLoading: true }
+      return { ...state, pairingLoading: true, pairingError: null }
     case 'PAIRING_LOADED':
       return { ...state, pairingLoading: false, pairing: action.pairing }
+    case 'PAIRING_FAILED':
+      return { ...state, pairingLoading: false, pairing: null, pairingError: action.error }
+    case 'PAIRING_REFRESH_FAILED':
+      return { ...state, pairingLoading: false }
     case 'LISTENING_STARTED':
-      return { ...state, listeningLoading: true }
+      return { ...state, listeningLoading: true, listeningError: null }
     case 'LISTENING_LOADED':
       return { ...state, listeningLoading: false, listening: action.listening }
+    case 'LISTENING_FAILED':
+      return {
+        ...state,
+        listeningLoading: false,
+        listening: null,
+        listeningError: action.error,
+      }
+    case 'LISTENING_REFRESH_FAILED':
+      return { ...state, listeningLoading: false }
     case 'START_PAIRING_STARTED':
       return { ...state, startingPairing: true }
     case 'START_PAIRING_FINISHED':
@@ -59,12 +87,20 @@ export function notificationChannelReducer(
       return { ...state, revoking: false }
 
     case 'LOG_STARTED':
-      return { ...state, logLoading: true }
+      return { ...state, logLoading: true, logError: null }
     case 'LOG_LOADED':
       return { ...state, logLoading: false, log: action.log }
+    case 'LOG_FAILED':
+      return { ...state, logLoading: false, log: [], logError: action.error }
+    case 'LOG_REFRESH_FAILED':
+      return { ...state, logLoading: false }
     case 'JOURNAL_STARTED':
-      return { ...state, journalLoading: true }
+      return { ...state, journalLoading: true, journalError: null }
     case 'JOURNAL_LOADED':
       return { ...state, journalLoading: false, journal: action.journal }
+    case 'JOURNAL_FAILED':
+      return { ...state, journalLoading: false, journal: [], journalError: action.error }
+    case 'JOURNAL_REFRESH_FAILED':
+      return { ...state, journalLoading: false }
   }
 }

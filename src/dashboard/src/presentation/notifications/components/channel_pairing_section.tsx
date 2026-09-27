@@ -3,6 +3,8 @@ import { Button } from '../../../common/ui/button'
 import { cn } from '../../../common/ui/utils'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Badge } from '../../../common/components/badge'
+import { ReadFailure } from '../../../common/components/error_message'
+import type { AppError } from '../../../common/errors/app_error'
 import type {
   ChannelListening,
   ChannelPairing,
@@ -21,6 +23,7 @@ export function ChannelPairingSection({
   pairingLoading,
   listening,
   listeningLoading,
+  listeningError,
   starting,
   confirmRevoke,
   revoking,
@@ -28,6 +31,7 @@ export function ChannelPairingSection({
   onAskRevoke,
   onCancelRevoke,
   onRevoke,
+  onRetryListening,
   onRefresh,
 }: {
   displayName: string
@@ -35,6 +39,7 @@ export function ChannelPairingSection({
   pairingLoading: boolean
   listening: ChannelListening | null
   listeningLoading: boolean
+  listeningError: AppError | null
   starting: boolean
   confirmRevoke: boolean
   revoking: boolean
@@ -42,6 +47,7 @@ export function ChannelPairingSection({
   onAskRevoke: () => void
   onCancelRevoke: () => void
   onRevoke: () => void
+  onRetryListening: () => void
   onRefresh: () => void
 }) {
   if (pairingLoading && !pairing) {
@@ -53,7 +59,15 @@ export function ChannelPairingSection({
   return (
     <>
       <div className="flex flex-col gap-4">
-        {listening && <ListeningStatus state={listening} />}
+        {listeningError ? (
+          // A linked conversation proves nothing: an unread listening state is said, never left blank (SPECS 5.4).
+          <div className="flex flex-col gap-1">
+            <p className="text-sm">Impossible de savoir si le canal est à l’écoute.</p>
+            <ReadFailure error={listeningError} onRetry={onRetryListening} />
+          </div>
+        ) : (
+          listening && <ListeningStatus state={listening} />
+        )}
 
         {status === 'awaiting_conversation' ? (
           <AwaitingConversation pairing={pairing!} displayName={displayName} />

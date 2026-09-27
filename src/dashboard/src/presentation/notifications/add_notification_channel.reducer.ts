@@ -6,9 +6,11 @@ export function addNotificationChannelReducer(
   action: AddNotificationChannelAction,
 ): AddNotificationChannelUido {
   switch (action.type) {
+    case 'LOAD_STARTED':
+      return { ...state, loading: true, error: null }
     case 'LOAD_SUCCEEDED':
       return { ...state, channels: action.channels, loading: false }
     case 'LOAD_FAILED':
-      return { ...state, channels: [], loading: false }
+      return { ...state, channels: [], loading: false, error: action.error }
   }
 }

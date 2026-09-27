@@ -2,6 +2,7 @@ import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
 import { Badge } from '../../common/components/badge'
+import { ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -30,7 +31,9 @@ export function NotificationChannelListView() {
 
   return (
     <SettingsPage lede="Par où Vyzio vous prévient quand il détecte quelque chose.">
-      {configured.length > 0 ? (
+      {uido.error ? (
+        <ReadFailure error={uido.error} onRetry={presenter.onLoad} className="py-3" />
+      ) : configured.length > 0 ? (
         <ul className="divide-y divide-border">
           {configured.map((channel) => (
             <li key={channel.channel}>
