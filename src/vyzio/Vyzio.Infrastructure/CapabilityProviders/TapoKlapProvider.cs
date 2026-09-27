@@ -15,14 +15,14 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // for privacy mode, but the old per-vendor adapter only exposed the capability it was
 // originally written for. The transport (handshake, AES-128-GCM) is unchanged from
 // TapoCameraAdapter — only the PTZ command payload is new and needs hardware validation.
-public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogger<TapoKlapProvider> logger)
+internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, PtzMoveRunner runner, ILogger<TapoKlapProvider> logger)
     : IPrivacyCapabilityProvider, IPtzCapabilityProvider
 {
     SupportedProtocol IPrivacyCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
     SupportedProtocol IPtzCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
 
-    // Estimate, unmeasured on Tapo pan-tilt hardware like the move itself (ADR-59).
-    public int FullRangeSteps => 60;
+    // Estimate, unmeasured on Tapo pan-tilt hardware like the move itself (ADR-60).
+    public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => await AuthenticateAsync(camera, ct) is not null;
@@ -43,38 +43,27 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
             active, camera.Host, active ? "off" : "on");
     }
 
-    // Direction/speed mapping comes from community KLAP documentation, never confirmed against real
-    // Tapo pan-tilt hardware, which is why this binding stays probe-gated and is never seeded (ADR-22).
-    public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-    {
-        var session = await AuthenticateAsync(camera, ct)
+    // The KLAP handshake happens here, before the move, and its session carries every command of it (ADR-60).
+    public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => new Motion(this, runner, camera, await AuthenticatePtzAsync(camera, ct));
+
+    private async Task<KlapSession> AuthenticatePtzAsync(Camera camera, CancellationToken ct)
+        => await AuthenticateAsync(camera, ct)
             ?? throw new InvalidOperationException($"KLAP authentication failed for camera {camera.DisplayName} ({camera.Host}).");
 
-        var (x, y) = DirectionToVelocity(direction, speed);
-        var command = new
-        {
-            method = "motorMove",
-            @params = new { x, y }
-        };
-
+    private async Task SendMoveAsync(Camera camera, KlapSession session, (int X, int Y) velocity, CancellationToken ct)
+    {
+        var command = new { method = "motorMove", @params = new { x = velocity.X, y = velocity.Y } };
         await SendCommandAsync(camera, session, JsonSerializer.Serialize(command), ct);
     }
 
-    public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    private sealed class Motion(TapoKlapProvider provider, PtzMoveRunner runner, Camera camera, KlapSession session)
+        : PtzContinuousMotion(runner, camera)
     {
-        var session = await AuthenticateAsync(camera, ct)
-            ?? throw new InvalidOperationException($"KLAP authentication failed for camera {camera.DisplayName} ({camera.Host}).");
+        protected override Task MoveAsync(PtzDirection direction, int speed, CancellationToken ct)
+            => provider.SendMoveAsync(Camera, session, DirectionToVelocity(direction, speed), ct);
 
-        var command = new { method = "motorMove", @params = new { x = 0, y = 0 } };
-        await SendCommandAsync(camera, session, JsonSerializer.Serialize(command), ct);
-    }
-
-    // A move then a stop; how far it goes is one round trip to the camera.
-    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-    {
-        await PtzMoveAsync(camera, binding, direction, speed, ct);
-        await PtzStopAsync(camera, binding, ct);
-        return true;
+        protected override Task StopMoveAsync(CancellationToken ct) => provider.SendMoveAsync(Camera, session, (0, 0), ct);
     }
 
     public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
@@ -87,6 +76,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
+    // The direction mapping comes from community KLAP documentation, unconfirmed on Tapo pan-tilt hardware: probe-gated, never seeded (ADR-22).
     internal static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
     {
         var s = Math.Clamp(speed, 1, 100);
@@ -184,7 +174,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         }
 
         var (key, iv) = DeriveKeyAndIv(localSeed, serverSeed, credHash);
-        return new KlapSession(key, iv, cookie, Seq: 1);
+        return new KlapSession(key, iv, cookie);
     }
 
     private async Task SendCommandAsync(Camera camera, KlapSession session, string commandJson, CancellationToken ct)
@@ -203,7 +193,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         response.EnsureSuccessStatusCode();
     }
 
-    private static byte[] ComputeCredentialHash(string username, string password)
+    internal static byte[] ComputeCredentialHash(string username, string password)
     {
         var unHex = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(username))).ToLowerInvariant();
         var pwHex = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password))).ToLowerInvariant();
@@ -220,7 +210,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
 
     private static (byte[] payload, int seq) Encrypt(KlapSession session, string plaintext)
     {
-        var seq = session.Seq;
+        var seq = session.NextSeq();
         var seqBytes = new byte[4];
         seqBytes[0] = (byte)(seq >> 24);
         seqBytes[1] = (byte)(seq >> 16);
@@ -243,5 +233,15 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         return ([.. seqBytes, .. ciphertext, .. tag], seq);
     }
 
-    private sealed record KlapSession(byte[] Key, byte[] Iv, string Cookie, int Seq);
+    // Each command of a session takes the next sequence number, so a held session can carry many (ADR-60).
+    private sealed class KlapSession(byte[] key, byte[] iv, string cookie)
+    {
+        private int _seq;
+
+        public byte[] Key { get; } = key;
+        public byte[] Iv { get; } = iv;
+        public string Cookie { get; } = cookie;
+
+        public int NextSeq() => Interlocked.Increment(ref _seq);
+    }
 }

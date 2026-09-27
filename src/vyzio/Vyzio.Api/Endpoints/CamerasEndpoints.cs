@@ -19,7 +19,7 @@ file sealed record TogglePrivacyRequest(bool Active);
 file sealed record BatchTogglePrivacyRequest(IReadOnlyList<string> CameraIds, bool Active);
 
 // Request types for PTZ endpoints
-file sealed record PtzStepApiRequest(string Direction, int Speed = 50);
+file sealed record PtzMoveApiRequest(string Direction, int Speed = 50);
 file sealed record PtzPresetApiRequest(int PresetId);
 file sealed record PrivacyStrategyApiRequest(string Strategy);
 file sealed record PtzPanInvertedApiRequest(bool Inverted);
@@ -176,18 +176,27 @@ public static class CamerasEndpoints
             return deleted ? Results.NoContent() : Results.NotFound();
         });
 
-        // PTZ control — single step endpoint handles both tap (durationMs=80) and hold (chained calls)
-        group.MapPost("/{id}/ptz/step", async (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
+        // Every press is a start, a signal while it lasts and a stop (ADR-60); an unknown direction is named for the interface.
+        group.MapPost("/{id}/ptz/move/start", async (string id, PtzMoveApiRequest request, PtzStartMoveUseCase useCase, CancellationToken ct) =>
         {
             try
             {
-                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct);
-                return ok ? Results.NoContent() : Results.NotFound();
+                return await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct) ? Results.NoContent() : Results.NotFound();
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(new { error = "unknown_direction", message = ex.Message });
             }
+        });
+
+        group.MapPost("/{id}/ptz/move/signal", (string id, PtzSignalMoveUseCase useCase) =>
+            useCase.Execute(id) ? Results.NoContent() : Results.NotFound());
+
+        // No CancellationToken: a stop goes out even when the page that asked for it is gone.
+        group.MapPost("/{id}/ptz/move/stop", async (string id, PtzStopMoveUseCase useCase) =>
+        {
+            await useCase.ExecuteAsync(id);
+            return Results.NoContent();
         });
 
         group.MapPost("/{id}/ptz/preset/save", async (string id, PtzPresetApiRequest request, PtzSavePresetUseCase useCase, CancellationToken ct) =>
@@ -228,8 +237,8 @@ public static class CamerasEndpoints
                     presetId = p.PresetId,
                     label = p.Label,
                     native = p.Native,
-                    stepsX = p.StepsX,
-                    stepsY = p.StepsY,
+                    panMs = p.PanMs,
+                    tiltMs = p.TiltMs,
                     configured = true,
                 }),
             });

@@ -26,8 +26,8 @@ internal sealed class PtzPresetRepository(VyzioDbContext db) : IPtzPresetReposit
             existing.Label = preset.Label;
             existing.Native = preset.Native;
             existing.NativeToken = preset.NativeToken;
-            existing.StepsX = preset.StepsX;
-            existing.StepsY = preset.StepsY;
+            existing.PanMs = preset.PanMs;
+            existing.TiltMs = preset.TiltMs;
         }
 
         await db.SaveChangesAsync(ct);

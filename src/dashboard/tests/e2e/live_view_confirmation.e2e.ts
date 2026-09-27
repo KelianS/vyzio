@@ -9,8 +9,8 @@ function ptzCameraWithOneSavedPosition() {
         presetId: 1,
         label: 'Surveillance',
         native: false,
-        stepsX: 3,
-        stepsY: 2,
+        panMs: 3,
+        tiltMs: 2,
         configured: true,
       },
     ],
@@ -67,7 +67,7 @@ test.describe('Live view confirmation', () => {
 
     await expect(page.getByText('Position « Surveillance » enregistrée.')).toBeVisible()
     expect(state.ptz.presets).toEqual([
-      expect.objectContaining({ presetId: 1, stepsX: 7, stepsY: 4 }),
+      expect.objectContaining({ presetId: 1, panMs: 7, tiltMs: 4 }),
     ])
     await closeTheLiveView(page)
   })
@@ -84,7 +84,7 @@ test.describe('Live view confirmation', () => {
 
     await expect(page.getByRole('alertdialog')).toBeHidden()
     expect(state.ptz.presets).toEqual([
-      expect.objectContaining({ presetId: 1, stepsX: 3, stepsY: 2 }),
+      expect.objectContaining({ presetId: 1, panMs: 3, tiltMs: 2 }),
     ])
     await closeTheLiveView(page)
   })

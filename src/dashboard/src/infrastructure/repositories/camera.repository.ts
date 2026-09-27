@@ -26,6 +26,7 @@ import type {
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import { fetchJson, postJson, putJson, patchJson, deleteReq, deleteJson } from '../http/fetch_json'
+import { httpErrorFrom, send } from '../http/send'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
 import type { CameraImageSettings } from '../../domain/entities/camera_image_settings.entity'
 
@@ -244,11 +245,23 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCamera(payload)
   }
 
-  async ptzStep(cameraId: string, direction: string, speed: number): Promise<void> {
-    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/step`, {
+  async ptzStartMove(cameraId: string, direction: string, speed: number): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/move/start`, {
       direction,
       speed,
     })
+  }
+
+  async ptzSignalMove(cameraId: string): Promise<boolean> {
+    const url = `${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/move/signal`
+    const response = await send(url, { method: 'POST', headers: { Accept: 'application/json' } })
+    if (response.status === 404) return false
+    if (!response.ok) throw await httpErrorFrom(response, url, 'POST')
+    return true
+  }
+
+  async ptzStopMove(cameraId: string): Promise<void> {
+    await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/ptz/move/stop`, {})
   }
 
   async ptzGoToPreset(cameraId: string, presetId: number): Promise<void> {

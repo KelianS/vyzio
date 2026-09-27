@@ -62,6 +62,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<OnvifClient>();
         services.AddSingleton<DvripClient>();
         services.AddSingleton<V380Client>();
+        // Singleton: one move at a time per camera holds across requests, a held move included (ADR-60).
+        services.AddSingleton<PtzMoveRunner>();
 
         // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
         // Scoped: TapoKlapProvider authenticates per-request and the registry follows the same

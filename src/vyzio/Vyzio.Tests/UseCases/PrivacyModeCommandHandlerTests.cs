@@ -23,7 +23,7 @@ public class PrivacyModeCommandHandlerTests
         return new PrivacyModeCommandHandler(
             new GetCamerasUseCase(_cameras, _bindings),
             new ToggleCameraPrivacyModeUseCase(
-                _cameras, _bindings, Substitute.For<ICapabilityProviderRegistry>(), _frigate, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)));
+                _cameras, _bindings, Substitute.For<ICapabilityProviderRegistry>(), _frigate, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance)));
     }
 
     private static Camera Camera(string slug, string displayName, bool privacy = false) => new()
