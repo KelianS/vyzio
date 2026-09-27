@@ -158,8 +158,10 @@ detail once:
   sit behind the card's own `Options` fold, closed by default. The protocol is chosen by its name
   there, and changing it runs its test, so its button says `Configurer`, never `Enregistrer`. The
   choice lists the camera's protocols (the `Avance` boxes) that can carry the capability, answering or
-  not: a sleeping camera stays configurable. When none can, a plain sentence points at `Ajouter un
-  protocole` in `Avance` instead of an empty list. A capability that already has a card, even a
+  not: a sleeping camera stays configurable. When none can, a plain sentence replaces the list: it
+  points first at `Detecter les capacites`, which checks the camera's usual protocols and keeps those
+  that answer, then at `Ajouter un protocole` in `Avance`. `Detecter les capacites` stays available
+  while the stream is not chosen yet, since it chooses it. A capability that already has a card, even a
   failing one, changes its protocol there.
 - **`Ajouter une capacite`** closes the list of cards: adding a capability is a capability's action.
   It opens the manual set-up of SPECS 2.3 (the capability, then one of the camera's protocols by
