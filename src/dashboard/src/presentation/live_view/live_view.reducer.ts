@@ -8,7 +8,7 @@ function matchPreset(
   position: { x: number; y: number } | null,
 ): number | null {
   if (!position) return null
-  return presets.find((p) => p.stepsX === position.x && p.stepsY === position.y)?.presetId ?? null
+  return presets.find((p) => p.panMs === position.x && p.tiltMs === position.y)?.presetId ?? null
 }
 
 function withActivity(state: LiveViewUido, presetId: number, activity: PresetActivity) {

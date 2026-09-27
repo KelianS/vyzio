@@ -328,12 +328,14 @@ export interface FakeBackendState {
       presetId: number
       label: string
       native: boolean
-      stepsX: number | null
-      stepsY: number | null
+      panMs: number | null
+      tiltMs: number | null
       configured: boolean
     }[]
     calibrated: boolean
     currentPosition: { x: number; y: number } | null
+    /** A held press the fake has started and not yet stopped (ADR-60). */
+    holding?: boolean
   }
 }
 
@@ -704,8 +706,16 @@ export async function installFakeBackend(
       if (rest === '/ptz/presets' && method === 'GET') {
         return json(route, state.ptz)
       }
-      if (rest === '/ptz/step' && method === 'POST') {
+      if (rest === '/ptz/move/start' && method === 'POST') {
         state.ptz.currentPosition = null
+        state.ptz.holding = true
+        return json(route, {})
+      }
+      if (rest === '/ptz/move/signal' && method === 'POST') {
+        return state.ptz.holding ? json(route, {}) : json(route, {}, 404)
+      }
+      if (rest === '/ptz/move/stop' && method === 'POST') {
+        state.ptz.holding = false
         return json(route, {})
       }
       if (rest === '/ptz/calibrate' && method === 'POST') {
@@ -715,7 +725,7 @@ export async function installFakeBackend(
       }
       if (rest === '/ptz/preset/goto' && method === 'POST') {
         const target = state.ptz.presets.find((p) => p.presetId === postData?.presetId)
-        state.ptz.currentPosition = target ? { x: target.stepsX ?? 0, y: target.stepsY ?? 0 } : null
+        state.ptz.currentPosition = target ? { x: target.panMs ?? 0, y: target.tiltMs ?? 0 } : null
         return json(route, {})
       }
       if (rest === '/ptz/preset/save' && method === 'POST') {
@@ -729,8 +739,8 @@ export async function installFakeBackend(
             presetId,
             label: `Position ${presetId}`,
             native: false,
-            stepsX: position.x,
-            stepsY: position.y,
+            panMs: position.x,
+            tiltMs: position.y,
             configured: true,
           },
         ]

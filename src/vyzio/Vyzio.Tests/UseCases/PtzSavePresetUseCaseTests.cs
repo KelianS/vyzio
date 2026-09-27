@@ -30,7 +30,7 @@ public class PtzSavePresetUseCaseTests
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
         _registry.ResolvePtz(SupportedProtocol.Onvif).Returns(_provider);
 
-        await new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+        await new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance)).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
 
         await _provider.Received(1).PtzSavePresetAsync(camera, binding, PtzPreset.ParkingSlot, Arg.Any<CancellationToken>());
         await _presets.Received(1).UpsertAsync(

@@ -7,8 +7,8 @@ const parking: PtzPreset = {
   presetId: 2,
   label: 'Parking',
   native: false,
-  stepsX: 7,
-  stepsY: 4,
+  panMs: 7,
+  tiltMs: 4,
   configured: true,
 }
 
