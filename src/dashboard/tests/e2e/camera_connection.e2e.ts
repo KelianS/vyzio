@@ -30,6 +30,20 @@ test.describe('CameraConnectionView', () => {
     await expect(page.getByRole('heading', { name: 'Portail' })).toBeVisible()
   })
 
+  test('CameraConnectionView_ShouldSaveTheStreamAddressThroughTheDraft_WhenTheUserFixesItInAdvanced', async ({
+    page,
+  }) => {
+    await page.locator('summary', { hasText: 'Avancé' }).click()
+    await page.getByRole('textbox', { name: 'Adresse' }).fill('192.168.1.51')
+
+    const bar = page.getByRole('region', { name: 'Modifications en attente' })
+    await expect(bar).toContainText('Adresse')
+
+    await bar.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(bar).toBeHidden()
+    await expect(page.getByRole('textbox', { name: 'Adresse' })).toHaveValue('192.168.1.51')
+  })
+
   test('CameraConnectionView_ShouldConfirmThenLandOnTheList_WhenTheUserDeletesTheCamera', async ({
     page,
   }) => {
@@ -38,5 +52,24 @@ test.describe('CameraConnectionView', () => {
 
     await page.getByRole('button', { name: 'Supprimer', exact: true }).click()
     await expect(page).toHaveURL('/settings/cameras')
+  })
+})
+
+// The stream is checked like any other capability, from its own card (DESIGN SYSTEM § Capability cards).
+test.describe('CameraConnectionView capability cards', () => {
+  test('CameraConnectionView_ShouldConfirmEachCapabilityWorks_WhenTheUserChecksThem', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
+    state.ptzBinding = { protocol: 'onvif', configJson: null }
+    await installFakeBackend(page, state)
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const cards = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem')
+
+    await cards.filter({ hasText: 'Flux vidéo' }).getByRole('button', { name: 'Vérifier' }).click()
+    await expect(page.getByText('Flux vidéo : connexion réussie.')).toBeVisible()
+
+    await cards.filter({ hasText: 'Orientation' }).getByRole('button', { name: 'Vérifier' }).click()
+    await expect(page.getByText('Orientation : connexion réussie.')).toBeVisible()
   })
 })

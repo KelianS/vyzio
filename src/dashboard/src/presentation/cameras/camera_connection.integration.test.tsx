@@ -12,10 +12,12 @@ const UPDATE = 'PUT /api/cameras/camera-1'
 const VERIFY = 'POST /api/cameras/camera-1/verify'
 const DELETE = 'DELETE /api/cameras/camera-1'
 const DETECT = 'POST /api/cameras/camera-1/capabilities/detect'
+const PROBE_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/probe'
 const CAMERAS = 'GET /api/cameras'
 const STATS = 'GET /api/system/stats'
 
 const camera = makeCamera()
+const cameraThatTurns = makeCamera({ ptzSupported: true })
 const ptzCapability = makeCapabilityBinding({ capability: 'ptz', protocol: 'onvif' })
 const privacyToConfigure = makeCapabilityBinding({
   capability: 'hardware_privacy',
@@ -24,12 +26,25 @@ const privacyToConfigure = makeCapabilityBinding({
   isConfigured: false,
 })
 
-function connectionTab() {
+function connectionTab(shown = camera) {
   return {
     path: '/settings/cameras/:cameraId/connexion',
     url: '/settings/cameras/camera-1/connexion',
-    outletContext: camera,
+    outletContext: shown,
   }
+}
+
+async function capabilityCards() {
+  return within(await screen.findByRole('list', { name: 'Capacités' })).getAllByRole('listitem')
+}
+
+async function protocolRows() {
+  return within(await screen.findByRole('list', { name: 'Protocoles' })).getAllByRole('listitem')
+}
+
+async function cardOf(title: string) {
+  const heading = await screen.findByRole('heading', { name: title })
+  return within(heading.closest('li') as HTMLElement)
 }
 
 async function renameTheCamera() {
@@ -78,18 +93,39 @@ describe('CameraConnectionView', () => {
     expect(screen.getByLabelText('Nom')).toHaveValue('Entrée')
   })
 
-  it('onVerify_ShouldSayTheCameraIsUnreachable_WhenItDoesNotAnswer', async () => {
+  it('onVerify_ShouldSayTheCameraIsUnreachableAndWhy_WhenItsStreamDoesNotAnswer', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([]), [VERIFY]: ok({ connected: false }), [CAMERAS]: ok([]) })
+    fakeNetwork({
+      [BINDINGS]: ok([]),
+      [VERIFY]: ok({ connected: false, guidance: 'Aucun service joignable sur le port 554.' }),
+      [CAMERAS]: ok([]),
+    })
     renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await cardOf('Flux vidéo')
 
     // Act
-    await userEvent.click(await screen.findByRole('button', { name: 'Vérifier la connexion' }))
+    await userEvent.click(stream.getByRole('button', { name: 'Vérifier' }))
 
     // Assert
     expect(
-      await screen.findByText('Caméra injoignable : vérifiez ces réglages.'),
+      await screen.findByText(
+        'Caméra injoignable : vérifiez l’adresse et les identifiants de la caméra, dans Avancé.',
+      ),
     ).toBeInTheDocument()
+    expect(screen.getByText('Aucun service joignable sur le port 554.')).toBeVisible()
+  })
+
+  it('onVerify_ShouldSayTheStreamWorks_WhenTheCameraAnswers', async () => {
+    // Arrange
+    fakeNetwork({ [BINDINGS]: ok([]), [VERIFY]: ok({ connected: true }), [CAMERAS]: ok([]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await cardOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(stream.getByRole('button', { name: 'Vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux vidéo : connexion réussie.')).toBeInTheDocument()
   })
 
   it('onDelete_ShouldDeleteAndGoBackToTheList_WhenTheUserConfirms', async () => {
@@ -112,7 +148,22 @@ describe('CameraConnectionView', () => {
     expect(network.sent).toContainEqual(expect.objectContaining({ route: DELETE }))
   })
 
-  it('onLoad_ShouldListEachCapabilityWithItsProtocol_WhenTheCameraHasSome', async () => {
+  it('onLoad_ShouldShowTheStreamFirstWithTheCameraStatusAndNoProtocol_WhenTheCameraHasCapabilities', async () => {
+    // Arrange
+    fakeNetwork({ [BINDINGS]: ok([ptzCapability]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Assert
+    const [stream, orientation] = await capabilityCards()
+    expect(stream).toHaveTextContent('Flux vidéoConnectée')
+    expect(orientation).toHaveTextContent('OrientationFonctionne')
+    expect(stream).not.toHaveTextContent('RTSP')
+    expect(orientation).not.toHaveTextContent('ONVIF')
+  })
+
+  it('onLoad_ShouldListHowEachCapabilityIsReachedInTheAdvancedFold_WhenTheCameraHasCapabilities', async () => {
     // Arrange
     fakeNetwork({ [BINDINGS]: ok([ptzCapability]) })
 
@@ -120,9 +171,83 @@ describe('CameraConnectionView', () => {
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Assert
-    const row = await screen.findByRole('listitem')
-    expect(row).toHaveTextContent('PTZ')
-    expect(row).toHaveTextContent('ONVIF')
+    const [stream, orientation] = await protocolRows()
+    expect(stream).toHaveTextContent('Flux vidéoRTSP')
+    expect(orientation).toHaveTextContent('OrientationONVIF')
+    expect(screen.getByLabelText('Chemin du flux')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldShowTheStreamOverDvripWithoutAStreamPath_WhenTheCameraStreamsOverDvrip', async () => {
+    // Arrange
+    fakeNetwork({ [BINDINGS]: ok([]) })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ streamProtocol: 'dvrip', port: 34567 })),
+    )
+
+    // Assert
+    const [stream] = await protocolRows()
+    expect(stream).toHaveTextContent('Flux vidéoDVRIP (ICSee / XMEye)')
+    expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheStreamFailsAndSuspendTheOtherChecks_WhenTheCameraIsOffline', async () => {
+    // Arrange
+    fakeNetwork({ [BINDINGS]: ok([ptzCapability]) })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'offline', connected: false, ptzSupported: true })),
+    )
+
+    // Assert
+    const orientation = await cardOf('Orientation')
+    const [stream] = await capabilityCards()
+    expect(stream).toHaveTextContent('Hors ligne')
+    expect(stream).toHaveTextContent(
+      'Vyzio ne reçoit pas les images : vérifiez l’adresse et les identifiants de la caméra, dans Avancé.',
+    )
+    expect(orientation.getByRole('button', { name: 'Vérifier' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Détecter les capacités' })).toBeDisabled()
+  })
+
+  it('onVerifyCapability_ShouldTestTheSavedProtocolAgain_WhenTheUserChecksACapability', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [BINDINGS]: ok([ptzCapability]),
+      [PROBE_PTZ]: ok(ptzCapability),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+    const orientation = await cardOf('Orientation')
+
+    // Act
+    await userEvent.click(orientation.getByRole('button', { name: 'Vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Orientation : connexion réussie.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: PROBE_PTZ }))
+  })
+
+  it('onVerifyCapability_ShouldShowTheCameraAnswerForSupport_WhenTheTestFails', async () => {
+    // Arrange
+    fakeNetwork({
+      [BINDINGS]: ok([ptzCapability]),
+      [PROBE_PTZ]: ok({ ...ptzCapability, verified: false, lastError: 'fault: not authorized' }),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+    const orientation = await cardOf('Orientation')
+
+    // Act
+    await userEvent.click(orientation.getByRole('button', { name: 'Vérifier' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Connexion échouée : vérifiez l’accès réseau et les identifiants.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('fault: not authorized')).toBeVisible()
   })
 
   it('onLoad_ShouldSayTheCapabilitiesCouldNotBeReadRatherThanOfferThemAll_WhenTheReadFails', async () => {
@@ -138,9 +263,8 @@ describe('CameraConnectionView', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/GET \/api\/cameras\/camera-1\/capabilities · 500/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Configurer une capacité manuellement' }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Flux vidéo' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).not.toBeInTheDocument()
   })
 
   it('onRetryRead_ShouldListTheCapabilities_WhenTheSecondReadSucceeds', async () => {
@@ -154,7 +278,7 @@ describe('CameraConnectionView', () => {
     await userEvent.click(retry)
 
     // Assert
-    expect(await screen.findByRole('listitem')).toHaveTextContent('PTZ')
+    expect(await screen.findByRole('heading', { name: 'Orientation' })).toBeInTheDocument()
   })
 
   it('onLoad_ShouldSayTheCameraIsGoneWithTheWayBack_WhenItsCapabilitiesAreNotFound', async () => {
@@ -177,7 +301,7 @@ describe('CameraConnectionView', () => {
     // Arrange
     const network = fakeNetwork({ [BINDINGS]: ok([ptzCapability]), [DETECT]: ok() })
     renderScreen(<CameraConnectionView />, connectionTab())
-    await screen.findByRole('listitem')
+    await screen.findByRole('heading', { name: 'Orientation' })
     network.answer(BINDINGS, failure(500))
 
     // Act
@@ -187,7 +311,7 @@ describe('CameraConnectionView', () => {
     expect(
       await screen.findByText(/GET \/api\/cameras\/camera-1\/capabilities · 500/),
     ).toBeVisible()
-    expect(screen.getByRole('listitem')).toHaveTextContent('PTZ')
+    expect(screen.getByRole('heading', { name: 'Orientation' })).toBeInTheDocument()
     expect(
       screen.queryByText('Les capacités de cette caméra n’ont pas pu être lues.'),
     ).not.toBeInTheDocument()
@@ -221,9 +345,7 @@ describe('CameraConnectionView', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Configurer' }))
 
     // Assert
-    expect(
-      await screen.findByText('Vie privée matérielle : connexion réussie.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Coupure matérielle : connexion réussie.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'PUT /api/cameras/camera-1/capabilities/hardware_privacy',
@@ -253,7 +375,61 @@ describe('CameraConnectionView', () => {
     expect(screen.getByText('KLAP handshake refused')).toBeVisible()
   })
 
-  it('onTogglePtz_ShouldTurnPtzOnAndReadTheCamerasAgain_WhenTheUserActivatesIt', async () => {
+  it('onConfigure_ShouldTestTheNewProtocol_WhenTheUserChangesItInTheAdvancedFold', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [BINDINGS]: ok([ptzCapability]),
+      'PUT /api/cameras/camera-1/capabilities/ptz': ok(ptzCapability),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const [, orientation] = await protocolRows()
+    await userEvent.click(within(orientation).getByRole('button', { name: 'Modifier' }))
+    const [, editedOrientation] = await protocolRows()
+    // The list opens on the current protocol (ONVIF); the next one down is DVRIP.
+    within(editedOrientation).getByRole('combobox', { name: 'Protocole' }).focus()
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+
+    // Act
+    await userEvent.click(within(editedOrientation).getByRole('button', { name: 'Configurer' }))
+
+    // Assert
+    expect(await screen.findByText('Orientation : connexion réussie.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'PUT /api/cameras/camera-1/capabilities/ptz',
+        body: { protocol: 'dvrip', configJson: null },
+      }),
+    )
+    const [, savedOrientation] = await protocolRows()
+    expect(within(savedOrientation).getByRole('button', { name: 'Modifier' })).toBeInTheDocument()
+  })
+
+  it('onConfigure_ShouldBeSuspendedWithTheReasonNearby_WhenTheStreamFails', async () => {
+    // Arrange
+    fakeNetwork({ [BINDINGS]: ok([privacyToConfigure]) })
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'offline', connected: false })),
+    )
+    const privacy = await cardOf('Coupure matérielle')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter une capacité' }))
+
+    // Assert
+    expect(privacy.getByRole('button', { name: 'Configurer' })).toBeDisabled()
+    expect(
+      within(screen.getByText('Configurer manuellement').parentElement as HTMLElement).getByRole(
+        'button',
+        { name: 'Configurer' },
+      ),
+    ).toBeDisabled()
+    expect(
+      screen.getAllByText('Les autres capacités se vérifient une fois le flux vidéo rétabli.'),
+    ).toHaveLength(2)
+  })
+
+  it('onTogglePtz_ShouldTurnOrientationOnAndReadTheCamerasAgain_WhenTheUserActivatesIt', async () => {
     // Arrange
     const network = fakeNetwork({
       [BINDINGS]: ok([ptzCapability]),
@@ -266,7 +442,7 @@ describe('CameraConnectionView', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Activer' }))
 
     // Assert
-    expect(await screen.findByText('PTZ activé.')).toBeInTheDocument()
+    expect(await screen.findByText('Orientation activée.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: UPDATE,
@@ -274,6 +450,31 @@ describe('CameraConnectionView', () => {
       }),
     )
     expect(network.sent).toContainEqual(expect.objectContaining({ route: CAMERAS }))
+  })
+
+  it('onTogglePtz_ShouldTurnOrientationOff_WhenTheUserConfirms', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [BINDINGS]: ok([ptzCapability]),
+      [UPDATE]: ok(camera),
+      [CAMERAS]: ok([]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+    await userEvent.click(await screen.findByRole('button', { name: 'Désactiver' }))
+
+    // Act
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Désactiver' }),
+    )
+
+    // Assert
+    expect(await screen.findByText('Orientation désactivée.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: UPDATE,
+        body: expect.objectContaining({ ptzSupported: false }),
+      }),
+    )
   })
 
   it('onRemove_ShouldRemoveTheCapability_WhenTheUserConfirms', async () => {
@@ -291,7 +492,7 @@ describe('CameraConnectionView', () => {
     )
 
     // Assert
-    expect(await screen.findByText('Réglages image retiré.')).toBeInTheDocument()
+    expect(await screen.findByText('Réglages image : capacité retirée.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'DELETE /api/cameras/camera-1/capabilities/image_settings',
@@ -306,17 +507,13 @@ describe('CameraConnectionView', () => {
       'PUT /api/cameras/camera-1/capabilities/ptz': ok(ptzCapability),
     })
     renderScreen(<CameraConnectionView />, connectionTab())
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Configurer une capacité manuellement' }),
-    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter une capacité' }))
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Configurer' }))
 
     // Assert
-    expect(
-      await screen.findByRole('button', { name: 'Configurer une capacité manuellement' }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Ajouter une capacité' })).toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'PUT /api/cameras/camera-1/capabilities/ptz',

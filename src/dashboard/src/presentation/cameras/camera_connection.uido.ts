@@ -4,9 +4,10 @@ import type {
   Capability,
 } from '../../domain/entities/camera_capability_binding.entity'
 
-/** What a capability row is busy with. */
+/** What a capability card is busy with. */
 export const CapabilityTask = {
   Configure: 'configure',
+  Verify: 'verify',
   TogglePtz: 'toggle_ptz',
   SetPanInverted: 'set_pan_inverted',
   Remove: 'remove',
