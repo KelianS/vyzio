@@ -18,14 +18,6 @@ export const PrivacyStrategy = {
 
 export type PrivacyStrategy = (typeof PrivacyStrategy)[keyof typeof PrivacyStrategy]
 
-/** The protocol a camera's video stream is read over: the stream is a capability like the others (SPECS 2.3). */
-export const StreamProtocol = {
-  Rtsp: 'rtsp',
-  Dvrip: 'dvrip',
-} as const
-
-export type StreamProtocol = (typeof StreamProtocol)[keyof typeof StreamProtocol]
-
 /** A camera's own status as the backend reports it; any other value has not been checked since it changed. */
 export const CameraState = {
   Online: 'online',
@@ -40,10 +32,7 @@ export interface Camera {
   displayName: string
   sourceType: string
   host: string
-  port: number
   username?: string | null
-  streamPath?: string | null
-  streamProtocol: StreamProtocol
   status: string
   connected: boolean
   validationState: string
@@ -61,6 +50,5 @@ export interface Camera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: PrivacyStrategy
-  supportedProtocols: string[]
   verifiedCapabilities: string[]
 }

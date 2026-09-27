@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
-import { CapabilityState, capabilityState } from './capability_state'
+import {
+  CapabilityState,
+  capabilityFailureLine,
+  capabilityState,
+  protocolPill,
+} from './capability_state'
 
 describe('capabilityState', () => {
   it.each([
@@ -40,5 +45,67 @@ describe('capabilityState', () => {
 
     // Assert
     expect(state).toBe(expected)
+  })
+})
+
+describe('protocolPill', () => {
+  it.each([
+    {
+      name: 'protocolPill_ShouldSayItAnswers_WhenTheLoginWasAccepted',
+      status: 'answers' as const,
+      label: 'Répond',
+    },
+    {
+      name: 'protocolPill_ShouldSayItRefusesAccess_WhenTheAccountWasTurnedDown',
+      status: 'refused' as const,
+      label: 'Refuse l’accès',
+    },
+    {
+      name: 'protocolPill_ShouldSayItDoesNotAnswer_WhenNothingWasReached',
+      status: 'unreachable' as const,
+      label: 'Ne répond pas',
+    },
+    {
+      name: 'protocolPill_ShouldSayNotCheckedYet_WhenTheCameraWasNeverAsked',
+      status: null,
+      label: 'Pas encore vérifié',
+    },
+  ])('$name', ({ status, label }) => {
+    // Arrange & Act
+    const pill = protocolPill(status)
+
+    // Assert
+    expect(pill.label).toBe(label)
+  })
+})
+
+describe('capabilityFailureLine', () => {
+  it.each([
+    {
+      name: 'capabilityFailureLine_ShouldSendToWakingTheCamera_WhenItsProtocolIsUnreachable',
+      status: 'unreachable' as const,
+      start: 'La caméra ne répond pas par ce moyen',
+    },
+    {
+      name: 'capabilityFailureLine_ShouldSendToTheAccount_WhenItsProtocolRefusedIt',
+      status: 'refused' as const,
+      start: 'La caméra refuse le compte pour ce moyen',
+    },
+    {
+      name: 'capabilityFailureLine_ShouldOfferAnotherTry_WhenItsProtocolAnswers',
+      status: 'answers' as const,
+      start: 'La dernière vérification a échoué',
+    },
+    {
+      name: 'capabilityFailureLine_ShouldOfferAnotherTry_WhenItsProtocolWasNeverChecked',
+      status: null,
+      start: 'La dernière vérification a échoué',
+    },
+  ])('$name', ({ status, start }) => {
+    // Arrange & Act
+    const line = capabilityFailureLine(status)
+
+    // Assert
+    expect(line.startsWith(start)).toBe(true)
   })
 })

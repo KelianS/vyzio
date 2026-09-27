@@ -43,6 +43,20 @@ describe('useSettingsDraft', () => {
     expect(result.current.dirty).toBe(true)
   })
 
+  it('revert_ShouldFollowTheSavedValueAgain_WhenItIsReReadAfterward', () => {
+    // Arrange
+    const { result, rerender } = setup()
+    act(() => result.current.set('motionDays', 30))
+
+    // Act
+    act(() => result.current.revert('motionDays'))
+    rerender({ current: { continuousDays: 0, motionDays: 14 } })
+
+    // Assert
+    expect(result.current.values.motionDays).toBe(14)
+    expect(result.current.dirty).toBe(false)
+  })
+
   it('useSettingsDraft_ShouldNameEachChange_WhenSeveralValuesAreEdited', () => {
     // Arrange
     const { result } = setup()

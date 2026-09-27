@@ -7,15 +7,16 @@ import type {
   Capability,
   SupportedProtocol,
 } from '../../../domain/entities/camera_capability_binding.entity'
+import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
 import type { Camera } from '../../../domain/entities/camera.entity'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Button } from '../../../common/ui/button'
-import { Input } from '../../../common/ui/input'
 import { SettingRow } from '../../../common/settings/setting_row'
 import { cn } from '../../../common/ui/utils'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import {
   CAPABILITY_LABELS,
+  DESTRUCTIVE_OUTLINE,
   STREAM_LABEL,
   TESTS_SUSPENDED,
   formatCameraStatusLabel,
@@ -27,10 +28,17 @@ import { CapabilityTask } from '../camera_connection.uido'
 import {
   CAPABILITY_STATE_PILLS,
   CapabilityState,
+  IS_STREAM,
   SWITCHED_ON_AND_OFF,
+  capabilityFailureLine,
   capabilityState,
+  streamBindingOf,
+  streamProtocolFailureLine,
 } from '../capability_state'
+import { NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
 import { CapabilityCard } from './capability_card'
+import { ProtocolChoice } from './protocol_choice'
+import { ManualCapability } from './manual_capability_form'
 
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
@@ -39,19 +47,21 @@ interface CapabilityIntents {
   onVerifyStream: () => void
   onVerify: (capability: Capability) => void
   /** Resolves true when the camera answered through the protocol. */
-  onConfigure: (
-    capability: Capability,
-    protocol: SupportedProtocol,
-    configJson?: string,
-  ) => Promise<boolean>
+  onConfigure: (capability: Capability, protocol: SupportedProtocol) => Promise<boolean>
   onTogglePtz: () => Promise<void>
   onSetPanInverted: (inverted: boolean) => void
   onRemove: (capability: Capability) => Promise<void>
+  onOpenManual: () => void
+  onCloseManual: () => void
+  onConfigureManually: (capability: Capability, protocol: SupportedProtocol) => void
 }
 
 interface CapabilitySectionProps {
   camera: Camera
   bindings: CameraCapabilityBinding[]
+  protocols: CameraProtocol[]
+  /** False while the protocols load or failed to: no card may then say the camera has none. */
+  protocolsRead: boolean
   loading: boolean
   readError: AppError | null
   detecting: boolean
@@ -59,45 +69,70 @@ interface CapabilitySectionProps {
   /** Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2). */
   testsSuspended: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
+  manualFormOpen: boolean
+  manualConfiguring: boolean
+  /** The stream's main path, a declared setting that follows the page's draft (ADR-41). */
+  streamPath: SettingDeclaration
   intents: CapabilityIntents
 }
 
-// V380 finds its camera by a device id, which the user types when discovery misses it.
-const ASKS_DEVICE_ID: Record<SupportedProtocol, boolean> = {
-  onvif: false,
+// Only an RTSP stream is addressed by a path; DVRIP derives it from the protocol (ADR-61).
+const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
+  rtsp: true,
   dvrip: false,
+  onvif: false,
+  v380: false,
   tapo_klap: false,
-  v380: true,
-  rtsp: false,
 }
 
 export function CapabilitySection({
   camera,
   bindings,
+  protocols,
+  protocolsRead,
   loading,
   readError,
   detecting,
   verifyingStream,
   testsSuspended,
   pending,
+  manualFormOpen,
+  manualConfiguring,
+  streamPath,
   intents,
 }: CapabilitySectionProps) {
+  const read = !loading && !readError
+  const stream = streamBindingOf(bindings)
+
   return (
     <div className="flex flex-col gap-3">
       <ul aria-label="Capacités" className="flex flex-col gap-3">
-        <StreamCard camera={camera} verifying={verifyingStream} onVerify={intents.onVerifyStream} />
-        {!loading &&
-          !readError &&
-          bindings.map((b) => (
-            <BindingCard
-              key={b.capability}
-              camera={camera}
-              binding={b}
-              task={pending[b.capability]}
-              testsSuspended={testsSuspended}
-              intents={intents}
-            />
-          ))}
+        <StreamCard
+          camera={camera}
+          binding={stream}
+          protocols={protocols}
+          protocolsRead={protocolsRead}
+          verifying={verifyingStream}
+          configuring={pending.stream === CapabilityTask.Configure}
+          streamPath={streamPath}
+          onVerify={intents.onVerifyStream}
+          onConfigure={(protocol) => intents.onConfigure('stream', protocol)}
+        />
+        {read &&
+          bindings
+            .filter((b) => !IS_STREAM[b.capability])
+            .map((b) => (
+              <BindingCard
+                key={b.capability}
+                camera={camera}
+                binding={b}
+                protocols={protocols}
+                protocolsRead={protocolsRead}
+                task={pending[b.capability]}
+                testsSuspended={testsSuspended}
+                intents={intents}
+              />
+            ))}
       </ul>
 
       {loading && <p className="text-muted-foreground">Chargement…</p>}
@@ -109,22 +144,35 @@ export function CapabilitySection({
         />
       )}
 
-      {testsSuspended && <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>}
-
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-        <span className="text-sm text-muted-foreground">
-          Orientation, coupure matérielle, réglages image…
-        </span>
+      {/* Adding a capability closes the list: it is a capability's own action (DESIGN SYSTEM § Capability cards). */}
+      <div className="flex flex-wrap items-center gap-2">
+        <ManualCapability
+          bindings={bindings}
+          protocols={protocols}
+          bindingsRead={read && protocolsRead}
+          open={manualFormOpen}
+          configuring={manualConfiguring}
+          testsSuspended={testsSuspended}
+          onOpen={intents.onOpenManual}
+          onClose={intents.onCloseManual}
+          onConfigure={intents.onConfigureManually}
+        />
+        {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-61 b). */}
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          disabled={detecting || testsSuspended}
+          disabled={detecting || (testsSuspended && stream?.isConfigured !== false)}
           onClick={intents.onDetect}
         >
-          {detecting ? 'Détection…' : 'Détecter les capacités'}
+          {detecting ? 'Détection…' : 'Détecter automatiquement'}
         </Button>
       </div>
+
+      {/* A stream never chosen is not waited for: its card already says what to do. */}
+      {testsSuspended && stream?.isConfigured !== false && (
+        <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>
+      )}
     </div>
   )
 }
@@ -132,26 +180,90 @@ export function CapabilitySection({
 /** The stream is a capability like the others; its state is the camera status, the words of the camera header. */
 function StreamCard({
   camera,
+  binding,
+  protocols,
+  protocolsRead,
   verifying,
+  configuring,
+  streamPath,
   onVerify,
+  onConfigure,
 }: {
   camera: Camera
+  /** Undefined until the capabilities are read. */
+  binding: CameraCapabilityBinding | undefined
+  /** The camera's protocols, once read: the stream's failure names the way out, its choice lists them (ADR-61). */
+  protocols: CameraProtocol[]
+  protocolsRead: boolean
   verifying: boolean
+  configuring: boolean
+  streamPath: SettingDeclaration
   onVerify: () => void
+  onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
 }) {
+  const unconfigured = binding ? !binding.isConfigured : false
+  const protocol = protocols.find((entry) => entry.protocol === binding?.protocol)
+  const choices = binding
+    ? protocolOptions('stream', protocols, binding.isConfigured ? binding.protocol : null)
+    : []
+  const pill = unconfigured
+    ? CAPABILITY_STATE_PILLS[CapabilityState.Unconfigured]
+    : { label: formatCameraStatusLabel(camera.status), tone: formatStatusTone(camera) }
+
   return (
     <CapabilityCard
       title={STREAM_LABEL}
-      pill={{ label: formatCameraStatusLabel(camera.status), tone: formatStatusTone(camera) }}
+      pill={pill}
+      options={
+        binding &&
+        choices.length > 0 && (
+          <>
+            <ProtocolChoice
+              options={choices}
+              current={binding.protocol}
+              configured={binding.isConfigured}
+              configuring={configuring}
+              disabled={false}
+              onConfigure={onConfigure}
+            />
+            {binding.isConfigured && ASKS_STREAM_PATH[binding.protocol] && (
+              <SettingRow setting={streamPath} />
+            )}
+          </>
+        )
+      }
       actions={
-        <Button type="button" variant="outline" size="sm" disabled={verifying} onClick={onVerify}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={verifying || unconfigured}
+          onClick={onVerify}
+        >
           {verifying ? 'Vérification…' : 'Vérifier'}
         </Button>
       }
     >
-      <p className={cn('text-sm', camera.connected ? 'text-muted-foreground' : 'text-destructive')}>
-        {formatStreamStateLine(camera)}
-      </p>
+      {unconfigured ? (
+        <p className="text-sm text-muted-foreground">
+          {choices.length > 0 || !protocolsRead
+            ? 'Choisissez comment Vyzio lit les images, dans les options ci-dessous.'
+            : NO_PROTOCOL_YET}
+        </p>
+      ) : (
+        <div
+          className={cn('text-sm', camera.connected ? 'text-muted-foreground' : 'text-destructive')}
+        >
+          <p>
+            {(!camera.connected && streamProtocolFailureLine(protocol?.status ?? null)) ||
+              formatStreamStateLine(camera)}
+          </p>
+          {/* The verifier's own reason is support detail, kept since the last check (SPECS 1.5). */}
+          {!camera.connected && binding?.lastError && (
+            <DiagnosticLine text={scrubSecrets(binding.lastError)} />
+          )}
+        </div>
+      )}
     </CapabilityCard>
   )
 }
@@ -173,20 +285,28 @@ function panInvertedSetting(
   }
 }
 
-const destructiveOutline = 'border-destructive text-destructive hover:bg-destructive/10'
-
 interface BindingCardProps {
   camera: Camera
   binding: CameraCapabilityBinding
+  /** The camera's protocols, once read: the one the capability goes through, and those it may choose. */
+  protocols: CameraProtocol[]
+  protocolsRead: boolean
   task: CapabilityTask | undefined
   testsSuspended: boolean
   intents: CapabilityIntents
 }
 
-function BindingCard({ camera, binding, task, testsSuspended, intents }: BindingCardProps) {
+function BindingCard({
+  camera,
+  binding,
+  protocols,
+  protocolsRead,
+  task,
+  testsSuspended,
+  intents,
+}: BindingCardProps) {
   const [confirmDisable, setConfirmDisable] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
-  const [v380DeviceId, setV380DeviceId] = useState('')
 
   const configuring = task === CapabilityTask.Configure
   const verifying = task === CapabilityTask.Verify
@@ -198,20 +318,16 @@ function BindingCard({ camera, binding, task, testsSuspended, intents }: Binding
   const state = capabilityState(binding, camera.ptzSupported)
   const switchedOnAndOff = SWITCHED_ON_AND_OFF[binding.capability]
 
-  function configure() {
-    return intents.onConfigure(
-      binding.capability,
-      binding.protocol,
-      v380DeviceId ? JSON.stringify({ device_id: parseInt(v380DeviceId, 10) }) : undefined,
-    )
-  }
-
-  const showV380IdInput =
-    ASKS_DEVICE_ID[binding.protocol] &&
-    !binding.verified &&
-    (binding.lastError?.includes('not found') ?? false)
-
   const verifiedAtLabel = binding.verifiedAt ? formatCheckedAt(binding.verifiedAt) : null
+  const protocol = protocols.find((entry) => entry.protocol === binding.protocol)
+  const choices = protocolOptions(
+    binding.capability,
+    protocols,
+    binding.isConfigured ? binding.protocol : null,
+  )
+  // An unconfigured card suggests its preset's protocol when the camera has it, else the first it has.
+  const suggested =
+    choices.find((choice) => choice.value === binding.protocol)?.value ?? choices[0]?.value
 
   function stateLine() {
     switch (state) {
@@ -223,14 +339,15 @@ function BindingCard({ camera, binding, task, testsSuspended, intents }: Binding
         // The camera's answer is support detail: a plain sentence leads (SPECS 1.5).
         return (
           <div className="text-sm text-destructive">
-            <p>
-              La dernière vérification a échoué : relancez-la, ou choisissez une autre façon de la
-              joindre dans Avancé.
-            </p>
+            {/* Silence, a refused account or a failed test each have their own way out (ADR-61). */}
+            <p>{capabilityFailureLine(protocol?.status ?? null)}</p>
             {binding.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
           </div>
         )
       case CapabilityState.Unconfigured:
+        return suggested || !protocolsRead ? null : (
+          <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
+        )
       case CapabilityState.SwitchedOff:
         return null
       default: {
@@ -244,15 +361,17 @@ function BindingCard({ camera, binding, task, testsSuspended, intents }: Binding
     switch (state) {
       case CapabilityState.Unconfigured:
         return (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={configuring || testsSuspended}
-            onClick={() => void configure()}
-          >
-            {configuring ? 'Configuration…' : 'Configurer'}
-          </Button>
+          suggested && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={configuring || testsSuspended}
+              onClick={() => void intents.onConfigure(binding.capability, suggested)}
+            >
+              {configuring ? 'Configuration…' : 'Configurer'}
+            </Button>
+          )
         )
       case CapabilityState.SwitchedOff:
         return (
@@ -284,7 +403,7 @@ function BindingCard({ camera, binding, task, testsSuspended, intents }: Binding
                 type="button"
                 variant="outline"
                 size="sm"
-                className={destructiveOutline}
+                className={DESTRUCTIVE_OUTLINE}
                 onClick={() => setConfirmDisable(true)}
               >
                 Désactiver
@@ -294,7 +413,7 @@ function BindingCard({ camera, binding, task, testsSuspended, intents }: Binding
                 type="button"
                 variant="outline"
                 size="sm"
-                className={destructiveOutline}
+                className={DESTRUCTIVE_OUTLINE}
                 onClick={() => setConfirmRemove(true)}
               >
                 Retirer
@@ -311,39 +430,36 @@ function BindingCard({ camera, binding, task, testsSuspended, intents }: Binding
 
   return (
     <>
-      <CapabilityCard title={label} pill={CAPABILITY_STATE_PILLS[state]} actions={actions()}>
-        {stateLine()}
-
-        {/* Stored by Vyzio, not sent to the camera: it stays usable offline. */}
-        {binding.isConfigured && binding.panInverted !== null && (
-          <SettingRow
-            setting={panInvertedSetting(binding.panInverted, panSaving, intents.onSetPanInverted)}
-          />
-        )}
-
-        {showV380IdInput && (
-          <div className="mt-2 flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted-foreground">Numéro de la caméra</span>
-              <Input
-                type="text"
-                placeholder="ex : 26970853"
-                value={v380DeviceId}
-                onChange={(e) => setV380DeviceId(e.target.value)}
-                className="w-40"
+      <CapabilityCard
+        title={label}
+        pill={CAPABILITY_STATE_PILLS[state]}
+        actions={actions()}
+        options={
+          choices.length > 0 && (
+            <>
+              <ProtocolChoice
+                options={choices}
+                current={binding.protocol}
+                configured={binding.isConfigured}
+                configuring={configuring}
+                disabled={testsSuspended}
+                onConfigure={(chosen) => intents.onConfigure(binding.capability, chosen)}
               />
-            </label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!v380DeviceId || configuring || testsSuspended}
-              onClick={() => void configure()}
-            >
-              {configuring ? 'Configuration…' : 'Configurer'}
-            </Button>
-          </div>
-        )}
+              {/* Stored by Vyzio, not sent to the camera: it stays usable offline. */}
+              {binding.isConfigured && binding.panInverted !== null && (
+                <SettingRow
+                  setting={panInvertedSetting(
+                    binding.panInverted,
+                    panSaving,
+                    intents.onSetPanInverted,
+                  )}
+                />
+              )}
+            </>
+          )
+        }
+      >
+        {stateLine()}
       </CapabilityCard>
 
       {confirmDisable && (

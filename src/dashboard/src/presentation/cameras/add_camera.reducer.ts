@@ -1,3 +1,4 @@
+import { StreamProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 import type { AddCameraAction } from './add_camera.actions'
 import { emptyCameraDraft, type AddCameraUido } from './add_camera.uido'
@@ -12,7 +13,7 @@ function draftFromCandidate(state: AddCameraUido, candidate: DiscoveredCamera) {
     sourceType: candidate.sourceType,
     streamPath: candidate.streamPath,
     vendorFamily: candidate.vendorFamily,
-    streamProtocol: 'rtsp',
+    streamProtocol: StreamProtocol.Rtsp,
   }
 }
 
@@ -69,12 +70,12 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         message: null,
         error: null,
         form: action.enabled
-          ? { ...state.form, port: 34567, streamPath: null, streamProtocol: 'dvrip' }
+          ? { ...state.form, port: 34567, streamPath: null, streamProtocol: StreamProtocol.Dvrip }
           : {
               ...state.form,
               port: action.fallbackPort,
               streamPath: action.fallbackStreamPath,
-              streamProtocol: 'rtsp',
+              streamProtocol: StreamProtocol.Rtsp,
             },
       }
 

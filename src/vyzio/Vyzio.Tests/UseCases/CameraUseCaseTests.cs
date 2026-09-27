@@ -30,7 +30,6 @@ public class GetCamerasUseCaseTests
                 FrigateCameraName = "front_door",
                 DisplayName = "Front Door",
                 Host = "192.168.1.10",
-                Port = 554,
                 Status = "online",
                 ValidationState = CameraValidationState.Validated,
                 IsEnabled = true,
@@ -53,7 +52,7 @@ public class GetCamerasUseCaseTests
         var cameraId = "cam-1";
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new Camera { Id = cameraId, Slug = "garage", FrigateCameraName = "garage", DisplayName = "Garage", Host = "192.168.1.11", Port = 554, Status = "online", ValidationState = CameraValidationState.Validated, IsEnabled = true }
+            new Camera { Id = cameraId, Slug = "garage", FrigateCameraName = "garage", DisplayName = "Garage", Host = "192.168.1.11", Status = "online", ValidationState = CameraValidationState.Validated, IsEnabled = true }
         ]);
         _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns(
         [
@@ -84,10 +83,9 @@ public class GetCameraStatusUseCaseTests
             FrigateCameraName = "garage",
             DisplayName = "Garage",
             Host = "192.168.1.11",
-            Port = 554,
             ValidationState = CameraValidationState.Draft,
             Status = "needs_attention"
-        };
+        }.WithStream(SupportedProtocol.Rtsp);
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
 
@@ -96,6 +94,28 @@ public class GetCameraStatusUseCaseTests
         Assert.NotNull(result);
         Assert.True(result!.NeedsAttention);
         Assert.Equal("Configuration incomplete. Ajoutez le chemin RTSP, puis lancez la verification.", result.Guidance);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAskToChooseHowTheStreamIsRead_WhenTheDraftCameraHasNoStreamBinding()
+    {
+        // Arrange
+        var camera = new Camera
+        {
+            Id = "camera-2",
+            Slug = "porch",
+            FrigateCameraName = "porch",
+            DisplayName = "Porch",
+            Host = "192.168.1.12",
+            ValidationState = CameraValidationState.Draft,
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Equal("Configuration incomplete. Choisissez comment Vyzio lit le flux video, puis lancez la verification.", result!.Guidance);
     }
 
     [Fact]
@@ -148,8 +168,7 @@ public class DiscoverCamerasUseCaseTests
                 FrigateCameraName = "front_door",
                 DisplayName = "Front Door",
                 Host = "192.168.1.10",
-                Port = 554,
-            }
+            }.WithStream(SupportedProtocol.Rtsp)
         ]);
 
         _discovery.DiscoverAsync(null, Arg.Any<CancellationToken>()).Returns(
@@ -176,7 +195,6 @@ public class DiscoverCamerasUseCaseTests
                 FrigateCameraName = "front_door",
                 DisplayName = "Front Door",
                 Host = "192.168.1.10",
-                Port = 554,
             }
         ]);
 
@@ -224,14 +242,14 @@ public class CreateCameraUseCaseTests
     private readonly IFrigateConfigApplier _configApplier = Substitute.For<IFrigateConfigApplier>();
     private readonly CreateCameraUseCase _sut;
 
-    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier);
+    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier, CapabilityTestUseCases.StreamRegistry());
 
     [Fact]
     public async Task ExecuteAsync_ShouldCreateADisabledDraftWithASlug_WhenTheSlugIsFree()
     {
         _repo.GetBySlugAsync("front-door", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
-        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", 554, null, null, "/rtsp", null, "tplink_tapo"));
+        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", null, null, null, new CreateCameraStreamRequest("rtsp", 554, "/rtsp"), "tplink_tapo"));
 
         Assert.Equal("front-door", result.Slug);
         Assert.Equal("needs_attention", result.Status);
@@ -247,7 +265,7 @@ public class CreateCameraUseCaseTests
     {
         _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
-        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", 554, null, null, null, null, "icsee"));
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("dvrip", null, null), "icsee"));
 
         _queue.Received(1).Enqueue(Arg.Any<string>());
     }
@@ -258,26 +276,73 @@ public class CreateCameraUseCaseTests
         _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
 
-        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", 554, null, null, null, null, null));
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("rtsp", null, null)));
 
         // Otherwise the trigger stays hidden, and its absence says everything is in service (ADR-44).
         await _configApplier.Received(1).WriteConfigAsync(
             Arg.Any<IReadOnlyList<Camera>>(), changed: true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldGiveTheCameraItsStreamCapability_WhenACameraStreamingOverDvripIsCreated()
+    {
+        // Arrange
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+        Camera? added = null;
+        await _repo.AddAsync(Arg.Do<Camera>(camera => added = camera), Arg.Any<CancellationToken>());
+
+        // Act
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("dvrip", 34567, null)));
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Dvrip, added!.StreamBinding?.Protocol);
+        Assert.Null(added.Protocol(SupportedProtocol.Dvrip)?.Port);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheStreamPortOnItsProtocol_WhenItIsNotTheUsualOne()
+    {
+        // Arrange
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+        Camera? added = null;
+        await _repo.AddAsync(Arg.Do<Camera>(camera => added = camera), Arg.Any<CancellationToken>());
+
+        // Act
+        await _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("rtsp", 8554, "stream1")));
+
+        // Assert
+        Assert.Equal(8554, added!.Protocol(SupportedProtocol.Rtsp)?.Port);
+        Assert.Equal("/stream1", added.MainStream?.Path);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuse_WhenTheStreamProtocolCannotCarryAStream()
+    {
+        // Arrange
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+
+        // Act
+        var act = () => _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("onvif", null, null)));
+
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(act);
     }
 }
 
 public class VerifyCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
     private readonly ICameraStreamEnumerator _streamEnumerator = Substitute.For<ICameraStreamEnumerator>();
+    private readonly ICameraProtocolProbe _protocols = CapabilityTestUseCases.AnsweringProbe();
     private readonly VerifyCameraUseCase _sut;
 
     public VerifyCameraUseCaseTests()
     {
         _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
             .Returns([]);
-        _sut = new VerifyCameraUseCase(_repo, _verifier, _streamEnumerator);
+        _sut = new VerifyCameraUseCase(_repo, _bindings, _verifier, _streamEnumerator, new CameraProtocolCheck(_protocols, TimeProvider.System));
     }
 
     [Fact]
@@ -290,7 +355,6 @@ public class VerifyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
         };
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
@@ -315,10 +379,9 @@ public class VerifyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
-            StreamPath = mainPath,
-        };
+        }.WithStream(SupportedProtocol.Rtsp, path: mainPath);
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync(camera.Id, CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
         _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
         return camera;
@@ -398,25 +461,51 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRecordTheTransportAsAProvenProtocol_WhenTheVerificationSucceeds()
+    public async Task ExecuteAsync_ShouldMarkTheStreamVerifiedAndItsProtocolAnswering_WhenTheVerificationSucceeds()
     {
+        // Arrange
         var camera = GivenReachableCamera();
 
+        // Act
         await _sut.ExecuteAsync(camera.Id);
 
-        Assert.Contains(SupportedProtocol.Rtsp, camera.GetSupportedProtocols());
+        // Assert
+        Assert.True(camera.StreamBinding!.Verified);
+        Assert.Equal(ProtocolStatus.Answers, camera.Protocol(SupportedProtocol.Rtsp)!.Status);
+        await _bindings.Received(1).SaveAsync(camera.StreamBinding, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRecordNoProvenProtocol_WhenTheCameraIsUnreachable()
+    public async Task ExecuteAsync_ShouldNotVerifyTheStream_WhenItsProtocolRefusesTheAccount()
     {
+        // Arrange
+        var camera = GivenReachableCamera();
+        _protocols.ProbeAsync(camera, SupportedProtocol.Rtsp, Arg.Any<CancellationToken>())
+            .Returns(ProtocolAnswer.Refused("RTSP: 192.168.1.10:554 refused the account (401 Unauthorized)."));
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Equal("needs_attention", result!.Status);
+        Assert.Equal("RTSP: 192.168.1.10:554 refused the account (401 Unauthorized).", camera.StreamBinding!.LastError);
+        await _verifier.DidNotReceive().VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheVerifierReasonOnTheStream_WhenTheCameraIsUnreachable()
+    {
+        // Arrange
         var camera = GivenReachableCamera();
         _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
 
+        // Act
         await _sut.ExecuteAsync(camera.Id);
 
-        Assert.Empty(camera.GetSupportedProtocols());
+        // Assert
+        Assert.False(camera.StreamBinding!.Verified);
+        Assert.Equal("Unreachable.", camera.StreamBinding.LastError);
     }
 
     [Fact]
@@ -428,7 +517,7 @@ public class VerifyCameraUseCaseTests
 
         await _sut.ExecuteAsync(camera.Id);
 
-        Assert.Equal("/stream1", camera.StreamPath);
+        Assert.Equal("/stream1", camera.MainStream?.Path);
         await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 }
@@ -438,7 +527,11 @@ public class VerifyDraftCameraUseCaseTests
     private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
     private readonly VerifyDraftCameraUseCase _sut;
 
-    public VerifyDraftCameraUseCaseTests() => _sut = new VerifyDraftCameraUseCase(_verifier);
+    public VerifyDraftCameraUseCaseTests() =>
+        _sut = new VerifyDraftCameraUseCase(
+            _verifier,
+            new CameraProtocolCheck(CapabilityTestUseCases.AnsweringProbe(), TimeProvider.System),
+            CapabilityTestUseCases.StreamRegistry());
 
     [Fact]
     public async Task ExecuteAsync_ShouldProjectTheStatusOfATransientDraft_WhenTheCameraIsNotSavedYet()
@@ -449,11 +542,10 @@ public class VerifyDraftCameraUseCaseTests
         var result = await _sut.ExecuteAsync(new CreateCameraRequest(
             "Front Door",
             "192.168.1.10",
-            554,
             "admin",
             "secret",
-            "Streaming/Channels/101",
             "rtsp_manual",
+            new CreateCameraStreamRequest("rtsp", 554, "Streaming/Channels/101"),
             "person_default"));
 
         Assert.Equal("online", result.Status);
@@ -461,7 +553,7 @@ public class VerifyDraftCameraUseCaseTests
         await _verifier.Received(1).VerifyAsync(Arg.Is<Camera>(camera =>
             camera.DisplayName == "Front Door"
             && camera.Host == "192.168.1.10"
-            && camera.StreamPath == "/Streaming/Channels/101"
+            && camera.MainStream!.Path == "/Streaming/Channels/101"
             && camera.ValidationState == CameraValidationState.Draft), Arg.Any<CancellationToken>());
     }
 }
@@ -484,7 +576,6 @@ public class ApplyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
             Status = "offline",
             ValidationState = CameraValidationState.Draft,
         };
@@ -508,7 +599,6 @@ public class ApplyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
             Status = "online",
             ValidationState = CameraValidationState.Draft,
         };
@@ -585,8 +675,6 @@ public class UpdateCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
-            StreamPath = "/Streaming/Channels/101",
             Status = "online",
             ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
@@ -598,10 +686,8 @@ public class UpdateCameraUseCaseTests
         var result = await _sut.ExecuteAsync(camera.Id, new UpdateCameraRequest(
             "Entry",
             "192.168.1.10",
-            554,
             null,
             null,
-            "/Streaming/Channels/101",
             "rtsp_manual"));
 
         Assert.NotNull(result);
@@ -613,8 +699,9 @@ public class UpdateCameraUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldResetTheCameraToDraft_WhenTheStreamSettingsChange()
+    public async Task ExecuteAsync_ShouldResetTheCameraToDraft_WhenItsAddressChanges()
     {
+        // Arrange
         var camera = new Camera
         {
             Id = "camera-1",
@@ -622,28 +709,25 @@ public class UpdateCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
-            StreamPath = "/Streaming/Channels/101",
             Status = "online",
             ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
             SourceType = "rtsp_manual",
         };
-
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
 
+        // Act
         var result = await _sut.ExecuteAsync(camera.Id, new UpdateCameraRequest(
             "Front Door",
-            "192.168.1.10",
-            554,
+            "192.168.1.12",
             null,
             null,
-            "/Streaming/Channels/102",
             "rtsp_manual"));
 
+        // Assert
         Assert.NotNull(result);
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated =>
-            updated.StreamPath == "/Streaming/Channels/102"
+            updated.Host == "192.168.1.12"
             && updated.ValidationState == CameraValidationState.Draft
             && updated.IsEnabled == false
             && updated.Status == "needs_attention"), Arg.Any<CancellationToken>());
@@ -668,7 +752,6 @@ public class ApplyCameraConfigurationUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
             Status = "online",
             ValidationState = CameraValidationState.Draft,
         };
@@ -680,7 +763,6 @@ public class ApplyCameraConfigurationUseCaseTests
             FrigateCameraName = "garage",
             DisplayName = "Garage",
             Host = "192.168.1.11",
-            Port = 554,
             Status = "offline",
             ValidationState = CameraValidationState.Validated,
             IsEnabled = true,

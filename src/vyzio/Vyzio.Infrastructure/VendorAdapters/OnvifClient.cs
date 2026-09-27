@@ -40,8 +40,26 @@ internal sealed class OnvifClient(
     // A continuous move is stopped after a short step: waiting longer than that would overshoot it.
     private static readonly TimeSpan MoveStartTimeout = TimeSpan.FromMilliseconds(300);
 
-    // Returns device identification info from ONVIF GetDeviceInformation.
-    // The SerialNumber field encodes the V380 device ID in bytes 2-5 as uint32 big-endian.
+    // The protocol level's login: one read the device service answers only to an accepted account (ADR-61).
+    public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, CancellationToken ct)
+    {
+        const string body = "<GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/>";
+        try
+        {
+            await PostSoapAsync(camera, OnvifService.Device, body, ct, throwOnFailure: true);
+            return ProtocolAnswer.Answers();
+        }
+        catch (CameraCommandRefusedException ex)
+        {
+            return ProtocolAnswer.Refused($"ONVIF: {ex.Message}");
+        }
+        catch (CameraUnreachableException ex)
+        {
+            return ProtocolAnswer.Unreachable($"ONVIF: {ex.Message}");
+        }
+    }
+
+    // Device identification; the SerialNumber carries the V380 device id in bytes 2..5, big-endian.
     public async Task<OnvifDeviceInfo?> GetDeviceInformationAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/>";
@@ -464,9 +482,9 @@ internal sealed class OnvifClient(
 
     // A camera without an account is asked without one: a guessed credential locks accounts out (ADR-56).
     private static string EnvelopeFor(Camera camera, string soapBody)
-        => string.IsNullOrWhiteSpace(camera.Username)
+        => camera.CredentialsFor(SupportedProtocol.Onvif) is not { Username: { Length: > 0 } username } account
             ? OnvifEnvelope.Anonymous(soapBody)
-            : OnvifEnvelope.Build(camera.Username, camera.Password ?? string.Empty, soapBody);
+            : OnvifEnvelope.Build(username, account.Password ?? string.Empty, soapBody);
 
     private static StringContent BuildContent(string envelope, string? soapAction)
     {

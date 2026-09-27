@@ -55,7 +55,6 @@ public class OnvifImageSettingsProviderTests
             FrigateCameraName = "cam1",
             DisplayName = "ONVIF Cam",
             Host = "192.168.1.100",
-            Port = 8899,
             Username = "admin",
             Password = "pass",
         };

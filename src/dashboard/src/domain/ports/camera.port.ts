@@ -1,4 +1,9 @@
-import type { CameraDraftInput } from '../entities/camera_draft_input.entity'
+import type { CameraDraftInput, CameraUpdateInput } from '../entities/camera_draft_input.entity'
+import type {
+  CameraProtocol,
+  CameraProtocolAddition,
+  CameraProtocolInput,
+} from '../entities/camera_protocol.entity'
 import type { Camera } from '../entities/camera.entity'
 import type { CameraStatus } from '../entities/camera_status.entity'
 import type { CameraPrivacySchedule } from '../entities/camera_privacy_schedule.entity'
@@ -43,7 +48,7 @@ export interface CameraRepository {
   discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: CameraDraftInput): Promise<Camera>
-  update(cameraId: string, input: CameraDraftInput): Promise<Camera>
+  update(cameraId: string, input: CameraUpdateInput): Promise<Camera>
   verifyDraft(input: CameraDraftInput): Promise<CameraStatus>
   verify(cameraId: string): Promise<CameraStatus>
   applyConfiguration(): Promise<CameraConfigurationApplyResult>
@@ -78,12 +83,23 @@ export interface CameraRepository {
     cameraId: string,
     capability: Capability,
     protocol: SupportedProtocol,
-    configJson?: string,
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
   removeCapability(cameraId: string, capability: Capability): Promise<void>
   setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding>
+  setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding>
   detectCapabilities(cameraId: string): Promise<void>
+  // Protocols (ADR-61): how each one is reached, and whether it answers.
+  getProtocols(cameraId: string): Promise<CameraProtocol[]>
+  updateProtocol(
+    cameraId: string,
+    protocol: SupportedProtocol,
+    input: CameraProtocolInput,
+  ): Promise<CameraProtocol>
+  checkProtocol(cameraId: string, protocol: SupportedProtocol): Promise<CameraProtocol>
+  searchProtocols(cameraId: string): Promise<CameraProtocol[]>
+  addProtocol(cameraId: string, addition: CameraProtocolAddition): Promise<CameraProtocol>
+  removeProtocol(cameraId: string, protocol: SupportedProtocol): Promise<void>
   // Image settings (ADR-27) — read/written live on the camera, nothing persisted by Vyzio.
   getImageSettings(cameraId: string): Promise<CameraImageSettings>
   setImageSettings(cameraId: string, settings: CameraImageSettings): Promise<CameraImageSettings>

@@ -20,7 +20,6 @@ public sealed class DvripCallException(string message, Exception? inner = null) 
 // see docs/investigations/icsee_dvrip_privacy.md. Registered as Singleton: stateless.
 internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger)
 {
-    private const int DvripPort = 34567;
     private const int LoginCmd = 1000;
     private const int ConfigGetCmd = 1042;
     // 1040, not 1044 — confirmed against the python-dvr reference client's set_info()
@@ -37,7 +36,7 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
         try
         {
             using var tcp = new TcpClient();
-            await tcp.ConnectAsync(camera.Host, DvripPort, linked.Token);
+            await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), linked.Token);
             using var stream = tcp.GetStream();
 
             var (sessionId, _, loginAnswer) = await LoginAsync(stream, camera, linked.Token);
@@ -59,7 +58,30 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
         catch (Exception ex) when (ex is not CameraCommandException && (ex is not OperationCanceledException || !ct.IsCancellationRequested))
         {
             var why = deadline.IsCancellationRequested ? "no answer within 5 s" : ex.Message;
-            throw new CameraUnreachableException($"DVRIP service on {camera.Host}:{DvripPort}: {why}", ex);
+            throw new CameraUnreachableException($"DVRIP service on {camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)}: {why}", ex);
+        }
+    }
+
+    // The protocol level's login: connect, then log in with the DVRIP account; nothing else is sent (ADR-61).
+    public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, CancellationToken ct)
+    {
+        var port = camera.PortOf(SupportedProtocol.Dvrip);
+        using var deadline = new CancellationTokenSource(CommandTimeout, time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, deadline.Token);
+        try
+        {
+            using var tcp = new TcpClient();
+            await tcp.ConnectAsync(camera.Host, port, linked.Token);
+            using var stream = tcp.GetStream();
+            var (sessionId, failure, answer) = await LoginAsync(stream, camera, linked.Token);
+            if (sessionId is not null) return ProtocolAnswer.Answers();
+            return answer is null
+                ? ProtocolAnswer.Unreachable($"DVRIP: {camera.Host}:{port} {failure}")
+                : ProtocolAnswer.Refused($"DVRIP: {camera.Host}:{port} {failure}");
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or SocketException or IOException && !ct.IsCancellationRequested)
+        {
+            return ProtocolAnswer.Unreachable($"DVRIP: {camera.Host}:{port} did not complete the login ({ex.GetType().Name}).");
         }
     }
 
@@ -71,7 +93,7 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
             using var tcp = new TcpClient();
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(TimeSpan.FromSeconds(3));
-            await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
+            await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), timeout.Token);
             using var stream = tcp.GetStream();
             var (sessionId, _, _) = await LoginAsync(stream, camera, timeout.Token);
             return sessionId is not null;
@@ -96,11 +118,11 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
         using var tcp = new TcpClient();
         try
         {
-            await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
+            await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), timeout.Token);
         }
         catch (Exception ex)
         {
-            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{DvripPort} ({DescribeTimeout(ex, timeout, ct)}).", ex);
+            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)} ({DescribeTimeout(ex, timeout, ct)}).", ex);
         }
         using var stream = tcp.GetStream();
 
@@ -137,11 +159,11 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
         using var tcp = new TcpClient();
         try
         {
-            await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
+            await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), timeout.Token);
         }
         catch (Exception ex)
         {
-            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{DvripPort} ({DescribeTimeout(ex, timeout, ct)}).", ex);
+            throw new DvripCallException($"Impossible de joindre le service DVRIP sur {camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)} ({DescribeTimeout(ex, timeout, ct)}).", ex);
         }
         using var stream = tcp.GetStream();
 
@@ -171,11 +193,12 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
     // On failure, Answer is what the camera said, or null when it said nothing.
     internal static async Task<(string? SessionId, string? FailureReason, string? Answer)> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
     {
-        var hash = SofiaHash(camera.Password ?? string.Empty);
+        var account = camera.CredentialsFor(SupportedProtocol.Dvrip);
+        var hash = SofiaHash(account.Password ?? string.Empty);
         var loginPayload = JsonSerializer.Serialize(new
         {
             LoginType = "DVRIP-Web",
-            UserName = camera.Username ?? "admin",
+            UserName = account.Username ?? "admin",
             PassWord = hash,
             EncryptType = "MD5"
         });
