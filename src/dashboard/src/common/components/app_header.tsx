@@ -40,7 +40,8 @@ export function AppHeader({ trailing }: { trailing?: ReactNode }) {
   return (
     <header
       className={cn(
-        'sticky top-4 z-100 flex flex-wrap items-center gap-x-4 gap-y-1',
+        // Below the Radix layers (`z-50`): a dialog, a viewer or a list opened near the top covers it.
+        'sticky top-4 z-40 flex flex-wrap items-center gap-x-4 gap-y-1',
         'rounded-card bg-surface-inverse px-3 py-2.5 text-surface-inverse-foreground',
         'shadow-[0_8px_32px_rgba(24,32,29,0.18)]',
         'sm:h-13 sm:flex-nowrap sm:gap-8 sm:px-6 sm:py-0',
