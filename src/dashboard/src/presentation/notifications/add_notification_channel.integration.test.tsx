@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { makeChannelSummary } from '../../testing/notification_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
@@ -47,7 +48,7 @@ describe('AddNotificationChannelView', () => {
     ).toBeInTheDocument()
   })
 
-  it('onLoad_ShouldReadAsEveryChannelInPlace_WhenTheListCannotBeRead', async () => {
+  it('onLoad_ShouldSayTheListIsUnreadAndHowToRetry_WhenTheListCannotBeRead', async () => {
     // Arrange
     fakeNetwork({ [CHANNELS]: failure(500) })
 
@@ -55,8 +56,26 @@ describe('AddNotificationChannelView', () => {
     renderScreen(<AddNotificationChannelView />, ADD)
 
     // Assert
-    expect(
-      await screen.findByText('Tous les canaux disponibles sont déjà en place.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/notifications\/channels · 500/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+    expect(screen.queryByText(/Tous les canaux/)).not.toBeInTheDocument()
+  })
+
+  it('onRetry_ShouldListTheChannels_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ [CHANNELS]: failure(500) })
+    renderScreen(<AddNotificationChannelView />, ADD)
+    await screen.findByRole('alert')
+    network.answer(
+      CHANNELS,
+      ok([makeChannelSummary({ channel: 'discord', displayName: 'Discord', isConfigured: false })]),
+    )
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByRole('link', { name: /Discord/ })).toBeInTheDocument()
   })
 })

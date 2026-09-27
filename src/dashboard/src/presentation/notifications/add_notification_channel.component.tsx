@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -39,7 +40,9 @@ export function AddNotificationChannelView() {
       </div>
 
       <SettingsPage lede="Le réglage est le même partout : seule la façon de s’y connecter change.">
-        {available.length > 0 ? (
+        {uido.error ? (
+          <ReadFailure error={uido.error} onRetry={presenter.onLoad} className="py-3" />
+        ) : available.length > 0 ? (
           <ul className="divide-y divide-border">
             {available.map((channel) => (
               <li key={channel.channel}>

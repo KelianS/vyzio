@@ -1,3 +1,4 @@
+import { toAppError } from '../../common/errors/to_app_error'
 import type { NotificationsContainer } from '../../infrastructure/providers/notifications.container'
 import type { AddNotificationChannelAction } from './add_notification_channel.actions'
 
@@ -12,11 +13,11 @@ export function buildAddNotificationChannelPresenter({
 }: AddNotificationChannelPresenterContext) {
   return {
     onLoad() {
+      dispatch({ type: 'LOAD_STARTED' })
       container.listNotificationChannels
         .execute()
         .then((channels) => dispatch({ type: 'LOAD_SUCCEEDED', channels }))
-        // An unread list still reads as an empty one.
-        .catch(() => dispatch({ type: 'LOAD_FAILED' }))
+        .catch((e: unknown) => dispatch({ type: 'LOAD_FAILED', error: toAppError(e) }))
     },
   }
 }

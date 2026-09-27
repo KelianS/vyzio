@@ -18,6 +18,27 @@ const REVOKE = 'DELETE /api/notifications/settings/telegram/pairing'
 const LISTENING = 'GET /api/notifications/settings/telegram/listening'
 const COMMANDS = 'GET /api/notifications/settings/telegram/commands'
 
+const PERSON = { value: 'person', displayName: 'Personne', emoji: '🧍' }
+const FAILED_SEND = {
+  status: 'failed',
+  sentAt: '2026-09-01T08:00:00Z',
+  errorMessage: 'Chat not found',
+}
+const ANSWERED = {
+  id: 'command-1',
+  verb: 'etat',
+  outcome: 'succeeded',
+  receivedAt: '2026-09-01T08:00:00Z',
+  errorMessage: null,
+}
+const LISTENING_NOW = {
+  channel: 'telegram',
+  listening: true,
+  since: null,
+  interruptedAt: null,
+  reason: null,
+}
+
 function channelAt(slug: string) {
   return { path: '/settings/notifications/:channel', url: `/settings/notifications/${slug}` }
 }
@@ -188,5 +209,263 @@ describe('NotificationChannelView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheChannelIsUnreadAndHowToRetry_WhenItsSettingsCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...channelRoutes(), [SETTINGS]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByRole('heading', { name: 'Ce canal ne s’affiche pas' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/notifications\/settings\/telegram · 500/)).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Canal introuvable' })).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldShowTheChannel_WhenTheRetryReadsItsSettings', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...channelRoutes(), [SETTINGS]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByRole('alert')
+    network.answer(SETTINGS, ok(makeChannelConfig()))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByRole('heading', { name: 'Telegram' })).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheTriggersAreUnreadAndKeepTheSettings_WhenTheLabelsCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...channelRoutes(), [LABELS]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText(/GET \/api\/detection-labels\/notifications · 500/),
+    ).toBeVisible()
+    expect(screen.getByRole('switch', { name: /Notifications Telegram/ })).toBeInTheDocument()
+  })
+
+  it('onRetryLabels_ShouldOfferTheTriggers_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...channelRoutes(), [LABELS]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByRole('alert')
+    network.answer(LABELS, ok([PERSON]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      await screen.findByRole('combobox', { name: /Ce qui déclenche une notification/ }),
+    ).toHaveTextContent('Tout')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheLinkIsUnread_WhenThePairingCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...commandRoutes(), [PAIRING]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/pairing · 500/),
+    ).toBeVisible()
+    expect(screen.queryByText(/Aucune conversation ne peut commander/)).not.toBeInTheDocument()
+  })
+
+  it('onRetryPairing_ShouldShowTheLink_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...commandRoutes(), [PAIRING]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByRole('alert')
+    network.answer(PAIRING, ok(makePairing()))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      await screen.findByRole('button', { name: 'Relier une conversation' }),
+    ).toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheListeningIsUnknownWhereTheBadgeGoes_WhenItCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...commandRoutes(), [LISTENING]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText('Impossible de savoir si le canal est à l’écoute.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/GET \/api\/notifications\/settings\/telegram\/listening · 500/),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  it('onRetryListening_ShouldShowTheBadge_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...commandRoutes(), [LISTENING]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByText('Impossible de savoir si le canal est à l’écoute.')
+    network.answer(LISTENING, ok(LISTENING_NOW))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('À l’écoute')).toBeInTheDocument()
+  })
+
+  it('onRefreshPairing_ShouldKeepTheBadgeAndSayWhy_WhenTheListeningRereadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...commandRoutes(), [LISTENING]: ok(LISTENING_NOW) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    const badge = await screen.findByText('À l’écoute')
+    network.answer(LISTENING, failure(500))
+
+    // Act
+    await userEvent.click(screen.getAllByRole('button', { name: 'Actualiser' })[0])
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(badge).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onRefreshPairing_ShouldKeepTheLinkAndSayWhy_WhenThePairingRereadFails', async () => {
+    // Arrange
+    const network = fakeNetwork(commandRoutes(makePairing({ status: 'paired' })))
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    const cut = await screen.findByRole('button', { name: 'Couper le lien' })
+    network.answer(PAIRING, failure(500))
+
+    // Act
+    await userEvent.click(screen.getAllByRole('button', { name: 'Actualiser' })[0])
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(cut).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onSave_ShouldKeepTheSettingsAndSayWhy_WhenTheRereadAfterSavingFails', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...channelRoutes(), [SAVE]: ok(makeChannelConfig()) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    network.answer(SETTINGS, failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Telegram' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Ce canal ne s’affiche pas' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheLogIsUnread_WhenItCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText(/GET \/api\/notifications\/log\/telegram · 500/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Aucun envoi pour l’instant.')).not.toBeInTheDocument()
+  })
+
+  it('onRetryLog_ShouldShowWhatWasSent_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByText(/GET \/api\/notifications\/log\/telegram · 500/)
+    network.answer(LOG, ok([FAILED_SEND]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('Chat not found')).toBeInTheDocument()
+  })
+
+  it('onRefreshLog_ShouldKeepWhatWasSentAndSayWhy_WhenTheRereadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...channelRoutes(), [LOG]: ok([FAILED_SEND]) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    const sent = await screen.findByText('Chat not found')
+    network.answer(LOG, failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Actualiser' }))
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(sent).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldSayTheJournalIsUnread_WhenItCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(
+      await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/commands · 500/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Aucune commande reçue pour l’instant.')).not.toBeInTheDocument()
+  })
+
+  it('onRetryJournal_ShouldShowTheCommands_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/commands · 500/)
+    network.answer(COMMANDS, ok([]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('Aucune commande reçue pour l’instant.')).toBeInTheDocument()
+  })
+
+  it('onRefreshJournal_ShouldKeepTheCommandsAndSayWhy_WhenTheRereadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: ok([ANSWERED]) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    const command = await screen.findByText('/etat')
+    network.answer(COMMANDS, failure(500))
+
+    // Act
+    await userEvent.click(screen.getAllByRole('button', { name: 'Actualiser' }).at(-1)!)
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(command).toBeInTheDocument()
   })
 })

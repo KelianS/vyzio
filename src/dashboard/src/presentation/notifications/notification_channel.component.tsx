@@ -12,10 +12,10 @@ import type { SettingDeclaration } from '../../common/settings/setting_declarati
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
+import { ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import {
   parseNotificationChannelName,
   type MediaMode,
@@ -54,6 +54,8 @@ const MESSAGE_FIELD_OPTIONS = [
   { value: 'snapshot', label: 'Aperçu' },
 ] as const
 
+const TRIGGERS_LABEL = 'Ce qui déclenche une notification'
+
 const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
@@ -78,6 +80,26 @@ export function NotificationChannelView() {
     if (channel) presenter.onLoad(channel)
   }, [presenter, channel])
 
+  // An unread channel says nothing about it: "not found" would be a false answer.
+  if (channel && uido.configError) {
+    return (
+      <SettingsPage>
+        <h1 className="font-serif text-3xl">Ce canal ne s’affiche pas</h1>
+        <ReadFailure
+          error={uido.configError}
+          onRetry={() => presenter.onLoad(channel)}
+          className="mt-3"
+        />
+        <Link
+          to="/settings/notifications"
+          className="mt-3 inline-block underline underline-offset-2"
+        >
+          Revenir aux notifications
+        </Link>
+      </SettingsPage>
+    )
+  }
+
   if (!channel || (!uido.configLoading && !uido.config)) {
     return (
       // This route announces that it carries its own header: with no channel to name,
@@ -94,29 +116,19 @@ export function NotificationChannelView() {
     )
   }
 
-  if (uido.configLoading || uido.labelsLoading || !uido.config) {
+  if (uido.configLoading || !uido.config) {
     return <SettingsPage>Chargement…</SettingsPage>
   }
 
-  return (
-    <ChannelForm
-      key={channel}
-      config={uido.config}
-      labels={uido.labels}
-      uido={uido}
-      presenter={presenter}
-    />
-  )
+  return <ChannelForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
 }
 
 function ChannelForm({
   config,
-  labels,
   uido,
   presenter,
 }: {
   config: NotificationChannelConfig
-  labels: DetectionLabel[]
   uido: NotificationChannelUido
   presenter: ReturnType<typeof buildNotificationChannelPresenter>
 }) {
@@ -165,22 +177,30 @@ function ChannelForm({
     }),
   ]
 
+  // Offered only once read: an empty choice would pass for nothing to be notified.
+  const labelsRead = !uido.labelsLoading && !uido.labelsError
+  const triggers: SettingDeclaration[] = labelsRead
+    ? [
+        {
+          id: 'channel-labels',
+          label: TRIGGERS_LABEL,
+          nature: {
+            kind: 'multiChoice',
+            options: uido.labels.map((label) => ({
+              value: label.value,
+              label: `${label.emoji} ${label.displayName}`,
+            })),
+          },
+          help: 'Seules les catégories cochées vous sont notifiées. Les autres restent détectées et consultables dans l’historique.',
+          value: draft.values.allowedLabels,
+          onChange: (value) => draft.set('allowedLabels', value as string[]),
+        },
+      ]
+    : []
+
   // Same order as detection: what is concerned first, the threshold next.
   const when: SettingDeclaration[] = [
-    {
-      id: 'channel-labels',
-      label: 'Ce qui déclenche une notification',
-      nature: {
-        kind: 'multiChoice',
-        options: labels.map((label) => ({
-          value: label.value,
-          label: `${label.emoji} ${label.displayName}`,
-        })),
-      },
-      help: 'Seules les catégories cochées vous sont notifiées. Les autres restent détectées et consultables dans l’historique.',
-      value: draft.values.allowedLabels,
-      onChange: (value) => draft.set('allowedLabels', value as string[]),
-    },
+    ...triggers,
     {
       id: 'channel-confidence',
       label: 'Certitude minimale',
@@ -323,21 +343,30 @@ function ChannelForm({
               title="Commander depuis la conversation"
               lede="Reliez une conversation à votre installation pour lui demander, depuis votre téléphone, ce qui se passe chez vous."
             >
-              <ChannelPairingSection
-                displayName={config.displayName}
-                pairing={uido.pairing}
-                pairingLoading={uido.pairingLoading}
-                listening={uido.listening}
-                listeningLoading={uido.listeningLoading}
-                starting={uido.startingPairing}
-                confirmRevoke={uido.confirmRevoke}
-                revoking={uido.revoking}
-                onStart={() => void presenter.onStartPairing(channel)}
-                onAskRevoke={presenter.onAskRevoke}
-                onCancelRevoke={presenter.onCancelRevoke}
-                onRevoke={() => void presenter.onRevoke(channel)}
-                onRefresh={() => presenter.onRefreshPairing(channel)}
-              />
+              {uido.pairingError ? (
+                <ReadFailure
+                  error={uido.pairingError}
+                  onRetry={() => presenter.onRetryPairing(channel)}
+                />
+              ) : (
+                <ChannelPairingSection
+                  displayName={config.displayName}
+                  pairing={uido.pairing}
+                  pairingLoading={uido.pairingLoading}
+                  listening={uido.listening}
+                  listeningLoading={uido.listeningLoading}
+                  listeningError={uido.listeningError}
+                  starting={uido.startingPairing}
+                  confirmRevoke={uido.confirmRevoke}
+                  revoking={uido.revoking}
+                  onStart={() => void presenter.onStartPairing(channel)}
+                  onAskRevoke={presenter.onAskRevoke}
+                  onCancelRevoke={presenter.onCancelRevoke}
+                  onRevoke={() => void presenter.onRevoke(channel)}
+                  onRetryListening={() => presenter.onRetryListening(channel)}
+                  onRefresh={() => presenter.onRefreshPairing(channel, uido.listening !== null)}
+                />
+              )}
 
               <HelpPanel title="Que puis-je demander, une fois relié ?">
                 <p>
@@ -355,6 +384,20 @@ function ChannelForm({
           )}
 
           <SettingsSection title="Quand notifier">
+            {!labelsRead && (
+              <div className="py-3">
+                <p className="font-medium">{TRIGGERS_LABEL}</p>
+                {uido.labelsError ? (
+                  <ReadFailure
+                    error={uido.labelsError}
+                    onRetry={presenter.onRetryLabels}
+                    className="mt-2"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">Chargement…</p>
+                )}
+              </div>
+            )}
             <SettingsList settings={when} />
 
             <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
@@ -382,20 +425,31 @@ function ChannelForm({
             </SettingsSection>
 
             <SettingsSection title="Derniers envois">
-              <NotificationLog
-                entries={uido.log}
-                loading={uido.logLoading}
-                onRefresh={() => presenter.onRefreshLog(channel)}
-              />
+              {uido.logError ? (
+                <ReadFailure error={uido.logError} onRetry={() => presenter.onRetryLog(channel)} />
+              ) : (
+                <NotificationLog
+                  entries={uido.log}
+                  loading={uido.logLoading}
+                  onRefresh={() => presenter.onRefreshLog(channel)}
+                />
+              )}
             </SettingsSection>
 
             {config.acceptsCommands && (
               <SettingsSection title="Dernières commandes">
-                <CommandJournal
-                  entries={uido.journal}
-                  loading={uido.journalLoading}
-                  onRefresh={() => presenter.onRefreshJournal(channel)}
-                />
+                {uido.journalError ? (
+                  <ReadFailure
+                    error={uido.journalError}
+                    onRetry={() => presenter.onRetryJournal(channel)}
+                  />
+                ) : (
+                  <CommandJournal
+                    entries={uido.journal}
+                    loading={uido.journalLoading}
+                    onRefresh={() => presenter.onRefreshJournal(channel)}
+                  />
+                )}
               </SettingsSection>
             )}
           </AdvancedFold>
