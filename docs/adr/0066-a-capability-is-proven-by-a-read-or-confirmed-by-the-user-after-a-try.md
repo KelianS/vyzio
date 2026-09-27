@@ -4,8 +4,8 @@
 >
 > Amends [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) on its
 > point c) (the capability's provider probe stays the proof until #221),
-> [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) on its point b)
-> (the login alone decides whether the DVRIP PTZ capability is verified),
+> [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) on the last clause
+> of its point b) (the login alone decides whether the DVRIP PTZ capability is verified),
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
 > on what `Verified` records (only a probe's result), and
 > [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) on

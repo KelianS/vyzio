@@ -320,8 +320,8 @@ entities folder.
   without a password is one whose host has just removed it, and it opens nothing until a new one is
   chosen.
 - A camera capability is never enabled without a real test passing (`verified`, ADR-28), and its
-  test first requires its protocol to answer (ADR-61). The test is a read-only proof of the capability,
-  never a login; where no proof exists, the capability waits for the user to try it and confirm it
+  test first requires its protocol to answer (ADR-61). The test is a read-only proof of the capability
+  (the one write, undone at once, is ADR-64's), never a login; where no proof exists, the capability waits for the user to try it and confirm it
   (ADR-66).
 - A connection detail lives on **one level**: the camera (access), one of its protocols (how to
   reach it), or one of its capabilities (its settings), never on two (ADR-61).

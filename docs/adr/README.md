@@ -73,5 +73,5 @@ references these ADRs rather than copying them.
 | [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) | A camera's connection data on three levels: access, protocols, capabilities | Accepted, amended by ADR-66 (the capability's proof) |
 | [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) | Privacy strategy: no "none" value, software stop by default | Accepted |
 | [ADR-63](0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md) | A scheduled rule is a type, a target set and a weekly range, planned in one calendar | Accepted |
-| [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) | DVRIP native presets are detected by storing, then clearing, a spare slot | Accepted (the login deciding PTZ verified replaced by ADR-66) |
+| [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) | DVRIP native presets are detected by storing, then clearing, a spare slot | Accepted, amended by ADR-66 (the login deciding PTZ verified) |
 | [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) | A capability is proven by a read, or confirmed by the user after trying it | Accepted |
