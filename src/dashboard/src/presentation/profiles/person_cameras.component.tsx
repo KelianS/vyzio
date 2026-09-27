@@ -9,9 +9,11 @@ import { ReadFailure } from '../../common/components/error_message'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera } from '../../domain/entities/camera.entity'
+import type { ProfileAlertMode } from '../../domain/entities/profile.entity'
 import type { ProfileCameraLink } from '../../domain/entities/profile_camera_link.entity'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import { usePerson } from './person_context'
+import { ALERT_MODE_FIELD_LABEL, ALERT_MODE_LABELS } from './person_labels'
 import { buildPersonCamerasPresenter } from './person_cameras.presenter'
 import { personCamerasReducer } from './person_cameras.reducer'
 import { buildInitialPersonCamerasUido } from './person_cameras.uido'
@@ -21,6 +23,9 @@ interface CameraValues {
 }
 
 const DRAFT_LABELS: Record<keyof CameraValues, string> = { cameraIds: 'Caméras' }
+
+// The cameras only narrow where a person is signalled; a person never signalled has nothing to narrow (ADR-58).
+const SIGNALLED: Record<ProfileAlertMode, boolean> = { always: true, never: false }
 
 export function PersonCamerasView() {
   const { person } = usePerson()
@@ -56,6 +61,15 @@ export function PersonCamerasView() {
     )
   if (uido.loading || (camerasLoading && cameras.length === 0))
     return <SettingsPage>Chargement…</SettingsPage>
+  if (!SIGNALLED[person.alertMode])
+    return (
+      <SettingsPage>
+        <p className="text-muted-foreground">
+          Vous n’êtes jamais prévenu du passage de cette personne. Pour choisir des caméras, réglez
+          « {ALERT_MODE_FIELD_LABEL} » sur « {ALERT_MODE_LABELS.always} » dans Identité.
+        </p>
+      </SettingsPage>
+    )
   if (!uido.links) return null
 
   return (
@@ -89,15 +103,16 @@ function CameraLinksForm({
 
   return (
     <>
-      <SettingsPage lede="Sans choix, cette personne est reconnue sur toutes les caméras.">
+      <SettingsPage lede="Sans choix, toutes les caméras, même celles ajoutées plus tard.">
         {cameras.length > 0 ? (
           <SettingsList
             settings={[
               {
                 id: 'person-cameras',
-                label: 'La reconnaître seulement sur',
+                label: 'Me prévenir seulement sur',
                 nature: {
                   kind: 'multiChoice',
+                  emptySummary: 'Toutes les caméras',
                   options: cameras.map((camera) => ({
                     value: camera.id,
                     label: camera.displayName,

@@ -9,7 +9,7 @@ import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/profile.entity'
-import { ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './person_labels'
+import { ALERT_MODE_FIELD_LABEL, ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './person_labels'
 import { buildAddPersonPresenter } from './add_person.presenter'
 import { addPersonReducer } from './add_person.reducer'
 import { buildInitialAddPersonUido } from './add_person.uido'
@@ -46,7 +46,7 @@ export function AddPersonView() {
     },
     {
       id: 'person-alert',
-      label: 'Quand elle est reconnue',
+      label: ALERT_MODE_FIELD_LABEL,
       nature: { kind: 'choice', options: ALERT_MODE_OPTIONS },
       help: 'Sans alerte, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
       value: alertMode,

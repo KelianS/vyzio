@@ -13,7 +13,7 @@ import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/profile.entity'
 import type { UpdateProfileRequest } from '../../domain/ports/profile.port'
-import { ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './person_labels'
+import { ALERT_MODE_FIELD_LABEL, ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './person_labels'
 import { usePerson } from './person_context'
 import { buildPersonIdentityPresenter } from './person_identity.presenter'
 import { personIdentityReducer } from './person_identity.reducer'
@@ -22,7 +22,7 @@ import { buildInitialPersonIdentityUido } from './person_identity.uido'
 const DRAFT_LABELS: Record<keyof UpdateProfileRequest, string> = {
   name: 'Nom',
   category: 'Lien avec vous',
-  alertMode: 'Quand elle est reconnue',
+  alertMode: ALERT_MODE_FIELD_LABEL,
 }
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
@@ -63,7 +63,7 @@ export function PersonIdentityView() {
     },
     {
       id: 'person-alert',
-      label: 'Quand elle est reconnue',
+      label: ALERT_MODE_FIELD_LABEL,
       nature: { kind: 'choice', options: ALERT_MODE_OPTIONS },
       help: 'Sans alerte, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
       value: draft.values.alertMode,
