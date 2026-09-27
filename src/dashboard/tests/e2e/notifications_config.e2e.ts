@@ -70,34 +70,6 @@ test.describe('NotificationChannelView', () => {
     await expect(page.getByRole('button', { name: 'Envoyer un message de test' })).toBeDisabled()
   })
 
-  test('NotificationChannelView_ShouldAskWhichHours_WhenTheUserRestrictsThem', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/notifications/telegram')
-
-    // The hours only exist if the range is asked for: showing them greyed would
-    // make two settings where the user decides only one.
-    await expect(page.getByRole('combobox', { name: 'À partir de' })).toHaveCount(0)
-    await page.getByRole('switch', { name: 'Seulement à certaines heures' }).click()
-    await expect(page.getByRole('combobox', { name: 'À partir de' })).toBeVisible()
-  })
-
-  test('NotificationChannelView_ShouldSayWhenTheRangeEnds_WhenItCrossesMidnight', async ({
-    page,
-  }) => {
-    await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/notifications/telegram')
-
-    await page.getByRole('switch', { name: 'Seulement à certaines heures' }).click()
-    await page.getByRole('combobox', { name: 'À partir de' }).click()
-    await page.getByRole('option', { name: '22:00' }).click()
-    await page.getByRole('combobox', { name: 'Jusqu’à' }).click()
-    await page.getByRole('option', { name: '07:00' }).click()
-
-    await expect(
-      page.getByText('La plage passe minuit : elle se termine le lendemain à 07:00.'),
-    ).toBeVisible()
-  })
-
   // The criterion for this step: unplugging the network must show in the settings,
   // or Vyzio looks broken when it is merely waiting (SPECS 5.4).
   test('NotificationChannelView_ShouldSayItStoppedListeningAndWhy_WhenTheLoopFell', async ({

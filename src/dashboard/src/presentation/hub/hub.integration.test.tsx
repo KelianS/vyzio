@@ -189,4 +189,32 @@ describe('HubView', () => {
     expect(card.getByText('Front Door')).toBeVisible()
     expect(card.getByText('10,0')).toBeVisible()
   })
+
+  it('SurveillanceCard_ShouldKeepTheDetailsClosed_WhenACameraIsOfflineAndAnotherSendsFewImages', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([
+        makeCamera(),
+        makeCamera({ id: 'camera-2', frigateCameraName: 'garden', status: 'offline' }),
+      ]),
+      'GET /api/system/stats': ok({
+        ...running,
+        cameras: [
+          { camera: 'front_door', fps: 0.4 },
+          { camera: 'garden', fps: 0 },
+        ],
+      }),
+    })
+    renderScreen(<HubView />)
+    await screen.findByRole('heading', { name: '2 caméras sous surveillance' })
+
+    // Act
+    await pollTheSurveillance()
+
+    // Assert
+    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
+    expect(card.getByText('0,4')).not.toBeVisible()
+    expect(card.getByText('0,0')).not.toBeVisible()
+  })
 })

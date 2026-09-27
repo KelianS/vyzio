@@ -91,6 +91,16 @@ const NotificationChannelView = lazy(() =>
     default: m.NotificationChannelView,
   })),
 )
+const ScheduleWeekView = lazy(() =>
+  import('./presentation/schedules/schedule_week.component').then((m) => ({
+    default: m.ScheduleWeekView,
+  })),
+)
+const ScheduleRuleView = lazy(() =>
+  import('./presentation/schedules/schedule_rule.component').then((m) => ({
+    default: m.ScheduleRuleView,
+  })),
+)
 const ConservationView = lazy(() =>
   import('./presentation/settings/conservation.component').then((m) => ({
     default: m.ConservationView,
@@ -190,6 +200,9 @@ const router = createBrowserRouter([
             element: <NotificationChannelView />,
             handle: OWN_HEADER,
           },
+          { path: 'planification', element: <ScheduleWeekView /> },
+          { path: 'planification/ajout', element: <ScheduleRuleView />, handle: OWN_HEADER },
+          { path: 'planification/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
           { path: 'acces', element: <AccessView /> },
           { path: 'systeme', element: <SystemView /> },
           { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },

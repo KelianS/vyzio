@@ -29,6 +29,8 @@ export function SettingControl({ setting }: { setting: SettingDeclaration }) {
       return <NumberControl setting={setting} nature={nature} />
     case 'range':
       return <RangeControl setting={setting} nature={nature} />
+    case 'time':
+      return <TimeControl setting={setting} />
     case 'text':
       return <TextControl setting={setting} nature={nature} />
     case 'secret':
@@ -271,6 +273,19 @@ function RangeControl({
         {current} {nature.unit}
       </span>
     </div>
+  )
+}
+
+function TimeControl({ setting }: { setting: SettingDeclaration }) {
+  return (
+    <Input
+      id={setting.id}
+      type="time"
+      className={cn('w-full tabular-nums', followingClass(setting))}
+      disabled={setting.disabled}
+      value={String(setting.value ?? '')}
+      onChange={(event) => setting.onChange(event.target.value)}
+    />
   )
 }
 

@@ -71,7 +71,6 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
   const usedRatio =
     stats.storage && stats.storage.totalGb > 0 ? stats.storage.usedGb / stats.storage.totalGb : 0
   const frameRates = receivedFrameRates(stats, cameras)
-  const lagging = frameRates.filter((row) => row.lagging).map((row) => row.label)
 
   return (
     <Panel status={stats.status}>
@@ -95,13 +94,7 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
         </dl>
       )}
 
-      <TechnicalDetails inFault={lagging.length > 0}>
-        {lagging.length > 0 && (
-          <p className="mb-3 text-destructive">
-            Trop peu d’images reçues de {LIST_FORMAT.format(lagging)}. La surveillance y est moins
-            fiable : vérifiez la caméra et sa connexion au réseau.
-          </p>
-        )}
+      <TechnicalDetails>
         <dl className="space-y-3">
           <div>
             <dt className="text-muted-foreground">Analyse des images</dt>
@@ -115,12 +108,10 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
             <div>
               <dt className="text-muted-foreground">Images reçues par seconde</dt>
               <dd className="mt-1 space-y-0.5">
-                {frameRates.map(({ key, label, fps, lagging }) => (
+                {frameRates.map(({ key, label, fps }) => (
                   <span key={key} className="flex justify-between gap-3">
                     <span className="min-w-0 truncate">{label}</span>
-                    <span className={cn('tabular-nums', lagging && 'text-destructive')}>
-                      {FPS_FORMAT.format(fps)}
-                    </span>
+                    <span className="tabular-nums">{FPS_FORMAT.format(fps)}</span>
                   </span>
                 ))}
               </dd>
@@ -138,10 +129,6 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
   )
 }
 
-/** Under one frame a second, the camera is no longer keeping up. */
-const LAGGING_FPS = 1
-
-const LIST_FORMAT = new Intl.ListFormat('fr')
 const FPS_FORMAT = new Intl.NumberFormat('fr', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -150,17 +137,11 @@ const FPS_FORMAT = new Intl.NumberFormat('fr', {
 /** Rates come keyed by the engine's camera name; the user knows the name they gave (principle 2). */
 function receivedFrameRates(stats: SystemStats, cameras: Camera[]) {
   const byEngineKey = new Map(cameras.map((camera) => [camera.frigateCameraName, camera]))
-  return stats.cameras.map(({ camera: engineKey, fps }) => {
-    const camera = byEngineKey.get(engineKey)
-    // A paused camera sends nothing on purpose; an unknown one awaits the next restart.
-    const expectedToStream = camera !== undefined && camera.isEnabled && !camera.privacyModeActive
-    return {
-      key: engineKey,
-      label: camera?.displayName ?? 'Caméra retirée ou renommée',
-      fps,
-      lagging: expectedToStream && fps < LAGGING_FPS,
-    }
-  })
+  return stats.cameras.map(({ camera: engineKey, fps }) => ({
+    key: engineKey,
+    label: byEngineKey.get(engineKey)?.displayName ?? 'Caméra retirée ou renommée',
+    fps,
+  }))
 }
 
 function Panel({ status, children }: { status: FrigateStatus; children: ReactNode }) {

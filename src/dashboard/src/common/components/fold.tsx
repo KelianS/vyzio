@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type Ref } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
 
 /** The in-card fold's look, one home; its meaning belongs to the component that uses it. */
@@ -7,7 +7,6 @@ export function Fold({
   defaultOpen,
   bodyClassName,
   lazy,
-  ref,
   children,
 }: {
   summary: ReactNode
@@ -15,14 +14,12 @@ export function Fold({
   bodyClassName: string
   /** Draws the body only once opened: a closed fold then holds no control of its own. */
   lazy?: boolean
-  ref?: Ref<HTMLDetailsElement>
   children: ReactNode
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false)
 
   return (
     <details
-      ref={ref}
       open={defaultOpen}
       onToggle={(event) => setOpen(event.currentTarget.open)}
       className="group mt-4 rounded-inset bg-muted/50"

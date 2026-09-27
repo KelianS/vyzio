@@ -60,6 +60,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _notifications,
             new NotificationChannelCatalog([_telegram, _discord]),
             channelConfigs,
+            new ScheduleRuleRepository(_db),
             Substitute.For<IFrigateEventImageProvider>(),
             _clipProvider,
             new DetectionMessageFormatter(),

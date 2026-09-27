@@ -24,4 +24,30 @@ test.describe('HubView technical details', () => {
     await expect(card.getByText('Jardin')).toBeVisible()
     await expect(card.getByText('salon', { exact: true })).toHaveCount(0)
   })
+
+  test('SurveillanceCard_ShouldStayFoldedAndQuiet_WhenACameraIsOfflineAndAnotherSendsFewImages', async ({
+    page,
+  }) => {
+    const salon = makeFakeCamera({ id: 'camera-1', slug: 'salon', displayName: 'Salon' })
+    const jardin = makeFakeCamera({
+      id: 'camera-2',
+      slug: 'jardin',
+      displayName: 'Jardin',
+      status: 'offline',
+    })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        cameras: [salon, jardin],
+        receivedFps: { 'camera-1': 0.4, 'camera-2': 0 },
+      }),
+    )
+
+    await page.goto('/')
+    const card = page.getByRole('region', { name: 'Surveillance' })
+
+    // A low rate is most often the machine, not the camera: the card reads nothing into it.
+    await expect(card.getByText('380 Go libres sur 500 Go')).toBeVisible()
+    await expect(card.getByText('Images reçues par seconde')).toBeHidden()
+  })
 })

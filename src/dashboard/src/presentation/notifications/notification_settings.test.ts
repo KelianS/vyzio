@@ -21,26 +21,20 @@ describe('toNotificationValues', () => {
       allowedLabels: DEFAULT_NOTIFICATION_VALUES.allowedLabels,
       messageFields: DEFAULT_NOTIFICATION_VALUES.messageFields,
       mediaMode: 'clip_or_photo',
-      restrictHours: false,
-      fromHour: 8,
-      toHour: 22,
       limitRepeats: false,
       cooldownMinutes: 5,
     })
   })
 
-  it('toNotificationValues_ShouldShowTheRangeAndTheCooldown_WhenTheChannelHasThem', () => {
+  it('toNotificationValues_ShouldShowTheCooldown_WhenTheChannelHasOne', () => {
     // Arrange
-    const config = makeChannelConfig({ activeFromHour: 22, activeToHour: 6, cooldownMinutes: 15 })
+    const config = makeChannelConfig({ cooldownMinutes: 15 })
 
     // Act
     const values = toNotificationValues(config)
 
     // Assert
     expect(values).toMatchObject({
-      restrictHours: true,
-      fromHour: 22,
-      toHour: 6,
       limitRepeats: true,
       cooldownMinutes: 15,
     })
@@ -91,20 +85,15 @@ describe('toSaveRequest', () => {
     // Assert
     expect(request).toMatchObject({
       credentials: { chat_id: '42' },
-      activeFromHour: null,
-      activeToHour: null,
       cooldownMinutes: undefined,
       clearCooldown: true,
     })
   })
 
-  it('toSaveRequest_ShouldSendTheRangeAndTheCooldown_WhenTheLimitsAreOn', () => {
+  it('toSaveRequest_ShouldSendTheCooldown_WhenTheLimitIsOn', () => {
     // Arrange
     const values = {
       ...DEFAULT_NOTIFICATION_VALUES,
-      restrictHours: true,
-      fromHour: 22,
-      toHour: 6,
       limitRepeats: true,
       cooldownMinutes: 15,
     }
@@ -114,8 +103,6 @@ describe('toSaveRequest', () => {
 
     // Assert
     expect(request).toMatchObject({
-      activeFromHour: 22,
-      activeToHour: 6,
       cooldownMinutes: 15,
       clearCooldown: false,
     })

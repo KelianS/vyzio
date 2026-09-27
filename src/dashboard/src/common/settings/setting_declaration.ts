@@ -54,6 +54,8 @@ export type SettingNature =
       readonly max: number
       readonly step?: number
     }
+  /** Time of day, "HH:mm" -> a time field (ADR-63). */
+  | { readonly kind: 'time' }
   /** Free text. Rare: often a choice that was misidentified. */
   | { readonly kind: 'text'; readonly placeholder?: string }
   /** Secret -> a masked field, with a reveal: one must be able to re-read it. */

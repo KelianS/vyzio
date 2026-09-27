@@ -16,11 +16,6 @@ import type { CameraRepository } from '../../domain/ports/camera.port'
 import type { DiscoveryRequest } from '../../domain/ports/camera.port'
 import type { VendorAssistanceRequest } from '../../domain/ports/camera.port'
 import type {
-  CreatePrivacyScheduleInput,
-  UpdatePrivacyScheduleInput,
-} from '../../domain/ports/camera.port'
-import type { CameraPrivacySchedule } from '../../domain/entities/camera_privacy_schedule.entity'
-import type {
   CameraCapabilityBinding,
   Capability,
   SupportedProtocol,
@@ -204,37 +199,6 @@ export class HttpCameraRepository implements CameraRepository {
       { cameraIds, active },
     )
     return payload.map(mapCamera)
-  }
-
-  async getPrivacySchedules(cameraId: string): Promise<CameraPrivacySchedule[]> {
-    return fetchJson<CameraPrivacySchedule[]>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules`,
-    )
-  }
-
-  async createPrivacySchedule(
-    cameraId: string,
-    input: CreatePrivacyScheduleInput,
-  ): Promise<CameraPrivacySchedule> {
-    return postJson<CameraPrivacySchedule>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules`,
-      input,
-    )
-  }
-
-  async updatePrivacySchedule(
-    cameraId: string,
-    scheduleId: string,
-    input: UpdatePrivacyScheduleInput,
-  ): Promise<CameraPrivacySchedule> {
-    return patchJson<CameraPrivacySchedule>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`,
-      input,
-    )
-  }
-
-  async deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void> {
-    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/schedules/${scheduleId}`)
   }
 
   async setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera> {

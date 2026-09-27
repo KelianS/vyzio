@@ -4,7 +4,6 @@ import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
-import { midnightRangeHint } from '../../common/settings/midnight_range'
 import { HelpPanel } from '../../common/components/help_panel'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
@@ -13,6 +12,8 @@ import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { ReadFailure } from '../../common/components/error_message'
+import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
+import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { Button } from '../../common/ui/button'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -56,25 +57,23 @@ const MESSAGE_FIELD_OPTIONS = [
 
 const TRIGGERS_LABEL = 'Ce qui déclenche une notification'
 
-const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`
-
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
-  value: String(hour),
-  label: hourLabel(hour),
-}))
-
 /** Second level of the Notifications rubric: one channel, whichever it is (ADR-40, ADR-50). */
 export function NotificationChannelView() {
   const { channel: slug } = useParams()
   const channel = parseNotificationChannelName(slug)
-  const { notifications: container } = useAppContainer()
+  const { notifications: container, schedules: schedulesContainer } = useAppContainer()
   const { toast } = useToast()
   const [uido, dispatch] = useReducer(
     notificationChannelReducer,
     undefined,
     buildInitialNotificationChannelUido,
   )
-  const presenter = usePresenter(buildNotificationChannelPresenter, { container, dispatch, toast })
+  const presenter = usePresenter(buildNotificationChannelPresenter, {
+    container,
+    schedulesContainer,
+    dispatch,
+    toast,
+  })
 
   useEffect(() => {
     if (channel) presenter.onLoad(channel)
@@ -209,38 +208,7 @@ function ChannelForm({
       value: draft.values.minimumConfidence,
       onChange: (value) => draft.set('minimumConfidence', value as number),
     },
-    {
-      id: 'channel-hours',
-      label: 'Seulement à certaines heures',
-      nature: { kind: 'toggle' },
-      value: draft.values.restrictHours,
-      onChange: (value) => draft.set('restrictHours', value as boolean),
-    },
   ]
-
-  if (draft.values.restrictHours) {
-    when.push(
-      {
-        id: 'channel-from',
-        label: 'À partir de',
-        nature: { kind: 'choice', options: HOUR_OPTIONS },
-        value: String(draft.values.fromHour),
-        onChange: (value) => draft.set('fromHour', Number(value)),
-      },
-      {
-        id: 'channel-to',
-        label: 'Jusqu’à',
-        nature: { kind: 'choice', options: HOUR_OPTIONS },
-        // A range ending before it starts crosses midnight, the common case worth stating.
-        consequence:
-          draft.values.fromHour > draft.values.toHour
-            ? midnightRangeHint(hourLabel(draft.values.toHour))
-            : undefined,
-        value: String(draft.values.toHour),
-        onChange: (value) => draft.set('toHour', Number(value)),
-      },
-    )
-  }
 
   when.push({
     id: 'channel-cooldown-on',
@@ -397,6 +365,14 @@ function ChannelForm({
               </div>
             )}
             <SettingsList settings={when} />
+            {/* Outside the list: a count and a link are not a setting (ADR-43, ADR-63). */}
+            <ScheduleCountLine
+              rules={uido.rules}
+              kind={ScheduleRuleKind.MuteNotifications}
+              targetId={channel}
+              error={uido.rulesError}
+              onRetry={presenter.onRetryRules}
+            />
 
             <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
               <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
@@ -404,7 +380,7 @@ function ChannelForm({
                 <li>le canal est activé et entièrement renseigné ;</li>
                 <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
                 <li>la certitude atteint le seuil ;</li>
-                <li>l’heure est dans la plage, s’il y en a une ;</li>
+                <li>aucune plage « Sans notification » ne s’applique à ce moment ;</li>
                 <li>aucun envoi récent ne le fait taire ;</li>
                 <li>l’événement ne lui a pas déjà été envoyé.</li>
               </ul>

@@ -33,10 +33,6 @@ public class NotificationChannelConfig
 
     public string? AllowedLabelsJson { get; set; }
 
-    public int? ActiveFromHour { get; set; }
-
-    public int? ActiveToHour { get; set; }
-
     public int? CooldownMinutes { get; set; }
 
     // --- What to send ---------------------------------------------------

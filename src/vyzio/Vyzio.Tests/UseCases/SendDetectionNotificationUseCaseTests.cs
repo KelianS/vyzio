@@ -18,6 +18,7 @@ public class SendDetectionNotificationUseCaseTests
     private readonly INotificationChannelSender _telegram = FakeSender(NotificationChannel.Telegram);
     private readonly INotificationChannelSender _discord = FakeSender(NotificationChannel.Discord);
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
+    private readonly IScheduleRuleRepository _scheduleRules = Substitute.For<IScheduleRuleRepository>();
 
     private static NotificationChannelConfig ActiveConfig(NotificationChannel channel = NotificationChannel.Telegram)
         => new()
@@ -62,6 +63,7 @@ public class SendDetectionNotificationUseCaseTests
             _notifications,
             new NotificationChannelCatalog(senders),
             _channelConfigs,
+            _scheduleRules,
             _imageProvider,
             _clipProvider,
             new DetectionMessageFormatter(),
@@ -80,6 +82,7 @@ public class SendDetectionNotificationUseCaseTests
     {
         Configure(ActiveConfig());
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _scheduleRules.GetByKindAsync(Arg.Any<ScheduleRuleKind>(), Arg.Any<CancellationToken>()).Returns([]);
     }
 
     [Fact]
@@ -290,19 +293,45 @@ public class SendDetectionNotificationUseCaseTests
         Assert.False(sent);
     }
 
-#pragma warning disable format // Aligned as a table so each row reads against the others.
-    [Theory]
-    [InlineData(8, 22, 10, true)]
-    [InlineData(8, 22, 7,  false)]
-    [InlineData(8, 22, 22, false)]
-    [InlineData(22, 6,  23, true)]
-    [InlineData(22, 6,  3,  true)]
-    [InlineData(22, 6,  10, false)]
-    [InlineData(null, 22, 10, true)]
-    [InlineData(8, null, 10, true)]
-    public void IsWithinActiveHours_ShouldTellWhetherTheHourIsActive_WhenTheWindowIsPlainWrapsMidnightOrIsHalfSet(int? from, int? to, int hour, bool expected)
-        => Assert.Equal(expected, SendDetectionNotificationUseCase.IsWithinActiveHours(hour, from, to));
-#pragma warning restore format
+    // The detection happens on Sunday 2026-05-10 at 10:15, local time.
+    private static ScheduleRule SundayMorningMute(string channel) => new()
+    {
+        Kind = ScheduleRuleKind.MuteNotifications,
+        DaysOfWeek = "[0]",
+        StartTime = "09:00",
+        EndTime = "12:00",
+        Targets = [new ScheduleRuleTarget { TargetId = channel }],
+    };
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothing_WhenAMutingRangeCoversTheChannelAtTheDetectionTime()
+    {
+        // Arrange
+        _scheduleRules.GetByKindAsync(ScheduleRuleKind.MuteNotifications, Arg.Any<CancellationToken>())
+            .Returns([SundayMorningMute("telegram")]);
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceive().SendAsync(
+            Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStillSendOnAChannel_WhenTheMutingRangeTargetsAnotherOne()
+    {
+        // Arrange
+        _scheduleRules.GetByKindAsync(ScheduleRuleKind.MuteNotifications, Arg.Any<CancellationToken>())
+            .Returns([SundayMorningMute("discord")]);
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.True(sent);
+    }
 
     private static DateTimeOffset LocalTime(int year, int month, int day, int hour, int minute) =>
         new(year, month, day, hour, minute, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(year, month, day, hour, minute, 0)));

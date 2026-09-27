@@ -22,6 +22,8 @@ export const ApiErrorCode = {
   ScheduleNoDay: 'schedule_no_day',
   ScheduleInvalidTime: 'schedule_invalid_time',
   ScheduleEmptyRange: 'schedule_empty_range',
+  ScheduleNoTarget: 'schedule_no_target',
+  ScheduleUnknownTarget: 'schedule_unknown_target',
   ProtocolNotOnCamera: 'protocol_not_on_camera',
 } as const
 
