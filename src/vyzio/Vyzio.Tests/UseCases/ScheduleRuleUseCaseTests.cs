@@ -24,7 +24,6 @@ public class ScheduleRuleUseCaseTests
         FrigateCameraName = id,
         DisplayName = id,
         Host = "192.168.1.10",
-        Port = 554,
     };
 
     private static INotificationChannelSender Sender(NotificationChannel channel)
