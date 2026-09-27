@@ -199,10 +199,11 @@ screens, whatever the number of rule types:
   narrower than its icon, so a short range stays tappable; its exact times are the range's own.
   Overlapping ranges stack in lanes, none hidden. A range crossing midnight runs to the end of its
   day with a square edge, and continues from the start of the next day's bar with a square edge
-  (Sunday's into Monday). A block opens its range. Today's name is emphasised and a thin line marks
-  the house's current time on its bar, read from the server, never the device's clock; when that
-  clock cannot be read, the line is left out rather than shown stale. Never seven columns: at phone
-  width a column holds no readable time, and on a wide screen the bars only grow longer.
+  (Sunday's into Monday); one ending at 00:00 sharp stops at the end of its day, leaving nothing on
+  the next. A block opens its range. Today's name is emphasised and a thin line marks the house's
+  current time on its bar, read from the server, never the device's clock; when that clock cannot be
+  read, the line is left out rather than shown stale. Never seven columns: at phone width a column
+  holds no readable time, and on a wide screen the bars only grow longer.
 - **The week is its own text equivalent.** Each day is a list headed by its full name; a block's
   accessible name is the full reading: **type name** · *times* (`22:00 → 06:00 le lendemain`, or
   `jusqu'a 06:00, depuis la veille` for a tail) · *targets*, named two at most then a count, a
