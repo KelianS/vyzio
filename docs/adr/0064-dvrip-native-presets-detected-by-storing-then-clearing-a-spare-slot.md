@@ -59,4 +59,4 @@ capability is verified, which the login alone decides, like the ONVIF preset cou
   the counted ones, and neither tier can reach the other's. After a probe changes the tier, the
   positions saved on the other one read as not saved, so a recall or a privacy parking says the
   position is missing rather than claim a move, and the user saves them again. They are kept, and
-  count again if the tier comes back.
+  count again if the tier comes back, unless the slot was saved again in the meantime.
