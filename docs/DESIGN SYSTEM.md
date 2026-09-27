@@ -221,6 +221,11 @@ An error reads at two levels ([SPECS](SPECS.md) 1.5).
 - **A read that fails shows where its data would have been**, with `Réessayer`, never an empty or
   welcome state that passes for a real answer. When it fails under data already shown, the data stays
   and the failure goes to a toast.
+- **A failed read first says what could not be read**, before the error's own sentence: a heading when
+  the failure fills a page nothing else names, a plain sentence inside a page the shell already names,
+  which never gains a title for it (§ Settings screens).
+- **An answer that the thing no longer exists is not a failed read**: it is said as such, heading or
+  sentence by the same measure, with the way back, never `Réessayer`, which cannot succeed.
 
 ### Cross-cutting bans
 
