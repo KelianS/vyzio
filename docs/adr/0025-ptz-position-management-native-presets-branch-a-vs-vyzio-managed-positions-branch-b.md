@@ -1,6 +1,6 @@
 # ADR-25 — Gestion des positions PTZ : presets natifs (Branch A) vs positions Vyzio-managed (Branch B)
 
-> Statut : Accepté
+> Statut : Superseded by [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) (where homing and position tracking live), amended by [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md)
 
 ## Contexte
 

@@ -26,4 +26,4 @@ create an empty TAD in anticipation.
 - **Frigate integration**: the MQTT and REST contract consumed, `FrigateAdapter`, `config.yml`
   generation. Sources: ADR-04, ADR-05, ADR-13, ADR-16, ADR-17, ADR-18.
 - **PTZ and positions**: native presets against Vyzio-managed ones, thumbnails. Sources: ADR-21,
-  ADR-25, ADR-26.
+  ADR-25, ADR-26, ADR-59.

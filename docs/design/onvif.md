@@ -15,7 +15,7 @@
 ## Role
 
 Speak ONVIF to any compliant camera, whatever port and path that camera happens to serve it on, and
-whatever brand is on the box. Feature logic (PTZ steps, imaging, presets) lives in the providers; this
+whatever brand is on the box. Feature logic (PTZ steps, imaging, native presets) lives in the providers; this
 document covers the transport and how its address is found.
 
 ## Layers
