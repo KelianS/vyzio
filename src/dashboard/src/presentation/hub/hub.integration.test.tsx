@@ -5,6 +5,8 @@ import { makeCamera } from '../../testing/camera_fixture'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
+import { pollTheSurveillance } from '../../testing/shared_reads'
+import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { HubView } from './hub.component'
 
 const overview = {
@@ -13,6 +15,14 @@ const overview = {
   profiles: [],
   notifications: { activeChannels: 0, sentCount: 0, lastSentAt: null },
   warnings: [],
+}
+
+const running: SystemStats = {
+  status: 'active',
+  storage: { totalGb: 100, usedGb: 40, freeGb: 60 },
+  cameras: [{ camera: 'front_door', fps: 10 }],
+  detection: { hardware: 'cpu', targetFps: 5 },
+  pendingChanges: false,
 }
 
 describe('HubView', () => {
@@ -136,5 +146,47 @@ describe('HubView', () => {
     expect(
       within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Tout couper' }),
     ).toBeEnabled()
+  })
+
+  it('SurveillanceCard_ShouldShowOnlyTheStateAndTheDisk_WhenSurveillanceRuns', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/system/stats': ok(running),
+    })
+    renderScreen(<HubView />)
+    await screen.findByRole('heading', { name: '1 caméra sous surveillance' })
+
+    // Act
+    await pollTheSurveillance()
+
+    // Assert
+    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
+    expect(card.getByText('En marche')).toBeVisible()
+    expect(card.getByText('60 Go libres sur 100 Go')).toBeVisible()
+    expect(card.getByText('Processeur · 5 images par seconde')).not.toBeVisible()
+    expect(card.getByText('Front Door')).not.toBeVisible()
+  })
+
+  it('SurveillanceCard_ShouldShowTheFiguresUnderTheCameraNames_WhenTheUserOpensTheDetails', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/system/stats': ok(running),
+    })
+    renderScreen(<HubView />)
+    await screen.findByRole('heading', { name: '1 caméra sous surveillance' })
+    await pollTheSurveillance()
+    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
+
+    // Act
+    await userEvent.click(card.getByText('Détails techniques'))
+
+    // Assert
+    expect(card.getByText('Processeur · 5 images par seconde')).toBeVisible()
+    expect(card.getByText('Front Door')).toBeVisible()
+    expect(card.getByText('10,0')).toBeVisible()
   })
 })

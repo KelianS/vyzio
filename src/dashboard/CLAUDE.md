@@ -87,9 +87,10 @@ in `presentation/` and `common/` except presenters and screen components.
 - **Styles**: Tailwind v4 only, with the [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) tokens defined
   in `src/index.css`. No literal colour or radius in a component.
 - A setting **is declared, it is not drawn** ([ADR-43](../../docs/adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)).
-- The end-of-page `Avancé` fold, a section's long-form help, a detection list and a detection preview
-  each have one shared component in `common/`. Reuse it: never a rewritten `<details>`, a second
-  rendering, or a bare `<img>` that stays broken when surveillance restarts (ADR-40, ADR-53).
+- The end-of-page `Avancé` fold, a section's long-form help, a card's `Détails techniques`, a detection
+  list and a detection preview each have one shared component in `common/`. Reuse it: never a
+  rewritten `<details>`, a second rendering, or a bare `<img>` that stays broken when surveillance
+  restarts (ADR-40, ADR-53).
 - A feature's help is written in the screen, never in a markdown file
   ([ADR-53](../../docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
 - Keep screens light, per the [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) § Intent and § Settings

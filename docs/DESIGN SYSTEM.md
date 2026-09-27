@@ -173,6 +173,23 @@ An `En savoir plus` panel is not the `Avance` fold, which is an end-of-page posi
 ([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)):
 help opens next to what it explains.
 
+### Technical details: figures for support
+
+On a viewing screen, a figure the user cannot act on (a frame rate, the detection hardware) is not
+shown on the card: it sits in a **`Details techniques`** fold at the end of the card it belongs to,
+closed by default. The fold is the `common/components/technical_details` component, never a rewritten
+`<details>`. It follows three boundaries:
+
+- **A fault is never only a figure**: when a watched camera no longer keeps up, the fold opens on its
+  own and a plain sentence first names the camera and what to check (principle 4). It never closes by
+  itself. A paused camera sends nothing on purpose: that is not a fault.
+- **It speaks the product's words**: a camera shows under the name the user gave it, never an internal
+  identifier; one Vyzio no longer knows reads `Camera retiree ou renommee`. It is not a place for
+  technical names ([SPECS](SPECS.md) 1.5).
+- **It is neither `Avance` nor help nor an error's detail**: it holds no setting (those go to the
+  `Avance` fold), no explanation (the `En savoir plus` panel), and never the diagnostic line of an
+  error, which stays visible under its sentence (§ Errors).
+
 ### Style and theme
 
 `App.css` (global CSS with hand-named classes) no longer exists: one styling system only, Tailwind plus
@@ -198,6 +215,7 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`, `Systeme`).
 - The end-of-page fold is called `Avance`. It is not a mode to switch on: it is a position.
+- The in-card fold of figures for support is called `Details techniques` (§ Technical details).
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
   settings screen, since the word promises a list of events, which the user finds under `Historique`.
 
