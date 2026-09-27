@@ -13,10 +13,7 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 // message (same rationale as CameraCommandException, ADR-28 follow-up).
 public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
 
-// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client — binary framing over TCP port 34567,
-// JSON payloads. Covers ICSee, Annke, Sannce, Zosi and other XMEye-chipset cameras.
-// Wire format and command codes confirmed against real hardware —
-// see docs/investigations/icsee_dvrip_privacy.md. Registered as Singleton: stateless.
+// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client, singleton and stateless: how it is used is in docs/design/dvrip.md.
 internal sealed class DvripClient(TimeProvider time)
 {
     private const int LoginCmd = 1000;

@@ -112,7 +112,21 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldStoreThenClearASpareSlotAboveVyzios_WhenItLooksForNativePresets()
+    public async Task ProbeAsync_ShouldStoreNothing_WhenTheAnswerCarriesNoPresetList()
+    {
+        // Arrange
+        await using var fake = FakeDvripCamera.Start(LoginOk, _ => OkAnswer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
+        Assert.Equal(1, fake.UnreadCommands);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldStoreThenClearTheHighestSlot_WhenNoPresetIsStoredYet()
     {
         // Arrange
         var presets = new FakeDvripPresets();
@@ -172,7 +186,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task PtzSavePresetAsync_ShouldStoreTheSlotInTheCamera_WhenCalled()
+    public async Task PtzSavePresetAsync_ShouldStoreTheSlotInTheCamera_WhenTheCameraKeepsNativePresets()
     {
         // Arrange
         var presets = new FakeDvripPresets();
@@ -186,7 +200,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task PtzGoToPresetAsync_ShouldRecallTheSlotStoredInTheCamera_WhenCalled()
+    public async Task PtzGoToPresetAsync_ShouldRecallTheSlotStoredInTheCamera_WhenTheCameraKeepsNativePresets()
     {
         // Arrange
         var presets = new FakeDvripPresets(stored: [PtzPreset.SurveillanceSlot]);
@@ -601,6 +615,8 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
     public CameraCapabilityBinding Binding { get; } = new() { CameraId = "cam", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Dvrip };
 
     public int Logins => Volatile.Read(ref _logins);
+
+    public int UnreadCommands => _commands.Reader.Count;
 
     // A null command hangs up at the first command, hangUpAt at that command; the first silentFirst connections never answer a command; held answers wait for ReleaseAnswers.
     public static FakeDvripCamera Start(string login, string? command, int silentFirst = 0, int hangUpAt = 0, bool holdAnswers = false, TimeProvider? clock = null)
