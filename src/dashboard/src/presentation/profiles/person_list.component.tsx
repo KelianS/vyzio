@@ -25,7 +25,12 @@ export function PersonListView() {
     <SettingsPage lede="Les personnes que Vyzio reconnaît, et ce qu’il en fait.">
       {uido.error ? (
         // An unread list is not an empty one: "nobody yet" would be false.
-        <ReadFailure error={uido.error} onRetry={presenter.onLoad} className="py-3" />
+        <ReadFailure
+          error={uido.error}
+          onRetry={presenter.onLoad}
+          subject="La liste des personnes n’a pas pu être lue."
+          className="py-3"
+        />
       ) : uido.people.length > 0 ? (
         <ul className="divide-y divide-border">
           {uido.people.map((person) => (

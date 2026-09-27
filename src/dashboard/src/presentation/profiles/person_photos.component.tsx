@@ -36,7 +36,11 @@ export function PersonPhotosView() {
   if (uido.error)
     return (
       <SettingsPage>
-        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(personId)} />
+        <ReadFailure
+          error={uido.error}
+          onRetry={() => presenter.onLoad(personId)}
+          subject="Les photos de cette personne n’ont pas pu être lues."
+        />
       </SettingsPage>
     )
 
