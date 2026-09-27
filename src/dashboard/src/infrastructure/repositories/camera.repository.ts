@@ -369,7 +369,7 @@ function mapCamera(camera: CameraDto): Camera {
     privacyMiss: privacyMissOf(camera.privacyMiss),
     privacyMissDetail: camera.privacyMissDetail ?? null,
     ptzSupported: camera.ptzSupported ?? false,
-    privacyStrategy: (camera.privacyStrategy || 'none') as Camera['privacyStrategy'],
+    privacyStrategy: camera.privacyStrategy as Camera['privacyStrategy'],
     supportedProtocols: camera.supportedProtocols ?? [],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     connected: camera.status === 'online',

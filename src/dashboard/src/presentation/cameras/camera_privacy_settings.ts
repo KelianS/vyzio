@@ -46,15 +46,9 @@ export const STRATEGY_LABEL = 'En mode vie privée'
  */
 const STRATEGIES: readonly StrategyDefinition[] = [
   {
-    value: PrivacyStrategy.None,
-    label: 'Aucun',
-    explanation: `${NOTHING_KEPT} Rien n’est demandé à la caméra : elle continue de filmer et ${STILL_VIEWABLE}.`,
-    unavailable: always,
-  },
-  {
     value: PrivacyStrategy.SoftwareBlur,
     label: 'Arrêt logiciel',
-    explanation: `${NOTHING_KEPT} La caméra continue de filmer et ${STILL_VIEWABLE}.`,
+    explanation: `${NOTHING_KEPT} Rien n’est demandé à la caméra : elle continue de filmer et ${STILL_VIEWABLE}.`,
     unavailable: always,
   },
   {

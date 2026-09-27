@@ -49,17 +49,18 @@ async function clearTheWeekdays() {
 }
 
 describe('CameraPrivacyView', () => {
-  it('onLoad_ShouldShowTheChoiceItsConsequenceAndAnAddButton_WhenNoneIsChosenWithNoRange', async () => {
+  it('onLoad_ShouldShowTheChoiceItsConsequenceAndAnAddButton_WhenTheSoftwareStopIsChosenWithNoRange', async () => {
     // Arrange
     fakeNetwork({ [SCHEDULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
-    const noneCamera = makeCamera({ ptzSupported: true, privacyStrategy: PrivacyStrategy.None })
 
     // Act
-    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: noneCamera })
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
 
     // Assert
     expect(await screen.findByText('Aucune plage.')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent('Aucun')
+    expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent(
+      'Arrêt logiciel',
+    )
     expect(screen.getByText(/Rien n’est demandé à la caméra/)).toBeVisible()
     expect(screen.queryByText(/Parking/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ajouter une plage' })).toBeVisible()
@@ -404,16 +405,17 @@ describe('CameraPrivacyView', () => {
 
   it('onSaveStrategy_ShouldSaveTheChosenMode_WhenTheUserSaves', async () => {
     // Arrange
+    const cutCamera = makeCamera({ verifiedCapabilities: ['hardware_privacy'] })
     const network = fakeNetwork({
       [SCHEDULES]: ok([]),
-      'PATCH /api/cameras/camera-1/privacy-strategy': ok(camera),
-      'GET /api/cameras': ok([camera]),
+      'PATCH /api/cameras/camera-1/privacy-strategy': ok(cutCamera),
+      'GET /api/cameras': ok([cutCamera]),
     })
-    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: cutCamera })
     await screen.findByText('Aucune plage.')
-    // The keyboard picks from the list the way it opens, highlighted on the current mode.
+    // The list opens on the current mode; the next choosable one skips the greyed Parking.
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
-    await userEvent.keyboard('{ArrowDown}{ArrowUp}{Enter}')
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -423,7 +425,7 @@ describe('CameraPrivacyView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'PATCH /api/cameras/camera-1/privacy-strategy',
-        body: { strategy: PrivacyStrategy.None },
+        body: { strategy: PrivacyStrategy.Hardware },
       }),
     )
   })

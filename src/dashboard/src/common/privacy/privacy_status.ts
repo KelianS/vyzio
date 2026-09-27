@@ -32,7 +32,6 @@ const DID_NOT_FOLLOW: Record<PrivacyMiss, boolean> = {
 
 /** Whether the strategy asks anything of the camera; a miss left under one that does not is stale and says nothing. */
 const ASKS_THE_CAMERA: Record<PrivacyStrategy, boolean> = {
-  [PrivacyStrategy.None]: false,
   [PrivacyStrategy.SoftwareBlur]: false,
   [PrivacyStrategy.PtzParking]: true,
   [PrivacyStrategy.Hardware]: true,
@@ -40,7 +39,6 @@ const ASKS_THE_CAMERA: Record<PrivacyStrategy, boolean> = {
 
 /** What an accepted request did, per strategy; a strategy that asks nothing of the camera claims nothing. */
 const FOLLOWED: Record<PrivacyStrategy, PrivacyBadge> = {
-  [PrivacyStrategy.None]: RECORDING_OFF,
   [PrivacyStrategy.SoftwareBlur]: RECORDING_OFF,
   [PrivacyStrategy.PtzParking]: {
     text: 'Caméra orientée, enregistrement désactivé',
@@ -53,14 +51,12 @@ const FOLLOWED: Record<PrivacyStrategy, PrivacyBadge> = {
 
 /** What did not happen, named per strategy rather than as a vague miss; null where nothing is asked of the camera. */
 const MISSED_BADGE: Record<PrivacyStrategy, string | null> = {
-  [PrivacyStrategy.None]: null,
   [PrivacyStrategy.SoftwareBlur]: null,
   [PrivacyStrategy.PtzParking]: 'Caméra non tournée, enregistrement désactivé',
   [PrivacyStrategy.Hardware]: 'Objectif non coupé, enregistrement désactivé',
 }
 
 const MISSED_LABEL: Record<PrivacyStrategy, { on: string; off: string } | null> = {
-  [PrivacyStrategy.None]: null,
   [PrivacyStrategy.SoftwareBlur]: null,
   [PrivacyStrategy.PtzParking]: {
     on: 'La caméra ne s’est pas tournée',
@@ -74,7 +70,6 @@ const MISSED_LABEL: Record<PrivacyStrategy, { on: string; off: string } | null> 
 
 /** The sentence per strategy; the ones that ask nothing of the camera are stopped by ASKS_THE_CAMERA first. */
 const UNVERIFIED: Record<PrivacyStrategy, string | null> = {
-  [PrivacyStrategy.None]: null,
   [PrivacyStrategy.SoftwareBlur]: null,
   [PrivacyStrategy.PtzParking]:
     'L’orientation de cette caméra n’est pas vérifiée : elle n’a pas bougé, seul l’enregistrement est coupé.',
@@ -83,7 +78,6 @@ const UNVERIFIED: Record<PrivacyStrategy, string | null> = {
 }
 
 const REFUSED_ON: Record<PrivacyStrategy, string | null> = {
-  [PrivacyStrategy.None]: null,
   [PrivacyStrategy.SoftwareBlur]: null,
   [PrivacyStrategy.PtzParking]: `La caméra ne s’est pas tournée vers sa position Parking : ${STILL_FILMING} ${CHECK_CAMERA}`,
   [PrivacyStrategy.Hardware]: `La caméra n’a pas coupé son objectif : ${STILL_FILMING} ${CHECK_CAMERA}`,

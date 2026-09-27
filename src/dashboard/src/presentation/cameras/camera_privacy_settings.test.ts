@@ -34,7 +34,6 @@ describe('buildPrivacySettings', () => {
     const setting = strategyOf(camera({ ptzSupported: false, verifiedCapabilities: [] }), null)
 
     // Assert
-    expect(optionOf(setting, PrivacyStrategy.None)).toBeDefined()
     expect(optionOf(setting, PrivacyStrategy.SoftwareBlur)).toBeDefined()
     expect(optionOf(setting, PrivacyStrategy.PtzParking)).toBeDefined()
     expect(optionOf(setting, PrivacyStrategy.Hardware)).toBeDefined()
@@ -101,9 +100,9 @@ describe('buildPrivacySettings', () => {
     expect(optionOf(setting, PrivacyStrategy.Hardware)?.unavailable).toBeUndefined()
   })
 
-  it('buildPrivacySettings_ShouldSayOnlyWhatNoneDoes_WhenNoneIsChosenAndParkingIsLocked', () => {
+  it('buildPrivacySettings_ShouldSayOnlyWhatTheSoftwareStopDoes_WhenItIsChosenAndParkingIsLocked', () => {
     // Arrange & Act
-    const setting = strategyOf(camera({ privacyStrategy: PrivacyStrategy.None }), false)
+    const setting = strategyOf(camera({ privacyStrategy: PrivacyStrategy.SoftwareBlur }), false)
 
     // Assert
     expect(setting.consequence).toContain('Rien n’est demandé à la caméra')
