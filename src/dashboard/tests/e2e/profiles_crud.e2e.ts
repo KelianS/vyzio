@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState } from './fixtures/fake_backend'
+import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 test.describe('People', () => {
   test('AddPersonView_ShouldOpenThePhotosOfThePerson_WhenTheUserAddsSomeone', async ({ page }) => {
@@ -51,5 +51,42 @@ test.describe('People', () => {
     // The name belongs to the shell: if it did not follow, the page would name
     // somebody who no longer exists.
     await expect(page.getByRole('heading', { name: 'Alice Martin' })).toBeVisible()
+  })
+
+  test('PersonCamerasView_ShouldKeepTheChosenCamera_WhenTheUserRestrictsThePersonToIt', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        cameras: [
+          makeFakeCamera({ id: 'camera-1', displayName: 'Entrée' }),
+          makeFakeCamera({ id: 'camera-2', slug: 'jardin', displayName: 'Jardin' }),
+        ],
+        profiles: [
+          {
+            id: 'profile-1',
+            name: 'Alice',
+            category: 'family',
+            alertMode: 'always',
+            lastSeenAt: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    )
+    await page.goto('/settings/detection/personnes/profile-1/cameras')
+
+    // A new person is recognised everywhere: every camera is offered, none ticked.
+    const cameras = page.getByRole('combobox', { name: 'La reconnaître seulement sur' })
+    await cameras.click()
+    await expect(page.getByRole('checkbox', { name: 'Jardin' })).not.toBeChecked()
+    await page.getByRole('checkbox', { name: 'Entrée' }).click()
+    await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(page.getByText('Caméras enregistrées.')).toBeVisible()
+
+    await page.reload()
+    await expect(cameras).toHaveText(/Entrée/)
   })
 })

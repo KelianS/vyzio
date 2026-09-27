@@ -64,6 +64,18 @@ export function makeFakeDetectionEvent(
   }
 }
 
+// What the API answers for a person's links: one enabled link per camera they are restricted to.
+function fakeCameraLinks(state: FakeBackendState, profileId: string) {
+  return (state.profileCameraLinks[profileId] ?? []).map((cameraId) => ({
+    id: `link-${cameraId}`,
+    profileId,
+    profileName: '',
+    cameraId,
+    cameraDisplayName: null,
+    enabled: true,
+  }))
+}
+
 export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera {
   return {
     id: 'camera-1',
@@ -248,6 +260,8 @@ export interface FakeBackendState {
   /** The state of a channel's incoming loop, and the trace of what was asked of it (ADR-52). */
   channelListening: Record<string, FakeChannelListening>
   commandJournal: Record<string, FakeCommandJournalEntry[]>
+  /** The cameras each person is restricted to, by profile id; none means every camera. */
+  profileCameraLinks: Record<string, string[]>
   detectionHistory: FakeDetectionEvent[]
   detectionConfig: {
     labels: string[]
@@ -303,6 +317,7 @@ export function createFakeBackendState(
     notificationChannels: {},
     channelListening: {},
     commandJournal: {},
+    profileCameraLinks: {},
     detectionHistory: [],
     detectionConfig: {
       labels: ['person'],
@@ -785,7 +800,12 @@ export async function installFakeBackend(
     if (profileMatch) {
       const [, profileId, rest] = profileMatch
       if (rest === '/photos' && method === 'GET') return json(route, [])
-      if (rest === '/camera-links' && method === 'GET') return json(route, [])
+      if (rest === '/camera-links' && method === 'PUT') {
+        state.profileCameraLinks[profileId] = (postData?.cameraIds as string[]) ?? []
+        return json(route, fakeCameraLinks(state, profileId))
+      }
+      if (rest === '/camera-links' && method === 'GET')
+        return json(route, fakeCameraLinks(state, profileId))
       if (!rest && method === 'PUT') {
         const existing = state.profiles.find((p) => p.id === profileId)
         const updated = {

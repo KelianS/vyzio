@@ -2,17 +2,21 @@ import type { ToastTone } from '../../common/components/toast'
 import { toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
+import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { ProfilesContainer } from '../../infrastructure/providers/profiles.container'
+import { reloadCameraList } from '../cameras/camera_list_reload'
 import type { PersonCamerasAction } from './person_cameras.actions'
 
 export interface PersonCamerasPresenterContext {
   container: ProfilesContainer
+  camerasContainer: CamerasContainer
   dispatch: (action: PersonCamerasAction) => void
   toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
 export function buildPersonCamerasPresenter({
   container,
+  camerasContainer,
   dispatch,
   toast,
 }: PersonCamerasPresenterContext) {
@@ -35,6 +39,8 @@ export function buildPersonCamerasPresenter({
 
   return {
     onLoad: load,
+
+    onReloadCameras: () => reloadCameraList(camerasContainer),
 
     /** Resolves true once saved, so the view clears its draft. */
     async onSave(personId: string, cameraIds: string[]) {
