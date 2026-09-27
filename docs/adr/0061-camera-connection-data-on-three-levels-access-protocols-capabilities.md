@@ -12,7 +12,8 @@
 > and [ADR-30](0030-native-v380-image-settings-rejected-imagesettings-through-onvif-only.md)
 > on `Camera.SupportedProtocols` and on where the V380 device id is kept (a binding's `ConfigJson`),
 > [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) on the
-> candidates the cascade tries (only the protocols that answer), and
+> candidates the cascade tries (only the protocols that answer) and on the manual choice (only among
+> the camera's protocol rows), and
 > [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) on where the
 > resolved ONVIF endpoint is stored (`Camera.ProtocolEndpointsJson`).
 
@@ -77,7 +78,7 @@ camera has one stream binding. A path is a setting only over RTSP, where ONVIF c
 The stream is not part of the detection cascade: onboarding chooses its protocol from what discovery
 saw, and the user can change it. Detection binds it only on a camera that has none: it checks the
 stream protocols in their order, RTSP then DVRIP, and keeps the first that answers and whose stream
-check passes (d). A camera without a stream binding is verified as not connected and
+check passes, or else the first that answers, unverified with its reason (d). A camera without a stream binding is verified as not connected and
 has no place in the generated configuration until one is chosen: its stream reads "to configure",
 like any unbound capability. Changing the stream's protocol or path is a connection change, like a new
 address: the camera goes back to being checked before surveillance takes it up again.
@@ -105,8 +106,7 @@ one of its rows that can carry the capability, answering or not (a sleeping batt
 configurable): it is saved, and its test says when the protocol does not answer. A protocol the camera
 does not have is refused: the user adds it first, and it is checked then. Binding a capability never
 creates a protocol row on the side, so the rows only grow by a check or by the user's own gesture.
-The protocol half of detection can also run alone: it adds the candidate protocols that answer,
-checks the camera's rows again and binds nothing. After detection, a protocol row that could not be reached, that no capability uses and
+The protocol search can also run alone: it binds nothing and keeps every row the camera had. After detection, a protocol row that could not be reached, that no capability uses and
 that holds nothing the user entered is dropped: the rows list what the camera speaks, not what Vyzio
 tried. A protocol that refused the account is kept: the camera speaks it. Once the camera exists, the
 user adds a protocol (checked at once) and removes one; a protocol a capability goes through is never

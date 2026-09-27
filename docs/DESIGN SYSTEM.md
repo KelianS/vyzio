@@ -159,22 +159,21 @@ detail once:
   there, and changing it runs its test, so its button says `Configurer`, never `Enregistrer`. The
   choice lists the camera's protocols (the `Avance` boxes) that can carry the capability, answering or
   not: a sleeping camera stays configurable. When none can, a plain sentence replaces the list: it
-  points first at `Detecter automatiquement`, then at `Ajouter un protocole` in `Avance`. A capability that already has a card, even a
-  failing one, changes its protocol there.
+  points first at `Detecter automatiquement`, then at `Ajouter un protocole` in `Avance`. A
+  capability that already has a card, even a failing one, changes its protocol there.
 - **`Detecter automatiquement`** sits right after the cards, next to `Ajouter une capacite`, visible
-  without opening anything. It runs both levels in order: it looks for the camera's usual protocols
-  and keeps those that answer, then binds the stream, when the camera has none, and the capabilities.
-  It stays available while the stream is not chosen yet, since it chooses it.
+  without opening anything; what it does is SPECS 2.3. It stays available while the stream is not
+  chosen yet.
 - **`Ajouter une capacite`** closes the list of cards: adding a capability is a capability's action.
   It opens the manual set-up of SPECS 2.3 (the capability, then one of the camera's protocols by
-  name, the same list as in `Options`, then an immediate test). When every capability has its card, the place says so and points at the cards'
-  `Options`.
+  name, the same list as in `Options`, then an immediate test). When every capability has its card,
+  the place says so and points at the cards' `Options`; when no protocol of the camera can carry a
+  capability left to add, it says so and points at the same two ways as the cards.
 - **The page's `Avance` fold**: the camera's access (address, account), then one box per protocol the
   camera speaks, with its state pill (`Repond`, `Refuse l'acces` when the account or the device number
   is turned down, `Ne repond pas`, `Pas encore verifie`), its port, its optional
-  `Compte specifique` and its own `Verifier`, then `Retirer`; then `Rechercher les protocoles`, the
-  protocol level of `Detecter automatiquement` alone (it adds the usual protocols that answer, checks
-  those the camera has again, and touches no capability); then `Ajouter un protocole`, the manual way (a protocol
+  `Compte specifique` and its own `Verifier`, then `Retirer`; then `Rechercher les protocoles` (SPECS
+  2.3); then `Ajouter un protocole`, the manual way (a protocol
   the camera does not have yet, its port, the usual one when left empty, an optional
   `Compte specifique`, checked at once). A protocol check goes through no capability, so it is never
   suspended by a failing stream. The specific account says it is only presented to the camera, on the

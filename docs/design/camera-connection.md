@@ -96,7 +96,8 @@ protocol with a registered provider:
 The stream is not part of the cascade, except on a camera that has no stream binding: before step 3
 the stream is bound to the first stream protocol (RTSP, then DVRIP, the registry's order) that
 answered in step 2, then verified; the next answering one is
-tried when the stream check fails. With none answering, the stream stays "to configure". Binding the
+tried when the stream check fails, and when none passes the stream is left on the first that
+answered, unverified with its reason. With none answering, the stream stays "to configure". Binding the
 stream this way is a connection change (below), followed by a rewrite of the generated configuration.
 
 A manual choice (`ConfigureCameraCapabilityUseCase`) names one of the camera's protocol rows, answering
