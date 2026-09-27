@@ -77,8 +77,19 @@ function DropdownControl({
       </SelectTrigger>
       <SelectContent>
         {nature.options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            disabled={!!option.unavailable}
+            // Greyed by its colour, not the primitive's fade, so the reason stays readable.
+            className={cn(
+              option.unavailable && 'text-muted-foreground data-[disabled]:opacity-100',
+            )}
+          >
+            <span className="flex flex-col items-start gap-0.5">
+              {option.label}
+              {option.unavailable && <span className="text-xs">{option.unavailable}</span>}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>

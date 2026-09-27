@@ -21,7 +21,7 @@ const SCHEDULES = 'GET /api/cameras/camera-1/privacy/schedules'
 const ADD_SCHEDULE = 'POST /api/cameras/camera-1/privacy/schedules'
 const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
 
-const ptzCamera = makeCamera({ ptzSupported: true })
+const ptzCamera = makeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
 
 function makeSchedule(overrides: Partial<CameraPrivacySchedule> = {}): CameraPrivacySchedule {
   return {
@@ -36,6 +36,10 @@ function makeSchedule(overrides: Partial<CameraPrivacySchedule> = {}): CameraPri
   }
 }
 
+async function openTheForm() {
+  await userEvent.click(await screen.findByRole('button', { name: 'Ajouter une plage' }))
+}
+
 async function clearTheWeekdays() {
   await userEvent.click(screen.getByRole('button', { name: 'Lun' }))
   await userEvent.click(screen.getByRole('button', { name: 'Mar' }))
@@ -45,6 +49,69 @@ async function clearTheWeekdays() {
 }
 
 describe('CameraPrivacyView', () => {
+  it('onLoad_ShouldShowTheChoiceItsConsequenceAndAnAddButton_WhenNoneIsChosenWithNoRange', async () => {
+    // Arrange
+    fakeNetwork({ [SCHEDULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+    const noneCamera = makeCamera({ ptzSupported: true, privacyStrategy: PrivacyStrategy.None })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: noneCamera })
+
+    // Assert
+    expect(await screen.findByText('Aucune plage.')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent('Aucun')
+    expect(screen.getByText(/Rien n’est demandé à la caméra/)).toBeVisible()
+    expect(screen.queryByText(/Parking/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ajouter une plage' })).toBeVisible()
+    expect(screen.queryByLabelText('Début')).not.toBeInTheDocument()
+  })
+
+  it('onOpenScheduleForm_ShouldShowTheDaysAndHours_WhenTheUserAsksToAddARange', async () => {
+    // Arrange
+    fakeNetwork({ [SCHEDULES]: ok([]) })
+    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+
+    // Act
+    await openTheForm()
+
+    // Assert
+    expect(screen.getByLabelText('Début')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Ajouter à cette caméra' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Ajouter une plage' })).not.toBeInTheDocument()
+  })
+
+  it('onCloseScheduleForm_ShouldFoldTheFormBackIntoItsButton_WhenTheUserCancels', async () => {
+    // Arrange
+    fakeNetwork({ [SCHEDULES]: ok([]) })
+    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+    await openTheForm()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+
+    // Assert
+    expect(screen.queryByLabelText('Début')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ajouter une plage' })).toBeVisible()
+  })
+
+  it('render_ShouldListParkingGreyedWithWhereToSaveThePositions_WhenTheyAreNotSaved', async () => {
+    // Arrange
+    fakeNetwork({ [SCHEDULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
+    await screen.findByText('Aucune plage.')
+    screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
+
+    // Act
+    await userEvent.keyboard('{ArrowDown}')
+
+    // Assert
+    const parking = await screen.findByRole('option', { name: /Orientation à l’écart/ })
+    expect(parking).toHaveAttribute('aria-disabled', 'true')
+    expect(parking).toHaveTextContent(
+      /Enregistrez d’abord ses positions Surveillance et Parking dans «\sImage et pilotage\s»/,
+    )
+  })
+
   it('onLoad_ShouldSayThereIsNoRange_WhenTheCameraHasNone', async () => {
     // Arrange
     fakeNetwork({ [SCHEDULES]: ok([]) })
@@ -53,7 +120,7 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('Aucune planification configurée.')).toBeInTheDocument()
+    expect(await screen.findByText('Aucune plage.')).toBeInTheDocument()
   })
 
   it('onLoad_ShouldListEachRangeWithItsDaysAndHours_WhenTheCameraHasSome', async () => {
@@ -83,8 +150,8 @@ describe('CameraPrivacyView', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(screen.getByText(/GET \/api\/cameras\/camera-1\/privacy\/schedules · 500/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
-    expect(screen.queryByText('Aucune planification configurée.')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Ajouter à cette caméra' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Aucune plage.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ajouter une plage' })).not.toBeInTheDocument()
   })
 
   it('onRetrySchedules_ShouldListTheRanges_WhenTheSecondReadSucceeds', async () => {
@@ -109,15 +176,17 @@ describe('CameraPrivacyView', () => {
       [ADD_SCHEDULE]: ok(makeSchedule()),
     })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    await screen.findByText('Aucune planification configurée.')
+    await screen.findByText('Aucune plage.')
     network.answer(SCHEDULES, failure(500))
+
+    await openTheForm()
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter à cette caméra' }))
 
     // Assert
     expect(await screen.findByText('Lun, Mar, Mer, Jeu, Ven')).toBeInTheDocument()
-    expect(screen.queryByText('Aucune planification configurée.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Aucune plage.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 
@@ -157,7 +226,8 @@ describe('CameraPrivacyView', () => {
     // Arrange
     fakeNetwork({ [SCHEDULES]: ok([]) })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    const end = await screen.findByLabelText('Fin')
+    await openTheForm()
+    const end = screen.getByLabelText('Fin')
     await userEvent.clear(end)
 
     // Act
@@ -171,7 +241,8 @@ describe('CameraPrivacyView', () => {
     // Arrange
     fakeNetwork({ [SCHEDULES]: ok([]) })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    const end = await screen.findByLabelText('Fin')
+    await openTheForm()
+    const end = screen.getByLabelText('Fin')
 
     // Act
     await userEvent.clear(end)
@@ -187,8 +258,10 @@ describe('CameraPrivacyView', () => {
       [ADD_SCHEDULE]: ok(makeSchedule()),
     })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    await screen.findByText('Aucune planification configurée.')
+    await screen.findByText('Aucune plage.')
     network.answer(SCHEDULES, ok([makeSchedule()]))
+
+    await openTheForm()
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter à cette caméra' }))
@@ -207,7 +280,7 @@ describe('CameraPrivacyView', () => {
     // Arrange
     const network = fakeNetwork({ [SCHEDULES]: ok([]) })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    await screen.findByText('Aucune planification configurée.')
+    await openTheForm()
     await clearTheWeekdays()
 
     // Act
@@ -225,7 +298,9 @@ describe('CameraPrivacyView', () => {
       [ADD_SCHEDULE]: failure(400, 'schedule_empty_range'),
     })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    await screen.findByText('Aucune planification configurée.')
+    await screen.findByText('Aucune plage.')
+
+    await openTheForm()
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter à cette caméra' }))
@@ -248,12 +323,13 @@ describe('CameraPrivacyView', () => {
     })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
     await readTheCameraList()
+    await openTheForm()
 
     // Act
-    await userEvent.click(await screen.findByRole('button', { name: 'Appliquer à toutes (2)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter à toutes (2)' }))
 
     // Assert
-    await screen.findByRole('button', { name: 'Ajouter à cette caméra' })
+    await screen.findByRole('button', { name: 'Ajouter une plage' })
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: 'POST /api/cameras/camera-2/privacy/schedules' }),
     )
@@ -265,13 +341,13 @@ describe('CameraPrivacyView', () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([camera]), [SCHEDULES]: ok([]) })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-
-    // Act
     await readTheCameraList()
 
+    // Act
+    await openTheForm()
+
     // Assert
-    expect(await screen.findByText('Aucune planification configurée.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Appliquer à toutes/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Ajouter à toutes/ })).toBeNull()
   })
 
   it('onDeleteSchedule_ShouldRemoveTheRange_WhenTheUserDeletesIt', async () => {
@@ -283,12 +359,47 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Act
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Supprimer cette planification' }),
-    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer cette plage' }))
 
     // Assert
-    expect(await screen.findByText('Aucune planification configurée.')).toBeInTheDocument()
+    expect(await screen.findByText('Aucune plage.')).toBeInTheDocument()
+  })
+
+  it('onDeleteSchedule_ShouldSayTheRangeWasNotDeleted_WhenTheServerFails', async () => {
+    // Arrange
+    fakeNetwork({
+      [SCHEDULES]: ok([makeSchedule()]),
+      'DELETE /api/cameras/camera-1/privacy/schedules/schedule-1': failure(500),
+    })
+    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer cette plage' }))
+
+    // Assert
+    expect(await screen.findByRole('alert')).toHaveTextContent('Vyzio a rencontré une erreur')
+    expect(screen.getByText('Lun, Mar, Mer, Jeu, Ven')).toBeInTheDocument()
+  })
+
+  it('render_ShouldSayWhatTheSavedStrategyLacks_WhenParkingIsSavedWithoutPositions', async () => {
+    // Arrange
+    fakeNetwork({ [SCHEDULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+    const parkedCamera = makeCamera({
+      ptzSupported: true,
+      verifiedCapabilities: ['ptz'],
+      privacyStrategy: PrivacyStrategy.PtzParking,
+    })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: parkedCamera })
+
+    // Assert
+    expect(
+      await screen.findByText(/Enregistrez d’abord ses positions Surveillance et Parking/),
+    ).toBeVisible()
+    expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent(
+      'Orientation à l’écart',
+    )
   })
 
   it('onSaveStrategy_ShouldSaveTheChosenMode_WhenTheUserSaves', async () => {
@@ -299,9 +410,9 @@ describe('CameraPrivacyView', () => {
       'GET /api/cameras': ok([camera]),
     })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
-    await screen.findByText('Aucune planification configurée.')
+    await screen.findByText('Aucune plage.')
     // The keyboard picks from the list the way it opens, highlighted on the current mode.
-    screen.getByRole('combobox', { name: 'Quand vous coupez la surveillance' }).focus()
+    screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
     await userEvent.keyboard('{ArrowDown}{ArrowUp}{Enter}')
 
     // Act

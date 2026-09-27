@@ -6,6 +6,7 @@ test.describe('Privacy schedule', () => {
   test('PrivacyScheduleSection_ShouldKeepTheNight_WhenTheDefaultRangeIsAdded', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/vie-privee')
+    await page.getByRole('button', { name: 'Ajouter une plage' }).click()
 
     await expect(
       page.getByText('La plage passe minuit : elle se termine le lendemain à 06:00.'),
@@ -14,6 +15,8 @@ test.describe('Privacy schedule', () => {
 
     await expect(page.getByText('22:00 → 06:00 le lendemain')).toBeVisible()
     await expect(page.getByRole('alert')).toHaveCount(0)
+    // Added, the form folds back into its button.
+    await expect(page.getByRole('button', { name: 'Ajouter une plage' })).toBeVisible()
   })
 
   test('PrivacyScheduleSection_ShouldSayWhatToChange_WhenStartAndEndAreTheSame', async ({
@@ -21,6 +24,7 @@ test.describe('Privacy schedule', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/vie-privee')
+    await page.getByRole('button', { name: 'Ajouter une plage' }).click()
 
     await page.getByLabel('Fin').fill('22:00')
     await page.getByRole('button', { name: 'Ajouter à cette caméra' }).click()

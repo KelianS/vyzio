@@ -85,6 +85,13 @@ export function buildCameraPrivacyPresenter({
       }
     },
 
+    onOpenScheduleForm() {
+      dispatch({ type: 'SCHEDULE_FORM_OPENED' })
+    },
+    onCloseScheduleForm() {
+      dispatch({ type: 'SCHEDULE_FORM_CLOSED' })
+    },
+
     onToggleDay(day: number) {
       dispatch({ type: 'DAY_TOGGLED', day })
     },
@@ -112,6 +119,7 @@ export function buildCameraPrivacyPresenter({
           // The add answers with the range: no second read that could fail under the shown list.
           if (targetId === openCameraId) dispatch({ type: 'SCHEDULE_ADDED', schedule: created })
         }
+        dispatch({ type: 'SCHEDULE_FORM_CLOSED' })
       } catch (e) {
         dispatch({ type: 'SCHEDULE_FAILED', error: toAppError(e) })
       } finally {

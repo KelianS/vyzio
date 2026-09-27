@@ -23,11 +23,14 @@ interface PrivacyScheduleSectionProps {
   loading: boolean
   readError: AppError | null
   onRetryRead: () => void
+  formOpen: boolean
   form: ScheduleForm
   adding: boolean
   invalid: string | null
   failure: AppError | null
   cameraCount: number
+  onOpenForm: () => void
+  onCloseForm: () => void
   onToggleDay: (day: number) => void
   onStartTimeChange: (value: string) => void
   onEndTimeChange: (value: string) => void
@@ -41,11 +44,14 @@ export function PrivacyScheduleSection({
   loading,
   readError,
   onRetryRead,
+  formOpen,
   form,
   adding,
   invalid,
   failure,
   cameraCount,
+  onOpenForm,
+  onCloseForm,
   onToggleDay,
   onStartTimeChange,
   onEndTimeChange,
@@ -69,7 +75,7 @@ export function PrivacyScheduleSection({
       {loading ? (
         <p className="text-muted-foreground">Chargement…</p>
       ) : schedules.length === 0 ? (
-        <p className="text-muted-foreground">Aucune planification configurée.</p>
+        <p className="text-muted-foreground">Aucune plage.</p>
       ) : (
         <ul className="divide-y divide-border">
           {schedules.map((s) => (
@@ -86,7 +92,7 @@ export function PrivacyScheduleSection({
                 size="icon"
                 className="ml-auto size-7"
                 title="Supprimer"
-                aria-label="Supprimer cette planification"
+                aria-label="Supprimer cette plage"
                 onClick={() => onDelete(s.id)}
               >
                 ✕
@@ -96,72 +102,86 @@ export function PrivacyScheduleSection({
         </ul>
       )}
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {DAY_LABELS.map((label, d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => onToggleDay(d)}
-              className={cn(
-                'rounded-full px-3 py-1 text-sm transition-colors',
-                form.days.includes(d)
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/70',
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* Outside the form: a failed delete must read with the form folded. */}
+      {failure && <ErrorMessage error={failure} />}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Début</span>
-            <Input
-              type="time"
-              value={form.startTime}
-              onChange={(e) => onStartTimeChange(e.target.value)}
-              className="w-32"
-            />
-          </label>
-          <span className="text-muted-foreground">→</span>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Fin</span>
-            <Input
-              type="time"
-              value={form.endTime}
-              onChange={(e) => onEndTimeChange(e.target.value)}
-              className="w-32"
-            />
-          </label>
-        </div>
+      {/* Nothing to add over a list still loading: it could duplicate a range not shown yet. */}
+      {!loading && !formOpen && (
+        <Button type="button" variant="outline" size="sm" className="w-fit" onClick={onOpenForm}>
+          Ajouter une plage
+        </Button>
+      )}
 
-        {endsNextDay(form.startTime, form.endTime) && (
-          <p className="text-sm text-muted-foreground">{midnightRangeHint(form.endTime)}</p>
-        )}
+      {formOpen && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {DAY_LABELS.map((label, d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => onToggleDay(d)}
+                className={cn(
+                  'rounded-full px-3 py-1 text-sm transition-colors',
+                  form.days.includes(d)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/70',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-        {invalid && <p className="text-sm text-destructive">{invalid}</p>}
-        {failure && <ErrorMessage error={failure} />}
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">Début</span>
+              <Input
+                type="time"
+                value={form.startTime}
+                onChange={(e) => onStartTimeChange(e.target.value)}
+                className="w-32"
+              />
+            </label>
+            <span className="text-muted-foreground">→</span>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">Fin</span>
+              <Input
+                type="time"
+                value={form.endTime}
+                onChange={(e) => onEndTimeChange(e.target.value)}
+                className="w-32"
+              />
+            </label>
+          </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={adding} onClick={onAddHere}>
-            {adding ? 'Ajout…' : 'Ajouter à cette caméra'}
-          </Button>
-          {cameraCount > 1 && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={adding}
-              title={`Appliquer cette planification aux ${cameraCount} caméras`}
-              onClick={onAddEverywhere}
-            >
-              {adding ? 'Ajout…' : `Appliquer à toutes (${cameraCount})`}
-            </Button>
+          {endsNextDay(form.startTime, form.endTime) && (
+            <p className="text-sm text-muted-foreground">{midnightRangeHint(form.endTime)}</p>
           )}
+
+          {invalid && <p className="text-sm text-destructive">{invalid}</p>}
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={adding} onClick={onAddHere}>
+              {adding ? 'Ajout…' : 'Ajouter à cette caméra'}
+            </Button>
+            {cameraCount > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={adding}
+                title={`Ajouter cette plage aux ${cameraCount} caméras`}
+                onClick={onAddEverywhere}
+              >
+                {adding ? 'Ajout…' : `Ajouter à toutes (${cameraCount})`}
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="sm" disabled={adding} onClick={onCloseForm}>
+              Annuler
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   )
 }
