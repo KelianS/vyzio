@@ -1,6 +1,6 @@
 # ADR-59: PTZ positions are resolved above the protocol, providers only move
 
-> Status: Accepted
+> Status: Accepted, the unit of a position (points a) 3 and b), counting steps), the provider primitives (point c), how long a move lasts (point e) and, for a continuous move, the lost-step margin (point d) superseded by [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)
 >
 > Supersedes [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)
 > on where homing and position tracking live. Its reserved slots, the `ptz_presets` table and the

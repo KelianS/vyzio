@@ -1,6 +1,6 @@
 # ADR-29 — DVRIP : `DvripClient` partagé, réglages image (`AVEnc.VideoColor.[0]`), PTZ Move/Stop
 
-> Statut : Accepté
+> Status: Accepted, the PTZ move then stop of point e), each on a connection of point a), superseded by [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)
 
 ## Contexte
 

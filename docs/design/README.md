@@ -22,8 +22,8 @@ create an empty TAD in anticipation.
 
 - **Camera protocols and capabilities**: the DVRIP and V380 clients, the capability registry,
   `PrivacyStrategy`. ONVIF has its own TAD above. Sources: ADR-19, ADR-20, ADR-22, ADR-24, ADR-28, ADR-29,
-  ADR-30.
+  ADR-30, ADR-60.
 - **Frigate integration**: the MQTT and REST contract consumed, `FrigateAdapter`, `config.yml`
   generation. Sources: ADR-04, ADR-05, ADR-13, ADR-16, ADR-17, ADR-18.
 - **PTZ and positions**: native presets against Vyzio-managed ones, thumbnails. Sources: ADR-21,
-  ADR-25, ADR-26, ADR-59.
+  ADR-25, ADR-26, ADR-59, ADR-60.

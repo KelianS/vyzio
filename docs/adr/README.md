@@ -34,11 +34,11 @@ references these ADRs rather than copying them.
 | [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md) | Camera capability catalogue: brand/protocol decoupling, vendor presets and manual onboarding | Accepted, amended by ADR-56 |
 | [ADR-23](0023-camera-reachability-monitoring-periodic-tcp-polling-independent-of-frigate.md) | Camera reachability monitoring: periodic TCP polling, independent of Frigate | Accepted |
 | [ADR-24](0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md) | Protocol layer separated from capability layer: `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy` | Accepted, amended by ADR-57 and ADR-62 |
-| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Superseded by ADR-59 (where homing and position tracking live), amended by ADR-57 |
+| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Superseded by ADR-59 (where homing and position tracking live), amended by ADR-57, its step columns counted in motion time by ADR-60 |
 | [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) | PTZ position thumbnails: client-triggered capture, file storage, direct serving | Accepted |
 | [ADR-27](0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md) | Advanced image settings: the `ImageSettings` capability, ONVIF Imaging Service, values not persisted | Accepted, amended by ADR-56 |
 | [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) | Cascading multi-protocol capability detection + the `ManuallyConfigured` flag | Accepted |
-| [ADR-29](0029-dvrip-a-shared-dvripclient-image-settings-and-ptz-move-stop.md) | DVRIP: a shared `DvripClient`, image settings (`AVEnc.VideoColor.[0]`), PTZ Move/Stop | Accepted |
+| [ADR-29](0029-dvrip-a-shared-dvripclient-image-settings-and-ptz-move-stop.md) | DVRIP: a shared `DvripClient`, image settings (`AVEnc.VideoColor.[0]`), PTZ Move/Stop | Accepted (the PTZ move then stop was replaced by ADR-60) |
 | [ADR-30](0030-native-v380-image-settings-rejected-imagesettings-through-onvif-only.md) | Native V380 image settings rejected, `ImageSettings` through ONVIF only | Accepted |
 | [ADR-31](0031-manual-vendor-override-at-onboarding.md) | Manual vendor override at onboarding | Accepted |
 | [ADR-32](0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) | Three-stage network discovery pipeline: identification, enrichment, interpretation | Accepted |
@@ -68,5 +68,6 @@ references these ADRs rather than copying them.
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |
 | [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) | Privacy parking goes to the Parking slot, and back to Surveillance | Accepted |
 | [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted |
-| [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) | PTZ positions are resolved above the protocol, providers only move | Accepted |
+| [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) | PTZ positions are resolved above the protocol, providers only move | Accepted (counting steps, the provider primitives and how long a move lasts were replaced by ADR-60) |
+| [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md) | PTZ positions are counted in motion time, on a session held for each move | Accepted |
 | [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) | Privacy strategy: no "none" value, software stop by default | Accepted |

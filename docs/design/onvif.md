@@ -15,7 +15,7 @@
 ## Role
 
 Speak ONVIF to any compliant camera, whatever port and path that camera happens to serve it on, and
-whatever brand is on the box. Feature logic (PTZ steps, imaging, native presets) lives in the providers; this
+whatever brand is on the box. Feature logic (PTZ moves, imaging, native presets) lives in the providers; this
 document covers the transport and how its address is found.
 
 ## Layers
@@ -98,7 +98,8 @@ Two send paths, and the difference matters.
   can say *why* instead of reporting an unsupported capability. The PTZ probe asks without it and
   reads silence as no PTZ (below).
 - **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer, 300 ms for the start of
-  a continuous move, which a step stops shortly after. **Silence is treated as success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ steps cannot wait
+  a continuous move, which a tap stops after a fixed duration and a hold on release
+  ([ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)). **Silence is treated as success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ moves cannot wait
   for them. Anything else that goes wrong is raised, and classified below.
 
 A failure is one of two things, both in `Vyzio.Core/Interfaces/CameraCommandException.cs`:
@@ -143,8 +144,8 @@ protocol whatever the verdict (ADR-28).
 | One endpoint for every service (Tapo) | Per-service paths 404 | `XAddr` fallback, above |
 | PTZ refused while privacy mode is on (Tapo) | Malformed HTTP answer, not a SOAP fault | Raised as a refusal, never as a missing capability |
 | Speaks ONVIF without PTZ over it (some ICSee units) | Media profile carries no `PTZConfiguration` | The PTZ probe answers no, the cascade falls through to DVRIP |
-| Answers a command in 2 to 3 seconds (V380) | Full await would stall stepping | Timeout treated as success |
-| `RelativeMove` absent | Steps overshoot | `GetConfigurationOptions` read when the profile carries a PTZ configuration, a real answer kept for the request; without one, `OnvifPtzProvider` falls back to move plus stop |
+| Answers a command in 2 to 3 seconds (V380) | Full await would stall every move | Timeout treated as success |
+| `RelativeMove` absent | No bounded move to repeat | `GetConfigurationOptions` read when the profile carries a PTZ configuration, a real answer kept for the request; without one, `OnvifPtzProvider` falls back to a continuous move, timed for a tap and held until release for a press ([ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)) |
 
 ## Authentication
 
