@@ -6,7 +6,7 @@ import type {
 /** A protocol by its name: said only where a protocol is chosen or reached (SPECS 1.5). */
 export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
   onvif: 'ONVIF',
-  dvrip: 'DVRIP (ICSee / XMEye)',
+  dvrip: 'DVRIP',
   tapo_klap: 'Tapo KLAP',
   v380: 'V380 natif',
   rtsp: 'RTSP',
@@ -24,18 +24,18 @@ interface ProtocolOption {
 /** Every protocol a capability can go through, answering or not: a sleeping camera stays configurable (ADR-61). */
 export const PROTOCOL_OPTIONS: Record<Capability, ProtocolOption[]> = {
   stream: [
-    { value: 'rtsp', label: 'RTSP : flux standard' },
-    { value: 'dvrip', label: 'DVRIP (ICSee / XMEye) : sans RTSP' },
+    { value: 'rtsp', label: 'RTSP (par défaut)' },
+    { value: 'dvrip', label: 'DVRIP' },
   ],
   ptz: [
     { value: 'v380', label: 'V380 natif' },
     { value: 'onvif', label: 'ONVIF : Hikvision, Dahua, Reolink, V380…' },
-    { value: 'dvrip', label: 'DVRIP (ICSee / XMEye)' },
+    { value: 'dvrip', label: 'DVRIP' },
     { value: 'tapo_klap', label: 'Tapo KLAP : caméra motorisée Tapo' },
   ],
   hardware_privacy: [{ value: 'tapo_klap', label: 'Tapo KLAP : cache objectif et LED' }],
   image_settings: [
     { value: 'onvif', label: 'ONVIF : Hikvision, Dahua, Reolink, V380…' },
-    { value: 'dvrip', label: 'DVRIP (ICSee / XMEye) : luminosité, contraste, saturation' },
+    { value: 'dvrip', label: 'DVRIP : luminosité, contraste, saturation' },
   ],
 }
