@@ -45,7 +45,7 @@ Une erreur se lit a deux niveaux :
 - une **phrase claire**, sans jargon, qui dit ce qui se passe et, quand il y a quelque chose a faire, quoi faire ;
 - en dessous, le **detail technique complet** : ce qui a ete demande, ce qui a repondu, le code et la raison recus.
 
-Le second niveau s'adresse au support, pas a l'utilisateur : une demande d'aide arrive souvent sous forme de photo de l'ecran, sans journaux, et cette photo doit suffire au diagnostic. Un utilisateur averti doit aussi pouvoir le lire et ouvrir un ticket. C'est le seul endroit de l'interface ou un nom technique peut apparaitre ; il reste discret et ne remplace jamais la phrase claire.
+Le second niveau s'adresse au support, pas a l'utilisateur : une demande d'aide arrive souvent sous forme de photo de l'ecran, sans journaux, et cette photo doit suffire au diagnostic. Un utilisateur averti doit aussi pouvoir le lire et ouvrir un ticket. Ce sont, avec le repli **Avance** qui porte la declaration manuelle des capacites (cf. 2.3, ou le protocole se choisit par son nom), les seuls endroits de l'interface ou un nom technique peut apparaitre ; il reste discret et ne remplace jamais la phrase claire.
 
 Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifiant de compte camera. Une erreur reste affichee le temps d'etre lue et photographiee.
 

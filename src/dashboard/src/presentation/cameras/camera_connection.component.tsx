@@ -10,10 +10,12 @@ import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Button } from '../../common/ui/button'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import type { Camera } from '../../domain/entities/camera.entity'
+import { StreamProtocol, type Camera } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
+import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { CapabilitySection } from './components/capability_section'
+import { CapabilityProtocols } from './components/capability_protocols'
 import { CameraNotFound } from './components/camera_not_found'
 import {
   buildCameraConnectionPresenter,
@@ -21,6 +23,12 @@ import {
 } from './camera_connection.presenter'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido } from './camera_connection.uido'
+
+// DVRIP derives the stream path from the protocol; asking for it makes no sense.
+const ASKS_STREAM_PATH: Record<StreamProtocol, boolean> = {
+  [StreamProtocol.Rtsp]: true,
+  [StreamProtocol.Dvrip]: false,
+}
 
 const DRAFT_LABELS: Record<keyof ConnectionValues, string> = {
   displayName: 'Nom',
@@ -68,7 +76,8 @@ export function CameraConnectionView() {
 
   useUnsavedChanges(draft.dirty)
 
-  const declarations: SettingDeclaration[] = [
+  // The name is the camera's identity, not a capability: it stays at the top of the page.
+  const identity: SettingDeclaration[] = [
     {
       id: 'connection-name',
       label: 'Nom',
@@ -76,6 +85,10 @@ export function CameraConnectionView() {
       value: draft.values.displayName,
       onChange: (value) => draft.set('displayName', value as string),
     },
+  ]
+
+  // How Vyzio reaches the stream: rare, in the Avance fold (DESIGN SYSTEM § Capability cards).
+  const connection: SettingDeclaration[] = [
     {
       id: 'connection-host',
       label: 'Adresse',
@@ -93,9 +106,8 @@ export function CameraConnectionView() {
     },
   ]
 
-  // DVRIP derives the stream path from the protocol; asking for it makes no sense.
-  if (camera.streamProtocol !== 'dvrip') {
-    declarations.push({
+  if (ASKS_STREAM_PATH[camera.streamProtocol]) {
+    connection.push({
       id: 'connection-stream-path',
       label: 'Chemin du flux',
       nature: { kind: 'text', placeholder: '/stream1' },
@@ -105,7 +117,7 @@ export function CameraConnectionView() {
     })
   }
 
-  declarations.push(
+  connection.push(
     {
       id: 'connection-username',
       label: 'Identifiant',
@@ -123,6 +135,9 @@ export function CameraConnectionView() {
     },
   )
 
+  // Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2).
+  const testsSuspended = !camera.connected
+
   if (uido.cameraGone)
     return (
       <SettingsPage>
@@ -132,25 +147,10 @@ export function CameraConnectionView() {
 
   return (
     <>
-      <SettingsPage lede="Comment Vyzio joint cette caméra.">
-        <SettingsList settings={declarations} />
+      <SettingsPage>
+        <SettingsList settings={identity} />
 
-        {/* Verifying and deleting act at once: they have no place in the draft. */}
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={uido.verifying}
-            onClick={() => void presenter.onVerify(cameraId)}
-          >
-            {uido.verifying ? 'Vérification…' : 'Vérifier la connexion'}
-          </Button>
-          <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
-            Supprimer cette caméra
-          </Button>
-        </div>
-
-        {/* Configuring a capability tests a connection and returns a result: an action, not a draft value. */}
+        {/* Checking or configuring a capability tests a connection and returns a result: an action, not a draft value. */}
         <SettingsSection title="Capacités" lede="Ce que Vyzio a vérifié auprès de cette caméra.">
           <CapabilitySection
             camera={camera}
@@ -158,17 +158,55 @@ export function CameraConnectionView() {
             loading={uido.bindingsLoading}
             readError={uido.bindingsError}
             detecting={uido.detecting}
+            verifyingStream={uido.verifying}
+            testsSuspended={testsSuspended}
             pending={uido.pending}
-            manualFormOpen={uido.manualFormOpen}
-            manualConfiguring={uido.manualConfiguring}
             intents={{
               onRetryRead: () => presenter.onLoad(cameraId),
               onDetect: () => void presenter.onDetect(cameraId),
+              onVerifyStream: () => void presenter.onVerify(cameraId),
+              onVerify: (capability) => void presenter.onVerifyCapability(cameraId, capability),
               onConfigure: (capability, protocol, configJson) =>
                 presenter.onConfigure(cameraId, capability, protocol, configJson),
               onTogglePtz: () => presenter.onTogglePtz(camera),
               onSetPanInverted: (inverted) => void presenter.onSetPanInverted(cameraId, inverted),
               onRemove: (capability) => presenter.onRemove(cameraId, capability),
+            }}
+          />
+
+          <HelpPanel title="Une vérification échoue, que faire ?">
+            <p>
+              Commencez par le flux vidéo : les autres capacités passent par lui. S’il échoue,
+              corrigez l’adresse ou les identifiants de la caméra dans Avancé, en bas de page,
+              enregistrez, puis relancez « Vérifier ».
+            </p>
+            <p>
+              Une capacité dont la vérification échoue n’est jamais proposée comme active, et la
+              vérification se relance à tout moment.
+            </p>
+          </HelpPanel>
+        </SettingsSection>
+
+        <div className="mt-8 border-t border-border pt-6">
+          <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
+            Supprimer cette caméra
+          </Button>
+        </div>
+
+        <AdvancedFold lede="Comment Vyzio joint cette caméra.">
+          <SettingsList settings={connection} />
+
+          <CapabilityProtocols
+            camera={camera}
+            bindings={uido.bindings}
+            bindingsRead={!uido.bindingsLoading && !uido.bindingsError}
+            pending={uido.pending}
+            manualFormOpen={uido.manualFormOpen}
+            manualConfiguring={uido.manualConfiguring}
+            testsSuspended={testsSuspended}
+            intents={{
+              onConfigure: (capability, protocol) =>
+                presenter.onConfigure(cameraId, capability, protocol),
               onOpenManual: presenter.onOpenManual,
               onCloseManual: presenter.onCloseManual,
               onConfigureManually: (capability, protocol) =>
@@ -176,25 +214,24 @@ export function CameraConnectionView() {
             }}
           />
 
-          <HelpPanel title="Le test échoue, que vérifier ?">
+          <HelpPanel title="Un protocole échoue, que vérifier ?">
             <p>
-              Que la caméra est joignable sur le réseau, et que le port du protocole choisi est
-              ouvert — <em>8899</em> pour ONVIF, <em>34567</em> pour DVRIP. Les identifiants sont
-              ceux saisis à l’ajout de la caméra : s’ils ont changé sur la caméra, corrigez-les
-              d’abord ci-dessus.
+              Que le port du protocole choisi est ouvert : <em>8899</em> pour ONVIF, <em>34567</em>{' '}
+              pour DVRIP. Les identifiants sont ceux saisis à l’ajout de la caméra : s’ils ont
+              changé sur la caméra, corrigez-les d’abord ci-dessus.
             </p>
             <p>
-              Beaucoup de caméras parlent plusieurs protocoles — une ICSee répond souvent en DVRIP
-              et en ONVIF. Si l’un échoue, essayez l’autre : une capacité dont le test échoue n’est
-              jamais proposée comme active, et le test se relance à tout moment.
+              Beaucoup de caméras parlent plusieurs protocoles, une ICSee répond souvent en DVRIP et
+              en ONVIF. Si l’un échoue, choisissez l’autre avec « Modifier ».
             </p>
             <p>
               Deux limites connues : sur les firmwares d’entrée de gamme, ONVIF répond parfois en
               plusieurs secondes, ce qui rend le pilotage précis difficile ; et l’orientation à
-              l’écart, en vie privée, suppose que le PTZ soit déjà vérifié sur la même caméra.
+              l’écart, en vie privée, suppose que l’orientation soit déjà vérifiée sur la même
+              caméra.
             </p>
           </HelpPanel>
-        </SettingsSection>
+        </AdvancedFold>
       </SettingsPage>
 
       <SettingsDraftBar

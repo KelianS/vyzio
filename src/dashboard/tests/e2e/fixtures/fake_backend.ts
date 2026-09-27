@@ -663,6 +663,9 @@ export async function installFakeBackend(
       if (rest === '/capabilities' && method === 'GET') {
         return json(route, state.ptzBinding ? [ptzBindingOf(state.ptzBinding)] : [])
       }
+      if (rest === '/capabilities/ptz/probe' && method === 'POST') {
+        return state.ptzBinding ? json(route, ptzBindingOf(state.ptzBinding)) : json(route, {}, 404)
+      }
       if (rest === '/capabilities/ptz/pan-inverted' && method === 'PUT') {
         if (!state.ptzBinding) return json(route, {}, 404)
         const inverted = Boolean(postData?.inverted)

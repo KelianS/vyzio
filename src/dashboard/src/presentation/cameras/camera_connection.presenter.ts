@@ -5,6 +5,7 @@ import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type {
+  CameraCapabilityBinding,
   Capability,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
@@ -15,7 +16,7 @@ import type { CameraConnectionAction } from './camera_connection.actions'
 import { CapabilityTask } from './camera_connection.uido'
 import { reloadCameraList, reportCameraGone } from './camera_list_reload'
 import { cameraUpdate } from './camera_update'
-import { CAPABILITY_LABELS } from './cameras.formatters'
+import { CAPABILITY_LABELS, STREAM_LABEL, STREAM_REPAIR } from './cameras.formatters'
 
 export interface ConnectionValues {
   displayName: string
@@ -80,6 +81,19 @@ export function buildCameraConnectionPresenter({
     }
   }
 
+  function announceTest(binding: CameraCapabilityBinding) {
+    if (binding.verified) {
+      toast(`${CAPABILITY_LABELS[binding.capability]} : connexion réussie.`, 'success')
+    } else {
+      // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
+      toast(
+        'Connexion échouée : vérifiez l’accès réseau et les identifiants.',
+        'error',
+        binding.lastError ? scrubSecrets(binding.lastError) : undefined,
+      )
+    }
+  }
+
   return {
     onLoad(cameraId: string) {
       readBindings(cameraId)
@@ -116,11 +130,16 @@ export function buildCameraConnectionPresenter({
     async onVerify(cameraId: string) {
       dispatch({ type: 'VERIFY_STARTED' })
       try {
-        const { connected } = await container.verifyCamera.execute(cameraId)
-        toast(
-          connected ? 'Caméra joignable.' : 'Caméra injoignable : vérifiez ces réglages.',
-          connected ? 'success' : 'error',
-        )
+        const { connected, guidance } = await container.verifyCamera.execute(cameraId)
+        if (connected) toast(`${STREAM_LABEL} : connexion réussie.`, 'success')
+        else {
+          // The verifier's own explanation names the stream's mechanics: support detail, never the sentence (SPECS 1.5).
+          toast(
+            `Caméra injoignable : ${STREAM_REPAIR}`,
+            'error',
+            guidance ? scrubSecrets(guidance) : undefined,
+          )
+        }
         reloadCameraList(container)
       } catch (e) {
         toastError(toast, toAppError(e))
@@ -176,17 +195,16 @@ export function buildCameraConnectionPresenter({
         container.configureCameraCapability.execute(cameraId, capability, protocol, configJson),
       )
       if (!binding) return false
-      if (binding.verified) {
-        toast(`${CAPABILITY_LABELS[capability]} : connexion réussie.`, 'success')
-      } else {
-        // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
-        toast(
-          'Connexion échouée : vérifiez l’accès réseau et les identifiants.',
-          'error',
-          binding.lastError ? scrubSecrets(binding.lastError) : undefined,
-        )
-      }
+      announceTest(binding)
       return binding.verified
+    },
+
+    /** Runs the capability's test again on its saved protocol, without declaring anything. */
+    async onVerifyCapability(cameraId: string, capability: Capability) {
+      const binding = await runTask(cameraId, capability, CapabilityTask.Verify, () =>
+        container.probeCameraCapability.execute(cameraId, capability),
+      )
+      if (binding) announceTest(binding)
     },
 
     async onTogglePtz(camera: Camera) {
@@ -195,8 +213,8 @@ export function buildCameraConnectionPresenter({
         container.updateCamera.execute(camera.id, cameraUpdate(camera, { ptzSupported: !enabled })),
       )
       if (!done) return
-      toast(enabled ? 'PTZ désactivé.' : 'PTZ activé.', 'success')
-      // Whether PTZ is on lives on the camera, read from the shared list.
+      toast(enabled ? 'Orientation désactivée.' : 'Orientation activée.', 'success')
+      // Whether orientation is on lives on the camera, read from the shared list.
       reloadCameraList(container)
     },
 
@@ -216,7 +234,7 @@ export function buildCameraConnectionPresenter({
         await container.removeCameraCapability.execute(cameraId, capability)
         return true
       })
-      if (removed) toast(`${CAPABILITY_LABELS[capability]} retiré.`, 'success')
+      if (removed) toast(`${CAPABILITY_LABELS[capability]} : capacité retirée.`, 'success')
     },
 
     onOpenManual() {

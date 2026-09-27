@@ -1,5 +1,5 @@
 import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
-import { PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
+import { PrivacyMiss, type Camera, type StreamProtocol } from '../../domain/entities/camera.entity'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/camera_configuration_apply_result.entity'
 import type { CameraStatus } from '../../domain/entities/camera_status.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
@@ -30,7 +30,7 @@ interface CameraDto {
   port: number
   username: string | null
   streamPath: string | null
-  streamProtocol: string
+  streamProtocol: StreamProtocol
   status: string
   validationState: string
   isEnabled: boolean
@@ -353,7 +353,7 @@ function mapCamera(camera: CameraDto): Camera {
     port: camera.port,
     username: camera.username,
     streamPath: camera.streamPath,
-    streamProtocol: camera.streamProtocol ?? 'rtsp',
+    streamProtocol: camera.streamProtocol,
     status: camera.status,
     validationState: camera.validationState,
     isEnabled: camera.isEnabled,

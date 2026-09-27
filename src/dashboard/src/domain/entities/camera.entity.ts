@@ -19,6 +19,14 @@ export const PrivacyStrategy = {
 
 export type PrivacyStrategy = (typeof PrivacyStrategy)[keyof typeof PrivacyStrategy]
 
+/** The protocol a camera's video stream is read over: the stream is a capability like the others (SPECS 2.3). */
+export const StreamProtocol = {
+  Rtsp: 'rtsp',
+  Dvrip: 'dvrip',
+} as const
+
+export type StreamProtocol = (typeof StreamProtocol)[keyof typeof StreamProtocol]
+
 export interface Camera {
   id: string
   slug: string
@@ -28,7 +36,7 @@ export interface Camera {
   port: number
   username?: string | null
   streamPath?: string | null
-  streamProtocol: string
+  streamProtocol: StreamProtocol
   status: string
   connected: boolean
   validationState: string
