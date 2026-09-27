@@ -32,8 +32,8 @@ session the camera dropped is reopened before the next command, never within a m
 A PTZ binding over DVRIP is `verified` once a session opens with the DVRIP account. On that same
 session, the probe then asks whether the camera keeps presets of its own, without moving it:
 
-1. Read the stored presets, `Uart.PTZPreset.[0]` through `ConfigGet`. An answer that carries no list,
-   not even an empty one, ends the probe here: no slot is known to be free.
+1. Read the stored presets, `Uart.PTZPreset.[0]` through `ConfigGet`. An answer that lacks the list key
+   ends the probe here, since no slot is known to be free; an empty or null list means none is stored.
 2. Pick the spare slot: the highest id from 255 down to 5 that is not already stored. Slots 1 to 4
    are the ones Vyzio uses (ADR-25, `PtzPreset`), and a preset already on the camera is never
    overwritten.

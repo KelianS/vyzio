@@ -55,5 +55,8 @@ capability is verified, which the login alone decides, like the ONVIF preset cou
   the positions Vyzio manages, as ADR-59 describes.
 - Each probe of a DVRIP PTZ binding stores and clears one preset on the camera. A cleanup that fails
   leaves at most one preset on a slot Vyzio never uses.
-- Positions saved while a camera was on the other tier are not where the new tier looks: they are to
-  be saved again after a probe changes the tier.
+- A saved position counts only on the tier it was saved on: the camera holds the native ones, Vyzio
+  the counted ones, and neither tier can reach the other's. After a probe changes the tier, the
+  positions saved on the other one read as not saved, so a recall or a privacy parking says the
+  position is missing rather than claim a move, and the user saves them again. They are kept, and
+  count again if the tier comes back.
