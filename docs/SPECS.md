@@ -16,7 +16,7 @@ Il ne tranche pas les choix de stack, d'algorithmes, de protocoles internes ou d
 
 ### 1.1 Promesse produit
 
-Vyzio est une solution de video-surveillance local-first, pensee pour un public non-technicien. Le systeme doit permettre d'ajouter des cameras existantes, surveiller les zones utiles, reconnaitre des personnes connues, signaler les evenements importants et laisser les donnees sous le controle de l'utilisateur.
+Vyzio est une solution de video-surveillance local-first, pensee pour un public non-technicien. Le systeme doit permettre d'ajouter des cameras existantes, surveiller les zones utiles, reconnaitre des personnes connues, notifier les evenements importants et laisser les donnees sous le controle de l'utilisateur.
 
 ### 1.2 Public cible
 
@@ -57,7 +57,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux que Vyzio m'aide a connecter mes cameras sans devoir connaitre leur configuration reseau.
 
-> **En tant qu'utilisateur**, je veux nommer clairement chaque camera, afin de comprendre immediatement l'origine d'une alerte.
+> **En tant qu'utilisateur**, je veux nommer clairement chaque camera, afin de comprendre immediatement l'origine d'une notification.
 
 > **En tant qu'utilisateur**, je veux definir des zones utiles sur l'image, afin d'ignorer les zones non pertinentes.
 
@@ -71,7 +71,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux pouvoir integrer une camera qui ne supporte pas le RTSP nativement (ex. camera sur batterie ICSee/XMEye), afin de ne pas etre bloque par les limitations du protocole du fabricant.
 
-> **En tant qu'utilisateur**, je veux qu'un boitier a plusieurs objectifs apparaisse comme plusieurs cameras que je nomme separement, afin de retrouver chaque angle de vue par son nom dans mes alertes.
+> **En tant qu'utilisateur**, je veux qu'un boitier a plusieurs objectifs apparaisse comme plusieurs cameras que je nomme separement, afin de retrouver chaque angle de vue par son nom dans mes notifications.
 
 > **En tant qu'utilisateur**, je veux choisir sur quel flux de ma camera l'analyse est faite, en voyant la resolution de chaque flux et ce que le choix change, afin d'arbitrer moi-meme entre fluidite du systeme et reconnaissance des visages.
 
@@ -94,7 +94,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, test de capacite) doivent etre suspendues avec un message explicite ;
 - une camera designe **une seule scene** ; un boitier exposant plusieurs objectifs donne autant de cameras, nommables et configurables independamment, mais reconnaissables comme appartenant au meme appareil ;
 - lorsqu'une camera expose plusieurs flux de la meme scene, le produit doit les presenter avec leur resolution quand elle est connue, et laisser l'utilisateur choisir celui qui sert a l'analyse ;
-- ce choix doit etre accompagne d'une explication de ce qu'il change concretement (fluidite du systeme d'un cote, finesse de l'image analysee — donc reconnaissance des visages, vignette et images d'alerte — de l'autre) ; il n'est jamais impose silencieusement ;
+- ce choix doit etre accompagne d'une explication de ce qu'il change concretement (fluidite du systeme d'un cote, finesse de l'image analysee, donc reconnaissance des visages, vignette et images des notifications, de l'autre) ; il n'est jamais impose silencieusement ;
 - par defaut, c'est le flux le plus leger qui est analyse : le moteur de detection reduit l'image de toute facon, donc analyser un flux tres detaille coute des ressources sans rien apporter ; ce defaut doit etre annonce comme tel dans l'interface, et le flux detaille doit rester accessible en un geste pour qui veut privilegier la reconnaissance des visages ;
 - le choix du flux d'analyse ne doit jamais degrader les enregistrements, qui restent faits sur le flux de meilleure qualite.
 
@@ -121,13 +121,13 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 ### 3.1 User stories
 
-> **En tant qu'utilisateur**, je veux etre alerte lorsqu'une personne connue est detectee, afin de savoir qui arrive.
+> **En tant qu'utilisateur**, je veux etre notifie lorsqu'une personne connue est detectee, afin de savoir qui arrive.
 
-> **En tant qu'utilisateur**, je veux etre alerte lorsqu'un visage inconnu apparait, afin de pouvoir reagir vite.
+> **En tant qu'utilisateur**, je veux etre notifie lorsqu'un visage inconnu apparait, afin de pouvoir reagir vite.
 
 > **En tant qu'utilisateur**, je veux choisir quels types de detection doivent generer des evenements utiles, afin d'adapter le systeme a mon contexte (personnes, animaux, vehicules, etc.).
 
-> **En tant qu'utilisateur**, je veux eviter les alertes inutiles, afin que le systeme reste credibile au quotidien.
+> **En tant qu'utilisateur**, je veux eviter les notifications inutiles, afin que le systeme reste credibile au quotidien.
 
 > **En tant qu'utilisateur**, je veux pouvoir confirmer ou corriger une reconnaissance, afin d'ameliorer la qualite du systeme dans le temps.
 
@@ -139,7 +139,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - un evenement reconnu doit indiquer la camera, l'heure et l'identite estimee si disponible ;
 - un evenement incertain doit pouvoir etre presente comme tel, sans sur-promettre une certitude ;
 - l'utilisateur doit pouvoir corriger une reconnaissance depuis un parcours simple ;
-- le produit doit privilegier la pertinence des alertes plutot que la quantite.
+- le produit doit privilegier la pertinence des notifications plutot que la quantite.
 
 **Sensibilite de detection — auto-reglage :**
 
@@ -161,9 +161,9 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux ajouter une personne a reconnaitre a partir d'une ou plusieurs photos.
 
-> **En tant qu'utilisateur**, je veux choisir le comportement d'alerte associe a une personne, afin d'adapter le systeme a mon foyer.
+> **En tant qu'utilisateur**, je veux choisir le comportement de notification associe a une personne, afin d'adapter le systeme a mon foyer.
 
-> **En tant qu'utilisateur**, je veux n'etre alerte du passage d'une personne de mon foyer que sur certaines cameras, afin de ne pas etre derange la ou sa presence est normale.
+> **En tant qu'utilisateur**, je veux n'etre notifie du passage d'une personne de mon foyer que sur certaines cameras, afin de ne pas etre derange la ou sa presence est normale.
 
 > **En tant qu'utilisateur**, je veux voir la derniere apparition d'une personne connue, afin de garder un historique simple.
 
@@ -171,11 +171,11 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 ### 4.2 Attendus fonctionnels
 
-- un profil doit contenir au minimum un nom, des donnees de reference suffisantes et une politique d'alerte ;
+- un profil doit contenir au minimum un nom, des donnees de reference suffisantes et une politique de notification ;
 - les profils doivent etre modifiables et supprimables depuis l'interface ;
 - l'historique recent d'une personne connue doit etre consultable ;
-- la politique d'alerte d'une personne ne regle que les notifications : une personne reglee sur « ne pas me notifier » ne declenche aucune notification, et reste reconnue et nommee dans l'historique ;
-- une personne peut etre limitee a certaines cameras pour ses alertes : sans choix, elle est signalee sur toutes les cameras, y compris une camera ajoutee plus tard ; avec un choix, seulement sur les cameras cochees, et cocher toutes les cameras fige la liste ; la reconnaissance et l'historique ne changent pas selon la camera ;
+- la politique de notification d'une personne ne regle que les notifications : une personne reglee sur « ne pas me notifier » ne declenche aucune notification, et reste reconnue et nommee dans l'historique ;
+- une personne peut etre limitee a certaines cameras pour ses notifications : sans choix, elle est notifiee sur toutes les cameras, y compris une camera ajoutee plus tard ; avec un choix, seulement sur les cameras cochees, et cocher toutes les cameras fige la liste ; la reconnaissance et l'historique ne changent pas selon la camera ;
 - la suppression d'un profil doit supprimer ses donnees liees selon la politique produit definie.
 
 ---
@@ -188,7 +188,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux pouvoir voir rapidement le contexte de l'evenement sans devoir fouiller dans l'interface.
 
-> **En tant qu'utilisateur**, je veux regler les horaires et le niveau de bruit des alertes, afin d'eviter la fatigue de notification.
+> **En tant qu'utilisateur**, je veux regler les horaires et le niveau de bruit des notifications, afin de ne pas en etre submerge.
 
 > **En tant qu'utilisateur**, je veux continuer a etre informe meme si je n'ai pas l'interface ouverte.
 
@@ -196,11 +196,11 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux etre guide pour configurer un canal, tester l'envoi et comprendre les compromis du canal choisi.
 
-> **En tant qu'utilisateur**, je veux choisir quelles categories d'evenements meritent une alerte et quel niveau de bruit appliquer selon le contexte.
+> **En tant qu'utilisateur**, je veux choisir quelles categories d'evenements meritent une notification et quel niveau de bruit appliquer selon le contexte.
 
 > **En tant qu'utilisateur**, je veux choisir les informations affichees dans le message, afin de recevoir un contenu utile sans surcharge.
 
-> **En tant qu'utilisateur hors de chez moi**, je veux repondre a une alerte par une action — voir la camera, couper la surveillance, verifier l'etat — sans avoir a joindre l'interface.
+> **En tant qu'utilisateur hors de chez moi**, je veux repondre a une notification par une action (voir la camera, couper la surveillance, verifier l'etat) sans avoir a joindre l'interface.
 
 > **En tant qu'utilisateur**, je veux retrouver les memes commandes quel que soit le canal de messagerie que j'utilise, afin de ne pas reapprendre le produit en changeant de canal.
 
@@ -209,12 +209,12 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - le produit doit supporter au moins un canal de notification utilisable par un public non-tech ;
 - plusieurs canaux pourront coexister selon les besoins utilisateur ;
 - chaque notification importante doit contenir un contexte minimum : type d'evenement, camera, heure, apercu si autorise ;
-- l'utilisateur doit pouvoir regler des plages horaires et un niveau minimal d'alerte ;
+- l'utilisateur doit pouvoir regler des plages horaires et une certitude minimale de notification ;
 - si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
 - la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;
 - chaque canal propose doit etre couvert de bout en bout : saisie de ce qu'il demande, verification, etat configure / non configure, test d'envoi ;
 - ajouter un canal ne doit pas ajouter un ecran : les canaux se reglent avec la meme grammaire, seule la facon de s'y connecter change ;
-- le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, le niveau minimal d'alerte et les plages horaires associees ;
+- le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, la certitude minimale et les plages horaires associees ;
 - le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise ;
 - les reglages doivent etre persistants cote Vyzio et ne pas dependre d'une edition manuelle du runtime ;
 - les capacites et limites d'un canal doivent etre explicites dans l'interface avant activation.
@@ -223,18 +223,18 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 - la surveillance locale doit continuer sans Internet ;
 - une indisponibilite reseau ne doit pas empecher l'enregistrement local des evenements ;
-- lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales d'alertes inutiles.
+- lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles.
 
 ### 5.4 Commandes depuis le canal de messagerie
 
-- le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des alertes, et accepter des commandes ;
+- le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des notifications, et accepter des commandes ;
 - les commandes doivent couvrir l'usage courant a distance — etat du systeme, apercu d'une camera, dernieres detections, mode vie privee, positions PTZ, interruption et reprise de la surveillance — de sorte qu'un acces reseau au produit reste **optionnel** ;
 - une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
 - **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)) ;
 - seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
 - le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien ;
 - une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
-- un canal qui ne sait pas recevoir reste un canal d'alerte a part entiere ; l'interface doit le dire avant l'activation, et ne jamais laisser croire qu'on pourra lui parler ;
+- un canal qui ne sait pas recevoir reste un canal de notification a part entiere ; l'interface doit le dire avant l'activation, et ne jamais laisser croire qu'on pourra lui parler ;
 - un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
 - l'utilisateur doit pouvoir consulter la trace des commandes recues et de leur issue ;
 - l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet.
@@ -290,7 +290,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 ### 7.2 Attendus fonctionnels
 
-- l'accueil doit rendre visible l'etat global du systeme et les alertes recentes ;
+- l'accueil doit rendre visible l'etat global du systeme et les notifications recentes ;
 - les parcours camera, profils, historique et reglages doivent etre accessibles sans configuration manuelle de fichiers ;
 - l'interface doit employer un vocabulaire comprehensible pour un utilisateur non-specialiste ;
 - le libelle d'une entree de navigation doit dire la nature de l'ecran : **consulter** ou **regler** ; les deux ne se melangent pas dans une meme entree ;
@@ -460,7 +460,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 ### 12.1 Inclus dans le MVP
 
 - ajout et gestion de cameras existantes ;
-- surveillance locale avec alertes sur evenements prioritaires ;
+- surveillance locale avec notifications sur evenements prioritaires ;
 - gestion de profils connus ;
 - historique consultable et retention configurable ;
 - interface web unifiee pour les parcours principaux.
@@ -476,7 +476,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 
 ## 13. Criteres de succes produit
 
-- un utilisateur non-tech doit pouvoir comprendre la promesse, installer le systeme et recevoir ses premieres alertes sans lire de documentation technique ;
+- un utilisateur non-tech doit pouvoir comprendre la promesse, installer le systeme et recevoir ses premieres notifications sans lire de documentation technique ;
 - le systeme doit rester utile meme sans connexion Internet ;
-- les alertes doivent etre suffisamment pertinentes pour ne pas degrader la confiance utilisateur ;
+- les notifications doivent etre suffisamment pertinentes pour ne pas degrader la confiance utilisateur ;
 - la frontiere entre comportement local par defaut et options distantes doit rester explicite a chaque etape.

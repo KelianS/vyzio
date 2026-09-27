@@ -65,7 +65,7 @@ En mode DVRIP, Vyzio passe par **go2rtc** (integre dans Frigate) comme passerell
 
 ## Mode vie privée
 
-**Niveau de garantie : enregistrement désactivé** — lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Le RTSP (via la passerelle go2rtc) est arrêté ; Vyzio n'enregistre plus et ne génère plus d'alertes.
+**Niveau de garantie : enregistrement désactivé.** Lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Le RTSP (via la passerelle go2rtc) est arrêté ; Vyzio n'enregistre plus et n'envoie plus de notification.
 
 Le protocole DVRIP natif (port 34567) reste techniquement ouvert sur votre réseau local, mais nécessite les identifiants de la caméra.
 
