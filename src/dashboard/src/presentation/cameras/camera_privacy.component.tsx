@@ -8,11 +8,11 @@ import { ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { useRootStore } from '../../infrastructure/store/root.store'
 import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
-import { PrivacyScheduleSection } from './components/privacy_schedule_section'
+import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
+import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
 import { buildPrivacySettings, STRATEGY_LABEL } from './camera_privacy_settings'
 import { POSITIONS_UNREAD } from './cameras.formatters'
@@ -24,15 +24,19 @@ const DRAFT_LABELS = { strategy: STRATEGY_LABEL }
 
 export function CameraPrivacyView() {
   const camera = useOutletContext<Camera>()
-  const allCameras = useRootStore((state) => state.cameras)
-  const { cameras: container } = useAppContainer()
+  const { cameras: container, schedules: schedulesContainer } = useAppContainer()
   const { toast } = useToast()
   const [uido, dispatch] = useReducer(
     cameraPrivacyReducer,
     undefined,
     buildInitialCameraPrivacyUido,
   )
-  const presenter = usePresenter(buildCameraPrivacyPresenter, { container, dispatch, toast })
+  const presenter = usePresenter(buildCameraPrivacyPresenter, {
+    container,
+    schedulesContainer,
+    dispatch,
+    toast,
+  })
 
   useEffect(() => {
     presenter.onLoad(camera.id, camera.ptzSupported)
@@ -54,7 +58,6 @@ export function CameraPrivacyView() {
 
   return (
     <>
-      {/* The mode and its ranges answer one question, so they share one frame. */}
       <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
         <PrivacyAnswerNotice camera={camera} />
         <SettingsList settings={settings} />
@@ -66,31 +69,13 @@ export function CameraPrivacyView() {
           />
         )}
 
-        <SettingsSection title="Plages horaires" lede="Couper et rétablir automatiquement.">
-          <PrivacyScheduleSection
-            schedules={uido.schedules}
-            loading={uido.schedulesLoading}
-            readError={uido.schedulesError}
-            onRetryRead={() => presenter.onRetrySchedules(camera.id)}
-            formOpen={uido.formOpen}
-            form={uido.form}
-            adding={uido.adding}
-            invalid={uido.invalid}
-            failure={uido.scheduleFailure}
-            cameraCount={allCameras.length}
-            onOpenForm={presenter.onOpenScheduleForm}
-            onCloseForm={presenter.onCloseScheduleForm}
-            onToggleDay={presenter.onToggleDay}
-            onStartTimeChange={presenter.onStartTimeChange}
-            onEndTimeChange={presenter.onEndTimeChange}
-            onAddHere={() => void presenter.onAddSchedule([camera.id], uido.form)}
-            onAddEverywhere={() =>
-              void presenter.onAddSchedule(
-                allCameras.map((entry) => entry.id),
-                uido.form,
-              )
-            }
-            onDelete={(scheduleId) => void presenter.onDeleteSchedule(camera.id, scheduleId)}
+        <SettingsSection title="Plages horaires">
+          <ScheduleCountLine
+            rules={uido.rules}
+            kind={ScheduleRuleKind.Privacy}
+            targetId={camera.id}
+            error={uido.rulesError}
+            onRetry={presenter.onRetryRules}
           />
 
           <HelpPanel title="Comment les plages et la coupure manuelle s’articulent-elles ?">
@@ -100,12 +85,8 @@ export function CameraPrivacyView() {
               ne se défait qu’à la main.
             </p>
             <p>
-              Une plage peut passer minuit : 22:00 → 06:00 commence le soir des jours choisis et se
-              termine le lendemain à 06:00.
-            </p>
-            <p>
               Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle
-              quelle, et les plages sont réévaluées — si l’heure courante tombe dans l’une d’elles,
+              quelle, et les plages sont réévaluées : si l’heure courante tombe dans l’une d’elles,
               la caméra repart coupée.
             </p>
           </HelpPanel>

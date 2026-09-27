@@ -12,9 +12,6 @@ export type NotificationValues = {
   enabled: boolean
   minimumConfidence: number
   allowedLabels: string[]
-  restrictHours: boolean
-  fromHour: number
-  toHour: number
   limitRepeats: boolean
   cooldownMinutes: number
   mediaMode: MediaMode
@@ -81,9 +78,6 @@ export function notificationDraftLabels(
     chat_id: credentialCopy(channel, 'chat_id').label,
     minimumConfidence: 'Certitude minimale',
     allowedLabels: 'Ce qui déclenche une notification',
-    restrictHours: 'Plage horaire',
-    fromHour: 'Plage horaire',
-    toHour: 'Plage horaire',
     limitRepeats: 'Notifications répétées',
     cooldownMinutes: 'Notifications répétées',
     mediaMode: 'Ce qui est envoyé',
@@ -104,9 +98,6 @@ export const DEFAULT_NOTIFICATION_VALUES: NotificationValues = {
   enabled: false,
   minimumConfidence: 75,
   allowedLabels: DEFAULT_LABELS,
-  restrictHours: false,
-  fromHour: 8,
-  toHour: 22,
   limitRepeats: false,
   cooldownMinutes: 5,
   mediaMode: 'clip_or_photo',
@@ -114,8 +105,6 @@ export const DEFAULT_NOTIFICATION_VALUES: NotificationValues = {
 }
 
 export function toNotificationValues(config: NotificationChannelConfig): NotificationValues {
-  const restrictHours = config.activeFromHour !== null && config.activeToHour !== null
-
   return {
     ...EMPTY_CREDENTIALS,
     // A credential the API hands back (never a secret) is shown as it is stored.
@@ -125,10 +114,6 @@ export function toNotificationValues(config: NotificationChannelConfig): Notific
     enabled: config.isEnabled,
     minimumConfidence: Math.round(config.minimumConfidence * 100),
     allowedLabels: config.allowedLabels.length > 0 ? config.allowedLabels : DEFAULT_LABELS,
-    restrictHours,
-    // Hours keep their value when the range toggle is off, so re-enabling restores them.
-    fromHour: config.activeFromHour ?? DEFAULT_NOTIFICATION_VALUES.fromHour,
-    toHour: config.activeToHour ?? DEFAULT_NOTIFICATION_VALUES.toHour,
     limitRepeats: config.cooldownMinutes !== null,
     cooldownMinutes: config.cooldownMinutes ?? DEFAULT_NOTIFICATION_VALUES.cooldownMinutes,
     mediaMode: config.mediaMode ?? 'clip_or_photo',
@@ -150,8 +135,6 @@ export function toSaveRequest(
     ),
     minimumConfidence: values.minimumConfidence / 100,
     allowedLabels: values.allowedLabels,
-    activeFromHour: values.restrictHours ? values.fromHour : null,
-    activeToHour: values.restrictHours ? values.toHour : null,
     messageFields: values.messageFields,
     mediaMode: values.mediaMode,
     cooldownMinutes: values.limitRepeats ? values.cooldownMinutes : undefined,

@@ -167,8 +167,6 @@ export interface FakeChannelConfig {
   acceptsCommands: boolean
   minimumConfidence: number
   allowedLabels: string[]
-  activeFromHour: number | null
-  activeToHour: number | null
   messageFields: string[]
   mediaMode: string
   cooldownMinutes: number | null
@@ -235,8 +233,6 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
     acceptsCommands: true,
     minimumConfidence: 0.75,
     allowedLabels: ['person_unknown', 'person_known'],
-    activeFromHour: null,
-    activeToHour: null,
     messageFields: ['camera', 'time', 'label', 'confidence', 'snapshot'],
     mediaMode: 'clip_or_photo',
     cooldownMinutes: null,
@@ -256,6 +252,25 @@ interface FakeAccessState {
   password?: string
 }
 
+export interface FakeScheduleRule {
+  id: string
+  kind: 'privacy' | 'mute_notifications'
+  targetIds: string[]
+  daysOfWeek: number[]
+  startTime: string
+  endTime: string
+  createdAt: string
+}
+
+// Like the real one: a night is kept, a range without target or with no length is refused.
+function scheduleRefusal(body: Pick<FakeScheduleRule, 'targetIds' | 'startTime' | 'endTime'>) {
+  if (body.targetIds.length === 0)
+    return { error: 'schedule_no_target', message: 'At least one target is required.' }
+  if (body.startTime === body.endTime)
+    return { error: 'schedule_empty_range', message: 'Start and end are the same time.' }
+  return null
+}
+
 export interface FakeBackendState {
   cameras: FakeCamera[]
   /** Where the installation stands on its password, and where this browser stands with it. */
@@ -265,17 +280,11 @@ export interface FakeBackendState {
   restartFails: boolean
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
+  scheduleRules: FakeScheduleRule[]
+  /** Fixed, so the week's "now" marker sits in the same place on every run. */
+  houseClock: { dayOfWeek: number; time: string }
   /** Frames a second received per camera id, where a test needs a low rate; others get 10. */
   receivedFps: Record<string, number>
-  privacySchedules: {
-    id: string
-    cameraId: string
-    enabled: boolean
-    daysOfWeek: number[]
-    startTime: string
-    endTime: string
-    createdAt: string
-  }[]
   profiles: {
     id: string
     name: string
@@ -356,8 +365,9 @@ export function createFakeBackendState(
     pendingChanges: false,
     restartFails: false,
     restartBreaks: false,
+    scheduleRules: [],
+    houseClock: { dayOfWeek: 2, time: '07:30' },
     receivedFps: {},
-    privacySchedules: [],
     profiles: [],
     notificationChannels: {},
     channelListening: {},
@@ -846,36 +856,6 @@ export async function installFakeBackend(
         state.ptzBinding.configJson = JSON.stringify({ ...config, pan_inverted: inverted })
         return json(route, ptzBindingOf(state.ptzBinding))
       }
-      if (rest === '/privacy/schedules' && method === 'GET') {
-        return json(
-          route,
-          state.privacySchedules.filter((s) => s.cameraId === cameraId),
-        )
-      }
-      if (rest === '/privacy/schedules' && method === 'POST') {
-        const body = route.request().postDataJSON() as {
-          daysOfWeek: number[]
-          startTime: string
-          endTime: string
-        }
-        // Like the real one: a range that crosses midnight is kept, an empty one is refused.
-        if (body.startTime === body.endTime) {
-          return json(
-            route,
-            { error: 'schedule_empty_range', message: 'Start and end are the same time.' },
-            400,
-          )
-        }
-        const schedule = {
-          id: `schedule-${state.privacySchedules.length + 1}`,
-          cameraId: cameraId!,
-          enabled: true,
-          ...body,
-          createdAt: new Date().toISOString(),
-        }
-        state.privacySchedules.push(schedule)
-        return json(route, schedule, 201)
-      }
       if (rest === '/detection-config') {
         if (method === 'PUT') {
           const body = route.request().postDataJSON() as Record<string, unknown>
@@ -939,6 +919,46 @@ export async function installFakeBackend(
         { value: 'person', displayName: 'Personne', emoji: '🧑' },
         { value: 'car', displayName: 'Voiture', emoji: '🚗' },
       ])
+    }
+
+    // --- The house's calendar (ADR-63) ---
+    if (path === '/api/schedules' && method === 'GET') {
+      return json(route, state.scheduleRules)
+    }
+    if (path === '/api/schedules/clock' && method === 'GET') {
+      return json(route, state.houseClock)
+    }
+    if (path === '/api/schedules' && method === 'POST') {
+      const body = route.request().postDataJSON() as Omit<FakeScheduleRule, 'id' | 'createdAt'>
+      const refusal = scheduleRefusal(body)
+      if (refusal) return json(route, refusal, 400)
+      const rule = {
+        ...body,
+        id: `rule-${state.scheduleRules.length + 1}`,
+        createdAt: new Date().toISOString(),
+      }
+      state.scheduleRules.push(rule)
+      return json(route, rule, 201)
+    }
+    const scheduleMatch = path.match(/^\/api\/schedules\/([^/]+)$/)
+    if (scheduleMatch) {
+      const rule = state.scheduleRules.find((entry) => entry.id === scheduleMatch[1])
+      if (!rule) return json(route, {}, 404)
+      if (method === 'GET') return json(route, rule)
+      if (method === 'DELETE') {
+        state.scheduleRules = state.scheduleRules.filter((entry) => entry !== rule)
+        return route.fulfill({ status: 204 })
+      }
+      if (method === 'PUT') {
+        const body = route.request().postDataJSON() as Omit<
+          FakeScheduleRule,
+          'id' | 'kind' | 'createdAt'
+        >
+        const refusal = scheduleRefusal(body)
+        if (refusal) return json(route, refusal, 400)
+        Object.assign(rule, body)
+        return json(route, rule)
+      }
     }
 
     // --- Recording settings (ADR-39) ---
@@ -1048,8 +1068,6 @@ export async function installFakeBackend(
           isConfigured: credentials.every((credential) => credential.isSet),
           minimumConfidence: (postData?.minimumConfidence as number) ?? existing.minimumConfidence,
           allowedLabels: (postData?.allowedLabels as string[]) ?? existing.allowedLabels,
-          activeFromHour: (postData?.activeFromHour as number | null) ?? null,
-          activeToHour: (postData?.activeToHour as number | null) ?? null,
           messageFields: (postData?.messageFields as string[]) ?? existing.messageFields,
           mediaMode: (postData?.mediaMode as string) ?? existing.mediaMode,
           cooldownMinutes: (postData?.cooldownMinutes as number | null) ?? null,

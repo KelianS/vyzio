@@ -88,8 +88,6 @@ export interface NotificationChannelConfig {
   acceptsCommands: boolean
   minimumConfidence: number
   allowedLabels: string[]
-  activeFromHour: number | null
-  activeToHour: number | null
   messageFields: string[]
   mediaMode: MediaMode
   cooldownMinutes: number | null
@@ -105,8 +103,6 @@ export interface SaveNotificationChannelConfigRequest {
   credentials?: Partial<Record<ChannelCredentialField, string>>
   minimumConfidence?: number
   allowedLabels?: string[]
-  activeFromHour?: number | null
-  activeToHour?: number | null
   messageFields?: string[]
   mediaMode?: MediaMode
   cooldownMinutes?: number | null

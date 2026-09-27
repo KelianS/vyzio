@@ -72,10 +72,6 @@ public sealed class SaveNotificationChannelConfigUseCase(
         if (request.AllowedLabels is { Length: > 0 })
             config.AllowedLabelsJson = JsonSerializer.Serialize(request.AllowedLabels);
 
-        // null clears the restriction; a value in 0-23 sets it
-        config.ActiveFromHour = request.ActiveFromHour is >= 0 and <= 23 ? request.ActiveFromHour : null;
-        config.ActiveToHour = request.ActiveToHour is >= 0 and <= 23 ? request.ActiveToHour : null;
-
         if (request.MessageFields is { Length: > 0 })
             config.MessageFieldsJson = MessageFields.Serialize(ParseFields(request.MessageFields));
         else if (request.MessageFields is { Length: 0 })

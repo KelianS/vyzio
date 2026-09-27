@@ -33,7 +33,8 @@ export function NavigationGuard() {
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
     if (currentLocation.pathname === nextLocation.pathname) return false
-    if (unsaved) return true
+    // Read at the moment of leaving: a page that just saved and leaves has not re-rendered the guard yet.
+    if (useRootStore.getState().unsavedChanges) return true
     return pending && isSettings(currentLocation.pathname) && !isSettings(nextLocation.pathname)
   })
 

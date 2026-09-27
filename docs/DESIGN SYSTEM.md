@@ -185,6 +185,51 @@ detail once:
 Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
 protocol choice, adding a capability or a protocol and removing a protocol are actions.
 
+### Calendar and range editor
+
+The `Planification` rubric is the house's calendar ([SPECS](SPECS.md) 7.3,
+[ADR-63](adr/0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md)). It has two
+screens, whatever the number of rule types:
+
+- **The week** is a calendar read at a glance: one row per day, Monday first, the day's short name
+  then a **24-hour bar**, hour marks `0 6 12 18 24` above the bars and faint guides across them. Each
+  range is a **block placed at its hours**, always carrying its type's icon and its type's fill (solid
+  for `Vie privee`, stripes for `Sans notification`); a legend under the week pairs each fill and
+  icon with the type's name, its swatch square-cornered since it is not tapped. A block is never
+  narrower than its icon, so a short range stays tappable; its exact times are the range's own.
+  Overlapping ranges stack in lanes, none hidden. A range crossing midnight runs to the end of its
+  day with a square edge, and continues from the start of the next day's bar with a square edge
+  (Sunday's into Monday); one ending at 00:00 sharp stops at the end of its day, leaving nothing on
+  the next. A block opens its range. Today's name is emphasised and a thin line marks the house's
+  current time on its bar, read from the server, never the device's clock; when that clock cannot be
+  read, the line is left out rather than shown stale. Never seven columns: at phone width a column
+  holds no readable time, and on a wide screen the bars only grow longer.
+- **The week is its own text equivalent.** Each day is a list headed by its full name; a block's
+  accessible name is the full reading: **type name** · *times* (`22:00 → 06:00 le lendemain`, or
+  `jusqu'a 06:00, depuis la veille` for a tail) · *targets*, named two at most then a count, a
+  target that no longer exists left out. An empty day says `Rien de prevu` to a screen reader.
+- **A rule left with no target** is an outlined block without fill, and a line under the week names
+  it (type and times) with `plus aucune camera visee` or `plus aucun canal vise`, opening the range.
+- **The range editor** is one page for every type, `Ajouter une plage` or the range itself. Its
+  fields are declared settings ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)):
+  the **type** (an exclusive choice, fixed once created), whose effect line is its consequence,
+  visible without a gesture; the **targets** the type declares (a multiple choice of cameras or of
+  channels); the **days** (a multiple choice, Monday first, the same order as the week); **start**
+  and **end** (the `time` nature), the end carrying the midnight sentence as its consequence. An
+  existing range follows the editing cycle (§ Editing cycle); a new one is added by its `Ajouter`
+  button, as a person is. Deleting one asks for a confirmation that names its type and targets. The
+  editor's lede says that the times are the house's and that a range already under way takes effect
+  within the minute.
+
+A type is told apart by its **icon and its name**, never by colour alone. Its name and effect line are
+the type's own words (§ UX vocabulary, Scheduled ranges), the same in the week, the editor and on the
+cameras and channels.
+
+A camera or a channel does not list its ranges: one line outside its settings list says how many of
+its type apply (`2 plages « Vie privee » s'appliquent`, `Aucune plage « Sans notification » ne
+s'applique`) and links to `Planification` (`Voir la planification`). When the rules could
+not be read, that line is the failed read (§ Errors), never `Aucune plage`.
+
 ### Help: three levels, not a manual
 
 How to use a feature lives **in the screen that carries it**, never in a document alongside
@@ -252,7 +297,8 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 ([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
 
 - Viewing: `Accueil`, `Direct`, `Historique`.
-- Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`, `Systeme`).
+- Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`,
+  `Planification`, `Acces`, `Systeme`).
 - The end-of-page fold is called `Avance`. It is not a mode to switch on: it is a position.
 - The in-card fold of figures for support is called `Details techniques` (§ Technical details).
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
@@ -264,6 +310,19 @@ What Vyzio sends to a channel is a **`notification`**, and sending it is **`noti
 `Notifications` section that configures it. One notion, one word: `alerte`, `prevenir` and `signaler`
 are not used for it. A person is `notifie`; a channel sends `notifications`; a setting says
 `Me notifier`.
+
+### Scheduled ranges
+
+A time range of the calendar is a **`plage`**, the rubric that holds them is **`Planification`**. Each type
+has one name and one effect line, used everywhere:
+
+| Type | Name | Effect line |
+| --- | --- | --- |
+| Privacy | `Vie privee` | `Aucun enregistrement, aucune detection, aucune notification.` |
+| Notifications muted | `Sans notification` | `Filme et enregistre, mais n'envoie aucune notification.` |
+
+`Couper` stays the word of privacy mode and `Silence` the word of the spacing between repeated
+notifications: neither names a notification range.
 
 ### Capabilities
 

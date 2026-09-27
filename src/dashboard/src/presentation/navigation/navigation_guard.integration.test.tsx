@@ -50,6 +50,23 @@ describe('NavigationGuard', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
+  it('NavigationGuard_ShouldLetThrough_WhenThePageClearsItsEditsAndLeavesAtOnce', async () => {
+    // Arrange
+    fakeNetwork({})
+    const { router } = renderGuard()
+    act(() => useRootStore.getState().setUnsavedChanges(true))
+
+    // Act
+    await act(async () => {
+      useRootStore.getState().setUnsavedChanges(false)
+      await router.navigate('/')
+    })
+
+    // Assert
+    expect(router.state.location.pathname).toBe('/')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
   it('NavigationGuard_ShouldKeepThePage_WhenTheUserStaysWithUnsavedEdits', async () => {
     // Arrange
     fakeNetwork({})

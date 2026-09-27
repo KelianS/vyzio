@@ -9,6 +9,7 @@ using Vyzio.Application.UseCases.Hub;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Application.UseCases.Profiles;
 using Vyzio.Application.UseCases.Monitoring;
+using Vyzio.Application.UseCases.Scheduling;
 using Vyzio.Application.UseCases.Settings;
 using Vyzio.Core.Interfaces;
 
@@ -57,10 +58,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SaveCameraDetectionConfigUseCase>();
         services.AddScoped<ToggleCameraPrivacyModeUseCase>();
         services.AddScoped<BatchToggleCameraPrivacyModeUseCase>();
-        services.AddScoped<GetCameraPrivacySchedulesUseCase>();
-        services.AddScoped<CreateCameraPrivacyScheduleUseCase>();
-        services.AddScoped<UpdateCameraPrivacyScheduleUseCase>();
-        services.AddScoped<DeleteCameraPrivacyScheduleUseCase>();
+        services.AddScoped<ScheduleRuleValidator>();
+        services.AddScoped<ListScheduleRulesUseCase>();
+        services.AddScoped<GetScheduleRuleUseCase>();
+        services.AddScoped<CreateScheduleRuleUseCase>();
+        services.AddScoped<UpdateScheduleRuleUseCase>();
+        services.AddScoped<DeleteScheduleRuleUseCase>();
+        services.AddSingleton<GetHouseClockUseCase>();
         // Singleton: a camera's position outlives the request that moved it (ADR-59).
         services.AddSingleton<PtzManagedPositions>();
         services.AddScoped<PtzStartMoveUseCase>();

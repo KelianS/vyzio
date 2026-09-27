@@ -10,7 +10,7 @@ describe('SettingsView', () => {
 
     // Assert
     const rubrics = screen.getByRole('navigation', { name: 'Rubriques de réglages' })
-    expect(within(rubrics).getAllByRole('link')).toHaveLength(6)
+    expect(within(rubrics).getAllByRole('link')).toHaveLength(7)
     expect(screen.getByText('Choisissez une rubrique.')).toBeInTheDocument()
   })
 
