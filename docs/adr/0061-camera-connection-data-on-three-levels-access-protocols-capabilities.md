@@ -75,7 +75,9 @@ keeps the verifier's reason in `LastError`. Its settings are the camera's stream
 (qualities, paths, the detect choice); they stay keyed by camera, which is the same thing, since a
 camera has one stream binding. A path is a setting only over RTSP, where ONVIF can also report it.
 The stream is not part of the detection cascade: onboarding chooses its protocol from what discovery
-saw, and the user can change it. A camera without a stream binding is verified as not connected and
+saw, and the user can change it. Detection binds it only on a camera that has none: it checks the
+stream protocols in their order, RTSP then DVRIP, and keeps the first that answers and whose stream
+check passes (d). A camera without a stream binding is verified as not connected and
 has no place in the generated configuration until one is chosen: its stream reads "to configure",
 like any unbound capability. Changing the stream's protocol or path is a connection change, like a new
 address: the camera goes back to being checked before surveillance takes it up again.
@@ -98,9 +100,11 @@ that has none, are the follow-up issue #221: the capability contract is left apa
 
 **d) Detection picks among the protocols that answer.** The detection cascade of ADR-28 checks each
 candidate protocol once, then tries the capabilities only on those that answered, in the same priority
-order. `ManuallyConfigured` keeps its meaning. A manual choice may name any protocol, answering or not
-(a sleeping battery camera must stay configurable): it is saved, and its test says when the protocol
-does not answer. After detection, a protocol row that could not be reached, that no capability uses and
+order. `ManuallyConfigured` keeps its meaning. A manual choice names one of the camera's protocols,
+one of its rows that can carry the capability, answering or not (a sleeping battery camera must stay
+configurable): it is saved, and its test says when the protocol does not answer. A protocol the camera
+does not have is refused: the user adds it first, and it is checked then. Binding a capability never
+creates a protocol row on the side, so the rows only grow by a check or by the user's own gesture. After detection, a protocol row that could not be reached, that no capability uses and
 that holds nothing the user entered is dropped: the rows list what the camera speaks, not what Vyzio
 tried. A protocol that refused the account is kept: the camera speaks it. Once the camera exists, the
 user adds a protocol (checked at once) and removes one; a protocol a capability goes through is never
@@ -133,6 +137,11 @@ the account failure found again by each capability. The lockout risk that argued
 met otherwise: one login per protocol and gesture, only after the protocol answered, only with the
 account the user gave, never a guess.
 
+**A manual choice among every protocol of the capability.** It let a card offer RTSP on a camera
+that only speaks DVRIP, and saving it created the protocol row silently: a choice the camera cannot
+honour, and a level 2 row the user never added. Choosing among the camera's own rows keeps each level
+the home of its data; adding a protocol is one gesture away.
+
 **Carrying the existing rows over, or reading a camera without a stream binding as RTSP.** The
 installation is a single deployed instance and its owner chose a clean schema over a data migration
 and over backward compatibility. A default transport would be a disguised value: a camera that
@@ -147,9 +156,11 @@ streamed over DVRIP would silently read as RTSP and fail.
 - ✅ A silent protocol, or a refused account, costs one check per detection instead of one per
   capability, and is named on the protocol, where it is fixed
 - ✅ A failed stream check keeps its reason, like any other capability
-- ⚠️ The clean schema leaves the cameras already added without a stream binding: each one has its
-  stream protocol chosen once on its stream card, and its stream port entered again when it is not
-  the usual one
+- ⚠️ The clean schema leaves the cameras already added without a stream binding: detection binds it
+  when a stream protocol answers, otherwise its stream protocol is chosen once on its stream card, and
+  its stream port entered again when it is not the usual one
+- ⚠️ A capability over a protocol the camera does not list yet takes two gestures: add the protocol,
+  then choose it
 - ⚠️ A protocol that answers with its account says nothing yet about each capability on it: until
   #221 gives each capability its own read-only proof, the capability's provider probe stays that proof
 - ⚠️ Each check logs in once per protocol: a camera that locks its account after repeated failures sees

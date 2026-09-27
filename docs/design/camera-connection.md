@@ -92,8 +92,15 @@ protocol with a registered provider:
 4. A protocol row that could not be reached, that no binding uses and that holds no port, account or
    device id the user entered is removed. A refused one stays: the camera speaks it.
 
-The stream is not part of the cascade. A manual choice (`ConfigureCameraCapabilityUseCase`) is not
-filtered: it is saved whatever the protocol, then tested, and a protocol that does not answer with its
+The stream is not part of the cascade, except on a camera that has no stream binding: the stream
+protocols (RTSP, then DVRIP, the registry's order) join the candidates checked in step 2, and before
+step 3 the stream is bound to the first of them that answers, then verified; the next answering one is
+tried when the stream check fails. With none answering, the stream stays "to configure". Binding the
+stream this way is a connection change (below), followed by a rewrite of the generated configuration.
+
+A manual choice (`ConfigureCameraCapabilityUseCase`) names one of the camera's protocol rows, answering
+or not: a protocol the camera has no row for is refused (`protocol_not_on_camera`), and no row is
+created on the side. The choice is saved, then tested, and a protocol that does not answer with its
 account fails the test with its reason.
 
 ## Adding and removing a protocol

@@ -156,12 +156,14 @@ detail once:
 - **Identity**: the camera's name, at the top of the page, outside any card.
 - **Each capability**: its title, state and check are visible; its **protocol choice and its settings**
   sit behind the card's own `Options` fold, closed by default. The protocol is chosen by its name
-  there, and changing it runs its test, so its button says `Configurer`, never `Enregistrer`. Every
-  protocol of the capability is offered, answering or not: a sleeping camera stays configurable. A
-  capability that already has a card, even a failing one, changes its protocol there.
+  there, and changing it runs its test, so its button says `Configurer`, never `Enregistrer`. The
+  choice lists the camera's protocols (the `Avance` boxes) that can carry the capability, answering or
+  not: a sleeping camera stays configurable. When none can, a plain sentence points at `Ajouter un
+  protocole` in `Avance` instead of an empty list. A capability that already has a card, even a
+  failing one, changes its protocol there.
 - **`Ajouter une capacite`** closes the list of cards: adding a capability is a capability's action.
-  It opens the manual set-up of SPECS 2.3 (the capability, then its protocol by name, then an
-  immediate test). When every capability has its card, the place says so and points at the cards'
+  It opens the manual set-up of SPECS 2.3 (the capability, then one of the camera's protocols by
+  name, the same list as in `Options`, then an immediate test). When every capability has its card, the place says so and points at the cards'
   `Options`.
 - **The page's `Avance` fold**: the camera's access (address, account), then one box per protocol the
   camera speaks, with its state pill (`Repond`, `Refuse l'acces` when the account or the device number
@@ -262,7 +264,8 @@ are not used for it. A person is `notifie`; a channel sends `notifications`; a s
 A capability card is titled by what the camera does, in the words the rest of the product already
 uses for it: `Flux video` (the stream), `Orientation` (the motorised head), `Coupure materielle`
 (the hardware privacy cut, as on the privacy screen), `Reglages image`. A protocol name (`RTSP`,
-`ONVIF`, `DVRIP`...) appears only where a protocol is chosen or reached, the page's `Avance` fold,
+`ONVIF`, `DVRIP`...) reads the same wherever it appears, the box title, every choice list and every
+sentence; a choice adds only `(par défaut)` to the default protocol of a capability. It appears only where a protocol is chosen or reached, the page's `Avance` fold,
 each card's `Options` fold and the form that adds a capability, and in the diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that
 names protocols or ports sits in the `Avance` fold; the help next to the cards stays in plain words.
 
