@@ -263,7 +263,7 @@ export interface FakeBackendState {
   /** Saved settings that surveillance has not picked up yet (ADR-44). */
   pendingChanges: boolean
   restartFails: boolean
-  /** Frames a second received per camera id, where a test needs a lag; others get 10, an offline one 0. */
+  /** Frames a second received per camera id, where a test needs a low rate; others get 10, an offline one 0. */
   receivedFps: Record<string, number>
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
