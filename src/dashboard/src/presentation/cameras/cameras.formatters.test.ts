@@ -67,12 +67,12 @@ describe('formatStreamStateLine', () => {
     {
       name: 'formatStreamStateLine_ShouldSendToTheAddressAndAccount_WhenTheCameraIsOffline',
       camera: makeCamera({ status: 'offline', connected: false }),
-      line: 'Vyzio ne reçoit pas les images : vérifiez l’adresse et les identifiants de la caméra, dans Avancé.',
+      line: 'Vyzio ne reçoit pas les images : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     },
     {
       name: 'formatStreamStateLine_ShouldSayTheImageDoesNotArrive_WhenTheCameraIsDegraded',
       camera: makeCamera({ status: 'degraded', connected: false }),
-      line: 'La caméra répond, mais son image n’arrive pas : vérifiez les identifiants et les réglages du flux, dans Avancé.',
+      line: 'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     },
     {
       name: 'formatStreamStateLine_ShouldSayVyzioCouldNotPrepareTheCamera_WhenItsSetUpFailed',

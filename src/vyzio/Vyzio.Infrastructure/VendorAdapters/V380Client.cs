@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
@@ -18,7 +19,6 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 // to reuse the protocol primitives without depending on any PTZ logic.
 internal sealed class V380Client(ILogger<V380Client> logger)
 {
-    private const int V380Port = 8800;
     private const int DiscoveryPort = 10008;
     private const int DiscoveryTimeoutMs = 1500;
     private const int DefaultTimeoutMs = 5000;
@@ -32,13 +32,35 @@ internal sealed class V380Client(ILogger<V380Client> logger)
     // Device IDs are stable per physical camera — cache by IP for the lifetime of the process.
     private readonly ConcurrentDictionary<string, uint> _deviceIds = new();
 
-    // Called by V380PtzProvider to pre-populate the cache from persisted ConfigJson,
+    // Called by V380DeviceIdBootstrap to pre-populate the cache from the V380 protocol row,
     // so UDP discovery is not needed on every PTZ command after the initial probe.
     internal void PreloadDeviceId(string host, uint deviceId)
         => _deviceIds[host] = deviceId;
 
     internal uint? GetCachedDeviceId(string host)
         => _deviceIds.TryGetValue(host, out var id) ? id : null;
+
+    // The protocol level's login: the auth handshake (cmd 1167) with the V380 account and device number (ADR-61).
+    public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, TimeProvider time, CancellationToken ct)
+    {
+        var port = camera.PortOf(SupportedProtocol.V380);
+        var deviceId = await GetOrDiscoverDeviceIdAsync(camera.Host, ct);
+        if (deviceId is null)
+            return ProtocolAnswer.Refused($"V380: {camera.Host}:{port} answers, but its device number is unknown (not found by discovery, not entered).");
+
+        using var expiry = new CancellationTokenSource(TimeSpan.FromMilliseconds(DefaultTimeoutMs), time);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
+        try
+        {
+            return await AuthenticateAsync(camera, deviceId.Value, cts.Token) is not null
+                ? ProtocolAnswer.Answers()
+                : ProtocolAnswer.Refused($"V380: {camera.Host}:{port} refused the account for device {deviceId.Value}.");
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or SocketException or IOException && !ct.IsCancellationRequested)
+        {
+            return ProtocolAnswer.Unreachable($"V380: {camera.Host}:{port} did not complete the login ({ex.GetType().Name}).");
+        }
+    }
 
     // Returns true if UDP discovery succeeds and auth (cmd 1167) returns a valid ticket.
     public async Task<bool> ProbeAsync(Camera camera, CancellationToken ct = default)
@@ -72,7 +94,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         var deviceId = await GetOrDiscoverDeviceIdAsync(camera.Host, ct)
             ?? throw new InvalidOperationException(
                 $"V380: device ID not found for {camera.Host}. " +
-                $"Set {{\"device_id\": <id>}} in the binding ConfigJson (obtain via UDP discovery or the V380 app).");
+                "Enter the camera's device number in its V380 protocol (shown in the V380 app).");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(DefaultTimeoutMs);
@@ -82,7 +104,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
             ?? throw new InvalidOperationException($"V380: authentication failed for {camera.Host}.");
 
         using var tcp = new TcpClient();
-        await tcp.ConnectAsync(camera.Host, V380Port, ct);
+        await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.V380), ct);
         tcp.NoDelay = true;
 
         var ns = tcp.GetStream();
@@ -136,15 +158,16 @@ internal sealed class V380Client(ILogger<V380Client> logger)
     private static async Task<uint?> AuthenticateAsync(Camera camera, uint deviceId, CancellationToken ct)
     {
         using var tcp = new TcpClient();
-        await tcp.ConnectAsync(camera.Host, V380Port, ct);
+        await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.V380), ct);
 
-        var encPw = GenerateEncryptedPassword(camera.Password ?? string.Empty);
+        var account = camera.CredentialsFor(SupportedProtocol.V380);
+        var encPw = GenerateEncryptedPassword(account.Password ?? string.Empty);
         var authBuf = BuildPacket(1167);
         BinaryPrimitives.WriteUInt32LittleEndian(authBuf.AsSpan(4), 1022);
         authBuf[8] = 2;
         BinaryPrimitives.WriteUInt32LittleEndian(authBuf.AsSpan(9), 1);
         BinaryPrimitives.WriteUInt32LittleEndian(authBuf.AsSpan(13), deviceId);
-        var usernameBytes = Encoding.UTF8.GetBytes(camera.Username ?? "admin");
+        var usernameBytes = Encoding.UTF8.GetBytes(account.Username ?? "admin");
         usernameBytes.AsSpan(0, Math.Min(usernameBytes.Length, 32)).CopyTo(authBuf.AsSpan(49));
         encPw.AsSpan().CopyTo(authBuf.AsSpan(81));
 

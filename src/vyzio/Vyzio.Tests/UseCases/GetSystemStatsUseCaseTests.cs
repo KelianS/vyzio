@@ -38,7 +38,6 @@ public class GetSystemStatsUseCaseTests
         FrigateCameraName = "front_door",
         DisplayName = "Front Door",
         Host = "192.168.1.10",
-        Port = 554,
         IsEnabled = isEnabled,
         ValidationState = validationState,
     };

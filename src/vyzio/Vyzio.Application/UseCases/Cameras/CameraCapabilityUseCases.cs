@@ -13,9 +13,10 @@ public sealed record CameraCapabilityBindingDto(
     string? LastError,
     bool IsPreset,
     bool IsConfigured,
-    bool? PanInverted = null)
+    bool? PanInverted = null,
+    string? StreamPath = null)
 {
-    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, bool isPreset = false) => new(
+    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, Camera? camera = null, bool isPreset = false) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
         SnakeCaseEnum.ToSnakeCase(binding.Protocol),
         binding.ConfigJson,
@@ -27,7 +28,9 @@ public sealed record CameraCapabilityBindingDto(
         // Only a PTZ binding has a direction to swap (SPECS 11).
         PanInverted: binding.Capability == CameraCapability.Ptz
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
-            : null);
+            : null,
+        // The stream's main path is its own setting (ADR-61).
+        StreamPath: binding.Capability == CameraCapability.Stream ? camera?.MainStream?.Path : null);
 
     public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, SupportedProtocol protocol) => new(
         SnakeCaseEnum.ToSnakeCase(capability),
@@ -46,42 +49,73 @@ public sealed class ProbeCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
-    ICameraProtocolEndpointCache endpointCache)
+    ICameraProtocolEndpointCache endpointCache,
+    CameraProtocolCheck protocolCheck,
+    VerifyCameraUseCase verifyStream)
 {
     // rediscoverEndpoints: resolve where the camera answers from scratch; the cascade forgets once itself (ADR-56).
+    // run: the protocol answers already heard in this gesture, so each protocol is asked once (ADR-61).
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(
-        string cameraId, CameraCapability capability, bool rediscoverEndpoints = false, CancellationToken ct = default)
+        string cameraId,
+        CameraCapability capability,
+        bool rediscoverEndpoints = false,
+        ProtocolCheckRun? run = null,
+        CancellationToken ct = default)
+    {
+        // The stream verification is the stream capability's probe (ADR-61).
+        if (capability == CameraCapability.Stream)
+        {
+            if (await verifyStream.ExecuteAsync(cameraId, run, ct) is null) return null;
+            var camera = await cameras.GetByIdAsync(cameraId, ct);
+            var stream = await bindings.GetAsync(cameraId, capability, ct);
+            return stream is null ? null : CameraCapabilityBindingDto.From(stream, camera);
+        }
+
+        return await ProbeThroughProtocolAsync(cameraId, capability, rediscoverEndpoints, run, ct);
+    }
+
+    private async Task<CameraCapabilityBindingDto?> ProbeThroughProtocolAsync(
+        string cameraId, CameraCapability capability, bool rediscoverEndpoints, ProtocolCheckRun? run, CancellationToken ct)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        // Taken before forgetting, so a forgotten address is saved even when nothing is found again.
-        var endpointsBefore = camera.ProtocolEndpointsJson;
         if (rediscoverEndpoints) CameraEndpointForgetting.Forget(camera, endpointCache);
 
         var binding = await bindings.GetAsync(cameraId, capability, ct);
         if (binding is null)
         {
-            if (camera.ProtocolEndpointsJson != endpointsBefore) await cameras.UpdateAsync(camera, ct);
+            // A forgotten address is saved even when there is nothing to probe (ADR-56).
+            if (rediscoverEndpoints) await cameras.UpdateAsync(camera, ct);
             return null;
         }
 
         bool verified;
         string? error = null;
-        try
+        var protocol = await protocolCheck.CheckAsync(camera, binding.Protocol, run, ct);
+        if (!protocol.Answers)
         {
-            verified = capability switch
-            {
-                CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
-                CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
-                CameraCapability.ImageSettings => await registry.ResolveImageSettings(binding.Protocol).ProbeAsync(camera, binding, ct),
-                _ => false,
-            };
-        }
-        catch (Exception ex)
-        {
+            // A protocol that is silent or refuses the account fails the capability with its own reason (ADR-61).
             verified = false;
-            error = ex.Message;
+            error = protocol.LastError;
+        }
+        else
+        {
+            try
+            {
+                verified = capability switch
+                {
+                    CameraCapability.Ptz => await registry.ResolvePtz(binding.Protocol).ProbeAsync(camera, binding, ct),
+                    CameraCapability.HardwarePrivacy => await registry.ResolvePrivacy(binding.Protocol).ProbeAsync(camera, binding, ct),
+                    CameraCapability.ImageSettings => await registry.ResolveImageSettings(binding.Protocol).ProbeAsync(camera, binding, ct),
+                    _ => false,
+                };
+            }
+            catch (Exception ex)
+            {
+                verified = false;
+                error = ex.Message;
+            }
         }
 
         binding.Verified = verified;
@@ -89,30 +123,14 @@ public sealed class ProbeCameraCapabilityUseCase(
         binding.LastError = verified ? null : error;
         await bindings.SaveAsync(binding, ct);
 
-        var cameraChanged = camera.ProtocolEndpointsJson != endpointsBefore;
-
-        // A protocol that just answered a real probe is proven to work on this camera. This is the
-        // only way Camera.SupportedProtocols is ever written — never on declaration (ADR-28), which
-        // is why the cascade's failed candidates are not recorded here.
-        if (verified && !camera.GetSupportedProtocols().Contains(binding.Protocol))
-        {
-            camera.AddSupportedProtocol(binding.Protocol);
-            cameraChanged = true;
-        }
-
         // A2: PTZ probe success → activate the PTZ panel without manual intervention.
         if (capability == CameraCapability.Ptz && verified && !camera.PtzSupported)
-        {
             camera.PtzSupported = true;
-            cameraChanged = true;
-        }
 
-        if (cameraChanged)
-        {
-            await cameras.UpdateAsync(camera, ct);
-        }
+        // The protocol row and what a provider found (ONVIF address, V380 device id) are saved with the camera.
+        await cameras.UpdateAsync(camera, ct);
 
-        return CameraCapabilityBindingDto.From(binding);
+        return CameraCapabilityBindingDto.From(binding, camera);
     }
 }
 
@@ -126,15 +144,25 @@ internal static class CameraEndpointForgetting
     }
 }
 
-public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? ConfigJson);
+public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol);
+
+// A capability goes through a protocol the camera has; another one is added first (ADR-61 d).
+public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
+    : Exception($"The camera has no {protocol} protocol: add it first.")
+{
+    public SupportedProtocol Protocol { get; } = protocol;
+}
 
 // Manual onboarding for non-listed cameras, or manual override on a recognized vendor
 // (SPECS §2.3): creates/updates a binding then immediately probes it — a binding is never
 // offered as activatable on declaration alone. Marks the binding ManuallyConfigured so
 // SeedAndProbePresetsUseCase never silently reverts this choice back to the vendor preset (ADR-28).
+// One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-61 d).
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
+    IFrigateConfigApplier frigateConfigApplier,
     ProbeCameraCapabilityUseCase probe)
 {
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, ConfigureCameraCapabilityRequest request, CancellationToken ct = default)
@@ -146,22 +174,35 @@ public sealed class ConfigureCameraCapabilityUseCase(
             throw new ArgumentException($"Invalid capability '{request.Capability}'.");
         if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(request.Protocol, out var protocol))
             throw new ArgumentException($"Invalid protocol '{request.Protocol}'.");
+        if (!registry.GetRegisteredProtocols(capability).Contains(protocol))
+            throw new ArgumentException($"No {request.Capability} provider speaks '{request.Protocol}'.");
 
-        var binding = await bindings.GetAsync(cameraId, capability, ct) ?? new CameraCapabilityBinding
+        var existing = await bindings.GetAsync(cameraId, capability, ct);
+        var protocolChanged = existing?.Protocol != protocol;
+        if (protocolChanged && camera.Protocol(protocol) is null)
+            throw new ProtocolNotOnCameraException(protocol);
+        var binding = existing ?? new CameraCapabilityBinding
         {
             CameraId = cameraId,
             Capability = capability,
         };
 
         binding.Protocol = protocol;
-        binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, request.ConfigJson, BindingConfig.PanInverted);
+        // The swap is the user's; what the former protocol found about the camera (native presets) is not.
+        binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, null, BindingConfig.PanInverted);
         binding.Verified = false;
         binding.LastError = null;
         binding.ManuallyConfigured = true;
 
         await bindings.SaveAsync(binding, ct);
 
-        return await probe.ExecuteAsync(cameraId, capability, ct: ct);
+        var streamMoved = capability == CameraCapability.Stream && protocolChanged;
+        if (streamMoved) CameraConnectionChange.Apply(camera);
+        await cameras.UpdateAsync(camera, ct);
+
+        var result = await probe.ExecuteAsync(cameraId, capability, ct: ct);
+        if (streamMoved) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        return result;
     }
 }
 
@@ -173,6 +214,10 @@ public sealed class RemoveCameraCapabilityUseCase(ICameraRepository cameras, ICa
 {
     public async Task<bool> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
     {
+        // A camera without its stream has nothing to watch: the stream changes protocol, it is never removed (ADR-61).
+        if (capability == CameraCapability.Stream)
+            throw new ArgumentException("The video stream cannot be removed; choose another protocol instead.");
+
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return false;
 
@@ -184,7 +229,10 @@ public sealed class RemoveCameraCapabilityUseCase(ICameraRepository cameras, ICa
     }
 }
 
-public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings)
+public sealed class GetCameraCapabilitiesUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry)
 {
     public async Task<IReadOnlyList<CameraCapabilityBindingDto>?> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -194,7 +242,14 @@ public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICam
         var dbBindings = await bindings.GetByCameraAsync(cameraId, ct);
         var preset = camera.VendorFamily is { } vf ? VendorCapabilityPresets.GetByVendorFamily(vf) : null;
 
-        var result = new List<CameraCapabilityBindingDto>();
+        // The stream first, every other capability depends on it; unchosen, it reads "to configure" (ADR-61).
+        var stream = dbBindings.FirstOrDefault(b => b.Capability == CameraCapability.Stream);
+        var result = new List<CameraCapabilityBindingDto>
+        {
+            stream is not null
+                ? CameraCapabilityBindingDto.From(stream, camera)
+                : CameraCapabilityBindingDto.FromPreset(CameraCapability.Stream, registry.GetRegisteredProtocols(CameraCapability.Stream)[0]),
+        };
 
         if (preset is not null)
         {
@@ -204,17 +259,18 @@ public sealed class GetCameraCapabilitiesUseCase(ICameraRepository cameras, ICam
             {
                 var binding = dbBindings.FirstOrDefault(b => b.Capability == capability);
                 result.Add(binding is not null
-                    ? CameraCapabilityBindingDto.From(binding, isPreset: true)
+                    ? CameraCapabilityBindingDto.From(binding, camera, isPreset: true)
                     : CameraCapabilityBindingDto.FromPreset(capability, protocols[0]));
             }
         }
 
         // Non-preset bindings (manually added on unlisted cameras).
-        var presetCaps = preset?.DefaultBindings.Select(b => b.Capability).ToHashSet() ?? [];
+        var listed = preset?.DefaultBindings.Select(b => b.Capability).ToHashSet() ?? [];
+        listed.Add(CameraCapability.Stream);
         foreach (var binding in dbBindings)
         {
-            if (!presetCaps.Contains(binding.Capability))
-                result.Add(CameraCapabilityBindingDto.From(binding, isPreset: false));
+            if (!listed.Contains(binding.Capability))
+                result.Add(CameraCapabilityBindingDto.From(binding, camera));
         }
 
         return result;

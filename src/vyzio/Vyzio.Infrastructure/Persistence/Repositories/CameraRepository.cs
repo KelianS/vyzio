@@ -6,23 +6,25 @@ namespace Vyzio.Infrastructure.Persistence.Repositories;
 
 public sealed class CameraRepository(VyzioDbContext db) : ICameraRepository
 {
-    // Streams are always loaded: Camera.StreamPath, MainStream and DetectStream all resolve through
-    // them (ADR-38), so a camera without its streams is a camera without a video source.
     public async Task<IReadOnlyList<Camera>> GetAllAsync(CancellationToken ct = default)
-        => await db.Cameras
-            .Include(camera => camera.Streams)
+        => await WithConnection()
             .OrderBy(camera => camera.DisplayName)
             .ToListAsync(ct);
 
     public Task<Camera?> GetByIdAsync(string id, CancellationToken ct = default)
-        => db.Cameras
-            .Include(camera => camera.Streams)
-            .FirstOrDefaultAsync(camera => camera.Id == id, ct);
+        => WithConnection().FirstOrDefaultAsync(camera => camera.Id == id, ct);
 
     public Task<Camera?> GetBySlugAsync(string slug, CancellationToken ct = default)
+        => WithConnection().FirstOrDefaultAsync(camera => camera.Slug == slug, ct);
+
+    // A camera always comes with how it is reached: its streams (ADR-38), its protocols and its
+    // capabilities, the stream included (ADR-61). Without them a provider has no port nor account.
+    private IQueryable<Camera> WithConnection()
         => db.Cameras
             .Include(camera => camera.Streams)
-            .FirstOrDefaultAsync(camera => camera.Slug == slug, ct);
+            .Include(camera => camera.Protocols)
+            .Include(camera => camera.Capabilities)
+            .AsSplitQuery();
 
     public async Task AddAsync(Camera camera, CancellationToken ct = default)
     {

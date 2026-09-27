@@ -31,7 +31,6 @@ public class SaveCameraDetectionConfigUseCaseTests
             Slug = "front-door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-            Port = 554,
             IsEnabled = true,
             ValidationState = CameraValidationState.Validated,
             FrigateCameraName = "front_door",

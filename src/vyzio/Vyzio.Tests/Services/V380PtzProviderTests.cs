@@ -22,12 +22,12 @@ public class V380PtzProviderTests
     {
         // Arrange
         var camera = new Camera { Id = "cam", Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = "127.0.0.1" };
+        camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 26970853;
         var binding = new CameraCapabilityBinding
         {
             CameraId = "cam",
             Capability = CameraCapability.Ptz,
             Protocol = SupportedProtocol.V380,
-            ConfigJson = """{"device_id":26970853}""",
         };
 
         // Act

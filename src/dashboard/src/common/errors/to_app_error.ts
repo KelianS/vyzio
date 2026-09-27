@@ -22,6 +22,10 @@ const KNOWN_REFUSALS = new Map<string, string>([
     'Une caméra ou un canal choisi n’existe plus : revoyez la liste, puis enregistrez de nouveau',
   ],
   [
+    ApiErrorCode.ProtocolNotOnCamera,
+    'Cette caméra n’a pas ce protocole : lancez « Détecter automatiquement », ou ajoutez-le dans Avancé',
+  ],
+  [
     ApiErrorCode.ParkingPositionsMissing,
     'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
   ],

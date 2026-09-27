@@ -1,6 +1,13 @@
 import { RestartSurveillance } from '../../domain/usecases/restart_surveillance.use_case'
 import { BatchToggleCameraPrivacyMode } from '../../domain/usecases/batch_toggle_camera_privacy_mode.use_case'
 import { CapturePtzPresetThumbnail } from '../../domain/usecases/capture_ptz_preset_thumbnail.use_case'
+import { AddCameraProtocol } from '../../domain/usecases/add_camera_protocol.use_case'
+import { CheckCameraProtocol } from '../../domain/usecases/check_camera_protocol.use_case'
+import { SearchCameraProtocols } from '../../domain/usecases/search_camera_protocols.use_case'
+import { RemoveCameraProtocol } from '../../domain/usecases/remove_camera_protocol.use_case'
+import { GetCameraProtocols } from '../../domain/usecases/get_camera_protocols.use_case'
+import { SetStreamPath } from '../../domain/usecases/set_stream_path.use_case'
+import { UpdateCameraProtocol } from '../../domain/usecases/update_camera_protocol.use_case'
 import { ConfigureCameraCapability } from '../../domain/usecases/configure_camera_capability.use_case'
 import { CreateCamera } from '../../domain/usecases/create_camera.use_case'
 import { DeleteCamera } from '../../domain/usecases/delete_camera.use_case'
@@ -52,7 +59,14 @@ export interface CamerasContainer {
   probeCameraCapability: ProbeCameraCapability
   removeCameraCapability: RemoveCameraCapability
   setPtzPanInverted: SetPtzPanInverted
+  setStreamPath: SetStreamPath
   detectCameraCapabilities: DetectCameraCapabilities
+  getCameraProtocols: GetCameraProtocols
+  updateCameraProtocol: UpdateCameraProtocol
+  checkCameraProtocol: CheckCameraProtocol
+  searchCameraProtocols: SearchCameraProtocols
+  addCameraProtocol: AddCameraProtocol
+  removeCameraProtocol: RemoveCameraProtocol
   getCameraImageSettings: GetCameraImageSettings
   setCameraImageSettings: SetCameraImageSettings
   getCameraDetectionConfig: GetCameraDetectionConfig
@@ -92,7 +106,14 @@ export function makeCamerasContainer(
     probeCameraCapability: new ProbeCameraCapability(cameraRepository),
     removeCameraCapability: new RemoveCameraCapability(cameraRepository),
     setPtzPanInverted: new SetPtzPanInverted(cameraRepository),
+    setStreamPath: new SetStreamPath(cameraRepository),
     detectCameraCapabilities: new DetectCameraCapabilities(cameraRepository),
+    getCameraProtocols: new GetCameraProtocols(cameraRepository),
+    updateCameraProtocol: new UpdateCameraProtocol(cameraRepository),
+    checkCameraProtocol: new CheckCameraProtocol(cameraRepository),
+    searchCameraProtocols: new SearchCameraProtocols(cameraRepository),
+    addCameraProtocol: new AddCameraProtocol(cameraRepository),
+    removeCameraProtocol: new RemoveCameraProtocol(cameraRepository),
     getCameraImageSettings: new GetCameraImageSettings(cameraRepository),
     setCameraImageSettings: new SetCameraImageSettings(cameraRepository),
     getCameraDetectionConfig: new GetCameraDetectionConfig(profileRepository),

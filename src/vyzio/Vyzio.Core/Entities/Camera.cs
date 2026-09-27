@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
-using Vyzio.Core.Common;
 
 namespace Vyzio.Core.Entities;
 
@@ -23,17 +22,20 @@ public class Camera
     [Required, MaxLength(200)]
     public required string Host { get; set; }
 
-    public int Port { get; set; }
-
+    // The camera's account; a protocol may carry its own, resolved by CredentialsFor (ADR-61).
     [MaxLength(200)]
     public string? Username { get; set; }
 
     [MaxLength(500)]
     public string? Password { get; set; }
 
-    public StreamProtocol StreamProtocol { get; set; } = StreamProtocol.Rtsp;
+    // The protocols this camera speaks, how to reach each and whether it answers (ADR-61).
+    public ICollection<CameraProtocol> Protocols { get; set; } = [];
 
-    // Video access points of this camera — qualities of ONE scene (ADR-38).
+    // What the camera does, the video stream included, each over one protocol (ADR-22, ADR-61).
+    public ICollection<CameraCapabilityBinding> Capabilities { get; set; } = [];
+
+    // The stream capability's qualities of ONE scene (ADR-38); keyed by camera, which has one stream binding (ADR-61).
     public ICollection<CameraStream> Streams { get; set; } = [];
 
     // User's pick among Streams for the `detect` role. Null keeps the main stream, so face
@@ -51,12 +53,6 @@ public class Camera
     // JSON array of active detection labels e.g. ["person","dog"]. Null defaults to ["person"].
     [MaxLength(500)]
     public string? DetectionLabelsJson { get; set; }
-
-    // JSON array of detected network protocols e.g. ["onvif","v380"]. Populated by probe pipeline.
-    public string? SupportedProtocolsJson { get; set; }
-
-    // Protocol -> address it answers on, e.g. {"onvif":"http://host:2020/onvif/service"}: a device fact (ADR-56).
-    public string? ProtocolEndpointsJson { get; set; }
 
     // Per-camera retention overrides (ADR-39). Null means "follow the installation" — never a
     // disguised value, which is why these are nullable rather than defaulted. Zero is a real
@@ -134,18 +130,12 @@ public class Camera
         => (DetectStreamId is null ? null : Streams.FirstOrDefault(stream => stream.Id == DetectStreamId))
            ?? Streams.OrderByDescending(stream => stream.Ordinal).FirstOrDefault();
 
-    // Projection of the main stream's path — the connection-level view of a camera, on the same
-    // footing as Host and Port. Settable at construction because that is when onboarding knows it;
-    // afterwards a path belongs to a stream and moves through SetMainStreamPath.
+    // The video stream capability; null until its protocol is chosen, never a disguised default (ADR-61).
     [NotMapped]
-    public string? StreamPath
-    {
-        get => MainStream?.Path;
-        init => SetMainStreamPath(value);
-    }
+    public CameraCapabilityBinding? StreamBinding
+        => Capabilities.FirstOrDefault(binding => binding.Capability == CameraCapability.Stream);
 
-    // Creates or updates the main stream in place. The only supported way to set a camera's primary
-    // path: writing StreamPath directly is impossible by construction.
+    // Creates or updates the main stream in place: the one way to set the stream capability's main path.
     public void SetMainStreamPath(string? path)
     {
         var main = Streams.FirstOrDefault(stream => stream.Ordinal == 0);
@@ -160,6 +150,30 @@ public class Camera
         main.Path = path;
         main.UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    public CameraProtocol? Protocol(SupportedProtocol protocol)
+        => Protocols.FirstOrDefault(entry => entry.Protocol == protocol);
+
+    public CameraProtocol EnsureProtocol(SupportedProtocol protocol)
+    {
+        if (Protocol(protocol) is { } existing) return existing;
+
+        var created = new CameraProtocol { CameraId = Id, Protocol = protocol };
+        Protocols.Add(created);
+        return created;
+    }
+
+    // The port a client dials for a protocol with a usual port; ONVIF asks the camera instead (ADR-56).
+    public int PortOf(SupportedProtocol protocol)
+        => Protocol(protocol)?.EffectivePort
+           ?? ProtocolPorts.Usual(protocol)
+           ?? throw new InvalidOperationException($"{protocol} has no usual port: its address is asked of the camera.");
+
+    // The protocol's specific account when it has one, the camera's otherwise; no client reads Username itself (ADR-61).
+    public CameraCredentials CredentialsFor(SupportedProtocol protocol)
+        => Protocol(protocol) is { HasSpecificAccount: true } specific
+            ? new CameraCredentials(specific.Username, specific.Password)
+            : new CameraCredentials(Username, Password);
 
     public IReadOnlyList<string> GetDetectionLabels()
     {
@@ -176,62 +190,15 @@ public class Camera
         }
     }
 
-    public IReadOnlyList<SupportedProtocol> GetSupportedProtocols()
-    {
-        if (SupportedProtocolsJson is null)
-            return [];
-
-        try
-        {
-            var strings = JsonSerializer.Deserialize<List<string>>(SupportedProtocolsJson) ?? [];
-            return strings
-                .Select(s => SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(s, out var p) ? (SupportedProtocol?)p : null)
-                .Where(p => p.HasValue)
-                .Select(p => p!.Value)
-                .ToList();
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
-    }
-
-    public void AddSupportedProtocol(SupportedProtocol protocol)
-    {
-        var current = GetSupportedProtocols().ToList();
-        if (!current.Contains(protocol))
-        {
-            current.Add(protocol);
-            SupportedProtocolsJson = JsonSerializer.Serialize(current.Select(p => SnakeCaseEnum.ToSnakeCase(p)));
-        }
-    }
-
-    public string? GetProtocolEndpoint(SupportedProtocol protocol)
-        => ReadProtocolEndpoints().GetValueOrDefault(SnakeCaseEnum.ToSnakeCase(protocol));
+    public string? GetProtocolEndpoint(SupportedProtocol protocol) => Protocol(protocol)?.Endpoint;
 
     public void SetProtocolEndpoint(SupportedProtocol protocol, string endpoint)
-    {
-        var endpoints = ReadProtocolEndpoints();
-        endpoints[SnakeCaseEnum.ToSnakeCase(protocol)] = endpoint;
-        ProtocolEndpointsJson = JsonSerializer.Serialize(endpoints);
-    }
+        => EnsureProtocol(protocol).Endpoint = endpoint;
 
     // Only through CameraEndpointForgetting, which clears the in-memory cache in the same gesture (ADR-56).
-    public void ClearProtocolEndpoints() => ProtocolEndpointsJson = null;
-
-    private Dictionary<string, string> ReadProtocolEndpoints()
+    public void ClearProtocolEndpoints()
     {
-        if (ProtocolEndpointsJson is null)
-            return [];
-
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(ProtocolEndpointsJson) ?? [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
+        foreach (var entry in Protocols) entry.Endpoint = null;
     }
 
     private static readonly IReadOnlyList<string> DefaultLabels = ["person"];

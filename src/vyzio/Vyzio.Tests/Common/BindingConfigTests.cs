@@ -8,10 +8,10 @@ public class BindingConfigTests
     [Fact]
     public void Carry_ShouldKeepTheSwap_WhenANewConfigDoesNotNameIt()
     {
-        var carried = BindingConfig.Carry("""{"pan_inverted":true}""", """{"device_id":42}""", BindingConfig.PanInverted);
+        var carried = BindingConfig.Carry("""{"pan_inverted":true}""", """{"supports_native_presets":true}""", BindingConfig.PanInverted);
 
         Assert.True(BindingConfig.ReadBool(carried, BindingConfig.PanInverted));
-        Assert.Contains("\"device_id\":42", carried, StringComparison.Ordinal);
+        Assert.Contains("\"supports_native_presets\":true", carried, StringComparison.Ordinal);
     }
 
     [Fact]

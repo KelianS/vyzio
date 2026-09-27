@@ -36,12 +36,10 @@ describe('VerifyDraftCamera', () => {
     const input = {
       displayName: 'Front Door',
       host: '192.168.1.10',
-      port: 554,
       username: 'admin',
       password: 'secret',
-      streamPath: '/Streaming/Channels/101',
       sourceType: 'rtsp_manual',
-      detectionPreset: 'person_default',
+      stream: { protocol: 'rtsp' as const, port: 554, path: '/Streaming/Channels/101' },
     }
 
     // Act

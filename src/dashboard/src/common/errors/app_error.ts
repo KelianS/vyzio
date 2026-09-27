@@ -24,6 +24,7 @@ export const ApiErrorCode = {
   ScheduleEmptyRange: 'schedule_empty_range',
   ScheduleNoTarget: 'schedule_no_target',
   ScheduleUnknownTarget: 'schedule_unknown_target',
+  ProtocolNotOnCamera: 'protocol_not_on_camera',
 } as const
 
 /** What support reads under the sentence (SPECS 1.5), and the code the API named, if any. */

@@ -1,6 +1,7 @@
 # ADR-56: The ONVIF endpoint is asked of the camera, never assumed by convention
 
-> Status: Accepted
+> Status: Accepted, amended by [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)
+> on where the resolved endpoint is stored
 >
 > Amends [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) and
 > [ADR-27](0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md)

@@ -10,6 +10,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<Camera> Cameras => Set<Camera>();
     public DbSet<ScheduleRule> ScheduleRules => Set<ScheduleRule>();
     public DbSet<CameraCapabilityBinding> CameraCapabilityBindings => Set<CameraCapabilityBinding>();
+    public DbSet<CameraProtocol> CameraProtocols => Set<CameraProtocol>();
     public DbSet<CameraStream> CameraStreams => Set<CameraStream>();
     public DbSet<PtzPreset> PtzPresets => Set<PtzPreset>();
     public DbSet<Profile> Profiles => Set<Profile>();
@@ -55,7 +56,6 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                 .HasDatabaseName("idx_cameras_status");
 
             // ADR-22 point 0 — enum in code, same TEXT column/values already in the database.
-            camera.Property(c => c.StreamProtocol).HasConversion<SnakeCaseEnumConverter<StreamProtocol>>();
             camera.Property(c => c.ValidationState).HasConversion<SnakeCaseEnumConverter<CameraValidationState>>().HasMaxLength(50);
             camera.Property(c => c.VendorFamily).HasConversion<NullableSnakeCaseEnumConverter<VendorFamily>>();
             camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
@@ -64,6 +64,28 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             camera.HasIndex(c => c.DeviceId)
                 .HasDatabaseName("idx_cameras_device");
+
+            camera.Ignore(c => c.StreamBinding);
+        });
+
+        modelBuilder.Entity<CameraProtocol>(protocol =>
+        {
+            protocol.HasOne(p => p.Camera)
+                    .WithMany(c => c.Protocols)
+                    .HasForeignKey(p => p.CameraId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+            // One row per protocol a camera speaks (ADR-61).
+            protocol.HasIndex(p => new { p.CameraId, p.Protocol })
+                    .IsUnique()
+                    .HasDatabaseName("ux_camera_protocols_camera_protocol");
+
+            protocol.Property(p => p.Protocol).HasConversion<SnakeCaseEnumConverter<SupportedProtocol>>();
+            protocol.Property(p => p.Status).HasConversion<NullableSnakeCaseEnumConverter<ProtocolStatus>>();
+            protocol.Ignore(p => p.EffectivePort);
+            protocol.Ignore(p => p.Answers);
+            protocol.Ignore(p => p.HasSpecificAccount);
+            protocol.Ignore(p => p.HoldsUserData);
         });
 
         modelBuilder.Entity<CameraStream>(stream =>
@@ -84,7 +106,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
         modelBuilder.Entity<CameraCapabilityBinding>(binding =>
         {
             binding.HasOne(b => b.Camera)
-                   .WithMany()
+                   .WithMany(c => c.Capabilities)
                    .HasForeignKey(b => b.CameraId)
                    .OnDelete(DeleteBehavior.Cascade);
 

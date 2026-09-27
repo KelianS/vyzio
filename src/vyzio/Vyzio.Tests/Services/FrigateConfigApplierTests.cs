@@ -28,18 +28,15 @@ public sealed class FrigateConfigApplierTests : IDisposable
         if (File.Exists($"{_configPath}.pending")) File.Delete($"{_configPath}.pending");
     }
 
-    private static Camera MakeValidatedCamera(string slug, StreamProtocol streamProtocol = StreamProtocol.Rtsp, string? streamPath = "/stream1", int port = 554) => new()
+    private static Camera MakeValidatedCamera(string slug, SupportedProtocol streamProtocol = SupportedProtocol.Rtsp, string? streamPath = "/stream1") => new Camera
     {
         Slug = slug,
         DisplayName = slug,
         Host = "192.168.1.10",
-        Port = port,
-        StreamPath = streamPath,
-        StreamProtocol = streamProtocol,
         IsEnabled = true,
         ValidationState = CameraValidationState.Validated,
         FrigateCameraName = slug.Replace('-', '_'),
-    };
+    }.WithStream(streamProtocol, path: streamPath);
 
     private sealed class StubHardwareAccelerationDetector(
         FrigateDetectorKind kind,
@@ -149,7 +146,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task ApplyAsync_ShouldEmitAGo2rtcSection_WhenACameraStreamsOverDvrip()
     {
-        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567)]);
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null)]);
 
         Assert.Contains("go2rtc:", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("streams:", yaml, StringComparison.OrdinalIgnoreCase);
@@ -159,7 +156,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task ApplyAsync_ShouldPointTheInputAtTheGo2rtcRtspBridge_WhenACameraStreamsOverDvrip()
     {
-        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567)]);
+        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null)]);
 
         Assert.Contains("rtsp://127.0.0.1:8554/garden", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("rtsp://192.168.1.10", yaml, StringComparison.OrdinalIgnoreCase);
@@ -171,7 +168,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         var yaml = await ApplyAndReadYamlAsync(
         [
             MakeValidatedCamera("front-door"),
-            MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567),
+            MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null),
         ]);
 
         Assert.Contains("go2rtc:", yaml, StringComparison.OrdinalIgnoreCase);
@@ -184,7 +181,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task ApplyAsync_ShouldPutTheCredentialsInTheGo2rtcUrl_WhenADvripCameraHasCredentials()
     {
-        var camera = MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567);
+        var camera = MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null);
         camera.Username = "admin";
         camera.Password = "secret";
 
@@ -192,6 +189,47 @@ public sealed class FrigateConfigApplierTests : IDisposable
 
         Assert.Contains("admin", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("secret", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldReadThePortAndAccountFromTheStreamProtocol_WhenTheProtocolCarriesItsOwn()
+    {
+        // Arrange
+        var camera = MakeValidatedCamera("front-door");
+        camera.Username = "camera-user";
+        camera.Password = "camera-pass";
+        var rtsp = camera.Protocol(SupportedProtocol.Rtsp)!;
+        rtsp.Port = 8554;
+        rtsp.Username = "stream-user";
+        rtsp.Password = "stream-pass";
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Assert
+        Assert.Contains("rtsp://stream-user:stream-pass@192.168.1.10:8554/stream1", yaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("camera-user", yaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldLeaveTheCameraOut_WhenItsStreamHasNoProtocolYet()
+    {
+        // Arrange
+        var camera = new Camera
+        {
+            Slug = "porch",
+            DisplayName = "porch",
+            Host = "192.168.1.10",
+            IsEnabled = true,
+            ValidationState = CameraValidationState.Validated,
+            FrigateCameraName = "porch",
+        };
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Assert
+        Assert.DoesNotContain("porch:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -355,7 +393,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task ApplyAsync_ShouldGiveTheSubStreamItsOwnGo2rtcBridge_WhenADvripCameraDetectsOnItsSubStream()
     {
-        var camera = MakeValidatedCamera("garden", StreamProtocol.Dvrip, null, 34567);
+        var camera = MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null);
         var sub = AddStream(camera, 1, "?channel=0&subtype=1");
         camera.DetectStreamId = sub.Id;
 
