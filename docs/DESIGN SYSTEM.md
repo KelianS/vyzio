@@ -180,20 +180,22 @@ detail once:
   local network. `Retirer` is refused, with the plain reason next to it, while a capability goes
   through the protocol or while its box has unsaved edits.
 - **The stream's way out** names both places: the address and account in `Avance`, the protocol and
-  path in the stream card's `Options`.
+  the streams in the stream card's `Options`.
 - **The stream lines** ([ADR-65](adr/0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md)):
   the stream stays one card with one pill, the camera status. Its state line adds one sentence when
   detection is not covered as chosen: detection runs on the recording stream since no stream holds
-  that role, or the detection stream failed its check. In its `Options`, after the protocol choice and
-  the main path, a `Flux` list shows one line per stream: its quality (the measured resolution and
-  frame rate, else its rank, ADR-38), its protocol name and path, its role as a choice
-  (`Enregistrement`, `Detection`, `Enregistrement et detection`, `Aucun`; the default is said as such,
-  the consequence names what the role changes), its own pill (the capability pills, `Desactive` for a
-  line switched off, `Pas encore verifie` before its first check) with the diagnostic line of a failure,
-  then its actions: `Verifier`, `Desactiver` or `Activer`, `Supprimer` with a confirmation. The stream
-  that records keeps `Desactiver` and `Supprimer` disabled, with the plain reason next to them. `Ajouter
-  un flux` closes the list: a protocol among the camera's stream protocols, a path, a role, checked at
-  once.
+  that role, or the detection stream failed its check. In its `Options`, after the protocol choice
+  (whose explanation says that changing it replaces the streams), a `Flux` list shows one line per
+  stream: its quality (the measured resolution and frame rate, else its rank, ADR-38), its protocol
+  name and path, its role as a choice (`Enregistrement`, `Détection`, `Enregistrement et détection`,
+  `Aucun`; the default is said as such, the consequence names what the role changes), its own pill
+  (the capability pills, `Désactivé` for a line switched off, `Pas encore vérifié` before its first
+  check) with the diagnostic line of a failure, then its actions: `Vérifier`, `Désactiver` or
+  `Activer`, `Supprimer` with a confirmation. The main stream's path is a declared setting on its own
+  line over RTSP, the one place it is shown. The stream that records is offered only the roles that
+  record, and keeps `Désactiver` and `Supprimer` disabled with the plain reason next to them; a line
+  switched off shows no role. `Ajouter un flux` closes the list: a protocol among the camera's stream
+  protocols, a path over RTSP or a quality over DVRIP, a role, checked at once.
 
 Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
 protocol choice, adding a capability or a protocol and removing a protocol are actions, and so is

@@ -7,9 +7,10 @@
 > recording and `Camera.DetectStreamId` naming the analysed one), on where the analysis choice is made
 > (on the stream, no longer in the detection settings) and on the streams found again at every
 > verification (they are found once, then the user's), and
-> [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b) and its
+> [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b) and c) and its
 > rejected option "Moving the streams under the stream binding" (the streams now belong to the
-> binding, each with its own protocol, state and check).
+> binding, each with its own protocol, state and check; the reachability poller follows the recording
+> stream's protocol).
 
 ## Context
 
@@ -44,19 +45,22 @@ rank and measured size (ADR-38), and now:
 
 - its **protocol**, one of the camera's stream protocols (RTSP or DVRIP). A stream the camera reports
   takes the binding's protocol; a stream declared by hand picks one of the camera's rows that can carry
-  a stream. The binding's protocol stays the capability's (ADR-61 b): the one the streams are found
-  over, the one the reachability poller knocks on. Changing it is a connection change that finds the
-  streams again over the new protocol;
+  a stream. The binding's protocol stays the capability's (ADR-61 b): the one its check starts with,
+  the one the streams are found over and a new stream is offered first. The reachability poller
+  (ADR-23) knocks on the recording stream's protocol, since the camera status follows that stream;
 - its **role**: record, detect, both, or none;
 - whether it is **enabled**;
 - its **last check**: verified or not, when, and the reason of a failure.
 
-`Camera.DetectStreamId` leaves the camera: the analysed stream is the one whose role says so.
+`Camera.DetectStreamId` leaves the camera: the analysed stream is the one whose role says so. The
+binding records when it found its streams (`StreamsFoundAt`, e), a fact of the stream capability,
+not a setting, so it is a column rather than a key of its `ConfigJson`.
 
 **b) One guard: one enabled stream records.** Exactly one enabled stream holds the record role, since
 Frigate takes one. Giving a role to a stream takes it from the stream that had it, so the record role
 moves in one gesture and never lapses. The stream that records cannot be disabled, removed, or lose
-its record role: the user first gives recording to another stream. A disabled stream holds no role.
+its record role, so it is only offered the roles that record: the user first gives recording to another
+stream. A disabled stream holds no role and takes none until it is enabled again.
 
 **c) Detection falls back to the recording stream.** At most one stream holds the detect role. When
 none does, because the detect stream was disabled, removed, or its role taken off, detection runs on
@@ -70,8 +74,11 @@ itself: Vyzio shows the failure on the card and leaves the choice to the user.
 the camera's streams adds them. After that, a verification refreshes the measured size of the streams
 it can match, and never adds or removes one: a stream the user removed does not come back, and a stream
 the camera stopped serving fails its check until the user removes it. The user declares a stream the
-camera did not report ("Ajouter un flux"), checked at once. A change of the binding's protocol clears
-the streams back to the main one, found again on the next verification.
+camera did not report ("Ajouter un flux"), checked at once: over RTSP by its path, over DVRIP by its
+quality (the main stream or the secondary one, ADR-38's convention). A change of the binding's protocol
+replaces the streams, hand-declared ones included, by a single main stream over the new protocol that
+records and detects, and clears `StreamsFoundAt`: the streams are found again on the next
+verification, and the protocol choice says so before it runs.
 
 **f) Each enabled stream is checked, at the capability level.** A stream check first requires its
 protocol to answer with its account (ADR-61 c), then probes that stream. The stream capability's check

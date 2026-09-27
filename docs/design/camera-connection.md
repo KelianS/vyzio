@@ -66,8 +66,8 @@ checked alone (`CheckCameraProtocolUseCase`), whatever the stream's state.
 Protocol tests cover reach and login (`CameraProtocolProbeTests`, `CameraProtocolUseCaseTests`);
 capability tests cover the binding (`CameraCapabilityUseCaseTests`).
 
-The reachability poller (ADR-23) knocks on the `EffectivePort` of the stream binding's protocol, and
-skips a camera that has no stream binding.
+The reachability poller (ADR-23) knocks on the `EffectivePort` of the recording stream's protocol
+(ADR-65), and skips a camera that has no stream binding.
 
 ## Testing a capability
 
@@ -131,7 +131,7 @@ removing ONVIF also forgets its cached address.
 |---|---|
 | Onboarding | The camera is created with its stream binding (RTSP or DVRIP, as discovery or the user chose), its protocol row (port from the form) and its main stream (path from the form, over RTSP), which records and detects |
 | Verification | The stream's protocol is checked first; then every enabled stream is checked (below); the camera status follows the recording stream |
-| Protocol or path changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. A protocol change also clears the streams back to the main one, over the new protocol, to be found again |
+| Protocol or main path changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. A protocol change also replaces the streams by one main stream over the new protocol, recording and detecting, and clears `StreamsFoundAt` |
 | Frigate generation | `FrigateConfigApplier` builds one input for the recording stream and, when it differs, one for the analysed stream, each from its own stream's protocol: an RTSP URL, or a `dvrip://` source handed to go2rtc (ADR-19) |
 
 A camera without a stream binding is verified as not connected, stays out of the generated
@@ -149,9 +149,9 @@ cannot take one (`stream_disabled`). `Camera.RecordStream` is the enabled stream
 (`Camera.DetectsOnRecordingStream`).
 
 **Found once.** `VerifyCameraUseCase` asks `ICameraStreamEnumerator` once the camera answers. While the
-binding has not found its streams yet (the `streams_found` key of its `ConfigJson`), the enumerated
+binding has not found its streams yet (`CameraCapabilityBinding.StreamsFoundAt` empty), the enumerated
 streams are added with the defaults: the most detailed records, the lightest detects, a single one does
-both, and the key is set. Afterwards only the measured size of a stream whose path matches is
+both, and the date is set. Afterwards only the measured size of a stream whose path matches is
 refreshed (the main stream's size only when its path matches, ADR-38); nothing is added or removed.
 
 **Checks.** `StreamVerification` checks the binding's protocol once per gesture, then each enabled
