@@ -15,8 +15,6 @@ export function makeDetectionConfig(overrides: Partial<DetectionConfig> = {}): D
     },
     motionSensitivity: 'medium',
     motionSensitivityPinned: false,
-    streams: [],
-    detectStreamId: null,
     ...overrides,
   }
 }

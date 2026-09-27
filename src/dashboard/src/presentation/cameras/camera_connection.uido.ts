@@ -5,6 +5,7 @@ import type {
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
+import type { CameraStreamLineup } from '../../domain/entities/camera_stream.entity'
 
 /** What a capability card is busy with. */
 export const CapabilityTask = {
@@ -15,6 +16,15 @@ export const CapabilityTask = {
   Remove: 'remove',
 } as const
 export type CapabilityTask = (typeof CapabilityTask)[keyof typeof CapabilityTask]
+
+/** What a stream line is busy with. */
+export const StreamTask = {
+  Role: 'role',
+  Toggle: 'toggle',
+  Remove: 'remove',
+  Check: 'check',
+} as const
+export type StreamTask = (typeof StreamTask)[keyof typeof StreamTask]
 
 export interface CameraConnectionUido {
   saving: boolean
@@ -42,6 +52,15 @@ export interface CameraConnectionUido {
   searchingProtocols: boolean
   protocolFormOpen: boolean
   addingProtocol: boolean
+
+  /** Null until read: an unread lineup is not an empty one. */
+  streams: CameraStreamLineup | null
+  streamsLoading: boolean
+  streamsError: AppError | null
+  /** The stream lines busy with an action, by stream id. */
+  streamTasks: Partial<Record<string, StreamTask>>
+  streamFormOpen: boolean
+  addingStream: boolean
 }
 
 export function buildInitialCameraConnectionUido(): CameraConnectionUido {
@@ -68,5 +87,12 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     searchingProtocols: false,
     protocolFormOpen: false,
     addingProtocol: false,
+
+    streams: null,
+    streamsLoading: true,
+    streamsError: null,
+    streamTasks: {},
+    streamFormOpen: false,
+    addingStream: false,
   }
 }

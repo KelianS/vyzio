@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { AppErrorKind, type AppError } from '../../common/errors/app_error'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { makeCameraProtocol } from '../../testing/camera_protocol_fixture'
+import { makeCameraStream, makeStreamLineup } from '../../testing/camera_stream_fixture'
 import { cameraConnectionReducer } from './camera_connection.reducer'
-import { buildInitialCameraConnectionUido, CapabilityTask } from './camera_connection.uido'
+import {
+  buildInitialCameraConnectionUido,
+  CapabilityTask,
+  StreamTask,
+} from './camera_connection.uido'
 
 const readError: AppError = { kind: AppErrorKind.Server, status: 500 }
 
@@ -139,5 +144,34 @@ describe('cameraConnectionReducer', () => {
 
     // Assert
     expect(next.removing).toEqual({ v380: true })
+  })
+
+  it('cameraConnectionReducer_ShouldShowNoLineAndKeepTheError_WhenTheStreamsReadFails', () => {
+    // Arrange
+    const state = cameraConnectionReducer(buildInitialCameraConnectionUido(), {
+      type: 'STREAMS_LOADED',
+      streams: makeStreamLineup([makeCameraStream()]),
+    })
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'STREAMS_FAILED', error: readError })
+
+    // Assert
+    expect(next.streams).toBeNull()
+    expect(next.streamsError).toBe(readError)
+  })
+
+  it('cameraConnectionReducer_ShouldFreeOnlyThatStream_WhenItsTaskFinishes', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      streamTasks: { main: StreamTask.Check, sub: StreamTask.Remove },
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'STREAM_TASK_FINISHED', streamId: 'main' })
+
+    // Assert
+    expect(next.streamTasks).toEqual({ sub: StreamTask.Remove })
   })
 })

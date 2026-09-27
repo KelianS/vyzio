@@ -166,6 +166,26 @@ export function CameraConnectionView() {
             manualFormOpen={uido.manualFormOpen}
             manualConfiguring={uido.manualConfiguring}
             streamPath={streamPath}
+            streams={{
+              lineup: uido.streams,
+              loading: uido.streamsLoading,
+              readError: uido.streamsError,
+              tasks: uido.streamTasks,
+              formOpen: uido.streamFormOpen,
+              adding: uido.addingStream,
+              intents: {
+                onRetryRead: () => presenter.onLoad(cameraId),
+                onSetRole: (streamId, role) =>
+                  void presenter.onSetStreamRole(cameraId, streamId, role),
+                onSetEnabled: (streamId, enabled) =>
+                  presenter.onSetStreamEnabled(cameraId, streamId, enabled),
+                onRemove: (streamId) => presenter.onRemoveStream(cameraId, streamId),
+                onCheck: (streamId) => void presenter.onCheckStream(cameraId, streamId),
+                onOpenForm: presenter.onOpenStreamForm,
+                onCloseForm: presenter.onCloseStreamForm,
+                onAdd: (addition) => void presenter.onAddStream(cameraId, addition),
+              },
+            }}
             intents={{
               onRetryRead: () => presenter.onLoad(cameraId),
               onDetect: () => void presenter.onDetect(cameraId),
@@ -197,6 +217,22 @@ export function CameraConnectionView() {
             <p>
               Une capacité dont la vérification échoue n’est jamais proposée comme active, et la
               vérification se relance à tout moment.
+            </p>
+          </HelpPanel>
+
+          <HelpPanel title="Quel flux faut-il faire analyser ?">
+            <p>
+              Sur une caméra large, jardin, garage, allée, où vous voulez seulement savoir que
+              quelqu’un est passé, gardez le flux le plus léger en détection : c’est le réglage
+              livré. Sur une caméra où vous voulez reconnaître les gens, entrée, couloir, salon,
+              donnez la détection au flux le plus détaillé, surtout si les visages y apparaissent à
+              plusieurs mètres.
+            </p>
+            <p>
+              Si Vyzio devient lent et que les caméras saccadent, vérifiez qu’aucune n’analyse son
+              flux le plus détaillé sans raison. Certaines caméras annoncent leurs flux sans en
+              donner les dimensions : Vyzio affiche alors « Flux principal » ou « Flux secondaire »
+              plutôt qu’un chiffre faux.
             </p>
           </HelpPanel>
         </SettingsSection>
