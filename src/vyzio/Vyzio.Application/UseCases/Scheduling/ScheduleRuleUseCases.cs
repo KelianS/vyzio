@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Core.Common;
@@ -125,4 +126,14 @@ public static class ScheduleRuleCoverage
 {
     public static bool Covers(IEnumerable<ScheduleRule> rules, string targetId, DateTimeOffset localMoment)
         => rules.Any(rule => rule.IsTargeting(targetId) && rule.Covers(localMoment));
+}
+
+/// <summary>The current moment in the house's clock, for the week to mark: the device consulting may sit elsewhere (ADR-63).</summary>
+public sealed class GetHouseClockUseCase(TimeZoneInfo timeZone, TimeProvider time)
+{
+    public HouseClockDto Execute()
+    {
+        var now = TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone);
+        return new HouseClockDto((int)now.DayOfWeek, now.ToString("HH:mm", CultureInfo.InvariantCulture));
+    }
 }

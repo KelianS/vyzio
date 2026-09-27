@@ -13,6 +13,8 @@ public static class SchedulesEndpoints
         group.MapGet("/", async (ListScheduleRulesUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(ct)));
 
+        group.MapGet("/clock", (GetHouseClockUseCase useCase) => Results.Ok(useCase.Execute()));
+
         group.MapGet("/{id}", async (string id, GetScheduleRuleUseCase useCase, CancellationToken ct) =>
             await useCase.ExecuteAsync(id, ct) is { } dto ? Results.Ok(dto) : Results.NotFound());
 

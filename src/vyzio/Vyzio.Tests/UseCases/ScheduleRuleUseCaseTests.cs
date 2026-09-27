@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Application.UseCases.Scheduling;
@@ -187,5 +188,19 @@ public class ScheduleRuleUseCaseTests
         // Assert
         Assert.True(deleted);
         await _rules.Received(1).DeleteAsync(rule, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void GetHouseClock_ShouldAnswerTheHousesDayAndTime_WhenTheHouseIsAheadOfUtc()
+    {
+        // Arrange
+        var house = TimeZoneInfo.CreateCustomTimeZone("house", TimeSpan.FromHours(2), "house", "house");
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 9, 27, 23, 30, 0, TimeSpan.Zero));
+
+        // Act
+        var clock = new GetHouseClockUseCase(house, time).Execute();
+
+        // Assert
+        Assert.Equal(new HouseClockDto(1, "01:30"), clock);
     }
 }

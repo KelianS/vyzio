@@ -129,4 +129,18 @@ public class SchedulesEndpointsTests : IClassFixture<CamerasApiFactory>
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetHouseClock_ShouldAnswerADayAndATime_WhenAsked()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var clock = await client.GetFromJsonAsync<HouseClockDto>("/api/schedules/clock");
+
+        // Assert
+        Assert.InRange(clock!.DayOfWeek, 0, 6);
+        Assert.Matches(@"^\d{2}:\d{2}$", clock.Time);
+    }
 }

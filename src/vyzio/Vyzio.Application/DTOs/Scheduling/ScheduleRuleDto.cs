@@ -37,3 +37,7 @@ public sealed record UpdateScheduleRuleRequest(
     IReadOnlyList<int>? DaysOfWeek,
     string StartTime,
     string EndTime);
+
+/// <param name="DayOfWeek">0 = Sunday, as a rule's days.</param>
+/// <param name="Time">"HH:mm" in the house's clock.</param>
+public sealed record HouseClockDto(int DayOfWeek, string Time);

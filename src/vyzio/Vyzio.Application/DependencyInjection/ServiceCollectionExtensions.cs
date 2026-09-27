@@ -64,6 +64,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreateScheduleRuleUseCase>();
         services.AddScoped<UpdateScheduleRuleUseCase>();
         services.AddScoped<DeleteScheduleRuleUseCase>();
+        services.AddSingleton<GetHouseClockUseCase>();
         // Singleton: a camera's position outlives the request that moved it (ADR-59).
         services.AddSingleton<PtzManagedPositions>();
         services.AddScoped<PtzStartMoveUseCase>();
