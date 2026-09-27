@@ -2,8 +2,9 @@ import type {
   Capability,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
+import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
 
-/** A protocol by its name: said only where a protocol is chosen or reached (SPECS 1.5). */
+/** A protocol's one displayed name, wherever it appears: box, choice list, sentence (SPECS 1.5). */
 export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
   onvif: 'ONVIF',
   dvrip: 'DVRIP',
@@ -16,26 +17,44 @@ export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
 export const SPECIFIC_ACCOUNT_HELP =
   'Pour une caméra qui demande un autre compte par ce seul moyen, comme le compte cloud Tapo pour la coupure matérielle. Il n’est présenté qu’à la caméra, sur votre réseau.'
 
-interface ProtocolOption {
+/** Where a capability has no protocol of the camera to go through: detection first, adding one by hand second. */
+export const NO_PROTOCOL_YET =
+  'Aucun protocole de cette caméra ne convient encore : lancez « Détecter automatiquement », ou ajoutez-en un dans Avancé avec « Ajouter un protocole ».'
+
+/** The protocols that can carry each capability, in the order they are offered. */
+const CARRIERS: Record<Capability, readonly SupportedProtocol[]> = {
+  stream: ['rtsp', 'dvrip'],
+  ptz: ['v380', 'onvif', 'dvrip', 'tapo_klap'],
+  hardware_privacy: ['tapo_klap'],
+  image_settings: ['onvif', 'dvrip'],
+}
+
+/** The protocol a capability falls back on: only the stream has one (ADR-61). */
+const DEFAULT_PROTOCOL: Record<Capability, SupportedProtocol | null> = {
+  stream: 'rtsp',
+  ptz: null,
+  hardware_privacy: null,
+  image_settings: null,
+}
+
+export interface ProtocolOption {
   value: SupportedProtocol
   label: string
 }
 
-/** Every protocol a capability can go through, answering or not: a sleeping camera stays configurable (ADR-61). */
-export const PROTOCOL_OPTIONS: Record<Capability, ProtocolOption[]> = {
-  stream: [
-    { value: 'rtsp', label: 'RTSP (par défaut)' },
-    { value: 'dvrip', label: 'DVRIP' },
-  ],
-  ptz: [
-    { value: 'v380', label: 'V380 natif' },
-    { value: 'onvif', label: 'ONVIF : Hikvision, Dahua, Reolink, V380…' },
-    { value: 'dvrip', label: 'DVRIP' },
-    { value: 'tapo_klap', label: 'Tapo KLAP : caméra motorisée Tapo' },
-  ],
-  hardware_privacy: [{ value: 'tapo_klap', label: 'Tapo KLAP : cache objectif et LED' }],
-  image_settings: [
-    { value: 'onvif', label: 'ONVIF : Hikvision, Dahua, Reolink, V380…' },
-    { value: 'dvrip', label: 'DVRIP : luminosité, contraste, saturation' },
-  ],
+/** The camera's protocols that can carry the capability, plus the one it goes through (ADR-61 d). */
+export function protocolOptions(
+  capability: Capability,
+  protocols: readonly CameraProtocol[],
+  current: SupportedProtocol | null,
+): ProtocolOption[] {
+  return CARRIERS[capability]
+    .filter((p) => p === current || protocols.some((entry) => entry.protocol === p))
+    .map((p) => ({
+      value: p,
+      label:
+        p === DEFAULT_PROTOCOL[capability]
+          ? `${PROTOCOL_LABELS[p]} (par défaut)`
+          : PROTOCOL_LABELS[p],
+    }))
 }

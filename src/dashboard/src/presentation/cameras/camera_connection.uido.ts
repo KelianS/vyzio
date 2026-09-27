@@ -38,6 +38,8 @@ export interface CameraConnectionUido {
   checking: Partial<Record<SupportedProtocol, true>>
   /** The protocols being removed. */
   removing: Partial<Record<SupportedProtocol, true>>
+  /** « Rechercher les protocoles » is running. */
+  searchingProtocols: boolean
   protocolFormOpen: boolean
   addingProtocol: boolean
 }
@@ -63,6 +65,7 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     protocolsError: null,
     checking: {},
     removing: {},
+    searchingProtocols: false,
     protocolFormOpen: false,
     addingProtocol: false,
   }

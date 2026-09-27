@@ -1,5 +1,5 @@
 import type { ToastTone } from '../../common/components/toast'
-import { AppErrorKind, toastError } from '../../common/errors/app_error'
+import { ApiErrorCode, AppErrorKind, toastError } from '../../common/errors/app_error'
 import { scrubSecrets } from '../../common/errors/scrub_secrets'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
@@ -97,7 +97,10 @@ export function buildCameraConnectionPresenter({
       readConnection(cameraId)
       return result
     } catch (e) {
-      toastError(toast, toAppError(e))
+      const error = toAppError(e)
+      toastError(toast, error)
+      // A page left open offered a protocol the camera no longer has: show its protocols as they are.
+      if (error.code === ApiErrorCode.ProtocolNotOnCamera) readProtocols(cameraId, true)
       return undefined
     } finally {
       dispatch({ type: 'TASK_FINISHED', capability })
@@ -285,6 +288,20 @@ export function buildCameraConnectionPresenter({
         toastError(toast, toAppError(e))
       } finally {
         dispatch({ type: 'PROTOCOL_CHECK_FINISHED', protocol })
+      }
+    },
+
+    /** The protocol level alone: the boxes gain the usual protocols that answer, no capability moves. */
+    async onSearchProtocols(cameraId: string) {
+      dispatch({ type: 'PROTOCOL_SEARCH_STARTED' })
+      try {
+        const protocols = await container.searchCameraProtocols.execute(cameraId)
+        dispatch({ type: 'PROTOCOLS_LOADED', protocols })
+        toast('Recherche terminée.', 'success')
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'PROTOCOL_SEARCH_FINISHED' })
       }
     },
 

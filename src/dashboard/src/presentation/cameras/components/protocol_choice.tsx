@@ -1,9 +1,6 @@
 import { useState } from 'react'
-import type {
-  Capability,
-  SupportedProtocol,
-} from '../../../domain/entities/camera_capability_binding.entity'
-import { PROTOCOL_OPTIONS } from '../protocol_labels'
+import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
+import type { ProtocolOption } from '../protocol_labels'
 import { Button } from '../../../common/ui/button'
 import {
   Select,
@@ -15,14 +12,15 @@ import {
 
 /** The protocol a capability goes through, inside its card's Options fold (DESIGN SYSTEM § Capability cards). */
 export function ProtocolChoice({
-  capability,
+  options,
   current,
   configured,
   configuring,
   disabled,
   onConfigure,
 }: {
-  capability: Capability
+  /** Never empty: the card says why instead when the camera has no protocol for it. */
+  options: ProtocolOption[]
   current: SupportedProtocol
   configured: boolean
   configuring: boolean
@@ -30,7 +28,9 @@ export function ProtocolChoice({
   /** Resolves true when the camera answered through the protocol. */
   onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
 }) {
-  const [selected, setSelected] = useState<SupportedProtocol>(current)
+  const [picked, setPicked] = useState<SupportedProtocol>(current)
+  // A suggestion the camera has no protocol for, or a protocol since removed, falls back to the first offered.
+  const selected = options.some((option) => option.value === picked) ? picked : options[0].value
   // The saved protocol, already tested: choosing it again would only repeat « Vérifier ».
   const unchanged = configured && selected === current
 
@@ -40,8 +40,8 @@ export function ProtocolChoice({
         <span className="text-muted-foreground">Protocole</span>
         <Picker
           value={selected}
-          options={PROTOCOL_OPTIONS[capability]}
-          onChange={(value) => setSelected(value as SupportedProtocol)}
+          options={options}
+          onChange={(value) => setPicked(value as SupportedProtocol)}
         />
       </label>
       <Button

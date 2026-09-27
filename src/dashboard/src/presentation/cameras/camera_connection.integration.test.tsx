@@ -7,6 +7,7 @@ import { makeCameraProtocol as protocolRow } from '../../testing/camera_protocol
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
+import { NO_PROTOCOL_YET } from './protocol_labels'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const UPDATE = 'PUT /api/cameras/camera-1'
@@ -18,8 +19,13 @@ const CAMERAS = 'GET /api/cameras'
 const STATS = 'GET /api/system/stats'
 const PROTOCOLS = 'GET /api/cameras/camera-1/protocols'
 const STREAM_PATH = 'PUT /api/cameras/camera-1/capabilities/stream/path'
+const SEARCH = 'POST /api/cameras/camera-1/protocols/search'
 
 const rtsp = protocolRow()
+const onvif = protocolRow({ protocol: 'onvif', effectivePort: 2020 })
+const dvrip = protocolRow({ protocol: 'dvrip', effectivePort: 34567 })
+const klap = protocolRow({ protocol: 'tapo_klap', effectivePort: 80 })
+const v380 = protocolRow({ protocol: 'v380', effectivePort: 8800 })
 
 /** The screen's network, its protocols answering with the camera's RTSP row unless a test says otherwise. */
 function connectionNetwork(routes: Parameters<typeof fakeNetwork>[0]) {
@@ -35,6 +41,13 @@ const rtspStream = makeCapabilityBinding({
 })
 const dvripStream = makeCapabilityBinding({ capability: 'stream', protocol: 'dvrip' })
 const ptzCapability = makeCapabilityBinding({ capability: 'ptz', protocol: 'onvif' })
+const streamToConfigure = makeCapabilityBinding({
+  capability: 'stream',
+  protocol: 'rtsp',
+  verified: false,
+  isConfigured: false,
+})
+const cameraWithoutStream = makeCamera({ status: 'offline', connected: false })
 const privacyToConfigure = makeCapabilityBinding({
   capability: 'hardware_privacy',
   protocol: 'tapo_klap',
@@ -445,7 +458,7 @@ describe('CameraConnectionView', () => {
       'Vyzio ne reçoit pas les images : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     )
     expect(orientation.getByRole('button', { name: 'Vérifier' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Détecter les capacités' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Détecter automatiquement' })).toBeDisabled()
   })
 
   it('onVerifyCapability_ShouldTestTheSavedProtocolAgain_WhenTheUserChecksACapability', async () => {
@@ -539,7 +552,7 @@ describe('CameraConnectionView', () => {
     network.answer(BINDINGS, failure(500))
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Détecter les capacités' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Détecter automatiquement' }))
 
     // Assert
     expect(
@@ -557,7 +570,7 @@ describe('CameraConnectionView', () => {
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Act
-    await userEvent.click(await screen.findByRole('button', { name: 'Détecter les capacités' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
 
     // Assert
     expect(await screen.findByText('Détection terminée.')).toBeInTheDocument()
@@ -566,6 +579,7 @@ describe('CameraConnectionView', () => {
   it('onConfigure_ShouldSayTheConnectionWorks_WhenTheCameraAnswers', async () => {
     // Arrange
     const network = connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, klap]),
       [BINDINGS]: ok([privacyToConfigure]),
       'PUT /api/cameras/camera-1/capabilities/hardware_privacy': ok({
         ...privacyToConfigure,
@@ -591,6 +605,7 @@ describe('CameraConnectionView', () => {
   it('onConfigure_ShouldShowTheCameraAnswerForSupport_WhenTheTestFails', async () => {
     // Arrange
     connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, klap]),
       [BINDINGS]: ok([privacyToConfigure]),
       'PUT /api/cameras/camera-1/capabilities/hardware_privacy': ok({
         ...privacyToConfigure,
@@ -612,6 +627,7 @@ describe('CameraConnectionView', () => {
   it('onConfigure_ShouldTestTheNewProtocol_WhenTheUserChangesItInTheCardOptions', async () => {
     // Arrange
     const network = connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, onvif, dvrip]),
       [BINDINGS]: ok([ptzCapability]),
       'PUT /api/cameras/camera-1/capabilities/ptz': ok(ptzCapability),
     })
@@ -636,7 +652,7 @@ describe('CameraConnectionView', () => {
 
   it('onConfigure_ShouldBeSuspendedWithTheReasonNearby_WhenTheStreamFails', async () => {
     // Arrange
-    connectionNetwork({ [BINDINGS]: ok([privacyToConfigure]) })
+    connectionNetwork({ [PROTOCOLS]: ok([rtsp, klap]), [BINDINGS]: ok([privacyToConfigure]) })
     renderScreen(
       <CameraConnectionView />,
       connectionTab(makeCamera({ status: 'offline', connected: false })),
@@ -733,7 +749,10 @@ describe('CameraConnectionView', () => {
 
   it('onLoad_ShouldOfferToAddACapabilityRightAfterTheCardsOutsideAnyFold_WhenOneIsLeftToAdd', async () => {
     // Arrange
-    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzCapability]) })
+    connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, onvif]),
+      [BINDINGS]: ok([rtspStream, ptzCapability]),
+    })
 
     // Act
     renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
@@ -885,6 +904,7 @@ describe('CameraConnectionView', () => {
   it('onConfigureManually_ShouldTestTheFirstCapabilityLeft_WhenTheUserKeepsTheDefaults', async () => {
     // Arrange
     const network = connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, v380]),
       [BINDINGS]: ok([]),
       'PUT /api/cameras/camera-1/capabilities/ptz': ok(ptzCapability),
     })
@@ -902,5 +922,93 @@ describe('CameraConnectionView', () => {
         body: { protocol: 'v380' },
       }),
     )
+  })
+
+  it('onLoad_ShouldOfferNoPickerAndPointAtDetection_WhenTheCameraHasNoProtocol', async () => {
+    // Arrange
+    connectionNetwork({
+      [PROTOCOLS]: ok([]),
+      [BINDINGS]: ok([streamToConfigure, privacyToConfigure]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraWithoutStream))
+
+    // Assert
+    expect(await screen.findAllByText(NO_PROTOCOL_YET)).toHaveLength(2)
+    expect(screen.queryByText('Options')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Configurer' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Détecter automatiquement' })).toBeEnabled()
+  })
+
+  it('onLoad_ShouldOfferOnlyTheCameraProtocols_WhenTheStreamOptionsOpen', async () => {
+    // Arrange
+    connectionNetwork({ [PROTOCOLS]: ok([dvrip]), [BINDINGS]: ok([streamToConfigure]) })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraWithoutStream))
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    stream.getByRole('combobox', { name: 'Protocole' }).focus()
+    await userEvent.keyboard('{ArrowDown}')
+
+    // Assert
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['DVRIP'])
+  })
+
+  it('onConfigure_ShouldSayTheCameraLacksTheProtocol_WhenTheServerRefusesIt', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, klap]),
+      [BINDINGS]: ok([privacyToConfigure]),
+      'PUT /api/cameras/camera-1/capabilities/hardware_privacy': failure(
+        409,
+        'protocol_not_on_camera',
+        'The camera has no TapoKlap protocol: add it first.',
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Configurer' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Cette caméra n’a pas ce protocole : ajoutez-le d’abord dans Avancé'),
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(network.sent.filter((request) => request.route === PROTOCOLS)).toHaveLength(2),
+    )
+  })
+
+  it('onLoad_ShouldPointAtDetectionInsteadOfAddingACapability_WhenNoProtocolOfTheCameraCarriesOne', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(await screen.findByText(NO_PROTOCOL_YET)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).toBeNull()
+  })
+
+  it('onSearchProtocols_ShouldShowTheProtocolsFound_WhenTheSearchFinishes', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [PROTOCOLS]: ok([]),
+      [BINDINGS]: ok([streamToConfigure]),
+      [SEARCH]: ok([dvrip]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraWithoutStream))
+    await userEvent.click(await screen.findByText('Avancé'))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechercher les protocoles' }))
+
+    // Assert
+    expect(await screen.findByText('Recherche terminée.')).toBeInTheDocument()
+    expect(await protocolBox('DVRIP')).toBeTruthy()
+    expect(network.sent.map((request) => request.route)).not.toContain(DETECT)
   })
 })

@@ -232,14 +232,26 @@ export function CameraConnectionView() {
               onRetryRead={() => presenter.onLoad(cameraId)}
             />
             {!uido.protocolsLoading && !uido.protocolsError && (
-              <AddProtocol
-                protocols={uido.protocols}
-                open={uido.protocolFormOpen}
-                adding={uido.addingProtocol}
-                onOpen={presenter.onOpenProtocolForm}
-                onClose={presenter.onCloseProtocolForm}
-                onAdd={(addition) => void presenter.onAddProtocol(cameraId, addition)}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uido.searchingProtocols}
+                  onClick={() => void presenter.onSearchProtocols(cameraId)}
+                >
+                  {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
+                </Button>
+                {/* Adding by hand is the way out when the search finds nothing (DESIGN SYSTEM § Capability cards). */}
+                <AddProtocol
+                  protocols={uido.protocols}
+                  open={uido.protocolFormOpen}
+                  adding={uido.addingProtocol}
+                  onOpen={presenter.onOpenProtocolForm}
+                  onClose={presenter.onCloseProtocolForm}
+                  onAdd={(addition) => void presenter.onAddProtocol(cameraId, addition)}
+                />
+              </div>
             )}
           </div>
 

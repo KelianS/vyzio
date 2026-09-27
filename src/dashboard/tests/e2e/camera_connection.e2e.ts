@@ -116,7 +116,9 @@ test.describe('CameraConnectionView three levels', () => {
   test('CameraConnectionView_ShouldOfferToAddACapabilityAfterTheCards_WhenOneIsLeftToAdd', async ({
     page,
   }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
+    state.protocols.push(makeFakeProtocol({ protocol: 'onvif', effectivePort: 2020 }))
+    await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/connexion')
 
     await page.getByRole('button', { name: 'Ajouter une capacité' }).click()
@@ -176,5 +178,49 @@ test.describe('CameraConnectionView capability cards', () => {
 
     await cards.filter({ hasText: 'Orientation' }).getByRole('button', { name: 'Vérifier' }).click()
     await expect(page.getByText('Orientation : connexion réussie.')).toBeVisible()
+  })
+})
+
+// A camera added before the three levels has no protocol yet: detection finds them (ADR-61 d).
+test.describe('CameraConnectionView camera without protocols', () => {
+  function cameraWithoutProtocols() {
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ status: 'offline' })],
+    })
+    state.streamBinding = { protocol: 'rtsp', streamPath: null, lastError: null, configured: false }
+    state.protocols = []
+    state.discoverableProtocols = [makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 })]
+    return state
+  }
+
+  test('CameraConnectionView_ShouldBindTheStreamToTheProtocolFound_WhenTheUserDetectsAutomatically', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, cameraWithoutProtocols())
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await expect(stream).toContainText('Détecter automatiquement')
+    await expect(stream.getByText('Options', { exact: true })).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Détecter automatiquement' }).click()
+    await expect(page.getByText('Détection terminée.')).toBeVisible()
+
+    await stream.getByText('Options', { exact: true }).click()
+    await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')
+  })
+
+  test('CameraConnectionView_ShouldListTheProtocolsFoundWithoutBindingAny_WhenTheUserSearchesThem', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, cameraWithoutProtocols())
+    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.locator('summary', { hasText: 'Avancé' }).click()
+
+    await page.getByRole('button', { name: 'Rechercher les protocoles' }).click()
+    await expect(page.getByText('Recherche terminée.')).toBeVisible()
+
+    await expect(page.getByRole('listitem', { name: 'DVRIP' })).toContainText('Répond')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await expect(stream).toContainText('Choisissez comment Vyzio lit les images')
   })
 })

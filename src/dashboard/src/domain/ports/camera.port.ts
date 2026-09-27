@@ -97,6 +97,7 @@ export interface CameraRepository {
     input: CameraProtocolInput,
   ): Promise<CameraProtocol>
   checkProtocol(cameraId: string, protocol: SupportedProtocol): Promise<CameraProtocol>
+  searchProtocols(cameraId: string): Promise<CameraProtocol[]>
   addProtocol(cameraId: string, addition: CameraProtocolAddition): Promise<CameraProtocol>
   removeProtocol(cameraId: string, protocol: SupportedProtocol): Promise<void>
   // Image settings (ADR-27) — read/written live on the camera, nothing persisted by Vyzio.

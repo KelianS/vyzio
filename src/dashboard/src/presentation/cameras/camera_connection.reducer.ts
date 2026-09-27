@@ -79,6 +79,11 @@ export function cameraConnectionReducer(
       return { ...state, checking }
     }
 
+    case 'PROTOCOL_SEARCH_STARTED':
+      return { ...state, searchingProtocols: true }
+    case 'PROTOCOL_SEARCH_FINISHED':
+      return { ...state, searchingProtocols: false }
+
     case 'PROTOCOL_FORM_OPENED':
       return { ...state, protocolFormOpen: true }
     case 'PROTOCOL_FORM_CLOSED':

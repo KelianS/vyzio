@@ -35,6 +35,7 @@ import {
   streamBindingOf,
   streamProtocolFailureLine,
 } from '../capability_state'
+import { NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
 import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
 import { ManualCapability } from './manual_capability_form'
@@ -106,7 +107,7 @@ export function CapabilitySection({
         <StreamCard
           camera={camera}
           binding={stream}
-          protocol={protocols.find((entry) => entry.protocol === stream?.protocol)}
+          protocols={protocols}
           verifying={verifyingStream}
           configuring={pending.stream === CapabilityTask.Configure}
           streamPath={streamPath}
@@ -121,7 +122,7 @@ export function CapabilitySection({
                 key={b.capability}
                 camera={camera}
                 binding={b}
-                protocol={protocols.find((entry) => entry.protocol === b.protocol)}
+                protocols={protocols}
                 task={pending[b.capability]}
                 testsSuspended={testsSuspended}
                 intents={intents}
@@ -139,33 +140,31 @@ export function CapabilitySection({
       )}
 
       {/* Adding a capability closes the list: it is a capability's own action (DESIGN SYSTEM § Capability cards). */}
-      <ManualCapability
-        bindings={bindings}
-        bindingsRead={read}
-        open={manualFormOpen}
-        configuring={manualConfiguring}
-        testsSuspended={testsSuspended}
-        onOpen={intents.onOpenManual}
-        onClose={intents.onCloseManual}
-        onConfigure={intents.onConfigureManually}
-      />
-
-      {testsSuspended && <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>}
-
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-        <span className="text-sm text-muted-foreground">
-          Orientation, coupure matérielle, réglages image…
-        </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <ManualCapability
+          bindings={bindings}
+          protocols={protocols}
+          bindingsRead={read}
+          open={manualFormOpen}
+          configuring={manualConfiguring}
+          testsSuspended={testsSuspended}
+          onOpen={intents.onOpenManual}
+          onClose={intents.onCloseManual}
+          onConfigure={intents.onConfigureManually}
+        />
+        {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-61 b). */}
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          disabled={detecting || testsSuspended}
+          disabled={detecting || (testsSuspended && stream?.isConfigured !== false)}
           onClick={intents.onDetect}
         >
-          {detecting ? 'Détection…' : 'Détecter les capacités'}
+          {detecting ? 'Détection…' : 'Détecter automatiquement'}
         </Button>
       </div>
+
+      {testsSuspended && <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>}
     </div>
   )
 }
@@ -174,7 +173,7 @@ export function CapabilitySection({
 function StreamCard({
   camera,
   binding,
-  protocol,
+  protocols,
   verifying,
   configuring,
   streamPath,
@@ -184,8 +183,8 @@ function StreamCard({
   camera: Camera
   /** Undefined until the capabilities are read. */
   binding: CameraCapabilityBinding | undefined
-  /** The row of the stream's protocol, once read: its failure names the way out (ADR-61). */
-  protocol: CameraProtocol | undefined
+  /** The camera's protocols, once read: the stream's failure names the way out, its choice lists them (ADR-61). */
+  protocols: CameraProtocol[]
   verifying: boolean
   configuring: boolean
   streamPath: SettingDeclaration
@@ -193,6 +192,10 @@ function StreamCard({
   onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
 }) {
   const unconfigured = binding ? !binding.isConfigured : false
+  const protocol = protocols.find((entry) => entry.protocol === binding?.protocol)
+  const choices = binding
+    ? protocolOptions('stream', protocols, binding.isConfigured ? binding.protocol : null)
+    : []
   const pill = unconfigured
     ? CAPABILITY_STATE_PILLS[CapabilityState.Unconfigured]
     : { label: formatCameraStatusLabel(camera.status), tone: formatStatusTone(camera) }
@@ -202,10 +205,11 @@ function StreamCard({
       title={STREAM_LABEL}
       pill={pill}
       options={
-        binding && (
+        binding &&
+        choices.length > 0 && (
           <>
             <ProtocolChoice
-              capability="stream"
+              options={choices}
               current={binding.protocol}
               configured={binding.isConfigured}
               configuring={configuring}
@@ -232,7 +236,9 @@ function StreamCard({
     >
       {unconfigured ? (
         <p className="text-sm text-muted-foreground">
-          Choisissez comment Vyzio lit les images, dans les options ci-dessous.
+          {choices.length > 0
+            ? 'Choisissez comment Vyzio lit les images, dans les options ci-dessous.'
+            : NO_PROTOCOL_YET}
         </p>
       ) : (
         <div
@@ -272,8 +278,8 @@ function panInvertedSetting(
 interface BindingCardProps {
   camera: Camera
   binding: CameraCapabilityBinding
-  /** The row of the protocol the capability goes through, once read. */
-  protocol: CameraProtocol | undefined
+  /** The camera's protocols, once read: the one the capability goes through, and those it may choose. */
+  protocols: CameraProtocol[]
   task: CapabilityTask | undefined
   testsSuspended: boolean
   intents: CapabilityIntents
@@ -282,7 +288,7 @@ interface BindingCardProps {
 function BindingCard({
   camera,
   binding,
-  protocol,
+  protocols,
   task,
   testsSuspended,
   intents,
@@ -301,6 +307,15 @@ function BindingCard({
   const switchedOnAndOff = SWITCHED_ON_AND_OFF[binding.capability]
 
   const verifiedAtLabel = binding.verifiedAt ? formatCheckedAt(binding.verifiedAt) : null
+  const protocol = protocols.find((entry) => entry.protocol === binding.protocol)
+  const choices = protocolOptions(
+    binding.capability,
+    protocols,
+    binding.isConfigured ? binding.protocol : null,
+  )
+  // An unconfigured card suggests its preset's protocol when the camera has it, else the first it has.
+  const suggested =
+    choices.find((choice) => choice.value === binding.protocol)?.value ?? choices[0]?.value
 
   function stateLine() {
     switch (state) {
@@ -318,6 +333,7 @@ function BindingCard({
           </div>
         )
       case CapabilityState.Unconfigured:
+        return suggested ? null : <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
       case CapabilityState.SwitchedOff:
         return null
       default: {
@@ -331,15 +347,17 @@ function BindingCard({
     switch (state) {
       case CapabilityState.Unconfigured:
         return (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={configuring || testsSuspended}
-            onClick={() => void intents.onConfigure(binding.capability, binding.protocol)}
-          >
-            {configuring ? 'Configuration…' : 'Configurer'}
-          </Button>
+          suggested && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={configuring || testsSuspended}
+              onClick={() => void intents.onConfigure(binding.capability, suggested)}
+            >
+              {configuring ? 'Configuration…' : 'Configurer'}
+            </Button>
+          )
         )
       case CapabilityState.SwitchedOff:
         return (
@@ -403,26 +421,28 @@ function BindingCard({
         pill={CAPABILITY_STATE_PILLS[state]}
         actions={actions()}
         options={
-          <>
-            <ProtocolChoice
-              capability={binding.capability}
-              current={binding.protocol}
-              configured={binding.isConfigured}
-              configuring={configuring}
-              disabled={testsSuspended}
-              onConfigure={(chosen) => intents.onConfigure(binding.capability, chosen)}
-            />
-            {/* Stored by Vyzio, not sent to the camera: it stays usable offline. */}
-            {binding.isConfigured && binding.panInverted !== null && (
-              <SettingRow
-                setting={panInvertedSetting(
-                  binding.panInverted,
-                  panSaving,
-                  intents.onSetPanInverted,
-                )}
+          choices.length > 0 && (
+            <>
+              <ProtocolChoice
+                options={choices}
+                current={binding.protocol}
+                configured={binding.isConfigured}
+                configuring={configuring}
+                disabled={testsSuspended}
+                onConfigure={(chosen) => intents.onConfigure(binding.capability, chosen)}
               />
-            )}
-          </>
+              {/* Stored by Vyzio, not sent to the camera: it stays usable offline. */}
+              {binding.isConfigured && binding.panInverted !== null && (
+                <SettingRow
+                  setting={panInvertedSetting(
+                    binding.panInverted,
+                    panSaving,
+                    intents.onSetPanInverted,
+                  )}
+                />
+              )}
+            </>
+          )
         }
       >
         {stateLine()}

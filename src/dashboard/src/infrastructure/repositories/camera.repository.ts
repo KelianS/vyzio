@@ -361,6 +361,10 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
+  async searchProtocols(cameraId: string): Promise<CameraProtocol[]> {
+    return postJson<CameraProtocol[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/search`)
+  }
+
   async getImageSettings(cameraId: string): Promise<CameraImageSettings> {
     return fetchJson<CameraImageSettings>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/image-settings`,

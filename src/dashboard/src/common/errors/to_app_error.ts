@@ -20,6 +20,10 @@ const KNOWN_REFUSALS = new Map<string, string>([
     'Le début et la fin sont à la même heure : choisissez deux heures différentes',
   ],
   [
+    ApiErrorCode.ProtocolNotOnCamera,
+    'Cette caméra n’a pas ce protocole : ajoutez-le d’abord dans Avancé',
+  ],
+  [
     ApiErrorCode.ParkingPositionsMissing,
     'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
   ],

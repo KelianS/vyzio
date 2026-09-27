@@ -307,9 +307,17 @@ export interface FakeBackendState {
     maxDays: number
   }
   /** The camera's stream capability: the protocol that carries it and its main path (ADR-61). */
-  streamBinding: { protocol: string; streamPath: string | null; lastError: string | null }
+  streamBinding: {
+    protocol: string
+    streamPath: string | null
+    lastError: string | null
+    /** False for a camera whose stream is still to choose; true when left out. */
+    configured?: boolean
+  }
   /** The protocols the camera speaks, one box each in Avancé (ADR-61). */
   protocols: FakeProtocol[]
+  /** The protocols a search or a detection finds answering, added to the boxes then. */
+  discoverableProtocols: FakeProtocol[]
   /** The camera's PTZ binding as the capability list shows it, when it has one. */
   ptzBinding: { protocol: string; configJson: string | null } | null
   /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
@@ -370,6 +378,7 @@ export function createFakeBackendState(
     },
     streamBinding: { protocol: 'rtsp', streamPath: '/Streaming/Channels/101', lastError: null },
     protocols: [makeFakeProtocol()],
+    discoverableProtocols: [],
     ptzBinding: null,
     ptz: { presets: [], calibrated: true, currentPosition: { x: 0, y: 0 } },
     ...overrides,
@@ -380,17 +389,25 @@ export function createFakeBackendState(
 export const FAKE_PASSWORD = 'mot-de-passe-de-test'
 
 function streamBindingOf(binding: FakeBackendState['streamBinding']) {
+  const configured = binding.configured !== false
   return {
     capability: 'stream',
     protocol: binding.protocol,
     configJson: null,
-    verified: binding.lastError === null,
+    verified: configured && binding.lastError === null,
     verifiedAt: '2026-01-01T00:00:00Z',
     lastError: binding.lastError,
     isPreset: false,
-    isConfigured: true,
+    isConfigured: configured,
     panInverted: null,
     streamPath: binding.streamPath,
+  }
+}
+
+/** The protocol half of detection: what answers joins the boxes, what the camera had stays. */
+function findProtocols(state: FakeBackendState) {
+  for (const found of state.discoverableProtocols) {
+    if (!state.protocols.some((p) => p.protocol === found.protocol)) state.protocols.push(found)
   }
 }
 
@@ -727,8 +744,30 @@ export async function installFakeBackend(
         return json(route, streamBindingOf(state.streamBinding))
       }
       if (rest === '/capabilities/stream' && method === 'PUT') {
-        state.streamBinding.protocol = postData?.protocol as string
+        // Like the real one: a capability goes through one of the camera's protocols (ADR-61 d).
+        const chosen = postData?.protocol as string
+        if (!state.protocols.some((p) => p.protocol === chosen)) {
+          return json(route, { error: 'protocol_not_on_camera' }, 409)
+        }
+        state.streamBinding.protocol = chosen
+        state.streamBinding.configured = true
         return json(route, streamBindingOf(state.streamBinding))
+      }
+      if (rest === '/capabilities/detect' && method === 'POST') {
+        // Both levels in order: the protocols that answer, then the stream when it is still to choose.
+        findProtocols(state)
+        const stream = ['rtsp', 'dvrip'].find((name) =>
+          state.protocols.some((p) => p.protocol === name && p.status === 'answers'),
+        )
+        if (state.streamBinding.configured === false && stream) {
+          state.streamBinding.protocol = stream
+          state.streamBinding.configured = true
+        }
+        return route.fulfill({ status: 204 })
+      }
+      if (rest === '/protocols/search' && method === 'POST') {
+        findProtocols(state)
+        return json(route, state.protocols)
       }
       if (rest === '/capabilities/stream/probe' && method === 'POST') {
         return json(route, streamBindingOf(state.streamBinding))

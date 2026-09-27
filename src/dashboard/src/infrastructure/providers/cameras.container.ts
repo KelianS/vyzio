@@ -3,6 +3,7 @@ import { BatchToggleCameraPrivacyMode } from '../../domain/usecases/batch_toggle
 import { CapturePtzPresetThumbnail } from '../../domain/usecases/capture_ptz_preset_thumbnail.use_case'
 import { AddCameraProtocol } from '../../domain/usecases/add_camera_protocol.use_case'
 import { CheckCameraProtocol } from '../../domain/usecases/check_camera_protocol.use_case'
+import { SearchCameraProtocols } from '../../domain/usecases/search_camera_protocols.use_case'
 import { RemoveCameraProtocol } from '../../domain/usecases/remove_camera_protocol.use_case'
 import { GetCameraProtocols } from '../../domain/usecases/get_camera_protocols.use_case'
 import { SetStreamPath } from '../../domain/usecases/set_stream_path.use_case'
@@ -69,6 +70,7 @@ export interface CamerasContainer {
   getCameraProtocols: GetCameraProtocols
   updateCameraProtocol: UpdateCameraProtocol
   checkCameraProtocol: CheckCameraProtocol
+  searchCameraProtocols: SearchCameraProtocols
   addCameraProtocol: AddCameraProtocol
   removeCameraProtocol: RemoveCameraProtocol
   getCameraImageSettings: GetCameraImageSettings
@@ -118,6 +120,7 @@ export function makeCamerasContainer(
     getCameraProtocols: new GetCameraProtocols(cameraRepository),
     updateCameraProtocol: new UpdateCameraProtocol(cameraRepository),
     checkCameraProtocol: new CheckCameraProtocol(cameraRepository),
+    searchCameraProtocols: new SearchCameraProtocols(cameraRepository),
     addCameraProtocol: new AddCameraProtocol(cameraRepository),
     removeCameraProtocol: new RemoveCameraProtocol(cameraRepository),
     getCameraImageSettings: new GetCameraImageSettings(cameraRepository),
