@@ -105,7 +105,7 @@ public sealed class PtzSavePresetUseCase(
 
         var provider = registry.ResolvePtz(binding.Protocol);
 
-        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
+        if (PtzPositionTier.IsNative(binding))
         {
             await provider.PtzSavePresetAsync(camera, binding, presetId, ct);
             // Held by the camera under the slot's token; the row lets Vyzio know the slot is saved (ADR-57).
@@ -244,7 +244,7 @@ public sealed class PtzCalibrateUseCase(
 
         if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
 
-        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets)) return true; // nothing to do
+        if (PtzPositionTier.IsNative(binding)) return true; // nothing to do
 
         await positions.HomeAsync(camera, binding, registry.ResolvePtz(binding.Protocol), ct);
         return true;

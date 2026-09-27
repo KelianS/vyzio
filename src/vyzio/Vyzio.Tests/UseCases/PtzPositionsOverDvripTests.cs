@@ -171,6 +171,24 @@ public class PtzPositionsOverDvripTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenThePositionWasStoredInTheCameraBeforeItLostNativePresets()
+    {
+        // Arrange
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, Native = true });
+        await Calibrate();
+        _dvripMotion.ClearReceivedCalls();
+
+        // Act
+        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+
+        // Assert
+        Assert.False(reached);
+        await _dvripMotion.DidNotReceive().MoveForAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldListOnlyThePositionsTheCameraKeeps_WhenTheCameraKeepsNativePresets()
     {
         // Arrange
