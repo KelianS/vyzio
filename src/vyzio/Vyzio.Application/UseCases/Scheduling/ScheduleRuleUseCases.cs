@@ -69,13 +69,14 @@ public sealed class CreateScheduleRuleUseCase(IScheduleRuleRepository rules, Sch
         if (!SnakeCaseEnum.TryFromSnakeCase<ScheduleRuleKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             throw new InvalidScheduleRuleException(ScheduleRuleRefusal.UnknownKind);
 
-        var targetIds = request.TargetIds.Distinct().ToList();
-        await validator.ThrowIfRefusedAsync(kind, targetIds, request.DaysOfWeek, request.StartTime, request.EndTime, ct);
+        var targetIds = (request.TargetIds ?? []).Distinct().ToList();
+        var daysOfWeek = request.DaysOfWeek ?? [];
+        await validator.ThrowIfRefusedAsync(kind, targetIds, daysOfWeek, request.StartTime, request.EndTime, ct);
 
         var rule = new ScheduleRule
         {
             Kind = kind,
-            DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek.Distinct().Order()),
+            DaysOfWeek = JsonSerializer.Serialize(daysOfWeek.Distinct().Order()),
             StartTime = request.StartTime,
             EndTime = request.EndTime,
         };
@@ -94,10 +95,11 @@ public sealed class UpdateScheduleRuleUseCase(IScheduleRuleRepository rules, Sch
         if (rule is null) return null;
 
         // Validated whole before anything changes, so a refusal leaves the tracked rule untouched.
-        var targetIds = request.TargetIds.Distinct().ToList();
-        await validator.ThrowIfRefusedAsync(rule.Kind, targetIds, request.DaysOfWeek, request.StartTime, request.EndTime, ct);
+        var targetIds = (request.TargetIds ?? []).Distinct().ToList();
+        var daysOfWeek = request.DaysOfWeek ?? [];
+        await validator.ThrowIfRefusedAsync(rule.Kind, targetIds, daysOfWeek, request.StartTime, request.EndTime, ct);
 
-        rule.DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek.Distinct().Order());
+        rule.DaysOfWeek = JsonSerializer.Serialize(daysOfWeek.Distinct().Order());
         rule.StartTime = request.StartTime;
         rule.EndTime = request.EndTime;
         rule.ReplaceTargets(targetIds);

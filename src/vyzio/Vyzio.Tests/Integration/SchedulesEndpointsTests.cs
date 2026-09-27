@@ -50,6 +50,39 @@ public class SchedulesEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task CreateSchedule_ShouldAnswerARefusalWithItsCode_WhenTheBodyOmitsTheTargets()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/schedules",
+            new { kind = "privacy", daysOfWeek = Weekdays, startTime = "08:00", endTime = "12:00" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("schedule_no_target", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task UpdateSchedule_ShouldAnswerARefusalWithItsCode_WhenTheBodyOmitsTheDays()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await client.PostAsJsonAsync("/api/schedules",
+            new { kind = "privacy", targetIds = FrontDoor, daysOfWeek = Weekdays, startTime = "22:00", endTime = "06:00" });
+        var rule = await created.Content.ReadFromJsonAsync<ScheduleRuleDto>();
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/schedules/{rule!.Id}",
+            new { targetIds = FrontDoor, startTime = "22:00", endTime = "06:00" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("schedule_no_day", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task UpdateSchedule_ShouldAnswerARefusalWithItsCode_WhenTheRangeBecomesEmpty()
     {
         // Arrange

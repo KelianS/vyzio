@@ -93,12 +93,14 @@ public class ScheduleRuleUseCaseTests
     [InlineData("privacy",            new[] { "cam1" },     new[] { 1 }, "08:00", "08:00", ScheduleRuleRefusal.EmptyRange)]
     [InlineData("privacy",            new[] { "cam1" },     new int[0],  "08:00", "12:00", ScheduleRuleRefusal.NoDay)]
     [InlineData("privacy",            new string[0],        new[] { 1 }, "08:00", "12:00", ScheduleRuleRefusal.NoTarget)]
+    [InlineData("privacy",            null,                 new[] { 1 }, "08:00", "12:00", ScheduleRuleRefusal.NoTarget)]
+    [InlineData("privacy",            new[] { "cam1" },     null,        "08:00", "12:00", ScheduleRuleRefusal.NoDay)]
     [InlineData("privacy",            new[] { "telegram" }, new[] { 1 }, "08:00", "12:00", ScheduleRuleRefusal.UnknownTarget)]
     [InlineData("mute_notifications", new[] { "cam1" },     new[] { 1 }, "08:00", "12:00", ScheduleRuleRefusal.UnknownTarget)]
     [InlineData("sprinklers",         new[] { "cam1" },     new[] { 1 }, "08:00", "12:00", ScheduleRuleRefusal.UnknownKind)]
     [InlineData("7",                  new[] { "cam1" },     new[] { 1 }, "08:00", "12:00", ScheduleRuleRefusal.UnknownKind)]
     public async Task ExecuteAsync_ShouldRefuseWithItsCodeAndSaveNothing_WhenTheRuleCannotBeKept(
-        string kind, string[] targets, int[] days, string start, string end, ScheduleRuleRefusal expected)
+        string kind, string[]? targets, int[]? days, string start, string end, ScheduleRuleRefusal expected)
     {
         // Arrange
         var request = new CreateScheduleRuleRequest(kind, targets, days, start, end);
@@ -143,6 +145,22 @@ public class ScheduleRuleUseCaseTests
         Assert.Equal(ScheduleRuleRefusal.EmptyRange, refusal.Refusal);
         Assert.Equal(("[3]", "08:00"), (rule.DaysOfWeek, rule.StartTime));
         Assert.Equal(["cam1"], rule.GetTargetIds());
+        await _rules.DidNotReceive().UpdateAsync(Arg.Any<ScheduleRule>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuseAndChangeNothing_WhenAnUpdateOmitsTheDaysAndTargets()
+    {
+        // Arrange
+        var rule = Saved();
+        _rules.GetByIdAsync("r1", Arg.Any<CancellationToken>()).Returns(rule);
+
+        // Act
+        var refusal = await Assert.ThrowsAsync<InvalidScheduleRuleException>(
+            () => Update().ExecuteAsync("r1", new UpdateScheduleRuleRequest(null, null, "08:00", "12:00")));
+
+        // Assert
+        Assert.Equal(ScheduleRuleRefusal.NoDay, refusal.Refusal);
         await _rules.DidNotReceive().UpdateAsync(Arg.Any<ScheduleRule>(), Arg.Any<CancellationToken>());
     }
 

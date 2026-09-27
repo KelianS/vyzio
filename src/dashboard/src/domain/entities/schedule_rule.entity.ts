@@ -6,6 +6,12 @@ export const ScheduleRuleKind = {
 
 export type ScheduleRuleKind = (typeof ScheduleRuleKind)[keyof typeof ScheduleRuleKind]
 
+const KNOWN_KINDS: ReadonlySet<string> = new Set(Object.values(ScheduleRuleKind))
+
+export function isScheduleRuleKind(value: string): value is ScheduleRuleKind {
+  return KNOWN_KINDS.has(value)
+}
+
 /** What the identifiers of a rule's targets name: the type declares it. */
 export const ScheduleTargetKind = {
   Camera: 'camera',

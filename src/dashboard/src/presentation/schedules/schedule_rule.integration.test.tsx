@@ -255,6 +255,18 @@ describe('ScheduleRuleView', () => {
     expect(await screen.findByRole('heading', { name: 'Vie privée' })).toBeVisible()
   })
 
+  it('onLoad_ShouldSayTheRangeCouldNotBeReadAndNameTheType_WhenTheServerSendsAnUnknownType', async () => {
+    // Arrange
+    fakeNetwork({ ...houseRoutes(), [RULE]: ok({ ...makeRule(), kind: 'sprinklers' }) })
+
+    // Act
+    await openAt(EDIT)
+
+    // Assert
+    expect(await screen.findByText('Cette plage n’a pas pu être lue.')).toBeVisible()
+    expect(screen.getByText(/Unknown schedule rule kind: sprinklers/)).toBeInTheDocument()
+  })
+
   it('onLoad_ShouldSayTheChannelsCouldNotBeRead_WhenAddingAndTheirReadFails', async () => {
     // Arrange
     fakeNetwork({ [CAMERAS]: ok([salon]), [CHANNELS]: failure(500) })

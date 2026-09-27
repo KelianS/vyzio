@@ -23,15 +23,17 @@ public sealed record ScheduleRuleDto(
 }
 
 /// <param name="Kind">The rule's type in snake_case; fixed once the rule exists.</param>
+/// <param name="TargetIds">Null when the body omits it, refused as no target.</param>
+/// <param name="DaysOfWeek">Null when the body omits it, refused as no day.</param>
 public sealed record CreateScheduleRuleRequest(
     string Kind,
-    IReadOnlyList<string> TargetIds,
-    IReadOnlyList<int> DaysOfWeek,
+    IReadOnlyList<string>? TargetIds,
+    IReadOnlyList<int>? DaysOfWeek,
     string StartTime,
     string EndTime);
 
 public sealed record UpdateScheduleRuleRequest(
-    IReadOnlyList<string> TargetIds,
-    IReadOnlyList<int> DaysOfWeek,
+    IReadOnlyList<string>? TargetIds,
+    IReadOnlyList<int>? DaysOfWeek,
     string StartTime,
     string EndTime);
