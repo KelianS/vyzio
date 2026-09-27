@@ -4,7 +4,7 @@ import { Badge, type BadgeTone } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { TechnicalDetails } from '../../common/components/technical_details'
-import type { Camera } from '../../domain/entities/camera.entity'
+import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type {
   FrigateDetectorKind,
   FrigateStatus,
@@ -71,7 +71,9 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
   const usedRatio =
     stats.storage && stats.storage.totalGb > 0 ? stats.storage.usedGb / stats.storage.totalGb : 0
   const frameRates = receivedFrameRates(stats, cameras)
-  const lagging = frameRates.filter((row) => row.lagging).map((row) => row.label)
+  const laggingCameras = frameRates.flatMap(({ camera, lagging }) =>
+    lagging && camera ? [camera] : [],
+  )
 
   return (
     <Panel status={stats.status}>
@@ -95,13 +97,13 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
         </dl>
       )}
 
-      <TechnicalDetails inFault={lagging.length > 0}>
-        {lagging.length > 0 && (
-          <p className="mb-3 text-destructive">
-            Trop peu d’images reçues de {LIST_FORMAT.format(lagging)}. La surveillance y est moins
-            fiable : vérifiez la caméra et sa connexion au réseau.
-          </p>
-        )}
+      {laggingCameras.length > 0 && (
+        <p className="mt-3 text-sm text-destructive">
+          Trop peu d’images reçues de <CameraLinks cameras={laggingCameras} />.
+        </p>
+      )}
+
+      <TechnicalDetails>
         <dl className="space-y-3">
           <div>
             <dt className="text-muted-foreground">Analyse des images</dt>
@@ -152,13 +154,45 @@ function receivedFrameRates(stats: SystemStats, cameras: Camera[]) {
   const byEngineKey = new Map(cameras.map((camera) => [camera.frigateCameraName, camera]))
   return stats.cameras.map(({ camera: engineKey, fps }) => {
     const camera = byEngineKey.get(engineKey)
-    // A paused camera sends nothing on purpose; an unknown one awaits the next restart.
-    const expectedToStream = camera !== undefined && camera.isEnabled && !camera.privacyModeActive
+    // Paused sends nothing on purpose, any other status says itself, an unknown camera awaits the next restart.
+    const expectedToStream =
+      camera !== undefined &&
+      camera.isEnabled &&
+      !camera.privacyModeActive &&
+      camera.status === CameraState.Online
     return {
       key: engineKey,
+      camera,
       label: camera?.displayName ?? 'Caméra retirée ou renommée',
       fps,
       lagging: expectedToStream && fps < LAGGING_FPS,
+    }
+  })
+}
+
+/** Each lagging camera links to its connection page, where its stream is checked. */
+function CameraLinks({ cameras }: { cameras: Camera[] }) {
+  // Formatted on the indexes, so each element names its camera whatever order the language puts them in.
+  return LIST_FORMAT.formatToParts(cameras.map((_, index) => String(index))).map((part) => {
+    switch (part.type) {
+      case 'literal':
+        return part.value
+      case 'element': {
+        const camera = cameras[Number(part.value)]
+        return (
+          <Link
+            key={camera.id}
+            to={`/settings/cameras/${camera.id}/connexion`}
+            className="underline underline-offset-2"
+          >
+            {camera.displayName}
+          </Link>
+        )
+      }
+      default: {
+        const unreachable: never = part.type
+        return unreachable
+      }
     }
   })
 }

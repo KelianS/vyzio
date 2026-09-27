@@ -26,6 +26,14 @@ export const StreamProtocol = {
 
 export type StreamProtocol = (typeof StreamProtocol)[keyof typeof StreamProtocol]
 
+/** A camera's own status as the backend reports it; any other value has not been checked since it changed. */
+export const CameraState = {
+  Online: 'online',
+  Offline: 'offline',
+  Degraded: 'degraded',
+  ConfigError: 'config_error',
+} as const
+
 export interface Camera {
   id: string
   slug: string

@@ -189,4 +189,48 @@ describe('HubView', () => {
     expect(card.getByText('Front Door')).toBeVisible()
     expect(card.getByText('10,0')).toBeVisible()
   })
+
+  it('SurveillanceCard_ShouldKeepTheDetailsClosedAndSayNothing_WhenAWatchedCameraIsOffline', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera({ status: 'offline' })]),
+      'GET /api/system/stats': ok({ ...running, cameras: [{ camera: 'front_door', fps: 0 }] }),
+    })
+    renderScreen(<HubView />)
+    await screen.findByRole('heading', { name: '1 caméra sous surveillance' })
+
+    // Act
+    await pollTheSurveillance()
+
+    // Assert
+    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
+    expect(card.getByText('0,0')).not.toBeVisible()
+    expect(card.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
+  })
+
+  it('SurveillanceCard_ShouldNameTheCameraOnOneLineAndKeepTheDetailsClosed_WhenAnOnlineCameraLags', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/system/stats': ok({ ...running, cameras: [{ camera: 'front_door', fps: 0.4 }] }),
+    })
+    renderScreen(<HubView />)
+    await screen.findByRole('heading', { name: '1 caméra sous surveillance' })
+
+    // Act
+    await pollTheSurveillance()
+
+    // Assert
+    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
+    expect(card.getByText(/Trop peu d’images reçues de/)).toHaveTextContent(
+      'Trop peu d’images reçues de Front Door.',
+    )
+    expect(card.getByRole('link', { name: 'Front Door' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1/connexion',
+    )
+    expect(card.getByText('0,4')).not.toBeVisible()
+  })
 })
