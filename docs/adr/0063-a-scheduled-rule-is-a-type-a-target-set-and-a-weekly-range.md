@@ -7,7 +7,7 @@
 > [ADR-20](0020-privacy-mode-vendor-api-first-frigate-fallback-and-ivendorcameraadapter.md)
 > on its per-camera schedule table, endpoints and evaluation, which this rule model replaces;
 > [ADR-40](0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)
-> on its settings tree, which gains the `Horaires` rubric while `Notifications` loses its hours;
+> on its settings tree, which gains the `Planification` rubric while `Notifications` loses its hours;
 > [ADR-43](0043-settings-grammar-a-setting-is-declared-not-drawn.md) on its control table, which gains
 > the time of day; [ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md)
 > and [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) on the hours they
@@ -47,7 +47,7 @@ interface.
 
 6. **A new entry in the main bar.** Rejected: ADR-40 keeps the bar for viewing, and the calendar is
    where rules are created and edited.
-7. **A settings rubric of its own, `Horaires`.** Chosen: the settings tree is where a new domain goes
+7. **A settings rubric of its own, `Planification`.** Chosen: the settings tree is where a new domain goes
    (ADR-40), and the rubric is reached from the camera and the channel that a rule targets.
 
 ## Decision
@@ -76,10 +76,12 @@ privacy mode, SPECS 9.3) and the manual privacy toggle; the channel keeps what i
 (categories, certainty, spacing) and how. Neither holds a range any more: each shows how many rules
 apply to it, with the way to the calendar.
 
-**The calendar is the `Horaires` settings rubric**, a week and one range editor serving every type.
+**The calendar is the `Planification` settings rubric**, a week and one range editor serving every type.
 The editor's fields are declared settings (ADR-43): an existing rule follows the editing cycle of
 ADR-41, and a new one is added by its own button, like a person or a camera. How the two screens
-read is the DESIGN SYSTEM's (§ Calendar and range editor).
+read is the DESIGN SYSTEM's (§ Calendar and range editor). The week marks the current moment in
+the installation's clock, which the server answers (`GET /api/schedules/clock`: day of the week and
+time), because the device consulting may sit in another time zone.
 
 **ADR-43 gains the `time` nature**: a time of day, drawn as a time field.
 

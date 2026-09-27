@@ -187,17 +187,27 @@ protocol choice, adding a capability or a protocol and removing a protocol are a
 
 ### Calendar and range editor
 
-The `Horaires` rubric is the house's calendar ([SPECS](SPECS.md) 7.3,
+The `Planification` rubric is the house's calendar ([SPECS](SPECS.md) 7.3,
 [ADR-63](adr/0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md)). It has two
 screens, whatever the number of rule types:
 
-- **The week** reads day by day, Monday first, one block per day, never seven columns: at phone
-  width a column holds no readable time. A day lists its ranges in time order, each as one row:
-  **type icon and name** · *times* · *targets*, the whole row opening the range. A range crossing
-  midnight shows under its own day with `le lendemain`, and its tail under the next day as
-  `jusqu'a 06:00, depuis la veille`. A day without a range says `Rien de prevu` in secondary text. The
-  targets are named, two at most then a count, a target that no longer exists left out; a rule left
-  with none says so in place of the names.
+- **The week** is a calendar read at a glance: one row per day, Monday first, the day's short name
+  then a **24-hour bar**, hour marks `0 6 12 18 24` above the bars and faint guides across them. Each
+  range is a **block placed at its hours**, always carrying its type's icon and its type's fill (solid
+  for `Vie privee`, stripes for `Sans notification`); a legend under the week pairs each fill and
+  icon with the type's name. A block is never narrower than its icon, so a short range stays
+  tappable; its exact times are the range's own. Overlapping ranges stack in lanes, none hidden. A
+  range crossing midnight runs to the end of its day with a square edge, and continues from the
+  start of the next day's bar with a square edge (Sunday's into Monday). A block opens its range.
+  Today's name is emphasised and a thin line marks the house's current time on its bar, read from
+  the server with the rules, never the device's clock. Never seven columns: at phone width a column
+  holds no readable time, and on a wide screen the bars only grow longer.
+- **The week is its own text equivalent.** Each day is a list headed by its full name; a block's
+  accessible name is the full reading: **type name** · *times* (`22:00 → 06:00 le lendemain`, or
+  `jusqu'a 06:00, depuis la veille` for a tail) · *targets*, named two at most then a count, a
+  target that no longer exists left out. An empty day says `Rien de prevu` to a screen reader.
+- **A rule left with no target** is an outlined block without fill, and a line under the week names
+  it (type and times) with `plus aucune camera visee` or `plus aucun canal vise`, opening the range.
 - **The range editor** is one page for every type, `Ajouter une plage` or the range itself. Its
   fields are declared settings ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md)):
   the **type** (an exclusive choice, fixed once created), whose effect line is its consequence,
@@ -215,7 +225,7 @@ cameras and channels.
 
 A camera or a channel does not list its ranges: one line outside its settings list says how many of
 its type apply (`2 plages « Vie privee » s'appliquent`, `Aucune plage « Sans notification » ne
-s'applique`) and links to `Horaires`. When the rules could
+s'applique`) and links to `Planification` (`Voir la planification`). When the rules could
 not be read, that line is the failed read (§ Errors), never `Aucune plage`.
 
 ### Help: three levels, not a manual
@@ -285,7 +295,7 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`,
-  `Horaires`, `Acces`, `Systeme`).
+  `Planification`, `Acces`, `Systeme`).
 - The end-of-page fold is called `Avance`. It is not a mode to switch on: it is a position.
 - The in-card fold of figures for support is called `Details techniques` (§ Technical details).
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
@@ -300,7 +310,7 @@ are not used for it. A person is `notifie`; a channel sends `notifications`; a s
 
 ### Scheduled ranges
 
-A time range of the calendar is a **`plage`**, the rubric that holds them is **`Horaires`**. Each type
+A time range of the calendar is a **`plage`**, the rubric that holds them is **`Planification`**. Each type
 has one name and one effect line, used everywhere:
 
 | Type | Name | Effect line |
