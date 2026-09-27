@@ -126,6 +126,21 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
+    public async Task ProbeAsync_ShouldRecordNativePresets_WhenTheCameraReportsANullListBeforeStoringOne()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(listsNullWhenEmpty: true);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.True(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
+        Assert.Equal<int?>(255, (await fake.ReceivedAsync(2))[1].Preset);
+    }
+
+    [Fact]
     public async Task ProbeAsync_ShouldStoreThenClearTheHighestSlot_WhenNoPresetIsStoredYet()
     {
         // Arrange
@@ -723,8 +738,8 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
 // A PTZ command by its command name and preset, any other request by its name.
 internal sealed record ReceivedCommand(string Name, DateTimeOffset At, int? Preset = null);
 
-// Presets kept as an ICSee keeps them (TAD dvrip): SetPreset lists the slot in Uart.PTZPreset, ClearPreset removes it.
-internal sealed class FakeDvripPresets(bool refusesSetPreset = false, bool listsWhatItStores = true, params int[] stored)
+// Presets kept as an ICSee keeps them (TAD dvrip): SetPreset lists the slot in Uart.PTZPreset, ClearPreset removes it; an empty list may read null.
+internal sealed class FakeDvripPresets(bool refusesSetPreset = false, bool listsWhatItStores = true, bool listsNullWhenEmpty = false, params int[] stored)
 {
     private const string Ok = """{"Ret":100}""";
     private const string Refused = """{"Ret":103}""";
@@ -764,6 +779,6 @@ internal sealed class FakeDvripPresets(bool refusesSetPreset = false, bool lists
     {
         ["Name"] = "Uart.PTZPreset.[0]",
         ["Ret"] = 100,
-        ["Uart.PTZPreset.[0]"] = new JsonArray([.. _stored.Order().Select(id => (JsonNode)new JsonObject { ["Id"] = id })]),
+        ["Uart.PTZPreset.[0]"] = _stored.Count == 0 && listsNullWhenEmpty ? null : new JsonArray([.. _stored.Order().Select(id => (JsonNode)new JsonObject { ["Id"] = id })]),
     }.ToJsonString();
 }

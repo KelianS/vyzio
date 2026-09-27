@@ -59,7 +59,11 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
             logger.LogDebug(ex, "DVRIP PTZ probe for {Camera}: no preset list, positions stay with Vyzio.", camera.DisplayName);
             return false;
         }
-        if (slot == 0) return false;
+        if (slot == 0)
+        {
+            logger.LogDebug("DVRIP PTZ probe for {Camera}: every spare slot holds a preset, positions stay with Vyzio.", camera.DisplayName);
+            return false;
+        }
 
         try
         {
@@ -100,7 +104,7 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
         }
     }
 
-    // The ids of the presets the camera keeps; an answer without a list, even an empty one, says nothing of which slots are free.
+    // The ids of the presets the camera keeps; an answer that lacks the list key says nothing of which slots are free.
     private static async Task<IReadOnlySet<int>> ReadStoredPresetsAsync(DvripSession session, Camera camera, CancellationToken ct)
     {
         var answer = await session.ExecuteAsync(

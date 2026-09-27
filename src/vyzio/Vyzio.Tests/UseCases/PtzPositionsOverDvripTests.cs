@@ -141,6 +141,8 @@ public class PtzPositionsOverDvripTests
     {
         // Arrange
         _binding.ConfigJson = NativePresetsConfig;
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, Native = true });
 
         // Act
         var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
@@ -149,6 +151,40 @@ public class PtzPositionsOverDvripTests
         Assert.True(reached);
         await _dvrip.Received(1).PtzGoToPresetAsync(_camera, _binding, PtzPreset.ParkingSlot, Arg.Any<CancellationToken>());
         await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenThePositionWasCountedBeforeTheCameraKeptNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 300, TiltMs = 100 });
+
+        // Act
+        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+
+        // Assert
+        Assert.False(reached);
+        await _dvrip.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldListOnlyThePositionsTheCameraKeeps_WhenTheCameraKeepsNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        _presets.GetAllAsync("cam1", Arg.Any<CancellationToken>()).Returns([
+            new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.SurveillanceSlot, Native = true },
+            new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 300, TiltMs = 100 },
+        ]);
+
+        // Act
+        var (presets, _, _) = await new GetPtzPresetsUseCase(_presets, _bindings, _positions).ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal([PtzPreset.SurveillanceSlot], presets.Select(preset => preset.PresetId));
     }
 
     [Fact]

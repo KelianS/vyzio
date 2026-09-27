@@ -160,7 +160,7 @@ public sealed class PtzGoToPresetUseCase(
 // One way to reach a saved position, whether the camera keeps it or Vyzio does (ADR-57, ADR-59).
 internal static class PtzPresetMove
 {
-    // False when Vyzio keeps the positions and this one was never saved.
+    // False when this position was never saved on the camera's current tier (ADR-64).
     public static async Task<bool> GoToAsync(
         Camera camera,
         CameraCapabilityBinding binding,
@@ -170,17 +170,26 @@ internal static class PtzPresetMove
         int presetId,
         CancellationToken ct)
     {
-        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
+        if (await presets.GetAsync(camera.Id, presetId, ct) is not { } preset || !PtzPositionTier.Holds(binding, preset)) return false;
+
+        if (preset.Native)
         {
             await provider.PtzGoToPresetAsync(camera, binding, presetId, ct);
             return true;
         }
 
-        if (await presets.GetAsync(camera.Id, presetId, ct) is not { } preset) return false;
-
         await positions.GoToAsync(camera, binding, provider, preset.PanMs ?? 0, preset.TiltMs ?? 0, ct);
         return true;
     }
+}
+
+// A position counts only on the tier it was saved on: the camera holds the native ones, Vyzio the counted ones (ADR-64).
+internal static class PtzPositionTier
+{
+    public static bool IsNative(CameraCapabilityBinding binding)
+        => BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets);
+
+    public static bool Holds(CameraCapabilityBinding binding, PtzPreset preset) => preset.Native == IsNative(binding);
 }
 
 // Diagnostic only — checks if camera reports its current pan/tilt position via ONVIF GetStatus.
@@ -212,11 +221,12 @@ public sealed class GetPtzPresetsUseCase(
         if (binding is not { Verified: true })
             return (list, true, null);
 
-        if (BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets))
-            return (list, true, null);
+        var saved = list.Where(preset => PtzPositionTier.Holds(binding, preset)).ToList();
+        if (PtzPositionTier.IsNative(binding))
+            return (saved, true, null);
 
         var pos = positions.Current(cameraId);
-        return (list, pos is not null, pos);
+        return (saved, pos is not null, pos);
     }
 }
 
@@ -243,7 +253,7 @@ public sealed class PtzCalibrateUseCase(
 
 public sealed record SetPrivacyStrategyRequest(string Strategy);
 
-public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, IPtzPresetRepository presets)
+public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, IPtzPresetRepository presets)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, SetPrivacyStrategyRequest request, CancellationToken ct = default)
     {
@@ -253,11 +263,10 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, I
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        // Parking promises a move there and back; both ends must be saved (ADR-57).
+        // Parking promises a move there and back; both ends must be saved, on the tier the camera is on (ADR-57, ADR-64).
         if (strategy == PrivacyStrategy.PtzParking
             && camera.PrivacyStrategy != PrivacyStrategy.PtzParking
-            && (await presets.GetAsync(cameraId, PtzPreset.ParkingSlot, ct) is null
-                || await presets.GetAsync(cameraId, PtzPreset.SurveillanceSlot, ct) is null))
+            && (!await IsSavedAsync(cameraId, PtzPreset.ParkingSlot, ct) || !await IsSavedAsync(cameraId, PtzPreset.SurveillanceSlot, ct)))
             throw new ParkingPositionsMissingException();
 
         // The last toggle's miss described the old strategy and would misname the new one (SPECS 9.2).
@@ -272,4 +281,8 @@ public sealed class SetCameraPrivacyStrategyUseCase(ICameraRepository cameras, I
 
         return CameraDto.From(camera);
     }
+
+    private async Task<bool> IsSavedAsync(string cameraId, int slot, CancellationToken ct)
+        => await presets.GetAsync(cameraId, slot, ct) is { } preset
+            && (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { } binding || PtzPositionTier.Holds(binding, preset));
 }
