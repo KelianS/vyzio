@@ -15,24 +15,22 @@ internal record PtzCapabilities(bool SupportsRelativeMove)
     public static readonly PtzCapabilities Default = new(false);
 }
 
-// IPtzCapabilityProvider for the ONVIF protocol — covers Hikvision, Dahua, Reolink, Axis,
-// V380, and any ONVIF-compliant PTZ camera (ADR-22). Delegates to OnvifClient for the
-// raw SOAP transport; all feature logic (caching, step serialization) lives here.
-internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvider> logger) : IPtzCapabilityProvider
+// PTZ over ONVIF for any compliant camera (ADR-22): SOAP through OnvifClient, pacing through PtzMoveRunner.
+internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, ILogger<OnvifPtzProvider> logger) : IPtzCapabilityProvider
 {
     public SupportedProtocol Protocol => SupportedProtocol.Onvif;
 
-    // A relative step at replay speed is 1/80 of the normalized [-1, 1] range; the rest is margin.
-    public int FullRangeSteps => 90;
+    // 80 relative moves at replay speed cover the normalized [-1, 1] range, the rest is margin; an estimate for a continuous move (ADR-60).
+    public TimeSpan FullRange => 90 * RelativeMoveLength;
+
+    // The motion time a relative move counts, the length of a tap, so that both kinds of move share one unit (ADR-60).
+    private static readonly TimeSpan RelativeMoveLength = TimeSpan.FromMilliseconds(100);
 
     // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid
     // a GetProfiles round-trip before every PTZ command (main source of step overshoot).
     private readonly ConcurrentDictionary<string, string> _profileCache = new();
     private readonly ConcurrentDictionary<string, string?> _ptzConfigCache = new();
     private readonly ConcurrentDictionary<string, PtzCapabilities> _capabilitiesCache = new();
-
-    // Serializes step commands per camera: prevents concurrent ContinuousMove/Stop sequences.
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _stepLocks = new();
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
@@ -76,19 +74,6 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         }
     }
 
-    public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-    {
-        var (pan, tilt) = DirectionToVelocity(direction, speed);
-        var token = await GetProfileTokenAsync(camera, ct);
-        await onvif.ContinuousMoveAsync(camera, token, pan, tilt, ct);
-    }
-
-    public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-    {
-        var token = await GetProfileTokenAsync(camera, ct);
-        await onvif.StopAsync(camera, token, ct);
-    }
-
     public async Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
@@ -101,39 +86,37 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         await onvif.SetPresetAsync(camera, token, presetId, ct);
     }
 
-    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    // The profile and its PTZ options are read here, before the move, so that no move waits on them (ADR-60).
+    public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
-        var caps = await GetPtzCapabilitiesAsync(camera, ct);
+        return (await GetPtzCapabilitiesAsync(camera, ct)).SupportsRelativeMove
+            ? new RelativeMotion(onvif, runner, camera, token, logger)
+            : new ContinuousMotion(onvif, runner, camera, token);
+    }
 
-        var stepLock = _stepLocks.GetOrAdd(camera.Id, _ => new SemaphoreSlim(1, 1));
-        if (!await stepLock.WaitAsync(TimeSpan.FromMilliseconds(300), ct))
+    // Nothing to hold between moves: every ONVIF command carries its own credentials.
+    private sealed class RelativeMotion(OnvifClient onvif, PtzMoveRunner runner, Camera camera, string token, ILogger logger)
+        : PtzSteppedMotion(runner, camera, RelativeMoveLength, logger)
+    {
+        protected override Task StepAsync(PtzDirection direction, int speed, CancellationToken ct)
         {
-            logger.LogDebug("ONVIF step skipped for {Camera}: previous step in progress.", camera.DisplayName);
-            return false;
+            var (x, y) = DirectionToStep(direction, speed);
+            return onvif.RelativeMoveAsync(Camera, token, x, y, ct);
+        }
+    }
+
+    // A continuous move at full speed whatever the requested one, so that a replay covers what a hold did (ADR-60).
+    private sealed class ContinuousMotion(OnvifClient onvif, PtzMoveRunner runner, Camera camera, string token)
+        : PtzContinuousMotion(runner, camera)
+    {
+        protected override Task MoveAsync(PtzDirection direction, int speed, CancellationToken ct)
+        {
+            var (pan, tilt) = DirectionToSign(direction);
+            return onvif.ContinuousMoveAsync(Camera, token, pan, tilt, ct);
         }
 
-        try
-        {
-            if (caps.SupportsRelativeMove)
-            {
-                var (pan, tilt) = DirectionToStep(direction, speed);
-                await onvif.RelativeMoveAsync(camera, token, pan, tilt, ct);
-            }
-            else
-            {
-                var (pan, tilt) = DirectionToSign(direction);
-                var stepMs = Math.Clamp(speed * 2, 40, 200);
-                await onvif.ContinuousMoveAsync(camera, token, pan, tilt, ct);
-                try { await Task.Delay(stepMs, ct); }
-                finally { await onvif.StopAsync(camera, token, ct); }
-            }
-            return true;
-        }
-        finally
-        {
-            stepLock.Release();
-        }
+        protected override Task StopMoveAsync(CancellationToken ct) => onvif.StopAsync(Camera, token, ct);
     }
 
     public async Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
@@ -193,23 +176,6 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
     }
 
 #pragma warning disable format // Aligned as a table so each row reads against the others.
-    private static (float pan, float tilt) DirectionToVelocity(PtzDirection direction, int speed)
-    {
-        var s = Math.Clamp(speed / 100f, 0.1f, 1f);
-        return direction switch
-        {
-            PtzDirection.Up        => (0f,   s),
-            PtzDirection.Down      => (0f,  -s),
-            PtzDirection.Left      => (-s,  0f),
-            PtzDirection.Right     => (s,   0f),
-            PtzDirection.UpLeft    => (-s,   s),
-            PtzDirection.UpRight   => (s,    s),
-            PtzDirection.DownLeft  => (-s,  -s),
-            PtzDirection.DownRight => (s,   -s),
-            _                      => (0f,  0f),
-        };
-    }
-
     private static (float pan, float tilt) DirectionToStep(PtzDirection direction, int speed)
     {
         var s = Math.Clamp(speed / 2000f, 0.01f, 0.08f);

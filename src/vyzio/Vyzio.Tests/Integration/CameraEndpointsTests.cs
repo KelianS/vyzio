@@ -45,6 +45,60 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task SignalPtzMove_ShouldAnswerNotFound_WhenNoMoveOfTheCameraIsHeld()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/api/cameras/camera-1/ptz/move/signal", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task StopPtzMove_ShouldAnswerNoContent_WhenTheMoveAlreadyStopped()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/api/cameras/camera-1/ptz/move/stop", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PtzStep_ShouldAnswerABadRequest_WhenTheDirectionIsUnknown()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/ptz/step", new { direction = "Sideways", speed = 50 });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("\"error\":\"unknown_direction\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task StartPtzMove_ShouldAnswerABadRequest_WhenTheDirectionIsUnknown()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/ptz/move/start", new { direction = "Sideways", speed = 50 });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("\"error\":\"unknown_direction\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task CreatePrivacySchedule_ShouldAcceptTheNight_WhenTheRangeCrossesMidnight()
     {
         using var client = _factory.CreateClient();

@@ -8,6 +8,9 @@ import { LiveView } from './live_view.component'
 
 const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
 const STEP = 'POST /api/cameras/camera-1/ptz/step'
+const START = 'POST /api/cameras/camera-1/ptz/move/start'
+const SIGNAL = 'POST /api/cameras/camera-1/ptz/move/signal'
+const STOP = 'POST /api/cameras/camera-1/ptz/move/stop'
 const SAVE = 'POST /api/cameras/camera-1/ptz/preset/save'
 const GOTO = 'POST /api/cameras/camera-1/ptz/preset/goto'
 const CALIBRATE = 'POST /api/cameras/camera-1/ptz/calibrate'
@@ -28,8 +31,8 @@ function makePreset(overrides: Partial<PtzPreset> = {}): PtzPreset {
     presetId: 1,
     label: 'Surveillance',
     native: false,
-    stepsX: 3,
-    stepsY: 2,
+    panMs: 3,
+    tiltMs: 2,
     configured: true,
     ...overrides,
   }
@@ -47,6 +50,13 @@ function presetsRead({
 async function askToRedefineSurveillance() {
   fireEvent.mouseDown(await screen.findByTitle(/^Surveillance \(appui/))
   await screen.findByText('Redéfinir cette position ?', undefined, { timeout: 2000 })
+}
+
+// A held press signals once a second: the first signal leaves about 1.3 s after the press.
+async function sentWithin(network: ReturnType<typeof fakeNetwork>, route: string, timeout = 1000) {
+  await waitFor(() => expect(network.sent).toContainEqual(expect.objectContaining({ route })), {
+    timeout,
+  })
 }
 
 function renderLiveView() {
@@ -123,7 +133,7 @@ describe('LiveView', () => {
     // Arrange
     fakeNetwork({
       [PRESETS]: presetsRead({
-        presets: [makePreset({ presetId: 2, label: 'Parking', stepsX: 7, stepsY: 4 })],
+        presets: [makePreset({ presetId: 2, label: 'Parking', panMs: 7, tiltMs: 4 })],
         currentPosition: { x: 7, y: 4 },
       }),
     })
@@ -203,28 +213,171 @@ describe('LiveView', () => {
     expect(screen.getByText(/POST \/api\/cameras\/camera-1\/ptz\/step · 502/)).toBeVisible()
   })
 
-  it('onPress_ShouldShowOneToastPerPress_WhenSeveralStepsOfAHoldFail', async () => {
-    // Arrange: the first step answers after the hold has already sent the next one.
+  it('onRelease_ShouldSendOneTapAndNoHold_WhenTheUserReleasesQuickly', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [STEP]: ok() })
+    renderLiveView()
+
+    // Act
+    await userEvent.click(await screen.findByTitle('Gauche'))
+
+    // Assert
+    await sentWithin(network, STEP)
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: STEP, body: { direction: 'Left', speed: 50 } }),
+    )
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: START }))
+  })
+
+  it('onRelease_ShouldStopTheOneMoveOfTheHold_WhenTheUserReleasesAHeldDirection', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
+    renderLiveView()
+    const up = await screen.findByTitle('Haut')
+    fireEvent.mouseDown(up)
+    await sentWithin(network, START)
+
+    // Act
+    fireEvent.mouseUp(up)
+
+    // Assert
+    await sentWithin(network, STOP)
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: START, body: { direction: 'Up', speed: 50 } }),
+    )
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: STEP }))
+  })
+
+  it('onPress_ShouldSignalTheHold_WhenThePressLasts', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [SIGNAL]: ok() })
+    renderLiveView()
+
+    // Act
+    fireEvent.mouseDown(await screen.findByTitle('Bas'))
+
+    // Assert
+    await sentWithin(network, SIGNAL, 2500)
+  })
+
+  it('onRelease_ShouldStopTheHold_WhenThePointerLeavesTheButton', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
+    renderLiveView()
+    const up = await screen.findByTitle('Haut')
+    fireEvent.mouseDown(up)
+    await sentWithin(network, START)
+
+    // Act
+    fireEvent.mouseLeave(up)
+
+    // Assert
+    await sentWithin(network, STOP)
+  })
+
+  it('onRelease_ShouldSendOneTap_WhenThePointerLeavesTheButtonQuickly', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [STEP]: ok() })
+    renderLiveView()
+    const right = await screen.findByTitle('Droite')
+    fireEvent.mouseDown(right)
+
+    // Act
+    fireEvent.mouseLeave(right)
+
+    // Assert
+    await sentWithin(network, STEP)
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: START }))
+  })
+
+  it('onRelease_ShouldStopTheHold_WhenTheTouchIsCancelled', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
+    renderLiveView()
+    const down = await screen.findByTitle('Bas')
+    fireEvent.touchStart(down)
+    await sentWithin(network, START)
+
+    // Act
+    fireEvent.touchCancel(down)
+
+    // Assert
+    await sentWithin(network, STOP)
+  })
+
+  it('onPress_ShouldStopSignalling_WhenTheServerNoLongerHoldsTheMove', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [SIGNAL]: failure(404) })
+    renderLiveView()
+    fireEvent.mouseDown(await screen.findByTitle('Haut'))
+    await sentWithin(network, SIGNAL, 2500)
+
+    // Act
+    // Nothing on screen marks a signal not sent: wait past the next one.
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+
+    // Assert
+    expect(network.sent.filter(({ route }) => route === SIGNAL)).toHaveLength(1)
+  })
+
+  it('onRelease_ShouldStopOnlyOnceTheStartAnswered_WhenReleasedWhileTheMoveStarts', async () => {
+    // Arrange
     const network = fakeNetwork({
       [PRESETS]: presetsRead(),
-      [STEP]: late(failure(502, 'camera_refused', 'first step'), 600),
+      [START]: late(ok(), 400),
+      [STOP]: ok(),
     })
     renderLiveView()
     const up = await screen.findByTitle('Haut')
+    fireEvent.mouseDown(up)
+    await sentWithin(network, START)
 
     // Act
-    fireEvent.mouseDown(up)
-    await waitFor(() =>
-      expect(network.sent).toContainEqual(expect.objectContaining({ route: STEP })),
-    )
-    network.answer(STEP, failure(502, 'camera_refused', 'held step'))
-    await screen.findByText(/held step/)
-    // Nothing on screen marks the first answer landing: wait past its 600 ms.
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    fireEvent.mouseUp(up)
 
     // Assert
-    expect(screen.getAllByText('La caméra a refusé la commande')).toHaveLength(1)
-    expect(screen.queryByText(/first step/)).not.toBeInTheDocument()
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: STOP }))
+    await sentWithin(network, STOP)
+  })
+
+  it('onPress_ShouldSayTheCameraRefusedAndSendNoStop_WhenTheCameraRefusesTheHold', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead(),
+      [START]: failure(502, 'camera_refused'),
+    })
+    renderLiveView()
+    const up = await screen.findByTitle('Haut')
+    fireEvent.mouseDown(up)
+    expect(await screen.findByText('La caméra a refusé la commande')).toBeInTheDocument()
+
+    // Act
+    fireEvent.mouseUp(up)
+
+    // Assert
+    expect(screen.getByText(/POST \/api\/cameras\/camera-1\/ptz\/move\/start · 502/)).toBeVisible()
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: STOP }))
+  })
+
+  it('onRelease_ShouldShowOneToastPerPress_WhenTheSignalAndTheStopOfAHoldFail', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead(),
+      [START]: ok(),
+      [SIGNAL]: failure(503, undefined, 'signal lost'),
+      [STOP]: failure(503, undefined, 'stop lost'),
+    })
+    renderLiveView()
+    const up = await screen.findByTitle('Haut')
+    fireEvent.mouseDown(up)
+    await screen.findByText(/signal lost/, undefined, { timeout: 2500 })
+
+    // Act
+    fireEvent.mouseUp(up)
+    await sentWithin(network, STOP)
+
+    // Assert
+    expect(screen.queryByText(/stop lost/)).not.toBeInTheDocument()
   })
 
   it('onContextMenu_ShouldKeepTheBrowserMenuClosed_WhenTheUserLongPressesAPosition', async () => {
@@ -291,17 +444,15 @@ describe('LiveView', () => {
 
   it('onClose_ShouldStopTheHold_WhenTheViewClosesWhileADirectionIsHeld', async () => {
     // Arrange
-    const network = fakeNetwork({ [PRESETS]: presetsRead(), [STEP]: late(ok(), 100) })
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
     const { unmount } = renderLiveView()
     fireEvent.mouseDown(await screen.findByTitle('Haut'))
-    await waitFor(() => expect(network.sent).toHaveLength(3))
+    await sentWithin(network, START)
 
     // Act
     unmount()
-    const sentAtClose = network.sent.length
-    await new Promise((resolve) => setTimeout(resolve, 400))
 
     // Assert
-    expect(network.sent).toHaveLength(sentAtClose)
+    await sentWithin(network, STOP)
   })
 })

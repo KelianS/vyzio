@@ -2,8 +2,9 @@ export interface PtzPreset {
   presetId: number
   label: string
   native: boolean
-  stepsX: number | null
-  stepsY: number | null
+  /** Milliseconds of motion right, then down, from the up-left limit (ADR-60). */
+  panMs: number | null
+  tiltMs: number | null
   configured: boolean
 }
 

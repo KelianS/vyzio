@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Common;
@@ -25,12 +26,16 @@ public class PtzStepUseCaseTests
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
     private readonly IPtzCapabilityProvider _provider = Substitute.For<IPtzCapabilityProvider>();
+    private readonly IPtzMotion _motion = Substitute.For<IPtzMotion>();
+    private readonly PtzManagedPositions _positions = new(new FakeTimeProvider(), NullLogger<PtzManagedPositions>.Instance);
     private readonly Camera _camera = new() { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "192.168.1.10" };
 
     public PtzStepUseCaseTests()
     {
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(_camera);
         _registry.ResolvePtz(SupportedProtocol.Onvif).Returns(_provider);
+        _provider.OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(_motion);
+        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(true);
     }
 
     [Theory]
@@ -47,9 +52,9 @@ public class PtzStepUseCaseTests
         var binding = PtzBinding.With("""{"supports_native_presets":true,"pan_inverted":true}""");
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
 
-        await new PtzStepUseCase(_cameras, _bindings, _registry, new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)).ExecuteAsync("cam1", new PtzMoveRequest(pressed));
+        await new PtzStepUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest(pressed));
 
-        await _provider.Received(1).PtzStepAsync(_camera, binding, sent, Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _motion.Received(1).MoveForAsync(sent, Arg.Any<int>(), PtzManagedPositions.TapDuration, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -61,8 +66,52 @@ public class PtzStepUseCaseTests
         var binding = PtzBinding.With(configJson);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
 
-        await new PtzStepUseCase(_cameras, _bindings, _registry, new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
+        await new PtzStepUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
 
-        await _provider.Received(1).PtzStepAsync(_camera, binding, PtzDirection.Left, Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _motion.Received(1).MoveForAsync(PtzDirection.Left, Arg.Any<int>(), PtzManagedPositions.TapDuration, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStartTheSwappedDirection_WhenAHeldCameraIsSetToTurnTheOtherWay()
+    {
+        // Arrange
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
+            .Returns(PtzBinding.With("""{"pan_inverted":true}"""));
+
+        // Act
+        var found = await new PtzStartMoveUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
+
+        // Assert
+        Assert.True(found);
+        await _motion.Received(1).StartAsync(PtzDirection.Right, 50, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStartNoMove_WhenThePtzOfTheCameraIsNotVerified()
+    {
+        // Arrange
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
+
+        // Act
+        var found = await new PtzStartMoveUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest("Left"));
+
+        // Assert
+        Assert.False(found);
+        await _provider.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStopTheHeldMove_WhenThePressIsReleased()
+    {
+        // Arrange
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(PtzBinding.With(null));
+        await new PtzStartMoveUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest("Up"));
+
+        // Act
+        await new PtzStopMoveUseCase(_positions).ExecuteAsync("cam1");
+
+        // Assert
+        await _motion.Received(1).StopAsync();
+        Assert.False(new PtzSignalMoveUseCase(_positions).Execute("cam1"));
     }
 }

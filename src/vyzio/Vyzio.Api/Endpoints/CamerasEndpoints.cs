@@ -159,18 +159,21 @@ public static class CamerasEndpoints
             return deleted ? Results.NoContent() : Results.NotFound();
         });
 
-        // PTZ control — single step endpoint handles both tap (durationMs=80) and hold (chained calls)
-        group.MapPost("/{id}/ptz/step", async (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
+        // A tap is one timed move; a held press is a start, a signal while it lasts and a stop (ADR-60).
+        group.MapPost("/{id}/ptz/step", (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
+            PtzMoveAsync(() => useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct)));
+
+        group.MapPost("/{id}/ptz/move/start", (string id, PtzStepApiRequest request, PtzStartMoveUseCase useCase, CancellationToken ct) =>
+            PtzMoveAsync(() => useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct)));
+
+        group.MapPost("/{id}/ptz/move/signal", (string id, PtzSignalMoveUseCase useCase) =>
+            useCase.Execute(id) ? Results.NoContent() : Results.NotFound());
+
+        // No CancellationToken: a stop goes out even when the page that asked for it is gone.
+        group.MapPost("/{id}/ptz/move/stop", async (string id, PtzStopMoveUseCase useCase) =>
         {
-            try
-            {
-                var ok = await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct);
-                return ok ? Results.NoContent() : Results.NotFound();
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            await useCase.ExecuteAsync(id);
+            return Results.NoContent();
         });
 
         group.MapPost("/{id}/ptz/preset/save", async (string id, PtzPresetApiRequest request, PtzSavePresetUseCase useCase, CancellationToken ct) =>
@@ -211,8 +214,8 @@ public static class CamerasEndpoints
                     presetId = p.PresetId,
                     label = p.Label,
                     native = p.Native,
-                    stepsX = p.StepsX,
-                    stepsY = p.StepsY,
+                    panMs = p.PanMs,
+                    tiltMs = p.TiltMs,
                     configured = true,
                 }),
             });
@@ -376,6 +379,19 @@ public static class CamerasEndpoints
         });
 
         return app;
+    }
+
+    // A tap or the start of a hold: an unknown direction is named for the interface, the rest found or not.
+    private static async Task<IResult> PtzMoveAsync(Func<Task<bool>> move)
+    {
+        try
+        {
+            return await move() ? Results.NoContent() : Results.NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(new { error = "unknown_direction", message = ex.Message });
+        }
     }
 
     private static IResult GetVendorAsset(string assetPath, VyzioRuntimeSettings settings)

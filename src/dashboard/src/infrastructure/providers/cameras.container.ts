@@ -23,6 +23,9 @@ import { PtzCalibrate } from '../../domain/usecases/ptz_calibrate.use_case'
 import { PtzGoToPreset } from '../../domain/usecases/ptz_go_to_preset.use_case'
 import { PtzSaveCurrentAsPreset } from '../../domain/usecases/ptz_save_current_as_preset.use_case'
 import { PtzStep } from '../../domain/usecases/ptz_step.use_case'
+import { PtzStartMove } from '../../domain/usecases/ptz_start_move.use_case'
+import { PtzSignalMove } from '../../domain/usecases/ptz_signal_move.use_case'
+import { PtzStopMove } from '../../domain/usecases/ptz_stop_move.use_case'
 import { RemoveCameraCapability } from '../../domain/usecases/remove_camera_capability.use_case'
 import { SetPtzPanInverted } from '../../domain/usecases/set_ptz_pan_inverted.use_case'
 import { SaveCameraDetectionConfig } from '../../domain/usecases/save_camera_detection_config.use_case'
@@ -67,6 +70,9 @@ export interface CamerasContainer {
   getRecordingSettings: GetRecordingSettings
   saveRecordingSettings: SaveRecordingSettings
   ptzStep: PtzStep
+  ptzStartMove: PtzStartMove
+  ptzSignalMove: PtzSignalMove
+  ptzStopMove: PtzStopMove
   ptzGoToPreset: PtzGoToPreset
   getPtzPresets: GetPtzPresets
   ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
@@ -110,6 +116,9 @@ export function makeCamerasContainer(
     getRecordingSettings: new GetRecordingSettings(recordingSettingsRepository),
     saveRecordingSettings: new SaveRecordingSettings(recordingSettingsRepository),
     ptzStep: new PtzStep(cameraRepository),
+    ptzStartMove: new PtzStartMove(cameraRepository),
+    ptzSignalMove: new PtzSignalMove(cameraRepository),
+    ptzStopMove: new PtzStopMove(cameraRepository),
     ptzGoToPreset: new PtzGoToPreset(cameraRepository),
     getPtzPresets: new GetPtzPresets(cameraRepository),
     ptzSaveCurrentAsPreset: new PtzSaveCurrentAsPreset(cameraRepository),

@@ -7,23 +7,32 @@ public interface IPtzCapabilityProvider
 {
     SupportedProtocol Protocol { get; }
 
-    // Steps in one direction that cover the whole mechanical range from anywhere: how far homing goes (ADR-59).
-    int FullRangeSteps { get; }
+    // Motion time in one direction that covers the whole mechanical range from anywhere, an estimate until measured (ADR-60).
+    TimeSpan FullRange { get; }
 
     // The real check against the camera; Verified is only ever set from its answer, never declared.
     Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
-
-    Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default);
-
-    Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
     Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    // False when skipped for a step still running; a camera that refused or was unreachable raises a CameraCommandException (ADR-56).
-    Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default);
+    // Opens what a move needs, login included, so that no move waits on it (ADR-60).
+    Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     // Current pan/tilt in normalized ONVIF space [-1, 1], or null when the camera cannot report it.
     Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
+}
+
+// The moves of one camera over what the provider opened for them, failures raised as ADR-56 names them; disposing closes it (ADR-60).
+public interface IPtzMotion : IAsyncDisposable
+{
+    // Moves for the given time and returns the motion time the camera made; zero when skipped for a move still running.
+    Task<TimeSpan> MoveForAsync(PtzDirection direction, int speed, TimeSpan duration, CancellationToken ct = default);
+
+    // Starts a move that lasts until StopAsync; false when skipped for a move still running.
+    Task<bool> StartAsync(PtzDirection direction, int speed, CancellationToken ct = default);
+
+    // Stops the started move and returns how long it moved, from the move sent to the stop sent.
+    Task<TimeSpan> StopAsync();
 }

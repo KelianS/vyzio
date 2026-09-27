@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Nodes;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
@@ -12,8 +13,12 @@ namespace Vyzio.Tests.Services;
 
 public class DvripPtzProviderTests
 {
+    private static readonly TimeSpan Tap = TimeSpan.FromMilliseconds(100);
+
     private static DvripPtzProvider MakeProvider(TimeProvider? time = null) =>
-        new(new DvripClient(time ?? TimeProvider.System, NullLogger<DvripClient>.Instance), NullLogger<DvripPtzProvider>.Instance);
+        new(new DvripClient(time ?? TimeProvider.System, NullLogger<DvripClient>.Instance),
+            new PtzMoveRunner(time ?? TimeProvider.System, NullLogger<PtzMoveRunner>.Instance),
+            NullLogger<DvripPtzProvider>.Instance);
 
     [Fact]
     public void Protocol_ShouldBeDvrip_WhenTheProviderIsCreated()
@@ -126,7 +131,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldRaiseThatTheCameraIsUnreachable_WhenNoDvripServiceAnswers()
+    public async Task OpenMotionAsync_ShouldRaiseThatTheCameraIsUnreachable_WhenNoDvripServiceAnswers()
     {
         // Arrange
         var camera = new Camera { Id = "cam", Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = "127.0.0.1" };
@@ -134,7 +139,7 @@ public class DvripPtzProviderTests
 
         // Act
         var error = await Assert.ThrowsAsync<CameraUnreachableException>(
-            () => MakeProvider().PtzStepAsync(camera, binding, PtzDirection.Left, 50));
+            () => MakeProvider().OpenMotionAsync(camera, binding));
 
         // Assert
         Assert.Contains("127.0.0.1", error.Message, StringComparison.Ordinal);
@@ -170,140 +175,287 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsTheMove()
+    public async Task MoveForAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsTheMove()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":100,"SessionID":"0x0000000B"}""", command: """{"Ret":103}""");
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Ret":103}""");
+        await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
-            () => MakeProvider().PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50));
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
 
         // Assert
         Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldStillSendTheStop_WhenTheCameraRejectsTheMove()
+    public async Task MoveForAsync_ShouldStillSendTheStop_WhenTheCameraRejectsTheMove()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":100,"SessionID":"0x0000000B"}""", command: """{"Ret":103}""");
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Ret":103}""");
+        await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        await Assert.ThrowsAsync<CameraCommandRefusedException>(
-            () => MakeProvider().PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50));
+        await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
 
         // Assert
         Assert.Equal(["DirectionRight", "DirectionUp"], await fake.CommandsAsync(2));
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldRaiseThatTheCameraRefused_WhenItsAnswerCarriesNoStatus()
+    public async Task MoveForAsync_ShouldRaiseThatTheCameraRefused_WhenItsAnswerCarriesNoStatus()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":100,"SessionID":"0x0000000B"}""", command: """{"Name":"OPPTZControl"}""");
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Name":"OPPTZControl"}""");
+        await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
-            () => MakeProvider().PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50));
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
 
         // Assert
         Assert.Contains("Ret=?", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsTheLogin()
+    public async Task OpenMotionAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsTheLogin()
     {
         // Arrange
         await using var fake = FakeDvripCamera.Start(login: """{"Ret":203}""", command: null);
 
         // Act
         var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
-            () => MakeProvider().PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50));
+            () => MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding));
 
         // Assert
         Assert.Contains("Ret=203", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldRaiseThatTheCameraIsUnreachable_WhenItHangsUpInsteadOfAnswering()
+    public async Task MoveForAsync_ShouldRaiseThatTheCameraIsUnreachable_WhenItHangsUpInsteadOfAnswering()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":100,"SessionID":"0x0000000B"}""", command: null);
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: null);
+        await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraUnreachableException>(
-            () => MakeProvider().PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50));
+        var error = await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
 
         // Assert
         Assert.Contains("connection closed", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldTakeTheStep_WhenTheCameraStaysSilentAfterReceivingTheMove()
+    public async Task MoveForAsync_ShouldCountTheMove_WhenTheCameraStaysSilentAfterReceivingIt()
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":100,"SessionID":"0x0000000B"}""", command: """{"Ret":100}""", silentFirst: 1);
-        var step = MakeProvider(time).PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50);
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, silentFirst: 1);
+        await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        await fake.CommandsAsync(1);
+        time.Advance(Tap);
         await fake.CommandsAsync(1);
 
         // Act
         time.Advance(TimeSpan.FromSeconds(5));
 
         // Assert
-        Assert.True(await step);
-        Assert.Equal(["DirectionUp"], await fake.CommandsAsync(1));
+        Assert.Equal(Tap, await step);
     }
 
     [Fact]
-    public async Task PtzStepAsync_ShouldMoveThenStop_WhenTheCameraTakesBothCommands()
+    public async Task MoveForAsync_ShouldMoveThenStop_WhenTheCameraTakesBothCommands()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":100,"SessionID":"0x0000000B"}""", command: """{"Ret":100}""");
+        var time = new FakeTimeProvider();
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer);
+        await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var move = await fake.CommandsAsync(1);
 
         // Act
-        var taken = await MakeProvider().PtzStepAsync(fake.Camera, fake.Binding, PtzDirection.Left, 50);
+        time.Advance(Tap);
+        var stop = await fake.CommandsAsync(1);
 
         // Assert
-        Assert.True(taken);
+        Assert.Equal(Tap, await step);
+        Assert.Equal(["DirectionRight", "DirectionUp"], [.. move, .. stop]);
+    }
+
+    [Fact]
+    public async Task MoveForAsync_ShouldStopTheDurationAfterTheMove_WhenTheCameraAnswersTheMoveAtOnce()
+    {
+        // Arrange
+        var time = new FakeTimeProvider();
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, clock: time);
+        await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var move = (await fake.ReceivedAsync(1))[0];
+
+        // Act
+        time.Advance(Tap);
+        var stop = (await fake.ReceivedAsync(1))[0];
+
+        // Assert
+        Assert.Equal(Tap, stop.At - move.At);
+        Assert.Equal(Tap, await step);
+    }
+
+    [Fact]
+    public async Task MoveForAsync_ShouldStopTheDurationAfterTheMove_WhenTheCameraHasNotAnsweredTheMoveYet()
+    {
+        // Arrange
+        var time = new FakeTimeProvider();
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, holdAnswers: true, clock: time);
+        await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var move = (await fake.ReceivedAsync(1))[0];
+
+        // Act
+        time.Advance(Tap);
+        var stop = (await fake.ReceivedAsync(1))[0];
+
+        // Assert
+        Assert.Equal(Tap, stop.At - move.At);
+        fake.ReleaseAnswers();
+        Assert.Equal(Tap, await step);
+    }
+
+    [Fact]
+    public async Task MoveForAsync_ShouldMakeEveryMoveOnTheLoginOfTheSession_WhenSeveralMovesAreMade()
+    {
+        // Arrange
+        var time = new FakeTimeProvider();
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer);
+        var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+
+        // Act
+        await TapAsync(motion, fake, time);
+        await TapAsync(motion, fake, time);
+        await TapAsync(motion, fake, time);
+        await motion.DisposeAsync();
+
+        // Assert
+        Assert.Equal(1, fake.Logins);
+    }
+
+    [Fact]
+    public async Task MoveForAsync_ShouldLogInAgainBeforeTheNextMove_WhenTheCameraDroppedTheSession()
+    {
+        // Arrange
+        var time = new FakeTimeProvider();
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, hangUpAt: 3);
+        await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+        await TapAsync(motion, fake, time);
+        await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
+        await fake.CommandsAsync(1);
+
+        // Act
+        await TapAsync(motion, fake, time);
+
+        // Assert
+        Assert.Equal(2, fake.Logins);
+    }
+
+    [Fact]
+    public async Task StopAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenTheCameraAnswersTheMoveLate()
+    {
+        // Arrange
+        var time = new FakeTimeProvider();
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, holdAnswers: true, clock: time);
+        await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
+        var start = motion.StartAsync(PtzDirection.Left, 50);
+        var move = await fake.CommandsAsync(1);
+        time.Advance(TimeSpan.FromMilliseconds(700));
+        fake.ReleaseAnswers();
+        Assert.True(await start);
+        time.Advance(TimeSpan.FromMilliseconds(1300));
+
+        // Act
+        var moved = await motion.StopAsync();
+
+        // Assert
+        var stop = await fake.CommandsAsync(1);
+        Assert.Equal(TimeSpan.FromSeconds(2), moved);
+        Assert.Equal(["DirectionRight", "DirectionUp"], [.. move, .. stop]);
+        Assert.Equal(1, fake.Logins);
+    }
+
+    [Fact]
+    public async Task StartAsync_ShouldRaiseThatTheCameraRefusedAndStopAtOnce_WhenItRejectsTheMove()
+    {
+        // Arrange
+        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Ret":103}""");
+        await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
+
+        // Act
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.StartAsync(PtzDirection.Left, 50));
+
+        // Assert
+        Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
         Assert.Equal(["DirectionRight", "DirectionUp"], await fake.CommandsAsync(2));
+    }
+
+    private const string LoginOk = """{"Ret":100,"SessionID":"0x0000000B"}""";
+    private const string OkAnswer = """{"Ret":100}""";
+
+    // Moves, lets the tap run out on the fake clock, and waits for the tap to end.
+    private static async Task TapAsync(IPtzMotion motion, FakeDvripCamera fake, FakeTimeProvider time)
+    {
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        await fake.CommandsAsync(1);
+        time.Advance(Tap);
+        await fake.CommandsAsync(1);
+        Assert.Equal(Tap, await step);
     }
 }
 
-// A DVRIP camera on its own loopback address (the port is fixed): answers every login, then every command, as told.
+// A DVRIP camera on its own loopback address (the port is fixed): answers every login, then every command on the same connection, as told.
 internal sealed class FakeDvripCamera : IAsyncDisposable
 {
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _stop = new();
-    private readonly System.Threading.Channels.Channel<string> _commands = System.Threading.Channels.Channel.CreateUnbounded<string>();
+    private readonly Channel<ReceivedCommand> _commands = Channel.CreateUnbounded<ReceivedCommand>();
+    private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TimeProvider _clock;
     private readonly Task _loop;
+    private int _logins;
 
-    private FakeDvripCamera(IPAddress address, string login, string? command, int silentFirst)
+    private FakeDvripCamera(IPAddress address, Behaviour behaviour, TimeProvider clock)
     {
         _listener = new TcpListener(address, 34567);
         _listener.Start();
+        _clock = clock;
         Camera = new Camera { Id = "cam", Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = address.ToString() };
-        _loop = ServeAsync(login, command, silentFirst);
+        if (!behaviour.HoldAnswers) _released.SetResult();
+        _loop = ServeAsync(behaviour);
     }
 
     public Camera Camera { get; }
 
     public CameraCapabilityBinding Binding { get; } = new() { CameraId = "cam", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Dvrip };
 
-    // A null command hangs up once it has the command; the first silentFirst connections keep the line open in silence.
-    public static FakeDvripCamera Start(string login, string? command, int silentFirst = 0)
-        => new(new IPAddress([127, 0, (byte)Random.Shared.Next(1, 255), (byte)Random.Shared.Next(2, 255)]), login, command, silentFirst);
+    public int Logins => Volatile.Read(ref _logins);
+
+    // A null command hangs up at the first command, hangUpAt at that command; the first silentFirst connections never answer a command; held answers wait for ReleaseAnswers.
+    public static FakeDvripCamera Start(string login, string? command, int silentFirst = 0, int hangUpAt = 0, bool holdAnswers = false, TimeProvider? clock = null)
+        => new(new IPAddress([127, 0, (byte)Random.Shared.Next(1, 255), (byte)Random.Shared.Next(2, 255)]),
+            new Behaviour(login, command, silentFirst, command is null ? 1 : hangUpAt, holdAnswers), clock ?? TimeProvider.System);
+
+    public void ReleaseAnswers() => _released.TrySetResult();
 
     public async Task<string[]> CommandsAsync(int count)
+        => [.. (await ReceivedAsync(count)).Select(command => command.Name)];
+
+    public async Task<ReceivedCommand[]> ReceivedAsync(int count)
     {
-        var received = new string[count];
+        var received = new ReceivedCommand[count];
         for (var i = 0; i < count; i++)
             received[i] = await _commands.Reader.ReadAsync(_stop.Token);
         return received;
     }
 
-    private async Task ServeAsync(string login, string? command, int silentFirst)
+    private async Task ServeAsync(Behaviour behaviour)
     {
         var handlers = new List<Task>();
         try
@@ -311,7 +463,7 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
             while (!_stop.IsCancellationRequested)
             {
                 var client = await _listener.AcceptTcpClientAsync(_stop.Token);
-                handlers.Add(AnswerAsync(client, login, command, silent: handlers.Count < silentFirst));
+                handlers.Add(AnswerAsync(client, behaviour, silent: handlers.Count < behaviour.SilentFirst));
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
@@ -320,26 +472,47 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
         await Task.WhenAll(handlers);
     }
 
-    private async Task AnswerAsync(TcpClient client, string login, string? command, bool silent)
+    private async Task AnswerAsync(TcpClient client, Behaviour behaviour, bool silent)
     {
         using var connection = client;
+        var answers = Channel.CreateUnbounded<string>();
+        var answering = Task.CompletedTask;
         try
         {
             var stream = connection.GetStream();
             await DvripClient.ReceivePacketAsync(stream, _stop.Token);
-            await DvripClient.SendPacketAsync(stream, 1001, login, 0, "0x0000000B", _stop.Token);
-            var sent = await DvripClient.ReceivePacketAsync(stream, _stop.Token);
-            if (sent is not null)
-                await _commands.Writer.WriteAsync(JsonNode.Parse(sent)!["OPPTZControl"]!["Command"]!.GetValue<string>(), _stop.Token);
-            if (silent)
-                await Task.Delay(Timeout.Infinite, _stop.Token);
-            else if (command is not null)
-                await DvripClient.SendPacketAsync(stream, 1401, command, 3, "0x0000000B", _stop.Token);
+            Interlocked.Increment(ref _logins);
+            await DvripClient.SendPacketAsync(stream, 1001, behaviour.Login, 0, "0x0000000B", _stop.Token);
+            answering = SendAnswersAsync(stream, answers.Reader);
+            for (var n = 1; await DvripClient.ReceivePacketAsync(stream, _stop.Token) is { } sent; n++)
+            {
+                await _commands.Writer.WriteAsync(new ReceivedCommand(JsonNode.Parse(sent)!["OPPTZControl"]!["Command"]!.GetValue<string>(), _clock.GetUtcNow()), _stop.Token);
+                if (n == behaviour.HangUpAt) break;
+                if (!silent) await answers.Writer.WriteAsync(behaviour.Command!, _stop.Token);
+            }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
         {
         }
         catch (IOException)
+        {
+        }
+        answers.Writer.TryComplete();
+        connection.Close();
+        await answering;
+    }
+
+    private async Task SendAnswersAsync(NetworkStream stream, ChannelReader<string> answers)
+    {
+        try
+        {
+            await foreach (var answer in answers.ReadAllAsync(_stop.Token))
+            {
+                await _released.Task.WaitAsync(_stop.Token);
+                await DvripClient.SendPacketAsync(stream, 1401, answer, 3, "0x0000000B", _stop.Token);
+            }
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or IOException or ObjectDisposedException)
         {
         }
     }
@@ -351,4 +524,8 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
         await _loop;
         _stop.Dispose();
     }
+
+    private sealed record Behaviour(string Login, string? Command, int SilentFirst, int HangUpAt, bool HoldAnswers);
 }
+
+internal sealed record ReceivedCommand(string Name, DateTimeOffset At);

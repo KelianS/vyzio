@@ -30,7 +30,7 @@ public class PrivacySchedulerServiceTests
         BackgroundLoop.Scopes(services => services
             .AddSingleton(_schedules)
             .AddSingleton(_cameras)
-            .AddSingleton(new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance)))),
+            .AddSingleton(new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance)))),
         TimeZoneInfo.Utc,
         time,
         NullLogger<PrivacySchedulerService>.Instance);

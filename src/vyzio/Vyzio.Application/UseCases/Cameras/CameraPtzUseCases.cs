@@ -22,7 +22,27 @@ public sealed class PtzNotCalibratedException : InvalidOperationException
         : base("PTZ position not calibrated. Call POST /ptz/calibrate first to establish reference.") { }
 }
 
-// Resolved through the camera's verified Ptz binding, never the brand (ADR-22); every step is counted (ADR-59).
+// Resolved through the camera's verified Ptz binding, never the brand (ADR-22); every move is counted (ADR-59, ADR-60).
+internal static class PtzJoystick
+{
+    // Null when the camera is unknown or its PTZ unverified; the direction is the one the user pressed (SPECS 11).
+    public static async Task<(Camera Camera, CameraCapabilityBinding Binding, IPtzCapabilityProvider Provider, PtzDirection Pressed)?> ResolveAsync(
+        ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry,
+        string cameraId, string requestedDirection, CancellationToken ct)
+    {
+        if (await cameras.GetByIdAsync(cameraId, ct) is not { } camera) return null;
+
+        if (!Enum.TryParse<PtzDirection>(requestedDirection, ignoreCase: true, out var direction))
+            throw new ArgumentException($"Unknown PTZ direction '{requestedDirection}'.");
+
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return null;
+
+        var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
+        return (camera, binding, registry.ResolvePtz(binding.Protocol), pressed);
+    }
+}
+
+// A tap: a timed move of a fixed duration (ADR-60).
 public sealed class PtzStepUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -31,19 +51,39 @@ public sealed class PtzStepUseCase(
 {
     public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
     {
-        var camera = await cameras.GetByIdAsync(cameraId, ct);
-        if (camera is null) return false;
+        if (await PtzJoystick.ResolveAsync(cameras, bindings, registry, cameraId, request.Direction, ct) is not { } ptz) return false;
 
-        if (!Enum.TryParse<PtzDirection>(request.Direction, ignoreCase: true, out var direction))
-            throw new ArgumentException($"Unknown PTZ direction '{request.Direction}'.");
-
-        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return false;
-
-        var provider = registry.ResolvePtz(binding.Protocol);
-        var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
-        await positions.StepAsync(camera, binding, provider, pressed, Math.Clamp(request.Speed, 1, 100), ct);
+        await positions.TapAsync(ptz.Camera, ptz.Binding, ptz.Provider, ptz.Pressed, Math.Clamp(request.Speed, 1, 100), ct);
         return true;
     }
+}
+
+// A press held past a tap: one move until released (ADR-60).
+public sealed class PtzStartMoveUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICapabilityProviderRegistry registry,
+    PtzManagedPositions positions)
+{
+    public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
+    {
+        if (await PtzJoystick.ResolveAsync(cameras, bindings, registry, cameraId, request.Direction, ct) is not { } ptz) return false;
+
+        await positions.StartHoldAsync(ptz.Camera, ptz.Binding, ptz.Provider, ptz.Pressed, Math.Clamp(request.Speed, 1, 100), ct);
+        return true;
+    }
+}
+
+// The interface says the press still lasts; false when no move is held any more (ADR-60).
+public sealed class PtzSignalMoveUseCase(PtzManagedPositions positions)
+{
+    public bool Execute(string cameraId) => positions.SignalHold(cameraId);
+}
+
+// The release of a held press; nothing to do when the move already stopped.
+public sealed class PtzStopMoveUseCase(PtzManagedPositions positions)
+{
+    public Task ExecuteAsync(string cameraId) => positions.StopHoldAsync(cameraId);
 }
 
 // Sets whether left and right are swapped for a camera that turns the other way (SPECS 11).
@@ -117,8 +157,8 @@ public sealed class PtzSavePresetUseCase(
                 PresetId = presetId,
                 Label = PtzPreset.DefaultLabel(presetId),
                 Native = false,
-                StepsX = pos.X,
-                StepsY = pos.Y,
+                PanMs = pos.X,
+                TiltMs = pos.Y,
             }, ct);
         }
 
@@ -165,7 +205,7 @@ internal static class PtzPresetMove
 
         if (await presets.GetAsync(camera.Id, presetId, ct) is not { } preset) return false;
 
-        await positions.GoToAsync(camera, binding, provider, preset.StepsX ?? 0, preset.StepsY ?? 0, ct);
+        await positions.GoToAsync(camera, binding, provider, preset.PanMs ?? 0, preset.TiltMs ?? 0, ct);
         return true;
     }
 }

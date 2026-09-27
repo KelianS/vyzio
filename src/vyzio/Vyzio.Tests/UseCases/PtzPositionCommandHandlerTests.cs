@@ -13,7 +13,7 @@ public class PtzPositionCommandHandlerTests
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
     private readonly ICapabilityProviderRegistry _providers = Substitute.For<ICapabilityProviderRegistry>();
-    private readonly PtzManagedPositions _positions = new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance);
+    private readonly PtzManagedPositions _positions = new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance);
 
     private PtzPositionCommandHandler CreateSut(params Camera[] cameras)
     {

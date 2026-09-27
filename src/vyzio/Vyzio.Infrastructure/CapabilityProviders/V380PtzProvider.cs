@@ -18,6 +18,7 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 internal sealed class V380PtzProvider(
     V380Client client,
     OnvifClient onvif,
+    PtzMoveRunner runner,
     ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
     // 16-byte PTZ binary packets (opcode 0xAA). Pan/tilt are uint16 LE: neutral=1000.
@@ -38,8 +39,11 @@ internal sealed class V380PtzProvider(
 
     public SupportedProtocol Protocol => SupportedProtocol.V380;
 
-    // About 650 ms a step (auth, connect, warm-up frames, drain): 25 steps, 16 s, cover the whole pan/tilt range.
-    public int FullRangeSteps => 25;
+    // The motion time a packet counts, the length of a tap, so that its positions share the unit of the others (ADR-60).
+    private static readonly TimeSpan PacketLength = TimeSpan.FromMilliseconds(100);
+
+    // 23 packets, plus the calibration margin: the 25 that cover the whole pan/tilt range at about 650 ms each.
+    public TimeSpan FullRange => 23 * PacketLength;
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
@@ -55,8 +59,19 @@ internal sealed class V380PtzProvider(
         return success;
     }
 
+    // Nothing opened ahead: the camera sets how far a packet moves, so the stream opened per packet does not change it (ADR-60).
+    public Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => Task.FromResult<IPtzMotion>(new Motion(this, runner, camera, binding, logger));
+
+    private sealed class Motion(V380PtzProvider provider, PtzMoveRunner runner, Camera camera, CameraCapabilityBinding binding, ILogger logger)
+        : PtzSteppedMotion(runner, camera, PacketLength, logger)
+    {
+        protected override Task StepAsync(PtzDirection direction, int speed, CancellationToken ct)
+            => provider.StepAsync(Camera, binding, direction, ct);
+    }
+
     // Sends one step packet; V380 has no continuous move without a persistent stream loop.
-    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    private async Task StepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, CancellationToken ct)
     {
         if (V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var storedId))
             client.PreloadDeviceId(camera.Host, storedId);
@@ -64,7 +79,6 @@ internal sealed class V380PtzProvider(
         try
         {
             await client.SendStreamCommandAsync(camera, DirectionToPacket(direction).ToArray(), ct);
-            return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -78,14 +92,6 @@ internal sealed class V380PtzProvider(
 
     public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<(float Pan, float Tilt)?>(null);
-
-    // V380 step-based PTZ: each packet causes a bounded micro-movement; there is no
-    // continuous move mode without a persistent background stream loop.
-    public Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-        => Task.CompletedTask;
-
-    public Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => Task.CompletedTask;
 
     public Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
