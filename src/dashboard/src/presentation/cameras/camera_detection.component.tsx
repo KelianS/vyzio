@@ -12,6 +12,7 @@ import type { DetectionLabel } from '../../domain/entities/detection_label.entit
 import { SettingsPage } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
 import { ReadFailure } from '../../common/components/error_message'
+import { CameraNotFound } from './components/camera_not_found'
 import {
   DETECTION_DRAFT_LABELS,
   buildDetectionSettings,
@@ -45,10 +46,19 @@ export function CameraDetectionView() {
   if (uido.error)
     return (
       <SettingsPage>
-        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(cameraId!)} />
+        <ReadFailure
+          error={uido.error}
+          onRetry={() => presenter.onLoad(cameraId!)}
+          subject="Les réglages de détection de cette caméra n’ont pas pu être lus."
+        />
       </SettingsPage>
     )
-  if (!uido.config) return null
+  if (!uido.config)
+    return (
+      <SettingsPage>
+        <CameraNotFound within="tab" />
+      </SettingsPage>
+    )
   const config = uido.config
 
   return (

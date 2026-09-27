@@ -1,5 +1,5 @@
 import type { ToastTone } from '../../common/components/toast'
-import { toastError } from '../../common/errors/app_error'
+import { AppErrorKind, toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type {
@@ -9,6 +9,7 @@ import type {
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { refreshSurveillance } from '../surveillance/surveillance_refresh'
+import { reloadCameraList } from './camera_list_reload'
 import type { CameraConservationAction } from './camera_conservation.actions'
 import { detectionConfigUpdate } from './detection_config_update'
 
@@ -39,11 +40,19 @@ export function buildCameraConservationPresenter({
     container.getCameraDetectionConfig
       .execute(cameraId)
       .then((config) => {
-        if (isLatest()) dispatch({ type: 'LOAD_SUCCEEDED', config })
+        if (!isLatest()) return
+        if (config) dispatch({ type: 'LOAD_SUCCEEDED', config })
+        else cameraGone()
       })
       .catch((e: unknown) => {
         if (isLatest()) dispatch({ type: 'LOAD_FAILED', error: toAppError(e) })
       })
+  }
+
+  // The camera was removed elsewhere: the shared list learns it too, so its page says so (DESIGN SYSTEM § Errors).
+  function cameraGone() {
+    dispatch({ type: 'CAMERA_GONE' })
+    reloadCameraList(container)
   }
 
   return {
@@ -53,16 +62,19 @@ export function buildCameraConservationPresenter({
     async onSave(cameraId: string, config: DetectionConfig, values: RetentionOverrides) {
       dispatch({ type: 'SAVE_STARTED' })
       try {
-        await container.saveCameraDetectionConfig.execute(
+        // The save answers with what was kept: no second read that could fail under the shown settings.
+        const saved = await container.saveCameraDetectionConfig.execute(
           cameraId,
           detectionConfigUpdate(config, values),
         )
+        dispatch({ type: 'SAVE_SUCCEEDED', config: saved })
         toast('Durées de conservation enregistrées.', 'success')
         refreshSurveillance(hubContainer)
-        load(cameraId)
         return true
       } catch (e) {
-        toastError(toast, toAppError(e))
+        const error = toAppError(e)
+        if (error.kind === AppErrorKind.NotFound) cameraGone()
+        else toastError(toast, error)
         return false
       } finally {
         dispatch({ type: 'SAVE_FINISHED' })

@@ -6,6 +6,7 @@ import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
 import { formatCameraStatusLabel } from '../cameras.formatters'
+import { CameraNotFound } from './camera_not_found'
 
 // The pages of one camera, each the twin of an installation page one notch lower (ADR-39, ADR-40).
 const CAMERA_PAGES = [
@@ -46,10 +47,7 @@ export function CameraPage({
     return (
       // The route carries its own header: with no camera to name, the failure names the page.
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Caméra introuvable</h1>
-        <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">
-          Revenir à la liste des caméras
-        </Link>
+        <CameraNotFound within="page" />
       </SettingsPage>
     )
   }

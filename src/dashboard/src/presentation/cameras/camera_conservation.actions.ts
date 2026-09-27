@@ -3,7 +3,9 @@ import type { DetectionConfig } from '../../domain/entities/detection_config.ent
 
 export type CameraConservationAction =
   | { type: 'LOAD_STARTED' }
-  | { type: 'LOAD_SUCCEEDED'; config: DetectionConfig | null }
+  | { type: 'LOAD_SUCCEEDED'; config: DetectionConfig }
   | { type: 'LOAD_FAILED'; error: AppError }
+  | { type: 'CAMERA_GONE' }
   | { type: 'SAVE_STARTED' }
+  | { type: 'SAVE_SUCCEEDED'; config: DetectionConfig }
   | { type: 'SAVE_FINISHED' }
