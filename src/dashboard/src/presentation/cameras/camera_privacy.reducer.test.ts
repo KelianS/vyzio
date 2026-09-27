@@ -108,4 +108,56 @@ describe('cameraPrivacyReducer', () => {
     // Assert
     expect(next.schedules).toEqual([schedule])
   })
+
+  it('cameraPrivacyReducer_ShouldFoldTheFormAndDropWhatWasComposed_WhenItCloses', () => {
+    // Arrange
+    const opened = cameraPrivacyReducer(buildInitialCameraPrivacyUido(), {
+      type: 'SCHEDULE_FORM_OPENED',
+    })
+    const composed = cameraPrivacyReducer(opened, { type: 'DAY_TOGGLED', day: 0 })
+    const refused = cameraPrivacyReducer(composed, { type: 'SCHEDULE_INVALID', message: 'jour' })
+    const failed = cameraPrivacyReducer(refused, { type: 'SCHEDULE_FAILED', error: readError })
+
+    // Act
+    const next = cameraPrivacyReducer(failed, { type: 'SCHEDULE_FORM_CLOSED' })
+
+    // Assert
+    expect(next.formOpen).toBe(false)
+    expect(next.form).toEqual(buildInitialCameraPrivacyUido().form)
+    expect(next.invalid).toBeNull()
+    expect(next.scheduleFailure).toBeNull()
+  })
+
+  it('cameraPrivacyReducer_ShouldDropTheFailure_WhenARangeIsDeleted', () => {
+    // Arrange
+    const loaded = cameraPrivacyReducer(buildInitialCameraPrivacyUido(), {
+      type: 'SCHEDULES_LOADED',
+      schedules: [schedule],
+    })
+    const failed = cameraPrivacyReducer(loaded, { type: 'SCHEDULE_FAILED', error: readError })
+
+    // Act
+    const next = cameraPrivacyReducer(failed, {
+      type: 'SCHEDULE_DELETED',
+      scheduleId: 'schedule-1',
+    })
+
+    // Assert
+    expect(next.scheduleFailure).toBeNull()
+  })
+
+  it('cameraPrivacyReducer_ShouldDropAnEarlierFailure_WhenTheFormOpens', () => {
+    // Arrange
+    const failed = cameraPrivacyReducer(buildInitialCameraPrivacyUido(), {
+      type: 'SCHEDULE_FAILED',
+      error: readError,
+    })
+
+    // Act
+    const next = cameraPrivacyReducer(failed, { type: 'SCHEDULE_FORM_OPENED' })
+
+    // Assert
+    expect(next.formOpen).toBe(true)
+    expect(next.scheduleFailure).toBeNull()
+  })
 })

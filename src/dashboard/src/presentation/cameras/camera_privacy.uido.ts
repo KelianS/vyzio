@@ -18,10 +18,18 @@ export interface CameraPrivacyUido {
   schedules: CameraPrivacySchedule[]
   schedulesLoading: boolean
   schedulesError: AppError | null
+  /** The add form stays folded behind its button until asked for. */
+  formOpen: boolean
   form: ScheduleForm
   adding: boolean
   invalid: string | null
   scheduleFailure: AppError | null
+}
+
+export const EMPTY_SCHEDULE_FORM: ScheduleForm = {
+  days: [1, 2, 3, 4, 5],
+  startTime: '22:00',
+  endTime: '06:00',
 }
 
 export function buildInitialCameraPrivacyUido(): CameraPrivacyUido {
@@ -33,7 +41,8 @@ export function buildInitialCameraPrivacyUido(): CameraPrivacyUido {
     schedules: [],
     schedulesLoading: true,
     schedulesError: null,
-    form: { days: [1, 2, 3, 4, 5], startTime: '22:00', endTime: '06:00' },
+    formOpen: false,
+    form: EMPTY_SCHEDULE_FORM,
     adding: false,
     invalid: null,
     scheduleFailure: null,

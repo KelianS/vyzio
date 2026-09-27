@@ -6,13 +6,19 @@
  * from that. The author of a screen has no hold on the appearance - not because it
  * is forbidden, but because nothing here offers it to them.
  *
- * Extending this file amounts to changing the control table of ADR-43: that is a
- * decision, and that friction is exactly the point.
+ * Adding a nature or a control amounts to changing the control table of ADR-43:
+ * that is a decision, and that friction is exactly the point.
  */
 
 export interface SettingOption<T extends string = string> {
   readonly value: T
   readonly label: string
+}
+
+/** An exclusive choice's option, which may be listed but not choosable yet. */
+export interface ChoiceOption<T extends string = string> extends SettingOption<T> {
+  /** Why it cannot be chosen yet and where to fix that: the option stays listed, greyed. */
+  readonly unavailable?: string
 }
 
 /**
@@ -25,7 +31,7 @@ export type SettingNature =
   /** Boolean -> a switch. The state reads without reading the label. */
   | { readonly kind: 'toggle' }
   /** Exclusive choice -> a dropdown, whatever the number of options. */
-  | { readonly kind: 'choice'; readonly options: readonly SettingOption[] }
+  | { readonly kind: 'choice'; readonly options: readonly ChoiceOption[] }
   /** Multiple choice -> a dropdown of checkboxes, summarised on one line at rest. */
   | {
       readonly kind: 'multiChoice'

@@ -531,7 +531,6 @@ public class SetCameraPrivacyStrategyUseCaseTests
     };
 
     [Theory]
-    [InlineData("none")]
     [InlineData("software_blur")]
     [InlineData("ptz_parking")]
     [InlineData("hardware")]
@@ -608,6 +607,21 @@ public class SetCameraPrivacyStrategyUseCaseTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("invalid_strategy")));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuseItAndNameTheValidOnes_WhenTheStrategyIsNone()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+
+        // Act
+        var error = await Assert.ThrowsAsync<ArgumentException>(() =>
+            _sut.ExecuteAsync("cam1", new SetPrivacyStrategyRequest("none")));
+
+        // Assert
+        Assert.Contains("Valid values: software_blur, ptz_parking, hardware.", error.Message);
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

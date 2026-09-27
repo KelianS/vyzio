@@ -124,7 +124,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     privacyMiss: null,
     privacyMissDetail: null,
     ptzSupported: false,
-    privacyStrategy: 'none',
+    privacyStrategy: 'software_blur',
     verifiedCapabilities: [],
     ...overrides,
   }
