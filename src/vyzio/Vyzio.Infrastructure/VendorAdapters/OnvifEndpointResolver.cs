@@ -74,7 +74,7 @@ internal sealed class OnvifEndpointResolver(
                 ct.ThrowIfCancellationRequested();
                 _failedAt[camera.Id] = time.GetUtcNow();
                 logger.LogWarning("No ONVIF service answered on {Host} (ports {Ports}).",
-                    camera.Host, string.Join(", ", DiscoveryPortCatalog.OnvifPorts));
+                    camera.Host, string.Join(", ", OnvifPortsOf(camera)));
                 return null;
             }
 
@@ -113,7 +113,7 @@ internal sealed class OnvifEndpointResolver(
             return persistedUrl;
         }
 
-        foreach (var port in DiscoveryPortCatalog.OnvifPorts)
+        foreach (var port in OnvifPortsOf(camera))
         {
             foreach (var path in DiscoveryPortCatalog.OnvifPaths)
             {
@@ -127,6 +127,10 @@ internal sealed class OnvifEndpointResolver(
 
         return null;
     }
+
+    // A port set on the ONVIF row narrows the search to it; otherwise every port ONVIF is known on (ADR-61).
+    private static IReadOnlyList<int> OnvifPortsOf(Camera camera)
+        => camera.Protocol(SupportedProtocol.Onvif)?.Port is { } port ? [port] : DiscoveryPortCatalog.OnvifPorts;
 
     private async Task<bool> AnswersOnvifAsync(Uri url, CancellationToken ct)
     {
@@ -154,8 +158,9 @@ internal sealed class OnvifEndpointResolver(
 
         // Pre-authentication first (ONVIF core); the camera's own account only if it insists, never a guess.
         var xml = await PostGetServicesAsync(deviceUrl, OnvifEnvelope.Anonymous(body), ct);
-        if (xml is { Unauthorized: true } && !string.IsNullOrWhiteSpace(camera.Username))
-            xml = await PostGetServicesAsync(deviceUrl, OnvifEnvelope.Build(camera.Username, camera.Password ?? string.Empty, body), ct);
+        var account = camera.CredentialsFor(SupportedProtocol.Onvif);
+        if (xml is { Unauthorized: true } && !string.IsNullOrWhiteSpace(account.Username))
+            xml = await PostGetServicesAsync(deviceUrl, OnvifEnvelope.Build(account.Username, account.Password ?? string.Empty, body), ct);
 
         if (xml is null)
         {

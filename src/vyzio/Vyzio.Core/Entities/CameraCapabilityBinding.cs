@@ -22,7 +22,7 @@ public class CameraCapabilityBinding
 
     public SupportedProtocol Protocol { get; set; }
 
-    // Protocol-specific connection parameters (ONVIF port/address, DVRIP credentials, etc.)
+    // The capability's own settings (BindingConfig); how to reach the protocol is on CameraProtocol (ADR-61).
     public string? ConfigJson { get; set; }
 
     // Result of the last real probe — never set declaratively.

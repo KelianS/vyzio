@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.Services;
 using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Tests.UseCases;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Services;
@@ -20,8 +21,8 @@ public class CameraCapabilityOnboardingWorkerTests
 
     private CameraCapabilityOnboardingWorker CreateSut() => new(
         _queue,
-        BackgroundLoop.Scopes(services => services.AddSingleton(new SeedAndProbePresetsUseCase(
-            _cameras, _bindings, new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache), _registry, _endpointCache))),
+        BackgroundLoop.Scopes(services => services.AddSingleton(
+            CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache))),
         NullLogger<CameraCapabilityOnboardingWorker>.Instance);
 
     // The probe starts by loading the camera: an unknown one ends it there, which is all these tests need.

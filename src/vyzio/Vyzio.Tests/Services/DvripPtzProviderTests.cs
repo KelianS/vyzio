@@ -30,7 +30,6 @@ public class DvripPtzProviderTests
             FrigateCameraName = "cam",
             DisplayName = "cam",
             Host = "127.0.0.1",
-            Port = 554,
         };
         var binding = new CameraCapabilityBinding
         {

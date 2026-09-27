@@ -20,16 +20,8 @@ internal sealed class CameraStreamEnumerator(
     {
         try
         {
-            // The transport decides how a stream is addressed, so it decides how streams are
-            // enumerated: a DVRIP camera reaches Frigate through go2rtc and selects its sub-stream by
-            // query, so an RTSP path advertised over ONVIF would be meaningless for it.
-            //
-            // Deliberately NOT gated on Camera.SupportedProtocols: that list is filled by the
-            // discovery pipeline and is empty on every manually added camera, so gating on it would
-            // leave those cameras without any enumeration at all. Asking ONVIF costs one HTTP call
-            // that fails fast when the service is absent, and an empty result is already the
-            // "nothing to report" answer.
-            return camera.StreamProtocol == StreamProtocol.Dvrip
+            // The stream's transport decides how streams are enumerated; ONVIF is asked ungated, a fast failure meaning nothing.
+            return camera.StreamBinding?.Protocol == SupportedProtocol.Dvrip
                 ? await EnumerateOverDvripAsync(camera, ct)
                 : await EnumerateOverOnvifAsync(camera, ct);
         }
