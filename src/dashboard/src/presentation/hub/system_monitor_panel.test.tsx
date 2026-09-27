@@ -2,36 +2,109 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
+import { makeCamera } from '../../testing/camera_fixture'
 import { SystemMonitorPanel } from './system_monitor_panel'
 
 const running: SystemStats = {
   status: 'active',
   storage: { totalGb: 100, usedGb: 95, freeGb: 5 },
-  cameras: [{ camera: 'front_door', fps: 0.5 }],
+  cameras: [{ camera: 'front_door', fps: 10 }],
   detection: { hardware: 'edge_tpu', targetFps: 5 },
   pendingChanges: false,
 }
 
+const cameras = [makeCamera({ frigateCameraName: 'front_door', displayName: 'Porte d’entrée' })]
+
 function renderPanel(stats: SystemStats) {
   render(
     <MemoryRouter>
-      <SystemMonitorPanel stats={stats} />
+      <SystemMonitorPanel stats={stats} cameras={cameras} />
     </MemoryRouter>,
   )
 }
 
 describe('SystemMonitorPanel', () => {
-  it('SystemMonitorPanel_ShouldShowTheMeasures_WhenSurveillanceRuns', () => {
+  it('SystemMonitorPanel_ShouldShowTheStateAndTheDiskAndFoldTheFigures_WhenSurveillanceRuns', () => {
     // Arrange & Act
     renderPanel(running)
 
     // Assert
-    expect(screen.getByText('En marche')).toBeInTheDocument()
-    expect(screen.getByText('Accélérateur dédié · 5 images par seconde')).toBeInTheDocument()
-    expect(screen.getByText('5 Go libres sur 100 Go')).toBeInTheDocument()
-    expect(screen.getByText('front door')).toBeInTheDocument()
-    expect(screen.getByText('0.5/s')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Détails techniques' })).toBeInTheDocument()
+    expect(screen.getByText('En marche')).toBeVisible()
+    expect(screen.getByText('5 Go libres sur 100 Go')).toBeVisible()
+    expect(screen.getByText('Accélérateur dédié · 5 images par seconde')).not.toBeVisible()
+    expect(screen.getByText('Porte d’entrée')).not.toBeVisible()
+    expect(screen.getByRole('link', { name: 'Ouvrir l’interface technique' })).toHaveAttribute(
+      'href',
+      '/settings/systeme/avance',
+    )
+  })
+
+  it('SystemMonitorPanel_ShouldOpenTheDetailsAndSayWhichCameraFallsBehind_WhenACameraFallsBehind', () => {
+    // Arrange & Act
+    renderPanel({ ...running, cameras: [{ camera: 'front_door', fps: 0.5 }] })
+
+    // Assert
+    expect(
+      screen.getByText(
+        /Trop peu d’images reçues de Porte d’entrée\. La surveillance y est moins fiable/,
+      ),
+    ).toBeVisible()
+    expect(screen.getByText('0,5')).toHaveClass('text-destructive')
+  })
+
+  it.each([{ privacyModeActive: true }, { isEnabled: false }])(
+    'SystemMonitorPanel_ShouldKeepTheDetailsClosedAndCalm_WhenTheSilentCameraIsPaused (%o)',
+    (pause) => {
+      // Arrange
+      const paused = [makeCamera({ frigateCameraName: 'front_door', ...pause })]
+
+      // Act
+      render(
+        <MemoryRouter>
+          <SystemMonitorPanel
+            stats={{ ...running, cameras: [{ camera: 'front_door', fps: 0 }] }}
+            cameras={paused}
+          />
+        </MemoryRouter>,
+      )
+
+      // Assert
+      expect(screen.getByText('0,0')).not.toBeVisible()
+      expect(screen.getByText('0,0')).not.toHaveClass('text-destructive')
+      expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
+    },
+  )
+
+  it('SystemMonitorPanel_ShouldKeepTheDetailsOpen_WhenTheLaggingCameraCatchesUp', () => {
+    // Arrange
+    const { rerender } = render(
+      <MemoryRouter>
+        <SystemMonitorPanel
+          stats={{ ...running, cameras: [{ camera: 'front_door', fps: 0.5 }] }}
+          cameras={cameras}
+        />
+      </MemoryRouter>,
+    )
+
+    // Act
+    rerender(
+      <MemoryRouter>
+        <SystemMonitorPanel stats={running} cameras={cameras} />
+      </MemoryRouter>,
+    )
+
+    // Assert
+    expect(screen.getByText('10,0')).toBeVisible()
+  })
+
+  it('SystemMonitorPanel_ShouldSayTheCameraWasRemovedOrRenamed_WhenVyzioDoesNotKnowIt', () => {
+    // Arrange & Act
+    renderPanel({ ...running, cameras: [{ camera: 'old_name', fps: 0 }] })
+
+    // Assert
+    expect(screen.getByText('Caméra retirée ou renommée')).toBeInTheDocument()
+    expect(screen.queryByText('old_name')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
 
   it('SystemMonitorPanel_ShouldLeaveOutDiskAndCameras_WhenNeitherIsReported', () => {
@@ -40,7 +113,7 @@ describe('SystemMonitorPanel', () => {
 
     // Assert
     expect(screen.queryByText('Espace disque')).not.toBeInTheDocument()
-    expect(screen.queryByText('Images reçues')).not.toBeInTheDocument()
+    expect(screen.queryByText('Images reçues par seconde')).not.toBeInTheDocument()
   })
 
   it('SystemMonitorPanel_ShouldSayTheMeasuresComeBackWithNoDiagnosis_WhenSurveillanceRestarts', () => {

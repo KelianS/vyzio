@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Badge, type BadgeTone } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
+import { TechnicalDetails } from '../../common/components/technical_details'
+import type { Camera } from '../../domain/entities/camera.entity'
 import type {
   FrigateDetectorKind,
   FrigateStatus,
@@ -42,7 +44,7 @@ const DEGRADED_SHOWS_DIAGNOSIS: Record<DegradedStatus, boolean> = {
 
 const ADVANCED_PATH = '/settings/systeme/avance'
 
-export function SystemMonitorPanel({ stats }: { stats: SystemStats }) {
+export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cameras: Camera[] }) {
   switch (stats.status) {
     case 'restarting':
     case 'unavailable':
@@ -68,70 +70,110 @@ export function SystemMonitorPanel({ stats }: { stats: SystemStats }) {
 
   const usedRatio =
     stats.storage && stats.storage.totalGb > 0 ? stats.storage.usedGb / stats.storage.totalGb : 0
+  const frameRates = receivedFrameRates(stats, cameras)
+  const lagging = frameRates.filter((row) => row.lagging).map((row) => row.label)
 
   return (
     <Panel status={stats.status}>
-      <dl className="mt-3 space-y-3 text-sm">
-        <div>
-          <dt className="text-muted-foreground">Analyse des images</dt>
+      {stats.storage && (
+        <dl className="mt-3 text-sm">
+          <dt className="text-muted-foreground">Espace disque</dt>
           <dd>
-            {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · {stats.detection.targetFps} images
-            par seconde
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  'h-full rounded-full',
+                  usedRatio > 0.9 ? 'bg-destructive' : 'bg-primary',
+                )}
+                style={{ width: `${Math.min(100, usedRatio * 100).toFixed(1)}%` }}
+              />
+            </div>
+            <span className="mt-1 block">
+              {stats.storage.freeGb} Go libres sur {stats.storage.totalGb} Go
+            </span>
           </dd>
-        </div>
+        </dl>
+      )}
 
-        {stats.storage && (
+      <TechnicalDetails inFault={lagging.length > 0}>
+        {lagging.length > 0 && (
+          <p className="mb-3 text-destructive">
+            Trop peu d’images reçues de {LIST_FORMAT.format(lagging)}. La surveillance y est moins
+            fiable : vérifiez la caméra et sa connexion au réseau.
+          </p>
+        )}
+        <dl className="space-y-3">
           <div>
-            <dt className="text-muted-foreground">Espace disque</dt>
+            <dt className="text-muted-foreground">Analyse des images</dt>
             <dd>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    usedRatio > 0.9 ? 'bg-destructive' : 'bg-primary',
-                  )}
-                  style={{ width: `${Math.min(100, usedRatio * 100).toFixed(1)}%` }}
-                />
-              </div>
-              <span className="mt-1 block">
-                {stats.storage.freeGb} Go libres sur {stats.storage.totalGb} Go
-              </span>
+              {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · {stats.detection.targetFps}{' '}
+              images par seconde
             </dd>
           </div>
-        )}
 
-        {stats.cameras.length > 0 && (
-          <div>
-            <dt className="text-muted-foreground">Images reçues</dt>
-            <dd className="mt-1 space-y-0.5">
-              {stats.cameras.map(({ camera, fps }) => (
-                <span key={camera} className="flex justify-between gap-3">
-                  <span className="min-w-0 truncate">{camera.replaceAll('_', ' ')}</span>
-                  {/* Under one frame a second, the camera is no longer keeping up. */}
-                  <span className={cn('tabular-nums', fps < 1 && 'text-destructive')}>
-                    {fps.toFixed(1)}/s
+          {frameRates.length > 0 && (
+            <div>
+              <dt className="text-muted-foreground">Images reçues par seconde</dt>
+              <dd className="mt-1 space-y-0.5">
+                {frameRates.map(({ key, label, fps, lagging }) => (
+                  <span key={key} className="flex justify-between gap-3">
+                    <span className="min-w-0 truncate">{label}</span>
+                    <span className={cn('tabular-nums', lagging && 'text-destructive')}>
+                      {FPS_FORMAT.format(fps)}
+                    </span>
                   </span>
-                </span>
-              ))}
-            </dd>
-          </div>
-        )}
-      </dl>
+                ))}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </TechnicalDetails>
 
       <div className="mt-4">
         <Button asChild variant="ghost" size="sm">
-          <Link to={ADVANCED_PATH}>Détails techniques</Link>
+          <Link to={ADVANCED_PATH}>Ouvrir l’interface technique</Link>
         </Button>
       </div>
     </Panel>
   )
 }
 
+/** Under one frame a second, the camera is no longer keeping up. */
+const LAGGING_FPS = 1
+
+const LIST_FORMAT = new Intl.ListFormat('fr')
+const FPS_FORMAT = new Intl.NumberFormat('fr', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+/** Rates come keyed by the engine's camera name; the user knows the name they gave (principle 2). */
+function receivedFrameRates(stats: SystemStats, cameras: Camera[]) {
+  const byEngineKey = new Map(cameras.map((camera) => [camera.frigateCameraName, camera]))
+  return stats.cameras.map(({ camera: engineKey, fps }) => {
+    const camera = byEngineKey.get(engineKey)
+    // A paused camera sends nothing on purpose; an unknown one awaits the next restart.
+    const expectedToStream = camera !== undefined && camera.isEnabled && !camera.privacyModeActive
+    return {
+      key: engineKey,
+      label: camera?.displayName ?? 'Caméra retirée ou renommée',
+      fps,
+      lagging: expectedToStream && fps < LAGGING_FPS,
+    }
+  })
+}
+
 function Panel({ status, children }: { status: FrigateStatus; children: ReactNode }) {
+  const titleId = useId()
   return (
-    <section className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
+    <section
+      aria-labelledby={titleId}
+      className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-serif text-2xl">Surveillance</h2>
+        <h2 id={titleId} className="font-serif text-2xl">
+          Surveillance
+        </h2>
         <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
       </div>
       {children}

@@ -94,7 +94,8 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     needsAttention: false,
     lastReachabilityCheckAt: new Date().toISOString(),
     lastSuccessfulFrameAt: new Date().toISOString(),
-    frigateCameraName: 'front_door',
+    // Derived from the slug as the backend does, so each camera has its own frame-rate row.
+    frigateCameraName: (overrides.slug ?? 'front-door').replaceAll('-', '_'),
     vendorFamily: null,
     privacyModeActive: false,
     privacyModeSource: null,
@@ -470,7 +471,7 @@ export async function installFakeBackend(
       return json(route, {
         status: 'active',
         storage: { totalGb: 500, usedGb: 120, freeGb: 380 },
-        cameras: state.cameras.map((c) => ({ camera: c.slug, fps: 10 })),
+        cameras: state.cameras.map((c) => ({ camera: c.frigateCameraName ?? c.slug, fps: 10 })),
         detection: { hardware: 'cpu', targetFps: 5 },
         pendingChanges: state.pendingChanges,
       })

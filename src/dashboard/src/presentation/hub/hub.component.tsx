@@ -356,7 +356,7 @@ function HubOperational({
             </div>
           </Card>
 
-          {systemStats && <SystemMonitorPanel stats={systemStats} />}
+          {systemStats && <SystemMonitorPanel stats={systemStats} cameras={cameras} />}
         </div>
       </div>
 

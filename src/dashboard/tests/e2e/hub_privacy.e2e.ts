@@ -12,7 +12,7 @@ test.describe('HubView privacy', () => {
 
     // Home says first what is being watched - that is what one comes to check.
     await expect(page.getByRole('heading', { name: '1 caméra sous surveillance' })).toBeVisible()
-    await expect(page.getByText('Salon')).toBeVisible()
+    await expect(page.getByRole('article').getByText('Salon')).toBeVisible()
 
     await page.getByRole('button', { name: 'Tout couper' }).click()
 
