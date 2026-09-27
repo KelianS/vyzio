@@ -4,10 +4,13 @@ import { scrubSecrets } from './scrub_secrets'
 
 const DIAGNOSTIC_LENGTH = 500
 
+/** One rule, one wording: the screen checks it before sending, the API refuses it with a code. */
+export const SCHEDULE_NO_DAY = 'Choisissez au moins un jour'
+
 // A refusal whose code is known reads as what to do; any other keeps the generic sentence.
 const KNOWN_REFUSALS = new Map<string, string>([
   [ApiErrorCode.NotCalibrated, 'Cette caméra doit d’abord être calibrée'],
-  [ApiErrorCode.ScheduleNoDay, 'Choisissez au moins un jour'],
+  [ApiErrorCode.ScheduleNoDay, SCHEDULE_NO_DAY],
   [
     ApiErrorCode.ScheduleInvalidTime,
     'Indiquez une heure de début et une heure de fin, par exemple 22:00',

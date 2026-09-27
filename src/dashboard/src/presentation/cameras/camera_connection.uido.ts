@@ -1,3 +1,4 @@
+import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -20,6 +21,8 @@ export interface CameraConnectionUido {
 
   bindings: CameraCapabilityBinding[]
   bindingsLoading: boolean
+  bindingsError: AppError | null
+  cameraGone: boolean
   detecting: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
   manualFormOpen: boolean
@@ -35,6 +38,8 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
 
     bindings: [],
     bindingsLoading: true,
+    bindingsError: null,
+    cameraGone: false,
     detecting: false,
     pending: {},
     manualFormOpen: false,

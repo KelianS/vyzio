@@ -1,6 +1,7 @@
 import type { AppError } from '../../../common/errors/app_error'
-import { ErrorMessage } from '../../../common/components/error_message'
+import { ReadFailure } from '../../../common/components/error_message'
 import { Button } from '../../../common/ui/button'
+import { POSITIONS_UNREAD } from '../cameras.formatters'
 
 /** Says where the camera stands and opens the live view, where all control happens (ADR-46). */
 export function PtzCalibrationSection({
@@ -9,17 +10,19 @@ export function PtzCalibrationSection({
   calibrated,
   currentPosition,
   onOpenLiveView,
+  onRetry,
 }: {
   loading: boolean
   error: AppError | null
   calibrated: boolean
   currentPosition: { x: number; y: number } | null
   onOpenLiveView: () => void
+  onRetry: () => void
 }) {
   return (
     <div className="flex flex-col gap-3">
       {loading && <p className="text-muted-foreground">Chargement…</p>}
-      {error && <ErrorMessage error={error} />}
+      {error && <ReadFailure error={error} onRetry={onRetry} subject={POSITIONS_UNREAD} />}
 
       {!loading && !error && (
         <>

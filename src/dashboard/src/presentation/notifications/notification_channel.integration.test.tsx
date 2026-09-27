@@ -282,6 +282,9 @@ describe('NotificationChannelView', () => {
     expect(
       await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/pairing · 500/),
     ).toBeVisible()
+    expect(
+      screen.getByText('Vyzio n’a pas pu lire si une conversation est reliée à ce canal.'),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/Aucune conversation ne peut commander/)).not.toBeInTheDocument()
   })
 

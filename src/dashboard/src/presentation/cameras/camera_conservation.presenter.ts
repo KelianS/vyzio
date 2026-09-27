@@ -9,7 +9,7 @@ import type {
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { refreshSurveillance } from '../surveillance/surveillance_refresh'
-import { reloadCameraList } from './camera_list_reload'
+import { reportCameraGone } from './camera_list_reload'
 import type { CameraConservationAction } from './camera_conservation.actions'
 import { detectionConfigUpdate } from './detection_config_update'
 
@@ -42,17 +42,11 @@ export function buildCameraConservationPresenter({
       .then((config) => {
         if (!isLatest()) return
         if (config) dispatch({ type: 'LOAD_SUCCEEDED', config })
-        else cameraGone()
+        else reportCameraGone(container, dispatch)
       })
       .catch((e: unknown) => {
         if (isLatest()) dispatch({ type: 'LOAD_FAILED', error: toAppError(e) })
       })
-  }
-
-  // The camera was removed elsewhere: the shared list learns it too, so its page says so (DESIGN SYSTEM § Errors).
-  function cameraGone() {
-    dispatch({ type: 'CAMERA_GONE' })
-    reloadCameraList(container)
   }
 
   return {
@@ -73,7 +67,7 @@ export function buildCameraConservationPresenter({
         return true
       } catch (e) {
         const error = toAppError(e)
-        if (error.kind === AppErrorKind.NotFound) cameraGone()
+        if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
         else toastError(toast, error)
         return false
       } finally {

@@ -125,6 +125,74 @@ describe('CameraConnectionView', () => {
     expect(row).toHaveTextContent('ONVIF')
   })
 
+  it('onLoad_ShouldSayTheCapabilitiesCouldNotBeReadRatherThanOfferThemAll_WhenTheReadFails', async () => {
+    // Arrange
+    fakeNetwork({ [BINDINGS]: failure(500) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(
+      await screen.findByText('Les capacités de cette caméra n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/cameras\/camera-1\/capabilities · 500/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Configurer une capacité manuellement' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('onRetryRead_ShouldListTheCapabilities_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ [BINDINGS]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const retry = await screen.findByRole('button', { name: 'Réessayer' })
+    network.answer(BINDINGS, ok([ptzCapability]))
+
+    // Act
+    await userEvent.click(retry)
+
+    // Assert
+    expect(await screen.findByRole('listitem')).toHaveTextContent('PTZ')
+  })
+
+  it('onLoad_ShouldSayTheCameraIsGoneWithTheWayBack_WhenItsCapabilitiesAreNotFound', async () => {
+    // Arrange
+    const network = fakeNetwork({ [BINDINGS]: failure(404), [CAMERAS]: ok([]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(
+      await screen.findByText('Cette caméra est introuvable : elle a peut-être été supprimée.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Revenir à la liste des caméras' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CAMERAS }))
+  })
+
+  it('onDetect_ShouldKeepTheShownCapabilitiesAndSayWhy_WhenTheRereadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({ [BINDINGS]: ok([ptzCapability]), [DETECT]: ok() })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await screen.findByRole('listitem')
+    network.answer(BINDINGS, failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Détecter les capacités' }))
+
+    // Assert
+    expect(
+      await screen.findByText(/GET \/api\/cameras\/camera-1\/capabilities · 500/),
+    ).toBeVisible()
+    expect(screen.getByRole('listitem')).toHaveTextContent('PTZ')
+    expect(
+      screen.queryByText('Les capacités de cette caméra n’ont pas pu être lues.'),
+    ).not.toBeInTheDocument()
+  })
+
   it('onDetect_ShouldSayTheDetectionIsDone_WhenItFinishes', async () => {
     // Arrange
     fakeNetwork({ [BINDINGS]: ok([]), [DETECT]: ok() })

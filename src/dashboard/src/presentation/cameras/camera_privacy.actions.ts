@@ -11,7 +11,7 @@ export type CameraPrivacyAction =
   | { type: 'SAVE_FINISHED' }
   | { type: 'SCHEDULES_RELOADING' }
   | { type: 'SCHEDULES_LOADED'; schedules: CameraPrivacySchedule[] }
-  | { type: 'SCHEDULES_READ_FAILED' }
+  | { type: 'SCHEDULES_READ_FAILED'; error: AppError }
   | { type: 'DAY_TOGGLED'; day: number }
   | { type: 'START_TIME_SET'; value: string }
   | { type: 'END_TIME_SET'; value: string }
@@ -19,4 +19,5 @@ export type CameraPrivacyAction =
   | { type: 'SCHEDULE_ADD_STARTED' }
   | { type: 'SCHEDULE_ADD_FINISHED' }
   | { type: 'SCHEDULE_FAILED'; error: AppError }
+  | { type: 'SCHEDULE_ADDED'; schedule: CameraPrivacySchedule }
   | { type: 'SCHEDULE_DELETED'; scheduleId: string }

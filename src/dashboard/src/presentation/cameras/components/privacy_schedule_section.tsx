@@ -3,7 +3,7 @@ import { Button } from '../../../common/ui/button'
 import { Input } from '../../../common/ui/input'
 import { cn } from '../../../common/ui/utils'
 import type { AppError } from '../../../common/errors/app_error'
-import { ErrorMessage } from '../../../common/components/error_message'
+import { ErrorMessage, ReadFailure } from '../../../common/components/error_message'
 import type { CameraPrivacySchedule } from '../../../domain/entities/camera_privacy_schedule.entity'
 import type { ScheduleForm } from '../camera_privacy.uido'
 
@@ -21,6 +21,8 @@ const endsNextDay = (start: string, end: string) =>
 interface PrivacyScheduleSectionProps {
   schedules: CameraPrivacySchedule[]
   loading: boolean
+  readError: AppError | null
+  onRetryRead: () => void
   form: ScheduleForm
   adding: boolean
   invalid: string | null
@@ -37,6 +39,8 @@ interface PrivacyScheduleSectionProps {
 export function PrivacyScheduleSection({
   schedules,
   loading,
+  readError,
+  onRetryRead,
   form,
   adding,
   invalid,
@@ -49,6 +53,16 @@ export function PrivacyScheduleSection({
   onAddEverywhere,
   onDelete,
 }: PrivacyScheduleSectionProps) {
+  // Ranges unknown: adding one blind could duplicate a range nobody can see.
+  if (readError)
+    return (
+      <ReadFailure
+        error={readError}
+        onRetry={onRetryRead}
+        subject="Les plages horaires de cette caméra n’ont pas pu être lues."
+      />
+    )
+
   return (
     // No own frame or title: the page already carries them.
     <section className="flex flex-col gap-4">

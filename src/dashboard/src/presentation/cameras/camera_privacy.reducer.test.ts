@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { AppErrorKind, type AppError } from '../../common/errors/app_error'
+import type { CameraPrivacySchedule } from '../../domain/entities/camera_privacy_schedule.entity'
 import {
   PARKING_PRESET_ID,
   SURVEILLANCE_PRESET_ID,
@@ -6,6 +8,18 @@ import {
 } from '../../domain/entities/ptz_preset.entity'
 import { cameraPrivacyReducer } from './camera_privacy.reducer'
 import { buildInitialCameraPrivacyUido } from './camera_privacy.uido'
+
+const readError: AppError = { kind: AppErrorKind.Server, status: 500 }
+
+const schedule: CameraPrivacySchedule = {
+  id: 'schedule-1',
+  cameraId: 'camera-1',
+  enabled: true,
+  daysOfWeek: [1],
+  startTime: '22:00',
+  endTime: '06:00',
+  createdAt: '2026-01-01T00:00:00Z',
+}
 
 function preset(presetId: number, configured: boolean): PtzPreset {
   return { presetId, label: '', native: false, stepsX: null, stepsY: null, configured }
@@ -48,5 +62,50 @@ describe('cameraPrivacyReducer', () => {
 
     // Assert
     expect(next.form.days).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('cameraPrivacyReducer_ShouldDropTheShownRangesAndKeepTheError_WhenTheirReadFails', () => {
+    // Arrange
+    const state = cameraPrivacyReducer(buildInitialCameraPrivacyUido(), {
+      type: 'SCHEDULES_LOADED',
+      schedules: [schedule],
+    })
+
+    // Act
+    const next = cameraPrivacyReducer(state, { type: 'SCHEDULES_READ_FAILED', error: readError })
+
+    // Assert
+    expect(next.schedules).toEqual([])
+    expect(next.schedulesError).toEqual(readError)
+    expect(next.schedulesLoading).toBe(false)
+  })
+
+  it('cameraPrivacyReducer_ShouldClearTheError_WhenTheRangesLoad', () => {
+    // Arrange
+    const state = cameraPrivacyReducer(buildInitialCameraPrivacyUido(), {
+      type: 'SCHEDULES_READ_FAILED',
+      error: readError,
+    })
+
+    // Act
+    const next = cameraPrivacyReducer(state, { type: 'SCHEDULES_LOADED', schedules: [schedule] })
+
+    // Assert
+    expect(next.schedulesError).toBeNull()
+    expect(next.schedules).toEqual([schedule])
+  })
+
+  it('cameraPrivacyReducer_ShouldListTheRange_WhenItIsAdded', () => {
+    // Arrange
+    const state = cameraPrivacyReducer(buildInitialCameraPrivacyUido(), {
+      type: 'SCHEDULES_LOADED',
+      schedules: [],
+    })
+
+    // Act
+    const next = cameraPrivacyReducer(state, { type: 'SCHEDULE_ADDED', schedule })
+
+    // Assert
+    expect(next.schedules).toEqual([schedule])
   })
 })

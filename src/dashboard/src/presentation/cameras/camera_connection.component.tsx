@@ -14,6 +14,7 @@ import type { Camera } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
 import { CapabilitySection } from './components/capability_section'
+import { CameraNotFound } from './components/camera_not_found'
 import {
   buildCameraConnectionPresenter,
   type ConnectionValues,
@@ -122,6 +123,13 @@ export function CameraConnectionView() {
     },
   )
 
+  if (uido.cameraGone)
+    return (
+      <SettingsPage>
+        <CameraNotFound within="tab" />
+      </SettingsPage>
+    )
+
   return (
     <>
       <SettingsPage lede="Comment Vyzio joint cette caméra.">
@@ -148,11 +156,13 @@ export function CameraConnectionView() {
             camera={camera}
             bindings={uido.bindings}
             loading={uido.bindingsLoading}
+            readError={uido.bindingsError}
             detecting={uido.detecting}
             pending={uido.pending}
             manualFormOpen={uido.manualFormOpen}
             manualConfiguring={uido.manualConfiguring}
             intents={{
+              onRetryRead: () => presenter.onLoad(cameraId),
               onDetect: () => void presenter.onDetect(cameraId),
               onConfigure: (capability, protocol, configJson) =>
                 presenter.onConfigure(cameraId, capability, protocol, configJson),

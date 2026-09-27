@@ -68,6 +68,7 @@ describe('PersonCamerasView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByText(/GET \/api\/cameras · 500/)).toBeVisible()
+    expect(screen.getByText('La liste de vos caméras n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.queryByText('Aucune caméra pour l’instant.')).not.toBeInTheDocument()
   })
 
@@ -99,6 +100,9 @@ describe('PersonCamerasView', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(alert).toHaveTextContent('GET /api/profiles/person-1/camera-links · 500')
+    expect(
+      screen.getByText('Les caméras choisies pour cette personne n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 

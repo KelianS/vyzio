@@ -30,9 +30,14 @@ export function NotificationChannelListView() {
   const remaining = uido.channels.length - configured.length
 
   return (
-    <SettingsPage lede="Par où Vyzio vous prévient quand il détecte quelque chose.">
+    <SettingsPage lede="Par où Vyzio vous notifie quand il détecte quelque chose.">
       {uido.error ? (
-        <ReadFailure error={uido.error} onRetry={presenter.onLoad} className="py-3" />
+        <ReadFailure
+          error={uido.error}
+          onRetry={presenter.onLoad}
+          subject="La liste de vos canaux n’a pas pu être lue."
+          className="py-3"
+        />
       ) : configured.length > 0 ? (
         <ul className="divide-y divide-border">
           {configured.map((channel) => (

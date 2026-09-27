@@ -41,7 +41,12 @@ export function AddNotificationChannelView() {
 
       <SettingsPage lede="Le réglage est le même partout : seule la façon de s’y connecter change.">
         {uido.error ? (
-          <ReadFailure error={uido.error} onRetry={presenter.onLoad} className="py-3" />
+          <ReadFailure
+            error={uido.error}
+            onRetry={presenter.onLoad}
+            subject="Les canaux disponibles n’ont pas pu être lus."
+            className="py-3"
+          />
         ) : available.length > 0 ? (
           <ul className="divide-y divide-border">
             {available.map((channel) => (

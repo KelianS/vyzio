@@ -17,6 +17,7 @@ export interface CameraPrivacyUido {
 
   schedules: CameraPrivacySchedule[]
   schedulesLoading: boolean
+  schedulesError: AppError | null
   form: ScheduleForm
   adding: boolean
   invalid: string | null
@@ -31,6 +32,7 @@ export function buildInitialCameraPrivacyUido(): CameraPrivacyUido {
 
     schedules: [],
     schedulesLoading: true,
+    schedulesError: null,
     form: { days: [1, 2, 3, 4, 5], startTime: '22:00', endTime: '06:00' },
     adding: false,
     invalid: null,

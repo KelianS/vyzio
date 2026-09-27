@@ -56,7 +56,11 @@ export function PersonCamerasView() {
   if (camerasError && cameras.length === 0)
     return (
       <SettingsPage>
-        <ReadFailure error={camerasError} onRetry={presenter.onReloadCameras} />
+        <ReadFailure
+          error={camerasError}
+          onRetry={presenter.onReloadCameras}
+          subject="La liste de vos caméras n’a pas pu être lue."
+        />
       </SettingsPage>
     )
   if (uido.loading || (camerasLoading && cameras.length === 0))
@@ -75,7 +79,11 @@ export function PersonCamerasView() {
   if (uido.error)
     return (
       <SettingsPage>
-        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(personId)} />
+        <ReadFailure
+          error={uido.error}
+          onRetry={() => presenter.onLoad(personId)}
+          subject="Les caméras choisies pour cette personne n’ont pas pu être lues."
+        />
       </SettingsPage>
     )
   if (!uido.links) return null

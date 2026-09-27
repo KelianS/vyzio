@@ -54,6 +54,7 @@ describe('NotificationChannelListView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByText(/GET \/api\/notifications\/channels · 500/)).toBeVisible()
+    expect(screen.getByText('La liste de vos canaux n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
     expect(screen.queryByText(/Aucun canal/)).not.toBeInTheDocument()
   })

@@ -45,6 +45,7 @@ describe('PersonListView', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(alert).toHaveTextContent('GET /api/profiles · 500')
+    expect(screen.getByText('La liste des personnes n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.queryByText('Personne d’enregistrée pour l’instant.')).not.toBeInTheDocument()
   })
 

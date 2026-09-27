@@ -347,6 +347,7 @@ function ChannelForm({
                 <ReadFailure
                   error={uido.pairingError}
                   onRetry={() => presenter.onRetryPairing(channel)}
+                  subject="Vyzio n’a pas pu lire si une conversation est reliée à ce canal."
                 />
               ) : (
                 <ChannelPairingSection
