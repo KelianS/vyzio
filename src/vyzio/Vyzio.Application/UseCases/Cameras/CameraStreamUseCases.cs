@@ -51,10 +51,11 @@ public sealed class AddCameraStreamUseCase(
 
         var path = protocol == SupportedProtocol.Rtsp
             ? CameraDraftFactory.NormalizeStreamPath(request.Path)
-            : CameraDraftFactory.NormalizeOptional(request.Path);
+            : request.Secondary ? CameraStream.DvripSecondaryQuery : null;
         var stream = StreamLineup.Add(binding, protocol, path, role);
         await StreamVerification.CheckStreamAsync(camera, stream, protocolCheck, verifier, run: null, ct);
 
+        camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
         if (role != StreamRole.None) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
         return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
@@ -100,17 +101,18 @@ public sealed class CheckCameraStreamUseCase(
         if (camera.Streams.FirstOrDefault(entry => entry.Id == streamId) is not { } stream)
             return new StreamResult(StreamOutcome.StreamNotFound);
 
-        if (stream.Records)
-        {
-            await verifyCamera.ExecuteAsync(cameraId, ct: ct);
-        }
-        else
+        if (!stream.Records)
         {
             await StreamVerification.CheckStreamAsync(camera, stream, protocolCheck, verifier, run: null, ct);
             await cameras.UpdateAsync(camera, ct);
+            return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
         }
 
-        return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
+        await verifyCamera.ExecuteAsync(cameraId, ct: ct);
+        var verified = await cameras.GetByIdAsync(cameraId, ct);
+        return verified is null
+            ? new StreamResult(StreamOutcome.CameraNotFound)
+            : new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(verified));
     }
 }
 

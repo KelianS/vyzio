@@ -70,7 +70,7 @@ describe('stream_lines', () => {
     [makeStreamLineup([recording, detecting], { detectStreamId: 'sub' }), null],
     [
       makeStreamLineup([recording, { ...detecting, verified: false }], { detectStreamId: 'sub' }),
-      'Le flux de détection ne répond pas : la détection est interrompue.',
+      'Le flux de détection ne répond pas : la détection est interrompue. Relancez sa vérification ou donnez la détection à un autre flux, dans les options.',
     ],
     [
       makeStreamLineup([recording], { detectsOnRecordingStream: true }),

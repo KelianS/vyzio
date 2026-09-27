@@ -39,9 +39,11 @@ export interface CameraStreamLineup {
   detectsOnRecordingStream: boolean
 }
 
-/** A stream declared by hand: its protocol, its path (the quality query over DVRIP), its role. */
+/** A stream declared by hand: its protocol, its path over RTSP or its quality over DVRIP, its role. */
 export interface CameraStreamAddition {
   protocol: StreamProtocol
   path: string | null
   role: StreamRole
+  /** Over DVRIP, the secondary stream rather than the main one; the server knows how to ask for it (ADR-38). */
+  secondary: boolean
 }

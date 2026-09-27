@@ -47,7 +47,8 @@ public sealed record CameraStreamsDto(
         camera.DetectsOnRecordingStream);
 }
 
-public sealed record AddCameraStreamRequest(string Protocol, string? Path, string Role);
+// Over DVRIP a stream is picked by its quality (Secondary), never a typed query (ADR-38); over RTSP by its Path.
+public sealed record AddCameraStreamRequest(string Protocol, string? Path, string Role, bool Secondary = false);
 
 public sealed record SetCameraStreamRoleRequest(string Role);
 

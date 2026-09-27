@@ -150,8 +150,9 @@ cannot take one (`stream_disabled`). `Camera.RecordStream` is the enabled stream
 
 **Found once.** `VerifyCameraUseCase` asks `ICameraStreamEnumerator` once the camera answers. While the
 binding has not found its streams yet (`CameraCapabilityBinding.StreamsFoundAt` empty), the enumerated
-streams are added with the defaults: the most detailed records, the lightest detects, a single one does
-both, and the date is set. Afterwards only the measured size of a stream whose path matches is
+streams are added, and the date is set. The defaults (the most detailed records, the lightest detects,
+a single one does both) apply only to a lineup still as onboarding left it; roles the user gave before
+are kept. Afterwards only the measured size of a stream whose path matches is
 refreshed (the main stream's size only when its path matches, ADR-38); nothing is added or removed.
 
 **Checks.** `StreamVerification` checks each enabled stream's own protocol, once per gesture however
@@ -161,6 +162,7 @@ an `OPTIONS` on its path, over DVRIP its port. Each stream records `Verified`, `
 checks one stream alone.
 
 **Per stream use cases** (`CameraStreamUseCases.cs`): list, add (a protocol among the camera's rows
-that can carry a stream, a path, a role; checked at once), change the role, enable or disable, remove,
+that can carry a stream, a path over RTSP or, over DVRIP, the secondary stream stored as
+`CameraStream.DvripSecondaryQuery`, a role; checked at once), change the role, enable or disable, remove,
 check. Each answers with the whole list, since a role change moves roles across streams, and a change
 that touches what Frigate reads rewrites the generated configuration.

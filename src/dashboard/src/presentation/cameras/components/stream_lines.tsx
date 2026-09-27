@@ -30,6 +30,7 @@ import {
   STREAM_LINE_PILLS,
   StreamLineState,
   roleOptions,
+  streamFailureLine,
   streamLineState,
   streamQuality,
 } from '../stream_lines'
@@ -145,7 +146,7 @@ function StreamLine({
       {mainPath && <SettingRow setting={mainPath} />}
       {state === StreamLineState.Failed && (
         <div className="text-sm text-destructive">
-          <p>Ce flux ne répond pas : relancez sa vérification, ou désactivez-le.</p>
+          <p>{streamFailureLine(records)}</p>
           {stream.lastError && <DiagnosticLine text={scrubSecrets(stream.lastError)} />}
         </div>
       )}
@@ -284,8 +285,13 @@ function AddStreamForm({
   const byPath = ASKS_STREAM_PATH[protocol]
 
   function add() {
-    const dvripPath = DVRIP_QUALITIES.find((entry) => entry.value === quality)?.path ?? null
-    onAdd({ protocol, path: byPath ? path.trim() || null : dvripPath, role })
+    const secondary = DVRIP_QUALITIES.find((entry) => entry.value === quality)?.secondary ?? false
+    onAdd({
+      protocol,
+      path: byPath ? path.trim() || null : null,
+      role,
+      secondary: !byPath && secondary,
+    })
   }
 
   return (

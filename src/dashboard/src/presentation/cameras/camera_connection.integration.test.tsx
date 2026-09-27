@@ -1076,7 +1076,7 @@ describe('CameraConnectionView', () => {
     expect(sub.getByText('RTSP · /stream2')).toBeInTheDocument()
   })
 
-  it('onLoad_ShouldKeepTheRecordingStream_WhenItIsTheOneThatRecords', async () => {
+  it('onLoad_ShouldLockDisableAndRemove_WhenTheStreamRecords', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
     renderScreen(<CameraConnectionView />, connectionTab())
@@ -1162,7 +1162,7 @@ describe('CameraConnectionView', () => {
     // Assert
     const card = await cardOf('Flux vidéo')
     expect(
-      await card.findByText('Le flux de détection ne répond pas : la détection est interrompue.'),
+      await card.findByText(/Le flux de détection ne répond pas : la détection est interrompue\./),
     ).toBeInTheDocument()
   })
 
@@ -1187,7 +1187,7 @@ describe('CameraConnectionView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'POST /api/cameras/camera-1/streams',
-        body: { protocol: 'rtsp', path: '/stream2', role: 'none' },
+        body: { protocol: 'rtsp', path: '/stream2', role: 'none', secondary: false },
       }),
     )
   })

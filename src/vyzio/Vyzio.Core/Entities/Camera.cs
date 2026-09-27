@@ -148,6 +148,10 @@ public class Camera
         main.UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    // A protocol a capability or a stream goes through is never removed (ADR-61 d, ADR-65 a).
+    public bool GoesThrough(SupportedProtocol protocol)
+        => Capabilities.Any(binding => binding.Protocol == protocol) || Streams.Any(stream => stream.Protocol == protocol);
+
     public CameraProtocol? Protocol(SupportedProtocol protocol)
         => Protocols.FirstOrDefault(entry => entry.Protocol == protocol);
 

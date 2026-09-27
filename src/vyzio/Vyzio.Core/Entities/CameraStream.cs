@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
-// A video access point of a camera, a row under its stream binding with its own role and check (ADR-38, ADR-65).
-// Ranked, not labelled: Ordinal 0 is the most detailed; the interface shows the measured size, never a tier name.
+// A video access point, a row under the stream binding with its own role and check; ranked, never labelled (ADR-38, ADR-65).
 [Table("camera_streams")]
 public class CameraStream
 {
@@ -46,6 +45,9 @@ public class CameraStream
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // XMEye extra-stream selector, verified on real hardware (see the CPU profiling investigation).
+    public const string DvripSecondaryQuery = "?channel=0&subtype=1";
 
     public bool HasKnownResolution => Width is > 0 && Height is > 0;
 

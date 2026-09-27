@@ -145,9 +145,8 @@ public sealed class SeedAndProbePresetsUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return;
 
-        var used = (await bindings.GetByCameraAsync(cameraId, ct)).Select(b => b.Protocol).ToHashSet();
         var silent = camera.Protocols
-            .Where(entry => entry.Status == ProtocolStatus.Unreachable && !used.Contains(entry.Protocol) && !entry.HoldsUserData)
+            .Where(entry => entry.Status == ProtocolStatus.Unreachable && !camera.GoesThrough(entry.Protocol) && !entry.HoldsUserData)
             .ToList();
         if (silent.Count == 0) return;
 

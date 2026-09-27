@@ -942,12 +942,17 @@ export async function installFakeBackend(
         return json(route, lineupOf(state.streams))
       }
       if (rest === '/streams' && method === 'POST') {
-        const body = postData as { protocol: string; path: string | null; role: FakeStream['role'] }
+        const body = postData as {
+          protocol: string
+          path: string | null
+          role: FakeStream['role']
+          secondary: boolean
+        }
         const added = makeFakeStream({
           id: `stream-${state.streams.length + 1}`,
           ordinal: Math.max(...state.streams.map((stream) => stream.ordinal)) + 1,
           protocol: body.protocol,
-          path: body.path,
+          path: body.secondary ? '?channel=0&subtype=1' : body.path,
           width: null,
           height: null,
           fps: null,

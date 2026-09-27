@@ -375,6 +375,28 @@ public class ConfigureCameraCapabilityUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldLeaveOneMainStreamOverTheNewProtocol_WhenTheStreamMovesToAnotherProtocol()
+    {
+        // Arrange
+        var camera = MakeCamera(SupportedProtocol.Dvrip).WithStream(SupportedProtocol.Rtsp, path: "/stream1");
+        var binding = camera.StreamBinding!;
+        StreamLineup.Add(binding, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
+        binding.StreamsFoundAt = DateTimeOffset.UnixEpoch;
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(binding);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("stream", "dvrip"));
+
+        // Assert
+        var main = Assert.Single(camera.Streams);
+        Assert.Equal(SupportedProtocol.Dvrip, main.Protocol);
+        Assert.Equal(StreamRole.RecordAndDetect, main.Role);
+        Assert.Null(binding.StreamsFoundAt);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldThrow_WhenNoProviderOfTheCapabilitySpeaksTheProtocol()
     {
         // Arrange

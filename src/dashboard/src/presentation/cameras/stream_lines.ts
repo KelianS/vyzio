@@ -59,10 +59,17 @@ export const ROLE_CONSEQUENCES: Record<StreamRole, string> = {
 
 /** The default, said as such (SPECS 2.2): Vyzio downscales the analysed image anyway. */
 export const ROLES_DEFAULT =
-  'Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio réduit de toute façon l’image avant de l’analyser.'
+  'Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio réduit de toute façon l’image avant de l’analyser. Donner un rôle à un flux le retire à celui qui l’avait.'
 
 export const RECORDING_STREAM_KEPT =
   'Ce flux enregistre : confiez l’enregistrement à un autre flux d’abord.'
+
+/** A failed line's way out; the recording stream cannot be switched off, so it is sent to another stream instead. */
+export function streamFailureLine(records: boolean): string {
+  return records
+    ? 'Ce flux ne répond pas : relancez sa vérification, ou confiez l’enregistrement à un autre flux.'
+    : 'Ce flux ne répond pas : relancez sa vérification, ou désactivez-le.'
+}
 
 const ALL_ROLES: readonly StreamRole[] = [
   StreamRole.Record,
@@ -97,13 +104,14 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
     detect !== undefined &&
     detect.id !== lineup.recordStreamId &&
     streamLineState(detect) === StreamLineState.Failed
-  if (detectFails) return 'Le flux de détection ne répond pas : la détection est interrompue.'
+  if (detectFails)
+    return 'Le flux de détection ne répond pas : la détection est interrompue. Relancez sa vérification ou donnez la détection à un autre flux, dans les options.'
   if (lineup.detectsOnRecordingStream) return 'La détection passe par le flux d’enregistrement.'
   return null
 }
 
 /** Over DVRIP a stream is picked by its quality, the convention of ADR-38, never a typed query. */
-export const DVRIP_QUALITIES: readonly { value: string; label: string; path: string | null }[] = [
-  { value: 'main', label: 'Flux principal', path: null },
-  { value: 'sub', label: 'Flux secondaire', path: '?channel=0&subtype=1' },
+export const DVRIP_QUALITIES: readonly { value: string; label: string; secondary: boolean }[] = [
+  { value: 'main', label: 'Flux principal', secondary: false },
+  { value: 'sub', label: 'Flux secondaire', secondary: true },
 ]
