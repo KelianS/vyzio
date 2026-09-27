@@ -45,7 +45,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task UpdateProtocol_ShouldListTheProtocolWithItsOwnAccountButNeverItsPassword_WhenAnAccountIsSet()
+    public async Task UpdateProtocol_ShouldListTheProtocolWithItsSpecificAccountButNeverItsPassword_WhenAnAccountIsSet()
     {
         // Arrange
         using var client = _factory.CreateClient();
@@ -59,8 +59,40 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         update.EnsureSuccessStatusCode();
         Assert.Contains("\"protocol\":\"rtsp\"", listed, StringComparison.Ordinal);
         Assert.Contains("\"protocol\":\"tapo_klap\"", listed, StringComparison.Ordinal);
-        Assert.Contains("\"hasOwnAccount\":true", listed, StringComparison.Ordinal);
+        Assert.Contains("\"hasSpecificAccount\":true", listed, StringComparison.Ordinal);
         Assert.DoesNotContain("cloud-pass", listed, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RemoveProtocol_ShouldRefuseWithItsCode_WhenTheStreamGoesThroughIt()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.DeleteAsync("/api/cameras/camera-1/protocols/rtsp");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("protocol_in_use", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AddProtocol_ShouldRefuseItTwiceAndRemoveIt_WhenNoCapabilityUsesIt()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var body = new { protocol = "dvrip", port = (int?)null, username = (string?)null, password = (string?)null };
+
+        // Act
+        var added = await client.PostAsJsonAsync("/api/cameras/camera-1/protocols", body);
+        var again = await client.PostAsJsonAsync("/api/cameras/camera-1/protocols", body);
+        var removed = await client.DeleteAsync("/api/cameras/camera-1/protocols/dvrip");
+
+        // Assert
+        added.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, removed.StatusCode);
     }
 
     [Fact]

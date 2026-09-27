@@ -169,10 +169,10 @@ public class Camera
            ?? ProtocolPorts.Usual(protocol)
            ?? throw new InvalidOperationException($"{protocol} has no usual port: its address is asked of the camera.");
 
-    // The protocol's own account when it has one, the camera's otherwise; no client reads Username itself (ADR-61).
+    // The protocol's specific account when it has one, the camera's otherwise; no client reads Username itself (ADR-61).
     public CameraCredentials CredentialsFor(SupportedProtocol protocol)
-        => Protocol(protocol) is { HasOwnAccount: true } own
-            ? new CameraCredentials(own.Username, own.Password)
+        => Protocol(protocol) is { HasSpecificAccount: true } specific
+            ? new CameraCredentials(specific.Username, specific.Password)
             : new CameraCredentials(Username, Password);
 
     public IReadOnlyList<string> GetDetectionLabels()

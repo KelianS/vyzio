@@ -80,7 +80,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             protocol.Property(p => p.Status).HasConversion<NullableSnakeCaseEnumConverter<ProtocolStatus>>();
             protocol.Ignore(p => p.EffectivePort);
             protocol.Ignore(p => p.Answers);
-            protocol.Ignore(p => p.HasOwnAccount);
+            protocol.Ignore(p => p.HasSpecificAccount);
             protocol.Ignore(p => p.HoldsUserData);
         });
 

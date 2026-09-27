@@ -19,7 +19,7 @@ public class CameraProtocolLevelTests
     };
 
     [Fact]
-    public void CredentialsFor_ShouldGiveTheProtocolsOwnAccount_WhenTheProtocolHasOne()
+    public void CredentialsFor_ShouldGiveTheProtocolsSpecificAccount_WhenTheProtocolHasOne()
     {
         // Arrange
         var camera = MakeCamera();
@@ -189,7 +189,7 @@ public class UpdateCameraProtocolUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldLeaveSurveillanceAlone_WhenAnotherProtocolGetsItsOwnAccount()
+    public async Task ExecuteAsync_ShouldLeaveSurveillanceAlone_WhenAnotherProtocolGetsItsSpecificAccount()
     {
         // Arrange
         var camera = GivenValidatedCamera();
@@ -198,7 +198,7 @@ public class UpdateCameraProtocolUseCaseTests
         var result = await _sut.ExecuteAsync("cam1", SupportedProtocol.TapoKlap, new UpdateCameraProtocolRequest(null, "cloud", "cloud-secret", null));
 
         // Assert
-        Assert.True(result!.HasOwnAccount);
+        Assert.True(result!.HasSpecificAccount);
         Assert.Equal(new CameraCredentials("cloud", "cloud-secret"), camera.CredentialsFor(SupportedProtocol.TapoKlap));
         Assert.Equal(CameraValidationState.Validated, camera.ValidationState);
         await _frigate.DidNotReceive().WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
@@ -221,7 +221,7 @@ public class UpdateCameraProtocolUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldDropTheOwnAccount_WhenTheUserNameIsEmptied()
+    public async Task ExecuteAsync_ShouldDropTheSpecificAccount_WhenTheUserNameIsEmptied()
     {
         // Arrange
         var camera = GivenValidatedCamera();
@@ -299,5 +299,143 @@ public class SetStreamPathUseCaseTests
         Assert.Equal("/stream2", result!.StreamPath);
         Assert.Equal(CameraValidationState.Draft, camera.ValidationState);
         await _frigate.Received(1).WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), changed: true, Arg.Any<CancellationToken>());
+    }
+}
+
+public class AddCameraProtocolUseCaseTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICameraProtocolProbe _probe = CapabilityTestUseCases.AnsweringProbe();
+    private readonly AddCameraProtocolUseCase _sut;
+
+    public AddCameraProtocolUseCaseTests()
+        => _sut = new AddCameraProtocolUseCase(_cameras, new CameraProtocolCheck(_probe, TimeProvider.System), TimeProvider.System);
+
+    private Camera GivenCamera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" }
+            .WithStream(SupportedProtocol.Rtsp);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        return camera;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAddTheProtocolAndCheckItAtOnce_WhenTheCameraDoesNotSpeakItYet()
+    {
+        // Arrange
+        var camera = GivenCamera();
+
+        // Act
+        var result = await _sut.ExecuteAsync("cam1", new AddCameraProtocolRequest("tapo_klap", 8080, "cloud", "cloud-secret"));
+
+        // Assert
+        Assert.Equal(AddProtocolOutcome.Added, result.Outcome);
+        Assert.Equal("answers", result.Protocol!.Status);
+        Assert.Equal(8080, camera.Protocol(SupportedProtocol.TapoKlap)!.Port);
+        Assert.Equal(new CameraCredentials("cloud", "cloud-secret"), camera.CredentialsFor(SupportedProtocol.TapoKlap));
+        await _cameras.Received(1).UpdateAsync(camera, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStoreNoPort_WhenTheUsualPortIsGiven()
+    {
+        // Arrange
+        var camera = GivenCamera();
+
+        // Act
+        await _sut.ExecuteAsync("cam1", new AddCameraProtocolRequest("dvrip", 34567, null, null));
+
+        // Assert
+        Assert.Null(camera.Protocol(SupportedProtocol.Dvrip)!.Port);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuse_WhenTheCameraAlreadySpeaksTheProtocol()
+    {
+        // Arrange
+        GivenCamera();
+
+        // Act
+        var result = await _sut.ExecuteAsync("cam1", new AddCameraProtocolRequest("rtsp", null, null, null));
+
+        // Assert
+        Assert.Equal(AddProtocolOutcome.AlreadySpoken, result.Outcome);
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuse_WhenTheProtocolIsUnknown()
+    {
+        // Arrange
+        GivenCamera();
+
+        // Act
+        var result = await _sut.ExecuteAsync("cam1", new AddCameraProtocolRequest("telnet", null, null, null));
+
+        // Assert
+        Assert.Equal(AddProtocolOutcome.UnknownProtocol, result.Outcome);
+    }
+}
+
+public class RemoveCameraProtocolUseCaseTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
+    private readonly RemoveCameraProtocolUseCase _sut;
+
+    public RemoveCameraProtocolUseCaseTests() => _sut = new RemoveCameraProtocolUseCase(_cameras, _bindings, _endpointCache);
+
+    private Camera GivenCamera()
+    {
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" }
+            .WithStream(SupportedProtocol.Rtsp);
+        camera.EnsureProtocol(SupportedProtocol.Onvif);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([camera.StreamBinding!]);
+        return camera;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRemoveTheProtocolAndForgetWhereItAnswered_WhenNoCapabilityUsesIt()
+    {
+        // Arrange
+        var camera = GivenCamera();
+
+        // Act
+        var outcome = await _sut.ExecuteAsync("cam1", SupportedProtocol.Onvif);
+
+        // Assert
+        Assert.Equal(RemoveProtocolOutcome.Removed, outcome);
+        Assert.Null(camera.Protocol(SupportedProtocol.Onvif));
+        _endpointCache.Received(1).Forget("cam1");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuse_WhenACapabilityGoesThroughTheProtocol()
+    {
+        // Arrange
+        var camera = GivenCamera();
+
+        // Act
+        var outcome = await _sut.ExecuteAsync("cam1", SupportedProtocol.Rtsp);
+
+        // Assert
+        Assert.Equal(RemoveProtocolOutcome.InUse, outcome);
+        Assert.NotNull(camera.Protocol(SupportedProtocol.Rtsp));
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSayNotFound_WhenTheCameraDoesNotSpeakTheProtocol()
+    {
+        // Arrange
+        GivenCamera();
+
+        // Act
+        var outcome = await _sut.ExecuteAsync("cam1", SupportedProtocol.V380);
+
+        // Assert
+        Assert.Equal(RemoveProtocolOutcome.NotFound, outcome);
     }
 }

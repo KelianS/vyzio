@@ -351,6 +351,33 @@ public static class CamerasEndpoints
             return list is null ? Results.NotFound() : Results.Ok(list);
         });
 
+        group.MapPost("/{id}/protocols", async (string id, AddCameraProtocolRequest request, AddCameraProtocolUseCase useCase, CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(id, request, ct);
+            return result.Outcome switch
+            {
+                AddProtocolOutcome.Added => Results.Ok(result.Protocol),
+                AddProtocolOutcome.CameraNotFound => Results.NotFound(),
+                AddProtocolOutcome.UnknownProtocol => Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {request.Protocol}" }),
+                AddProtocolOutcome.AlreadySpoken => Results.Conflict(new { error = "protocol_exists", message = $"The camera already speaks {request.Protocol}." }),
+                _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
+            };
+        });
+
+        group.MapDelete("/{id}/protocols/{protocol}", async (string id, string protocol, RemoveCameraProtocolUseCase useCase, CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
+                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+
+            return await useCase.ExecuteAsync(id, parsed, ct) switch
+            {
+                RemoveProtocolOutcome.Removed => Results.NoContent(),
+                RemoveProtocolOutcome.NotFound => Results.NotFound(),
+                RemoveProtocolOutcome.InUse => Results.Conflict(new { error = "protocol_in_use", message = $"A capability goes through {protocol}." }),
+                var other => throw new InvalidOperationException($"Unhandled outcome {other}."),
+            };
+        });
+
         group.MapPut("/{id}/protocols/{protocol}", async (
             string id,
             string protocol,

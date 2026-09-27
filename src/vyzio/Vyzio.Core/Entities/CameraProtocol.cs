@@ -50,14 +50,14 @@ public class CameraProtocol
     public int? EffectivePort => Port ?? ProtocolPorts.Usual(Protocol);
 
     [NotMapped]
-    public bool HasOwnAccount => !string.IsNullOrWhiteSpace(Username);
+    public bool HasSpecificAccount => !string.IsNullOrWhiteSpace(Username);
 
     [NotMapped]
     public bool Answers => Status == ProtocolStatus.Answers;
 
     // What the user or discovery entered: a row holding it is never dropped as a failed try (ADR-61).
     [NotMapped]
-    public bool HoldsUserData => Port is not null || HasOwnAccount || DeviceId is not null;
+    public bool HoldsUserData => Port is not null || HasSpecificAccount || DeviceId is not null;
 }
 
 // The account a client presents to one protocol of a camera (ADR-61).

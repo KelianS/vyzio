@@ -9,7 +9,7 @@ public sealed record CameraProtocolDto(
     int? Port,
     int? EffectivePort,
     string? Username,
-    bool HasOwnAccount,
+    bool HasSpecificAccount,
     uint? DeviceId,
     string? Status,
     DateTimeOffset? CheckedAt,
@@ -21,7 +21,7 @@ public sealed record CameraProtocolDto(
         // ONVIF has no usual port: the one the camera answered on is read from its address (ADR-56).
         entry.EffectivePort ?? PortOfEndpoint(entry.Endpoint),
         entry.Username,
-        entry.HasOwnAccount,
+        entry.HasSpecificAccount,
         entry.DeviceId,
         entry.Status is { } status ? SnakeCaseEnum.ToSnakeCase(status) : null,
         entry.CheckedAt,
@@ -86,7 +86,7 @@ public sealed class CheckCameraProtocolUseCase(ICameraRepository cameras, Camera
     }
 }
 
-// The whole box as the screen holds it: a null password keeps the saved one, an empty user name drops the own account.
+// The whole box as the screen holds it: a null password keeps the saved one, an empty user name drops the specific account.
 public sealed record UpdateCameraProtocolRequest(int? Port, string? Username, string? Password, uint? DeviceId);
 
 public sealed class UpdateCameraProtocolUseCase(
@@ -128,13 +128,80 @@ public sealed class UpdateCameraProtocolUseCase(
         entry.LastError = null;
         entry.UpdatedAt = time.GetUtcNow();
 
-        var streamChanged = reachChanged && camera.StreamBinding?.Protocol == protocol;
+        var streamChanged = reachChanged && camera.Capabilities.Any(b => b.Capability == CameraCapability.Stream && b.Protocol == protocol);
         if (streamChanged) CameraConnectionChange.Apply(camera);
 
         await cameras.UpdateAsync(camera, ct);
         if (streamChanged) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
 
         return CameraProtocolDto.From(entry);
+    }
+}
+
+// A protocol the camera did not have: its port (null: the usual one) and an optional specific account.
+public sealed record AddCameraProtocolRequest(string Protocol, int? Port, string? Username, string? Password);
+
+public enum AddProtocolOutcome
+{
+    Added,
+    CameraNotFound,
+    UnknownProtocol,
+    AlreadySpoken,
+}
+
+public sealed record AddProtocolResult(AddProtocolOutcome Outcome, CameraProtocolDto? Protocol = null);
+
+// Adds a protocol once the camera exists and checks it at once, reach then login (ADR-61).
+public sealed class AddCameraProtocolUseCase(ICameraRepository cameras, CameraProtocolCheck protocolCheck, TimeProvider time)
+{
+    public async Task<AddProtocolResult> ExecuteAsync(string cameraId, AddCameraProtocolRequest request, CancellationToken ct = default)
+    {
+        if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(request.Protocol, out var protocol))
+            return new AddProtocolResult(AddProtocolOutcome.UnknownProtocol);
+
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return new AddProtocolResult(AddProtocolOutcome.CameraNotFound);
+        if (camera.Protocol(protocol) is not null) return new AddProtocolResult(AddProtocolOutcome.AlreadySpoken);
+
+        var entry = camera.EnsureProtocol(protocol);
+        // The usual port is stored as none, as on any other row.
+        entry.Port = request.Port is > 0 && request.Port != ProtocolPorts.Usual(protocol) ? request.Port : null;
+        entry.Username = CameraDraftFactory.NormalizeOptional(request.Username);
+        entry.Password = entry.Username is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
+        entry.UpdatedAt = time.GetUtcNow();
+
+        await protocolCheck.CheckAsync(camera, protocol, run: null, ct);
+        await cameras.UpdateAsync(camera, ct);
+        return new AddProtocolResult(AddProtocolOutcome.Added, CameraProtocolDto.From(entry));
+    }
+}
+
+public enum RemoveProtocolOutcome
+{
+    Removed,
+    NotFound,
+    InUse,
+}
+
+// Removes a protocol no capability goes through, however many streams or capabilities a camera has (ADR-61).
+public sealed class RemoveCameraProtocolUseCase(
+    ICameraRepository cameras,
+    ICameraCapabilityBindingRepository bindings,
+    ICameraProtocolEndpointCache endpointCache)
+{
+    public async Task<RemoveProtocolOutcome> ExecuteAsync(string cameraId, SupportedProtocol protocol, CancellationToken ct = default)
+    {
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera?.Protocol(protocol) is not { } entry) return RemoveProtocolOutcome.NotFound;
+
+        var used = (await bindings.GetByCameraAsync(cameraId, ct)).Any(b => b.Protocol == protocol);
+        if (used) return RemoveProtocolOutcome.InUse;
+
+        // Removing ONVIF drops both halves of where it answered (ADR-56).
+        if (protocol == SupportedProtocol.Onvif) endpointCache.Forget(camera.Id);
+        camera.Protocols.Remove(entry);
+        await cameras.UpdateAsync(camera, ct);
+        return RemoveProtocolOutcome.Removed;
     }
 }
 
