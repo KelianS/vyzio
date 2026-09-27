@@ -163,6 +163,8 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux choisir le comportement d'alerte associe a une personne, afin d'adapter le systeme a mon foyer.
 
+> **En tant qu'utilisateur**, je veux n'etre alerte du passage d'une personne de mon foyer que sur certaines cameras, afin de ne pas etre derange la ou sa presence est normale.
+
 > **En tant qu'utilisateur**, je veux voir la derniere apparition d'une personne connue, afin de garder un historique simple.
 
 > **En tant qu'utilisateur**, je veux supprimer un profil et ses donnees associees, afin de rester maitre de mes donnees.
@@ -172,6 +174,8 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - un profil doit contenir au minimum un nom, des donnees de reference suffisantes et une politique d'alerte ;
 - les profils doivent etre modifiables et supprimables depuis l'interface ;
 - l'historique recent d'une personne connue doit etre consultable ;
+- la politique d'alerte d'une personne ne regle que les notifications : une personne reglee sur « ne rien signaler » ne declenche aucune notification, et reste reconnue et nommee dans l'historique ;
+- une personne peut etre limitee a certaines cameras pour ses alertes : sans choix, elle est signalee sur toutes les cameras, y compris une camera ajoutee plus tard ; avec un choix, seulement sur les cameras cochees, et cocher toutes les cameras fige la liste ; la reconnaissance et l'historique ne changent pas selon la camera ;
 - la suppression d'un profil doit supprimer ses donnees liees selon la politique produit definie.
 
 ---

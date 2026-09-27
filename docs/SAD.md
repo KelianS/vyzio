@@ -216,8 +216,8 @@ Frigate                           -> Raw video, detection, clips, face recogniti
 Mosquitto Broker                  -> The MQTT bus shared between Frigate and Vyzio
 FrigateAdapter (.NET)             -> Bridge from Frigate to the Vyzio domain (MQTT consumer + REST client)
 FrigateRestClient (.NET)          -> Frigate REST calls: sub_label, face photo upload, library
-Profile & Rules Service (.NET)    -> Product profiles, sub_label to profile mapping, profile/camera filter, alert rules
-Notification Service (.NET)       -> Alert rules and delivery to every active channel behind a single port (ADR-50)
+Profile & Rules Service (.NET)    -> Product profiles, sub_label to profile mapping on every camera
+Notification Service (.NET)       -> Alert rules, a person's alert mode and cameras (ADR-58), delivery to every active channel behind a single port (ADR-50)
 Command Registry (.NET)           -> Declaration of the remote commands: typed parameters, authorisation, structured result (ADR-50)
 Channel Ingress (.NET)            -> Outbound retrieval of a channel's messages, pairing, execution through the existing use cases (ADR-50/52)
 Storage Service (.NET)            -> Persistence of Vyzio's own data (EF Core), never the detections (ADR-49)
@@ -247,8 +247,8 @@ Dashboard / Hub (React + TS)      -> Guided consumer UI: viewing and a settings 
    |-> Returns immediately, with no waiting inside the message handler
 
 4. NotificationService, consuming the queue outside the MQTT handler
-   |-> Re-reads the identity from Frigate (sub_label "Alice"). Resolving the profile itself
-       belongs to reading the history (ADR-15)
+   |-> Re-reads the identity from Frigate (sub_label "Alice") and resolves its profile, whose
+       alert mode and cameras decide whether it is signalled at all (ADR-58)
    |-> Fetches the media with retries (Frigate finalises it a few seconds after the end),
        and falls back to text when nothing comes
    |-> Hands the message and its media to every active channel, which renders it its own way:
@@ -292,7 +292,7 @@ read, never keeping a copy (ADR-49).
 |---|---|---|
 | `Profile` | A recognised person or animal: category plus alert mode | <- `ProfilePhoto`, `ProfileCameraLink` |
 | `ProfilePhoto` | A reference photo synced to Frigate (ADR-13) | -> `Profile` |
-| `ProfileCameraLink` | Profile/camera recognition filter (ADR-15) | -> `Profile`, `Camera` |
+| `ProfileCameraLink` | The cameras a person is signalled on; none means every camera (ADR-58) | -> `Profile`, `Camera` |
 | `Camera` | A camera: **one scene**, connection, status, privacy mode, detected protocols (ADR-38) | <- `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
 | `CameraStream` | A camera's video access point: quality, path, measured resolution (ADR-38) | -> `Camera` |
 | `CameraCapabilityBinding` | An optional capability (PTZ, hardware privacy, image) decoupled from the brand, **tested and never declarative** (ADR-22/24/28) | -> `Camera` |
