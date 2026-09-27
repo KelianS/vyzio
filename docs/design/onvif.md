@@ -6,7 +6,8 @@
 > (resolution by protocol, never by brand) and
 > [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) (capability cascade),
 > [ADR-24](../adr/0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md)
-> (the client is transport only) and
+> (the client is transport only),
+> [ADR-25](../adr/0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) (native PTZ presets) and
 > [ADR-27](../adr/0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md) (imaging).
 > Home of the code: `src/vyzio/Vyzio.Infrastructure/VendorAdapters/OnvifClient.cs`,
 > `OnvifEndpointResolver.cs`, and the providers in `Vyzio.Infrastructure/CapabilityProviders/`.
@@ -93,8 +94,9 @@ cameras, and holds no per-camera state of its own.
 Two send paths, and the difference matters.
 
 - **Queries** (`GetProfiles`, `GetStatus`, `GetPresets`, `GetImagingSettings`) read the response.
-  `throwOnFailure: true` raises instead of returning nothing, so a probe can say *why*, instead of
-  reporting an unsupported capability.
+  With `throwOnFailure: true` a failure is raised instead of returning nothing, so the imaging probe
+  can say *why* instead of reporting an unsupported capability. The PTZ probe asks without it and
+  reads silence as no PTZ (below).
 - **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer, 300 ms for the start of
   a continuous move, which a step stops shortly after. **Silence is treated as success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ steps cannot wait
   for them. Anything else that goes wrong is raised, and classified below.
@@ -114,14 +116,35 @@ the status, the SOAP fault or the transport error, never a credential. `CameraCo
 turns both into a 502 whose body carries the code and that message; the interface branches on the code,
 never on the status, which a proxy in front of the API also sends.
 
+## The PTZ probe
+
+A binding is `verified` only after a real test ([SAD](../SAD.md#7-data-model) section 7,
+[ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)), and answering
+ONVIF is not doing PTZ over it: a camera can serve its media profiles over ONVIF with no PTZ service
+behind them. `OnvifPtzProvider.ProbeAsync` verifies on the camera's own PTZ description, never on a
+guess:
+
+1. `GetProfiles`: the first media profile must carry a `PTZConfiguration` token. Without one the probe
+   answers no; no default token is substituted.
+2. `GetConfigurationOptions` on that token must answer with `PTZConfigurationOptions`. Silence, a
+   refusal or an answer without them, and the probe answers no. The same answer says whether
+   `RelativeMove` is offered.
+3. `GetPresets` counts the native presets
+   ([ADR-25](../adr/0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)); it does not weigh on the verdict.
+
+The probe never moves the camera: a pan at onboarding is a side effect the user did not ask for. A no
+lets the cascade move on to the next candidate protocol; a binding the user chose by hand keeps its
+protocol whatever the verdict (ADR-28).
+
 ## Known camera behaviours
 
 | Behaviour | Effect | Where it is handled |
 |---|---|---|
 | One endpoint for every service (Tapo) | Per-service paths 404 | `XAddr` fallback, above |
 | PTZ refused while privacy mode is on (Tapo) | Malformed HTTP answer, not a SOAP fault | Raised as a refusal, never as a missing capability |
+| Speaks ONVIF without PTZ over it (some ICSee units) | Media profile carries no `PTZConfiguration` | The PTZ probe answers no, the cascade falls through to DVRIP |
 | Answers a command in 2 to 3 seconds (V380) | Full await would stall stepping | Timeout treated as success |
-| `RelativeMove` absent | Steps overshoot | `GetConfigurationOptions` read once per camera, `OnvifPtzProvider` falls back to move plus stop |
+| `RelativeMove` absent | Steps overshoot | `GetConfigurationOptions` read when the profile carries a PTZ configuration, a real answer kept for the request; without one, `OnvifPtzProvider` falls back to move plus stop |
 
 ## Authentication
 

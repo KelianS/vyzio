@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Common;
@@ -24,7 +25,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
     // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid
     // a GetProfiles round-trip before every PTZ command (main source of step overshoot).
     private readonly ConcurrentDictionary<string, string> _profileCache = new();
-    private readonly ConcurrentDictionary<string, string> _ptzConfigCache = new();
+    private readonly ConcurrentDictionary<string, string?> _ptzConfigCache = new();
     private readonly ConcurrentDictionary<string, PtzCapabilities> _capabilitiesCache = new();
 
     // Serializes step commands per camera: prevents concurrent ContinuousMove/Stop sequences.
@@ -35,8 +36,13 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         try
         {
             var token = await GetProfileTokenAsync(camera, ct);
-            if (string.IsNullOrWhiteSpace(token)) return false;
-            await GetPtzCapabilitiesAsync(camera, ct);
+
+            // Answering ONVIF is not doing PTZ over it: without a PTZ description, the cascade moves on (ADR-28).
+            if (await ReadPtzCapabilitiesAsync(camera, ct) is null)
+            {
+                logger.LogDebug("ONVIF PTZ probe for {Camera}: the camera describes no PTZ configuration.", camera.DisplayName);
+                return false;
+            }
 
             // Detect native preset support (ADR-25 Branch A/B routing).
             var presetsCount = await onvif.GetPresetsCountAsync(camera, token, ct);
@@ -143,37 +149,43 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, ILogger<OnvifPtzProvid
         return profileToken;
     }
 
+    // A camera the user bound by hand still gets its commands tried, with the move-plus-stop fallback (ADR-28).
     private async Task<PtzCapabilities> GetPtzCapabilitiesAsync(Camera camera, CancellationToken ct)
+        => await ReadPtzCapabilitiesAsync(camera, ct) ?? PtzCapabilities.Default;
+
+    // Null when the camera describes no PTZ configuration; only a real description is cached.
+    private async Task<PtzCapabilities?> ReadPtzCapabilitiesAsync(Camera camera, CancellationToken ct)
     {
         if (_capabilitiesCache.TryGetValue(camera.Id, out var cached))
             return cached;
 
         await GetProfileTokenAsync(camera, ct);
-        _ptzConfigCache.TryGetValue(camera.Id, out var configToken);
-        configToken ??= "ptz_config_0";
+        if (!_ptzConfigCache.TryGetValue(camera.Id, out var configToken) || configToken is null)
+            return null;
 
-        var xml = await onvif.GetPtzConfigurationOptionsAsync(camera, configToken, ct);
-
-        PtzCapabilities caps;
-        if (xml is null)
-        {
-            caps = PtzCapabilities.Default;
-        }
-        else
-        {
-            try
-            {
-                var doc = XDocument.Parse(xml);
-                var supportsRelative = doc.Descendants()
-                    .Any(e => e.Name.LocalName == "RelativePanTiltTranslationSpace");
-                caps = new PtzCapabilities(supportsRelative);
-            }
-            catch { caps = PtzCapabilities.Default; }
-        }
+        var caps = ParsePtzCapabilities(await onvif.GetPtzConfigurationOptionsAsync(camera, configToken, ct));
+        if (caps is null)
+            return null;
 
         _capabilitiesCache[camera.Id] = caps;
         logger.LogDebug("ONVIF PTZ capabilities for {Host}: RelativeMove={Rel}.", camera.Host, caps.SupportsRelativeMove);
         return caps;
+    }
+
+    private static PtzCapabilities? ParsePtzCapabilities(string? xml)
+    {
+        if (xml is null)
+            return null;
+
+        XDocument doc;
+        try { doc = XDocument.Parse(xml); }
+        catch (XmlException) { return null; }
+
+        var elements = doc.Descendants().ToList();
+        if (!elements.Any(e => e.Name.LocalName == "PTZConfigurationOptions"))
+            return null;
+
+        return new PtzCapabilities(elements.Any(e => e.Name.LocalName == "RelativePanTiltTranslationSpace"));
     }
 
 #pragma warning disable format // Aligned as a table so each row reads against the others.

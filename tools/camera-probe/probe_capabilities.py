@@ -77,7 +77,7 @@ def find_all_local(xml_str, local_name):
 
 def run(host, user, password, port=8899):
     print(f"\n=== ONVIF capability probe — {host}:{port} ===")
-    print("Reproduces OnvifPtzClient.GetPtzCapabilitiesAsync logic\n")
+    print("Reproduces OnvifPtzProvider PTZ probe logic\n")
 
     media_url = f"http://{host}:{port}/onvif/media_service"
     ptz_url   = f"http://{host}:{port}/onvif/ptz_service"
@@ -89,7 +89,7 @@ def run(host, user, password, port=8899):
         "GetProfiles")
 
     profile_token = "stream0_0"
-    ptz_config_token = "ptz_config_0"
+    ptz_config_token = None
 
     if raw:
         profiles = find_all_local(raw, "Profiles")
@@ -97,10 +97,16 @@ def run(host, user, password, port=8899):
             profile_token = profiles[0].get("token", profile_token)
             ptz_cfgs = [e for e in profiles[0].iter() if e.tag.split("}")[-1] == "PTZConfiguration"]
             if ptz_cfgs:
-                ptz_config_token = ptz_cfgs[0].get("token", ptz_config_token)
+                ptz_config_token = ptz_cfgs[0].get("token")
 
     print(f"     Profile token    : {profile_token}")
     print(f"     PTZ config token : {ptz_config_token}\n")
+
+    # No PTZ configuration on the profile: Vyzio's probe answers no here, it never guesses a token.
+    if not ptz_config_token:
+        print("     -> no PTZConfiguration on the first profile: no ONVIF PTZ on this camera.")
+        print("\n=== Probe complete ===\n")
+        return
 
     # ── Step 2: GetConfigurationOptions ───────────────────────────────────────
     print("[2] GetConfigurationOptions (ptz_service) — THE KEY CALL...")

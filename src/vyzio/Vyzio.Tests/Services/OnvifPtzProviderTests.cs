@@ -266,59 +266,164 @@ public class OnvifPtzProviderTests
         Assert.Contains($"y=\"{expectedTilt}\"", moveBody);
     }
 
-    [Fact]
-    public async Task ProbeAsync_ShouldReturnTrue_WhenTheCameraAnswersWithAProfile()
+    private static OnvifPtzProvider MakeProviderFor(FakeOnvifPtzCamera camera)
     {
-        var profilesXml = """
-            <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-              <s:Body>
-                <trt:GetProfilesResponse xmlns:trt="http://www.onvif.org/ver10/media/wsdl">
-                  <trt:Profiles token="profile_1"/>
-                </trt:GetProfilesResponse>
-              </s:Body>
-            </s:Envelope>
-            """;
-        var (provider, _) = MakeProvider(responseBody: profilesXml);
-
-        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
-
-        Assert.True(result);
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("onvif").Returns(_ => new HttpClient(camera, disposeHandler: false));
+        var resolver = new OnvifEndpointResolver(factory, TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvifClient = new OnvifClient(factory, resolver, TimeProvider.System, NullLogger<OnvifClient>.Instance);
+        return new OnvifPtzProvider(onvifClient, NullLogger<OnvifPtzProvider>.Instance);
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldAskForTheProfilesAndStillSucceed_WhenTheCameraReturnsNoProfile()
+    public async Task ProbeAsync_ShouldReturnTrue_WhenTheProfileDescribesAPtzConfiguration()
     {
-        // OnvifPtzClient is resilient — uses default profile token on failure, so ProbeAsync
-        // always returns true as long as no exception escapes GetFirstProfileTokenAsync.
-        var (provider, requests) = MakeProvider();
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml);
+        var provider = MakeProviderFor(camera);
 
+        // Act
         var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
 
+        // Assert
         Assert.True(result);
-        var bodies = await ReadBodies(requests);
-        Assert.Contains(bodies, b => b.Contains("GetProfiles"));
+        Assert.Contains(camera.Bodies, body => body.Contains("<ConfigurationToken>ptz_cfg_1</ConfigurationToken>", StringComparison.Ordinal));
     }
 
-    private const string ProfileWithOnePresetXml = """
-        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-          <s:Body>
-            <trt:GetProfilesResponse xmlns:trt="http://www.onvif.org/ver10/media/wsdl">
-              <trt:Profiles token="profile_1"/>
-              <tptz:Preset xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl" token="1"/>
-            </trt:GetProfilesResponse>
-          </s:Body>
-        </s:Envelope>
-        """;
+    [Fact]
+    public async Task ProbeAsync_ShouldReturnFalseWithoutGuessingAToken_WhenTheProfileCarriesNoPtzConfiguration()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
+
+        // Assert
+        Assert.False(result);
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("<GetConfigurationOptions", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldReturnFalseWithoutAskingPtzOptions_WhenTheCameraListsNoProfile()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera("<s:Envelope/>", FakeOnvifPtzCamera.PtzOptionsXml);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
+
+        // Assert
+        Assert.False(result);
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("<GetConfigurationOptions", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task PtzStepAsync_ShouldMoveThenStopWithoutAskingPtzOptions_WhenTheProfileCarriesNoPtzConfiguration()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        await provider.PtzStepAsync(MakeCamera(), MakeBinding(), PtzDirection.Left, speed: 10);
+
+        // Assert
+        Assert.Contains(camera.Bodies, body => body.Contains("<ContinuousMove", StringComparison.Ordinal));
+        Assert.Contains("<Stop", camera.Bodies.Last());
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("<GetConfigurationOptions", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task PtzStepAsync_ShouldSendARelativeMoveOnly_WhenThePtzOptionsOfferRelativeMove()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsWithRelativeMoveXml);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        await provider.PtzStepAsync(MakeCamera(), MakeBinding(), PtzDirection.Left, speed: 10);
+
+        // Assert
+        Assert.Contains(camera.Bodies, body => body.Contains("<RelativeMove", StringComparison.Ordinal));
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("<ContinuousMove", StringComparison.Ordinal));
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("<Stop", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task PtzStepAsync_ShouldMoveThenStop_WhenTheCameraRefusesThePtzConfigurationOptions()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, configurationOptions: null);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        await provider.PtzStepAsync(MakeCamera(), MakeBinding(), PtzDirection.Left, speed: 10);
+
+        // Assert
+        Assert.Contains(camera.Bodies, body => body.Contains("<ContinuousMove", StringComparison.Ordinal));
+        Assert.Contains("<Stop", camera.Bodies.Last());
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldReturnFalse_WhenTheCameraRefusesThePtzConfigurationOptions()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, configurationOptions: null);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldReturnFalse_WhenTheOptionsAnswerDescribesNoPtz()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, "<s:Envelope/>");
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldNeverMoveTheCamera_WhenItVerifiesPtz()
+    {
+        // Arrange
+        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml, FakeOnvifPtzCamera.OnePresetXml);
+        var provider = MakeProviderFor(camera);
+
+        // Act
+        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
+
+        // Assert
+        Assert.True(result);
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("Move", StringComparison.Ordinal));
+        Assert.DoesNotContain(camera.Bodies, body => body.Contains("<GotoPreset", StringComparison.Ordinal));
+    }
 
     [Fact]
     public async Task ProbeAsync_ShouldKeepThePanSwap_WhenItRecordsNativePresets()
     {
-        var (provider, _) = MakeProvider(responseBody: ProfileWithOnePresetXml);
+        // Arrange
+        var provider = MakeProviderFor(new FakeOnvifPtzCamera(
+            FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml, FakeOnvifPtzCamera.OnePresetXml));
         var binding = MakeBinding();
         binding.ConfigJson = """{"pan_inverted":true}""";
 
+        // Act
         await provider.ProbeAsync(MakeCamera(), binding);
 
+        // Assert
         Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
         Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted));
     }
@@ -326,12 +431,16 @@ public class OnvifPtzProviderTests
     [Fact]
     public async Task ProbeAsync_ShouldWriteAFreshConfig_WhenTheStoredOneIsUnreadable()
     {
-        var (provider, _) = MakeProvider(responseBody: ProfileWithOnePresetXml);
+        // Arrange
+        var provider = MakeProviderFor(new FakeOnvifPtzCamera(
+            FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml, FakeOnvifPtzCamera.OnePresetXml));
         var binding = MakeBinding();
         binding.ConfigJson = "not json";
 
+        // Act
         await provider.ProbeAsync(MakeCamera(), binding);
 
+        // Assert
         Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
