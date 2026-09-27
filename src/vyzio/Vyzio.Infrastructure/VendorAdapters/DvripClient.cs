@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
@@ -17,7 +18,7 @@ public sealed class DvripCallException(string message, Exception? inner = null) 
 // JSON payloads. Covers ICSee, Annke, Sannce, Zosi and other XMEye-chipset cameras.
 // Wire format and command codes confirmed against real hardware —
 // see docs/investigations/icsee_dvrip_privacy.md. Registered as Singleton: stateless.
-internal sealed class DvripClient(ILogger<DvripClient> logger)
+internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger)
 {
     private const int DvripPort = 34567;
     private const int LoginCmd = 1000;
@@ -25,23 +26,41 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
     // 1040, not 1044 — confirmed against the python-dvr reference client's set_info()
     // (2026-07-15); 1044 was a transcription error in an earlier investigation note.
     private const int ConfigSetCmd = 1040;
+    private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(5);
 
-    // Opens a fresh connection, logs in, sends one command, and returns the raw response —
-    // used by PTZ (cmd 1400) and any other one-shot command. Never throws on failure; callers
-    // that need a real diagnostic (e.g. ImageSettings) should use ConfigGetAsync/ConfigSetAsync
-    // or check the response themselves.
+    // One command within 5 s, raised as refused or unreachable (ADR-56); null when the camera stays silent once it has the command.
     public async Task<string?> ExecuteAsync(Camera camera, int cmdCode, Func<string, string> buildPayload, CancellationToken ct)
     {
-        using var tcp = new TcpClient();
-        await tcp.ConnectAsync(camera.Host, DvripPort, ct);
-        using var stream = tcp.GetStream();
+        using var deadline = new CancellationTokenSource(CommandTimeout, time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, deadline.Token);
+        var sent = false;
+        try
+        {
+            using var tcp = new TcpClient();
+            await tcp.ConnectAsync(camera.Host, DvripPort, linked.Token);
+            using var stream = tcp.GetStream();
 
-        var (sessionId, _) = await LoginAsync(stream, camera, ct);
-        if (sessionId is null) return null;
+            var (sessionId, _, loginAnswer) = await LoginAsync(stream, camera, linked.Token);
+            if (sessionId is null)
+                throw loginAnswer is null
+                    ? new CameraUnreachableException($"No DVRIP login answer from {camera.Host} (connection closed by the camera).")
+                    : new CameraCommandRefusedException($"DVRIP login refused by {camera.Host} (Ret={ReadRet(loginAnswer)?.ToString(CultureInfo.InvariantCulture) ?? "unreadable"}).");
 
-        var payload = buildPayload(sessionId);
-        await SendPacketAsync(stream, cmdCode, payload, 2, sessionId, ct);
-        return await ReceivePacketAsync(stream, ct);
+            await SendPacketAsync(stream, cmdCode, buildPayload(sessionId), 2, sessionId, linked.Token);
+            sent = true;
+            return await ReceivePacketAsync(stream, linked.Token)
+                ?? throw new CameraUnreachableException($"No DVRIP answer from {camera.Host} (connection closed by the camera).");
+        }
+        catch (OperationCanceledException) when (sent && deadline.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            // Budget cameras execute on receipt and may answer late: silence within the wait stays a success (ADR-56).
+            return null;
+        }
+        catch (Exception ex) when (ex is not CameraCommandException && (ex is not OperationCanceledException || !ct.IsCancellationRequested))
+        {
+            var why = deadline.IsCancellationRequested ? "no answer within 5 s" : ex.Message;
+            throw new CameraUnreachableException($"DVRIP service on {camera.Host}:{DvripPort}: {why}", ex);
+        }
     }
 
     // True if login succeeds — used as the connectivity probe (no side effect on the camera).
@@ -54,7 +73,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
             timeout.CancelAfter(TimeSpan.FromSeconds(3));
             await tcp.ConnectAsync(camera.Host, DvripPort, timeout.Token);
             using var stream = tcp.GetStream();
-            var (sessionId, _) = await LoginAsync(stream, camera, timeout.Token);
+            var (sessionId, _, _) = await LoginAsync(stream, camera, timeout.Token);
             return sessionId is not null;
         }
         catch (Exception ex)
@@ -85,7 +104,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
         }
         using var stream = tcp.GetStream();
 
-        var (sessionId, loginFailure) = await LoginAsync(stream, camera, timeout.Token);
+        var (sessionId, loginFailure, _) = await LoginAsync(stream, camera, timeout.Token);
         if (sessionId is null)
             throw new DvripCallException($"Connexion DVRIP refusée par {camera.Host} : {loginFailure}");
 
@@ -126,7 +145,7 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
         }
         using var stream = tcp.GetStream();
 
-        var (sessionId, loginFailure) = await LoginAsync(stream, camera, timeout.Token);
+        var (sessionId, loginFailure, _) = await LoginAsync(stream, camera, timeout.Token);
         if (sessionId is null)
             throw new DvripCallException($"Connexion DVRIP refusée par {camera.Host} : {loginFailure}");
 
@@ -149,11 +168,8 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
             ? "délai de 5s dépassé"
             : ex.Message;
 
-    // Returns (SessionId, null) on success, or (null, reason) on failure — the reason
-    // distinguishes "no response at all" (connection dropped/timeout) from an explicit
-    // rejection (Ret != 100), so callers that surface it (ConfigGetAsync/ConfigSetAsync)
-    // don't report "identifiants invalides" for what's actually a network/timeout issue.
-    internal static async Task<(string? SessionId, string? FailureReason)> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
+    // On failure, Answer is what the camera said, or null when it said nothing.
+    internal static async Task<(string? SessionId, string? FailureReason, string? Answer)> LoginAsync(NetworkStream stream, Camera camera, CancellationToken ct)
     {
         var hash = SofiaHash(camera.Password ?? string.Empty);
         var loginPayload = JsonSerializer.Serialize(new
@@ -166,18 +182,18 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
 
         await SendPacketAsync(stream, LoginCmd, loginPayload, 0, "0x00000000", ct);
         var response = await ReceivePacketAsync(stream, ct);
-        if (response is null) return (null, "aucune réponse de la caméra (connexion fermée ou délai dépassé).");
+        if (response is null) return (null, "aucune réponse de la caméra (connexion fermée ou délai dépassé).", null);
 
         try
         {
             var doc = JsonNode.Parse(response);
             var ret = doc?["Ret"]?.GetValue<int>();
-            if (ret != 100) return (null, $"identifiants refusés par la caméra (Ret={ret?.ToString(CultureInfo.InvariantCulture) ?? "?"}).");
-            return (doc?["SessionID"]?.GetValue<string>(), null);
+            if (ret != 100) return (null, $"identifiants refusés par la caméra (Ret={ret?.ToString(CultureInfo.InvariantCulture) ?? "?"}).", response);
+            return (doc?["SessionID"]?.GetValue<string>(), null, null);
         }
         catch (Exception ex)
         {
-            return (null, $"réponse de connexion illisible ({ex.Message}).");
+            return (null, $"réponse de connexion illisible ({ex.Message}).", response);
         }
     }
 
@@ -256,11 +272,14 @@ internal sealed class DvripClient(ILogger<DvripClient> logger)
         return Encoding.UTF8.GetString(body, 0, len);
     }
 
-    internal static bool IsRetOk(string? json)
+    internal static bool IsRetOk(string? json) => ReadRet(json) == 100;
+
+    // The status the camera answered, or null when the answer carries none.
+    internal static int? ReadRet(string? json)
     {
-        if (json is null) return false;
-        try { return JsonNode.Parse(json)?["Ret"]?.GetValue<int>() == 100; }
-        catch { return false; }
+        if (json is null) return null;
+        try { return JsonNode.Parse(json)?["Ret"]?.GetValue<int>(); }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException) { return null; }
     }
 
     private static void WriteInt32Le(byte[] buf, int offset, int value)

@@ -192,7 +192,6 @@ public static class CamerasEndpoints
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
-        // Branch B calibration: homes the camera to establish virtual position (0,0).
         group.MapPost("/{id}/ptz/calibrate", async (string id, PtzCalibrateUseCase useCase, CancellationToken ct) =>
         {
             var ok = await useCase.ExecuteAsync(id, ct);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
@@ -15,6 +16,9 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     private const int PtzCmd = 1400;
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
+
+    // Estimate, unmeasured: a step lasts one login round trip, so the range is counted generously (ADR-59).
+    public int FullRangeSteps => 60;
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => await dvrip.TryLoginAsync(camera, ct);
@@ -43,21 +47,41 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => await ExecutePtzAsync(camera, "SetPreset", presetId, step: 0, ct);
 
+    // A move then a stop, the step validated on the hardware (ADR-29); how far it goes is one round trip.
+    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
+    {
+        try
+        {
+            await PtzMoveAsync(camera, binding, direction, speed, ct);
+        }
+        catch (CameraCommandException)
+        {
+            // The move may have reached the camera although its answer did not: the stop still goes out, the move's error is the one raised.
+            try { await PtzStopAsync(camera, binding, ct); }
+            catch (CameraCommandException) { }
+            throw;
+        }
+        await PtzStopAsync(camera, binding, ct);
+        return true;
+    }
+
+    public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => Task.FromResult<(float Pan, float Tilt)?>(null);
+
+    // A command the camera did not take is raised, named, never swallowed (ADR-56, ADR-59).
     private async Task ExecutePtzAsync(Camera camera, string command, int preset, int step, CancellationToken ct)
     {
         try
         {
             var response = await dvrip.ExecuteAsync(camera, PtzCmd,
                 sessionId => BuildPtzPayload(sessionId, command, preset, step), ct);
-
-            if (response is null)
-                logger.LogWarning("DVRIP login failed for {Camera} — PTZ skipped.", camera.DisplayName);
-            else if (!DvripClient.IsRetOk(response))
-                logger.LogWarning("DVRIP PTZ {Command} returned non-OK for {Camera}: {Resp}.", command, camera.DisplayName, response);
+            if (response is not null && !DvripClient.IsRetOk(response))
+                throw new CameraCommandRefusedException($"DVRIP PTZ {command} refused by {camera.Host} (Ret={DvripClient.ReadRet(response)?.ToString(CultureInfo.InvariantCulture) ?? "?"}).");
         }
-        catch (Exception ex)
+        catch (CameraCommandException ex)
         {
-            logger.LogWarning(ex, "DVRIP PTZ error for {Camera}.", camera.DisplayName);
+            logger.LogWarning(ex, "DVRIP PTZ {Command} did not go through on {Camera}.", command, camera.DisplayName);
+            throw;
         }
     }
 

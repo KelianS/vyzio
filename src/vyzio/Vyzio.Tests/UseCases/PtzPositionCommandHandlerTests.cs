@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -12,6 +13,7 @@ public class PtzPositionCommandHandlerTests
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
     private readonly ICapabilityProviderRegistry _providers = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly PtzManagedPositions _positions = new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance);
 
     private PtzPositionCommandHandler CreateSut(params Camera[] cameras)
     {
@@ -22,8 +24,8 @@ public class PtzPositionCommandHandlerTests
 
         return new PtzPositionCommandHandler(
             new GetCamerasUseCase(_cameras, _bindings),
-            new GetPtzPresetsUseCase(_presets, _bindings, _providers),
-            new PtzGoToPresetUseCase(_cameras, _bindings, _providers, _presets));
+            new GetPtzPresetsUseCase(_presets, _bindings, _positions),
+            new PtzGoToPresetUseCase(_cameras, _bindings, _providers, _presets, _positions));
     }
 
     private static Camera Motorised(string slug, string displayName) => new()

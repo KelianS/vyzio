@@ -2,17 +2,15 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Replaces the PTZ half of IVendorCameraAdapter (ADR-22). Resolved by SupportedProtocol,
-// never by VendorFamily — a single implementation can serve every brand that speaks the
-// same protocol (e.g. OnvifPtzProvider covers V380, Hikvision, Dahua, Reolink, Axis...).
+// Motion primitives of one protocol, never of a brand (ADR-22); positions are resolved above it (ADR-59).
 public interface IPtzCapabilityProvider
 {
     SupportedProtocol Protocol { get; }
 
-    // Executes a real connectivity/capability check against the camera. Verified must only
-    // ever be set to true as a result of this call — never declaratively.
-    // camera: provides Host, Username, Password (base connectivity)
-    // binding: provides ConfigJson (protocol-specific overrides, e.g. custom ONVIF port)
+    // Steps in one direction that cover the whole mechanical range from anywhere: how far homing goes (ADR-59).
+    int FullRangeSteps { get; }
+
+    // The real check against the camera; Verified is only ever set from its answer, never declared.
     Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default);
@@ -23,24 +21,9 @@ public interface IPtzCapabilityProvider
 
     Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    // Single precise step. Implementations that support native relative moves (ONVIF
-    // RelativeMove) should override — the default fallback is Move+Stop which is imprecise.
-    virtual async Task PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-    {
-        await PtzMoveAsync(camera, binding, direction, speed, ct);
-        await PtzStopAsync(camera, binding, ct);
-    }
+    // False when skipped for a step still running; a camera that refused or was unreachable raises a CameraCommandException (ADR-56).
+    Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default);
 
-    // Returns current pan/tilt position in normalized ONVIF space [-1, 1], or null if not supported.
-    virtual Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => Task.FromResult<(float Pan, float Tilt)?>(null);
-
-    // Branch B (ADR-25): returns current virtual step position from home (0,0), or null if not yet homed.
-    // Branch A providers (native presets) return null — not applicable.
-    virtual (int StepsX, int StepsY)? GetVirtualPosition(string cameraId) => null;
-
-    // Branch B (ADR-25): homes the camera to its mechanical UpLeft limit and resets virtual position to (0,0).
-    // Default no-op — only step-based providers that support homing implement this.
-    virtual Task PtzHomingStepsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => Task.CompletedTask;
+    // Current pan/tilt in normalized ONVIF space [-1, 1], or null when the camera cannot report it.
+    Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 }

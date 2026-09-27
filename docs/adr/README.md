@@ -34,7 +34,7 @@ references these ADRs rather than copying them.
 | [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md) | Camera capability catalogue: brand/protocol decoupling, vendor presets and manual onboarding | Accepted, amended by ADR-56 |
 | [ADR-23](0023-camera-reachability-monitoring-periodic-tcp-polling-independent-of-frigate.md) | Camera reachability monitoring: periodic TCP polling, independent of Frigate | Accepted |
 | [ADR-24](0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md) | Protocol layer separated from capability layer: `OnvifClient`, `SupportedProtocol`, `PrivacyStrategy` | Accepted, amended by ADR-57 |
-| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Accepted, amended by ADR-57 |
+| [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md) | PTZ position management: native presets (Branch A) vs Vyzio-managed positions (Branch B) | Superseded by ADR-59 (where homing and position tracking live), amended by ADR-57 |
 | [ADR-26](0026-ptz-position-thumbnails-client-triggered-capture-file-storage-direct-serving.md) | PTZ position thumbnails: client-triggered capture, file storage, direct serving | Accepted |
 | [ADR-27](0027-advanced-image-settings-imagesettings-capability-onvif-imaging-service-values-not-persisted.md) | Advanced image settings: the `ImageSettings` capability, ONVIF Imaging Service, values not persisted | Accepted, amended by ADR-56 |
 | [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) | Cascading multi-protocol capability detection + the `ManuallyConfigured` flag | Accepted |
@@ -68,3 +68,4 @@ references these ADRs rather than copying them.
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |
 | [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) | Privacy parking goes to the Parking slot, and back to Surveillance | Accepted |
 | [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted |
+| [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) | PTZ positions are resolved above the protocol, providers only move | Accepted |
