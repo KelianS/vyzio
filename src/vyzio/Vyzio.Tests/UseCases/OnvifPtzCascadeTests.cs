@@ -1,0 +1,106 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
+using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
+using Vyzio.Infrastructure.CapabilityProviders;
+using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Tests.Services;
+
+namespace Vyzio.Tests.UseCases;
+
+// The ADR-28 cascade driven through the real ONVIF PTZ probe, DVRIP standing in behind it.
+public class OnvifPtzCascadeTests
+{
+    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
+    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
+    private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
+    private readonly IPtzCapabilityProvider _dvripPtz = Substitute.For<IPtzCapabilityProvider>();
+    private readonly Camera _camera = new()
+    {
+        Id = "cam1",
+        Slug = "cam1",
+        FrigateCameraName = "cam1",
+        DisplayName = "cam1",
+        Host = "192.0.2.10",
+        VendorFamily = VendorFamily.Icsee,
+    };
+    private CameraCapabilityBinding? _storedPtz;
+
+    public OnvifPtzCascadeTests()
+    {
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(_camera);
+        _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(_ => _storedPtz);
+        _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Ptz), Arg.Any<CancellationToken>()))
+            .Do(call => _storedPtz = call.Arg<CameraCapabilityBinding>());
+        _registry.ResolveImageSettings(Arg.Any<SupportedProtocol>()).Returns(Substitute.For<IImageSettingsCapabilityProvider>());
+        _registry.GetRegisteredProtocols(Arg.Any<CameraCapability>()).Returns([]);
+        _registry.ResolvePtz(SupportedProtocol.Dvrip).Returns(_dvripPtz);
+        _dvripPtz.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+    }
+
+    private SeedAndProbePresetsUseCase MakeCascadeOver(FakeOnvifPtzCamera onvifCamera)
+    {
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("onvif").Returns(_ => new HttpClient(onvifCamera, disposeHandler: false));
+        var resolver = new OnvifEndpointResolver(factory, TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance);
+        var onvif = new OnvifClient(factory, resolver, TimeProvider.System, NullLogger<OnvifClient>.Instance);
+        _registry.ResolvePtz(SupportedProtocol.Onvif).Returns(new OnvifPtzProvider(onvif, NullLogger<OnvifPtzProvider>.Instance));
+        var probe = new ProbeCameraCapabilityUseCase(_cameras, _bindings, _registry, _endpointCache);
+        return new SeedAndProbePresetsUseCase(_cameras, _bindings, probe, _registry, _endpointCache);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldBindPtzToDvrip_WhenTheOnvifProfileCarriesNoPtzConfiguration()
+    {
+        // Arrange
+        var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));
+
+        // Act
+        await cascade.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Dvrip, _storedPtz?.Protocol);
+        Assert.True(_storedPtz?.Verified);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepPtzOnOnvifWithoutTryingDvrip_WhenTheOnvifProfileDescribesPtz()
+    {
+        // Arrange
+        var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));
+
+        // Act
+        await cascade.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Onvif, _storedPtz?.Protocol);
+        Assert.True(_storedPtz?.Verified);
+        await _dvripPtz.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepAManualOnvifChoiceButUnverifyIt_WhenTheOnvifProbeAnswersNo()
+    {
+        // Arrange
+        var manual = new CameraCapabilityBinding
+        {
+            CameraId = "cam1",
+            Capability = CameraCapability.Ptz,
+            Protocol = SupportedProtocol.Onvif,
+            Verified = true,
+            ManuallyConfigured = true,
+        };
+        _storedPtz = manual;
+        var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));
+
+        // Act
+        await cascade.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Onvif, manual.Protocol);
+        Assert.False(manual.Verified);
+        await _dvripPtz.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+    }
+}

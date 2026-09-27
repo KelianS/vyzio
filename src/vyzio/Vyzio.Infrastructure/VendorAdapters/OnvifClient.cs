@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
@@ -62,14 +63,14 @@ internal sealed class OnvifClient(
         }
     }
 
-    // Returns (profileToken, ptzConfigToken) for the first media profile.
-    public async Task<(string ProfileToken, string PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct)
+    // Returns the first media profile's token, and its PTZ configuration token or null when it has none.
+    public async Task<(string ProfileToken, string? PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
         var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct);
 
         var profileToken = "profile1";
-        var ptzConfigToken = "ptz_config_0";
+        string? ptzConfigToken = null;
 
         if (xml is not null)
         {
@@ -81,9 +82,12 @@ internal sealed class OnvifClient(
                 profileToken = profile?.Attribute("token")?.Value ?? profileToken;
                 ptzConfigToken = profile?.Descendants()
                                          .FirstOrDefault(e => e.Name.LocalName == "PTZConfiguration")
-                                         ?.Attribute("token")?.Value ?? ptzConfigToken;
+                                         ?.Attribute("token")?.Value;
             }
-            catch { }
+            catch (XmlException ex)
+            {
+                logger.LogDebug(ex, "ONVIF GetProfiles answer unreadable for {Host}.", camera.Host);
+            }
         }
 
         return (profileToken, ptzConfigToken);
