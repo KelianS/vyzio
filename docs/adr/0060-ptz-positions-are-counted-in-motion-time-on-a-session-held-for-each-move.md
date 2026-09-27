@@ -40,35 +40,41 @@ camera has moved right, and down, since. A discrete move counts a fixed nominal 
 positions of every protocol are in the same unit and a saved position replays in the one it was
 recorded in.
 
-**b) A held joystick is one continuous move.** It starts on the press and stops on the release, on a
-session opened at the start and held until the stop. Vyzio measures how long it moved on its own
-timer, an injected `TimeProvider`, from the move sent to the stop sent, and adds that time to the
-position. On a protocol whose move is discrete, the hold repeats its packet until the stop, each
-counting its nominal time.
+**b) Every press of the joystick is one continuous move, short or held.** The interface asks for the
+move on the press and for the stop on the release, with no tap told apart from a hold; the server
+opens the session as soon as the press reaches it and holds it until the stop. Vyzio measures how
+long it moved on its own timer, an injected `TimeProvider`, from the move sent to the stop sent, and
+adds that time to the position. On a protocol whose move is discrete, the move repeats its packet
+until the stop, each counting its nominal time, and a press sends at least one packet.
 
-**c) A held move stops by itself.** The interface signals the hold for as long as the press lasts;
+**c) A continuous move lasts a minimum time**, set once for every protocol and tuned on the hardware,
+so that a short press still moves the camera. A release that reaches the server before the move went
+out, or less than that minimum after it, stops the camera once the minimum has run; a later release
+stops it at once, without waiting for the move's answer. A press is registered before anything is
+awaited, so a release that overtakes the session opening still ends it.
+
+**d) A held move stops by itself.** The interface signals the hold for as long as the press lasts;
 when the signal stops for a few seconds (tab closed, network cut), the server stops the camera and
 counts the move as if released.
 
-**d) A tap is a timed move of a fixed duration**, the same whatever the requested speed and the
-network: the timer starts as the move goes out, and the stop goes out when it runs out, whether or
-not the move has answered yet. One place in the infrastructure paces every timed move and runs one
-move at a time per camera.
+**e) A timed move lasts its duration whatever the network**: the timer starts as the move goes out,
+and the stop goes out when it runs out, whether or not the move has answered yet. One place in the
+infrastructure paces every move, timed or held, and runs one move at a time per camera.
 
-**e) A recall is one continuous move per axis** for the time of the difference, from the known
+**f) A recall is one continuous move per axis** for the time of the difference, from the known
 position, with no homing added before it. **A calibration is one continuous move up-left** for the
 time that covers the whole range plus a margin, or for the known position plus that margin.
 
-**f) The time that covers the whole range is set per protocol**, and stays an estimate until
+**g) The time that covers the whole range is set per protocol**, and stays an estimate until
 measured on each camera, as ADR-59 says for its step counts.
 
-**g) No connection and no login inside a continuous move.** A provider opens what a move needs
-(connection, login, profile) before it, and the application holds it for the whole move: a hold, a
-tap, a recall with the calibration it may start, a calibration. A session the camera dropped is
+**h) No connection and no login inside a continuous move.** A provider opens what a move needs
+(connection, login, profile) before it, and the application holds it for the whole move: a press,
+a recall with the calibration it may start, a calibration. A session the camera dropped is
 reopened before the next move, never within one. A discrete packet is bounded by the camera, so what
 it opens per packet does not change the distance it covers.
 
-**h) Errors are raised and named, as ADR-56 says.** A move the camera refuses is stopped at once; a
+**i) Errors are raised and named, as ADR-56 says.** A move the camera refuses is stopped at once; a
 stop still goes out when the move failed; silence within the command wait counts as taken. A move
 that failed may have covered part of its time, or not stopped: it leaves the position unknown, and the
 next save asks for a calibration rather than record a wrong position. A move skipped because another
@@ -86,17 +92,24 @@ than claim it arrived, as ADR-59 d) says.
 - **A position counted in steps of a fixed length, a hold as chained steps** (option 2). Tried on the
   ICSee: the steps were repeatable, but the interface chained one step request after another, each
   opening and closing its own session, and a login between two steps made a held joystick stutter.
+- **A tap told apart from a hold by how long the press lasts**, a tap as a timed move sent on the
+  release and a hold as a move started past a threshold. Tried on the ICSee: a tap opened its
+  session only on the release and was too short for the motor, so it often did not move; a press
+  just past the threshold waited for the start's answer, login included, before its stop, so it
+  moved far.
 
 ## Consequences
 
 - A held joystick moves continuously on DVRIP, ONVIF without `RelativeMove` and Tapo; a recall is two
   moves, whatever the distance. How precisely a saved position is found again is measured on the
   hardware.
-- The interface drives a press in three calls, start, signal and stop, next to the single tap.
+- The interface drives every press in three calls, start, signal and stop. The shortest press moves
+  the camera for the minimum time: finer framing than that comes from the recall, not the joystick.
 - A DVRIP move reuses one logged-in connection; its commands go out in order and their answers are
   matched in order.
-- Over ONVIF and Tapo, the move and the stop of a tap are two HTTP requests the wire does not order:
-  a camera that handled the stop first would turn to its limit. The hardware test checks it.
-- The V380 moves as before: the same packet per tap, repeated while held, the same homing length and
+- Over ONVIF and Tapo, the move and the stop of a short press or a timed move are two HTTP requests
+  the wire does not order: a camera that handled the stop first would turn to its limit. The
+  hardware test checks it.
+- The V380 moves as before: the same packet for a short press, repeated while held, the same homing length and
   margin. It still opens its stream per packet.
 - Positions saved before this change were counted in steps and are to be saved again.

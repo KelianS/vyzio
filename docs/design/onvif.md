@@ -98,7 +98,8 @@ Two send paths, and the difference matters.
   can say *why* instead of reporting an unsupported capability. The PTZ probe asks without it and
   reads silence as no PTZ (below).
 - **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer, 300 ms for the start of
-  a continuous move, which a tap stops after a fixed duration and a hold on release
+  a continuous move, which a press stops on release, never before a minimum time,
+  and a recall after the time it replays
   ([ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)). **Silence is treated as success**: budget cameras execute on TCP receipt and answer seconds later, and PTZ moves cannot wait
   for them. Anything else that goes wrong is raised, and classified below.
 
@@ -145,7 +146,7 @@ protocol whatever the verdict (ADR-28).
 | PTZ refused while privacy mode is on (Tapo) | Malformed HTTP answer, not a SOAP fault | Raised as a refusal, never as a missing capability |
 | Speaks ONVIF without PTZ over it (some ICSee units) | Media profile carries no `PTZConfiguration` | The PTZ probe answers no, the cascade falls through to DVRIP |
 | Answers a command in 2 to 3 seconds (V380) | Full await would stall every move | Timeout treated as success |
-| `RelativeMove` absent | No bounded move to repeat | `GetConfigurationOptions` read when the profile carries a PTZ configuration, a real answer kept for the request; without one, `OnvifPtzProvider` falls back to a continuous move, timed for a tap and held until release for a press ([ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)) |
+| `RelativeMove` absent | No bounded move to repeat | `GetConfigurationOptions` read when the profile carries a PTZ configuration, a real answer kept for the request; without one, `OnvifPtzProvider` falls back to a continuous move, held until release for a press and timed for a recall ([ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)) |
 
 ## Authentication
 
