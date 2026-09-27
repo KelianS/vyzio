@@ -195,16 +195,17 @@ screens, whatever the number of rule types:
   then a **24-hour bar**, hour marks `0 6 12 18 24` above the bars and faint guides across them. Each
   range is a **block placed at its hours**, always carrying its type's icon and its type's fill (solid
   for `Vie privee`, stripes for `Sans notification`); a legend under the week pairs each fill and
-  icon with the type's name. A block is never narrower than its icon, so a short range stays
+  icon with the type's name, its swatch square since it is not tapped. A block is never narrower than its icon, so a short range stays
   tappable; its exact times are the range's own. Overlapping ranges stack in lanes, none hidden. A
   range crossing midnight runs to the end of its day with a square edge, and continues from the
   start of the next day's bar with a square edge (Sunday's into Monday). A block opens its range.
   Today's name is emphasised and a thin line marks the house's current time on its bar, read from
-  the server with the rules, never the device's clock. Never seven columns: at phone width a column
+  the server, never the device's clock; when that clock cannot be read, the line is left out rather
+  than shown stale. Never seven columns: at phone width a column
   holds no readable time, and on a wide screen the bars only grow longer.
 - **The week is its own text equivalent.** Each day is a list headed by its full name; a block's
-  accessible name is the full reading: **type name** · *times* (`22:00 → 06:00 le lendemain`, or
-  `jusqu'a 06:00, depuis la veille` for a tail) · *targets*, named two at most then a count, a
+  accessible name is the full reading: **type name** · *times* (`22:00 → 06:00 le lendemain`, `20:00 → minuit`,
+  or `jusqu'a 06:00, depuis la veille` for a tail) · *targets*, named two at most then a count, a
   target that no longer exists left out. An empty day says `Rien de prevu` to a screen reader.
 - **A rule left with no target** is an outlined block without fill, and a line under the week names
   it (type and times) with `plus aucune camera visee` or `plus aucun canal vise`, opening the range.

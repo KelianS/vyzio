@@ -80,8 +80,8 @@ apply to it, with the way to the calendar.
 The editor's fields are declared settings (ADR-43): an existing rule follows the editing cycle of
 ADR-41, and a new one is added by its own button, like a person or a camera. How the two screens
 read is the DESIGN SYSTEM's (§ Calendar and range editor). The week marks the current moment in
-the installation's clock, which the server answers (`GET /api/schedules/clock`: day of the week and
-time), because the device consulting may sit in another time zone.
+the installation's clock, which the server answers, because the device consulting may sit in
+another time zone.
 
 **ADR-43 gains the `time` nature**: a time of day, drawn as a time field.
 
