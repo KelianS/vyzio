@@ -2,6 +2,8 @@ using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
@@ -61,6 +63,10 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             Substitute.For<IFrigateEventImageProvider>(),
             _clipProvider,
             new DetectionMessageFormatter(),
+            new PersonAlertPolicy(
+                new DetectionProfileResolver(new ProfileRepository(_db)),
+                new ProfileCameraLinkRepository(_db),
+                new CameraDirectory(new CameraRepository(_db))),
             TimeZoneInfo.Local,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);

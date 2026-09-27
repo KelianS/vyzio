@@ -21,6 +21,7 @@ public sealed class SendDetectionNotificationUseCase(
     IFrigateEventImageProvider imageProvider,
     IFrigateClipProvider clipProvider,
     DetectionMessageFormatter formatter,
+    PersonAlertPolicy personAlertPolicy,
     TimeZoneInfo timeZone,
     ILogger<SendDetectionNotificationUseCase> logger,
     TimeSpan? mediaFinalizationWindow = null) : IDetectionNotificationDispatcher
@@ -33,6 +34,14 @@ public sealed class SendDetectionNotificationUseCase(
     public async Task<bool> ExecuteAsync(FrigateDetection detection, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(detection);
+
+        var decision = await personAlertPolicy.DecideAsync(detection, ct);
+        if (decision != PersonAlertDecision.Signalled)
+        {
+            logger.LogDebug("Event {EventId} not signalled: {Identity} on camera {Camera}, {Decision}",
+                detection.EventId, detection.Identity, detection.Camera, decision);
+            return false;
+        }
 
         var configs = await channelConfigs.GetAllAsync(ct);
         var sentSomewhere = false;

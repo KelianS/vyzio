@@ -45,9 +45,7 @@ public sealed class DetectionEventContractProjector(
         ArgumentNullException.ThrowIfNull(detection);
 
         var camera = await cameras.FindByFrigateNameAsync(detection.Camera, ct);
-        // A camera Vyzio no longer knows matches no link, so only an unrestricted profile resolves.
-        var profileId = await profileResolver.ResolveProfileIdAsync(
-            detection.Identity, camera?.Id ?? detection.Camera, ct);
+        var profileId = (await profileResolver.ResolveProfileAsync(detection.Identity, ct))?.Id;
 
         var retention = camera is null
             ? RetentionPolicy.ForInstallation(installation)

@@ -99,6 +99,11 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                   .HasDatabaseName("ux_ptz_presets_camera_preset");
         });
 
+        modelBuilder.Entity<Profile>(profile =>
+        {
+            profile.Property(p => p.AlertMode).HasConversion<SnakeCaseEnumConverter<ProfileAlertMode>>();
+        });
+
         modelBuilder.Entity<ProfilePhoto>(photo =>
         {
             photo.HasOne(p => p.Profile)

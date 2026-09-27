@@ -14,7 +14,6 @@ public class SystemStateCommandHandlerTests
 {
     private readonly IFrigateEventReader _events = Substitute.For<IFrigateEventReader>();
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly IProfileCameraLinkRepository _links = Substitute.For<IProfileCameraLinkRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
@@ -43,7 +42,7 @@ public class SystemStateCommandHandlerTests
                 _events,
                 new DetectionEventContractProjector(
                     new CameraDirectory(_cameras),
-                    new DetectionProfileResolver(_profiles, _links),
+                    new DetectionProfileResolver(_profiles),
                     _recordingSettings)),
             _profiles,
             _notifications,

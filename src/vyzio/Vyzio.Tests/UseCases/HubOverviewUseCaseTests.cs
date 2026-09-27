@@ -13,7 +13,6 @@ public class GetHubOverviewUseCaseTests
 {
     private readonly IFrigateEventReader _events = Substitute.For<IFrigateEventReader>();
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly IProfileCameraLinkRepository _links = Substitute.For<IProfileCameraLinkRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly INotificationChannelConfigRepository _channelConfigs = Substitute.For<INotificationChannelConfigRepository>();
@@ -45,7 +44,7 @@ public class GetHubOverviewUseCaseTests
                 _events,
                 new DetectionEventContractProjector(
                     new CameraDirectory(_cameras),
-                    new DetectionProfileResolver(_profiles, _links),
+                    new DetectionProfileResolver(_profiles),
                     _recordingSettings)),
             _profiles,
             _notifications,
@@ -63,8 +62,8 @@ public class GetHubOverviewUseCaseTests
         ]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
         [
-            new Profile { Name = "Alice", Category = "household", AlertMode = "notify" },
-            new Profile { Name = "Bob", Category = "known", AlertMode = "silent" }
+            new Profile { Name = "Alice", Category = "household", AlertMode = ProfileAlertMode.Always },
+            new Profile { Name = "Bob", Category = "known", AlertMode = ProfileAlertMode.Never }
         ]);
         _notifications.CountSentAsync(Arg.Any<CancellationToken>()).Returns(3);
         _notifications.GetLastSentAtAsync(Arg.Any<CancellationToken>())

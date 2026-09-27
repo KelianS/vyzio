@@ -75,7 +75,7 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
             db.Database.Migrate();
             SignedInTestClient.SeedOwnerSession(db);
 
-            var profile = new Profile { Name = "Alice", Category = "household", AlertMode = "notify" };
+            var profile = new Profile { Name = "Alice", Category = "household", AlertMode = ProfileAlertMode.Always };
             db.Profiles.Add(profile);
             db.SaveChanges();
 

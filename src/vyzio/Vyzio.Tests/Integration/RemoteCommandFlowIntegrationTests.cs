@@ -81,8 +81,6 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
         var profiles = Substitute.For<IProfileRepository>();
         profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
 
-        var links = Substitute.For<IProfileCameraLinkRepository>();
-
         var notifications = Substitute.For<INotificationRepository>();
         notifications.CountSentAsync(Arg.Any<CancellationToken>()).Returns(0);
         notifications.GetLastSentAtAsync(Arg.Any<CancellationToken>()).Returns((DateTimeOffset?)null);
@@ -98,7 +96,7 @@ public sealed class RemoteCommandFlowIntegrationTests : IDisposable
                 events,
                 new DetectionEventContractProjector(
                     new CameraDirectory(cameras),
-                    new DetectionProfileResolver(profiles, links),
+                    new DetectionProfileResolver(profiles),
                     recordingSettings)),
             profiles,
             notifications,

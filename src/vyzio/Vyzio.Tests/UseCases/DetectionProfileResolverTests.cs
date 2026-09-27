@@ -5,59 +5,51 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// Contract tests for ADR-15: profile-camera link filtering, now applied when reading the history.
+// Recognition is whole: a profile resolves on every camera (ADR-58).
 public class DetectionProfileResolverTests
 {
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
-    private readonly IProfileCameraLinkRepository _links = Substitute.For<IProfileCameraLinkRepository>();
 
-    private DetectionProfileResolver CreateSut() => new(_profiles, _links);
+    private DetectionProfileResolver CreateSut() => new(_profiles);
 
     [Fact]
-    public async Task ResolveProfileIdAsync_ShouldReturnTheProfile_WhenItIsLinkedToTheCamera()
+    public async Task ResolveProfileAsync_ShouldReturnTheProfile_WhenItBearsTheIdentityWhateverItsCase()
     {
+        // Arrange
         var profile = new Profile { Name = "Alice" };
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
-        _links.GetByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns([new ProfileCameraLink { ProfileId = profile.Id, CameraId = "cam-1", Enabled = true }]);
 
-        Assert.Equal(profile.Id, await CreateSut().ResolveProfileIdAsync("Alice", "cam-1"));
+        // Act
+        var resolved = await CreateSut().ResolveProfileAsync("alice");
+
+        // Assert
+        Assert.Same(profile, resolved);
     }
 
     [Fact]
-    public async Task ResolveProfileIdAsync_ShouldReturnNull_WhenTheCameraIsNotAmongTheActiveLinks()
+    public async Task ResolveProfileAsync_ShouldReturnNull_WhenNoProfileBearsThatName()
     {
-        var profile = new Profile { Name = "Bob" };
-        _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
-        _links.GetByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns([new ProfileCameraLink { ProfileId = profile.Id, CameraId = "cam-garage", Enabled = true }]);
-
-        Assert.Null(await CreateSut().ResolveProfileIdAsync("Bob", "cam-1"));
-    }
-
-    [Fact]
-    public async Task ResolveProfileIdAsync_ShouldReturnTheProfile_WhenItHasNoCameraLink()
-    {
-        // No link = recognized on every camera (ADR-15).
-        var profile = new Profile { Name = "Carol" };
-        _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
-        _links.GetByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns([]);
-
-        Assert.Equal(profile.Id, await CreateSut().ResolveProfileIdAsync("Carol", "any-camera"));
-    }
-
-    [Fact]
-    public async Task ResolveProfileIdAsync_ShouldReturnNull_WhenNoProfileBearsThatName()
-    {
+        // Arrange
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([new Profile { Name = "Alice" }]);
 
-        Assert.Null(await CreateSut().ResolveProfileIdAsync("Mallory", "cam-1"));
+        // Act
+        var resolved = await CreateSut().ResolveProfileAsync("Mallory");
+
+        // Assert
+        Assert.Null(resolved);
     }
 
     [Fact]
-    public async Task ResolveProfileIdAsync_ShouldReturnNullWithoutReadingProfiles_WhenThereIsNoIdentity()
+    public async Task ResolveProfileAsync_ShouldReturnNullWithoutReadingProfiles_WhenThereIsNoIdentity()
     {
-        Assert.Null(await CreateSut().ResolveProfileIdAsync(null, "cam-1"));
+        // Arrange
+        var sut = CreateSut();
+
+        // Act
+        var resolved = await sut.ResolveProfileAsync(null);
+
+        // Assert
+        Assert.Null(resolved);
         await _profiles.DidNotReceive().GetAllAsync(Arg.Any<CancellationToken>());
     }
 }
