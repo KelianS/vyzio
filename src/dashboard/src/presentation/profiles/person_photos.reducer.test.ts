@@ -1,8 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import { makeProfilePhoto } from '../../testing/profile_fixture'
 import { personPhotosReducer } from './person_photos.reducer'
 import { buildInitialPersonPhotosUido } from './person_photos.uido'
 
 describe('personPhotosReducer', () => {
+  it('personPhotosReducer_ShouldKeepTheGalleryWithoutAFailure_WhenAReloadFails', () => {
+    // Arrange
+    const state = { ...buildInitialPersonPhotosUido(), photos: [makeProfilePhoto()] }
+
+    // Act
+    const next = personPhotosReducer(state, { type: 'RELOAD_FAILED' })
+
+    // Assert
+    expect(next.photos).toEqual([makeProfilePhoto()])
+    expect(next.error).toBeNull()
+    expect(next.loading).toBe(false)
+  })
+
   it('personPhotosReducer_ShouldCloseTheQuestion_WhenTheRemovalFinishes', () => {
     // Arrange
     const state = { ...buildInitialPersonPhotosUido(), confirmRemoveId: 'photo-1', removing: true }

@@ -1,3 +1,4 @@
+import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { ProfilesContainer } from '../../infrastructure/providers/profiles.container'
 import type { PersonAction } from './person.actions'
@@ -20,9 +21,8 @@ export function buildPersonPresenter({ container, dispatch }: PersonPresenterCon
         .then((people) => {
           if (isLatest()) dispatch({ type: 'LOAD_SUCCEEDED', people, profileId })
         })
-        // An unread list still reads as a missing person.
-        .catch(() => {
-          if (isLatest()) dispatch({ type: 'LOAD_FAILED' })
+        .catch((e: unknown) => {
+          if (isLatest()) dispatch({ type: 'LOAD_FAILED', error: toAppError(e) })
         })
     },
   }

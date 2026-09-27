@@ -6,6 +6,7 @@ import { SettingsPage } from '../../common/settings/settings_page'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
+import { ReadFailure } from '../../common/components/error_message'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { usePerson } from './person_context'
@@ -30,6 +31,14 @@ export function PersonPhotosView() {
   useEffect(() => {
     presenter.onLoad(personId)
   }, [presenter, personId])
+
+  // An unread gallery is not an empty one: "recognition is off" would be false.
+  if (uido.error)
+    return (
+      <SettingsPage>
+        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(personId)} />
+      </SettingsPage>
+    )
 
   return (
     <>
@@ -140,7 +149,7 @@ function describeCoverage(count: number, loading: boolean): string {
   if (loading) return 'Chargement…'
   if (count === 0) return 'Aucune photo : la reconnaissance est inactive pour cette personne.'
   if (count < ADVISED_PHOTOS) {
-    return `${count} photo${count > 1 ? 's' : ''} — au moins ${ADVISED_PHOTOS} pour une reconnaissance fiable.`
+    return `${count} photo${count > 1 ? 's' : ''} : au moins ${ADVISED_PHOTOS} pour une reconnaissance fiable.`
   }
-  return `${count} photos — de quoi la reconnaître dans des conditions variées.`
+  return `${count} photos : de quoi la reconnaître dans des conditions variées.`
 }

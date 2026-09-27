@@ -19,7 +19,7 @@ export function buildPersonPhotosPresenter({
   // Moving to another person keeps the tab mounted: only the latest read may answer.
   const nextLoad = latestOnly()
 
-  function load(personId: string) {
+  function load(personId: string, galleryShown = false) {
     const isLatest = nextLoad()
     dispatch({ type: 'LOAD_STARTED' })
     container.getProfilePhotos
@@ -27,21 +27,28 @@ export function buildPersonPhotosPresenter({
       .then((photos) => {
         if (isLatest()) dispatch({ type: 'LOAD_SUCCEEDED', photos })
       })
-      // An unread gallery still reads as an empty one.
-      .catch(() => {
-        if (isLatest()) dispatch({ type: 'LOAD_FAILED' })
+      .catch((e: unknown) => {
+        if (!isLatest()) return
+        const error = toAppError(e)
+        // Under a gallery already shown, it stays and the failure goes to a toast (DESIGN SYSTEM § Errors).
+        if (galleryShown) {
+          toastError(toast, error)
+          dispatch({ type: 'RELOAD_FAILED' })
+        } else {
+          dispatch({ type: 'LOAD_FAILED', error })
+        }
       })
   }
 
   return {
-    onLoad: load,
+    onLoad: (personId: string) => load(personId),
 
     async onUpload(personId: string, file: File) {
       dispatch({ type: 'UPLOAD_STARTED' })
       try {
         await container.addProfilePhoto.execute(personId, file)
         toast('Photo ajoutée.', 'success')
-        load(personId)
+        load(personId, true)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {
@@ -60,7 +67,7 @@ export function buildPersonPhotosPresenter({
       try {
         await container.removeProfilePhoto.execute(personId, photoId)
         toast('Photo supprimée.', 'info')
-        load(personId)
+        load(personId, true)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {

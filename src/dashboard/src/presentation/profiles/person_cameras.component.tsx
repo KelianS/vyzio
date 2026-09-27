@@ -71,6 +71,13 @@ export function PersonCamerasView() {
         </p>
       </SettingsPage>
     )
+  // Unread links are not "every camera": the form would offer a false choice.
+  if (uido.error)
+    return (
+      <SettingsPage>
+        <ReadFailure error={uido.error} onRetry={() => presenter.onLoad(personId)} />
+      </SettingsPage>
+    )
   if (!uido.links) return null
 
   return (

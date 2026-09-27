@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AppErrorKind } from '../../common/errors/app_error'
 import { makeProfile } from '../../testing/profile_fixture'
 import { personReducer } from './person.reducer'
 import { buildInitialPersonUido } from './person.uido'
@@ -26,5 +27,21 @@ describe('personReducer', () => {
 
     // Assert
     expect(next.person).toBeNull()
+  })
+
+  it('personReducer_ShouldForgetThePreviousFailure_WhenARetryStarts', () => {
+    // Arrange
+    const state = {
+      ...buildInitialPersonUido(),
+      loading: false,
+      error: { kind: AppErrorKind.Server, status: 500 },
+    }
+
+    // Act
+    const next = personReducer(state, { type: 'LOAD_STARTED' })
+
+    // Assert
+    expect(next.error).toBeNull()
+    expect(next.loading).toBe(true)
   })
 })
