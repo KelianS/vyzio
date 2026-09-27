@@ -30,7 +30,7 @@ export function NotificationChannelListView() {
   const remaining = uido.channels.length - configured.length
 
   return (
-    <SettingsPage lede="Par où Vyzio vous prévient quand il détecte quelque chose.">
+    <SettingsPage lede="Par où Vyzio vous notifie quand il détecte quelque chose.">
       {uido.error ? (
         <ReadFailure
           error={uido.error}
