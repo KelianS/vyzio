@@ -74,9 +74,39 @@ skips a camera that has no stream binding.
 1. The capability's protocol is checked (above). When it does not answer with its account, the binding
    fails with the protocol's reason and nothing else runs.
 2. The stream is then verified (`VerifyCameraUseCase`, `StreamVerification`): the camera status, the
-   streams it serves, and the binding's `Verified` and `LastError`.
-3. Any other capability is probed by the provider for (capability, protocol), as in ADR-22. A
-   read-only proof per capability is issue #221.
+   streams it serves, and the binding's state and `LastError`.
+3. Any other capability is proven by the provider for (capability, protocol), as in ADR-22, through its
+   `ProveAsync` ([ADR-66](../adr/0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)).
+   It returns a `CapabilityProof`: `Proven`, `Missing` (with what the camera answered) or `Unprovable`.
+   An exception is a failure with its message.
+
+What each provider reads:
+
+| Capability, protocol | Proof | Outcome when absent |
+|---|---|---|
+| PTZ, ONVIF | the media profile carries a PTZ configuration and `GetConfigurationOptions` describes it ([`onvif.md`](onvif.md)) | `Missing` |
+| PTZ, DVRIP | the ADR-64 probe preset is stored, then listed in `Uart.PTZPreset` ([`dvrip.md`](dvrip.md)) | `Unprovable` |
+| PTZ, V380 | none: the device number is found and authenticated (`V380Client.ProbeAsync`), which only the protocol proves | `Unprovable` |
+| PTZ and hardware cut, Tapo KLAP | none validated on hardware: nothing is sent beyond the protocol's handshake | `Unprovable` |
+| Image settings, ONVIF | `GetImagingSettings` returns the settings | `Missing` |
+| Image settings, DVRIP | `AVEnc.VideoColor` holds a `Brightness` value | `Missing` |
+
+`CapabilityVerdict` turns the proof into the binding's `Status` (`CapabilityStatus`): `Proven` gives
+`Verified`, `Missing` gives `Missing` with the camera's answer in `LastError`, `Unprovable` gives
+`ToConfirm`, or `Verified` when `ConfirmedAt` holds the user's confirmation over this protocol. A
+failure gives `Failed`. `Verified` is read from `Status`, never written. `ConfirmedAt` survives every
+check and is cleared by a protocol change (`ConfigureCameraCapabilityUseCase`) and by a "no".
+
+## Trying and confirming a capability
+
+`TryCameraCapabilityUseCase` acts on a binding in `ToConfirm` only, and never on a camera in privacy
+mode (`privacy_mode_active`): PTZ turns right, then left, for `CapabilityTry.PtzNudge` each at the
+replay speed, through `PtzManagedPositions.NudgeAsync`, which forgets the counted position so the next
+recall homes first (ADR-60); the hardware cut closes, waits `CapabilityTry.CutHold` on the injected
+`TimeProvider`, then opens, the opening attempted even when the wait is cancelled. It records nothing.
+`ConfirmCameraCapabilityUseCase` takes the user's answer on a binding in `ToConfirm`
+(`nothing_to_confirm` otherwise): yes sets `Verified`, `VerifiedAt` and `ConfirmedAt`, and the PTZ
+panel like a proof does; no sets `RejectedByUser` and clears `ConfirmedAt`.
 
 ## Detection
 
@@ -87,9 +117,9 @@ protocol with a registered provider:
 2. The protocol search below runs: every candidate protocol and every row is checked once, reach and
    login.
 3. Each capability tries, in priority order, only the candidates that answered, and keeps the first
-   that verifies. A capability the user configured by hand keeps its protocol and is only tested
-   again. When no candidate answers, a preset capability stays unverified with the reason; a blind
-   one is removed.
+   that proves it, otherwise the first where it is to confirm (ADR-66). A capability the user configured by hand keeps its protocol and is only tested
+   again. When none proves it or leaves it to confirm, a preset capability stays unverified with the
+   reason; a blind one is removed, and so is a blind one left to confirm.
 4. A protocol row that could not be reached, that no binding uses and that holds no port, account or
    device id the user entered is removed. A refused one stays: the camera speaks it.
 

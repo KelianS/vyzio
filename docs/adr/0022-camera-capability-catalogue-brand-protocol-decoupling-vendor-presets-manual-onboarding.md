@@ -1,7 +1,8 @@
 # ADR-22 — Catalogue de capacités caméra : découplage marque/protocole, presets vendor et onboarding manuel
 
 > Statut : Accepté, modifié par [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md)
-> et par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) (le flux devient une capacité ; port, adresse et compte quittent `ConfigJson`).
+> et par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) (le flux devient une capacité ; port, adresse et compte quittent `ConfigJson`),
+> et par [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) (`Verified` vient d'une preuve ou de la confirmation de l'utilisateur).
 
 ## Contexte
 
