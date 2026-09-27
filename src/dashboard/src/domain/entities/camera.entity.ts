@@ -18,6 +18,14 @@ export const PrivacyStrategy = {
 
 export type PrivacyStrategy = (typeof PrivacyStrategy)[keyof typeof PrivacyStrategy]
 
+/** A camera's own status as the backend reports it; any other value has not been checked since it changed. */
+export const CameraState = {
+  Online: 'online',
+  Offline: 'offline',
+  Degraded: 'degraded',
+  ConfigError: 'config_error',
+} as const
+
 export interface Camera {
   id: string
   slug: string

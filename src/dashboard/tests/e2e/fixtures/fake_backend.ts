@@ -283,6 +283,8 @@ export interface FakeBackendState {
   scheduleRules: FakeScheduleRule[]
   /** Fixed, so the week's "now" marker sits in the same place on every run. */
   houseClock: { dayOfWeek: number; time: string }
+  /** Frames a second received per camera id, where a test needs a low rate; others get 10. */
+  receivedFps: Record<string, number>
   profiles: {
     id: string
     name: string
@@ -365,6 +367,7 @@ export function createFakeBackendState(
     restartBreaks: false,
     scheduleRules: [],
     houseClock: { dayOfWeek: 2, time: '07:30' },
+    receivedFps: {},
     profiles: [],
     notificationChannels: {},
     channelListening: {},
@@ -542,7 +545,10 @@ export async function installFakeBackend(
       return json(route, {
         status: 'active',
         storage: { totalGb: 500, usedGb: 120, freeGb: 380 },
-        cameras: state.cameras.map((c) => ({ camera: c.frigateCameraName ?? c.slug, fps: 10 })),
+        cameras: state.cameras.map((c) => ({
+          camera: c.frigateCameraName ?? c.slug,
+          fps: state.receivedFps[c.id] ?? 10,
+        })),
         detection: { hardware: 'cpu', targetFps: 5 },
         pendingChanges: state.pendingChanges,
       })
