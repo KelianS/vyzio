@@ -13,7 +13,7 @@ The chain: SAD (boundaries), ADR (decision and why), **TAD (how)**, code (does).
 |---|---|---|---|
 | Camera network discovery | [`camera-discovery.md`](camera-discovery.md) | ADR-31, ADR-32 | `Vyzio.Infrastructure/Services/CameraDiscovery/` |
 | ONVIF client and endpoint resolution | [`onvif.md`](onvif.md) | ADR-24, ADR-27, ADR-56 | `Vyzio.Infrastructure/VendorAdapters/` |
-| DVRIP client and its PTZ, native preset detection | [`dvrip.md`](dvrip.md) | ADR-25, ADR-29, ADR-59, ADR-60 | `Vyzio.Infrastructure/VendorAdapters/Dvrip*.cs`, `Vyzio.Infrastructure/CapabilityProviders/DvripPtzProvider.cs` |
+| DVRIP client and its PTZ, native preset detection | [`dvrip.md`](dvrip.md) | ADR-25, ADR-29, ADR-59, ADR-60, ADR-64 | `Vyzio.Infrastructure/VendorAdapters/Dvrip*.cs`, `Vyzio.Infrastructure/CapabilityProviders/DvripPtzProvider.cs` |
 | Reaching a camera: access, protocols, capabilities | [`camera-connection.md`](camera-connection.md) | ADR-19, ADR-22, ADR-28, ADR-38, ADR-61 | `Vyzio.Core/Entities/`, `Vyzio.Application/UseCases/Cameras/`, `Vyzio.Infrastructure/CapabilityProviders/` |
 
 ## Candidate components (detail still carried by their ADRs and the code)

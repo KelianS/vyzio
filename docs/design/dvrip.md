@@ -6,9 +6,10 @@
 > [ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)
 > (a session held for each move),
 > [ADR-59](../adr/0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) (positions in
-> tiers, native presets first) and
+> tiers, native presets first),
 > [ADR-25](../adr/0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)
-> (routing on `supports_native_presets`). How the camera is reached, its port and its account, is in
+> (routing on `supports_native_presets`) and [ADR-64](../adr/0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) (native presets
+> detected by storing, then clearing, a spare slot). How the camera is reached, its port and its account, is in
 > [`camera-connection.md`](camera-connection.md).
 > Home of the code: `src/vyzio/Vyzio.Infrastructure/VendorAdapters/DvripClient.cs`, `DvripSession.cs`
 > and `Vyzio.Infrastructure/CapabilityProviders/DvripPtzProvider.cs`.
@@ -31,24 +32,26 @@ session the camera dropped is reopened before the next command, never within a m
 A PTZ binding over DVRIP is `verified` once a session opens with the DVRIP account. On that same
 session, the probe then asks whether the camera keeps presets of its own, without moving it:
 
-1. Read the stored presets, `Uart.PTZPreset.[0]` through `ConfigGet`.
+1. Read the stored presets, `Uart.PTZPreset.[0]` through `ConfigGet`. An answer that carries no list,
+   not even an empty one, ends the probe here: no slot is known to be free.
 2. Pick the spare slot: the highest id from 255 down to 5 that is not already stored. Slots 1 to 4
-   are the ones Vyzio uses (SPECS 9.2), and a preset already on the camera is never overwritten.
+   are the ones Vyzio uses (ADR-25, `PtzPreset`), and a preset already on the camera is never
+   overwritten.
 3. `SetPreset` on that slot, then read the list again: the slot must be listed.
-4. `ClearPreset` on that slot, whatever came before, even when a step failed.
+4. `ClearPreset` on that slot, even when step 3 failed.
 
 When the slot is listed, the probe records `supports_native_presets: true` on the binding, and the
 positions take the first tier. Any other outcome (a refusal, silence, an unreadable list, a slot
 missing from it) records `false`, and the positions stay with Vyzio (third tier); the PTZ binding stays
-verified either way. This is the hardware confirmation ADR-59 f) waited for before a DVRIP camera
-could take the first tier. A failed cleanup is logged and leaves at most one preset on the spare slot.
+verified either way. Why a probe may store a preset, and the options rejected, are in
+[ADR-64](../adr/0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md).
+A failed cleanup is logged and leaves at most one preset on the spare slot.
 
 ## Positions on the native tier
 
 Saving a position is `SetPreset` on its slot, recalling it is `GotoPreset` on it, each on a session of
 its own: the camera moves by itself, so no motion time is counted and no calibration exists
-(`calibrated` stays true). Positions saved on the Vyzio-managed tier are not in the camera and are to
-be saved again once a binding moves to the native tier.
+(`calibrated` stays true).
 
 ## Known camera behaviours
 
@@ -61,5 +64,3 @@ Measured on an ICSee unit (2026-09-27).
 | At least twelve presets are kept at once, on ids up to 255 | Room for a spare slot above the four Vyzio uses | Probe step 2 |
 | `Ability.PTZ` and `SystemFunction` answer `Ret` 607 (not supported) | No capability flag to read | Detection by storing a preset instead |
 | The vendor app offers no preset feature | The capability is only visible through the protocol | The probe above |
-| The horizontal axis is mirrored | Left pans right | `DvripPtzProvider.DirectionToCommand` |
-| A stop is `DirectionUp` with `Preset` -1, whatever was moving | Any other stop is ignored | `DvripPtzProvider` |
