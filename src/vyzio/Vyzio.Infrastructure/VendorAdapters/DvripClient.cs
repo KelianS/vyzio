@@ -41,7 +41,7 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
                 throw loginAnswer is null
                     ? new CameraUnreachableException($"No DVRIP login answer from {camera.Host} (connection closed by the camera).")
                     : new CameraCommandRefusedException($"DVRIP login refused by {camera.Host} (Ret={ReadRet(loginAnswer)?.ToString(CultureInfo.InvariantCulture) ?? "unreadable"}).");
-            return new DvripSession(tcp, sessionId, camera.Host, time, CommandTimeout);
+            return new DvripSession(tcp, sessionId, $"{camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)}", time, CommandTimeout);
         }
         catch (Exception ex)
         {

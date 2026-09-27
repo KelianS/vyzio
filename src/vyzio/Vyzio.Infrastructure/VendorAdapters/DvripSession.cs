@@ -10,7 +10,7 @@ internal sealed class DvripSession : IAsyncDisposable
     private readonly TcpClient _tcp;
     private readonly NetworkStream _stream;
     private readonly string _sessionId;
-    private readonly string _host;
+    private readonly string _endpoint;
     private readonly TimeProvider _time;
     private readonly TimeSpan _answerWait;
     private readonly ConcurrentQueue<TaskCompletionSource<string?>> _pending = new();
@@ -23,12 +23,12 @@ internal sealed class DvripSession : IAsyncDisposable
     private volatile string _closedBy = "connection closed by the camera";
     private int _disposed;
 
-    internal DvripSession(TcpClient tcp, string sessionId, string host, TimeProvider time, TimeSpan answerWait)
+    internal DvripSession(TcpClient tcp, string sessionId, string endpoint, TimeProvider time, TimeSpan answerWait)
     {
         _tcp = tcp;
         _stream = tcp.GetStream();
         _sessionId = sessionId;
-        _host = host;
+        _endpoint = endpoint;
         _time = time;
         _answerWait = answerWait;
         _reading = ReadAnswersAsync();
@@ -49,7 +49,7 @@ internal sealed class DvripSession : IAsyncDisposable
         try
         {
             if (_closed)
-                throw new CameraUnreachableException($"DVRIP service on {_host}: {_closedBy}.");
+                throw new CameraUnreachableException($"DVRIP service on {_endpoint}: {_closedBy}.");
             _pending.Enqueue(answer);
             if (_closed) Close();
             var sequence = _sequence++;
@@ -59,7 +59,7 @@ internal sealed class DvripSession : IAsyncDisposable
         catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
         {
             Close();
-            throw new CameraUnreachableException($"DVRIP service on {_host}: {ex.Message}", ex);
+            throw new CameraUnreachableException($"DVRIP service on {_endpoint}: {ex.Message}", ex);
         }
         finally
         {
@@ -76,7 +76,7 @@ internal sealed class DvripSession : IAsyncDisposable
         try
         {
             return await answer.WaitAsync(linked.Token)
-                ?? throw new CameraUnreachableException($"No DVRIP answer from {_host} ({_closedBy}).");
+                ?? throw new CameraUnreachableException($"No DVRIP answer from {_endpoint} ({_closedBy}).");
         }
         catch (OperationCanceledException) when (deadline.IsCancellationRequested && !ct.IsCancellationRequested)
         {
