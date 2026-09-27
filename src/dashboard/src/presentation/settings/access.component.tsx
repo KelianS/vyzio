@@ -28,10 +28,10 @@ export function AccessView() {
   }
 
   return (
-    <SettingsPage lede="Qui peut ouvrir cette interface, et depuis quels appareils.">
+    <SettingsPage>
       <SettingsSection
         title="Mot de passe"
-        lede="Le changer ferme toutes les sessions ouvertes ailleurs. Cet appareil reste connecté."
+        lede="Le changer déconnecte les autres appareils, pas celui-ci."
       >
         <ChangePasswordForm
           minLength={uido.minLength}
@@ -41,10 +41,7 @@ export function AccessView() {
         />
       </SettingsSection>
 
-      <SettingsSection
-        title="Cet appareil"
-        lede="Cet appareil reste connecté plusieurs semaines sans redemander le mot de passe. Le déconnecter ne change rien aux autres."
-      >
+      <SettingsSection title="Cet appareil">
         <Button
           variant="outline"
           disabled={uido.leaving}
@@ -54,10 +51,8 @@ export function AccessView() {
         </Button>
       </SettingsSection>
 
-      <SettingsSection
-        title="Tous les appareils"
-        lede="Referme toutes les sessions ouvertes, celle-ci comprise. Le mot de passe reste le même : chaque appareil devra le saisir à nouveau."
-      >
+      {/* The cost is said by the confirmation, not above the button (DESIGN SYSTEM § Help). */}
+      <SettingsSection title="Tous les appareils">
         <Button
           variant="outline"
           disabled={uido.leavingEverywhere}
@@ -69,13 +64,12 @@ export function AccessView() {
         <HelpPanel title="Quand faut-il déconnecter tous les appareils ?">
           <p>
             Quand un téléphone ou un ordinateur qui ouvrait Vyzio n’est plus entre vos mains :
-            perdu, volé, revendu, ou simplement prêté. Tant qu’une session y reste ouverte, elle
-            donne accès à vos caméras sans mot de passe.
+            perdu, volé, revendu, ou simplement prêté. Tant qu’il reste connecté, il donne accès à
+            vos caméras sans mot de passe.
           </p>
           <p>
             Si vous pensez que quelqu’un connaît votre mot de passe, cela ne suffit pas : il
-            pourrait se reconnecter aussitôt. Changez-le d’abord, ci-dessus — le changer ferme les
-            sessions par la même occasion.
+            pourrait se reconnecter aussitôt. Changez-le plutôt, ci-dessus.
           </p>
         </HelpPanel>
       </SettingsSection>
@@ -83,7 +77,7 @@ export function AccessView() {
       {uido.confirmEverywhere && (
         <ConfirmModal
           title="Déconnecter tous les appareils ?"
-          body="Vous devrez saisir votre mot de passe à nouveau, ici comme ailleurs."
+          body="Chaque appareil, celui-ci compris, devra saisir le mot de passe à nouveau. Le mot de passe, lui, ne change pas."
           confirmLabel="Déconnecter"
           onCancel={presenter.onCancelSignOutEverywhere}
           onConfirm={() => leave(presenter.onSignOutEverywhere)}

@@ -30,6 +30,19 @@ describe('AccessView', () => {
     expect(await screen.findByText('Au moins 8 caractères.')).toBeInTheDocument()
   })
 
+  it('AccessView_ShouldStateThePasswordChangeCostAboveTheForm_WhenOpened', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(state) })
+
+    // Act
+    renderScreen(<AccessView />, ACCESS)
+
+    // Assert
+    expect(
+      await screen.findByText('Le changer déconnecte les autres appareils, pas celui-ci.'),
+    ).toBeInTheDocument()
+  })
+
   it('onChangePassword_ShouldSaySoAndClearTheFields_WhenThePasswordChanges', async () => {
     // Arrange
     const network = fakeNetwork({ [STATE]: ok(state), [PASSWORD]: ok() })
@@ -90,6 +103,22 @@ describe('AccessView', () => {
 
     // Assert
     expect(network.sent).toContainEqual(expect.objectContaining({ route: SIGN_OUT }))
+  })
+
+  it('onAskSignOutEverywhere_ShouldStateTheCostInTheConfirmation_WhenTheUserAsks', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(state) })
+    renderScreen(<AccessView />, ACCESS)
+
+    // Act
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Déconnecter tous les appareils' }),
+    )
+
+    // Assert
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(
+      'Chaque appareil, celui-ci compris, devra saisir le mot de passe à nouveau.',
+    )
   })
 
   it('onSignOutEverywhere_ShouldCloseEverySession_WhenTheUserConfirms', async () => {

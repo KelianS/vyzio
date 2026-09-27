@@ -158,6 +158,12 @@ The boundary between them is checkable: **a tooltip fits in two sentences**. Wha
 about the task rather than the field, and belongs down in the section panel, leaving the one sufficient
 sentence in the tooltip. A **cost** never moves down: it stays visible without a gesture.
 
+For an **action**, the cost is said once, before the effect ([SPECS](SPECS.md) 7.2). When the action
+asks for a confirmation, the confirmation says it: it opens on the gesture that triggers the action, so
+it takes no gesture of its own, and nothing above the button repeats it. An action without a
+confirmation says its cost in one line above its button. An action that costs nothing gets no line at
+all: its title and its button are enough.
+
 The panel is the `common/components/help_panel` component, never a rewritten `<details>`. Its header
 carries the **question** the reader is asking ("Ou trouver ces informations ?") rather than the words
 "En savoir plus", which say nothing about what will be found there; it opens on its own only where the
