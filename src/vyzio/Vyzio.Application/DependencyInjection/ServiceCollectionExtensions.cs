@@ -63,7 +63,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteCameraPrivacyScheduleUseCase>();
         // Singleton: a camera's position outlives the request that moved it (ADR-59).
         services.AddSingleton<PtzManagedPositions>();
-        services.AddScoped<PtzStepUseCase>();
         services.AddScoped<PtzStartMoveUseCase>();
         services.AddScoped<PtzSignalMoveUseCase>();
         services.AddScoped<PtzStopMoveUseCase>();

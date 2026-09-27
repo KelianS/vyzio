@@ -23,7 +23,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
     // 80 relative moves at replay speed cover the normalized [-1, 1] range, the rest is margin; an estimate for a continuous move (ADR-60).
     public TimeSpan FullRange => 90 * RelativeMoveLength;
 
-    // The motion time a relative move counts, the length of a tap, so that both kinds of move share one unit (ADR-60).
+    // The motion time a relative move counts, so that both kinds of move share one unit (ADR-60).
     private static readonly TimeSpan RelativeMoveLength = TimeSpan.FromMilliseconds(100);
 
     // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid

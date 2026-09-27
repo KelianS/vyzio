@@ -13,6 +13,7 @@ public class PtzMoveRunnerTests
     private readonly FakeTimeProvider _time = new();
     private readonly Camera _camera = new() { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "192.168.1.10" };
     private readonly TaskCompletionSource _moveAnswer = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource<DateTimeOffset> _stopSentAt = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private PtzMoveRunner MakeRunner() => new(_time, NullLogger<PtzMoveRunner>.Instance);
@@ -135,20 +136,69 @@ public class PtzMoveRunnerTests
     }
 
     [Fact]
-    public async Task HoldAsync_ShouldMeasureFromTheMoveSentToTheStopSent_WhenTheCameraAnswersTheMoveLate()
+    public async Task HoldAsync_ShouldStopOnTheRelease_WhenReleasedPastTheMinimum()
     {
         // Arrange
-        var holding = MakeRunner().HoldAsync(_camera, _ => _moveAnswer.Task, _ => Stop(), CancellationToken.None);
-        _time.Advance(TimeSpan.FromMilliseconds(400));
-        _moveAnswer.SetResult();
-        var held = await holding;
-        _time.Advance(TimeSpan.FromMilliseconds(1600));
+        var movedAt = _time.GetUtcNow();
+        var stopped = await MakeRunner().HoldAsync(_camera, _ => Task.CompletedTask, _ => Stop(), _released.Task, CancellationToken.None);
+        _time.Advance(TimeSpan.FromSeconds(2));
 
         // Act
-        var moved = await held!.StopAsync();
+        _released.SetResult();
 
         // Assert
-        Assert.Equal(TimeSpan.FromSeconds(2), moved);
+        Assert.Equal(TimeSpan.FromSeconds(2), await stopped!);
+        Assert.Equal(movedAt + TimeSpan.FromSeconds(2), await _stopSentAt.Task);
+    }
+
+    [Fact]
+    public async Task HoldAsync_ShouldMoveForTheMinimum_WhenReleasedBeforeTheMinimum()
+    {
+        // Arrange
+        var movedAt = _time.GetUtcNow();
+        var stopped = await MakeRunner().HoldAsync(_camera, _ => Task.CompletedTask, _ => Stop(), _released.Task, CancellationToken.None);
+        _time.Advance(TimeSpan.FromMilliseconds(50));
+        _released.SetResult();
+
+        // Act
+        _time.Advance(PtzMoveRunner.MinimumHold - TimeSpan.FromMilliseconds(50));
+
+        // Assert
+        Assert.Equal(PtzMoveRunner.MinimumHold, await stopped!);
+        Assert.Equal(movedAt + PtzMoveRunner.MinimumHold, await _stopSentAt.Task);
+    }
+
+    [Fact]
+    public async Task HoldAsync_ShouldMoveForTheMinimum_WhenReleasedBeforeTheMoveWentOut()
+    {
+        // Arrange
+        _released.SetResult();
+        var movedAt = _time.GetUtcNow();
+        var stopped = await MakeRunner().HoldAsync(_camera, _ => Task.CompletedTask, _ => Stop(), _released.Task, CancellationToken.None);
+
+        // Act
+        _time.Advance(PtzMoveRunner.MinimumHold);
+
+        // Assert
+        Assert.Equal(PtzMoveRunner.MinimumHold, await stopped!);
+        Assert.Equal(movedAt + PtzMoveRunner.MinimumHold, await _stopSentAt.Task);
+    }
+
+    [Fact]
+    public async Task HoldAsync_ShouldStopWithoutWaitingForTheMovesAnswer_WhenReleasedPastTheMinimum()
+    {
+        // Arrange
+        var movedAt = _time.GetUtcNow();
+        var holding = MakeRunner().HoldAsync(_camera, _ => _moveAnswer.Task, _ => Stop(), _released.Task, CancellationToken.None);
+        _time.Advance(TimeSpan.FromMilliseconds(400));
+
+        // Act
+        _released.SetResult();
+
+        // Assert
+        Assert.Equal(movedAt + TimeSpan.FromMilliseconds(400), await _stopSentAt.Task);
+        _moveAnswer.SetResult();
+        Assert.Equal(TimeSpan.FromMilliseconds(400), await (await holding)!);
     }
 
     [Fact]
@@ -159,7 +209,7 @@ public class PtzMoveRunnerTests
 
         // Act
         var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => MakeRunner().HoldAsync(_camera,
-            _ => Task.FromException(new CameraCommandRefusedException("refused")), _ => Stop(), CancellationToken.None));
+            _ => Task.FromException(new CameraCommandRefusedException("refused")), _ => Stop(), _released.Task, CancellationToken.None));
 
         // Assert
         Assert.Equal("refused", error.Message);
@@ -171,7 +221,7 @@ public class PtzMoveRunnerTests
     {
         // Arrange
         var runner = MakeRunner();
-        var held = await runner.HoldAsync(_camera, _ => Task.CompletedTask, _ => Stop(), CancellationToken.None);
+        var stopped = await runner.HoldAsync(_camera, _ => Task.CompletedTask, _ => Stop(), _released.Task, CancellationToken.None);
         var skipped = runner.RunAsync(_camera, _ => Task.CompletedTask, CancellationToken.None);
 
         // Act
@@ -179,7 +229,8 @@ public class PtzMoveRunnerTests
 
         // Assert
         Assert.False(await skipped);
-        await held!.StopAsync();
+        _released.SetResult();
+        await stopped!;
         Assert.True(await runner.RunAsync(_camera, _ => Task.CompletedTask, CancellationToken.None));
     }
 
@@ -188,13 +239,15 @@ public class PtzMoveRunnerTests
     {
         // Arrange
         var runner = MakeRunner();
-        var held = await runner.HoldAsync(_camera,
-            _ => Task.CompletedTask, _ => Task.FromException(new CameraUnreachableException("stop lost")), CancellationToken.None);
+        var stopped = await runner.HoldAsync(_camera,
+            _ => Task.CompletedTask, _ => Task.FromException(new CameraUnreachableException("stop lost")), _released.Task, CancellationToken.None);
+        _released.SetResult();
 
         // Act
-        await Assert.ThrowsAsync<CameraUnreachableException>(() => held!.StopAsync());
+        _time.Advance(PtzMoveRunner.MinimumHold);
 
         // Assert
+        await Assert.ThrowsAsync<CameraUnreachableException>(() => stopped!);
         Assert.True(await runner.RunAsync(_camera, _ => Task.CompletedTask, CancellationToken.None));
     }
 }

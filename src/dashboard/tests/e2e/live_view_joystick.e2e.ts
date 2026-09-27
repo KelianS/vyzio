@@ -9,7 +9,7 @@ async function openTheLiveView(page: Page) {
   return state
 }
 
-// A held direction is one move, signalled while held and stopped on release; a tap is one short move (ADR-60).
+// Every press is one move, started on the press, signalled while held and stopped on release (ADR-60).
 test.describe('Live view joystick', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
@@ -31,12 +31,14 @@ test.describe('Live view joystick', () => {
     await expect.poll(() => state.ptz.holding).toBe(false)
   })
 
-  test('Joystick_ShouldSendOneShortMove_WhenTheUserTapsADirection', async ({ page }) => {
+  test('Joystick_ShouldStartThenStopOneMove_WhenTheUserTapsADirection', async ({ page }) => {
     await openTheLiveView(page)
-    const tapped = page.waitForRequest('**/api/cameras/camera-1/ptz/step')
+    const started = page.waitForRequest('**/api/cameras/camera-1/ptz/move/start')
+    const stopped = page.waitForRequest('**/api/cameras/camera-1/ptz/move/stop')
 
     await page.getByTitle('Gauche').click()
 
-    expect((await tapped).postDataJSON()).toEqual({ direction: 'Left', speed: 50 })
+    expect((await started).postDataJSON()).toEqual({ direction: 'Left', speed: 50 })
+    await stopped
   })
 })

@@ -37,11 +37,17 @@ public class PtzPositionsOverDvripTests
         _dvrip.OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(_dvripMotion);
         _dvripMotion.MoveForAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns(call => call.ArgAt<TimeSpan>(2));
+        _dvripMotion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<Task>(), Arg.Any<CancellationToken>()).Returns(true);
+        _dvripMotion.StoppedAsync().Returns(TimeSpan.FromMilliseconds(100));
     }
 
     private Task<bool> Calibrate() => new PtzCalibrateUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1");
 
-    private Task<bool> Step(string direction) => new PtzStepUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest(direction));
+    private async Task Press(string direction)
+    {
+        await new PtzStartMoveUseCase(_cameras, _bindings, _registry, _positions).ExecuteAsync("cam1", new PtzMoveRequest(direction));
+        await new PtzStopMoveUseCase(_positions).ExecuteAsync("cam1");
+    }
 
     private async Task<bool> IsCalibrated() => (await new GetPtzPresetsUseCase(_presets, _bindings, _positions).ExecuteAsync("cam1")).Calibrated;
 
@@ -79,9 +85,9 @@ public class PtzPositionsOverDvripTests
     {
         // Arrange
         await Calibrate();
-        await Step("Right");
-        await Step("Right");
-        await Step("Down");
+        await Press("Right");
+        await Press("Right");
+        await Press("Down");
 
         // Act
         var saved = await new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.SurveillanceSlot);

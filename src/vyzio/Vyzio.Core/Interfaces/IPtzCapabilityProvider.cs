@@ -30,9 +30,9 @@ public interface IPtzMotion : IAsyncDisposable
     // Moves for the given time and returns the motion time the camera made; zero when skipped for a move still running.
     Task<TimeSpan> MoveForAsync(PtzDirection direction, int speed, TimeSpan duration, CancellationToken ct = default);
 
-    // Starts a move that lasts until StopAsync; false when skipped for a move still running.
-    Task<bool> StartAsync(PtzDirection direction, int speed, CancellationToken ct = default);
+    // Starts a move that lasts until released completes, a continuous one never shorter than a minimum; false when skipped.
+    Task<bool> StartAsync(PtzDirection direction, int speed, Task released, CancellationToken ct = default);
 
-    // Stops the started move and returns how long it moved, from the move sent to the stop sent.
-    Task<TimeSpan> StopAsync();
+    // Waits for the started move to stop after its release and returns how long it moved, from the move sent to the stop sent.
+    Task<TimeSpan> StoppedAsync();
 }

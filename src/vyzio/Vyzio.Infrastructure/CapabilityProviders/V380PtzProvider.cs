@@ -39,7 +39,7 @@ internal sealed class V380PtzProvider(
 
     public SupportedProtocol Protocol => SupportedProtocol.V380;
 
-    // The motion time a packet counts, the length of a tap, so that its positions share the unit of the others (ADR-60).
+    // The motion time a packet counts, so that its positions share the unit of the others (ADR-60).
     private static readonly TimeSpan PacketLength = TimeSpan.FromMilliseconds(100);
 
     // 23 packets, plus the calibration margin: the 25 that cover the whole pan/tilt range at about 650 ms each.

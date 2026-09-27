@@ -22,7 +22,6 @@ import { ProbeCameraCapability } from '../../domain/usecases/probe_camera_capabi
 import { PtzCalibrate } from '../../domain/usecases/ptz_calibrate.use_case'
 import { PtzGoToPreset } from '../../domain/usecases/ptz_go_to_preset.use_case'
 import { PtzSaveCurrentAsPreset } from '../../domain/usecases/ptz_save_current_as_preset.use_case'
-import { PtzStep } from '../../domain/usecases/ptz_step.use_case'
 import { PtzStartMove } from '../../domain/usecases/ptz_start_move.use_case'
 import { PtzSignalMove } from '../../domain/usecases/ptz_signal_move.use_case'
 import { PtzStopMove } from '../../domain/usecases/ptz_stop_move.use_case'
@@ -69,7 +68,6 @@ export interface CamerasContainer {
   getCameraLabels: GetDetectionLabels
   getRecordingSettings: GetRecordingSettings
   saveRecordingSettings: SaveRecordingSettings
-  ptzStep: PtzStep
   ptzStartMove: PtzStartMove
   ptzSignalMove: PtzSignalMove
   ptzStopMove: PtzStopMove
@@ -115,7 +113,6 @@ export function makeCamerasContainer(
     getCameraLabels: new GetDetectionLabels(cameraLabelsRepository),
     getRecordingSettings: new GetRecordingSettings(recordingSettingsRepository),
     saveRecordingSettings: new SaveRecordingSettings(recordingSettingsRepository),
-    ptzStep: new PtzStep(cameraRepository),
     ptzStartMove: new PtzStartMove(cameraRepository),
     ptzSignalMove: new PtzSignalMove(cameraRepository),
     ptzStopMove: new PtzStopMove(cameraRepository),

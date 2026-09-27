@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -13,7 +13,7 @@ namespace Vyzio.Tests.Services;
 
 public class OnvifPtzProviderTests
 {
-    private static readonly TimeSpan Tap = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan ShortMove = TimeSpan.FromMilliseconds(100);
 
     // A resolved address, so these tests exercise the provider, not the sweep (ADR-56).
     private static Camera MakeCamera()
@@ -33,12 +33,15 @@ public class OnvifPtzProviderTests
         return camera;
     }
 
+    // A press that is never released, for tests of the move alone.
+    private static readonly Task Held = new TaskCompletionSource().Task;
+
     // A press held then released: the stop it sends is the command under test.
     private static async Task ReleaseAHoldAsync(OnvifPtzProvider provider, Camera camera)
     {
         await using var motion = await provider.OpenMotionAsync(camera, MakeBinding());
-        await motion.StartAsync(PtzDirection.Up, 50);
-        await motion.StopAsync();
+        await motion.StartAsync(PtzDirection.Up, 50, Task.CompletedTask);
+        await motion.StoppedAsync();
     }
 
     private static CameraCapabilityBinding MakeBinding() => new()
@@ -138,8 +141,9 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldCountTheCommandAsDone_WhenTheCameraIsSilentPastTheTimeout()
+    public async Task StoppedAsync_ShouldCountTheCommandAsDone_WhenTheCameraIsSilentPastTheTimeout()
     {
+        // Arrange
         var time = new FakeTimeProvider();
         var stopArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var provider = MakeProviderAnsweringStop(async ct =>
@@ -148,12 +152,16 @@ public class OnvifPtzProviderTests
             await Task.Delay(Timeout.Infinite, ct);
             throw new InvalidOperationException("unreachable");
         }, time);
-
-        var stop = ReleaseAHoldAsync(provider, MakeCamera());
+        await using var motion = await provider.OpenMotionAsync(MakeCamera(), MakeBinding());
+        await motion.StartAsync(PtzDirection.Up, 50, Task.CompletedTask);
+        time.Advance(PtzMoveRunner.MinimumHold);
         await stopArrived.Task;
+
+        // Act
         time.Advance(TimeSpan.FromSeconds(2));
 
-        Assert.Null(await Record.ExceptionAsync(() => stop));
+        // Assert
+        Assert.Null(await Record.ExceptionAsync(motion.StoppedAsync));
     }
 
     [Fact]
@@ -237,7 +245,7 @@ public class OnvifPtzProviderTests
         var (provider, requests) = MakeProvider(responseBody: profilesXml);
 
         await using var motion = await provider.OpenMotionAsync(MakeCamera(), MakeBinding());
-        await motion.StartAsync(PtzDirection.Up, 80);
+        await motion.StartAsync(PtzDirection.Up, 80, Held);
 
         var bodies = await ReadBodies(requests);
         Assert.Contains(bodies, body => body.Contains("GetProfiles"));
@@ -246,7 +254,7 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldSendAStopCommandLast_WhenTheCameraAnswers()
+    public async Task StoppedAsync_ShouldSendAStopCommandLast_WhenTheCameraAnswers()
     {
         var (provider, requests) = MakeProvider();
 
@@ -270,7 +278,7 @@ public class OnvifPtzProviderTests
         var (provider, requests) = MakeProvider();
 
         await using var motion = await provider.OpenMotionAsync(MakeCamera(), MakeBinding());
-        await motion.StartAsync(direction, 80);
+        await motion.StartAsync(direction, 80, Held);
 
         var bodies = await ReadBodies(requests);
         var moveBody = bodies.First(b => b.Contains("ContinuousMove"));
@@ -295,27 +303,28 @@ public class OnvifPtzProviderTests
         var time = new FakeTimeProvider();
         var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml) { Clock = time, HoldsMoveAnswers = true };
         await using var motion = await MakeProviderFor(camera, time).OpenMotionAsync(MakeCamera(), MakeBinding());
-        var step = motion.MoveForAsync(PtzDirection.Left, 10, Tap);
+        var step = motion.MoveForAsync(PtzDirection.Left, 10, ShortMove);
         var moved = await camera.NextArrivalAsync("ContinuousMove").WaitAsync(TimeSpan.FromSeconds(10));
 
         // Act
-        time.Advance(Tap);
+        time.Advance(ShortMove);
         var stopped = await camera.NextArrivalAsync("Stop").WaitAsync(TimeSpan.FromSeconds(10));
 
         // Assert
-        Assert.Equal(Tap, stopped - moved);
+        Assert.Equal(ShortMove, stopped - moved);
         camera.AnswerMoves();
-        Assert.Equal(Tap, await step);
+        Assert.Equal(ShortMove, await step);
     }
 
     [Fact]
-    public async Task StopAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenTheCameraAnswersTheMoveLate()
+    public async Task StoppedAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenTheCameraAnswersTheMoveLate()
     {
         // Arrange
         var time = new FakeTimeProvider();
         var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml) { Clock = time, HoldsMoveAnswers = true };
         await using var motion = await MakeProviderFor(camera, time).OpenMotionAsync(MakeCamera(), MakeBinding());
-        var start = motion.StartAsync(PtzDirection.Left, 10);
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var start = motion.StartAsync(PtzDirection.Left, 10, released.Task);
         await camera.NextArrivalAsync("ContinuousMove").WaitAsync(TimeSpan.FromSeconds(10));
         time.Advance(TimeSpan.FromMilliseconds(200));
         camera.AnswerMoves();
@@ -323,7 +332,8 @@ public class OnvifPtzProviderTests
         time.Advance(TimeSpan.FromMilliseconds(1800));
 
         // Act
-        var moved = await motion.StopAsync();
+        released.SetResult();
+        var moved = await motion.StoppedAsync();
 
         // Assert
         Assert.Equal(TimeSpan.FromSeconds(2), moved);
@@ -331,18 +341,20 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldCountEveryRelativeMoveOfTheHold_WhenThePtzOptionsOfferRelativeMove()
+    public async Task StoppedAsync_ShouldCountEveryRelativeMoveOfTheHold_WhenThePtzOptionsOfferRelativeMove()
     {
         // Arrange
         var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsWithRelativeMoveXml);
         await using var motion = await MakeProviderFor(camera).OpenMotionAsync(MakeCamera(), MakeBinding());
-        Assert.True(await motion.StartAsync(PtzDirection.Left, 10));
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Assert.True(await motion.StartAsync(PtzDirection.Left, 10, released.Task));
 
         // Act
-        var moved = await motion.StopAsync();
+        released.SetResult();
+        var moved = await motion.StoppedAsync();
 
         // Assert
-        Assert.Equal(camera.Bodies.Count(body => body.Contains("<RelativeMove", StringComparison.Ordinal)) * Tap, moved);
+        Assert.Equal(camera.Bodies.Count(body => body.Contains("<RelativeMove", StringComparison.Ordinal)) * ShortMove, moved);
         Assert.DoesNotContain(camera.Bodies, body => body.Contains("<Stop", StringComparison.Ordinal));
     }
 
@@ -400,7 +412,7 @@ public class OnvifPtzProviderTests
 
         // Act
         await using var motion = await provider.OpenMotionAsync(MakeCamera(), MakeBinding());
-        await motion.MoveForAsync(PtzDirection.Left, 10, Tap);
+        await motion.MoveForAsync(PtzDirection.Left, 10, ShortMove);
 
         // Assert
         Assert.Contains(camera.Bodies, body => body.Contains("<ContinuousMove", StringComparison.Ordinal));
@@ -417,7 +429,7 @@ public class OnvifPtzProviderTests
 
         // Act
         await using var motion = await provider.OpenMotionAsync(MakeCamera(), MakeBinding());
-        await motion.MoveForAsync(PtzDirection.Left, 10, Tap);
+        await motion.MoveForAsync(PtzDirection.Left, 10, ShortMove);
 
         // Assert
         Assert.Contains(camera.Bodies, body => body.Contains("<RelativeMove", StringComparison.Ordinal));
@@ -434,7 +446,7 @@ public class OnvifPtzProviderTests
 
         // Act
         await using var motion = await provider.OpenMotionAsync(MakeCamera(), MakeBinding());
-        await motion.MoveForAsync(PtzDirection.Left, 10, Tap);
+        await motion.MoveForAsync(PtzDirection.Left, 10, ShortMove);
 
         // Assert
         Assert.Contains(camera.Bodies, body => body.Contains("<ContinuousMove", StringComparison.Ordinal));

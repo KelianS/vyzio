@@ -12,7 +12,6 @@ internal abstract class PtzSteppedMotion(PtzMoveRunner runner, Camera camera, Ti
 
     protected Camera Camera { get; } = camera;
 
-    private volatile bool _releasing;
     private Task? _held;
     private int _heldTaken;
     private CameraCommandException? _heldFailure;
@@ -40,20 +39,18 @@ internal abstract class PtzSteppedMotion(PtzMoveRunner runner, Camera camera, Ti
     }
 
     // The first packet goes out here, so a refusal reaches the press; the next ones repeat until the stop.
-    public async Task<bool> StartAsync(PtzDirection direction, int speed, CancellationToken ct = default)
+    public async Task<bool> StartAsync(PtzDirection direction, int speed, Task released, CancellationToken ct = default)
     {
         if (!await runner.RunAsync(Camera, t => StepAsync(direction, speed, t), ct)) return false;
         _heldTaken = 1;
         _heldFailure = null;
-        _releasing = false;
-        _held = RepeatAsync(direction, speed);
+        _held = RepeatAsync(direction, speed, released);
         return true;
     }
 
-    public async Task<TimeSpan> StopAsync()
+    public async Task<TimeSpan> StoppedAsync()
     {
         if (Interlocked.Exchange(ref _held, null) is not { } held) return TimeSpan.Zero;
-        _releasing = true;
         await held;
         if (_heldFailure is { } failure) throw failure;
         return _heldTaken * stepLength;
@@ -62,12 +59,12 @@ internal abstract class PtzSteppedMotion(PtzMoveRunner runner, Camera camera, Ti
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     // A packet is never cut short by the release: it would leave the count one off.
-    private async Task RepeatAsync(PtzDirection direction, int speed)
+    private async Task RepeatAsync(PtzDirection direction, int speed, Task released)
     {
         await Task.Yield();
         try
         {
-            while (!_releasing)
+            while (!released.IsCompleted)
                 if (await runner.RunAsync(Camera, t => StepAsync(direction, speed, t), CancellationToken.None))
                     _heldTaken++;
         }

@@ -22,65 +22,37 @@ public sealed class PtzNotCalibratedException : InvalidOperationException
         : base("PTZ position not calibrated. Call POST /ptz/calibrate first to establish reference.") { }
 }
 
-// Resolved through the camera's verified Ptz binding, never the brand (ADR-22); every move is counted (ADR-59, ADR-60).
-internal static class PtzJoystick
-{
-    // Null when the camera is unknown or its PTZ unverified; the direction is the one the user pressed (SPECS 11).
-    public static async Task<(Camera Camera, CameraCapabilityBinding Binding, IPtzCapabilityProvider Provider, PtzDirection Pressed)?> ResolveAsync(
-        ICameraRepository cameras, ICameraCapabilityBindingRepository bindings, ICapabilityProviderRegistry registry,
-        string cameraId, string requestedDirection, CancellationToken ct)
-    {
-        if (await cameras.GetByIdAsync(cameraId, ct) is not { } camera) return null;
-
-        if (!Enum.TryParse<PtzDirection>(requestedDirection, ignoreCase: true, out var direction))
-            throw new ArgumentException($"Unknown PTZ direction '{requestedDirection}'.");
-
-        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return null;
-
-        var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
-        return (camera, binding, registry.ResolvePtz(binding.Protocol), pressed);
-    }
-}
-
-// A tap: a timed move of a fixed duration (ADR-60).
-public sealed class PtzStepUseCase(
-    ICameraRepository cameras,
-    ICameraCapabilityBindingRepository bindings,
-    ICapabilityProviderRegistry registry,
-    PtzManagedPositions positions)
-{
-    public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
-    {
-        if (await PtzJoystick.ResolveAsync(cameras, bindings, registry, cameraId, request.Direction, ct) is not { } ptz) return false;
-
-        await positions.TapAsync(ptz.Camera, ptz.Binding, ptz.Provider, ptz.Pressed, Math.Clamp(request.Speed, 1, 100), ct);
-        return true;
-    }
-}
-
-// A press held past a tap: one move until released (ADR-60).
+// A press of the joystick: one move from the press to the release, resolved through the camera's verified Ptz binding, never the brand (ADR-22, ADR-60).
 public sealed class PtzStartMoveUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     PtzManagedPositions positions)
 {
-    public async Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
-    {
-        if (await PtzJoystick.ResolveAsync(cameras, bindings, registry, cameraId, request.Direction, ct) is not { } ptz) return false;
+    public Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
+        => positions.StartHoldAsync(cameraId, () => ResolveAsync(cameraId, request, ct), ct);
 
-        await positions.StartHoldAsync(ptz.Camera, ptz.Binding, ptz.Provider, ptz.Pressed, Math.Clamp(request.Speed, 1, 100), ct);
-        return true;
+    // Null when the camera is unknown or its PTZ unverified; the direction is the one the user pressed (SPECS 11).
+    private async Task<PtzPress?> ResolveAsync(string cameraId, PtzMoveRequest request, CancellationToken ct)
+    {
+        if (await cameras.GetByIdAsync(cameraId, ct) is not { } camera) return null;
+
+        if (!Enum.TryParse<PtzDirection>(request.Direction, ignoreCase: true, out var direction))
+            throw new ArgumentException($"Unknown PTZ direction '{request.Direction}'.");
+
+        if (await bindings.GetAsync(cameraId, CameraCapability.Ptz, ct) is not { Verified: true } binding) return null;
+
+        var pressed = PtzPanDirection.AsPressed(direction, PtzPanDirection.IsInverted(binding.ConfigJson));
+        return new PtzPress(camera, binding, registry.ResolvePtz(binding.Protocol), pressed, Math.Clamp(request.Speed, 1, 100));
     }
 }
-
 // The interface says the press still lasts; false when no move is held any more (ADR-60).
 public sealed class PtzSignalMoveUseCase(PtzManagedPositions positions)
 {
     public bool Execute(string cameraId) => positions.SignalHold(cameraId);
 }
 
-// The release of a held press; nothing to do when the move already stopped.
+// The release of a press; nothing to do when the move already stopped.
 public sealed class PtzStopMoveUseCase(PtzManagedPositions positions)
 {
     public Task ExecuteAsync(string cameraId) => positions.StopHoldAsync(cameraId);

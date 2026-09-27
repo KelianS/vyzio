@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
@@ -13,7 +13,7 @@ namespace Vyzio.Tests.Services;
 
 public class DvripPtzProviderTests
 {
-    private static readonly TimeSpan Tap = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan ShortMove = TimeSpan.FromMilliseconds(100);
 
     private static DvripPtzProvider MakeProvider(TimeProvider? time = null) =>
         new(new DvripClient(time ?? TimeProvider.System, NullLogger<DvripClient>.Instance),
@@ -182,7 +182,7 @@ public class DvripPtzProviderTests
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
 
         // Assert
         Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
@@ -196,7 +196,7 @@ public class DvripPtzProviderTests
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
+        await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
 
         // Assert
         Assert.Equal(["DirectionRight", "DirectionUp"], await fake.CommandsAsync(2));
@@ -210,7 +210,7 @@ public class DvripPtzProviderTests
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
 
         // Assert
         Assert.Contains("Ret=?", error.Message, StringComparison.Ordinal);
@@ -238,7 +238,7 @@ public class DvripPtzProviderTests
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
+        var error = await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
 
         // Assert
         Assert.Contains("connection closed", error.Message, StringComparison.Ordinal);
@@ -251,16 +251,16 @@ public class DvripPtzProviderTests
         var time = new FakeTimeProvider();
         await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, silentFirst: 1);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
-        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         await fake.CommandsAsync(1);
-        time.Advance(Tap);
+        time.Advance(ShortMove);
         await fake.CommandsAsync(1);
 
         // Act
         time.Advance(TimeSpan.FromSeconds(5));
 
         // Assert
-        Assert.Equal(Tap, await step);
+        Assert.Equal(ShortMove, await step);
     }
 
     [Fact]
@@ -270,15 +270,15 @@ public class DvripPtzProviderTests
         var time = new FakeTimeProvider();
         await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
-        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         var move = await fake.CommandsAsync(1);
 
         // Act
-        time.Advance(Tap);
+        time.Advance(ShortMove);
         var stop = await fake.CommandsAsync(1);
 
         // Assert
-        Assert.Equal(Tap, await step);
+        Assert.Equal(ShortMove, await step);
         Assert.Equal(["DirectionRight", "DirectionUp"], [.. move, .. stop]);
     }
 
@@ -289,16 +289,16 @@ public class DvripPtzProviderTests
         var time = new FakeTimeProvider();
         await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, clock: time);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
-        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         var move = (await fake.ReceivedAsync(1))[0];
 
         // Act
-        time.Advance(Tap);
+        time.Advance(ShortMove);
         var stop = (await fake.ReceivedAsync(1))[0];
 
         // Assert
-        Assert.Equal(Tap, stop.At - move.At);
-        Assert.Equal(Tap, await step);
+        Assert.Equal(ShortMove, stop.At - move.At);
+        Assert.Equal(ShortMove, await step);
     }
 
     [Fact]
@@ -308,17 +308,17 @@ public class DvripPtzProviderTests
         var time = new FakeTimeProvider();
         await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, holdAnswers: true, clock: time);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
-        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         var move = (await fake.ReceivedAsync(1))[0];
 
         // Act
-        time.Advance(Tap);
+        time.Advance(ShortMove);
         var stop = (await fake.ReceivedAsync(1))[0];
 
         // Assert
-        Assert.Equal(Tap, stop.At - move.At);
+        Assert.Equal(ShortMove, stop.At - move.At);
         fake.ReleaseAnswers();
-        Assert.Equal(Tap, await step);
+        Assert.Equal(ShortMove, await step);
     }
 
     [Fact]
@@ -330,9 +330,9 @@ public class DvripPtzProviderTests
         var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        await TapAsync(motion, fake, time);
-        await TapAsync(motion, fake, time);
-        await TapAsync(motion, fake, time);
+        await MoveBrieflyAsync(motion, fake, time);
+        await MoveBrieflyAsync(motion, fake, time);
+        await MoveBrieflyAsync(motion, fake, time);
         await motion.DisposeAsync();
 
         // Assert
@@ -346,25 +346,26 @@ public class DvripPtzProviderTests
         var time = new FakeTimeProvider();
         await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, hangUpAt: 3);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
-        await TapAsync(motion, fake, time);
-        await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, Tap));
+        await MoveBrieflyAsync(motion, fake, time);
+        await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
         await fake.CommandsAsync(1);
 
         // Act
-        await TapAsync(motion, fake, time);
+        await MoveBrieflyAsync(motion, fake, time);
 
         // Assert
         Assert.Equal(2, fake.Logins);
     }
 
     [Fact]
-    public async Task StopAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenTheCameraAnswersTheMoveLate()
+    public async Task StoppedAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenTheCameraAnswersTheMoveLate()
     {
         // Arrange
         var time = new FakeTimeProvider();
         await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, holdAnswers: true, clock: time);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
-        var start = motion.StartAsync(PtzDirection.Left, 50);
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var start = motion.StartAsync(PtzDirection.Left, 50, released.Task);
         var move = await fake.CommandsAsync(1);
         time.Advance(TimeSpan.FromMilliseconds(700));
         fake.ReleaseAnswers();
@@ -372,7 +373,8 @@ public class DvripPtzProviderTests
         time.Advance(TimeSpan.FromMilliseconds(1300));
 
         // Act
-        var moved = await motion.StopAsync();
+        released.SetResult();
+        var moved = await motion.StoppedAsync();
 
         // Assert
         var stop = await fake.CommandsAsync(1);
@@ -389,7 +391,7 @@ public class DvripPtzProviderTests
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.StartAsync(PtzDirection.Left, 50));
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => motion.StartAsync(PtzDirection.Left, 50, new TaskCompletionSource().Task));
 
         // Assert
         Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
@@ -399,14 +401,14 @@ public class DvripPtzProviderTests
     private const string LoginOk = """{"Ret":100,"SessionID":"0x0000000B"}""";
     private const string OkAnswer = """{"Ret":100}""";
 
-    // Moves, lets the tap run out on the fake clock, and waits for the tap to end.
-    private static async Task TapAsync(IPtzMotion motion, FakeDvripCamera fake, FakeTimeProvider time)
+    // Moves, lets the short move run out on the fake clock, and waits for it to end.
+    private static async Task MoveBrieflyAsync(IPtzMotion motion, FakeDvripCamera fake, FakeTimeProvider time)
     {
-        var step = motion.MoveForAsync(PtzDirection.Left, 50, Tap);
+        var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         await fake.CommandsAsync(1);
-        time.Advance(Tap);
+        time.Advance(ShortMove);
         await fake.CommandsAsync(1);
-        Assert.Equal(Tap, await step);
+        Assert.Equal(ShortMove, await step);
     }
 }
 

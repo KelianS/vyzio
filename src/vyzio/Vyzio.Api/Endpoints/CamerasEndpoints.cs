@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -18,7 +18,7 @@ file sealed record TogglePrivacyRequest(bool Active);
 file sealed record BatchTogglePrivacyRequest(IReadOnlyList<string> CameraIds, bool Active);
 
 // Request types for PTZ endpoints
-file sealed record PtzStepApiRequest(string Direction, int Speed = 50);
+file sealed record PtzMoveApiRequest(string Direction, int Speed = 50);
 file sealed record PtzPresetApiRequest(int PresetId);
 file sealed record PrivacyStrategyApiRequest(string Strategy);
 file sealed record PtzPanInvertedApiRequest(bool Inverted);
@@ -159,12 +159,18 @@ public static class CamerasEndpoints
             return deleted ? Results.NoContent() : Results.NotFound();
         });
 
-        // A tap is one timed move; a held press is a start, a signal while it lasts and a stop (ADR-60).
-        group.MapPost("/{id}/ptz/step", (string id, PtzStepApiRequest request, PtzStepUseCase useCase, CancellationToken ct) =>
-            PtzMoveAsync(() => useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct)));
-
-        group.MapPost("/{id}/ptz/move/start", (string id, PtzStepApiRequest request, PtzStartMoveUseCase useCase, CancellationToken ct) =>
-            PtzMoveAsync(() => useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct)));
+        // Every press is a start, a signal while it lasts and a stop (ADR-60); an unknown direction is named for the interface.
+        group.MapPost("/{id}/ptz/move/start", async (string id, PtzMoveApiRequest request, PtzStartMoveUseCase useCase, CancellationToken ct) =>
+        {
+            try
+            {
+                return await useCase.ExecuteAsync(id, new PtzMoveRequest(request.Direction, request.Speed), ct) ? Results.NoContent() : Results.NotFound();
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = "unknown_direction", message = ex.Message });
+            }
+        });
 
         group.MapPost("/{id}/ptz/move/signal", (string id, PtzSignalMoveUseCase useCase) =>
             useCase.Execute(id) ? Results.NoContent() : Results.NotFound());
@@ -381,18 +387,6 @@ public static class CamerasEndpoints
         return app;
     }
 
-    // A tap or the start of a hold: an unknown direction is named for the interface, the rest found or not.
-    private static async Task<IResult> PtzMoveAsync(Func<Task<bool>> move)
-    {
-        try
-        {
-            return await move() ? Results.NoContent() : Results.NotFound();
-        }
-        catch (ArgumentException ex)
-        {
-            return Results.BadRequest(new { error = "unknown_direction", message = ex.Message });
-        }
-    }
 
     private static IResult GetVendorAsset(string assetPath, VyzioRuntimeSettings settings)
     {

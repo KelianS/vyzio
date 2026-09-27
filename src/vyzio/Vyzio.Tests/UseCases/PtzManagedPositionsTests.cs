@@ -32,16 +32,34 @@ public class PtzManagedPositionsTests
         _provider.OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(_motion);
         _motion.MoveForAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns(call => call.ArgAt<TimeSpan>(2));
-        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(true);
+        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<Task>(), Arg.Any<CancellationToken>()).Returns(true);
+        _motion.StoppedAsync().Returns(Ms(100));
     }
 
     private static TimeSpan Ms(int milliseconds) => TimeSpan.FromMilliseconds(milliseconds);
 
-    private Task Tap(PtzDirection direction) => _sut.TapAsync(_camera, _binding, _provider, direction, 50, CancellationToken.None);
+    private async Task Press(PtzDirection direction)
+    {
+        await StartHold(direction);
+        await _sut.StopHoldAsync("cam1");
+    }
 
     private Task Home() => _sut.HomeAsync(_camera, _binding, _provider, CancellationToken.None);
 
-    private Task StartHold(PtzDirection direction) => _sut.StartHoldAsync(_camera, _binding, _provider, direction, 50, CancellationToken.None);
+    private Task<bool> StartHold(PtzDirection direction) => StartHold(direction, Task.FromResult<IPtzMotion>(_motion));
+
+    private Task<bool> StartHold(PtzDirection direction, Task<IPtzMotion> opening, Task? resolving = null)
+    {
+        _provider.OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(opening);
+        return _sut.StartHoldAsync("cam1", async () =>
+        {
+            await (resolving ?? Task.CompletedTask);
+            return new PtzPress(_camera, _binding, _provider, direction, 50);
+        }, CancellationToken.None);
+    }
+
+    private Task Started(int count, PtzDirection direction, Func<Task, bool> released)
+        => _motion.Received(count).StartAsync(direction, 50, Arg.Is<Task>(task => released(task)), Arg.Any<CancellationToken>());
 
     private Task GoTo(int x, int y) => _sut.GoToAsync(_camera, _binding, _provider, x, y, CancellationToken.None);
 
@@ -75,9 +93,9 @@ public class PtzManagedPositionsTests
     {
         // Arrange
         await Home();
-        await Tap(PtzDirection.Right);
-        await Tap(PtzDirection.Right);
-        await Tap(PtzDirection.Right);
+        await Press(PtzDirection.Right);
+        await Press(PtzDirection.Right);
+        await Press(PtzDirection.Right);
         _motion.ClearReceivedCalls();
 
         // Act
@@ -160,92 +178,50 @@ public class PtzManagedPositionsTests
     }
 
     [Fact]
-    public async Task TapAsync_ShouldCountTheTapDurationOnEachAxisItMoves_WhenThePositionIsKnown()
+    public async Task StopHoldAsync_ShouldAddTheMeasuredMotionTimeOnEachAxisItMoves_WhenThePositionIsKnown()
     {
         // Arrange
         await Home();
+        _motion.StoppedAsync().Returns(Ms(1234), Ms(100), Ms(100));
 
         // Act
-        await Tap(PtzDirection.Right);
-        await Tap(PtzDirection.DownRight);
-        await Tap(PtzDirection.Down);
+        await Press(PtzDirection.DownRight);
+        await Press(PtzDirection.Right);
+        await Press(PtzDirection.Down);
 
         // Assert
-        await MovedFor(1, PtzDirection.Right, PtzManagedPositions.TapDuration);
-        Assert.Equal((200, 200), _sut.Current("cam1"));
+        Assert.Equal((1334, 1334), _sut.Current("cam1"));
     }
 
     [Fact]
-    public async Task TapAsync_ShouldKeepThePosition_WhenTheTapIsSkipped()
-    {
-        // Arrange
-        await Home();
-        MoveForReturns(PtzDirection.Right, TimeSpan.Zero);
-
-        // Act
-        await Tap(PtzDirection.Right);
-
-        // Assert
-        Assert.Equal((0, 0), _sut.Current("cam1"));
-    }
-
-    [Fact]
-    public async Task TapAsync_ShouldMoveWithoutInventingAPosition_WhenTheCameraWasNeverHomed()
+    public async Task StopHoldAsync_ShouldMoveWithoutInventingAPosition_WhenTheCameraWasNeverHomed()
     {
         // Arrange
 
         // Act
-        await Tap(PtzDirection.Right);
+        await Press(PtzDirection.Right);
 
         // Assert
-        await MovedAny(1, PtzDirection.Right);
+        await Started(1, PtzDirection.Right, _ => true);
         Assert.Null(_sut.Current("cam1"));
     }
 
     [Fact]
-    public async Task TapAsync_ShouldRaiseAndForgetThePosition_WhenTheCameraFailsTheMove()
-    {
-        // Arrange
-        await Home();
-        MoveForThrows(PtzDirection.Right, new CameraCommandRefusedException("DVRIP PTZ DirectionLeft refused by 192.168.1.10 (Ret=103)."));
-
-        // Act
-        await Assert.ThrowsAsync<CameraCommandRefusedException>(() => Tap(PtzDirection.Right));
-
-        // Assert
-        Assert.Null(_sut.Current("cam1"));
-    }
-
-    [Fact]
-    public async Task StopHoldAsync_ShouldAddTheMeasuredMotionTime_WhenTheHoldIsReleased()
-    {
-        // Arrange
-        await Home();
-        _motion.StopAsync().Returns(Ms(1234));
-        await StartHold(PtzDirection.DownRight);
-
-        // Act
-        await _sut.StopHoldAsync("cam1");
-
-        // Assert
-        Assert.Equal((1234, 1234), _sut.Current("cam1"));
-    }
-
-    [Fact]
-    public async Task StartHoldAsync_ShouldKeepItsSessionOpen_WhenThePressLasts()
+    public async Task StartHoldAsync_ShouldKeepItsSessionOpenAndTheMoveUnreleased_WhenThePressLasts()
     {
         // Arrange
 
         // Act
-        await StartHold(PtzDirection.Left);
+        var found = await StartHold(PtzDirection.Left);
 
         // Assert
-        await _motion.Received(1).StartAsync(PtzDirection.Left, 50, Arg.Any<CancellationToken>());
+        Assert.True(found);
+        await Started(1, PtzDirection.Left, released => !released.IsCompleted);
         await _motion.DidNotReceive().DisposeAsync();
     }
 
     [Fact]
-    public async Task StopHoldAsync_ShouldStopAndCloseTheOneSessionOfThePress_WhenThePressIsReleased()
+    public async Task StopHoldAsync_ShouldReleaseTheMoveAndCloseTheOneSessionOfThePress_WhenThePressIsReleased()
     {
         // Arrange
         await StartHold(PtzDirection.Left);
@@ -255,8 +231,50 @@ public class PtzManagedPositionsTests
 
         // Assert
         await _provider.Received(1).OpenMotionAsync(_camera, _binding, Arg.Any<CancellationToken>());
-        await _motion.Received(1).StopAsync();
+        await Started(1, PtzDirection.Left, released => released.IsCompleted);
+        await _motion.Received(1).StoppedAsync();
         await _motion.Received(1).DisposeAsync();
+    }
+
+    [Fact]
+    public async Task StopHoldAsync_ShouldStillMoveThenStop_WhenTheReleaseArrivesBeforeTheSessionIsOpen()
+    {
+        // Arrange
+        await Home();
+        _motion.ClearReceivedCalls();
+        var opening = new TaskCompletionSource<IPtzMotion>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var start = StartHold(PtzDirection.Right, opening.Task);
+        var stop = _sut.StopHoldAsync("cam1");
+
+        // Act
+        opening.SetResult(_motion);
+        await start;
+        await stop;
+
+        // Assert
+        await Started(1, PtzDirection.Right, released => released.IsCompleted);
+        await _motion.Received(1).StoppedAsync();
+        await _motion.Received(1).DisposeAsync();
+        Assert.Equal((100, 0), _sut.Current("cam1"));
+    }
+
+    [Fact]
+    public async Task StopHoldAsync_ShouldStillEndThePress_WhenTheReleaseArrivesWhileTheCameraIsResolved()
+    {
+        // Arrange
+        var resolving = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var start = StartHold(PtzDirection.Right, Task.FromResult(_motion), resolving.Task);
+        var stop = _sut.StopHoldAsync("cam1");
+
+        // Act
+        resolving.SetResult();
+        await start;
+        await stop;
+
+        // Assert
+        await Started(1, PtzDirection.Right, released => released.IsCompleted);
+        await _motion.Received(1).DisposeAsync();
+        Assert.False(_sut.SignalHold("cam1"));
     }
 
     [Fact]
@@ -265,14 +283,15 @@ public class PtzManagedPositionsTests
         // Arrange
         await Home();
         _motion.ClearReceivedCalls();
-        _motion.StopAsync().Returns(PtzManagedPositions.HoldTimeout);
+        _motion.StoppedAsync().Returns(PtzManagedPositions.HoldTimeout);
         await StartHold(PtzDirection.Right);
 
         // Act
         _time.Advance(PtzManagedPositions.HoldTimeout);
 
         // Assert
-        await _motion.Received(1).StopAsync();
+        await Started(1, PtzDirection.Right, released => released.IsCompleted);
+        await _motion.Received(1).StoppedAsync();
         await _motion.Received(1).DisposeAsync();
         Assert.Equal((3000, 0), _sut.Current("cam1"));
         Assert.False(_sut.SignalHold("cam1"));
@@ -291,7 +310,8 @@ public class PtzManagedPositionsTests
 
         // Assert
         Assert.True(held);
-        await _motion.DidNotReceive().StopAsync();
+        await Started(1, PtzDirection.Right, released => !released.IsCompleted);
+        await _motion.DidNotReceive().StoppedAsync();
     }
 
     [Fact]
@@ -300,7 +320,7 @@ public class PtzManagedPositionsTests
         // Arrange
         await Home();
         _motion.ClearReceivedCalls();
-        _motion.StopAsync().ThrowsAsync(new CameraUnreachableException("No DVRIP answer from 192.168.1.10 (connection closed by the camera)."));
+        _motion.StoppedAsync().ThrowsAsync(new CameraUnreachableException("No DVRIP answer from 192.168.1.10 (connection closed by the camera)."));
         await StartHold(PtzDirection.Right);
 
         // Act
@@ -312,24 +332,43 @@ public class PtzManagedPositionsTests
     }
 
     [Fact]
-    public async Task StartHoldAsync_ShouldCloseTheSessionAndHoldNothing_WhenTheMoveIsSkipped()
+    public async Task StartHoldAsync_ShouldCloseTheSessionAndKeepThePosition_WhenTheMoveIsSkipped()
     {
         // Arrange
-        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(false);
+        await Home();
+        _motion.ClearReceivedCalls();
+        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<Task>(), Arg.Any<CancellationToken>()).Returns(false);
 
         // Act
-        await StartHold(PtzDirection.Right);
+        var found = await StartHold(PtzDirection.Right);
 
         // Assert
+        Assert.True(found);
         await _motion.Received(1).DisposeAsync();
+        Assert.False(_sut.SignalHold("cam1"));
+        Assert.Equal((0, 0), _sut.Current("cam1"));
+    }
+
+    [Fact]
+    public async Task StartHoldAsync_ShouldAnswerNotFoundAndHoldNothing_WhenThePressResolvesToNoCamera()
+    {
+        // Arrange
+
+        // Act
+        var found = await _sut.StartHoldAsync("cam1", () => Task.FromResult<PtzPress?>(null), CancellationToken.None);
+
+        // Assert
+        Assert.False(found);
         Assert.False(_sut.SignalHold("cam1"));
     }
 
     [Fact]
-    public async Task StartHoldAsync_ShouldRaiseAndCloseTheSession_WhenTheCameraRefusesTheMove()
+    public async Task StartHoldAsync_ShouldRaiseCloseTheSessionAndForgetThePosition_WhenTheCameraRefusesTheMove()
     {
         // Arrange
-        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+        await Home();
+        _motion.ClearReceivedCalls();
+        _motion.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<Task>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new CameraCommandRefusedException("DVRIP PTZ DirectionLeft refused by 192.168.1.10 (Ret=103)."));
 
         // Act
@@ -338,6 +377,7 @@ public class PtzManagedPositionsTests
         // Assert
         await _motion.Received(1).DisposeAsync();
         Assert.False(_sut.SignalHold("cam1"));
+        Assert.Null(_sut.Current("cam1"));
     }
 
     [Fact]
@@ -345,50 +385,49 @@ public class PtzManagedPositionsTests
     {
         // Arrange
         await Home();
-        _motion.StopAsync().Returns(Ms(500));
+        _motion.StoppedAsync().Returns(Ms(500));
         await StartHold(PtzDirection.Right);
 
         // Act
         await StartHold(PtzDirection.Down);
 
         // Assert
-        await _motion.Received(1).StopAsync();
+        await _motion.Received(1).StoppedAsync();
         Assert.Equal((500, 0), _sut.Current("cam1"));
         Assert.True(_sut.SignalHold("cam1"));
     }
 
     [Fact]
-    public async Task StartHoldAsync_ShouldEndItsOwnMove_WhenAnotherPressRegisteredWhileItStarted()
+    public async Task StartHoldAsync_ShouldEndThePreviousPress_WhenANewPressArrivesWhileItsSessionOpens()
     {
         // Arrange
         var late = Substitute.For<IPtzMotion>();
-        late.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(true);
+        late.StartAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<Task>(), Arg.Any<CancellationToken>()).Returns(true);
         var opening = new TaskCompletionSource<IPtzMotion>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _provider.OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>())
-            .Returns(opening.Task, Task.FromResult(_motion));
-        var first = StartHold(PtzDirection.Left);
-        await StartHold(PtzDirection.Right);
+        var first = StartHold(PtzDirection.Left, opening.Task);
+        var second = StartHold(PtzDirection.Right);
 
         // Act
         opening.SetResult(late);
         await first;
+        await second;
 
         // Assert
-        await late.Received(1).StopAsync();
+        await late.Received(1).StartAsync(PtzDirection.Left, 50, Arg.Is<Task>(released => released.IsCompleted), Arg.Any<CancellationToken>());
+        await late.Received(1).StoppedAsync();
         await late.Received(1).DisposeAsync();
-        await _motion.DidNotReceive().StopAsync();
+        await _motion.DidNotReceive().StoppedAsync();
         Assert.True(_sut.SignalHold("cam1"));
     }
-
     [Fact]
     public async Task GoToAsync_ShouldMoveEachAxisOnceForTheDifference_WhenThePositionIsKnown()
     {
         // Arrange
         await Home();
-        await Tap(PtzDirection.Right);
-        await Tap(PtzDirection.Right);
-        await Tap(PtzDirection.Right);
-        await Tap(PtzDirection.Down);
+        await Press(PtzDirection.Right);
+        await Press(PtzDirection.Right);
+        await Press(PtzDirection.Right);
+        await Press(PtzDirection.Down);
         _motion.ClearReceivedCalls();
 
         // Act

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -68,20 +68,6 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task PtzStep_ShouldAnswerABadRequest_WhenTheDirectionIsUnknown()
-    {
-        // Arrange
-        using var client = _factory.CreateClient();
-
-        // Act
-        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/ptz/step", new { direction = "Sideways", speed = 50 });
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("\"error\":\"unknown_direction\"", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]

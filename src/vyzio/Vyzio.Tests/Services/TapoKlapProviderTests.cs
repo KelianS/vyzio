@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -166,17 +166,19 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenAPressIsHeld()
+    public async Task StoppedAsync_ShouldReturnTheTimeFromTheMoveSentToTheStopSent_WhenAPressIsHeld()
     {
         // Arrange
         var time = new FakeTimeProvider();
         var camera = new FakeKlapCamera("admin", "secret") { Clock = time };
         await using var motion = await MakeProvider(camera, time).OpenMotionAsync(MakeCamera(), MakeBinding(CameraCapability.Ptz));
-        Assert.True(await motion.StartAsync(PtzDirection.Left, 50));
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Assert.True(await motion.StartAsync(PtzDirection.Left, 50, released.Task));
         time.Advance(TimeSpan.FromMilliseconds(1500));
 
         // Act
-        var moved = await motion.StopAsync();
+        released.SetResult();
+        var moved = await motion.StoppedAsync();
 
         // Assert
         Assert.Equal(TimeSpan.FromMilliseconds(1500), moved);

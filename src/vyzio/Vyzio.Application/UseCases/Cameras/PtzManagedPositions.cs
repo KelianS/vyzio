@@ -6,11 +6,12 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
+// A press of the joystick, resolved to the camera it moves and the direction it moves in.
+public sealed record PtzPress(Camera Camera, CameraCapabilityBinding Binding, IPtzCapabilityProvider Provider, PtzDirection Direction, int Speed);
+
 // The positions Vyzio keeps for a camera without native presets, whatever its protocol, in motion time (ADR-59, ADR-60).
 public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPositions> logger)
 {
-    // A tap moves this long, whatever the protocol and the network (ADR-60).
-    public static readonly TimeSpan TapDuration = TimeSpan.FromMilliseconds(100);
 
     // Moved past the known position, or past the full range, so that a calibration reaches the limit.
     public static readonly TimeSpan HomingMargin = TimeSpan.FromMilliseconds(200);
@@ -27,40 +28,28 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
     public (int X, int Y)? Current(string cameraId)
         => _positions.TryGetValue(cameraId, out var position) ? position : null;
 
-    // A timed move of TapDuration on a session of its own; it counts only when the camera took it (ADR-60).
-    public async Task TapAsync(
-        Camera camera, CameraCapabilityBinding binding, IPtzCapabilityProvider provider,
-        PtzDirection direction, int speed, CancellationToken ct)
+    // False when the camera or its PTZ is not found; registered before any await, so an early release still ends it (ADR-60).
+    public async Task<bool> StartHoldAsync(string cameraId, Func<Task<PtzPress?>> resolve, CancellationToken ct)
     {
-        await using var motion = await provider.OpenMotionAsync(camera, binding, ct);
-        Add(camera.Id, direction, await MoveAsync(camera, () => motion.MoveForAsync(direction, speed, TapDuration, ct)));
-    }
+        var hold = new Hold();
+        hold.Watchdog = time.CreateTimer(_ => _ = StopUnsignalledAsync(cameraId, hold), null, HoldTimeout, Timeout.InfiniteTimeSpan);
+        Hold? previous = null;
+        _holds.AddOrUpdate(cameraId, hold, (_, old) => { previous = old; return hold; });
 
-    // Starts a move held until StopHoldAsync, or until the interface stops signalling it (ADR-60).
-    public async Task StartHoldAsync(
-        Camera camera, CameraCapabilityBinding binding, IPtzCapabilityProvider provider,
-        PtzDirection direction, int speed, CancellationToken ct)
-    {
-        await StopHoldAsync(camera.Id);
-
-        var motion = await provider.OpenMotionAsync(camera, binding, ct);
-        var started = false;
+        Moving? moving = null;
         try
         {
-            started = await MoveAsync(camera, () => motion.StartAsync(direction, speed, ct));
+            if (previous is not null) await EndAsync(previous);
+            moving = await StartAsync(hold, resolve, ct);
+            return moving is not null;
         }
         finally
         {
-            if (!started) await motion.DisposeAsync();
+            hold.Started.SetResult(moving);
+            if (moving?.Motion is null && _holds.TryRemove(new KeyValuePair<string, Hold>(cameraId, hold)))
+                hold.Watchdog?.Dispose();
         }
-        if (!started) return;
-
-        var hold = new Hold(camera, direction, motion);
-        hold.Watchdog = time.CreateTimer(_ => _ = StopUnsignalledAsync(hold), null, HoldTimeout, Timeout.InfiniteTimeSpan);
-        // A concurrent press registered first: this one ends at once rather than leave the camera moving unheld.
-        if (!_holds.TryAdd(camera.Id, hold)) await EndAsync(hold);
     }
-
     // False when no move of this camera is held any more, stopped by its release or by the watchdog.
     public bool SignalHold(string cameraId)
     {
@@ -150,31 +139,52 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         }
     }
 
-    private async Task EndAsync(Hold hold)
+    // Null when the camera or its PTZ is not found; no motion when skipped for a move still running.
+    private async Task<Moving?> StartAsync(Hold hold, Func<Task<PtzPress?>> resolve, CancellationToken ct)
     {
-        hold.Watchdog?.Dispose();
+        if (await resolve() is not { } press) return null;
+
+        var motion = await press.Provider.OpenMotionAsync(press.Camera, press.Binding, ct);
+        var started = false;
         try
         {
-            Add(hold.Camera.Id, hold.Direction, await MoveAsync(hold.Camera, hold.Motion.StopAsync));
+            started = await MoveAsync(press.Camera, () => motion.StartAsync(press.Direction, press.Speed, hold.Released.Task, ct));
         }
         finally
         {
-            await hold.Motion.DisposeAsync();
+            if (!started) await motion.DisposeAsync();
+        }
+        return new Moving(press, started ? motion : null);
+    }
+
+    // The release reaches the move at once; its motion time is counted once the start has answered.
+    private async Task EndAsync(Hold hold)
+    {
+        hold.Watchdog?.Dispose();
+        hold.Released.TrySetResult();
+        if (await hold.Started.Task is not { Motion: { } motion } moving) return;
+        try
+        {
+            Add(moving.Press.Camera.Id, moving.Press.Direction, await MoveAsync(moving.Press.Camera, motion.StoppedAsync));
+        }
+        finally
+        {
+            await motion.DisposeAsync();
         }
     }
 
     // A tab closed or a network cut mid-hold must not leave the camera turning to its limit (ADR-60).
-    private async Task StopUnsignalledAsync(Hold hold)
+    private async Task StopUnsignalledAsync(string cameraId, Hold hold)
     {
-        if (!_holds.TryRemove(new KeyValuePair<string, Hold>(hold.Camera.Id, hold))) return;
-        logger.LogWarning("PTZ hold of {Camera} stopped: the interface stopped signalling it.", hold.Camera.DisplayName);
+        if (!_holds.TryRemove(new KeyValuePair<string, Hold>(cameraId, hold))) return;
+        logger.LogWarning("PTZ hold of camera {CameraId} stopped: the interface stopped signalling it.", cameraId);
         try
         {
             await EndAsync(hold);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "PTZ stop of an unsignalled hold did not go through on {Camera}.", hold.Camera.DisplayName);
+            logger.LogWarning(ex, "PTZ stop of an unsignalled hold did not go through on camera {CameraId}.", cameraId);
         }
     }
 
@@ -187,13 +197,14 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         _positions.AddOrUpdate(cameraId, (dx * ms, dy * ms), (_, old) => (old.X + dx * ms, old.Y + dy * ms));
     }
 
-    private sealed class Hold(Camera camera, PtzDirection direction, IPtzMotion motion)
+    private sealed class Hold
     {
-        public Camera Camera { get; } = camera;
-        public PtzDirection Direction { get; } = direction;
-        public IPtzMotion Motion { get; } = motion;
+        public TaskCompletionSource Released { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<Moving?> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public ITimer? Watchdog { get; set; }
     }
+
+    private sealed record Moving(PtzPress Press, IPtzMotion? Motion);
 
 #pragma warning disable format // Aligned as a table so each row reads against the others.
     private static (int Dx, int Dy) Delta(PtzDirection direction) => direction switch

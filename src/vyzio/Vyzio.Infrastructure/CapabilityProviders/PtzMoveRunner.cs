@@ -10,6 +10,9 @@ internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> lo
     // How long a move waits for the previous one of the same camera before it is skipped.
     public static readonly TimeSpan BusyWait = TimeSpan.FromMilliseconds(300);
 
+    // A held move lasts at least this long, so the shortest press still turns the motor; to tune on hardware (ADR-60).
+    public static readonly TimeSpan MinimumHold = TimeSpan.FromMilliseconds(200);
+
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _running = new();
 
     // One discrete move; false when skipped because another move of this camera was still running (ADR-59).
@@ -32,26 +35,25 @@ internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> lo
         Camera camera, Func<CancellationToken, Task> move, Func<CancellationToken, Task> stop, TimeSpan duration, CancellationToken ct)
         => RunAsync(camera, token => MoveForAsync(move, stop, duration, token), ct);
 
-    // Starts a move held until the handle stops it, the camera kept to it meanwhile; null when skipped.
-    public async Task<PtzHeldMove?> HoldAsync(
-        Camera camera, Func<CancellationToken, Task> move, Func<CancellationToken, Task> stop, CancellationToken ct)
+    // Starts a move stopped once released and MinimumHold after it went out; null when skipped, the move's error raised once stopped.
+    public async Task<Task<TimeSpan>?> HoldAsync(
+        Camera camera, Func<CancellationToken, Task> move, Func<CancellationToken, Task> stop, Task released, CancellationToken ct)
     {
         if (await AcquireAsync(camera, ct) is not { } running) return null;
         var sentAt = time.GetTimestamp();
+        var moved = move(ct);
+        var stopped = StopWhenReleasedAsync(sentAt, moved, stop, released, running);
         try
         {
-            await move(ct);
+            await moved;
         }
         catch (Exception)
         {
-            // A refused move may still have started: it is stopped at once, and its error is the one raised.
-            await StopAfterFailedMoveAsync(stop(CancellationToken.None));
-            running.Release();
+            await stopped;
             throw;
         }
-        return new PtzHeldMove(time, sentAt, stop, running);
+        return stopped;
     }
-
     private async Task<SemaphoreSlim?> AcquireAsync(Camera camera, CancellationToken ct)
     {
         var running = _running.GetOrAdd(camera.Id, _ => new SemaphoreSlim(1, 1));
@@ -96,32 +98,38 @@ internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> lo
         ct.ThrowIfCancellationRequested();
     }
 
-    // The move's error is the one raised; the stop's is only logged.
-    private async Task StopAfterFailedMoveAsync(Task stopped)
+    // Measured from the move sent to the stop sent; the stop does not wait for the move's answer, only a refusal stops it sooner.
+    private async Task<TimeSpan> StopWhenReleasedAsync(
+        long sentAt, Task moved, Func<CancellationToken, Task> stop, Task released, SemaphoreSlim running)
     {
-        try { await stopped; }
-        catch (Exception ex) { logger.LogWarning(ex, "PTZ stop after a failed move did not go through either."); }
-    }
-}
-
-// A move started by PtzMoveRunner.HoldAsync, which keeps the camera until it is stopped (ADR-60).
-internal sealed class PtzHeldMove(TimeProvider time, long sentAt, Func<CancellationToken, Task> stop, SemaphoreSlim running)
-{
-    private int _stopped;
-
-    // Sends the stop and returns the motion time measured from the move sent to the stop sent.
-    public async Task<TimeSpan> StopAsync()
-    {
-        if (Interlocked.Exchange(ref _stopped, 1) == 1) return TimeSpan.Zero;
-        var moved = time.GetElapsedTime(sentAt);
         try
         {
-            await stop(CancellationToken.None);
+            var due = Task.WhenAll(released, Task.Delay(MinimumHold, time));
+            await Task.WhenAny(due, moved);
+            if (moved.IsCompletedSuccessfully) await due;
+
+            var elapsed = time.GetElapsedTime(sentAt);
+            var stopped = stop(CancellationToken.None);
+            // The move's error reaches the press that started it, not the release.
+            await moved.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!moved.IsCompletedSuccessfully)
+            {
+                await StopAfterFailedMoveAsync(stopped);
+                return TimeSpan.Zero;
+            }
+            await stopped;
+            return elapsed;
         }
         finally
         {
             running.Release();
         }
-        return moved;
+    }
+
+    // The move's error is the one raised; the stop's is only logged.
+    private async Task StopAfterFailedMoveAsync(Task stopped)
+    {
+        try { await stopped; }
+        catch (Exception ex) { logger.LogWarning(ex, "PTZ stop after a failed move did not go through either."); }
     }
 }

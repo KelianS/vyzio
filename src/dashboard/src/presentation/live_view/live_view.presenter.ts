@@ -6,12 +6,9 @@ import type { CamerasContainer } from '../../infrastructure/providers/cameras.co
 import type { LiveViewAction } from './live_view.actions'
 import type { PtzDirection } from './live_view.uido'
 
-// Released before this delay, a press is a tap: one short move. Held past it, one move lasts until release (ADR-60).
-const HOLD_THRESHOLD_MS = 300
 // Well within the few seconds after which the server stops a hold it no longer hears about (ADR-60).
 const HOLD_SIGNAL_MS = 1000
-const STEP_SPEED = 50
-// The camera is still settling when the move answers: capture once it stands still.
+const MOVE_SPEED = 50 // The camera is still settling when the move answers: capture once it stands still.
 const CAPTURE_DELAY_MS = 1500
 
 export interface LiveViewPresenterContext {
@@ -20,23 +17,14 @@ export interface LiveViewPresenterContext {
   toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
-interface Press {
-  cameraId: string
-  direction: PtzDirection
-}
-
 interface Hold {
   cameraId: string
-  /** Settles on whether the server started the move, its failure already shown. */
-  started: Promise<boolean>
   signal: ReturnType<typeof setInterval> | null
 }
 
 export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewPresenterContext) {
   const nextPresetsRead = latestOnly()
 
-  let press: Press | null = null
-  let holdTimer: ReturnType<typeof setTimeout> | null = null
   let hold: Hold | null = null
   // A press sends up to three calls: a failure is shown once per press, not once per call.
   let failureShown = false
@@ -64,39 +52,25 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
       })
   }
 
-  function startHold({ cameraId, direction }: Press) {
-    const current: Hold = { cameraId, started: Promise.resolve(false), signal: null }
-    current.started = container.ptzStartMove
-      .execute(cameraId, direction, STEP_SPEED)
-      .then(() => {
-        if (hold === current) current.signal = setInterval(() => signal(current), HOLD_SIGNAL_MS)
-        return true
-      })
-      .catch((e: unknown) => {
-        reportMoveFailure(e)
-        return false
-      })
+  // Every press is one move, started at once so the camera opens its session while the finger is down (ADR-60).
+  function startHold(cameraId: string, direction: PtzDirection) {
+    const current: Hold = { cameraId, signal: null }
+    current.signal = setInterval(() => signal(current), HOLD_SIGNAL_MS)
     hold = current
+    container.ptzStartMove.execute(cameraId, direction, MOVE_SPEED).catch((e: unknown) => {
+      stopSignalling(current)
+      reportMoveFailure(e)
+    })
   }
 
-  // The stop waits for the start: a release during it must not leave the camera moving.
+  // The stop does not wait for the start: the server keeps the camera moving for its minimum time, then stops it (ADR-60).
   function endHold() {
     const current = hold
     hold = null
     if (!current) return
     stopSignalling(current)
-    void current.started.then((started) => {
-      if (started) container.ptzStopMove.execute(current.cameraId).catch(reportMoveFailure)
-    })
+    container.ptzStopMove.execute(current.cameraId).catch(reportMoveFailure)
   }
-
-  function endPress() {
-    press = null
-    if (holdTimer) clearTimeout(holdTimer)
-    holdTimer = null
-    endHold()
-  }
-
   async function readPresets(cameraId: string) {
     const { presets, calibrated, currentPosition } = await container.getPtzPresets.execute(cameraId)
     dispatch({ type: 'PRESETS_LOADED', presets, calibrated, currentPosition })
@@ -150,32 +124,15 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     },
 
     onPress(cameraId: string, direction: PtzDirection) {
-      if (press) return
-      const current: Press = { cameraId, direction }
-      press = current
+      if (hold) return
       failureShown = false
       dispatch({ type: 'MOVE_STARTED' })
-      holdTimer = setTimeout(() => {
-        holdTimer = null
-        if (press === current) startHold(current)
-      }, HOLD_THRESHOLD_MS)
+      startHold(cameraId, direction)
     },
 
-    // Closing the view mid-hold stops the camera; a press cut short by it is no tap.
-    onClose: endPress,
-
-    onRelease() {
-      const current = press
-      if (!current) return
-      const tapped = holdTimer !== null
-      endPress()
-      if (tapped) {
-        container.ptzStep
-          .execute(current.cameraId, current.direction, STEP_SPEED)
-          .catch(reportMoveFailure)
-      }
-    },
-
+    // Closing the view mid-press stops the camera.
+    onClose: endHold,
+    onRelease: endHold,
     async onGoTo(cameraId: string, presetId: number, label: string) {
       dispatch({ type: 'GOTO_STARTED', presetId })
       try {

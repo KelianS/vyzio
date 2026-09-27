@@ -72,16 +72,18 @@ public class PtzSteppedMotionTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldCountEveryPacketSentUntilTheRelease_WhenAPressIsHeld()
+    public async Task StoppedAsync_ShouldCountEveryPacketSentUntilTheRelease_WhenAPressIsHeld()
     {
         // Arrange
         var third = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var motion = MakeMotion(Taken, Taken, () => third.Task);
-        Assert.True(await motion.StartAsync(PtzDirection.Right, 50));
+        Assert.True(await motion.StartAsync(PtzDirection.Right, 50, released.Task));
         await motion.SentAsync(3);
 
         // Act
-        var stopping = motion.StopAsync();
+        released.SetResult();
+        var stopping = motion.StoppedAsync();
         third.SetResult();
         var moved = await stopping;
 
@@ -91,15 +93,30 @@ public class PtzSteppedMotionTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldRaiseThePacketsError_WhenAPacketFailsDuringTheHold()
+    public async Task StoppedAsync_ShouldCountOnePacket_WhenThePressIsReleasedBeforeTheFirstPacketWentOut()
+    {
+        // Arrange
+        var motion = MakeMotion(Taken);
+        Assert.True(await motion.StartAsync(PtzDirection.Right, 50, Task.CompletedTask));
+
+        // Act
+        var moved = await motion.StoppedAsync();
+
+        // Assert
+        Assert.Equal(PacketLength, moved);
+        Assert.Equal(1, motion.Sent);
+    }
+
+    [Fact]
+    public async Task StoppedAsync_ShouldRaiseThePacketsError_WhenAPacketFailsDuringTheHold()
     {
         // Arrange
         var motion = MakeMotion(Taken, Lost);
-        Assert.True(await motion.StartAsync(PtzDirection.Right, 50));
+        Assert.True(await motion.StartAsync(PtzDirection.Right, 50, new TaskCompletionSource().Task));
         await motion.SentAsync(2);
 
         // Act
-        var error = await Assert.ThrowsAsync<CameraUnreachableException>(motion.StopAsync);
+        var error = await Assert.ThrowsAsync<CameraUnreachableException>(motion.StoppedAsync);
 
         // Assert
         Assert.Contains("connection reset", error.Message, StringComparison.Ordinal);
@@ -112,10 +129,10 @@ public class PtzSteppedMotionTests
         var motion = MakeMotion(Lost, Taken);
 
         // Act
-        await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.StartAsync(PtzDirection.Right, 50));
+        await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.StartAsync(PtzDirection.Right, 50, Task.CompletedTask));
 
         // Assert
-        Assert.Equal(TimeSpan.Zero, await motion.StopAsync());
+        Assert.Equal(TimeSpan.Zero, await motion.StoppedAsync());
         Assert.Equal(1, motion.Sent);
     }
 

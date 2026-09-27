@@ -6,7 +6,7 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // A move the camera keeps up until a stop reaches it (DVRIP, ONVIF ContinuousMove, Tapo): its length is timed (ADR-60).
 internal abstract class PtzContinuousMotion(PtzMoveRunner runner, Camera camera) : IPtzMotion
 {
-    private PtzHeldMove? _held;
+    private Task<TimeSpan>? _stopped;
 
     protected Camera Camera { get; } = camera;
 
@@ -25,15 +25,14 @@ internal abstract class PtzContinuousMotion(PtzMoveRunner runner, Camera camera)
             : TimeSpan.Zero;
     }
 
-    public async Task<bool> StartAsync(PtzDirection direction, int speed, CancellationToken ct = default)
+    public async Task<bool> StartAsync(PtzDirection direction, int speed, Task released, CancellationToken ct = default)
     {
         await PrepareAsync(ct);
-        _held = await runner.HoldAsync(Camera, t => MoveAsync(direction, speed, t), StopMoveAsync, ct);
-        return _held is not null;
+        _stopped = await runner.HoldAsync(Camera, t => MoveAsync(direction, speed, t), StopMoveAsync, released, ct);
+        return _stopped is not null;
     }
 
-    public Task<TimeSpan> StopAsync()
-        => Interlocked.Exchange(ref _held, null) is { } held ? held.StopAsync() : Task.FromResult(TimeSpan.Zero);
+    public Task<TimeSpan> StoppedAsync() => Interlocked.Exchange(ref _stopped, null) ?? Task.FromResult(TimeSpan.Zero);
 
     public ValueTask DisposeAsync() => CloseAsync();
 

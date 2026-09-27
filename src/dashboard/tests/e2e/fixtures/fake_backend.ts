@@ -635,10 +635,6 @@ export async function installFakeBackend(
       if (rest === '/ptz/presets' && method === 'GET') {
         return json(route, state.ptz)
       }
-      if (rest === '/ptz/step' && method === 'POST') {
-        state.ptz.currentPosition = null
-        return json(route, {})
-      }
       if (rest === '/ptz/move/start' && method === 'POST') {
         state.ptz.currentPosition = null
         state.ptz.holding = true

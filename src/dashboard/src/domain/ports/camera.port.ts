@@ -62,7 +62,6 @@ export interface CameraRepository {
   ): Promise<CameraPrivacySchedule>
   deletePrivacySchedule(cameraId: string, scheduleId: string): Promise<void>
   setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera>
-  ptzStep(cameraId: string, direction: string, speed: number): Promise<void>
   ptzStartMove(cameraId: string, direction: string, speed: number): Promise<void>
   /** False once the server holds no move of this camera any more. */
   ptzSignalMove(cameraId: string): Promise<boolean>
