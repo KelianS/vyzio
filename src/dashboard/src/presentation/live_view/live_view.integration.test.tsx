@@ -386,6 +386,7 @@ describe('LiveView', () => {
     // Assert
     expect(screen.queryByText(/stop lost/)).not.toBeInTheDocument()
   })
+
   it('onContextMenu_ShouldKeepTheBrowserMenuClosed_WhenTheUserLongPressesAPosition', async () => {
     // Arrange
     fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset()] }) })

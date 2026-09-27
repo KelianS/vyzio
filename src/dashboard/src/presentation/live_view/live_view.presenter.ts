@@ -8,7 +8,8 @@ import type { PtzDirection } from './live_view.uido'
 
 // Well within the few seconds after which the server stops a hold it no longer hears about (ADR-60).
 const HOLD_SIGNAL_MS = 1000
-const MOVE_SPEED = 50 // The camera is still settling when the move answers: capture once it stands still.
+const MOVE_SPEED = 50
+// The camera is still settling when the move answers: capture once it stands still.
 const CAPTURE_DELAY_MS = 1500
 
 export interface LiveViewPresenterContext {
@@ -71,6 +72,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     stopSignalling(current)
     container.ptzStopMove.execute(current.cameraId).catch(reportMoveFailure)
   }
+
   async function readPresets(cameraId: string) {
     const { presets, calibrated, currentPosition } = await container.getPtzPresets.execute(cameraId)
     dispatch({ type: 'PRESETS_LOADED', presets, calibrated, currentPosition })
@@ -133,6 +135,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     // Closing the view mid-press stops the camera.
     onClose: endHold,
     onRelease: endHold,
+
     async onGoTo(cameraId: string, presetId: number, label: string) {
       dispatch({ type: 'GOTO_STARTED', presetId })
       try {

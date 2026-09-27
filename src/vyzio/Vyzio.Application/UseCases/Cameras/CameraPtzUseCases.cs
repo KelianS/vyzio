@@ -46,6 +46,7 @@ public sealed class PtzStartMoveUseCase(
         return new PtzPress(camera, binding, registry.ResolvePtz(binding.Protocol), pressed, Math.Clamp(request.Speed, 1, 100));
     }
 }
+
 // The interface says the press still lasts; false when no move is held any more (ADR-60).
 public sealed class PtzSignalMoveUseCase(PtzManagedPositions positions)
 {

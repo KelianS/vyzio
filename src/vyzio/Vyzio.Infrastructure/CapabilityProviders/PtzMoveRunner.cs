@@ -41,7 +41,7 @@ internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> lo
     {
         if (await AcquireAsync(camera, ct) is not { } running) return null;
         var sentAt = time.GetTimestamp();
-        var moved = move(ct);
+        var moved = Send(move, ct);
         var stopped = StopWhenReleasedAsync(sentAt, moved, stop, released, running);
         try
         {
@@ -54,6 +54,7 @@ internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> lo
         }
         return stopped;
     }
+
     private async Task<SemaphoreSlim?> AcquireAsync(Camera camera, CancellationToken ct)
     {
         var running = _running.GetOrAdd(camera.Id, _ => new SemaphoreSlim(1, 1));
@@ -123,6 +124,19 @@ internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> lo
         finally
         {
             running.Release();
+        }
+    }
+
+    // A move that throws before its first await still reaches the stop, which frees the camera.
+    private static Task Send(Func<CancellationToken, Task> move, CancellationToken ct)
+    {
+        try
+        {
+            return move(ct);
+        }
+        catch (Exception ex)
+        {
+            return Task.FromException(ex);
         }
     }
 

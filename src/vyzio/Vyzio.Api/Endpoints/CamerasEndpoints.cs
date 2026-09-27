@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.StaticFiles;
+﻿using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -386,7 +386,6 @@ public static class CamerasEndpoints
 
         return app;
     }
-
 
     private static IResult GetVendorAsset(string assetPath, VyzioRuntimeSettings settings)
     {

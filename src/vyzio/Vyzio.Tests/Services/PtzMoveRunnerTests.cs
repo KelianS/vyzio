@@ -235,6 +235,21 @@ public class PtzMoveRunnerTests
     }
 
     [Fact]
+    public async Task HoldAsync_ShouldStopAndFreeTheCamera_WhenTheMoveThrowsBeforeItsFirstAwait()
+    {
+        // Arrange
+        var runner = MakeRunner();
+
+        // Act
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => runner.HoldAsync(_camera,
+            _ => throw new ArgumentOutOfRangeException("direction"), _ => Stop(), _released.Task, CancellationToken.None));
+
+        // Assert
+        Assert.True(_stopSentAt.Task.IsCompleted);
+        Assert.True(await runner.RunAsync(_camera, _ => Task.CompletedTask, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task HoldAsync_ShouldFreeTheCamera_WhenTheStopFails()
     {
         // Arrange

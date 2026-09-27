@@ -12,7 +12,6 @@ public sealed record PtzPress(Camera Camera, CameraCapabilityBinding Binding, IP
 // The positions Vyzio keeps for a camera without native presets, whatever its protocol, in motion time (ADR-59, ADR-60).
 public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPositions> logger)
 {
-
     // Moved past the known position, or past the full range, so that a calibration reaches the limit.
     public static readonly TimeSpan HomingMargin = TimeSpan.FromMilliseconds(200);
 
@@ -50,6 +49,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
                 hold.Watchdog?.Dispose();
         }
     }
+
     // False when no move of this camera is held any more, stopped by its release or by the watchdog.
     public bool SignalHold(string cameraId)
     {

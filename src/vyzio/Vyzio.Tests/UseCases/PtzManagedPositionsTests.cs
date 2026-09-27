@@ -419,6 +419,7 @@ public class PtzManagedPositionsTests
         await _motion.DidNotReceive().StoppedAsync();
         Assert.True(_sut.SignalHold("cam1"));
     }
+
     [Fact]
     public async Task GoToAsync_ShouldMoveEachAxisOnceForTheDifference_WhenThePositionIsKnown()
     {
