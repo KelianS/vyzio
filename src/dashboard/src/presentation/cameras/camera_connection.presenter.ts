@@ -294,9 +294,11 @@ export function buildCameraConnectionPresenter({
     /** The protocol level alone: the boxes gain the usual protocols that answer, no capability moves. */
     async onSearchProtocols(cameraId: string) {
       dispatch({ type: 'PROTOCOL_SEARCH_STARTED' })
+      // A reread already on its way must not overwrite what the search found.
+      const isLatest = nextProtocolsRead()
       try {
         const protocols = await container.searchCameraProtocols.execute(cameraId)
-        dispatch({ type: 'PROTOCOLS_LOADED', protocols })
+        if (isLatest()) dispatch({ type: 'PROTOCOLS_LOADED', protocols })
         toast('Recherche terminée.', 'success')
       } catch (e) {
         toastError(toast, toAppError(e))

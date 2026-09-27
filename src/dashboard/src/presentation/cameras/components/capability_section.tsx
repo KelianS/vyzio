@@ -60,6 +60,8 @@ interface CapabilitySectionProps {
   camera: Camera
   bindings: CameraCapabilityBinding[]
   protocols: CameraProtocol[]
+  /** False while the protocols load or failed to: no card may then say the camera has none. */
+  protocolsRead: boolean
   loading: boolean
   readError: AppError | null
   detecting: boolean
@@ -87,6 +89,7 @@ export function CapabilitySection({
   camera,
   bindings,
   protocols,
+  protocolsRead,
   loading,
   readError,
   detecting,
@@ -108,6 +111,7 @@ export function CapabilitySection({
           camera={camera}
           binding={stream}
           protocols={protocols}
+          protocolsRead={protocolsRead}
           verifying={verifyingStream}
           configuring={pending.stream === CapabilityTask.Configure}
           streamPath={streamPath}
@@ -123,6 +127,7 @@ export function CapabilitySection({
                 camera={camera}
                 binding={b}
                 protocols={protocols}
+                protocolsRead={protocolsRead}
                 task={pending[b.capability]}
                 testsSuspended={testsSuspended}
                 intents={intents}
@@ -144,7 +149,7 @@ export function CapabilitySection({
         <ManualCapability
           bindings={bindings}
           protocols={protocols}
-          bindingsRead={read}
+          bindingsRead={read && protocolsRead}
           open={manualFormOpen}
           configuring={manualConfiguring}
           testsSuspended={testsSuspended}
@@ -164,7 +169,10 @@ export function CapabilitySection({
         </Button>
       </div>
 
-      {testsSuspended && <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>}
+      {/* A stream never chosen is not waited for: its card already says what to do. */}
+      {testsSuspended && stream?.isConfigured !== false && (
+        <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>
+      )}
     </div>
   )
 }
@@ -174,6 +182,7 @@ function StreamCard({
   camera,
   binding,
   protocols,
+  protocolsRead,
   verifying,
   configuring,
   streamPath,
@@ -185,6 +194,7 @@ function StreamCard({
   binding: CameraCapabilityBinding | undefined
   /** The camera's protocols, once read: the stream's failure names the way out, its choice lists them (ADR-61). */
   protocols: CameraProtocol[]
+  protocolsRead: boolean
   verifying: boolean
   configuring: boolean
   streamPath: SettingDeclaration
@@ -236,7 +246,7 @@ function StreamCard({
     >
       {unconfigured ? (
         <p className="text-sm text-muted-foreground">
-          {choices.length > 0
+          {choices.length > 0 || !protocolsRead
             ? 'Choisissez comment Vyzio lit les images, dans les options ci-dessous.'
             : NO_PROTOCOL_YET}
         </p>
@@ -280,6 +290,7 @@ interface BindingCardProps {
   binding: CameraCapabilityBinding
   /** The camera's protocols, once read: the one the capability goes through, and those it may choose. */
   protocols: CameraProtocol[]
+  protocolsRead: boolean
   task: CapabilityTask | undefined
   testsSuspended: boolean
   intents: CapabilityIntents
@@ -289,6 +300,7 @@ function BindingCard({
   camera,
   binding,
   protocols,
+  protocolsRead,
   task,
   testsSuspended,
   intents,
@@ -333,7 +345,9 @@ function BindingCard({
           </div>
         )
       case CapabilityState.Unconfigured:
-        return suggested ? null : <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
+        return suggested || !protocolsRead ? null : (
+          <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
+        )
       case CapabilityState.SwitchedOff:
         return null
       default: {

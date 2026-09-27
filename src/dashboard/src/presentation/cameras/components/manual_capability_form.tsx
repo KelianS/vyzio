@@ -8,7 +8,11 @@ import type {
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
 import { Button } from '../../../common/ui/button'
 import { CAPABILITY_LABELS } from '../cameras.formatters'
-import { NO_PROTOCOL_YET, protocolOptions, type ProtocolOption } from '../protocol_labels'
+import {
+  NO_PROTOCOL_FOR_ANOTHER_CAPABILITY,
+  protocolOptions,
+  type ProtocolOption,
+} from '../protocol_labels'
 import { Picker } from './protocol_choice'
 
 // The stream is never added by hand: a camera is born with it (ADR-61).
@@ -28,7 +32,7 @@ export function ManualCapability({
 }: {
   bindings: CameraCapabilityBinding[]
   protocols: CameraProtocol[]
-  /** False while the capabilities are unread: an unread list would offer every capability to add by hand. */
+  /** False while the capabilities or the protocols are unread: an unread list would say something false. */
   bindingsRead: boolean
   open: boolean
   configuring: boolean
@@ -52,7 +56,7 @@ export function ManualCapability({
   // With no protocol at all, the stream card already says the way out.
   if (available.length === 0)
     return protocols.length === 0 ? null : (
-      <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
+      <p className="text-sm text-muted-foreground">{NO_PROTOCOL_FOR_ANOTHER_CAPABILITY}</p>
     )
 
   return open ? (

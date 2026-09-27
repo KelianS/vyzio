@@ -156,6 +156,7 @@ export function CameraConnectionView() {
             camera={camera}
             bindings={uido.bindings}
             protocols={uido.protocols}
+            protocolsRead={!uido.protocolsLoading && !uido.protocolsError}
             loading={uido.bindingsLoading}
             readError={uido.bindingsError}
             detecting={uido.detecting}

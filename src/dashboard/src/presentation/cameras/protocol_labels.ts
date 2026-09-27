@@ -17,9 +17,15 @@ export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
 export const SPECIFIC_ACCOUNT_HELP =
   'Pour une caméra qui demande un autre compte par ce seul moyen, comme le compte cloud Tapo pour la coupure matérielle. Il n’est présenté qu’à la caméra, sur votre réseau.'
 
-/** Where a capability has no protocol of the camera to go through: detection first, adding one by hand second. */
-export const NO_PROTOCOL_YET =
-  'Aucun protocole de cette caméra ne convient encore : lancez « Détecter automatiquement », ou ajoutez-en un dans Avancé avec « Ajouter un protocole ».'
+/** The two ways to a protocol the camera lacks, in their order: detection first, adding one by hand second. */
+const WAYS_TO_A_PROTOCOL =
+  'lancez « Détecter automatiquement », ou ajoutez-en un dans Avancé avec « Ajouter un protocole »'
+
+/** On a card whose capability has no protocol of the camera to go through. */
+export const NO_PROTOCOL_YET = `Aucun protocole de cette caméra ne convient encore : ${WAYS_TO_A_PROTOCOL}.`
+
+/** Where a capability is added, when no protocol of the camera can carry one that is left. */
+export const NO_PROTOCOL_FOR_ANOTHER_CAPABILITY = `Aucun protocole de cette caméra ne permet d’ajouter une autre capacité : ${WAYS_TO_A_PROTOCOL}.`
 
 /** The protocols that can carry each capability, in the order they are offered. */
 const CARRIERS: Record<Capability, readonly SupportedProtocol[]> = {

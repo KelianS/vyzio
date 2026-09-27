@@ -7,7 +7,7 @@ import { makeCameraProtocol as protocolRow } from '../../testing/camera_protocol
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
-import { NO_PROTOCOL_YET } from './protocol_labels'
+import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const UPDATE = 'PUT /api/cameras/camera-1'
@@ -940,6 +940,25 @@ describe('CameraConnectionView', () => {
     expect(screen.queryByRole('button', { name: 'Configurer' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Détecter automatiquement' })).toBeEnabled()
+    expect(
+      screen.queryByText('Les autres capacités se vérifient une fois le flux vidéo rétabli.'),
+    ).toBeNull()
+  })
+
+  it('onLoad_ShouldNeverSayTheCameraHasNoProtocol_WhenItsProtocolsCouldNotBeRead', async () => {
+    // Arrange
+    connectionNetwork({
+      [PROTOCOLS]: failure(500),
+      [BINDINGS]: ok([rtspStream, privacyToConfigure]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(await screen.findByRole('heading', { name: 'Coupure matérielle' })).toBeVisible()
+    expect(screen.queryByText(NO_PROTOCOL_YET)).toBeNull()
+    expect(screen.queryByText(NO_PROTOCOL_FOR_ANOTHER_CAPABILITY)).toBeNull()
   })
 
   it('onLoad_ShouldOfferOnlyTheCameraProtocols_WhenTheStreamOptionsOpen', async () => {
@@ -974,7 +993,9 @@ describe('CameraConnectionView', () => {
 
     // Assert
     expect(
-      await screen.findByText('Cette caméra n’a pas ce protocole : ajoutez-le d’abord dans Avancé'),
+      await screen.findByText(
+        'Cette caméra n’a pas ce protocole : lancez « Détecter automatiquement », ou ajoutez-le dans Avancé',
+      ),
     ).toBeInTheDocument()
     await waitFor(() =>
       expect(network.sent.filter((request) => request.route === PROTOCOLS)).toHaveLength(2),
@@ -989,7 +1010,7 @@ describe('CameraConnectionView', () => {
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Assert
-    expect(await screen.findByText(NO_PROTOCOL_YET)).toBeVisible()
+    expect(await screen.findByText(NO_PROTOCOL_FOR_ANOTHER_CAPABILITY)).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).toBeNull()
   })
 

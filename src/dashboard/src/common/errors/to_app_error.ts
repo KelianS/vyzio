@@ -21,7 +21,7 @@ const KNOWN_REFUSALS = new Map<string, string>([
   ],
   [
     ApiErrorCode.ProtocolNotOnCamera,
-    'Cette caméra n’a pas ce protocole : ajoutez-le d’abord dans Avancé',
+    'Cette caméra n’a pas ce protocole : lancez « Détecter automatiquement », ou ajoutez-le dans Avancé',
   ],
   [
     ApiErrorCode.ParkingPositionsMissing,
