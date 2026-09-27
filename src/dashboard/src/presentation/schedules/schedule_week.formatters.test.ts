@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
-import { entryTimes, targetSummary, weekOf } from './schedule_week.formatters'
+import { barOf, entryTimes, targetSummary, weekOf } from './schedule_week.formatters'
 
 function makeRule(overrides: Partial<ScheduleRule> = {}): ScheduleRule {
   return {
@@ -79,6 +79,64 @@ describe('weekOf', () => {
 
     // Assert
     expect(tuesday.entries.map((entry) => entry.rule.id)).toEqual(['night', 'morning'])
+  })
+
+  it('weekOf_ShouldLeaveTheNextDayEmpty_WhenTheRangeEndsAtMidnightSharp', () => {
+    // Arrange
+    const evening = makeRule({ daysOfWeek: [1], startTime: '20:00', endTime: '00:00' })
+
+    // Act
+    const tuesday = weekOf([evening])[1]
+
+    // Assert
+    expect(tuesday.entries).toEqual([])
+  })
+})
+
+describe('barOf', () => {
+  it('barOf_ShouldRunTheNightToMidnightAndItsTailFromMidnight_WhenTheRangeCrossesMidnight', () => {
+    // Arrange
+    const night = makeRule({ daysOfWeek: [1] })
+    const [monday, tuesday] = weekOf([night])
+
+    // Act
+    const evening = barOf(monday.entries).blocks
+    const morning = barOf(tuesday.entries).blocks
+
+    // Assert
+    expect(evening).toEqual([
+      { entry: monday.entries[0], start: 1320, end: 1440, continues: true, lane: 0 },
+    ])
+    expect(morning).toEqual([
+      { entry: tuesday.entries[0], start: 0, end: 360, continues: false, lane: 0 },
+    ])
+  })
+
+  it('barOf_ShouldStackOverlappingRangesInLanes_WhenTwoRangesShareHours', () => {
+    // Arrange
+    const privacy = makeRule({ id: 'privacy', startTime: '08:00', endTime: '12:00' })
+    const muted = makeRule({ id: 'muted', startTime: '10:00', endTime: '14:00' })
+    const evening = makeRule({ id: 'evening', startTime: '18:00', endTime: '20:00' })
+    const [monday] = weekOf([privacy, muted, evening])
+
+    // Act
+    const bar = barOf(monday.entries)
+
+    // Assert
+    expect(bar.blocks.map((block) => [block.entry.rule.id, block.lane])).toEqual([
+      ['privacy', 0],
+      ['muted', 1],
+      ['evening', 0],
+    ])
+    expect(bar.lanes).toBe(2)
+  })
+
+  it('barOf_ShouldKeepOneLane_WhenTheDayIsEmpty', () => {
+    // Act
+    const bar = barOf([])
+
+    // Assert
+    expect(bar).toEqual({ blocks: [], lanes: 1 })
   })
 })
 

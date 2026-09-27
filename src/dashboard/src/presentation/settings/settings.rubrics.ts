@@ -29,8 +29,8 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
     summary: 'Canaux et messages',
   },
   {
-    slug: 'horaires',
-    label: 'Horaires',
+    slug: 'planification',
+    label: 'Planification',
     summary: 'Vie privée et notifications',
   },
   {

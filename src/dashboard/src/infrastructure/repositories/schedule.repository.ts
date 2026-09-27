@@ -1,5 +1,6 @@
 import {
   isScheduleRuleKind,
+  type HouseClock,
   type NewScheduleRule,
   type ScheduleRule,
   type ScheduleRuleInput,
@@ -50,5 +51,9 @@ export class HttpScheduleRepository implements ScheduleRepository {
 
   async delete(ruleId: string): Promise<void> {
     await deleteReq(this.url(ruleId))
+  }
+
+  async clock(): Promise<HouseClock> {
+    return fetchJson<HouseClock>(`${this.url()}/clock`)
   }
 }

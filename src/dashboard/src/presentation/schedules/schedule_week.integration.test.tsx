@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
@@ -9,14 +9,16 @@ import { renderScreen } from '../../testing/render_screen'
 import { readTheCameraList } from '../../testing/shared_reads'
 import { ScheduleWeekView } from './schedule_week.component'
 
-const WEEK = { path: '/settings/horaires', url: '/settings/horaires' }
+const WEEK = { path: '/settings/planification', url: '/settings/planification' }
 
 const RULES = 'GET /api/schedules'
+const CLOCK = 'GET /api/schedules/clock'
 const CHANNELS = 'GET /api/notifications/channels'
 const CAMERAS = 'GET /api/cameras'
 
 const salon = makeCamera({ id: 'camera-1', displayName: 'Salon' })
 const cuisine = makeCamera({ id: 'camera-2', displayName: 'Cuisine' })
+const wednesdayAfternoon = { dayOfWeek: 3, time: '14:30' }
 
 function makeRule(overrides: Partial<ScheduleRule> = {}): ScheduleRule {
   return {
@@ -31,16 +33,21 @@ function makeRule(overrides: Partial<ScheduleRule> = {}): ScheduleRule {
   }
 }
 
-function dayBlock(name: string) {
+function dayRow(name: string) {
   return screen.getByRole('heading', { name }).closest('li') as HTMLElement
 }
 
+afterEach(() => {
+  vi.useRealTimers()
+})
+
 describe('ScheduleWeekView', () => {
-  it('onLoad_ShouldShowEachRangeUnderItsDaysWithItsTypeAndTargets_WhenTheHouseHasRanges', async () => {
+  it('onLoad_ShouldPlaceEachRangeOnItsDayWithItsTypeTimesAndTargets_WhenTheHouseHasRanges', async () => {
     // Arrange
     fakeNetwork({
       [CAMERAS]: ok([salon, cuisine]),
       [CHANNELS]: ok([makeChannelSummary({ channel: 'telegram', displayName: 'Telegram' })]),
+      [CLOCK]: ok(wednesdayAfternoon),
       [RULES]: ok([
         makeRule(),
         makeRule({
@@ -60,19 +67,105 @@ describe('ScheduleWeekView', () => {
 
     // Assert
     await screen.findByRole('heading', { name: 'Lundi' })
-    const monday = within(dayBlock('Lundi'))
     expect(
-      monday.getByRole('link', { name: /Vie privée · 22:00 → 06:00 le lendemains*Salon, Cuisine/ }),
-    ).toHaveAttribute('href', '/settings/horaires/rule-1')
+      within(dayRow('Lundi')).getByRole('link', {
+        name: 'Vie privée · 22:00 → 06:00 le lendemain · Salon, Cuisine',
+      }),
+    ).toHaveAttribute('href', '/settings/planification/rule-1')
     expect(
-      within(dayBlock('Mardi')).getByRole('link', { name: /jusqu’à 06:00, depuis la veille/ }),
-    ).toBeVisible()
-    expect(
-      within(dayBlock('Samedi')).getByRole('link', {
-        name: /Sans notification · 09:00 → 12:00s*Telegram/,
+      within(dayRow('Mardi')).getByRole('link', {
+        name: 'Vie privée · jusqu’à 06:00, depuis la veille · Salon, Cuisine',
       }),
     ).toBeVisible()
-    expect(within(dayBlock('Mercredi')).getByText('Rien de prévu')).toBeVisible()
+    expect(
+      within(dayRow('Samedi')).getByRole('link', {
+        name: 'Sans notification · 09:00 → 12:00 · Telegram',
+      }),
+    ).toBeVisible()
+    expect(within(dayRow('Mercredi')).getByText('Rien de prévu')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldPlaceABlockAtItsHours_WhenARangeIsShown', async () => {
+    // Arrange
+    fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([makeRule({ targetIds: ['camera-1'], startTime: '06:00', endTime: '12:00' })]),
+    })
+
+    // Act
+    renderScreen(<ScheduleWeekView />, WEEK)
+    await readTheCameraList()
+
+    // Assert
+    const block = await screen.findByRole('link', { name: /Vie privée · 06:00 → 12:00/ })
+    expect(block.style.left).toBe('min(25%, 100% - 1.5rem)')
+    expect(block.style.width).toBe('max(1.5rem, 25%)')
+  })
+
+  it('onLoad_ShouldCarrySundayNightOntoMonday_WhenTheWeekWrapsAround', async () => {
+    // Arrange
+    fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([makeRule({ targetIds: ['camera-1'], daysOfWeek: [0] })]),
+    })
+
+    // Act
+    renderScreen(<ScheduleWeekView />, WEEK)
+    await readTheCameraList()
+
+    // Assert
+    await screen.findByRole('heading', { name: 'Lundi' })
+    expect(
+      within(dayRow('Lundi')).getByRole('link', {
+        name: 'Vie privée · jusqu’à 06:00, depuis la veille · Salon',
+      }),
+    ).toBeVisible()
+  })
+
+  it('onLoad_ShouldMarkTheHousesCurrentTimeOnTodayOnly_WhenTheClockIsRead', async () => {
+    // Arrange
+    fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([]),
+    })
+
+    // Act
+    renderScreen(<ScheduleWeekView />, WEEK)
+    await readTheCameraList()
+
+    // Assert
+    await screen.findByRole('heading', { name: 'Mercredi' })
+    expect(
+      within(dayRow('Mercredi')).getByRole('img', { name: 'Maintenant, 14:30' }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('img', { name: /Maintenant/ })).toHaveLength(1)
+  })
+
+  it('onWatchClock_ShouldMoveTheMarker_WhenAMinuteHasPassed', async () => {
+    // Arrange
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const network = fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([]),
+    })
+    renderScreen(<ScheduleWeekView />, WEEK)
+    await readTheCameraList()
+    await screen.findByRole('img', { name: 'Maintenant, 14:30' })
+    network.answer(CLOCK, ok({ dayOfWeek: 3, time: '14:31' }))
+
+    // Act
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    // Assert
+    expect(await screen.findByRole('img', { name: 'Maintenant, 14:31' })).toBeInTheDocument()
   })
 
   it('onLoad_ShouldSayARuleNoLongerTargetsAnything_WhenItsCamerasWereRemoved', async () => {
@@ -80,6 +173,7 @@ describe('ScheduleWeekView', () => {
     fakeNetwork({
       [CAMERAS]: ok([salon]),
       [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
       [RULES]: ok([makeRule({ targetIds: ['removed'] })]),
     })
 
@@ -88,13 +182,25 @@ describe('ScheduleWeekView', () => {
     await readTheCameraList()
 
     // Assert
-    // Once under its day, once under the next where its night ends.
-    expect(await screen.findAllByText('Plus aucune caméra visée')).toHaveLength(2)
+    expect(await screen.findByText(/Plus aucune caméra visée/)).toHaveAttribute(
+      'href',
+      '/settings/planification/rule-1',
+    )
+    expect(
+      within(dayRow('Lundi')).getByRole('link', {
+        name: 'Vie privée · 22:00 → 06:00 le lendemain · Plus aucune caméra visée',
+      }),
+    ).toBeVisible()
   })
 
   it('onLoad_ShouldOfferToAddARange_WhenTheWeekIsRead', async () => {
     // Arrange
-    fakeNetwork({ [CAMERAS]: ok([salon]), [CHANNELS]: ok([]), [RULES]: ok([]) })
+    fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([]),
+    })
 
     // Act
     renderScreen(<ScheduleWeekView />, WEEK)
@@ -103,23 +209,46 @@ describe('ScheduleWeekView', () => {
     // Assert
     expect(await screen.findByRole('link', { name: 'Ajouter une plage' })).toHaveAttribute(
       'href',
-      '/settings/horaires/ajout',
+      '/settings/planification/ajout',
     )
     expect(screen.getAllByText('Rien de prévu')).toHaveLength(7)
   })
 
   it('onLoad_ShouldSayTheWeekCouldNotBeReadWhereItWouldBe_WhenTheReadFails', async () => {
     // Arrange
-    fakeNetwork({ [CAMERAS]: ok([salon]), [CHANNELS]: ok([]), [RULES]: failure(500) })
+    fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: failure(500),
+    })
 
     // Act
     renderScreen(<ScheduleWeekView />, WEEK)
     await readTheCameraList()
 
     // Assert
-    expect(await screen.findByText('Les horaires n’ont pas pu être lus.')).toBeVisible()
+    expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeVisible()
     expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules · 500')
     expect(screen.queryByText('Rien de prévu')).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheWeekCouldNotBeRead_WhenTheHouseClockCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({
+      [CAMERAS]: ok([salon]),
+      [CHANNELS]: ok([]),
+      [CLOCK]: failure(500),
+      [RULES]: ok([]),
+    })
+
+    // Act
+    renderScreen(<ScheduleWeekView />, WEEK)
+    await readTheCameraList()
+
+    // Assert
+    expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeVisible()
+    expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules/clock · 500')
   })
 
   it('onLoad_ShouldReadTheWeekAgain_WhenTheUserRetries', async () => {
@@ -127,6 +256,7 @@ describe('ScheduleWeekView', () => {
     const network = fakeNetwork({
       [CAMERAS]: ok([salon]),
       [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
       [RULES]: failure(500),
     })
     renderScreen(<ScheduleWeekView />, WEEK)
@@ -143,7 +273,12 @@ describe('ScheduleWeekView', () => {
 
   it('onLoad_ShouldSayTheCamerasCouldNotBeRead_WhenTheListFails', async () => {
     // Arrange
-    fakeNetwork({ [CAMERAS]: failure(500), [CHANNELS]: ok([]), [RULES]: ok([]) })
+    fakeNetwork({
+      [CAMERAS]: failure(500),
+      [CHANNELS]: ok([]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([]),
+    })
 
     // Act
     renderScreen(<ScheduleWeekView />, WEEK)

@@ -1,4 +1,5 @@
 import type {
+  HouseClock,
   NewScheduleRule,
   ScheduleRule,
   ScheduleRuleInput,
@@ -11,4 +12,5 @@ export interface ScheduleRepository {
   create(rule: NewScheduleRule): Promise<ScheduleRule>
   update(ruleId: string, input: ScheduleRuleInput): Promise<ScheduleRule>
   delete(ruleId: string): Promise<void>
+  clock(): Promise<HouseClock>
 }

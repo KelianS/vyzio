@@ -93,9 +93,9 @@ describe('NotificationChannelView', () => {
     expect(
       await screen.findByText('2 plages « Sans notification » s’appliquent'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir les horaires' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
       'href',
-      '/settings/horaires',
+      '/settings/planification',
     )
     expect(screen.queryByText('Seulement à certaines heures')).not.toBeInTheDocument()
   })
@@ -108,7 +108,7 @@ describe('NotificationChannelView', () => {
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
 
     // Assert
-    expect(await screen.findByText('Les horaires n’ont pas pu être lus.')).toBeInTheDocument()
+    expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
     expect(
       screen.queryByText('Aucune plage « Sans notification » ne s’applique'),
     ).not.toBeInTheDocument()
@@ -118,7 +118,7 @@ describe('NotificationChannelView', () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [RULES]: failure(500) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await screen.findByText('Les horaires n’ont pas pu être lus.')
+    await screen.findByText('La planification n’a pas pu être lue.')
     network.answer(RULES, ok([]))
 
     // Act

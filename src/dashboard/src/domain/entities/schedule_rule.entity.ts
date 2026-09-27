@@ -39,3 +39,11 @@ export interface ScheduleRule extends NewScheduleRule {
   id: string
   createdAt: string
 }
+
+/** The current moment in the house's clock (ADR-63), never the consulting device's. */
+export interface HouseClock {
+  /** [0..6], 0 = Sunday. */
+  dayOfWeek: number
+  /** "HH:mm". */
+  time: string
+}

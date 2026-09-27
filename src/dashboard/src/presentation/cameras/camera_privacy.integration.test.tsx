@@ -71,9 +71,9 @@ describe('CameraPrivacyView', () => {
 
     // Assert
     expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir les horaires' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
       'href',
-      '/settings/horaires',
+      '/settings/planification',
     )
   })
 
@@ -85,7 +85,7 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('Les horaires n’ont pas pu être lus.')).toBeInTheDocument()
+    expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules · 500')
     expect(screen.queryByText('Aucune plage « Vie privée » ne s’applique')).not.toBeInTheDocument()
   })

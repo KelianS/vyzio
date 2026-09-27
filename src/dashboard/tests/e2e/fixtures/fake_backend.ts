@@ -281,6 +281,8 @@ export interface FakeBackendState {
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
   scheduleRules: FakeScheduleRule[]
+  /** Fixed, so the week's "now" marker sits in the same place on every run. */
+  houseClock: { dayOfWeek: number; time: string }
   profiles: {
     id: string
     name: string
@@ -362,6 +364,7 @@ export function createFakeBackendState(
     restartFails: false,
     restartBreaks: false,
     scheduleRules: [],
+    houseClock: { dayOfWeek: 2, time: '07:30' },
     profiles: [],
     notificationChannels: {},
     channelListening: {},
@@ -915,6 +918,9 @@ export async function installFakeBackend(
     // --- The house's calendar (ADR-63) ---
     if (path === '/api/schedules' && method === 'GET') {
       return json(route, state.scheduleRules)
+    }
+    if (path === '/api/schedules/clock' && method === 'GET') {
+      return json(route, state.houseClock)
     }
     if (path === '/api/schedules' && method === 'POST') {
       const body = route.request().postDataJSON() as Omit<FakeScheduleRule, 'id' | 'createdAt'>

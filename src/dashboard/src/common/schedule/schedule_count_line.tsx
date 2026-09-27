@@ -4,7 +4,7 @@ import type { ScheduleRule, ScheduleRuleKind } from '../../domain/entities/sched
 import { ReadFailure } from '../components/error_message'
 import { appliesSentence, rulesTargeting, SCHEDULES_PATH } from './schedule_types'
 
-export const SCHEDULES_UNREAD = 'Les horaires n’ont pas pu être lus.'
+export const SCHEDULES_UNREAD = 'La planification n’a pas pu être lue.'
 
 interface ScheduleCountLineProps {
   /** The house's rules; null while not read yet. */
@@ -32,7 +32,7 @@ export function ScheduleCountLine({
     <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
       <span>{appliesSentence(kind, rulesTargeting(rules, kind, targetId))}</span>
       <Link to={SCHEDULES_PATH} className="text-sm underline underline-offset-2">
-        Voir les horaires
+        Voir la planification
       </Link>
     </p>
   )

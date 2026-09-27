@@ -9,8 +9,8 @@ import { renderScreen } from '../../testing/render_screen'
 import { readTheCameraList } from '../../testing/shared_reads'
 import { ScheduleRuleView } from './schedule_rule.component'
 
-const ADD = { path: '/settings/horaires/ajout', url: '/settings/horaires/ajout' }
-const EDIT = { path: '/settings/horaires/:ruleId', url: '/settings/horaires/rule-1' }
+const ADD = { path: '/settings/planification/ajout', url: '/settings/planification/ajout' }
+const EDIT = { path: '/settings/planification/:ruleId', url: '/settings/planification/rule-1' }
 
 const CAMERAS = 'GET /api/cameras'
 const CHANNELS = 'GET /api/notifications/channels'
@@ -63,7 +63,7 @@ describe('ScheduleRuleView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     // Assert
-    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/horaires'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/planification'))
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: CREATE,
@@ -126,7 +126,7 @@ describe('ScheduleRuleView', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Choisissez au moins une caméra ou un canal pour cette plage',
     )
-    expect(router.state.location.pathname).toBe('/settings/horaires/ajout')
+    expect(router.state.location.pathname).toBe('/settings/planification/ajout')
   })
 
   it('onUpdate_ShouldSaveTheNewEnd_WhenTheUserChangesItAndSaves', async () => {
@@ -180,7 +180,7 @@ describe('ScheduleRuleView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
 
     // Assert
-    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/horaires'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/planification'))
     expect(network.sent).toContainEqual(expect.objectContaining({ route: DELETE }))
   })
 
@@ -209,7 +209,7 @@ describe('ScheduleRuleView', () => {
 
     // Assert
     expect(await screen.findByRole('alert')).toHaveTextContent('DELETE /api/schedules/rule-1 · 500')
-    expect(router.state.location.pathname).toBe('/settings/horaires/rule-1')
+    expect(router.state.location.pathname).toBe('/settings/planification/rule-1')
   })
 
   it('onLoad_ShouldSayTheRangeIsGoneWithTheWayBack_WhenItWasDeletedMeanwhile', async () => {
@@ -221,9 +221,9 @@ describe('ScheduleRuleView', () => {
 
     // Assert
     expect(await screen.findByRole('heading', { name: 'Plage introuvable' })).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Horaires' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Planification' })).toHaveAttribute(
       'href',
-      '/settings/horaires',
+      '/settings/planification',
     )
     expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })

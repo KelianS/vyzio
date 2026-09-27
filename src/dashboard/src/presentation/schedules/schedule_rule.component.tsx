@@ -341,7 +341,7 @@ function Page({ title, children }: { title: string; children: ReactNode }) {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
-          Horaires
+          Planification
         </Link>
         <h1 className="mt-1 font-serif text-3xl">{title}</h1>
       </div>
