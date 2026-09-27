@@ -18,7 +18,7 @@ public class RtspCameraVerifierTests
         var camera = new Camera { Slug = "porch", FrigateCameraName = "porch", DisplayName = "Porch", Host = "127.0.0.1" };
 
         // Act
-        var result = await sut.VerifyAsync(camera);
+        var result = await sut.VerifyAsync(camera, stream: null);
 
         // Assert
         Assert.False(result.Connected);
@@ -47,13 +47,14 @@ public class RtspCameraVerifierTests
 
         // Never advanced, so the verdict comes from what the listener answered, not from how fast it did.
         var sut = new RtspCameraVerifier(new FakeTimeProvider());
-        var result = await sut.VerifyAsync(new Camera
+        var camera = new Camera
         {
             Slug = "front-door",
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "127.0.0.1",
-        }.WithStream(SupportedProtocol.Rtsp, port, "/stream1")).ObservedAsync();
+        }.WithStream(SupportedProtocol.Rtsp, port, "/stream1");
+        var result = await sut.VerifyAsync(camera, camera.MainStream).ObservedAsync();
 
         await serverTask;
 

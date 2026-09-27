@@ -35,14 +35,6 @@ public class Camera
     // What the camera does, the video stream included, each over one protocol (ADR-22, ADR-61).
     public ICollection<CameraCapabilityBinding> Capabilities { get; set; } = [];
 
-    // The stream capability's qualities of ONE scene (ADR-38); keyed by camera, which has one stream binding (ADR-61).
-    public ICollection<CameraStream> Streams { get; set; } = [];
-
-    // User's pick among Streams for the `detect` role. Null keeps the main stream, so face
-    // recognition is never silently degraded by a default (ADR-38).
-    [MaxLength(100)]
-    public string? DetectStreamId { get; set; }
-
     // Groups the cameras that share one physical device — the lenses of a multi-sensor box are
     // separate cameras (ADR-38), and this is what lets the UI say so. Null for a single-lens device.
     [MaxLength(200)]
@@ -115,33 +107,38 @@ public class Camera
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // Rank 0 — the most detailed stream. Recording always uses it, and it is the fallback for
-    // everything else.
+    // The qualities of ONE scene (ADR-38), rows under the stream binding (ADR-65); none without a binding.
     [NotMapped]
-    public CameraStream? MainStream
-        => Streams.OrderBy(stream => stream.Ordinal).FirstOrDefault();
+    public IReadOnlyCollection<CameraStream> Streams
+        => StreamBinding?.Streams.OrderBy(stream => stream.Ordinal).ToList() ?? [];
 
-    // The stream carrying the `detect` role. Without an explicit choice the lightest stream wins:
-    // Frigate downscales to its own detect size anyway, so analysing a high-definition stream buys
-    // nothing and costs decoding on every camera (ADR-38). Falls back to the main stream when it is
-    // the only one, or when a stored choice no longer resolves.
+    // The lowest rank: the stream onboarding created, whose path the user entered.
     [NotMapped]
-    public CameraStream? DetectStream
-        => (DetectStreamId is null ? null : Streams.FirstOrDefault(stream => stream.Id == DetectStreamId))
-           ?? Streams.OrderByDescending(stream => stream.Ordinal).FirstOrDefault();
+    public CameraStream? MainStream => Streams.FirstOrDefault();
+
+    // The enabled stream holding the record role; StreamLineup keeps exactly one (ADR-65).
+    [NotMapped]
+    public CameraStream? RecordStream => Streams.FirstOrDefault(stream => stream.Records);
+
+    // The enabled stream holding the detect role, else the recording stream (ADR-65 c).
+    [NotMapped]
+    public CameraStream? DetectStream => Streams.FirstOrDefault(stream => stream.Detects) ?? RecordStream;
+
+    [NotMapped]
+    public bool DetectsOnRecordingStream => RecordStream is not null && !Streams.Any(stream => stream.Detects);
 
     // The video stream capability; null until its protocol is chosen, never a disguised default (ADR-61).
     [NotMapped]
     public CameraCapabilityBinding? StreamBinding
         => Capabilities.FirstOrDefault(binding => binding.Capability == CameraCapability.Stream);
 
-    // Creates or updates the main stream in place: the one way to set the stream capability's main path.
+    // Sets the main stream's path, creating the main stream when the binding has none yet.
     public void SetMainStreamPath(string? path)
     {
-        var main = Streams.FirstOrDefault(stream => stream.Ordinal == 0);
-        if (main is null)
+        var binding = StreamBinding ?? throw new InvalidOperationException("The camera has no stream binding.");
+        if (MainStream is not { } main)
         {
-            Streams.Add(new CameraStream { CameraId = Id, Ordinal = 0, Path = path });
+            StreamLineup.ResetTo(binding, binding.Protocol, path);
             return;
         }
 

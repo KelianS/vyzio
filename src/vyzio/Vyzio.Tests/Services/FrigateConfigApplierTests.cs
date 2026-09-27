@@ -303,19 +303,15 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Contains("hwaccel_args: preset-vaapi", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
-    // ── Detect / record stream roles (ADR-38) ──
+    // ── Detect / record stream roles (ADR-38, ADR-65) ──
 
-    private static CameraStream AddStream(Camera camera, int ordinal, string? path, int? width = null, int? height = null)
+    private static CameraStream AddStream(
+        Camera camera, string? path, StreamRole role, int? width = null, int? height = null, SupportedProtocol? protocol = null)
     {
-        var stream = new CameraStream
-        {
-            CameraId = camera.Id,
-            Ordinal = ordinal,
-            Path = path,
-            Width = width,
-            Height = height,
-        };
-        camera.Streams.Add(stream);
+        var binding = camera.StreamBinding!;
+        var stream = StreamLineup.Add(binding, protocol ?? binding.Protocol, path, role);
+        stream.Width = width;
+        stream.Height = height;
         return stream;
     }
 
@@ -330,12 +326,11 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
     }
 
-    // Frigate downscales the detect image anyway, so the lighter stream is the default (ADR-38).
     [Fact]
-    public async Task ApplyAsync_ShouldDetectOnTheSubStream_WhenTheUserHasNotChosenADetectStream()
+    public async Task ApplyAsync_ShouldDetectOnTheSubStream_WhenTheSubStreamHoldsTheDetectRole()
     {
         var camera = MakeValidatedCamera("front-door");
-        AddStream(camera, 1, "/stream2", 640, 360);
+        AddStream(camera, "/stream2", StreamRole.Detect, 640, 360);
 
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
@@ -346,11 +341,10 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldPutBothRolesOnTheMainStream_WhenTheUserChoosesItForDetection()
+    public async Task ApplyAsync_ShouldPutBothRolesOnTheMainStream_WhenTheOtherStreamHoldsNoRole()
     {
         var camera = MakeValidatedCamera("front-door");
-        AddStream(camera, 1, "/stream2", 640, 360);
-        camera.DetectStreamId = camera.MainStream!.Id;
+        AddStream(camera, "/stream2", StreamRole.None, 640, 360);
 
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
@@ -359,11 +353,10 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldDetectOnTheSubStreamAndRecordOnTheMain_WhenTheUserChoosesTheSubStream()
+    public async Task ApplyAsync_ShouldDetectOnTheSubStreamAndRecordOnTheMain_WhenTheUserGivesDetectionToTheSubStream()
     {
         var camera = MakeValidatedCamera("front-door");
-        var sub = AddStream(camera, 1, "/stream2", 640, 360);
-        camera.DetectStreamId = sub.Id;
+        AddStream(camera, "/stream2", StreamRole.Detect, 640, 360);
 
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
@@ -373,6 +366,53 @@ public sealed class FrigateConfigApplierTests : IDisposable
         // detect input is emitted first, record second — each with a single role.
         Assert.True(detectIndex < recordIndex);
         Assert.Contains("640", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldRecordOnTheOtherStream_WhenRecordingWasGivenToIt()
+    {
+        // Arrange
+        var camera = MakeValidatedCamera("front-door");
+        AddStream(camera, "/stream2", StreamRole.RecordAndDetect);
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Assert
+        Assert.Equal(0, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream2"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldDetectOnTheRecordingStream_WhenTheDetectStreamIsDisabled()
+    {
+        // Arrange
+        var camera = MakeValidatedCamera("front-door");
+        var sub = AddStream(camera, "/stream2", StreamRole.Detect, 640, 360);
+        StreamLineup.SetEnabled(sub, enabled: false);
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Assert
+        Assert.DoesNotContain("stream2", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldBridgeOnlyTheDvripStream_WhenTheDetectStreamGoesOverAnotherProtocol()
+    {
+        // Arrange
+        var camera = MakeValidatedCamera("front-door");
+        AddStream(camera, "?channel=0&subtype=1", StreamRole.Detect, protocol: SupportedProtocol.Dvrip);
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Assert
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+        Assert.Equal(1, CountOccurrences(yaml, "rtsp://127.0.0.1:8554/front_door_1"));
+        Assert.Contains("subtype=1", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -394,8 +434,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     public async Task ApplyAsync_ShouldGiveTheSubStreamItsOwnGo2rtcBridge_WhenADvripCameraDetectsOnItsSubStream()
     {
         var camera = MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null);
-        var sub = AddStream(camera, 1, "?channel=0&subtype=1");
-        camera.DetectStreamId = sub.Id;
+        AddStream(camera, "?channel=0&subtype=1", StreamRole.Detect);
 
         var yaml = await ApplyAndReadYamlAsync([camera]);
 

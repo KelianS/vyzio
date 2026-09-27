@@ -154,8 +154,8 @@ streams are added with the defaults: the most detailed records, the lightest det
 both, and the date is set. Afterwards only the measured size of a stream whose path matches is
 refreshed (the main stream's size only when its path matches, ADR-38); nothing is added or removed.
 
-**Checks.** `StreamVerification` checks the binding's protocol once per gesture, then each enabled
-stream's own protocol (once per gesture too), then asks `ICameraVerifier` about that stream: over RTSP
+**Checks.** `StreamVerification` checks each enabled stream's own protocol, once per gesture however
+many streams go through it, then asks `ICameraVerifier` about that stream: over RTSP
 an `OPTIONS` on its path, over DVRIP its port. Each stream records `Verified`, `CheckedAt` and
 `LastError`; the recording stream's result is the camera's and the binding's. `CheckCameraStreamUseCase`
 checks one stream alone.

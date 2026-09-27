@@ -845,7 +845,7 @@ public class SeedAndProbePresetsUseCaseTests
     {
         // Arrange
         var verifier = Substitute.For<ICameraVerifier>();
-        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>())
             .Returns(new CameraVerificationResult(true, false, "needs_attention", "No image.", DateTimeOffset.UnixEpoch, null));
         _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, verifier: verifier);

@@ -559,7 +559,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraVerifier : ICameraVerifier
     {
-        public Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
+        public Task<CameraVerificationResult> VerifyAsync(Camera camera, CameraStream? stream, CancellationToken ct = default)
             => Task.FromResult(new CameraVerificationResult(
                 true,
                 true,
