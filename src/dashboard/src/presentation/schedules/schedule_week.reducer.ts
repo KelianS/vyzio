@@ -9,17 +9,14 @@ export function scheduleWeekReducer(
     case 'LOAD_STARTED':
       return { ...state, loading: true, error: null }
     case 'LOAD_SUCCEEDED':
-      return {
-        ...state,
-        loading: false,
-        rules: action.rules,
-        channels: action.channels,
-        clock: action.clock,
-      }
+      return { ...state, loading: false, rules: action.rules, channels: action.channels }
     // An unread week is not an empty one: nothing shown may pass for "rien de prévu".
     case 'LOAD_FAILED':
-      return { ...state, loading: false, rules: [], channels: [], clock: null, error: action.error }
+      return { ...state, loading: false, rules: [], channels: [], error: action.error }
     case 'CLOCK_READ':
       return { ...state, clock: action.clock }
+    // The marker is an aid, the week stays read; a time that can no longer be told is left out, never frozen.
+    case 'CLOCK_FAILED':
+      return { ...state, clock: null }
   }
 }

@@ -183,7 +183,7 @@ test.describe('House calendar', () => {
       .filter({ has: page.getByRole('heading', { name: 'Mardi' }) })
     await expect(tuesday.getByRole('img', { name: 'Maintenant, 07:30' })).toBeVisible()
     const block = tuesday.getByRole('link', { name: 'Vie privée · 08:00 → 12:00 · Salon' })
-    // 08:00 to 12:00 is the second sixth of the day's bar.
+    // 08:00 to 12:00 starts a third of the way along the day's bar and spans a sixth of it.
     const [start, width] = await block.evaluate((element) => {
       const bar = element.closest('ul')!.parentElement!.getBoundingClientRect()
       const own = element.getBoundingClientRect()

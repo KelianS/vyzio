@@ -131,6 +131,19 @@ describe('barOf', () => {
     expect(bar.lanes).toBe(2)
   })
 
+  it('barOf_ShouldStackShortRangesInLanes_WhenTheirDrawnBlocksWouldTouch', () => {
+    // Arrange
+    const first = makeRule({ id: 'first', startTime: '10:00', endTime: '10:15' })
+    const second = makeRule({ id: 'second', startTime: '10:30', endTime: '11:00' })
+    const [monday] = weekOf([first, second])
+
+    // Act
+    const bar = barOf(monday.entries)
+
+    // Assert
+    expect(bar.blocks.map((block) => block.lane)).toEqual([0, 1])
+  })
+
   it('barOf_ShouldKeepOneLane_WhenTheDayIsEmpty', () => {
     // Act
     const bar = barOf([])
@@ -145,6 +158,7 @@ describe('entryTimes', () => {
     [{ rule: makeRule(), tail: false }, '22:00 → 06:00 le lendemain'],
     [{ rule: makeRule(), tail: true }, 'jusqu’à 06:00, depuis la veille'],
     [{ rule: makeRule({ startTime: '08:00', endTime: '12:00' }), tail: false }, '08:00 → 12:00'],
+    [{ rule: makeRule({ startTime: '20:00', endTime: '00:00' }), tail: false }, '20:00 → minuit'],
   ])('entryTimes_ShouldSayWhenTheRangeRuns_WhenTheWeekShowsIt %#', (entry, expected) => {
     // Act
     const times = entryTimes(entry)

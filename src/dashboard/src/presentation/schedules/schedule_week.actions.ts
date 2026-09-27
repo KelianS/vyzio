@@ -4,11 +4,7 @@ import type { HouseClock, ScheduleRule } from '../../domain/entities/schedule_ru
 
 export type ScheduleWeekAction =
   | { type: 'LOAD_STARTED' }
-  | {
-      type: 'LOAD_SUCCEEDED'
-      rules: ScheduleRule[]
-      channels: NotificationChannelSummary[]
-      clock: HouseClock
-    }
+  | { type: 'LOAD_SUCCEEDED'; rules: ScheduleRule[]; channels: NotificationChannelSummary[] }
   | { type: 'LOAD_FAILED'; error: AppError }
   | { type: 'CLOCK_READ'; clock: HouseClock }
+  | { type: 'CLOCK_FAILED'; error: AppError }

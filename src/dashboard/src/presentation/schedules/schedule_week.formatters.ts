@@ -75,6 +75,8 @@ export function barOf(entries: readonly WeekEntry[]): { blocks: BarBlock[]; lane
 export function entryTimes(entry: WeekEntry): string {
   const { startTime, endTime } = entry.rule
   if (entry.tail) return `jusqu’à ${endTime}, depuis la veille`
+  // Ending at midnight sharp, the range stays on its day, as the bar draws it.
+  if (minutesOf(endTime) === 0) return `${startTime} → minuit`
   return endsNextDay(startTime, endTime)
     ? `${startTime} → ${endTime} le lendemain`
     : `${startTime} → ${endTime}`

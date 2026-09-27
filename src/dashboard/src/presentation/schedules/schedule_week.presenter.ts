@@ -26,27 +26,26 @@ export function buildScheduleWeekPresenter({
     Promise.all([
       container.listScheduleRules.execute(),
       notificationsContainer.listNotificationChannels.execute(),
-      container.getHouseClock.execute(),
     ])
-      .then(([rules, channels, clock]) =>
-        dispatch({ type: 'LOAD_SUCCEEDED', rules, channels, clock }),
-      )
+      .then(([rules, channels]) => dispatch({ type: 'LOAD_SUCCEEDED', rules, channels }))
       .catch((e: unknown) => dispatch({ type: 'LOAD_FAILED', error: toAppError(e) }))
+  }
+
+  function readClock() {
+    container.getHouseClock
+      .execute()
+      .then((clock) => dispatch({ type: 'CLOCK_READ', clock }))
+      .catch((e: unknown) => dispatch({ type: 'CLOCK_FAILED', error: toAppError(e) }))
   }
 
   return {
     onLoad: load,
     onReloadCameras: () => reloadCameraList(camerasContainer),
 
-    /** Reads the house's clock again every minute; returns the stop. */
+    /** Reads the house's clock now and every minute after; returns the stop. */
     onWatchClock() {
-      const read = () =>
-        container.getHouseClock
-          .execute()
-          .then((clock) => dispatch({ type: 'CLOCK_READ', clock }))
-          // A missed tick keeps the last marker: the week itself was read.
-          .catch(() => undefined)
-      const interval = setInterval(read, CLOCK_INTERVAL_MS)
+      readClock()
+      const interval = setInterval(readClock, CLOCK_INTERVAL_MS)
       return () => clearInterval(interval)
     },
   }

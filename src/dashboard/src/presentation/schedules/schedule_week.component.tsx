@@ -119,12 +119,7 @@ export function ScheduleWeekView() {
           const Icon = type.icon
           return (
             <li key={kind} className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'inline-flex h-4 w-6 items-center justify-center rounded-sm',
-                  type.fill,
-                )}
-              >
+              <span className={cn('inline-flex h-4 w-6 items-center justify-center', type.fill)}>
                 <Icon className="size-3" aria-hidden="true" />
               </span>
               {type.name}
@@ -257,7 +252,7 @@ function DayRow({
           <span
             role="img"
             aria-label={`Maintenant, ${clock.time}`}
-            className="absolute -inset-y-1 z-10 w-0.5 -translate-x-1/2 bg-destructive"
+            className="absolute -inset-y-1 z-10 w-0.5 -translate-x-1/2 bg-primary ring-2 ring-card"
             style={{ left: percentOf(minutesOf(clock.time)) }}
           />
         )}

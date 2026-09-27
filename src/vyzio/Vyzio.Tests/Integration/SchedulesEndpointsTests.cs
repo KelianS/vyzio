@@ -131,7 +131,7 @@ public class SchedulesEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task GetHouseClock_ShouldAnswerADayAndATime_WhenAsked()
+    public async Task GetHouseClock_ShouldAnswerADayAndATime_WhenTheHouseClockIsRead()
     {
         // Arrange
         using var client = _factory.CreateClient();

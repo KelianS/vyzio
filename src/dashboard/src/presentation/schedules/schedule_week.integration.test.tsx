@@ -233,13 +233,13 @@ describe('ScheduleWeekView', () => {
     expect(screen.queryByText('Rien de prévu')).not.toBeInTheDocument()
   })
 
-  it('onLoad_ShouldSayTheWeekCouldNotBeRead_WhenTheHouseClockCannotBeRead', async () => {
+  it('onWatchClock_ShouldShowTheWeekWithoutMarker_WhenTheHouseClockCannotBeRead', async () => {
     // Arrange
     fakeNetwork({
       [CAMERAS]: ok([salon]),
       [CHANNELS]: ok([]),
       [CLOCK]: failure(500),
-      [RULES]: ok([]),
+      [RULES]: ok([makeRule({ targetIds: ['camera-1'] })]),
     })
 
     // Act
@@ -247,8 +247,10 @@ describe('ScheduleWeekView', () => {
     await readTheCameraList()
 
     // Assert
-    expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeVisible()
-    expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules/clock · 500')
+    expect(
+      await screen.findByRole('link', { name: /Vie privée · 22:00 → 06:00 le lendemain/ }),
+    ).toBeVisible()
+    expect(screen.queryByRole('img', { name: /Maintenant/ })).not.toBeInTheDocument()
   })
 
   it('onLoad_ShouldReadTheWeekAgain_WhenTheUserRetries', async () => {

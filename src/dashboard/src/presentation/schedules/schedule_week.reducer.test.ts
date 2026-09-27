@@ -6,30 +6,32 @@ import { buildInitialScheduleWeekUido } from './schedule_week.uido'
 
 const serverError: AppError = { kind: AppErrorKind.Server, status: 500 }
 
-const loaded = scheduleWeekReducer(buildInitialScheduleWeekUido(), {
-  type: 'LOAD_SUCCEEDED',
-  rules: [
-    {
-      id: 'rule-1',
-      kind: ScheduleRuleKind.Privacy,
-      targetIds: ['camera-1'],
-      daysOfWeek: [1],
-      startTime: '22:00',
-      endTime: '06:00',
-      createdAt: '2026-01-01T00:00:00Z',
-    },
-  ],
-  channels: [],
-  clock: { dayOfWeek: 1, time: '21:00' },
-})
+const loaded = scheduleWeekReducer(
+  scheduleWeekReducer(buildInitialScheduleWeekUido(), {
+    type: 'LOAD_SUCCEEDED',
+    rules: [
+      {
+        id: 'rule-1',
+        kind: ScheduleRuleKind.Privacy,
+        targetIds: ['camera-1'],
+        daysOfWeek: [1],
+        startTime: '22:00',
+        endTime: '06:00',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+    ],
+    channels: [],
+  }),
+  { type: 'CLOCK_READ', clock: { dayOfWeek: 1, time: '21:00' } },
+)
 
 describe('scheduleWeekReducer', () => {
-  it('scheduleWeekReducer_ShouldDropTheRulesAndTheClockShown_WhenAReadFails', () => {
+  it('scheduleWeekReducer_ShouldDropTheRulesShown_WhenAReadFails', () => {
     // Act
     const next = scheduleWeekReducer(loaded, { type: 'LOAD_FAILED', error: serverError })
 
     // Assert
-    expect(next).toMatchObject({ rules: [], clock: null, loading: false, error: serverError })
+    expect(next).toMatchObject({ rules: [], loading: false, error: serverError })
   })
 
   it('scheduleWeekReducer_ShouldMoveOnlyTheClock_WhenTheClockIsReadAgain', () => {
@@ -41,5 +43,13 @@ describe('scheduleWeekReducer', () => {
 
     // Assert
     expect(next).toEqual({ ...loaded, clock: { dayOfWeek: 1, time: '21:01' } })
+  })
+
+  it('scheduleWeekReducer_ShouldLeaveTheMarkerOutAndKeepTheWeek_WhenTheClockCannotBeRead', () => {
+    // Act
+    const next = scheduleWeekReducer(loaded, { type: 'CLOCK_FAILED', error: serverError })
+
+    // Assert
+    expect(next).toEqual({ ...loaded, clock: null })
   })
 })
