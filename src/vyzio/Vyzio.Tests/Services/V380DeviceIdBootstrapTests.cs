@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.VendorAdapters;
 
@@ -7,23 +6,42 @@ namespace Vyzio.Tests.Services;
 
 public class V380DeviceIdBootstrapTests
 {
-    [Fact]
-    public void PersistIfDiscovered_ShouldAddTheDeviceIdAndKeepTheRest_WhenTheBindingHasAConfig()
+    private static Camera MakeCamera() => new()
     {
+        Id = "cam1",
+        Slug = "cam1",
+        FrigateCameraName = "cam1",
+        DisplayName = "cam1",
+        Host = "192.168.1.20",
+    };
+
+    [Fact]
+    public void PersistIfDiscovered_ShouldKeepTheDeviceIdOnTheV380Protocol_WhenTheClientFoundIt()
+    {
+        // Arrange
         var client = new V380Client(NullLogger<V380Client>.Instance);
         client.PreloadDeviceId("192.168.1.20", 26970853);
-        var binding = new CameraCapabilityBinding
-        {
-            CameraId = "cam1",
-            Capability = CameraCapability.Ptz,
-            Protocol = SupportedProtocol.V380,
-            ConfigJson = """{"pan_inverted":true}""",
-        };
+        var camera = MakeCamera();
 
-        V380DeviceIdBootstrap.PersistIfDiscovered(binding, client, "192.168.1.20");
+        // Act
+        V380DeviceIdBootstrap.PersistIfDiscovered(camera, client);
 
-        Assert.True(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted));
-        Assert.True(V380DeviceIdBootstrap.TryReadDeviceId(binding.ConfigJson, out var deviceId));
-        Assert.Equal(26970853u, deviceId);
+        // Assert
+        Assert.Equal(26970853u, camera.Protocol(SupportedProtocol.V380)?.DeviceId);
+    }
+
+    [Fact]
+    public void PreloadStored_ShouldHandTheTypedNumberToTheClient_WhenTheV380ProtocolHoldsOne()
+    {
+        // Arrange
+        var client = new V380Client(NullLogger<V380Client>.Instance);
+        var camera = MakeCamera();
+        camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 12345678;
+
+        // Act
+        V380DeviceIdBootstrap.PreloadStored(camera, client);
+
+        // Assert
+        Assert.Equal(12345678u, client.GetCachedDeviceId("192.168.1.20"));
     }
 }

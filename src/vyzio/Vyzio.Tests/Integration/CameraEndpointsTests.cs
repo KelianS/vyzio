@@ -45,6 +45,97 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task UpdateProtocol_ShouldListTheProtocolWithItsSpecificAccountButNeverItsPassword_WhenAnAccountIsSet()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var update = await client.PutAsJsonAsync("/api/cameras/camera-1/protocols/tapo_klap",
+            new { port = (int?)null, username = "cloud-user", password = "cloud-pass", deviceId = (uint?)null });
+        var listed = await client.GetStringAsync("/api/cameras/camera-1/protocols");
+
+        // Assert
+        update.EnsureSuccessStatusCode();
+        Assert.Contains("\"protocol\":\"rtsp\"", listed, StringComparison.Ordinal);
+        Assert.Contains("\"protocol\":\"tapo_klap\"", listed, StringComparison.Ordinal);
+        Assert.Contains("\"hasSpecificAccount\":true", listed, StringComparison.Ordinal);
+        Assert.DoesNotContain("cloud-pass", listed, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RemoveProtocol_ShouldRefuseWithItsCode_WhenTheStreamGoesThroughIt()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.DeleteAsync("/api/cameras/camera-1/protocols/rtsp");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("protocol_in_use", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ConfigureCapability_ShouldRefuseWithItsCode_WhenTheCameraDoesNotHaveTheProtocol()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/cameras/camera-1/capabilities/ptz", new { protocol = "dvrip" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("protocol_not_on_camera", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SearchProtocols_ShouldAnswerNotFound_WhenTheCameraDoesNotExist()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/api/cameras/no-such-camera/protocols/search", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddProtocol_ShouldRefuseItTwiceAndRemoveIt_WhenNoCapabilityUsesIt()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var body = new { protocol = "dvrip", port = (int?)null, username = (string?)null, password = (string?)null };
+
+        // Act
+        var added = await client.PostAsJsonAsync("/api/cameras/camera-1/protocols", body);
+        var again = await client.PostAsJsonAsync("/api/cameras/camera-1/protocols", body);
+        var removed = await client.DeleteAsync("/api/cameras/camera-1/protocols/dvrip");
+
+        // Assert
+        added.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, removed.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemoveCapability_ShouldRefuseWithABadRequest_WhenTheCapabilityIsTheStream()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.DeleteAsync("/api/cameras/camera-1/capabilities/stream");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CreatePrivacySchedule_ShouldAcceptTheNight_WhenTheRangeCrossesMidnight()
     {
         using var client = _factory.CreateClient();
@@ -161,11 +252,9 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         var response = await client.PutAsJsonAsync("/api/cameras/camera-1", new UpdateCameraRequest(
             "Entry",
-            "192.168.1.10",
-            554,
+            "192.168.1.12",
             null,
             null,
-            "/Streaming/Channels/101",
             "rtsp_manual",
             "person_default"));
 
@@ -217,11 +306,10 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var createResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
             "Garage",
             "192.168.1.30",
-            554,
             null,
             null,
-            "/Streaming/Channels/101",
             "rtsp_manual",
+            new CreateCameraStreamRequest("rtsp", 554, "/Streaming/Channels/101"),
             "person_default"));
 
         createResponse.EnsureSuccessStatusCode();
@@ -250,11 +338,10 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var response = await client.PostAsJsonAsync("/api/cameras/verify-draft", new CreateCameraRequest(
             "Porch",
             "192.168.1.40",
-            554,
             "admin",
             "secret",
-            "/Streaming/Channels/101",
             "rtsp_manual",
+            new CreateCameraStreamRequest("rtsp", 554, "/Streaming/Channels/101"),
             "person_default"));
 
         response.EnsureSuccessStatusCode();
@@ -276,11 +363,10 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var createResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
             "Garage",
             "192.168.1.30",
-            554,
             null,
             null,
-            "/Streaming/Channels/101",
             "rtsp_manual",
+            new CreateCameraStreamRequest("rtsp", 554, "/Streaming/Channels/101"),
             "person_default"));
 
         createResponse.EnsureSuccessStatusCode();
@@ -331,7 +417,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Empty(refreshedCatalog!);
     }
 
-    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, int Port, string? Username, string? StreamPath, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, string? FrigateCameraName, string? VendorFamily);
+    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, string? Username, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, string? FrigateCameraName, string? VendorFamily);
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
@@ -370,14 +456,13 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             DisplayName = "Front Door",
             SourceType = "rtsp_manual",
             Host = "192.168.1.10",
-            Port = 554,
             Status = "online",
             ValidationState = CameraValidationState.Validated,
             IsEnabled = true,
             LastReachabilityCheckAt = DateTimeOffset.Parse("2026-05-12T09:00:00+00:00", CultureInfo.InvariantCulture),
             LastSuccessfulFrameAt = DateTimeOffset.Parse("2026-05-12T09:01:00+00:00", CultureInfo.InvariantCulture),
             FrigateCameraName = "front_door"
-        });
+        }.WithStream(SupportedProtocol.Rtsp));
 
         db.SaveChanges();
     }
@@ -395,6 +480,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<VyzioDbContext>();
             services.RemoveAll<ICameraDiscoveryService>();
             services.RemoveAll<ICameraVerifier>();
+            services.RemoveAll<ICameraProtocolProbe>();
             services.RemoveAll<ICameraStreamEnumerator>();
             services.RemoveAll<IFrigateConfigApplier>();
             services.RemoveAll<IVendorAssistanceService>();
@@ -413,6 +499,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
             services.AddSingleton<ICameraDiscoveryService>(new StubCameraDiscoveryService());
             services.AddSingleton<ICameraVerifier>(new StubCameraVerifier());
+            services.AddSingleton<ICameraProtocolProbe>(new StubCameraProtocolProbe());
             services.AddSingleton<ICameraStreamEnumerator>(new StubCameraStreamEnumerator());
             services.AddSingleton<IFrigateConfigApplier>(new StubFrigateConfigApplier());
             services.AddSingleton<IVendorAssistanceService>(new StubVendorAssistanceService());
@@ -462,6 +549,12 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                         new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"]),
                         new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
                     ]);
+    }
+
+    private sealed class StubCameraProtocolProbe : ICameraProtocolProbe
+    {
+        public Task<ProtocolAnswer> ProbeAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default)
+            => Task.FromResult(ProtocolAnswer.Answers());
     }
 
     private sealed class StubCameraVerifier : ICameraVerifier

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AppErrorKind, type AppError } from '../../common/errors/app_error'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
+import { makeCameraProtocol } from '../../testing/camera_protocol_fixture'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido, CapabilityTask } from './camera_connection.uido'
 
@@ -73,5 +74,70 @@ describe('cameraConnectionReducer', () => {
     // Assert
     expect(next.cameraGone).toBe(true)
     expect(next.bindingsLoading).toBe(false)
+  })
+
+  it('cameraConnectionReducer_ShouldReplaceOnlyTheCheckedBox_WhenAProtocolAnswers', () => {
+    // Arrange
+    const onvif = makeCameraProtocol({ protocol: 'onvif', status: null })
+    const state = cameraConnectionReducer(buildInitialCameraConnectionUido(), {
+      type: 'PROTOCOLS_LOADED',
+      protocols: [makeCameraProtocol(), onvif],
+    })
+    const checked = makeCameraProtocol({ status: 'refused', lastError: 'RTSP: 401' })
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'PROTOCOL_CHECKED', protocol: checked })
+
+    // Assert
+    expect(next.protocols).toEqual([checked, onvif])
+  })
+
+  it('cameraConnectionReducer_ShouldShowNoBoxAndKeepTheError_WhenTheProtocolsReadFails', () => {
+    // Arrange
+    const state = cameraConnectionReducer(buildInitialCameraConnectionUido(), {
+      type: 'PROTOCOLS_LOADED',
+      protocols: [makeCameraProtocol()],
+    })
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'PROTOCOLS_FAILED', error: readError })
+
+    // Assert
+    expect(next.protocols).toEqual([])
+    expect(next.protocolsError).toBe(readError)
+  })
+
+  it('cameraConnectionReducer_ShouldFreeOnlyThatProtocol_WhenItsCheckFinishes', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      checking: { rtsp: true, v380: true } as const,
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'PROTOCOL_CHECK_FINISHED',
+      protocol: 'rtsp',
+    })
+
+    // Assert
+    expect(next.checking).toEqual({ v380: true })
+  })
+
+  it('cameraConnectionReducer_ShouldFreeOnlyThatProtocol_WhenItsRemovalFinishes', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      removing: { onvif: true, v380: true } as const,
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'PROTOCOL_REMOVE_FINISHED',
+      protocol: 'onvif',
+    })
+
+    // Assert
+    expect(next.removing).toEqual({ v380: true })
   })
 })

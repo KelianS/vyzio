@@ -19,7 +19,6 @@ public class CameraPrivacyScheduleUseCaseTests
             FrigateCameraName = "cam1",
             DisplayName = "cam1",
             Host = "192.168.1.10",
-            Port = 554,
         });
     }
 

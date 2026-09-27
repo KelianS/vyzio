@@ -38,7 +38,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
             @params = new { lens_mask_info = new { enabled = active ? "on" : "off" } }
         };
 
-        await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
+        await SendCommandAsync(camera, session, JsonSerializer.Serialize(command), ct);
         logger.LogInformation("Tapo privacy mode set to {Active} on {Host} (LED should be {LedState}).",
             active, camera.Host, active ? "off" : "on");
     }
@@ -57,7 +57,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
             @params = new { x, y }
         };
 
-        await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
+        await SendCommandAsync(camera, session, JsonSerializer.Serialize(command), ct);
     }
 
     public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
@@ -66,7 +66,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
             ?? throw new InvalidOperationException($"KLAP authentication failed for camera {camera.DisplayName} ({camera.Host}).");
 
         var command = new { method = "motorMove", @params = new { x = 0, y = 0 } };
-        await SendCommandAsync(camera.Host, session, JsonSerializer.Serialize(command), ct);
+        await SendCommandAsync(camera, session, JsonSerializer.Serialize(command), ct);
     }
 
     // A move then a stop; how far it goes is one round trip to the camera.
@@ -106,12 +106,35 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
 #pragma warning restore format
     }
 
+    // The protocol level's login: the KLAP handshake with the protocol's account, nothing sent to the camera beyond it (ADR-61).
+    public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, TimeProvider time, CancellationToken ct)
+    {
+        using var expiry = new CancellationTokenSource(TimeSpan.FromSeconds(5), time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
+        try
+        {
+            return await AuthenticateAsync(camera, linked.Token) is not null
+                ? ProtocolAnswer.Answers()
+                : ProtocolAnswer.Refused($"Tapo KLAP: {camera.Host} refused the handshake (wrong account or firmware without KLAP).");
+        }
+        catch (HttpRequestException ex)
+        {
+            return ProtocolAnswer.Unreachable($"Tapo KLAP: {camera.Host} did not answer the handshake ({ex.HttpRequestError}).");
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return ProtocolAnswer.Unreachable($"Tapo KLAP: {camera.Host} did not answer the handshake within 5 s.");
+        }
+    }
+
     private async Task<KlapSession?> AuthenticateAsync(Camera camera, CancellationToken ct)
     {
         var http = httpClientFactory.CreateClient("tapo");
-        var baseUrl = $"http://{camera.Host}";
-        var username = camera.Username ?? "admin";
-        var password = camera.Password ?? string.Empty;
+        var baseUrl = $"http://{camera.Host}:{camera.PortOf(SupportedProtocol.TapoKlap)}";
+        // KLAP may want the Tapo cloud account while RTSP and ONVIF take the local one (ADR-61).
+        var account = camera.CredentialsFor(SupportedProtocol.TapoKlap);
+        var username = account.Username ?? "admin";
+        var password = account.Password ?? string.Empty;
 
         var localSeed = RandomNumberGenerator.GetBytes(16);
         var credHash = ComputeCredentialHash(username, password);
@@ -164,7 +187,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         return new KlapSession(key, iv, cookie, Seq: 1);
     }
 
-    private async Task SendCommandAsync(string host, KlapSession session, string commandJson, CancellationToken ct)
+    private async Task SendCommandAsync(Camera camera, KlapSession session, string commandJson, CancellationToken ct)
     {
         var http = httpClientFactory.CreateClient("tapo");
 
@@ -172,7 +195,7 @@ public sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, ILogg
         using var content = new ByteArrayContent(payload);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"http://{host}/app?seq={seq}");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"http://{camera.Host}:{camera.PortOf(SupportedProtocol.TapoKlap)}/app?seq={seq}");
         request.Content = content;
         request.Headers.Add("Cookie", session.Cookie);
 

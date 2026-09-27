@@ -1,6 +1,7 @@
 # ADR-28 — Détection de capacité en cascade multi-protocole + flag `ManuallyConfigured`
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)
+> (la cascade n'essaie que les protocoles qui répondent).
 
 ## Contexte
 

@@ -2,7 +2,8 @@
 
 > How Vyzio talks ONVIF. The *why* behind the choices is in
 > [ADR-56](../adr/0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md)
-> (endpoint asked of the camera), [ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
+> (endpoint asked of the camera), [ADR-61](../adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)
+> (where it is kept, on the ONVIF protocol row), [ADR-22](../adr/0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
 > (resolution by protocol, never by brand) and
 > [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) (capability cascade),
 > [ADR-24](../adr/0024-protocol-layer-separated-from-capability-layer-onvifclient-supportedprotocol-privacystrategy.md)
@@ -34,10 +35,12 @@ service name; the address is resolved beneath it.
 The unit of resolution is the **device service URL**. Everything else is read from the camera's own
 answer.
 
-1. **Stored.** `Camera.ProtocolEndpointsJson`, keyed by `SupportedProtocol`, taken as-is: only a real
-   resolution writes it, and a stale one surfaces as a failed call. No sweep.
-2. **Swept**, when nothing is stored. The ONVIF ports of `DiscoveryPortCatalog` crossed with the
-   candidate paths below. First answer wins, and becomes the device service URL.
+1. **Stored.** The `Endpoint` of the camera's ONVIF protocol row (`CameraProtocol`,
+   [`camera-connection.md`](camera-connection.md)), taken as-is: only a real resolution writes it, and
+   a stale one surfaces as a failed call. No sweep.
+2. **Swept**, when nothing is stored. The ONVIF ports of `DiscoveryPortCatalog`, or only the port set
+   on the ONVIF row when there is one, crossed with the candidate paths below. First answer wins, and
+   becomes the device service URL.
 3. **Announced.** Whether stored or swept, the device service is then asked `GetServices`, which gives
    an `XAddr` per service namespace. Authoritative, and the only correct source for the per-service
    paths. It is asked without credentials first, `GetServices` being pre-authentication in the ONVIF
@@ -74,7 +77,7 @@ A camera changes: a service gets enabled in the vendor app, a firmware moves a p
 address that is never dropped would make that change invisible, and deleting the camera would be the
 only way out.
 
-Both halves are dropped together, `Camera.ProtocolEndpointsJson` and the process-wide cache behind
+Both halves are dropped together, the ONVIF row's `Endpoint` and the process-wide cache behind
 `ICameraProtocolEndpointCache`; clearing one alone leaves the other in charge. Two user gestures do
 it, and both are the user saying "look at this camera again":
 
@@ -149,4 +152,6 @@ protocol whatever the verdict (ADR-28).
 ## Authentication
 
 WS-Security `UsernameToken` with `PasswordDigest`: `SHA1(nonce + created + password)`, base64. The
-camera account credentials are the ones on `Camera`; no vendor cloud account is ever involved.
+account is the one `Camera.CredentialsFor(Onvif)` resolves: the ONVIF row's specific account when set, the
+camera's otherwise ([`camera-connection.md`](camera-connection.md)). No vendor cloud account is
+involved.

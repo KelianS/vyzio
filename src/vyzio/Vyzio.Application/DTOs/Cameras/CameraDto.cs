@@ -9,10 +9,7 @@ public sealed record CameraDto(
     string DisplayName,
     string SourceType,
     string Host,
-    int Port,
     string? Username,
-    string? StreamPath,
-    string StreamProtocol,
     string Status,
     string ValidationState,
     bool IsEnabled,
@@ -29,7 +26,6 @@ public sealed record CameraDto(
     string? PrivacyMissDetail,
     bool PtzSupported,
     string PrivacyStrategy,
-    IReadOnlyList<string> SupportedProtocols,
     IReadOnlyList<string> VerifiedCapabilities)
 {
     public static CameraDto From(Camera camera, IEnumerable<CameraCapabilityBinding>? verifiedBindings = null) => new(
@@ -38,10 +34,7 @@ public sealed record CameraDto(
         camera.DisplayName,
         camera.SourceType,
         camera.Host,
-        camera.Port,
         camera.Username,
-        camera.StreamPath,
-        SnakeCaseEnum.ToSnakeCase(camera.StreamProtocol),
         camera.Status,
         SnakeCaseEnum.ToSnakeCase(camera.ValidationState),
         camera.IsEnabled,
@@ -58,7 +51,6 @@ public sealed record CameraDto(
         camera.PrivacyMissDetail,
         camera.PtzSupported,
         SnakeCaseEnum.ToSnakeCase(camera.PrivacyStrategy),
-        camera.GetSupportedProtocols().Select(p => SnakeCaseEnum.ToSnakeCase(p)).ToList(),
         verifiedBindings?
             .Where(b => b.CameraId == camera.Id)
             .Select(b => SnakeCaseEnum.ToSnakeCase(b.Capability))

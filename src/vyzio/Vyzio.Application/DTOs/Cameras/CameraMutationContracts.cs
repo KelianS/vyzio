@@ -3,27 +3,26 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
 
+// The camera (identity and access) and its stream capability, the one it is born with (ADR-61).
 public sealed record CreateCameraRequest(
     string DisplayName,
     string Host,
-    int Port,
     string? Username,
     string? Password,
-    string? StreamPath,
     string? SourceType,
-    string? VendorFamily = null,
-    string? StreamProtocol = null);
+    CreateCameraStreamRequest Stream,
+    string? VendorFamily = null);
+
+// The protocol carrying the stream, that protocol's port (null: its usual one) and the main path over RTSP.
+public sealed record CreateCameraStreamRequest(string Protocol, int? Port, string? Path);
 
 public sealed record UpdateCameraRequest(
     string DisplayName,
     string Host,
-    int Port,
     string? Username,
     string? Password,
-    string? StreamPath,
     string? SourceType,
     string? VendorFamily = null,
-    string? StreamProtocol = null,
     bool? PtzSupported = null);
 
 public sealed record DiscoverCamerasRequest(

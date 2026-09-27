@@ -51,13 +51,15 @@ internal sealed class CameraReachabilityPollerService(
         {
             if (ct.IsCancellationRequested) break;
 
-            var newStatus = await ProbeAsync(camera.Host, camera.Port, ct);
+            // Without a stream protocol there is nothing to watch: the status says so rather than keep its last word (ADR-61).
+            var port = camera.StreamBinding is { } stream ? camera.PortOf(stream.Protocol) : (int?)null;
+            var newStatus = port is { } streamPort ? await ProbeAsync(camera.Host, streamPort, ct) : "needs_attention";
 
             if (!string.Equals(camera.Status, newStatus, StringComparison.Ordinal))
             {
                 logger.LogInformation(
                     "Camera {CameraId} ({Host}:{Port}) status changed: {Old} → {New}.",
-                    camera.Id, camera.Host, camera.Port, camera.Status, newStatus);
+                    camera.Id, camera.Host, port, camera.Status, newStatus);
 
                 camera.Status = newStatus;
                 camera.LastReachabilityCheckAt = time.GetUtcNow();

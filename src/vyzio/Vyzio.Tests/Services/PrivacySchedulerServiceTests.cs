@@ -54,7 +54,6 @@ public class PrivacySchedulerServiceTests
             FrigateCameraName = "cam1",
             DisplayName = "Salon",
             Host = "192.168.1.10",
-            Port = 554,
             PrivacyModeActive = privacyActive,
             PrivacyModeSource = source,
         };

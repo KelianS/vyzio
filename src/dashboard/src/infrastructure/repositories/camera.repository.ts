@@ -1,5 +1,13 @@
-import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
-import { PrivacyMiss, type Camera, type StreamProtocol } from '../../domain/entities/camera.entity'
+import type {
+  CameraDraftInput,
+  CameraUpdateInput,
+} from '../../domain/entities/camera_draft_input.entity'
+import { PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
+import type {
+  CameraProtocol,
+  CameraProtocolAddition,
+  CameraProtocolInput,
+} from '../../domain/entities/camera_protocol.entity'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/camera_configuration_apply_result.entity'
 import type { CameraStatus } from '../../domain/entities/camera_status.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
@@ -27,10 +35,7 @@ interface CameraDto {
   displayName: string
   sourceType: string
   host: string
-  port: number
   username: string | null
-  streamPath: string | null
-  streamProtocol: StreamProtocol
   status: string
   validationState: string
   isEnabled: boolean
@@ -47,7 +52,6 @@ interface CameraDto {
   privacyMissDetail?: string | null
   ptzSupported: boolean
   privacyStrategy: string
-  supportedProtocols: string[]
   verifiedCapabilities: string[]
 }
 
@@ -153,7 +157,7 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCamera(payload)
   }
 
-  async update(cameraId: string, input: CameraDraftInput): Promise<Camera> {
+  async update(cameraId: string, input: CameraUpdateInput): Promise<Camera> {
     const payload = await putJson<CameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`, input)
     return mapCamera(payload)
   }
@@ -287,11 +291,10 @@ export class HttpCameraRepository implements CameraRepository {
     cameraId: string,
     capability: Capability,
     protocol: SupportedProtocol,
-    configJson?: string,
   ): Promise<CameraCapabilityBinding> {
     return putJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`,
-      { protocol, configJson: configJson ?? null },
+      { protocol },
     )
   }
 
@@ -315,8 +318,51 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
+  async setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding> {
+    return putJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/stream/path`,
+      { path },
+    )
+  }
+
   async detectCapabilities(cameraId: string): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
+  }
+
+  async getProtocols(cameraId: string): Promise<CameraProtocol[]> {
+    return fetchJson<CameraProtocol[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/protocols`)
+  }
+
+  async updateProtocol(
+    cameraId: string,
+    protocol: SupportedProtocol,
+    input: CameraProtocolInput,
+  ): Promise<CameraProtocol> {
+    return putJson<CameraProtocol>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/${protocol}`,
+      input,
+    )
+  }
+
+  async addProtocol(cameraId: string, addition: CameraProtocolAddition): Promise<CameraProtocol> {
+    return postJson<CameraProtocol>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/protocols`,
+      addition,
+    )
+  }
+
+  async removeProtocol(cameraId: string, protocol: SupportedProtocol): Promise<void> {
+    await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/${protocol}`)
+  }
+
+  async checkProtocol(cameraId: string, protocol: SupportedProtocol): Promise<CameraProtocol> {
+    return postJson<CameraProtocol>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/${protocol}/check`,
+    )
+  }
+
+  async searchProtocols(cameraId: string): Promise<CameraProtocol[]> {
+    return postJson<CameraProtocol[]>(`${this.apiBaseUrl}/api/cameras/${cameraId}/protocols/search`)
   }
 
   async getImageSettings(cameraId: string): Promise<CameraImageSettings> {
@@ -350,10 +396,7 @@ function mapCamera(camera: CameraDto): Camera {
     displayName: camera.displayName,
     sourceType: camera.sourceType,
     host: camera.host,
-    port: camera.port,
     username: camera.username,
-    streamPath: camera.streamPath,
-    streamProtocol: camera.streamProtocol,
     status: camera.status,
     validationState: camera.validationState,
     isEnabled: camera.isEnabled,
@@ -370,7 +413,6 @@ function mapCamera(camera: CameraDto): Camera {
     privacyMissDetail: camera.privacyMissDetail ?? null,
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: camera.privacyStrategy as Camera['privacyStrategy'],
-    supportedProtocols: camera.supportedProtocols ?? [],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     connected: camera.status === 'online',
   }
