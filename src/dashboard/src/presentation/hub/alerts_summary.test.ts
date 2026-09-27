@@ -7,7 +7,7 @@ describe('alertsSummary', () => {
     const summary = alertsSummary({ activeChannels: 1, sentCount: 0, lastSentAt: null })
 
     // Assert
-    expect(summary).toBe('Aucune alerte envoyée pour l’instant.')
+    expect(summary).toBe('Aucune notification envoyée pour l’instant.')
   })
 
   it('alertsSummary_ShouldCountThemInThePlural_WhenSeveralWereSent', () => {
@@ -23,6 +23,6 @@ describe('alertsSummary', () => {
     const summary = alertsSummary({ activeChannels: 0, sentCount: 0, lastSentAt: null })
 
     // Assert
-    expect(summary).toBe('Aucun canal configuré : Vyzio ne peut pas vous prévenir.')
+    expect(summary).toBe('Aucun canal configuré : Vyzio ne peut pas vous notifier.')
   })
 })

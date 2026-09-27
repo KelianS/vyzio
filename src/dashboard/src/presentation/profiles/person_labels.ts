@@ -12,8 +12,8 @@ export const CATEGORY_LABELS: Record<ProfileCategory, string> = {
 export const ALERT_MODE_FIELD_LABEL = 'Quand elle est reconnue'
 
 export const ALERT_MODE_LABELS: Record<ProfileAlertMode, string> = {
-  always: 'Me prévenir',
-  never: 'Ne rien signaler',
+  always: 'Me notifier',
+  never: 'Ne pas me notifier',
 }
 
 export const CATEGORY_OPTIONS: readonly SettingOption[] = Object.entries(CATEGORY_LABELS).map(

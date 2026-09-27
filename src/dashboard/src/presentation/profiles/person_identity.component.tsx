@@ -65,7 +65,7 @@ export function PersonIdentityView() {
       id: 'person-alert',
       label: ALERT_MODE_FIELD_LABEL,
       nature: { kind: 'choice', options: ALERT_MODE_OPTIONS },
-      help: 'Sans alerte, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
+      help: 'Sans notification, la détection reste consultable dans l’historique : elle n’est pas ignorée, seulement silencieuse.',
       value: draft.values.alertMode,
       onChange: (value) => draft.set('alertMode', value as ProfileAlertMode),
     },

@@ -38,7 +38,7 @@ describe('NotificationChannelListView', () => {
     // Assert
     expect(
       await screen.findByText(
-        'Aucun canal pour l’instant : vous n’êtes prévenu que dans l’interface.',
+        'Aucun canal pour l’instant : aucune notification n’est envoyée, les détections restent dans l’historique.',
       ),
     ).toBeInTheDocument()
   })
@@ -53,7 +53,7 @@ describe('NotificationChannelListView', () => {
     // Assert
     expect(
       await screen.findByText(
-        'Aucun canal pour l’instant : vous n’êtes prévenu que dans l’interface.',
+        'Aucun canal pour l’instant : aucune notification n’est envoyée, les détections restent dans l’historique.',
       ),
     ).toBeInTheDocument()
   })

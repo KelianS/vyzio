@@ -34,7 +34,7 @@ const frontDoor: ProfileCameraLink = {
 }
 
 async function openTheCameras() {
-  const cameras = await screen.findByRole('combobox', { name: 'Me prévenir seulement sur' })
+  const cameras = await screen.findByRole('combobox', { name: 'Me notifier seulement sur' })
   cameras.focus()
   await userEvent.keyboard('{Enter}')
 }
@@ -83,7 +83,7 @@ describe('PersonCamerasView', () => {
 
     // Assert
     expect(
-      await screen.findByRole('combobox', { name: 'Me prévenir seulement sur' }),
+      await screen.findByRole('combobox', { name: 'Me notifier seulement sur' }),
     ).toBeInTheDocument()
   })
 
@@ -111,7 +111,7 @@ describe('PersonCamerasView', () => {
 
     // Assert
     expect(
-      await screen.findByRole('combobox', { name: 'Me prévenir seulement sur' }),
+      await screen.findByRole('combobox', { name: 'Me notifier seulement sur' }),
     ).toHaveTextContent('Toutes les caméras')
   })
 
@@ -129,7 +129,9 @@ describe('PersonCamerasView', () => {
 
     // Assert
     expect(
-      await screen.findByText(/Vous n’êtes jamais prévenu du passage de cette personne/),
+      await screen.findByText(
+        /Aucune notification n’est envoyée pour le passage de cette personne/,
+      ),
     ).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })

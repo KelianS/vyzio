@@ -19,7 +19,7 @@ test.describe('NotificationChannelView', () => {
 
     await page.getByRole('textbox', { name: 'Token du bot' }).fill('123456:ABCDEF')
     await page.getByRole('textbox', { name: 'Identifiant de conversation' }).fill('987654321')
-    await page.getByRole('switch', { name: 'Alertes Telegram' }).click()
+    await page.getByRole('switch', { name: 'Notifications Telegram' }).click()
 
     await page.getByRole('button', { name: 'Enregistrer' }).click()
 
@@ -29,7 +29,7 @@ test.describe('NotificationChannelView', () => {
     await expect(dialog).toContainText('serveurs de Telegram')
     await dialog.getByRole('button', { name: 'Activer' }).click()
 
-    await expect(page.getByText('Les alertes sont envoyées.')).toBeVisible()
+    await expect(page.getByText('Les notifications sont envoyées.')).toBeVisible()
 
     await page.getByRole('button', { name: 'Envoyer un message de test' }).click()
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
@@ -49,7 +49,7 @@ test.describe('NotificationChannelView', () => {
 
     await page.getByRole('textbox', { name: 'Token du bot' }).fill('discord-bot-token')
     await page.getByRole('textbox', { name: 'Identifiant du salon' }).fill('4242')
-    await page.getByRole('switch', { name: 'Alertes Discord' }).click()
+    await page.getByRole('switch', { name: 'Notifications Discord' }).click()
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()
 
@@ -137,7 +137,7 @@ test.describe('NotificationChannelView', () => {
     // The trace of what was asked, including what was ignored: it is the only
     // sign that another conversation is knocking at the door (ADR-50).
     await page.locator('summary').filter({ hasText: 'Avancé' }).click()
-    await expect(page.getByText('Ignoré — conversation non reliée')).toBeVisible()
+    await expect(page.getByText('Ignoré : conversation non reliée')).toBeVisible()
   })
 
   test('NotificationChannelView_ShouldSayItListens_WhenTheLoopRuns', async ({ page }) => {

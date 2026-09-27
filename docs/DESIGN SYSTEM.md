@@ -162,6 +162,13 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
   settings screen, since the word promises a list of events, which the user finds under `Historique`.
 
+### Notifications
+
+What Vyzio sends to a channel is a **`notification`**, and sending it is **`notifier`**, the words of the
+`Notifications` section that configures it. One notion, one word: `alerte`, `prevenir` and `signaler`
+are not used for it. A person is `notifie`; a channel sends `notifications`; a setting says
+`Me notifier`.
+
 ### Editing cycle
 
 A setting is saved; surveillance is restarted separately

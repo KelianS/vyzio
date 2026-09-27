@@ -7,7 +7,7 @@ import type {
   SaveNotificationChannelConfigRequest,
 } from '../../domain/entities/notification_channel_config.entity'
 
-/** Screen-facing values and their API translation — one place for every fractional/null quirk. */
+/** Screen-facing values and their API translation, one place for every fractional/null quirk. */
 export type NotificationValues = {
   enabled: boolean
   minimumConfidence: number
@@ -46,7 +46,7 @@ const CREDENTIAL_COPY: Record<
     },
     chat_id: {
       label: 'Identifiant de conversation',
-      help: 'Le numéro de la conversation qui recevra les alertes et répondra à vos commandes.',
+      help: 'Le numéro de la conversation qui recevra les notifications et répondra à vos commandes.',
       placeholder: '123456789',
     },
   },
@@ -58,7 +58,7 @@ const CREDENTIAL_COPY: Record<
     },
     chat_id: {
       label: 'Identifiant du salon',
-      help: 'Le numéro du salon qui recevra les alertes et répondra à vos commandes.',
+      help: 'Le numéro du salon qui recevra les notifications et répondra à vos commandes.',
       placeholder: '123456789012345678',
     },
   },
@@ -76,16 +76,16 @@ export function notificationDraftLabels(
   channel: NotificationChannelName,
 ): Record<keyof NotificationValues, string> {
   return {
-    enabled: 'Envoi des alertes',
+    enabled: 'Envoi des notifications',
     bot_token: credentialCopy(channel, 'bot_token').label,
     chat_id: credentialCopy(channel, 'chat_id').label,
     minimumConfidence: 'Certitude minimale',
-    allowedLabels: 'Ce qui déclenche une alerte',
+    allowedLabels: 'Ce qui déclenche une notification',
     restrictHours: 'Plage horaire',
     fromHour: 'Plage horaire',
     toHour: 'Plage horaire',
-    limitRepeats: 'Alertes répétées',
-    cooldownMinutes: 'Alertes répétées',
+    limitRepeats: 'Notifications répétées',
+    cooldownMinutes: 'Notifications répétées',
     mediaMode: 'Ce qui est envoyé',
     messageFields: 'Détails du message',
   }

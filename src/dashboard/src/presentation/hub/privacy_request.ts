@@ -23,8 +23,8 @@ export function privacyWording({ active, cameraLabel }: PrivacyRequest): Privacy
         title: cameraLabel === null ? 'Couper toutes les caméras ?' : `Mettre ${target} en pause ?`,
         body:
           cameraLabel === null
-            ? 'Plus rien n’est enregistré ni signalé tant que vous ne les rallumez pas.'
-            : 'Plus rien n’est enregistré ni signalé par cette caméra tant que vous ne la rallumez pas.',
+            ? 'Plus rien n’est enregistré, détecté ni notifié tant que vous ne les rallumez pas.'
+            : 'Plus rien n’est enregistré, détecté ni notifié par cette caméra tant que vous ne la rallumez pas.',
         confirmLabel: cameraLabel === null ? 'Tout couper' : 'Mettre en pause',
         done: cameraLabel === null ? 'Caméras coupées.' : `${cameraLabel} est en pause.`,
       }
@@ -32,8 +32,8 @@ export function privacyWording({ active, cameraLabel }: PrivacyRequest): Privacy
         title: 'Reprendre la surveillance ?',
         body:
           cameraLabel === null
-            ? 'Les caméras recommencent à enregistrer et à vous signaler ce qu’elles voient.'
-            : 'Cette caméra recommence à enregistrer et à vous signaler ce qu’elle voit.',
+            ? 'Les caméras recommencent à enregistrer, et les notifications reprennent.'
+            : 'Cette caméra recommence à enregistrer, et ses notifications reprennent.',
         confirmLabel: 'Reprendre',
         done:
           cameraLabel === null

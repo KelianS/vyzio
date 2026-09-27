@@ -22,7 +22,9 @@ test.describe('Camera pause', () => {
     // Cutting one camera costs as much as all of them: the request announces itself alike.
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Mettre « Salon » en pause ?')
-    await expect(dialog).toContainText('Plus rien n’est enregistré ni signalé par cette caméra')
+    await expect(dialog).toContainText(
+      'Plus rien n’est enregistré, détecté ni notifié par cette caméra',
+    )
     await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
 
     // And the result is said: without that, nothing tells a long operation from a failed one.

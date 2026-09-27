@@ -175,9 +175,12 @@ const WELCOME_STEPS = [
   },
   {
     title: 'Choisir ce qui compte',
-    body: 'Personnes, animaux, véhicules : à vous de dire ce qui mérite une alerte.',
+    body: 'Personnes, animaux, véhicules : à vous de dire ce qui mérite une notification.',
   },
-  { title: 'Être prévenu', body: 'Les alertes arrivent sur Telegram, aux heures que vous fixez.' },
+  {
+    title: 'Recevoir les notifications',
+    body: 'Sur Telegram, aux heures que vous fixez.',
+  },
 ]
 
 function HubWelcome() {
@@ -206,7 +209,7 @@ function HubWelcome() {
             <Link to="/settings/cameras/ajout">Ajouter une caméra</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link to="/settings/notifications">Configurer les alertes</Link>
+            <Link to="/settings/notifications">Configurer les notifications</Link>
           </Button>
         </div>
       </Card>
@@ -342,13 +345,13 @@ function HubOperational({
 
         <div className="flex flex-col gap-4">
           <Card>
-            <h2 className="font-serif text-2xl">Alertes</h2>
+            <h2 className="font-serif text-2xl">Notifications</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {alertsSummary(data.notifications)}
             </p>
             <div className="mt-4">
               <Button asChild variant="outline" size="sm">
-                <Link to="/settings/notifications">Configurer les alertes</Link>
+                <Link to="/settings/notifications">Configurer les notifications</Link>
               </Button>
             </div>
           </Card>
