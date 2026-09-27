@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Vyzio.Application.UseCases.Cameras;
+using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -15,6 +17,7 @@ public class SendDetectionNotificationUseCaseTests
     private readonly IFrigateClipProvider _clipProvider = Substitute.For<IFrigateClipProvider>();
     private readonly INotificationChannelSender _telegram = FakeSender(NotificationChannel.Telegram);
     private readonly INotificationChannelSender _discord = FakeSender(NotificationChannel.Discord);
+    private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
 
     private static NotificationChannelConfig ActiveConfig(NotificationChannel channel = NotificationChannel.Telegram)
         => new()
@@ -62,6 +65,10 @@ public class SendDetectionNotificationUseCaseTests
             _imageProvider,
             _clipProvider,
             new DetectionMessageFormatter(),
+            new PersonAlertPolicy(
+                new DetectionProfileResolver(_profiles),
+                Substitute.For<IProfileCameraLinkRepository>(),
+                new CameraDirectory(Substitute.For<ICameraRepository>())),
             TimeZoneInfo.Local,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
@@ -69,7 +76,27 @@ public class SendDetectionNotificationUseCaseTests
     private void Configure(params NotificationChannelConfig[] configs)
         => _channelConfigs.GetAllAsync(Arg.Any<CancellationToken>()).Returns(configs);
 
-    public SendDetectionNotificationUseCaseTests() => Configure(ActiveConfig());
+    public SendDetectionNotificationUseCaseTests()
+    {
+        Configure(ActiveConfig());
+        _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendOnNoChannel_WhenThePersonIsSetToNeverBeSignalled()
+    {
+        // Arrange
+        _profiles.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns([new Profile { Name = "Alice", AlertMode = ProfileAlertMode.Never }]);
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection(identity: "Alice"));
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceive().SendAsync(
+            Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task ExecuteAsync_ShouldCarryTheClipAndTheSnapshot_WhenBothAreAvailable()

@@ -77,8 +77,8 @@ test.describe('People', () => {
     )
     await page.goto('/settings/detection/personnes/profile-1/cameras')
 
-    // A new person is recognised everywhere: every camera is offered, none ticked.
-    const cameras = page.getByRole('combobox', { name: 'La reconnaître seulement sur' })
+    // A new person is signalled everywhere: every camera is offered, none ticked.
+    const cameras = page.getByRole('combobox', { name: 'Me prévenir seulement sur' })
     await cameras.click()
     await expect(page.getByRole('checkbox', { name: 'Jardin' })).not.toBeChecked()
     await page.getByRole('checkbox', { name: 'Entrée' }).click()

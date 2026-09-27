@@ -119,7 +119,9 @@ function MultiChoiceControl({
           className={cn('w-full justify-between font-normal', followingClass(setting))}
         >
           {/* Un reglage se lit au repos : le controle dit son etat, pas la liste des options. */}
-          <span className="truncate">{summarise(nature.options, selected)}</span>
+          <span className="truncate">
+            {summarise(nature.options, selected, nature.emptySummary)}
+          </span>
           <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
@@ -166,10 +168,15 @@ function MultiChoiceControl({
 const SUMMARY_NAMES_MAX = 2
 
 /** The state of a multiple choice in one line: two names at most, then the count of the rest. */
-function summarise(options: Narrow<'multiChoice'>['options'], selected: string[]): string {
+function summarise(
+  options: Narrow<'multiChoice'>['options'],
+  selected: string[],
+  emptySummary?: string,
+): string {
   const chosen = options.filter((option) => selected.includes(option.value))
-  if (chosen.length === 0) return 'Aucune sélection'
-  if (chosen.length === options.length) return 'Tout'
+  if (chosen.length === 0) return emptySummary ?? 'Aucune sélection'
+  // Where empty already means everything, a full choice is a list and names its items.
+  if (chosen.length === options.length && emptySummary === undefined) return 'Tout'
 
   const named = chosen
     .slice(0, SUMMARY_NAMES_MAX)

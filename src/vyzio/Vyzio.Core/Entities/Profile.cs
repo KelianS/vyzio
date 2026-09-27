@@ -16,7 +16,7 @@ public class Profile
     public string Category { get; set; } = "other";  // household|known|delivery|pet|other
 
     [Required, MaxLength(50)]
-    public string AlertMode { get; set; } = "notify"; // notify|silent|ignore
+    public ProfileAlertMode AlertMode { get; set; } = ProfileAlertMode.Always;
 
     public DateTimeOffset? LastSeenAt { get; set; }
 

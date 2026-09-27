@@ -24,7 +24,7 @@ references these ADRs rather than copying them.
 | [ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md) | Camera management driven by Vyzio, applied to Frigate | Accepted |
 | [ADR-13](0013-profile-photos-stored-by-vyzio-synced-through-the-frigate-rest-api.md) | Profile photos: stored by Vyzio, synced through the Frigate REST API | Accepted |
 | [ADR-14](0014-per-camera-detection-labels-json-column-on-camera.md) | Per-camera detection labels: a JSON column on Camera | Accepted |
-| [ADR-15](0015-profile-camera-association-join-table-and-filtering-in-profilerulesservice.md) | Profile-camera association: a join table + filtering in ProfileRulesService | Accepted |
+| [ADR-15](0015-profile-camera-association-join-table-and-filtering-in-profilerulesservice.md) | Profile-camera association: a join table + filtering in ProfileRulesService | Superseded by ADR-58 (where the filter applies) |
 | [ADR-16](0016-live-stream-access-polling-latest-jpg-through-vyzio-frigate-never-exposed.md) | Live stream access: polling latest.jpg through Vyzio, Frigate never exposed | Accepted |
 | [ADR-17](0017-event-clip-access-an-authenticated-streaming-vyzio-proxy.md) | Event clip access: an authenticated streaming Vyzio proxy | Accepted |
 | [ADR-18](0018-continuous-recording-enabled-per-camera-in-the-generated-frigate-config.md) | Continuous recording: enabled per camera in the generated Frigate config | Superseded by ADR-39 (retention, activation) |
@@ -67,3 +67,4 @@ references these ADRs rather than copying them.
 | [ADR-55](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted |
 | [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) | Privacy parking goes to the Parking slot, and back to Surveillance | Accepted |
+| [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted |

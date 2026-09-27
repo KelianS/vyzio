@@ -16,13 +16,31 @@ public class CreateProfileUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldReturnTheRequestedFields_WhenTheProfileIsCreated()
     {
-        var request = new CreateProfileRequest("Alice", "household", "notify");
+        // Arrange
+        var request = new CreateProfileRequest("Alice", "household", "never");
 
+        // Act
         var result = await _sut.ExecuteAsync(request);
 
+        // Assert
         Assert.Equal("Alice", result.Name);
         Assert.Equal("household", result.Category);
-        Assert.Equal("notify", result.AlertMode);
+        Assert.Equal("never", result.AlertMode);
+    }
+
+    [Theory]
+    [InlineData("notify")]
+    [InlineData("7")]
+    public async Task ExecuteAsync_ShouldSignalThePerson_WhenTheAlertModeIsUnknown(string mode)
+    {
+        // Arrange
+        var request = new CreateProfileRequest("Alice", "household", mode);
+
+        // Act
+        var result = await _sut.ExecuteAsync(request);
+
+        // Assert
+        Assert.Equal("always", result.AlertMode);
     }
 
     [Fact]

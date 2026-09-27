@@ -1,6 +1,6 @@
 # ADR-15 — Association profil-caméra : table de jointure + filtrage dans ProfileRulesService
 
-> Statut : Accepté
+> Statut : Superseded by [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) (where the filter applies)
 
 ## Contexte
 

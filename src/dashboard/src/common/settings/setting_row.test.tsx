@@ -109,6 +109,36 @@ describe('SettingRow control', () => {
     },
   )
 
+  it('SettingRow_ShouldSayWhatAnEmptyChoiceMeans_WhenTheSettingNamesIt', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'multiChoice', options: options(3), emptySummary: 'Toutes les caméras' },
+          value: [],
+        })}
+      />,
+    )
+
+    // Assert
+    expect(screen.getByRole('combobox')).toHaveTextContent('Toutes les caméras')
+  })
+
+  it('SettingRow_ShouldNameEveryItem_WhenAFullChoiceIsAListBecauseEmptyMeansEverything', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'multiChoice', options: options(2), emptySummary: 'Toutes les caméras' },
+          value: ['v0', 'v1'],
+        })}
+      />,
+    )
+
+    // Assert
+    expect(screen.getByRole('combobox')).toHaveTextContent('Option 0, Option 1')
+  })
+
   it('SettingRow_ShouldOfferAFilterInThePanel_WhenAMultiChoiceHasMoreThanSevenOptions', async () => {
     // Arrange
     render(

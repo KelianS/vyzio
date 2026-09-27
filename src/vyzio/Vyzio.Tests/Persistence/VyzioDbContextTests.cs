@@ -48,7 +48,7 @@ public sealed class VyzioDbContextTests : IDisposable
     [Fact]
     public void SaveChanges_ShouldStoreTheProfileWithAnId_WhenAProfileIsAdded()
     {
-        var profile = new Profile { Name = "Alice", Category = "household", AlertMode = "notify" };
+        var profile = new Profile { Name = "Alice", Category = "household", AlertMode = ProfileAlertMode.Always };
         _db.Profiles.Add(profile);
         _db.SaveChanges();
 

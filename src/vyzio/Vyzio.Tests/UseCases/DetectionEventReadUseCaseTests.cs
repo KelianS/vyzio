@@ -12,7 +12,6 @@ public abstract class DetectionReadTestBase
     protected IFrigateEventReader Events { get; } = Substitute.For<IFrigateEventReader>();
     protected ICameraRepository Cameras { get; } = Substitute.For<ICameraRepository>();
     protected IProfileRepository Profiles { get; } = Substitute.For<IProfileRepository>();
-    protected IProfileCameraLinkRepository Links { get; } = Substitute.For<IProfileCameraLinkRepository>();
 
     protected IRecordingSettingsRepository RecordingSettings { get; } =
         Substitute.For<IRecordingSettingsRepository>();
@@ -23,7 +22,7 @@ public abstract class DetectionReadTestBase
             .Returns(Vyzio.Core.Entities.RecordingSettings.CreateDefault());
 
         return new DetectionEventContractProjector(
-            new CameraDirectory(Cameras), new DetectionProfileResolver(Profiles, Links), RecordingSettings);
+            new CameraDirectory(Cameras), new DetectionProfileResolver(Profiles), RecordingSettings);
     }
 
     protected static FrigateDetection Detection(string eventId, DateTimeOffset? occurredAt = null)

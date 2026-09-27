@@ -34,7 +34,7 @@ const frontDoor: ProfileCameraLink = {
 }
 
 async function openTheCameras() {
-  const cameras = await screen.findByRole('combobox', { name: 'La reconnaître seulement sur' })
+  const cameras = await screen.findByRole('combobox', { name: 'Me prévenir seulement sur' })
   cameras.focus()
   await userEvent.keyboard('{Enter}')
 }
@@ -83,7 +83,7 @@ describe('PersonCamerasView', () => {
 
     // Assert
     expect(
-      await screen.findByRole('combobox', { name: 'La reconnaître seulement sur' }),
+      await screen.findByRole('combobox', { name: 'Me prévenir seulement sur' }),
     ).toBeInTheDocument()
   })
 
@@ -101,6 +101,39 @@ describe('PersonCamerasView', () => {
     expect(screen.getByRole('checkbox', { name: 'Jardin' })).not.toBeChecked()
   })
 
+  it('onLoad_ShouldSayEveryCameraSignalsThePerson_WhenNoneIsTicked', async () => {
+    // Arrange
+    fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: ok([]) })
+
+    // Act
+    renderScreen(<PersonCamerasView />, CAMERAS_TAB)
+    await readTheCameraList()
+
+    // Assert
+    expect(
+      await screen.findByRole('combobox', { name: 'Me prévenir seulement sur' }),
+    ).toHaveTextContent('Toutes les caméras')
+  })
+
+  it('onLoad_ShouldSayThePersonIsNeverSignalledAndOfferNoChoice_WhenTheirAlertsAreOff', async () => {
+    // Arrange
+    fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: ok([]) })
+    const silenced = {
+      ...CAMERAS_TAB,
+      outletContext: { person: makeProfile({ alertMode: 'never' }), reload: () => undefined },
+    }
+
+    // Act
+    renderScreen(<PersonCamerasView />, silenced)
+    await readTheCameraList()
+
+    // Assert
+    expect(
+      await screen.findByText(/Vous n’êtes jamais prévenu du passage de cette personne/),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  })
+
   it('onLoad_ShouldTickOnlyTheLinkedCamera_WhenThePersonIsLinkedToOne', async () => {
     // Arrange
     fakeNetwork({ [CAMERAS]: ok(installed), [LINKS]: ok([frontDoor]) })
@@ -115,7 +148,7 @@ describe('PersonCamerasView', () => {
     expect(screen.getByRole('checkbox', { name: 'Jardin' })).not.toBeChecked()
   })
 
-  it('onSave_ShouldLimitRecognitionToTheChosenCamera_WhenTheUserTicksIt', async () => {
+  it('onSave_ShouldLimitAlertsToTheChosenCamera_WhenTheUserTicksIt', async () => {
     // Arrange
     const network = fakeNetwork({
       [CAMERAS]: ok(installed),

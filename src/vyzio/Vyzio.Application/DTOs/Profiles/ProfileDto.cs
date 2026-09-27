@@ -1,3 +1,4 @@
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Profiles;
@@ -14,7 +15,7 @@ public sealed record ProfileDto(
         p.Id,
         p.Name,
         p.Category,
-        p.AlertMode,
+        SnakeCaseEnum.ToSnakeCase(p.AlertMode),
         p.LastSeenAt,
         p.CreatedAt);
 }

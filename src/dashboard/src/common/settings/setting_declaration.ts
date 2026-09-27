@@ -27,7 +27,12 @@ export type SettingNature =
   /** Exclusive choice -> a dropdown, whatever the number of options. */
   | { readonly kind: 'choice'; readonly options: readonly SettingOption[] }
   /** Multiple choice -> a dropdown of checkboxes, summarised on one line at rest. */
-  | { readonly kind: 'multiChoice'; readonly options: readonly SettingOption[] }
+  | {
+      readonly kind: 'multiChoice'
+      readonly options: readonly SettingOption[]
+      /** What an empty choice means, where it means more than nothing chosen. */
+      readonly emptySummary?: string
+    }
   /** Number -> a numeric field, the unit suffixing the control when there is one. */
   | {
       readonly kind: 'number'

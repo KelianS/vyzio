@@ -91,6 +91,7 @@ public static class ServiceCollectionExtensions
 
         // Hub
         services.AddScoped<GetHubOverviewUseCase>();
+        services.AddScoped<PersonAlertPolicy>();
         services.AddScoped<IDetectionNotificationDispatcher, SendDetectionNotificationUseCase>();
 
         // Notification use cases

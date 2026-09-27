@@ -11,7 +11,6 @@ public class DetectionEventContractProjectorTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
-    private readonly IProfileCameraLinkRepository _links = Substitute.For<IProfileCameraLinkRepository>();
     private readonly IRecordingSettingsRepository _recordingSettings = Substitute.For<IRecordingSettingsRepository>();
 
     private DetectionEventContractProjector CreateSut(int eventClipDays = 14)
@@ -21,7 +20,7 @@ public class DetectionEventContractProjectorTests
 
         return new DetectionEventContractProjector(
             new CameraDirectory(_cameras),
-            new DetectionProfileResolver(_profiles, _links),
+            new DetectionProfileResolver(_profiles),
             _recordingSettings);
     }
 
@@ -64,32 +63,16 @@ public class DetectionEventContractProjectorTests
     }
 
     [Fact]
-    public async Task ToContractAsync_ShouldResolveTheProfileAtReadTime_WhenTheIdentityMatchesAProfileWithoutCameraLinks()
+    public async Task ToContractAsync_ShouldResolveTheProfileAtReadTime_WhenTheIdentityMatchesAProfile()
     {
         var profile = new Profile { Name = "Alice" };
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
         _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
-        _links.GetByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns([]);
 
         var contract = await CreateSut().ToContractAsync(Detection("frigate-evt-001", identity: "Alice"));
 
         Assert.Equal("Alice", contract.Identity);
         Assert.Equal(profile.Id, contract.ProfileId);
-    }
-
-    [Fact]
-    public async Task ToContractAsync_ShouldLeaveTheProfileUnresolved_WhenTheCameraIsNotLinkedToIt()
-    {
-        var profile = new Profile { Name = "Alice" };
-        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([FrontDoor()]);
-        _profiles.GetAllAsync(Arg.Any<CancellationToken>()).Returns([profile]);
-        _links.GetByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns([new ProfileCameraLink { ProfileId = profile.Id, CameraId = "cam-other", Enabled = true }]);
-
-        var contract = await CreateSut().ToContractAsync(Detection("frigate-evt-001", identity: "Alice"));
-
-        Assert.Equal("Alice", contract.Identity);
-        Assert.Null(contract.ProfileId);
     }
 
     [Fact]

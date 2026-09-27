@@ -9,6 +9,8 @@ export const CATEGORY_LABELS: Record<ProfileCategory, string> = {
   other: 'Autre',
 }
 
+export const ALERT_MODE_FIELD_LABEL = 'Quand elle est reconnue'
+
 export const ALERT_MODE_LABELS: Record<ProfileAlertMode, string> = {
   always: 'Me prévenir',
   never: 'Ne rien signaler',

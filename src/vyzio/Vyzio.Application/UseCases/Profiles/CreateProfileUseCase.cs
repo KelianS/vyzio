@@ -12,7 +12,7 @@ public sealed class CreateProfileUseCase(IProfileRepository profiles)
         {
             Name = request.Name,
             Category = request.Category,
-            AlertMode = request.AlertMode
+            AlertMode = ProfileAlertModes.FromRequest(request.AlertMode)
         };
 
         await profiles.AddAsync(profile, ct);

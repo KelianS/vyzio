@@ -13,7 +13,7 @@ public sealed class UpdateProfileUseCase(IProfileRepository profiles)
 
         profile.Name = request.Name;
         profile.Category = request.Category;
-        profile.AlertMode = request.AlertMode;
+        profile.AlertMode = ProfileAlertModes.FromRequest(request.AlertMode);
 
         await profiles.UpdateAsync(profile, ct);
         return ProfileDto.From(profile);
