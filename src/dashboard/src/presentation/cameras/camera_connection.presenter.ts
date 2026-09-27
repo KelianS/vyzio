@@ -17,15 +17,12 @@ import { CapabilityTask } from './camera_connection.uido'
 import { reloadCameraList, reportCameraGone } from './camera_list_reload'
 import { cameraUpdate } from './camera_update'
 import { CAPABILITY_LABELS, STREAM_LABEL, STREAM_REPAIR } from './cameras.formatters'
-
-export interface ConnectionValues {
-  displayName: string
-  host: string
-  port: number
-  streamPath: string
-  username: string
-  password: string
-}
+import {
+  ALL_PROTOCOLS,
+  protocolInputOf,
+  protocolKey,
+  type ConnectionValues,
+} from './camera_connection_values'
 
 export interface CameraConnectionPresenterContext {
   container: CamerasContainer
@@ -42,6 +39,31 @@ export function buildCameraConnectionPresenter({
 }: CameraConnectionPresenterContext) {
   // Moving to another camera keeps the tab mounted: only the latest read may answer.
   const nextBindingsRead = latestOnly()
+  const nextProtocolsRead = latestOnly()
+
+  /** The protocol boxes of Avancé; after an action a failed reread keeps them and goes to a toast. */
+  function readProtocols(cameraId: string, listShown = false) {
+    const isLatest = nextProtocolsRead()
+    if (!listShown) dispatch({ type: 'PROTOCOLS_STARTED' })
+    container.getCameraProtocols
+      .execute(cameraId)
+      .then((protocols) => {
+        if (isLatest()) dispatch({ type: 'PROTOCOLS_LOADED', protocols })
+      })
+      .catch((e: unknown) => {
+        if (!isLatest()) return
+        const error = toAppError(e)
+        if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
+        else if (listShown) toastError(toast, error)
+        else dispatch({ type: 'PROTOCOLS_FAILED', error })
+      })
+  }
+
+  /** Everything a test or a save can have changed: capabilities and protocols. */
+  function readConnection(cameraId: string) {
+    readBindings(cameraId, true)
+    readProtocols(cameraId, true)
+  }
 
   /** After an action the list is already shown: a failed reread keeps it and goes to a toast (DESIGN SYSTEM § Errors). */
   function readBindings(cameraId: string, listShown = false) {
@@ -71,7 +93,7 @@ export function buildCameraConnectionPresenter({
     dispatch({ type: 'TASK_STARTED', capability, task })
     try {
       const result = await work()
-      readBindings(cameraId, true)
+      readConnection(cameraId)
       return result
     } catch (e) {
       toastError(toast, toAppError(e))
@@ -97,27 +119,46 @@ export function buildCameraConnectionPresenter({
   return {
     onLoad(cameraId: string) {
       readBindings(cameraId)
+      readProtocols(cameraId)
     },
 
-    /** Resolves true once saved, so the view clears its draft. */
-    async onSave(camera: Camera, values: ConnectionValues) {
+    /** Saves each level that changed, the camera, the stream's path, each protocol; resolves true once saved. */
+    async onSave(camera: Camera, values: ConnectionValues, saved: ConnectionValues) {
       dispatch({ type: 'SAVE_STARTED' })
       try {
-        await container.updateCamera.execute(
-          camera.id,
-          cameraUpdate(camera, {
-            displayName: values.displayName,
-            host: values.host,
-            port: values.port,
-            streamPath: values.streamPath.trim() || null,
-            username: values.username.trim() || null,
-            // An empty field keeps the saved password: sending it blank would erase it.
-            password: values.password.trim() ? values.password : null,
-          }),
-        )
+        const accessChanged =
+          values.displayName !== saved.displayName ||
+          values.host !== saved.host ||
+          values.username !== saved.username ||
+          values.password !== saved.password
+        if (accessChanged) {
+          await container.updateCamera.execute(
+            camera.id,
+            cameraUpdate(camera, {
+              displayName: values.displayName,
+              host: values.host,
+              username: values.username.trim() || null,
+              // An empty field keeps the saved password: sending it blank would erase it.
+              password: values.password.trim() ? values.password : null,
+            }),
+          )
+        }
+        if (values.streamPath !== saved.streamPath) {
+          await container.setStreamPath.execute(camera.id, values.streamPath.trim() || null)
+        }
+        for (const protocol of ALL_PROTOCOLS) {
+          const key = protocolKey(protocol)
+          if (values[key] === saved[key]) continue
+          await container.updateCameraProtocol.execute(
+            camera.id,
+            protocol,
+            protocolInputOf(values[key]),
+          )
+        }
         toast('Connexion enregistrée.', 'success')
         refreshSurveillance(hubContainer)
         reloadCameraList(container)
+        readConnection(camera.id)
         return true
       } catch (e) {
         toastError(toast, toAppError(e))
@@ -141,6 +182,7 @@ export function buildCameraConnectionPresenter({
           )
         }
         reloadCameraList(container)
+        readConnection(cameraId)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {
@@ -176,7 +218,7 @@ export function buildCameraConnectionPresenter({
       try {
         await container.detectCameraCapabilities.execute(cameraId)
         toast('Détection terminée.', 'success')
-        readBindings(cameraId, true)
+        readConnection(cameraId)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {
@@ -185,14 +227,9 @@ export function buildCameraConnectionPresenter({
     },
 
     /** Tests the capability through the protocol; resolves true when the camera answered. */
-    async onConfigure(
-      cameraId: string,
-      capability: Capability,
-      protocol: SupportedProtocol,
-      configJson?: string,
-    ) {
+    async onConfigure(cameraId: string, capability: Capability, protocol: SupportedProtocol) {
       const binding = await runTask(cameraId, capability, CapabilityTask.Configure, () =>
-        container.configureCameraCapability.execute(cameraId, capability, protocol, configJson),
+        container.configureCameraCapability.execute(cameraId, capability, protocol),
       )
       if (!binding) return false
       announceTest(binding)
@@ -237,6 +274,19 @@ export function buildCameraConnectionPresenter({
       if (removed) toast(`${CAPABILITY_LABELS[capability]} : capacité retirée.`, 'success')
     },
 
+    /** Asks the camera whether one protocol answers; no capability goes through it, so nothing suspends it. */
+    async onCheckProtocol(cameraId: string, protocol: SupportedProtocol) {
+      dispatch({ type: 'PROTOCOL_CHECK_STARTED', protocol })
+      try {
+        const checked = await container.checkCameraProtocol.execute(cameraId, protocol)
+        dispatch({ type: 'PROTOCOL_CHECKED', protocol: checked })
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'PROTOCOL_CHECK_FINISHED', protocol })
+      }
+    },
+
     onOpenManual() {
       dispatch({ type: 'MANUAL_OPENED' })
     },
@@ -253,7 +303,7 @@ export function buildCameraConnectionPresenter({
       try {
         await container.configureCameraCapability.execute(cameraId, capability, protocol)
         dispatch({ type: 'MANUAL_CLOSED' })
-        readBindings(cameraId, true)
+        readConnection(cameraId)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {

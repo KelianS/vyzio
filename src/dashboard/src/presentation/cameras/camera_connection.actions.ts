@@ -2,7 +2,9 @@ import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
   Capability,
+  SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
+import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
 import type { CapabilityTask } from './camera_connection.uido'
 
 export type CameraConnectionAction =
@@ -26,3 +28,9 @@ export type CameraConnectionAction =
   | { type: 'MANUAL_CLOSED' }
   | { type: 'MANUAL_STARTED' }
   | { type: 'MANUAL_FINISHED' }
+  | { type: 'PROTOCOLS_STARTED' }
+  | { type: 'PROTOCOLS_LOADED'; protocols: CameraProtocol[] }
+  | { type: 'PROTOCOLS_FAILED'; error: AppError }
+  | { type: 'PROTOCOL_CHECK_STARTED'; protocol: SupportedProtocol }
+  | { type: 'PROTOCOL_CHECKED'; protocol: CameraProtocol }
+  | { type: 'PROTOCOL_CHECK_FINISHED'; protocol: SupportedProtocol }

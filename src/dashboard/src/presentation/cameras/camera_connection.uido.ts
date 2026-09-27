@@ -2,7 +2,9 @@ import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
   Capability,
+  SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
+import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
 
 /** What a capability card is busy with. */
 export const CapabilityTask = {
@@ -28,6 +30,12 @@ export interface CameraConnectionUido {
   pending: Partial<Record<Capability, CapabilityTask>>
   manualFormOpen: boolean
   manualConfiguring: boolean
+
+  protocols: CameraProtocol[]
+  protocolsLoading: boolean
+  protocolsError: AppError | null
+  /** The protocols whose « Vérifier » is running. */
+  checking: Partial<Record<SupportedProtocol, true>>
 }
 
 export function buildInitialCameraConnectionUido(): CameraConnectionUido {
@@ -45,5 +53,10 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     pending: {},
     manualFormOpen: false,
     manualConfiguring: false,
+
+    protocols: [],
+    protocolsLoading: true,
+    protocolsError: null,
+    checking: {},
   }
 }

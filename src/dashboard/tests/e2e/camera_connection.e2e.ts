@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
+import {
+  installFakeBackend,
+  createFakeBackendState,
+  makeFakeCamera,
+  makeFakeProtocol,
+} from './fixtures/fake_backend'
 
 /**
  * Editing and deleting a camera had become unreachable when the camera page was
@@ -52,6 +57,72 @@ test.describe('CameraConnectionView', () => {
 
     await page.getByRole('button', { name: 'Supprimer', exact: true }).click()
     await expect(page).toHaveURL('/settings/cameras')
+  })
+})
+
+// Each connection detail sits on its level: the stream's path in its card options, a port and an own account in its protocol box (ADR-61).
+test.describe('CameraConnectionView three levels', () => {
+  test('CameraConnectionView_ShouldSaveThePortAndOwnAccountOfAProtocol_WhenTheUserEditsItsBox', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
+    state.protocols = [
+      makeFakeProtocol(),
+      makeFakeProtocol({ protocol: 'tapo_klap', effectivePort: 80 }),
+    ]
+    await installFakeBackend(page, state)
+    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.locator('summary', { hasText: 'Avancé' }).click()
+    const klap = page.getByRole('listitem', { name: 'Tapo KLAP' })
+
+    await klap.getByRole('spinbutton', { name: 'Port' }).fill('8080')
+    await klap.getByRole('switch', { name: 'Compte propre' }).click()
+    await klap.getByRole('textbox', { name: 'Identifiant' }).fill('compte-cloud')
+
+    const bar = page.getByRole('region', { name: 'Modifications en attente' })
+    await expect(bar).toContainText('Protocoles')
+    await expect(bar).not.toContainText('KLAP')
+
+    await bar.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(bar).toBeHidden()
+    await expect(klap.getByRole('spinbutton', { name: 'Port' })).toHaveValue('8080')
+    await expect(klap.getByRole('switch', { name: 'Compte propre' })).toBeChecked()
+  })
+
+  test('CameraConnectionView_ShouldSaveTheStreamPathThroughTheDraft_WhenTheUserChangesItInTheStreamOptions', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+
+    await stream.getByText('Options').click()
+    await stream.getByRole('textbox', { name: 'Chemin du flux' }).fill('/Streaming/Channels/102')
+
+    const bar = page.getByRole('region', { name: 'Modifications en attente' })
+    await expect(bar).toContainText('Chemin du flux')
+
+    await bar.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(bar).toBeHidden()
+    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveValue(
+      '/Streaming/Channels/102',
+    )
+  })
+
+  test('CameraConnectionView_ShouldHideTheStreamPath_WhenTheStreamGoesOverDvrip', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
+    state.streamBinding = { protocol: 'dvrip', streamPath: null, lastError: null }
+    state.protocols = [makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 })]
+    await installFakeBackend(page, state)
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+
+    await stream.getByText('Options').click()
+
+    await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')
+    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
   })
 })
 

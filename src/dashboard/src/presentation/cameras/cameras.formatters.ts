@@ -4,16 +4,18 @@ import type { Capability } from '../../domain/entities/camera_capability_binding
 
 /** Plain names, the words the rest of the product uses for each capability (DESIGN SYSTEM § Capabilities). */
 export const CAPABILITY_LABELS: Record<Capability, string> = {
+  stream: 'Flux vidéo',
   ptz: 'Orientation',
   hardware_privacy: 'Coupure matérielle',
   image_settings: 'Réglages image',
 }
 
 /** The video stream, the capability every other one depends on. */
-export const STREAM_LABEL = 'Flux vidéo'
+export const STREAM_LABEL = CAPABILITY_LABELS.stream
 
-/** The way out of a stream that does not answer, wherever it is said. */
-export const STREAM_REPAIR = 'vérifiez l’adresse et les identifiants de la caméra, dans Avancé.'
+/** The way out of a stream that does not answer, wherever it is said: both places it can be fixed (DESIGN SYSTEM § Capability cards). */
+export const STREAM_REPAIR =
+  'vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.'
 
 /** Why a capability test cannot run, next to every button it greys out (SPECS 2.2). */
 export const TESTS_SUSPENDED = 'Les autres capacités se vérifient une fois le flux vidéo rétabli.'
@@ -22,7 +24,7 @@ export const TESTS_SUSPENDED = 'Les autres capacités se vérifient une fois le 
 const STREAM_FAILURE_LINES: Record<string, string> = {
   offline: `Vyzio ne reçoit pas les images : ${STREAM_REPAIR}`,
   degraded:
-    'La caméra répond, mais son image n’arrive pas : vérifiez les identifiants et les réglages du flux, dans Avancé.',
+    'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.',
   config_error: 'Vyzio n’a pas pu préparer la surveillance de cette caméra.',
 }
 
@@ -64,10 +66,6 @@ export function formatCameraStatusLabel(status: string): string {
     default:
       return 'À vérifier'
   }
-}
-
-export function formatCameraAddress(camera: Camera): string {
-  return `${camera.host}:${camera.port}`
 }
 
 export function formatStatusTone(camera: Camera): BadgeTone {

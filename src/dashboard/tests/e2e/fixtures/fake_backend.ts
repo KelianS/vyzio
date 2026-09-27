@@ -6,10 +6,7 @@ export interface FakeCamera {
   displayName: string
   sourceType: string
   host: string
-  port: number
   username: string | null
-  streamPath: string | null
-  streamProtocol: string
   status: string
   validationState: string
   isEnabled: boolean
@@ -26,8 +23,35 @@ export interface FakeCamera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: string
-  supportedProtocols: string[]
   verifiedCapabilities: string[]
+}
+
+/** A protocol the fake camera speaks, as the Connexion page reads it (ADR-61). */
+export interface FakeProtocol {
+  protocol: string
+  port: number | null
+  effectivePort: number | null
+  username: string | null
+  hasOwnAccount: boolean
+  deviceId: number | null
+  status: 'answers' | 'refused' | 'unreachable' | null
+  checkedAt: string | null
+  lastError: string | null
+}
+
+export function makeFakeProtocol(overrides: Partial<FakeProtocol> = {}): FakeProtocol {
+  return {
+    protocol: 'rtsp',
+    port: null,
+    effectivePort: 554,
+    username: null,
+    hasOwnAccount: false,
+    deviceId: null,
+    status: 'answers',
+    checkedAt: '2026-01-01T00:00:00Z',
+    lastError: null,
+    ...overrides,
+  }
 }
 
 /** A detection as the screens read it: the id is Frigate's, Vyzio holds none of its own (ADR-49). */
@@ -83,10 +107,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     displayName: 'Porte d’entrée',
     sourceType: 'rtsp_manual',
     host: '192.168.1.50',
-    port: 554,
     username: null,
-    streamPath: '/Streaming/Channels/101',
-    streamProtocol: 'rtsp',
     status: 'online',
     validationState: 'validated',
     isEnabled: true,
@@ -104,7 +125,6 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     privacyMissDetail: null,
     ptzSupported: false,
     privacyStrategy: 'none',
-    supportedProtocols: ['rtsp'],
     verifiedCapabilities: [],
     ...overrides,
   }
@@ -286,6 +306,10 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
+  /** The camera's stream capability: the protocol that carries it and its main path (ADR-61). */
+  streamBinding: { protocol: string; streamPath: string | null; lastError: string | null }
+  /** The protocols the camera speaks, one box each in Avancé (ADR-61). */
+  protocols: FakeProtocol[]
   /** The camera's PTZ binding as the capability list shows it, when it has one. */
   ptzBinding: { protocol: string; configJson: string | null } | null
   /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
@@ -344,6 +368,8 @@ export function createFakeBackendState(
       eventClip: { days: 14, default: 14 },
       maxDays: 365,
     },
+    streamBinding: { protocol: 'rtsp', streamPath: '/Streaming/Channels/101', lastError: null },
+    protocols: [makeFakeProtocol()],
     ptzBinding: null,
     ptz: { presets: [], calibrated: true, currentPosition: { x: 0, y: 0 } },
     ...overrides,
@@ -352,6 +378,21 @@ export function createFakeBackendState(
 
 /** The fake installation's password: the tests type it, nothing else knows it. */
 export const FAKE_PASSWORD = 'mot-de-passe-de-test'
+
+function streamBindingOf(binding: FakeBackendState['streamBinding']) {
+  return {
+    capability: 'stream',
+    protocol: binding.protocol,
+    configJson: null,
+    verified: binding.lastError === null,
+    verifiedAt: '2026-01-01T00:00:00Z',
+    lastError: binding.lastError,
+    isPreset: false,
+    isConfigured: true,
+    panInverted: null,
+    streamPath: binding.streamPath,
+  }
+}
 
 function ptzBindingOf(binding: { protocol: string; configJson: string | null }) {
   return {
@@ -365,6 +406,7 @@ function ptzBindingOf(binding: { protocol: string; configJson: string | null }) 
     isConfigured: true,
     panInverted:
       (JSON.parse(binding.configJson ?? '{}') as { pan_inverted?: boolean }).pan_inverted ?? false,
+    streamPath: null,
   }
 }
 
@@ -486,11 +528,17 @@ export async function installFakeBackend(
         id: `camera-${nextId++}`,
         displayName: (postData?.displayName as string) ?? 'Nouvelle caméra',
         host: (postData?.host as string) ?? '192.168.1.99',
-        port: (postData?.port as number) ?? 554,
-        streamPath: (postData?.streamPath as string) ?? null,
         validationState: 'validated',
         status: 'online',
       })
+      // Like the real one: the camera is born with its stream capability (ADR-61).
+      const stream = postData?.stream as { protocol: string; path: string | null } | undefined
+      if (stream)
+        state.streamBinding = {
+          protocol: stream.protocol,
+          streamPath: stream.path,
+          lastError: null,
+        }
       state.cameras.push(camera)
       // Like the real one: the catalogue changed, surveillance has not picked it up.
       state.pendingChanges = true
@@ -670,7 +718,44 @@ export async function installFakeBackend(
       }
 
       if (rest === '/capabilities' && method === 'GET') {
-        return json(route, state.ptzBinding ? [ptzBindingOf(state.ptzBinding)] : [])
+        const stream = streamBindingOf(state.streamBinding)
+        return json(route, state.ptzBinding ? [stream, ptzBindingOf(state.ptzBinding)] : [stream])
+      }
+      if (rest === '/capabilities/stream/path' && method === 'PUT') {
+        state.streamBinding.streamPath = (postData?.path as string | null) ?? null
+        state.pendingChanges = true
+        return json(route, streamBindingOf(state.streamBinding))
+      }
+      if (rest === '/capabilities/stream' && method === 'PUT') {
+        state.streamBinding.protocol = postData?.protocol as string
+        return json(route, streamBindingOf(state.streamBinding))
+      }
+      if (rest === '/capabilities/stream/probe' && method === 'POST') {
+        return json(route, streamBindingOf(state.streamBinding))
+      }
+      if (rest === '/protocols' && method === 'GET') {
+        return json(route, state.protocols)
+      }
+      const protocolMatch = rest?.match(/^\/protocols\/([^/]+)(\/check)?$/)
+      if (protocolMatch) {
+        const [, name, check] = protocolMatch
+        const entry = state.protocols.find((p) => p.protocol === name)
+        if (!entry) return json(route, { message: 'not found' }, 404)
+        if (check && method === 'POST') {
+          entry.checkedAt = new Date().toISOString()
+          return json(route, entry)
+        }
+        if (method === 'PUT') {
+          const username = (postData?.username as string | null) ?? null
+          entry.port = (postData?.port as number | null) ?? null
+          entry.effectivePort = entry.port ?? entry.effectivePort
+          entry.username = username
+          entry.hasOwnAccount = username !== null
+          entry.deviceId = (postData?.deviceId as number | null) ?? null
+          entry.status = null
+          state.pendingChanges = true
+          return json(route, entry)
+        }
       }
       if (rest === '/capabilities/ptz/probe' && method === 'POST') {
         return state.ptzBinding ? json(route, ptzBindingOf(state.ptzBinding)) : json(route, {}, 404)

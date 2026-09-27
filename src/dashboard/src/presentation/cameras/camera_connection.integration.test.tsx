@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
+import { makeCameraProtocol as protocolRow } from '../../testing/camera_protocol_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
@@ -15,9 +16,24 @@ const DETECT = 'POST /api/cameras/camera-1/capabilities/detect'
 const PROBE_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/probe'
 const CAMERAS = 'GET /api/cameras'
 const STATS = 'GET /api/system/stats'
+const PROTOCOLS = 'GET /api/cameras/camera-1/protocols'
+const STREAM_PATH = 'PUT /api/cameras/camera-1/capabilities/stream/path'
+
+const rtsp = protocolRow()
+
+/** The screen's network, its protocols answering with the camera's RTSP row unless a test says otherwise. */
+function connectionNetwork(routes: Parameters<typeof fakeNetwork>[0]) {
+  return fakeNetwork({ [PROTOCOLS]: ok([rtsp]), ...routes })
+}
 
 const camera = makeCamera()
 const cameraThatTurns = makeCamera({ ptzSupported: true })
+const rtspStream = makeCapabilityBinding({
+  capability: 'stream',
+  protocol: 'rtsp',
+  streamPath: '/stream1',
+})
+const dvripStream = makeCapabilityBinding({ capability: 'stream', protocol: 'dvrip' })
 const ptzCapability = makeCapabilityBinding({ capability: 'ptz', protocol: 'onvif' })
 const privacyToConfigure = makeCapabilityBinding({
   capability: 'hardware_privacy',
@@ -47,6 +63,17 @@ async function cardOf(title: string) {
   return within(heading.closest('li') as HTMLElement)
 }
 
+/** Opens a card's Options fold, where its protocol and settings are. */
+async function optionsOf(title: string) {
+  const card = await cardOf(title)
+  await userEvent.click(card.getByText('Options'))
+  return card
+}
+
+async function protocolBox(name: string) {
+  return within(await screen.findByRole('listitem', { name }))
+}
+
 async function renameTheCamera() {
   const name = await screen.findByLabelText('Nom')
   await userEvent.clear(name)
@@ -56,7 +83,7 @@ async function renameTheCamera() {
 describe('CameraConnectionView', () => {
   it('onSave_ShouldSaveTheNewNameAndKeepThePassword_WhenTheUserRenamesTheCamera', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([]),
       [UPDATE]: ok(camera),
       [CAMERAS]: ok([]),
@@ -80,7 +107,7 @@ describe('CameraConnectionView', () => {
 
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([]), [UPDATE]: failure(500) })
+    connectionNetwork({ [BINDINGS]: ok([]), [UPDATE]: failure(500) })
     renderScreen(<CameraConnectionView />, connectionTab())
     await renameTheCamera()
 
@@ -95,7 +122,7 @@ describe('CameraConnectionView', () => {
 
   it('onVerify_ShouldSayTheCameraIsUnreachableAndWhy_WhenItsStreamDoesNotAnswer', async () => {
     // Arrange
-    fakeNetwork({
+    connectionNetwork({
       [BINDINGS]: ok([]),
       [VERIFY]: ok({ connected: false, guidance: 'Aucun service joignable sur le port 554.' }),
       [CAMERAS]: ok([]),
@@ -109,7 +136,7 @@ describe('CameraConnectionView', () => {
     // Assert
     expect(
       await screen.findByText(
-        'Caméra injoignable : vérifiez l’adresse et les identifiants de la caméra, dans Avancé.',
+        'Caméra injoignable : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
       ),
     ).toBeInTheDocument()
     expect(screen.getByText('Aucun service joignable sur le port 554.')).toBeVisible()
@@ -117,7 +144,7 @@ describe('CameraConnectionView', () => {
 
   it('onVerify_ShouldSayTheStreamWorks_WhenTheCameraAnswers', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([]), [VERIFY]: ok({ connected: true }), [CAMERAS]: ok([]) })
+    connectionNetwork({ [BINDINGS]: ok([]), [VERIFY]: ok({ connected: true }), [CAMERAS]: ok([]) })
     renderScreen(<CameraConnectionView />, connectionTab())
     const stream = await cardOf('Flux vidéo')
 
@@ -130,7 +157,7 @@ describe('CameraConnectionView', () => {
 
   it('onDelete_ShouldDeleteAndGoBackToTheList_WhenTheUserConfirms', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([]),
       [DELETE]: ok({ deleted: true, message: 'Caméra supprimée.', configPath: '' }),
       [CAMERAS]: ok([]),
@@ -150,7 +177,7 @@ describe('CameraConnectionView', () => {
 
   it('onLoad_ShouldShowTheStreamFirstWithTheCameraStatusAndNoProtocol_WhenTheCameraHasCapabilities', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([ptzCapability]) })
+    connectionNetwork({ [BINDINGS]: ok([ptzCapability]) })
 
     // Act
     renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
@@ -163,39 +190,246 @@ describe('CameraConnectionView', () => {
     expect(orientation).not.toHaveTextContent('ONVIF')
   })
 
-  it('onLoad_ShouldListHowEachCapabilityIsReachedInTheAdvancedFold_WhenTheCameraHasCapabilities', async () => {
+  it('onLoad_ShouldListEachProtocolOnceWithItsPortAndState_WhenTheCameraSpeaksSeveral', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([ptzCapability]) })
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzCapability]),
+      [PROTOCOLS]: ok([
+        rtsp,
+        protocolRow({ protocol: 'onvif', effectivePort: 2020, status: null }),
+      ]),
+    })
 
     // Act
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Assert
-    const [stream, orientation] = await protocolRows()
-    expect(stream).toHaveTextContent('Flux vidéoRTSP')
-    expect(orientation).toHaveTextContent('OrientationONVIF')
-    expect(screen.getByLabelText('Chemin du flux')).toBeInTheDocument()
+    const [rtspBox, onvifBox] = await protocolRows()
+    expect(rtspBox).toHaveTextContent('RTSPRépond')
+    expect(within(rtspBox).getByLabelText('Port')).toHaveValue(554)
+    expect(onvifBox).toHaveTextContent('ONVIFPas encore vérifié')
+    expect(within(onvifBox).getByLabelText('Port')).toHaveValue(2020)
+    expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldShowTheStreamPathInTheStreamOptions_WhenTheStreamGoesOverRtsp', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    const stream = await optionsOf('Flux vidéo')
+
+    // Assert
+    expect(stream.getByLabelText('Chemin du flux')).toHaveValue('/stream1')
+    expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('RTSP')
   })
 
   it('onLoad_ShouldShowTheStreamOverDvripWithoutAStreamPath_WhenTheCameraStreamsOverDvrip', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([]) })
+    connectionNetwork({
+      [BINDINGS]: ok([dvripStream]),
+      [PROTOCOLS]: ok([protocolRow({ protocol: 'dvrip', effectivePort: 34567 })]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    const stream = await optionsOf('Flux vidéo')
+
+    // Assert
+    expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('DVRIP')
+    expect(stream.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldAskToChooseHowTheStreamIsRead_WhenTheStreamHasNoProtocolYet', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([{ ...rtspStream, isConfigured: false, streamPath: null }]),
+      [PROTOCOLS]: ok([]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    const stream = await cardOf('Flux vidéo')
+    expect(await stream.findByText('À configurer')).toBeInTheDocument()
+    expect(stream.getByRole('button', { name: 'Vérifier' })).toBeDisabled()
+  })
+
+  it('onLoad_ShouldKeepTheLastStreamFailureForSupport_WhenTheCameraIsOffline', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([
+        {
+          ...rtspStream,
+          verified: false,
+          lastError: 'RTSP: 192.168.1.10:554 refused the connection.',
+        },
+      ]),
+    })
 
     // Act
     renderScreen(
       <CameraConnectionView />,
-      connectionTab(makeCamera({ streamProtocol: 'dvrip', port: 34567 })),
+      connectionTab(makeCamera({ status: 'offline', connected: false })),
     )
 
     // Assert
-    const [stream] = await protocolRows()
-    expect(stream).toHaveTextContent('Flux vidéoDVRIP (ICSee / XMEye)')
-    expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
+    expect(await screen.findByText('RTSP: 192.168.1.10:554 refused the connection.')).toBeVisible()
+  })
+
+  it('onLoad_ShouldSayTheCameraDoesNotAnswerThatWay_WhenTheCapabilityProtocolIsUnreachable', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream, { ...ptzCapability, verified: false }]),
+      [PROTOCOLS]: ok([
+        rtsp,
+        protocolRow({ protocol: 'onvif', effectivePort: null, status: 'unreachable' }),
+      ]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Assert
+    const orientation = await cardOf('Orientation')
+    expect(
+      await orientation.findByText(
+        'La caméra ne répond pas par ce moyen : vérifiez qu’elle est allumée, ou réveillez-la si elle est sur batterie, puis relancez.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSendTheStreamToWakingTheCamera_WhenItsProtocolDoesNotAnswer', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([dvripStream]),
+      [PROTOCOLS]: ok([
+        protocolRow({ protocol: 'dvrip', effectivePort: 34567, status: 'unreachable' }),
+      ]),
+    })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'offline', connected: false })),
+    )
+
+    // Assert
+    const stream = await cardOf('Flux vidéo')
+    expect(
+      await stream.findByText(
+        'La caméra ne répond pas sur ce port : vérifiez qu’elle est allumée et que ce protocole est activé sur elle.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheProtocolsCouldNotBeRead_WhenTheirReadFails', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [PROTOCOLS]: failure(500) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(
+      await screen.findByText('Les protocoles de cette caméra n’ont pas pu être lus.'),
+    ).toBeInTheDocument()
+  })
+
+  it('onCheckProtocol_ShouldShowWhatTheCameraSaid_WhenTheUserChecksAProtocol', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'POST /api/cameras/camera-1/protocols/rtsp/check': ok(
+        protocolRow({
+          status: 'refused',
+          lastError: 'RTSP: refused the account (401 Unauthorized).',
+        }),
+      ),
+    })
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'offline', connected: false })),
+    )
+    await userEvent.click(await screen.findByText('Avancé'))
+    const box = await protocolBox('RTSP')
+
+    // Act
+    await userEvent.click(box.getByRole('button', { name: 'Vérifier' }))
+
+    // Assert
+    expect(await box.findByText('Refuse l’accès')).toBeInTheDocument()
+    expect(
+      box.getByText(
+        'La caméra refuse le compte : vérifiez celui de la caméra, ou le compte propre de ce protocole.',
+      ),
+    ).toBeVisible()
+    expect(box.getByText('RTSP: refused the account (401 Unauthorized).')).toBeVisible()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: 'POST /api/cameras/camera-1/protocols/rtsp/check' }),
+    )
+  })
+
+  it('onSave_ShouldSaveTheProtocolPortAndItsOwnAccount_WhenTheUserChangesThem', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'PUT /api/cameras/camera-1/protocols/rtsp': ok(
+        protocolRow({ port: 8554, effectivePort: 8554 }),
+      ),
+      [CAMERAS]: ok([]),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const box = await protocolBox('RTSP')
+    await userEvent.clear(box.getByLabelText('Port'))
+    await userEvent.type(box.getByLabelText('Port'), '8554')
+    await userEvent.tab()
+    await userEvent.click(box.getByRole('switch', { name: 'Compte propre' }))
+    await userEvent.type(box.getByLabelText('Identifiant'), 'viewer')
+    await userEvent.type(box.getByLabelText('Mot de passe'), 'test-secret')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText('Connexion enregistrée.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual({
+      route: 'PUT /api/cameras/camera-1/protocols/rtsp',
+      query: '',
+      body: { port: 8554, username: 'viewer', password: 'test-secret', deviceId: null },
+    })
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: UPDATE }))
+  })
+
+  it('onSave_ShouldSaveTheStreamPathOnItsCapability_WhenTheUserChangesIt', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAM_PATH]: ok({ ...rtspStream, streamPath: '/stream2' }),
+      [CAMERAS]: ok([]),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.clear(stream.getByLabelText('Chemin du flux'))
+    await userEvent.type(stream.getByLabelText('Chemin du flux'), '/stream2')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText('Connexion enregistrée.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: STREAM_PATH, body: { path: '/stream2' } }),
+    )
   })
 
   it('onLoad_ShouldSayTheStreamFailsAndSuspendTheOtherChecks_WhenTheCameraIsOffline', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([ptzCapability]) })
+    connectionNetwork({ [BINDINGS]: ok([ptzCapability]) })
 
     // Act
     renderScreen(
@@ -208,7 +442,7 @@ describe('CameraConnectionView', () => {
     const [stream] = await capabilityCards()
     expect(stream).toHaveTextContent('Hors ligne')
     expect(stream).toHaveTextContent(
-      'Vyzio ne reçoit pas les images : vérifiez l’adresse et les identifiants de la caméra, dans Avancé.',
+      'Vyzio ne reçoit pas les images : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     )
     expect(orientation.getByRole('button', { name: 'Vérifier' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Détecter les capacités' })).toBeDisabled()
@@ -216,7 +450,7 @@ describe('CameraConnectionView', () => {
 
   it('onVerifyCapability_ShouldTestTheSavedProtocolAgain_WhenTheUserChecksACapability', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([ptzCapability]),
       [PROBE_PTZ]: ok(ptzCapability),
     })
@@ -233,7 +467,7 @@ describe('CameraConnectionView', () => {
 
   it('onVerifyCapability_ShouldShowTheCameraAnswerForSupport_WhenTheTestFails', async () => {
     // Arrange
-    fakeNetwork({
+    connectionNetwork({
       [BINDINGS]: ok([ptzCapability]),
       [PROBE_PTZ]: ok({ ...ptzCapability, verified: false, lastError: 'fault: not authorized' }),
     })
@@ -252,7 +486,7 @@ describe('CameraConnectionView', () => {
 
   it('onLoad_ShouldSayTheCapabilitiesCouldNotBeReadRatherThanOfferThemAll_WhenTheReadFails', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: failure(500) })
+    connectionNetwork({ [BINDINGS]: failure(500) })
 
     // Act
     renderScreen(<CameraConnectionView />, connectionTab())
@@ -269,7 +503,7 @@ describe('CameraConnectionView', () => {
 
   it('onRetryRead_ShouldListTheCapabilities_WhenTheSecondReadSucceeds', async () => {
     // Arrange
-    const network = fakeNetwork({ [BINDINGS]: failure(500) })
+    const network = connectionNetwork({ [BINDINGS]: failure(500) })
     renderScreen(<CameraConnectionView />, connectionTab())
     const retry = await screen.findByRole('button', { name: 'Réessayer' })
     network.answer(BINDINGS, ok([ptzCapability]))
@@ -283,7 +517,7 @@ describe('CameraConnectionView', () => {
 
   it('onLoad_ShouldSayTheCameraIsGoneWithTheWayBack_WhenItsCapabilitiesAreNotFound', async () => {
     // Arrange
-    const network = fakeNetwork({ [BINDINGS]: failure(404), [CAMERAS]: ok([]) })
+    const network = connectionNetwork({ [BINDINGS]: failure(404), [CAMERAS]: ok([]) })
 
     // Act
     renderScreen(<CameraConnectionView />, connectionTab())
@@ -299,7 +533,7 @@ describe('CameraConnectionView', () => {
 
   it('onDetect_ShouldKeepTheShownCapabilitiesAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
-    const network = fakeNetwork({ [BINDINGS]: ok([ptzCapability]), [DETECT]: ok() })
+    const network = connectionNetwork({ [BINDINGS]: ok([ptzCapability]), [DETECT]: ok() })
     renderScreen(<CameraConnectionView />, connectionTab())
     await screen.findByRole('heading', { name: 'Orientation' })
     network.answer(BINDINGS, failure(500))
@@ -319,7 +553,7 @@ describe('CameraConnectionView', () => {
 
   it('onDetect_ShouldSayTheDetectionIsDone_WhenItFinishes', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([]), [DETECT]: ok() })
+    connectionNetwork({ [BINDINGS]: ok([]), [DETECT]: ok() })
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Act
@@ -331,7 +565,7 @@ describe('CameraConnectionView', () => {
 
   it('onConfigure_ShouldSayTheConnectionWorks_WhenTheCameraAnswers', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([privacyToConfigure]),
       'PUT /api/cameras/camera-1/capabilities/hardware_privacy': ok({
         ...privacyToConfigure,
@@ -349,14 +583,14 @@ describe('CameraConnectionView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'PUT /api/cameras/camera-1/capabilities/hardware_privacy',
-        body: { protocol: 'tapo_klap', configJson: null },
+        body: { protocol: 'tapo_klap' },
       }),
     )
   })
 
   it('onConfigure_ShouldShowTheCameraAnswerForSupport_WhenTheTestFails', async () => {
     // Arrange
-    fakeNetwork({
+    connectionNetwork({
       [BINDINGS]: ok([privacyToConfigure]),
       'PUT /api/cameras/camera-1/capabilities/hardware_privacy': ok({
         ...privacyToConfigure,
@@ -375,38 +609,34 @@ describe('CameraConnectionView', () => {
     expect(screen.getByText('KLAP handshake refused')).toBeVisible()
   })
 
-  it('onConfigure_ShouldTestTheNewProtocol_WhenTheUserChangesItInTheAdvancedFold', async () => {
+  it('onConfigure_ShouldTestTheNewProtocol_WhenTheUserChangesItInTheCardOptions', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([ptzCapability]),
       'PUT /api/cameras/camera-1/capabilities/ptz': ok(ptzCapability),
     })
-    renderScreen(<CameraConnectionView />, connectionTab())
-    const [, orientation] = await protocolRows()
-    await userEvent.click(within(orientation).getByRole('button', { name: 'Modifier' }))
-    const [, editedOrientation] = await protocolRows()
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+    const orientation = await optionsOf('Orientation')
     // The list opens on the current protocol (ONVIF); the next one down is DVRIP.
-    within(editedOrientation).getByRole('combobox', { name: 'Protocole' }).focus()
+    orientation.getByRole('combobox', { name: 'Protocole' }).focus()
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
 
     // Act
-    await userEvent.click(within(editedOrientation).getByRole('button', { name: 'Configurer' }))
+    await userEvent.click(orientation.getByRole('button', { name: 'Configurer' }))
 
     // Assert
     expect(await screen.findByText('Orientation : connexion réussie.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'PUT /api/cameras/camera-1/capabilities/ptz',
-        body: { protocol: 'dvrip', configJson: null },
+        body: { protocol: 'dvrip' },
       }),
     )
-    const [, savedOrientation] = await protocolRows()
-    expect(within(savedOrientation).getByRole('button', { name: 'Modifier' })).toBeInTheDocument()
   })
 
   it('onConfigure_ShouldBeSuspendedWithTheReasonNearby_WhenTheStreamFails', async () => {
     // Arrange
-    fakeNetwork({ [BINDINGS]: ok([privacyToConfigure]) })
+    connectionNetwork({ [BINDINGS]: ok([privacyToConfigure]) })
     renderScreen(
       <CameraConnectionView />,
       connectionTab(makeCamera({ status: 'offline', connected: false })),
@@ -425,13 +655,13 @@ describe('CameraConnectionView', () => {
       ),
     ).toBeDisabled()
     expect(
-      screen.getAllByText('Les autres capacités se vérifient une fois le flux vidéo rétabli.'),
-    ).toHaveLength(2)
+      screen.getByText('Les autres capacités se vérifient une fois le flux vidéo rétabli.'),
+    ).toBeVisible()
   })
 
   it('onTogglePtz_ShouldTurnOrientationOnAndReadTheCamerasAgain_WhenTheUserActivatesIt', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([ptzCapability]),
       [UPDATE]: ok(camera),
       [CAMERAS]: ok([]),
@@ -454,7 +684,7 @@ describe('CameraConnectionView', () => {
 
   it('onTogglePtz_ShouldTurnOrientationOff_WhenTheUserConfirms', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([ptzCapability]),
       [UPDATE]: ok(camera),
       [CAMERAS]: ok([]),
@@ -479,7 +709,7 @@ describe('CameraConnectionView', () => {
 
   it('onRemove_ShouldRemoveTheCapability_WhenTheUserConfirms', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([makeCapabilityBinding()]),
       'DELETE /api/cameras/camera-1/capabilities/image_settings': ok(),
     })
@@ -502,7 +732,7 @@ describe('CameraConnectionView', () => {
 
   it('onConfigureManually_ShouldTestTheFirstCapabilityLeft_WhenTheUserKeepsTheDefaults', async () => {
     // Arrange
-    const network = fakeNetwork({
+    const network = connectionNetwork({
       [BINDINGS]: ok([]),
       'PUT /api/cameras/camera-1/capabilities/ptz': ok(ptzCapability),
     })
@@ -517,7 +747,7 @@ describe('CameraConnectionView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'PUT /api/cameras/camera-1/capabilities/ptz',
-        body: { protocol: 'v380', configJson: null },
+        body: { protocol: 'v380' },
       }),
     )
   })
