@@ -1,4 +1,5 @@
-import { DiagnosticLine } from '../../../common/components/error_message'
+import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
+import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
@@ -27,6 +28,7 @@ import { CapabilityTask } from '../camera_connection.uido'
 
 /** What the capability section asks of its screen. */
 interface CapabilityIntents {
+  onRetryRead: () => void
   onDetect: () => void
   /** Resolves true when the camera answered through the protocol. */
   onConfigure: (
@@ -46,6 +48,7 @@ interface CapabilitySectionProps {
   camera: Camera
   bindings: CameraCapabilityBinding[]
   loading: boolean
+  readError: AppError | null
   detecting: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
   manualFormOpen: boolean
@@ -113,6 +116,7 @@ export function CapabilitySection({
   camera,
   bindings,
   loading,
+  readError,
   detecting,
   pending,
   manualFormOpen,
@@ -126,6 +130,15 @@ export function CapabilitySection({
 
   if (loading) {
     return <p className="text-muted-foreground">Chargement…</p>
+  }
+  if (readError) {
+    return (
+      <ReadFailure
+        error={readError}
+        onRetry={intents.onRetryRead}
+        subject="Les capacités de cette caméra n’ont pas pu être lues."
+      />
+    )
   }
 
   return (

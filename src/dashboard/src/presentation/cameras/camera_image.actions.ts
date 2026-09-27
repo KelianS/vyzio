@@ -5,8 +5,12 @@ import type { CameraImageSettings } from '../../domain/entities/camera_image_set
 export type CameraImageAction =
   | { type: 'SETTINGS_STARTED' }
   | { type: 'SETTINGS_LOADED'; settings: CameraImageSettings }
-  | { type: 'SETTINGS_FAILED' }
+  | { type: 'SETTINGS_FAILED'; error: AppError }
+  | { type: 'SETTINGS_SAVED'; settings: CameraImageSettings }
+  | { type: 'BINDINGS_STARTED' }
   | { type: 'BINDINGS_LOADED'; bindings: CameraCapabilityBinding[] }
+  | { type: 'BINDINGS_FAILED'; error: AppError }
+  | { type: 'CAMERA_GONE' }
   | { type: 'SAVE_STARTED' }
   | { type: 'SAVE_FINISHED' }
   | {

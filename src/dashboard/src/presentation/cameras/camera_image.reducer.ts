@@ -31,14 +31,30 @@ export function cameraImageReducer(
   action: CameraImageAction,
 ): CameraImageUido {
   switch (action.type) {
+    // Sharpness and night vision stay hidden until the bindings confirm them (ADR-29).
     case 'SETTINGS_STARTED':
-      return { ...state, settingsLoading: true }
+      return {
+        ...state,
+        settingsLoading: true,
+        settingsError: null,
+        cameraGone: false,
+        writableBeyondBasics: false,
+        bindingsError: null,
+      }
     case 'SETTINGS_LOADED':
       return { ...state, settingsLoading: false, settings: action.settings }
-    case 'SETTINGS_FAILED':
-      return { ...state, settingsLoading: false, settings: null }
+    case 'BINDINGS_STARTED':
+      return { ...state, bindingsError: null }
     case 'BINDINGS_LOADED':
       return { ...state, writableBeyondBasics: writableBeyondBasics(action.bindings) }
+    case 'BINDINGS_FAILED':
+      return { ...state, writableBeyondBasics: false, bindingsError: action.error }
+    case 'SETTINGS_FAILED':
+      return { ...state, settingsLoading: false, settings: null, settingsError: action.error }
+    case 'SETTINGS_SAVED':
+      return { ...state, settings: action.settings }
+    case 'CAMERA_GONE':
+      return { ...state, settingsLoading: false, settings: null, cameraGone: true }
 
     case 'SAVE_STARTED':
       return { ...state, saving: true }

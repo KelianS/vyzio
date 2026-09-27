@@ -1,5 +1,5 @@
 import type { ToastTone } from '../../common/components/toast'
-import { toastError } from '../../common/errors/app_error'
+import { AppErrorKind, toastError } from '../../common/errors/app_error'
 import { scrubSecrets } from '../../common/errors/scrub_secrets'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
@@ -13,7 +13,7 @@ import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { refreshSurveillance } from '../surveillance/surveillance_refresh'
 import type { CameraConnectionAction } from './camera_connection.actions'
 import { CapabilityTask } from './camera_connection.uido'
-import { reloadCameraList } from './camera_list_reload'
+import { reloadCameraList, reportCameraGone } from './camera_list_reload'
 import { cameraUpdate } from './camera_update'
 import { CAPABILITY_LABELS } from './cameras.formatters'
 
@@ -42,17 +42,21 @@ export function buildCameraConnectionPresenter({
   // Moving to another camera keeps the tab mounted: only the latest read may answer.
   const nextBindingsRead = latestOnly()
 
-  function readBindings(cameraId: string) {
+  /** After an action the list is already shown: a failed reread keeps it and goes to a toast (DESIGN SYSTEM § Errors). */
+  function readBindings(cameraId: string, listShown = false) {
     const isLatest = nextBindingsRead()
-    dispatch({ type: 'BINDINGS_STARTED' })
+    if (!listShown) dispatch({ type: 'BINDINGS_STARTED' })
     container.getCameraCapabilities
       .execute(cameraId)
       .then((bindings) => {
         if (isLatest()) dispatch({ type: 'BINDINGS_LOADED', bindings })
       })
-      // An unread list shows as an empty one, every capability left to add by hand.
-      .catch(() => {
-        if (isLatest()) dispatch({ type: 'BINDINGS_FAILED' })
+      .catch((e: unknown) => {
+        if (!isLatest()) return
+        const error = toAppError(e)
+        if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
+        else if (listShown) toastError(toast, error)
+        else dispatch({ type: 'BINDINGS_FAILED', error })
       })
   }
 
@@ -66,7 +70,7 @@ export function buildCameraConnectionPresenter({
     dispatch({ type: 'TASK_STARTED', capability, task })
     try {
       const result = await work()
-      readBindings(cameraId)
+      readBindings(cameraId, true)
       return result
     } catch (e) {
       toastError(toast, toAppError(e))
@@ -77,7 +81,9 @@ export function buildCameraConnectionPresenter({
   }
 
   return {
-    onLoad: readBindings,
+    onLoad(cameraId: string) {
+      readBindings(cameraId)
+    },
 
     /** Resolves true once saved, so the view clears its draft. */
     async onSave(camera: Camera, values: ConnectionValues) {
@@ -151,7 +157,7 @@ export function buildCameraConnectionPresenter({
       try {
         await container.detectCameraCapabilities.execute(cameraId)
         toast('Détection terminée.', 'success')
-        readBindings(cameraId)
+        readBindings(cameraId, true)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {
@@ -229,7 +235,7 @@ export function buildCameraConnectionPresenter({
       try {
         await container.configureCameraCapability.execute(cameraId, capability, protocol)
         dispatch({ type: 'MANUAL_CLOSED' })
-        readBindings(cameraId)
+        readBindings(cameraId, true)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PrivacyStrategy } from '../../domain/entities/camera.entity'
 import type { CameraPrivacySchedule } from '../../domain/entities/camera_privacy_schedule.entity'
@@ -19,6 +19,9 @@ const PRIVACY_TAB = {
 
 const SCHEDULES = 'GET /api/cameras/camera-1/privacy/schedules'
 const ADD_SCHEDULE = 'POST /api/cameras/camera-1/privacy/schedules'
+const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
+
+const ptzCamera = makeCamera({ ptzSupported: true })
 
 function makeSchedule(overrides: Partial<CameraPrivacySchedule> = {}): CameraPrivacySchedule {
   return {
@@ -66,7 +69,7 @@ describe('CameraPrivacyView', () => {
     expect(range).toHaveTextContent('22:00 → 06:00 le lendemain')
   })
 
-  it('onLoad_ShouldSayWhyAndForSupport_WhenTheRangesCannotBeRead', async () => {
+  it('onLoad_ShouldSayTheRangesCouldNotBeReadWhereTheyWouldBe_WhenTheReadFails', async () => {
     // Arrange
     fakeNetwork({ [SCHEDULES]: failure(500) })
 
@@ -74,25 +77,80 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(
+      await screen.findByText('Les plages horaires de cette caméra n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(screen.getByText(/GET \/api\/cameras\/camera-1\/privacy\/schedules · 500/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+    expect(screen.queryByText('Aucune planification configurée.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ajouter à cette caméra' })).not.toBeInTheDocument()
   })
 
-  it('onLoad_ShouldSayWhyThePositionsAreUnknown_WhenTheyCannotBeRead', async () => {
+  it('onRetrySchedules_ShouldListTheRanges_WhenTheSecondReadSucceeds', async () => {
     // Arrange
-    fakeNetwork({
+    const network = fakeNetwork({ [SCHEDULES]: failure(500) })
+    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+    const retry = await screen.findByRole('button', { name: 'Réessayer' })
+    network.answer(SCHEDULES, ok([makeSchedule()]))
+
+    // Act
+    await userEvent.click(retry)
+
+    // Assert
+    expect(await screen.findByText('Lun, Mar, Mer, Jeu, Ven')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onAddSchedule_ShouldListTheCreatedRange_WhenReadingAgainWouldFail', async () => {
+    // Arrange
+    const network = fakeNetwork({
       [SCHEDULES]: ok([]),
-      'GET /api/cameras/camera-1/ptz/presets': failure(500),
+      [ADD_SCHEDULE]: ok(makeSchedule()),
     })
-    const ptzCamera = makeCamera({ ptzSupported: true })
+    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+    await screen.findByText('Aucune planification configurée.')
+    network.answer(SCHEDULES, failure(500))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter à cette caméra' }))
+
+    // Assert
+    expect(await screen.findByText('Lun, Mar, Mer, Jeu, Ven')).toBeInTheDocument()
+    expect(screen.queryByText('Aucune planification configurée.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayThePositionsCouldNotBeReadAndOfferARetry_WhenTheReadFails', async () => {
+    // Arrange
+    fakeNetwork({ [SCHEDULES]: ok([]), [PRESETS]: failure(500) })
 
     // Act
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
 
     // Assert
-    const alert = await screen.findByRole('alert')
+    expect(
+      await screen.findByText('Les positions de cette caméra n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
     expect(alert).toHaveTextContent('GET /api/cameras/camera-1/ptz/presets · 500')
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  it('onRetryPresets_ShouldClearTheFailure_WhenTheSecondReadSucceeds', async () => {
+    // Arrange
+    const network = fakeNetwork({ [SCHEDULES]: ok([]), [PRESETS]: failure(500) })
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
+    const retry = await screen.findByRole('button', { name: 'Réessayer' })
+    network.answer(PRESETS, ok({ presets: [], calibrated: true, currentPosition: null }))
+
+    // Act
+    await userEvent.click(retry)
+
+    // Assert
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 
   it('onEndTimeChange_ShouldSayTheRangeEndsTheNextDay_WhenTheEndIsBeforeTheStart', async () => {
@@ -156,7 +214,7 @@ describe('CameraPrivacyView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter à cette caméra' }))
 
     // Assert
-    expect(screen.getByText('Sélectionnez au moins un jour.')).toBeInTheDocument()
+    expect(screen.getByText('Choisissez au moins un jour')).toBeInTheDocument()
     expect(network.sent).not.toContainEqual(expect.objectContaining({ route: ADD_SCHEDULE }))
   })
 
@@ -184,7 +242,9 @@ describe('CameraPrivacyView', () => {
       'GET /api/cameras': ok([camera, makeCamera({ id: 'camera-2', slug: 'garden' })]),
       [SCHEDULES]: ok([]),
       [ADD_SCHEDULE]: ok(makeSchedule()),
-      'POST /api/cameras/camera-2/privacy/schedules': ok(makeSchedule({ cameraId: 'camera-2' })),
+      'POST /api/cameras/camera-2/privacy/schedules': ok(
+        makeSchedule({ id: 'schedule-2', cameraId: 'camera-2' }),
+      ),
     })
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
     await readTheCameraList()
@@ -193,10 +253,12 @@ describe('CameraPrivacyView', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Appliquer à toutes (2)' }))
 
     // Assert
+    await screen.findByRole('button', { name: 'Ajouter à cette caméra' })
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: 'POST /api/cameras/camera-2/privacy/schedules' }),
     )
     expect(network.sent).toContainEqual(expect.objectContaining({ route: ADD_SCHEDULE }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
   })
 
   it('render_ShouldNotOfferToApplyToAll_WhenThereIsOneCamera', async () => {

@@ -1,3 +1,4 @@
+import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -15,7 +16,8 @@ export type CameraConnectionAction =
   | { type: 'DELETE_FINISHED' }
   | { type: 'BINDINGS_STARTED' }
   | { type: 'BINDINGS_LOADED'; bindings: CameraCapabilityBinding[] }
-  | { type: 'BINDINGS_FAILED' }
+  | { type: 'BINDINGS_FAILED'; error: AppError }
+  | { type: 'CAMERA_GONE' }
   | { type: 'DETECT_STARTED' }
   | { type: 'DETECT_FINISHED' }
   | { type: 'TASK_STARTED'; capability: Capability; task: CapabilityTask }

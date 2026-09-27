@@ -59,13 +59,19 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     dispatch({ type: 'PRESETS_LOADED', presets, calibrated, currentPosition })
   }
 
-  function captureThumbnailSoon(cameraId: string, presetId: number) {
+  // A missed capture fails under a thumbnail already shown: it stays, and a toast says so (DESIGN SYSTEM § Errors).
+  function captureThumbnailSoon(cameraId: string, presetId: number, label: string) {
     setTimeout(() => {
       container.capturePtzPresetThumbnail
         .execute(cameraId, presetId)
         .then(() => dispatch({ type: 'THUMBNAIL_CAPTURED', presetId, version: Date.now() }))
-        // A missed capture keeps the previous thumbnail: nothing the user has to act on.
-        .catch(() => undefined)
+        .catch((e: unknown) => {
+          toastError(
+            toast,
+            toAppError(e),
+            `La miniature de la position « ${label} » n’a pas été mise à jour.`,
+          )
+        })
     }, CAPTURE_DELAY_MS)
   }
 
@@ -76,7 +82,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
       toast(`Position « ${label} » enregistrée.`, 'success')
       await readPresets(cameraId)
       dispatch({ type: 'SAVE_SUCCEEDED', presetId })
-      captureThumbnailSoon(cameraId, presetId)
+      captureThumbnailSoon(cameraId, presetId, label)
     } catch (e) {
       const error = toAppError(e)
       if (error.code === ApiErrorCode.NotCalibrated) dispatch({ type: 'CALIBRATION_LOST' })
@@ -128,7 +134,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
         dispatch({ type: 'GOTO_SUCCEEDED', presetId })
         // A move takes time: without an acknowledgement, the press looks like it did nothing.
         toast(`Caméra en position « ${label} ».`, 'success')
-        captureThumbnailSoon(cameraId, presetId)
+        captureThumbnailSoon(cameraId, presetId, label)
       } catch (e) {
         toastError(toast, toAppError(e))
       } finally {

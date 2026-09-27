@@ -1,14 +1,12 @@
 import type { ToastTone } from '../../common/components/toast'
 import { toastError } from '../../common/errors/app_error'
-import { toAppError } from '../../common/errors/to_app_error'
+import { SCHEDULE_NO_DAY, toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { PrivacyStrategy } from '../../domain/entities/camera.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { CameraPrivacyAction } from './camera_privacy.actions'
 import type { ScheduleForm } from './camera_privacy.uido'
 import { reloadCameraList } from './camera_list_reload'
-
-const NO_DAY = 'Sélectionnez au moins un jour.'
 
 export interface CameraPrivacyPresenterContext {
   container: CamerasContainer
@@ -24,6 +22,8 @@ export function buildCameraPrivacyPresenter({
   // Moving to another camera keeps the tab mounted: only the latest read may answer.
   const nextPresetsRead = latestOnly()
   const nextSchedulesRead = latestOnly()
+  // The tab stays mounted across cameras: an add that answers after a switch must not land in the new list.
+  let openCameraId: string | null = null
 
   function readPresets(cameraId: string, ptzSupported: boolean) {
     const isLatest = nextPresetsRead()
@@ -51,15 +51,21 @@ export function buildCameraPrivacyPresenter({
         if (isLatest()) dispatch({ type: 'SCHEDULES_LOADED', schedules })
       })
       .catch((e: unknown) => {
-        if (!isLatest()) return
-        dispatch({ type: 'SCHEDULES_READ_FAILED' })
-        toastError(toast, toAppError(e))
+        if (isLatest()) dispatch({ type: 'SCHEDULES_READ_FAILED', error: toAppError(e) })
       })
   }
 
   return {
     onLoad(cameraId: string, ptzSupported: boolean) {
+      openCameraId = cameraId
       readPresets(cameraId, ptzSupported)
+      readSchedules(cameraId)
+    },
+
+    onRetryPresets: readPresets,
+
+    onRetrySchedules(cameraId: string) {
+      dispatch({ type: 'SCHEDULES_RELOADING' })
       readSchedules(cameraId)
     },
 
@@ -89,23 +95,23 @@ export function buildCameraPrivacyPresenter({
       dispatch({ type: 'END_TIME_SET', value })
     },
 
-    /** Adds the range to each target camera, then shows the open camera's list again. */
-    async onAddSchedule(cameraId: string, targetIds: string[], form: ScheduleForm) {
+    /** Adds the range to each target camera; the open camera's list takes the range as created. */
+    async onAddSchedule(targetIds: string[], form: ScheduleForm) {
       if (form.days.length === 0) {
-        dispatch({ type: 'SCHEDULE_INVALID', message: NO_DAY })
+        dispatch({ type: 'SCHEDULE_INVALID', message: SCHEDULE_NO_DAY })
         return
       }
       dispatch({ type: 'SCHEDULE_ADD_STARTED' })
       try {
         for (const targetId of targetIds) {
-          await container.createCameraPrivacySchedule.execute(targetId, {
+          const created = await container.createCameraPrivacySchedule.execute(targetId, {
             daysOfWeek: form.days,
             startTime: form.startTime,
             endTime: form.endTime,
           })
+          // The add answers with the range: no second read that could fail under the shown list.
+          if (targetId === openCameraId) dispatch({ type: 'SCHEDULE_ADDED', schedule: created })
         }
-        dispatch({ type: 'SCHEDULES_RELOADING' })
-        readSchedules(cameraId)
       } catch (e) {
         dispatch({ type: 'SCHEDULE_FAILED', error: toAppError(e) })
       } finally {

@@ -92,6 +92,33 @@ describe('LiveView', () => {
     await theThumbnailIsCaptured(network)
   })
 
+  it('onGoTo_ShouldSayThePreviewWasNotUpdated_WhenTheCaptureFails', async () => {
+    // Arrange
+    fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()] }),
+      [GOTO]: ok(),
+      [CAPTURE]: failure(500),
+    })
+    renderLiveView()
+    const tile = await screen.findByTitle(/^Surveillance \(appui/)
+
+    // Act
+    await userEvent.click(tile)
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'La miniature de la position « Surveillance » n’a pas été mise à jour.',
+        undefined,
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/POST \/api\/cameras\/camera-1\/ptz\/presets\/1\/snapshot · 500/),
+    ).toBeVisible()
+    expect(screen.getByTitle(/^Surveillance \(appui/)).toBeInTheDocument()
+  })
+
   it('onOpen_ShouldMarkThePositionTheCameraSitsOn_WhenItMatchesASavedOne', async () => {
     // Arrange
     fakeNetwork({

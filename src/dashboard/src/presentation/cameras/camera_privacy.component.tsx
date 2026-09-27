@@ -4,7 +4,7 @@ import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
-import { ErrorMessage } from '../../common/components/error_message'
+import { ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -15,6 +15,7 @@ import { HelpPanel } from '../../common/components/help_panel'
 import { PrivacyScheduleSection } from './components/privacy_schedule_section'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
 import { buildPrivacySettings } from './camera_privacy_settings'
+import { POSITIONS_UNREAD } from './cameras.formatters'
 import { buildCameraPrivacyPresenter } from './camera_privacy.presenter'
 import { cameraPrivacyReducer } from './camera_privacy.reducer'
 import { buildInitialCameraPrivacyUido } from './camera_privacy.uido'
@@ -57,12 +58,20 @@ export function CameraPrivacyView() {
       <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
         <PrivacyAnswerNotice camera={camera} />
         <SettingsList settings={settings} />
-        {uido.presetsError && <ErrorMessage error={uido.presetsError} />}
+        {uido.presetsError && (
+          <ReadFailure
+            error={uido.presetsError}
+            onRetry={() => presenter.onRetryPresets(camera.id, camera.ptzSupported)}
+            subject={POSITIONS_UNREAD}
+          />
+        )}
 
         <SettingsSection title="Plages horaires" lede="Couper et rétablir automatiquement.">
           <PrivacyScheduleSection
             schedules={uido.schedules}
             loading={uido.schedulesLoading}
+            readError={uido.schedulesError}
+            onRetryRead={() => presenter.onRetrySchedules(camera.id)}
             form={uido.form}
             adding={uido.adding}
             invalid={uido.invalid}
@@ -71,10 +80,9 @@ export function CameraPrivacyView() {
             onToggleDay={presenter.onToggleDay}
             onStartTimeChange={presenter.onStartTimeChange}
             onEndTimeChange={presenter.onEndTimeChange}
-            onAddHere={() => void presenter.onAddSchedule(camera.id, [camera.id], uido.form)}
+            onAddHere={() => void presenter.onAddSchedule([camera.id], uido.form)}
             onAddEverywhere={() =>
               void presenter.onAddSchedule(
-                camera.id,
                 allCameras.map((entry) => entry.id),
                 uido.form,
               )

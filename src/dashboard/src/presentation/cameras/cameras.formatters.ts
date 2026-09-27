@@ -8,6 +8,9 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   image_settings: 'Réglages image',
 }
 
+/** One read, one sentence: the saved positions, wherever their read fails. */
+export const POSITIONS_UNREAD = 'Les positions de cette caméra n’ont pas pu être lues.'
+
 export function formatCameraStatusLabel(status: string): string {
   switch (status) {
     case 'online':

@@ -26,11 +26,14 @@ export function cameraConnectionReducer(
       return { ...state, deleting: false, confirmDelete: false }
 
     case 'BINDINGS_STARTED':
-      return { ...state, bindingsLoading: true }
+      return { ...state, bindingsLoading: true, bindingsError: null, cameraGone: false }
     case 'BINDINGS_LOADED':
       return { ...state, bindingsLoading: false, bindings: action.bindings }
+    // An unread list is not an empty one: every capability would be offered to add by hand.
     case 'BINDINGS_FAILED':
-      return { ...state, bindingsLoading: false, bindings: [] }
+      return { ...state, bindingsLoading: false, bindings: [], bindingsError: action.error }
+    case 'CAMERA_GONE':
+      return { ...state, bindingsLoading: false, bindings: [], cameraGone: true }
     case 'DETECT_STARTED':
       return { ...state, detecting: true }
     case 'DETECT_FINISHED':

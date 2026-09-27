@@ -16,7 +16,9 @@ import type {
 } from '../../domain/entities/camera_image_settings.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { LiveView } from '../live_view/live_view.component'
+import { ReadFailure } from '../../common/components/error_message'
 import { PtzCalibrationSection } from './components/ptz_calibration_section'
+import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraImagePresenter } from './camera_image.presenter'
 import { cameraImageReducer } from './camera_image.reducer'
 import { buildInitialCameraImageUido } from './camera_image.uido'
@@ -67,6 +69,7 @@ export function CameraImageView() {
         calibrated={uido.calibrated}
         currentPosition={uido.currentPosition}
         onOpenLiveView={presenter.onOpenLiveView}
+        onRetry={() => presenter.onRetryPtz(cameraId)}
       />
       {uido.liveViewOpen && (
         <Overlay
@@ -91,8 +94,25 @@ export function CameraImageView() {
     )
   }
 
+  if (uido.cameraGone)
+    return (
+      <SettingsPage>
+        <CameraNotFound within="tab" />
+      </SettingsPage>
+    )
   // Control does not depend on these settings: it stays on screen while they load, failure included.
   if (uido.settingsLoading) return <SettingsPage>Chargement…{pilotage}</SettingsPage>
+  if (uido.settingsError)
+    return (
+      <SettingsPage>
+        <ReadFailure
+          error={uido.settingsError}
+          onRetry={() => presenter.onRetrySettings(cameraId)}
+          subject="Les réglages d’image de cette caméra n’ont pas pu être lus."
+        />
+        {pilotage}
+      </SettingsPage>
+    )
   if (!uido.settings) return <SettingsPage>{pilotage}</SettingsPage>
 
   return (
@@ -101,6 +121,15 @@ export function CameraImageView() {
       writableBeyondBasics={uido.writableBeyondBasics}
       saving={uido.saving}
       onSave={(values) => presenter.onSave(cameraId, values)}
+      beyondBasicsFailure={
+        uido.bindingsError && (
+          <ReadFailure
+            error={uido.bindingsError}
+            onRetry={() => presenter.onRetryBindings(cameraId)}
+            subject="Vyzio n’a pas pu vérifier si cette caméra accepte la netteté et la vision nocturne."
+          />
+        )
+      }
     >
       {pilotage}
     </ImageForm>
@@ -112,12 +141,15 @@ function ImageForm({
   writableBeyondBasics,
   saving,
   onSave,
+  beyondBasicsFailure,
   children,
 }: {
   settings: CameraImageSettings
   writableBeyondBasics: boolean
   saving: boolean
   onSave: (values: CameraImageSettings) => Promise<boolean>
+  /** Shown where sharpness and night vision would be, when whether they are writable is unknown. */
+  beyondBasicsFailure: ReactNode
   children: ReactNode
 }) {
   const draft = useSettingsDraft<CameraImageSettings>({ saved: settings, labels: DRAFT_LABELS })
@@ -150,6 +182,7 @@ function ImageForm({
     <>
       <SettingsPage lede="Ce que la caméra envoie, avant toute analyse.">
         <SettingsList settings={declarations} />
+        {beyondBasicsFailure}
         {children}
       </SettingsPage>
 

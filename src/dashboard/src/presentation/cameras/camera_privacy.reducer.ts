@@ -37,9 +37,15 @@ export function cameraPrivacyReducer(
     case 'SCHEDULES_RELOADING':
       return { ...state, schedulesLoading: true }
     case 'SCHEDULES_LOADED':
-      return { ...state, schedulesLoading: false, schedules: action.schedules }
+      return {
+        ...state,
+        schedulesLoading: false,
+        schedulesError: null,
+        schedules: action.schedules,
+      }
+    // The list shown may belong to another camera: it must not pass for this one's answer.
     case 'SCHEDULES_READ_FAILED':
-      return { ...state, schedulesLoading: false }
+      return { ...state, schedulesLoading: false, schedules: [], schedulesError: action.error }
 
     case 'DAY_TOGGLED': {
       const { days } = state.form
@@ -61,6 +67,8 @@ export function cameraPrivacyReducer(
       return { ...state, adding: false }
     case 'SCHEDULE_FAILED':
       return { ...state, scheduleFailure: action.error }
+    case 'SCHEDULE_ADDED':
+      return { ...state, schedules: [...state.schedules, action.schedule] }
     case 'SCHEDULE_DELETED':
       return {
         ...state,
