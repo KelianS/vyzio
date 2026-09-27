@@ -74,7 +74,7 @@ const FAILURE_LINES: Record<ProtocolStatus, string> = {
   unreachable:
     'La caméra ne répond pas par ce moyen : vérifiez qu’elle est allumée, ou réveillez-la si elle est sur batterie, puis relancez.',
   refused:
-    'La caméra refuse le compte pour ce moyen : vérifiez le compte de la caméra, ou celui propre à ce moyen, dans Avancé, puis relancez.',
+    'La caméra refuse le compte pour ce moyen : vérifiez le compte de la caméra, ou le compte spécifique de ce moyen, dans Avancé, puis relancez.',
   answers:
     'La dernière vérification a échoué : relancez-la, ou choisissez une autre façon de la joindre dans ses options.',
 }
@@ -82,6 +82,18 @@ const FAILURE_LINES: Record<ProtocolStatus, string> = {
 /** The plain sentence of a failed capability card (SPECS 1.5); a protocol not checked yet reads as a plain failure. */
 export function capabilityFailureLine(status: ProtocolStatus | null): string {
   return FAILURE_LINES[status ?? ProtocolStatus.Answers]
+}
+
+// The stream card keeps its own sentence unless its protocol said why, then speaks the cards' plain words.
+const STREAM_PROTOCOL_LINES: Record<ProtocolStatus, string | null> = {
+  unreachable: FAILURE_LINES.unreachable,
+  refused: FAILURE_LINES.refused,
+  answers: null,
+}
+
+/** The plain sentence of a stream whose protocol failed; null when its own state line says it better. */
+export function streamProtocolFailureLine(status: ProtocolStatus | null): string | null {
+  return status === null ? null : STREAM_PROTOCOL_LINES[status]
 }
 
 // What the protocol itself says went wrong, above its diagnostic line; nothing when it answers.
@@ -93,7 +105,7 @@ const PROTOCOL_FAILURE_LINES: Record<ProtocolStatus, string | null> = {
   answers: null,
 }
 
-/** The plain sentence of a protocol box that failed, or of a stream whose protocol failed; null otherwise. */
+/** The plain sentence of a protocol box that failed; null otherwise. */
 export function protocolFailureLine(status: ProtocolStatus | null): string | null {
   return status === null ? null : PROTOCOL_FAILURE_LINES[status]
 }

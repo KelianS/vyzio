@@ -16,6 +16,7 @@ import { cn } from '../../../common/ui/utils'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import {
   CAPABILITY_LABELS,
+  DESTRUCTIVE_OUTLINE,
   STREAM_LABEL,
   TESTS_SUSPENDED,
   formatCameraStatusLabel,
@@ -31,8 +32,8 @@ import {
   SWITCHED_ON_AND_OFF,
   capabilityFailureLine,
   capabilityState,
-  protocolFailureLine,
   streamBindingOf,
+  streamProtocolFailureLine,
 } from '../capability_state'
 import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
@@ -238,7 +239,7 @@ function StreamCard({
           className={cn('text-sm', camera.connected ? 'text-muted-foreground' : 'text-destructive')}
         >
           <p>
-            {(!camera.connected && protocolFailureLine(protocol?.status ?? null)) ||
+            {(!camera.connected && streamProtocolFailureLine(protocol?.status ?? null)) ||
               formatStreamStateLine(camera)}
           </p>
           {/* The verifier's own reason is support detail, kept since the last check (SPECS 1.5). */}
@@ -267,8 +268,6 @@ function panInvertedSetting(
     disabled: saving,
   }
 }
-
-const destructiveOutline = 'border-destructive text-destructive hover:bg-destructive/10'
 
 interface BindingCardProps {
   camera: Camera
@@ -372,7 +371,7 @@ function BindingCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className={destructiveOutline}
+                className={DESTRUCTIVE_OUTLINE}
                 onClick={() => setConfirmDisable(true)}
               >
                 Désactiver
@@ -382,7 +381,7 @@ function BindingCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className={destructiveOutline}
+                className={DESTRUCTIVE_OUTLINE}
                 onClick={() => setConfirmRemove(true)}
               >
                 Retirer

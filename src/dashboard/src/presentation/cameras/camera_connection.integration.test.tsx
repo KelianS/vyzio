@@ -320,7 +320,7 @@ describe('CameraConnectionView', () => {
     const stream = await cardOf('Flux vidéo')
     expect(
       await stream.findByText(
-        'La caméra ne répond pas sur ce port : vérifiez qu’elle est allumée et que ce protocole est activé sur elle.',
+        'La caméra ne répond pas par ce moyen : vérifiez qu’elle est allumée, ou réveillez-la si elle est sur batterie, puis relancez.',
       ),
     ).toBeInTheDocument()
   })
@@ -740,7 +740,9 @@ describe('CameraConnectionView', () => {
 
     // Assert
     const add = await screen.findByRole('button', { name: 'Ajouter une capacité' })
+    const lastCard = screen.getByRole('heading', { name: 'Orientation' }).closest('li') as Node
     expect(add.closest('details')).toBeNull()
+    expect(lastCard.compareDocumentPosition(add)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
   it('onLoad_ShouldPointAtTheCardsOptions_WhenEveryCapabilityAlreadyHasItsCard', async () => {

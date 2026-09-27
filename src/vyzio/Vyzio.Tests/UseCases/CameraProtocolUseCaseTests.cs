@@ -380,11 +380,10 @@ public class AddCameraProtocolUseCaseTests
 public class RemoveCameraProtocolUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
     private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
     private readonly RemoveCameraProtocolUseCase _sut;
 
-    public RemoveCameraProtocolUseCaseTests() => _sut = new RemoveCameraProtocolUseCase(_cameras, _bindings, _endpointCache);
+    public RemoveCameraProtocolUseCaseTests() => _sut = new RemoveCameraProtocolUseCase(_cameras, _endpointCache);
 
     private Camera GivenCamera()
     {
@@ -392,7 +391,6 @@ public class RemoveCameraProtocolUseCaseTests
             .WithStream(SupportedProtocol.Rtsp);
         camera.EnsureProtocol(SupportedProtocol.Onvif);
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([camera.StreamBinding!]);
         return camera;
     }
 
@@ -409,6 +407,7 @@ public class RemoveCameraProtocolUseCaseTests
         Assert.Equal(RemoveProtocolOutcome.Removed, outcome);
         Assert.Null(camera.Protocol(SupportedProtocol.Onvif));
         _endpointCache.Received(1).Forget("cam1");
+        await _cameras.Received(1).UpdateAsync(camera, Arg.Any<CancellationToken>());
     }
 
     [Fact]

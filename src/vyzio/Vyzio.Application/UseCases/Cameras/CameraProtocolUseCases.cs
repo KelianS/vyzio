@@ -184,18 +184,14 @@ public enum RemoveProtocolOutcome
 }
 
 // Removes a protocol no capability goes through, however many streams or capabilities a camera has (ADR-61).
-public sealed class RemoveCameraProtocolUseCase(
-    ICameraRepository cameras,
-    ICameraCapabilityBindingRepository bindings,
-    ICameraProtocolEndpointCache endpointCache)
+public sealed class RemoveCameraProtocolUseCase(ICameraRepository cameras, ICameraProtocolEndpointCache endpointCache)
 {
     public async Task<RemoveProtocolOutcome> ExecuteAsync(string cameraId, SupportedProtocol protocol, CancellationToken ct = default)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera?.Protocol(protocol) is not { } entry) return RemoveProtocolOutcome.NotFound;
 
-        var used = (await bindings.GetByCameraAsync(cameraId, ct)).Any(b => b.Protocol == protocol);
-        if (used) return RemoveProtocolOutcome.InUse;
+        if (camera.Capabilities.Any(b => b.Protocol == protocol)) return RemoveProtocolOutcome.InUse;
 
         // Removing ONVIF drops both halves of where it answered (ADR-56).
         if (protocol == SupportedProtocol.Onvif) endpointCache.Forget(camera.Id);

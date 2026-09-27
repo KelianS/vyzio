@@ -80,11 +80,12 @@ export function CameraConnectionView() {
 
   useUnsavedChanges(draft.dirty)
 
-  /** Back to its saved content, a box hands the saved one back, so it is no longer a change. */
+  /** Back to its saved content, a box drops its edit, so a later re-read never mistakes it for a change. */
   function setProtocol(protocol: SupportedProtocol, patch: Partial<ProtocolValues>) {
     const key = protocolKey(protocol)
     const next = { ...draft.values[key], ...patch }
-    draft.set(key, sameBox(next, draft.saved[key]) ? draft.saved[key] : next)
+    if (sameBox(next, draft.saved[key])) draft.revert(key)
+    else draft.set(key, next)
   }
 
   // The name is the camera's identity, not a capability: it stays at the top of the page.

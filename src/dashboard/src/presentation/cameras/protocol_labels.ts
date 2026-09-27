@@ -12,6 +12,10 @@ export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
   rtsp: 'RTSP',
 }
 
+/** Why a protocol may take another account, wherever one is entered: it never leaves the local network. */
+export const SPECIFIC_ACCOUNT_HELP =
+  'Pour une caméra qui demande un autre compte par ce seul moyen, comme le compte cloud Tapo pour la coupure matérielle. Il n’est présenté qu’à la caméra, sur votre réseau.'
+
 interface ProtocolOption {
   value: SupportedProtocol
   label: string

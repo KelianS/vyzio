@@ -8,7 +8,7 @@ import type {
 import { Button } from '../../../common/ui/button'
 import { Input } from '../../../common/ui/input'
 import { Switch } from '../../../common/ui/switch'
-import { PROTOCOL_LABELS } from '../protocol_labels'
+import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 import { ALL_PROTOCOLS } from '../camera_connection_values'
 import { Picker } from './protocol_choice'
 
@@ -101,6 +101,7 @@ function AddProtocolForm({
           <span className="text-muted-foreground">Compte spécifique</span>
           <Switch checked={specificAccount} onCheckedChange={setSpecificAccount} />
         </label>
+        <p className="-mt-2 text-sm text-muted-foreground">{SPECIFIC_ACCOUNT_HELP}</p>
         {specificAccount && (
           <>
             <label className="flex flex-col gap-1 text-sm">
@@ -127,7 +128,8 @@ function AddProtocolForm({
         </div>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
-        Vyzio vérifie aussitôt que la caméra répond par ce protocole, avec ce compte.
+        Vyzio vérifie aussitôt que la caméra répond par ce protocole, avec le compte de la caméra ou
+        le compte spécifique.
       </p>
     </div>
   )

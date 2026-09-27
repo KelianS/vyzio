@@ -9,10 +9,10 @@ import { SettingsList } from '../../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
-import { formatCheckedAt } from '../cameras.formatters'
+import { DESTRUCTIVE_OUTLINE, formatCheckedAt } from '../cameras.formatters'
 import type { ProtocolValues } from '../camera_connection_values'
 import { protocolFailureLine, protocolPill } from '../capability_state'
-import { PROTOCOL_LABELS } from '../protocol_labels'
+import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 
 // V380 addresses the camera by a number the user types when discovery misses it.
 const ASKS_DEVICE_ID: Record<SupportedProtocol, boolean> = {
@@ -142,7 +142,7 @@ function ProtocolBox({
     id: `${id}-specific-account`,
     label: 'Compte spécifique',
     nature: { kind: 'toggle' },
-    help: 'Pour une caméra qui demande un autre compte par ce seul moyen, comme le compte cloud Tapo pour la coupure matérielle. Il n’est présenté qu’à la caméra, sur votre réseau.',
+    help: SPECIFIC_ACCOUNT_HELP,
     value: values.specificAccount,
     onChange: (value) => onChange({ specificAccount: value as boolean }),
   })
@@ -199,7 +199,7 @@ function ProtocolBox({
           type="button"
           variant="outline"
           size="sm"
-          className="border-destructive text-destructive hover:bg-destructive/10"
+          className={DESTRUCTIVE_OUTLINE}
           disabled={removalBlocker !== null || removing}
           onClick={() => setConfirmRemove(true)}
         >
