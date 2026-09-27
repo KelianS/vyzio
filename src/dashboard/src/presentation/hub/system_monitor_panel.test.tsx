@@ -39,62 +39,14 @@ describe('SystemMonitorPanel', () => {
     )
   })
 
-  it('SystemMonitorPanel_ShouldOpenTheDetailsAndSayWhichCameraFallsBehind_WhenACameraFallsBehind', () => {
+  it('SystemMonitorPanel_ShouldKeepTheDetailsClosedAndTheFigureNeutral_WhenACameraSendsFewImages', () => {
     // Arrange & Act
     renderPanel({ ...running, cameras: [{ camera: 'front_door', fps: 0.5 }] })
 
     // Assert
-    expect(
-      screen.getByText(
-        /Trop peu d’images reçues de Porte d’entrée\. La surveillance y est moins fiable/,
-      ),
-    ).toBeVisible()
-    expect(screen.getByText('0,5')).toHaveClass('text-destructive')
-  })
-
-  it.each([{ privacyModeActive: true }, { isEnabled: false }])(
-    'SystemMonitorPanel_ShouldKeepTheDetailsClosedAndCalm_WhenTheSilentCameraIsPaused (%o)',
-    (pause) => {
-      // Arrange
-      const paused = [makeCamera({ frigateCameraName: 'front_door', ...pause })]
-
-      // Act
-      render(
-        <MemoryRouter>
-          <SystemMonitorPanel
-            stats={{ ...running, cameras: [{ camera: 'front_door', fps: 0 }] }}
-            cameras={paused}
-          />
-        </MemoryRouter>,
-      )
-
-      // Assert
-      expect(screen.getByText('0,0')).not.toBeVisible()
-      expect(screen.getByText('0,0')).not.toHaveClass('text-destructive')
-      expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
-    },
-  )
-
-  it('SystemMonitorPanel_ShouldKeepTheDetailsOpen_WhenTheLaggingCameraCatchesUp', () => {
-    // Arrange
-    const { rerender } = render(
-      <MemoryRouter>
-        <SystemMonitorPanel
-          stats={{ ...running, cameras: [{ camera: 'front_door', fps: 0.5 }] }}
-          cameras={cameras}
-        />
-      </MemoryRouter>,
-    )
-
-    // Act
-    rerender(
-      <MemoryRouter>
-        <SystemMonitorPanel stats={running} cameras={cameras} />
-      </MemoryRouter>,
-    )
-
-    // Assert
-    expect(screen.getByText('10,0')).toBeVisible()
+    expect(screen.getByText('0,5')).not.toBeVisible()
+    expect(screen.getByText('0,5')).not.toHaveClass('text-destructive')
+    expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
 
   it('SystemMonitorPanel_ShouldSayTheCameraWasRemovedOrRenamed_WhenVyzioDoesNotKnowIt', () => {
@@ -104,7 +56,6 @@ describe('SystemMonitorPanel', () => {
     // Assert
     expect(screen.getByText('Caméra retirée ou renommée')).toBeInTheDocument()
     expect(screen.queryByText('old_name')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Trop peu d’images/)).not.toBeInTheDocument()
   })
 
   it('SystemMonitorPanel_ShouldLeaveOutDiskAndCameras_WhenNeitherIsReported', () => {

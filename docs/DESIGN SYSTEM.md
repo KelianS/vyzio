@@ -218,9 +218,10 @@ shown on the card: it sits in a **`Details techniques`** fold at the end of the 
 closed by default. The fold is the `common/components/technical_details` component, never a rewritten
 `<details>`. It follows three boundaries:
 
-- **A fault is never only a figure**: when a watched camera no longer keeps up, the fold opens on its
-  own and a plain sentence first names the camera and what to check (principle 4). It never closes by
-  itself. A paused camera sends nothing on purpose: that is not a fault.
+- **It only opens when the user opens it, and a figure is never read as a fault**: nothing opens it
+  on its own, and the card adds no line and no warning colour from the figures it holds. A low frame
+  rate most often means the machine lacks the power to analyse the images, not that the camera has a
+  problem; a camera that is offline already says so through its own status.
 - **It speaks the product's words**: a camera shows under the name the user gave it, never an internal
   identifier; one Vyzio no longer knows reads `Camera retiree ou renommee`. It is not a place for
   technical names ([SPECS](SPECS.md) 1.5).
