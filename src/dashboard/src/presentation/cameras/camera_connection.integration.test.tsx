@@ -795,6 +795,51 @@ describe('CameraConnectionView', () => {
     )
   })
 
+  it('onOpenProtocolForm_ShouldSayTheSpecificAccountStaysOnTheNetwork_WhenTheUserSwitchesItOn', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await userEvent.click(await screen.findByText('Avancé'))
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter un protocole' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un protocole' }))
+
+    // Act
+    await userEvent.click(form.getByRole('switch', { name: 'Compte spécifique' }))
+
+    // Assert
+    expect(form.getByText(/Il n’est présenté qu’à la caméra, sur votre réseau\./)).toBeVisible()
+    expect(form.getByRole('textbox', { name: 'Identifiant' })).toBeVisible()
+  })
+
+  it('onCheckProtocol_ShouldKeepNoPendingChangeAndAllowRemoval_WhenABoxWasEditedThenPutBack', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [PROTOCOLS]: ok([rtsp, protocolRow({ protocol: 'onvif', effectivePort: 2020 })]),
+      'POST /api/cameras/camera-1/protocols/onvif/check': ok(
+        protocolRow({ protocol: 'onvif', effectivePort: 2020 }),
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await userEvent.click(await screen.findByText('Avancé'))
+    const box = await protocolBox('ONVIF')
+    const port = box.getByRole('spinbutton', { name: 'Port' })
+    await userEvent.clear(port)
+    await userEvent.type(port, '2021')
+    await userEvent.tab()
+    await userEvent.clear(port)
+    await userEvent.type(port, '2020')
+    await userEvent.tab()
+
+    // Act
+    await userEvent.click(box.getByRole('button', { name: 'Vérifier' }))
+
+    // Assert
+    await waitFor(() => expect(box.getByRole('button', { name: 'Vérifier' })).toBeEnabled())
+    expect(screen.queryByRole('region', { name: 'Modifications en attente' })).toBeNull()
+    expect(box.getByRole('button', { name: 'Retirer' })).toBeEnabled()
+  })
+
   it('onLoad_ShouldRefuseToRemoveAProtocolWithThePlainReason_WhenACapabilityGoesThroughIt', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
