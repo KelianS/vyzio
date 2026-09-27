@@ -84,7 +84,8 @@ skips a camera that has no stream binding.
 protocol with a registered provider:
 
 1. The ONVIF address is forgotten once for the run ([`onvif.md`](onvif.md)).
-2. Every candidate protocol of every capability is checked once, reach and login.
+2. The protocol search below runs: every candidate protocol and every row is checked once, reach and
+   login.
 3. Each capability tries, in priority order, only the candidates that answered, and keeps the first
    that verifies. A capability the user configured by hand keeps its protocol and is only tested
    again. When no candidate answers, a preset capability stays unverified with the reason; a blind
@@ -92,9 +93,9 @@ protocol with a registered provider:
 4. A protocol row that could not be reached, that no binding uses and that holds no port, account or
    device id the user entered is removed. A refused one stays: the camera speaks it.
 
-The stream is not part of the cascade, except on a camera that has no stream binding: the stream
-protocols (RTSP, then DVRIP, the registry's order) join the candidates checked in step 2, and before
-step 3 the stream is bound to the first of them that answers, then verified; the next answering one is
+The stream is not part of the cascade, except on a camera that has no stream binding: before step 3
+the stream is bound to the first stream protocol (RTSP, then DVRIP, the registry's order) that
+answered in step 2, then verified; the next answering one is
 tried when the stream check fails. With none answering, the stream stays "to configure". Binding the
 stream this way is a connection change (below), followed by a rewrite of the generated configuration.
 
@@ -102,6 +103,16 @@ A manual choice (`ConfigureCameraCapabilityUseCase`) names one of the camera's p
 or not: a protocol the camera has no row for is refused (`protocol_not_on_camera`), and no row is
 created on the side. The choice is saved, then tested, and a protocol that does not answer with its
 account fails the test with its reason.
+
+## Searching the protocols
+
+`DetectionPlan` holds what detection tries: the preset's candidates, or every registered provider's
+for a blind camera, and the stream protocols (RTSP, then DVRIP) ahead of them. `CameraProtocolSearch`
+checks those candidates and every protocol the camera already has, once per gesture. It is the first
+half of detection (`SeedAndProbePresetsUseCase`, the screen's "Détecter automatiquement") and, alone,
+the screen's "Rechercher les protocoles" (`SearchCameraProtocolsUseCase`): that one also forgets the
+ONVIF address, keeps every row the camera had with its new state, drops a try that could not be
+reached, and binds or tests no capability.
 
 ## Adding and removing a protocol
 

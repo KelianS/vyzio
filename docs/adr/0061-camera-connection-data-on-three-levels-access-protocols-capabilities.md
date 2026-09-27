@@ -104,7 +104,9 @@ order. `ManuallyConfigured` keeps its meaning. A manual choice names one of the 
 one of its rows that can carry the capability, answering or not (a sleeping battery camera must stay
 configurable): it is saved, and its test says when the protocol does not answer. A protocol the camera
 does not have is refused: the user adds it first, and it is checked then. Binding a capability never
-creates a protocol row on the side, so the rows only grow by a check or by the user's own gesture. After detection, a protocol row that could not be reached, that no capability uses and
+creates a protocol row on the side, so the rows only grow by a check or by the user's own gesture.
+The protocol half of detection can also run alone: it adds the candidate protocols that answer,
+checks the camera's rows again and binds nothing. After detection, a protocol row that could not be reached, that no capability uses and
 that holds nothing the user entered is dropped: the rows list what the camera speaks, not what Vyzio
 tried. A protocol that refused the account is kept: the camera speaks it. Once the camera exists, the
 user adds a protocol (checked at once) and removes one; a protocol a capability goes through is never
