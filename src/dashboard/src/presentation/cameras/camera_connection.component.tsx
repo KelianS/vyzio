@@ -219,22 +219,6 @@ export function CameraConnectionView() {
               vérification se relance à tout moment.
             </p>
           </HelpPanel>
-
-          <HelpPanel title="Quel flux faut-il faire analyser ?">
-            <p>
-              Sur une caméra large, jardin, garage, allée, où vous voulez seulement savoir que
-              quelqu’un est passé, gardez le flux le plus léger en détection : c’est le réglage
-              livré. Sur une caméra où vous voulez reconnaître les gens, entrée, couloir, salon,
-              donnez la détection au flux le plus détaillé, surtout si les visages y apparaissent à
-              plusieurs mètres.
-            </p>
-            <p>
-              Si Vyzio devient lent et que les caméras saccadent, vérifiez qu’aucune n’analyse son
-              flux le plus détaillé sans raison. Certaines caméras annoncent leurs flux sans en
-              donner les dimensions : Vyzio affiche alors « Flux principal » ou « Flux secondaire »
-              plutôt qu’un chiffre faux.
-            </p>
-          </HelpPanel>
         </SettingsSection>
 
         <div className="mt-8 border-t border-border pt-6">

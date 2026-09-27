@@ -109,10 +109,16 @@ export function StreamLines({
           onAdd={intents.onAdd}
         />
       )}
-      <HelpPanel title="Comment les flux se partagent-ils le travail ?">
+      <HelpPanel title="Quel rôle donner à chaque flux ?">
         <p>
           Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio
           réduit de toute façon l’image avant de l’analyser.
+        </p>
+        <p>
+          Sur une caméra large, jardin, garage, allée, gardez le flux le plus léger en détection.
+          Pour reconnaître les gens, entrée, couloir, salon, donnez la détection au flux le plus
+          détaillé, surtout si les visages y apparaissent à plusieurs mètres. Si Vyzio devient lent,
+          vérifiez qu’aucune caméra n’analyse son flux le plus détaillé sans raison.
         </p>
         <p>Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait.</p>
         <p>
