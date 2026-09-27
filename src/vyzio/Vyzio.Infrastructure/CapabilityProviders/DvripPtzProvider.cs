@@ -11,35 +11,20 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // Sannce, Zosi...). Delegates wire-level framing/login to DvripClient (shared with
 // DvripImageSettingsProvider) — all PTZ feature logic (payload shape, direction mapping)
 // lives here.
-internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvider> logger) : IPtzCapabilityProvider
+internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, ILogger<DvripPtzProvider> logger) : IPtzCapabilityProvider
 {
     private const int PtzCmd = 1400;
+    // The stop is DirectionUp with Preset=-1 whatever was moving, as python-dvr and dbuezas/icsee-ptz send it.
+    private const string StopCommand = "DirectionUp";
+    private const int StopStep = 5;
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
 
-    // Estimate, unmeasured: a step lasts one login round trip, so the range is counted generously (ADR-59).
-    public int FullRangeSteps => 60;
+    // Estimate, unmeasured on the hardware (ADR-60).
+    public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => await dvrip.TryLoginAsync(camera, ct);
-
-    // Confirmed against dbuezas/icsee-ptz (a real, community-used Home Assistant integration
-    // for this exact camera family, found via web search 2026-07-15) — its async_move():
-    //   if cmd == "Stop": dvrip.ptz("DirectionUp", preset=-1)
-    //   else:             dvrip.ptz(cmd, step=step, preset=preset)   # preset defaults to 0
-    // Preset=-1 is the real stop sentinel — not a "0"/"65535" placeholder as previously assumed,
-    // and not tied to the direction that was moving (Command is always "DirectionUp" for stop).
-    // No "Action" field exists at all (matches python-dvr's ptz() exactly) — the field Vyzio
-    // used to send was invented from an investigation note and never part of the real protocol.
-    public async Task PtzMoveAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-    {
-        var command = DirectionToCommand(direction);
-        var step = Math.Clamp(speed / 12, 1, 8); // map 0-100 → 1-8
-        await ExecutePtzAsync(camera, command, preset: 0, step, ct);
-    }
-
-    public async Task PtzStopAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => await ExecutePtzAsync(camera, "DirectionUp", preset: -1, step: 5, ct);
 
     public async Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => await ExecutePtzAsync(camera, "GotoPreset", presetId, step: 0, ct);
@@ -47,23 +32,9 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => await ExecutePtzAsync(camera, "SetPreset", presetId, step: 0, ct);
 
-    // A move then a stop, the step validated on the hardware (ADR-29); how far it goes is one round trip.
-    public async Task<bool> PtzStepAsync(Camera camera, CameraCapabilityBinding binding, PtzDirection direction, int speed, CancellationToken ct = default)
-    {
-        try
-        {
-            await PtzMoveAsync(camera, binding, direction, speed, ct);
-        }
-        catch (CameraCommandException)
-        {
-            // The move may have reached the camera although its answer did not: the stop still goes out, the move's error is the one raised.
-            try { await PtzStopAsync(camera, binding, ct); }
-            catch (CameraCommandException) { }
-            throw;
-        }
-        await PtzStopAsync(camera, binding, ct);
-        return true;
-    }
+    // The login happens here, before the move, and the session is held until the move ends (ADR-60).
+    public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => new Motion(this, runner, camera, await OpenSessionAsync(camera, ct));
 
     public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<(float Pan, float Tilt)?>(null);
@@ -71,10 +42,15 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
     // A command the camera did not take is raised, named, never swallowed (ADR-56, ADR-59).
     private async Task ExecutePtzAsync(Camera camera, string command, int preset, int step, CancellationToken ct)
     {
+        await using var session = await OpenSessionAsync(camera, ct);
+        await ExecutePtzAsync(session, camera, command, preset, step, ct);
+    }
+
+    private async Task ExecutePtzAsync(DvripSession session, Camera camera, string command, int preset, int step, CancellationToken ct)
+    {
         try
         {
-            var response = await dvrip.ExecuteAsync(camera, PtzCmd,
-                sessionId => BuildPtzPayload(sessionId, command, preset, step), ct);
+            var response = await session.ExecuteAsync(PtzCmd, sessionId => BuildPtzPayload(sessionId, command, preset, step), ct);
             if (response is not null && !DvripClient.IsRetOk(response))
                 throw new CameraCommandRefusedException($"DVRIP PTZ {command} refused by {camera.Host} (Ret={DvripClient.ReadRet(response)?.ToString(CultureInfo.InvariantCulture) ?? "?"}).");
         }
@@ -83,6 +59,43 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, ILogger<DvripPtzProvid
             logger.LogWarning(ex, "DVRIP PTZ {Command} did not go through on {Camera}.", command, camera.DisplayName);
             throw;
         }
+    }
+
+    private async Task<DvripSession> OpenSessionAsync(Camera camera, CancellationToken ct)
+    {
+        try
+        {
+            return await dvrip.OpenSessionAsync(camera, ct);
+        }
+        catch (CameraCommandException ex)
+        {
+            logger.LogWarning(ex, "DVRIP PTZ login did not go through on {Camera}.", camera.DisplayName);
+            throw;
+        }
+    }
+
+    private static int SpeedToStep(int speed) => Math.Clamp(speed / 12, 1, 8);
+
+    // A move then a stop on one logged-in session (ADR-29, ADR-60).
+    private sealed class Motion(DvripPtzProvider provider, PtzMoveRunner runner, Camera camera, DvripSession session)
+        : PtzContinuousMotion(runner, camera)
+    {
+        private DvripSession _session = session;
+
+        protected override Task MoveAsync(PtzDirection direction, int speed, CancellationToken ct)
+            => provider.ExecutePtzAsync(_session, Camera, DirectionToCommand(direction), preset: 0, SpeedToStep(speed), ct);
+
+        protected override Task StopMoveAsync(CancellationToken ct)
+            => provider.ExecutePtzAsync(_session, Camera, StopCommand, preset: -1, StopStep, ct);
+
+        protected override async Task PrepareAsync(CancellationToken ct)
+        {
+            if (_session.IsOpen) return;
+            await _session.DisposeAsync();
+            _session = await provider.OpenSessionAsync(Camera, ct);
+        }
+
+        protected override ValueTask CloseAsync() => _session.DisposeAsync();
     }
 
     // Matches python-dvr's DVRIPCam.ptz() payload exactly (confirmed both by reading its source

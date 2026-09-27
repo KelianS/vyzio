@@ -11,8 +11,8 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20260927170241_ScheduleRulesReplacePrivacySchedulesAndChannelHours")]
-    partial class ScheduleRulesReplacePrivacySchedulesAndChannelHours
+    [Migration("20260927170353_RenamePtzPresetStepsToMotionTime")]
+    partial class RenamePtzPresetStepsToMotionTime
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -277,6 +277,52 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_capability_bindings_camera_capability");
 
                     b.ToTable("camera_capability_bindings", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraPrivacySchedule", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CameraId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("camera_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DaysOfWeek")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("days_of_week");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("EndTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("end_time");
+
+                    b.Property<string>("StartTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("start_time");
+
+                    b.HasKey("Id")
+                        .HasName("pk_camera_privacy_schedules");
+
+                    b.HasIndex("CameraId", "Enabled")
+                        .HasDatabaseName("idx_privacy_schedules_camera");
+
+                    b.ToTable("camera_privacy_schedules", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.CameraProtocol", b =>
@@ -549,6 +595,14 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
+                    b.Property<int?>("ActiveFromHour")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("active_from_hour");
+
+                    b.Property<int?>("ActiveToHour")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("active_to_hour");
+
                     b.Property<string>("AllowedLabelsJson")
                         .HasColumnType("TEXT")
                         .HasColumnName("allowed_labels_json");
@@ -752,17 +806,17 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("native_token");
 
+                    b.Property<int?>("PanMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("pan_ms");
+
                     b.Property<int>("PresetId")
                         .HasColumnType("INTEGER")
                         .HasColumnName("preset_id");
 
-                    b.Property<int?>("StepsX")
+                    b.Property<int?>("TiltMs")
                         .HasColumnType("INTEGER")
-                        .HasColumnName("steps_x");
-
-                    b.Property<int?>("StepsY")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("steps_y");
+                        .HasColumnName("tilt_ms");
 
                     b.HasKey("Id")
                         .HasName("pk_ptz_presets");
@@ -801,66 +855,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasName("pk_recording_settings");
 
                     b.ToTable("recording_settings", (string)null);
-                });
-
-            modelBuilder.Entity("Vyzio.Core.Entities.ScheduleRule", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("DaysOfWeek")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("days_of_week");
-
-                    b.Property<string>("EndTime")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("end_time");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("kind");
-
-                    b.Property<string>("StartTime")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("start_time");
-
-                    b.HasKey("Id")
-                        .HasName("pk_schedule_rules");
-
-                    b.HasIndex("Kind")
-                        .HasDatabaseName("idx_schedule_rules_kind");
-
-                    b.ToTable("schedule_rules", (string)null);
-                });
-
-            modelBuilder.Entity("Vyzio.Core.Entities.ScheduleRuleTarget", b =>
-                {
-                    b.Property<string>("RuleId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("rule_id");
-
-                    b.Property<string>("TargetId")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("target_id");
-
-                    b.HasKey("RuleId", "TargetId")
-                        .HasName("pk_schedule_rule_targets");
-
-                    b.ToTable("schedule_rule_targets", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
@@ -927,6 +921,18 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Navigation("Camera");
                 });
 
+            modelBuilder.Entity("Vyzio.Core.Entities.CameraPrivacySchedule", b =>
+                {
+                    b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_camera_privacy_schedules_cameras_camera_id");
+
+                    b.Navigation("Camera");
+                });
+
             modelBuilder.Entity("Vyzio.Core.Entities.CameraProtocol", b =>
                 {
                     b.HasOne("Vyzio.Core.Entities.Camera", "Camera")
@@ -984,16 +990,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Navigation("Profile");
                 });
 
-            modelBuilder.Entity("Vyzio.Core.Entities.ScheduleRuleTarget", b =>
-                {
-                    b.HasOne("Vyzio.Core.Entities.ScheduleRule", null)
-                        .WithMany("Targets")
-                        .HasForeignKey("RuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_schedule_rule_targets_schedule_rules_rule_id");
-                });
-
             modelBuilder.Entity("Vyzio.Core.Entities.Session", b =>
                 {
                     b.HasOne("Vyzio.Core.Entities.Account", null)
@@ -1018,11 +1014,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Navigation("CameraLinks");
 
                     b.Navigation("Photos");
-                });
-
-            modelBuilder.Entity("Vyzio.Core.Entities.ScheduleRule", b =>
-                {
-                    b.Navigation("Targets");
                 });
 #pragma warning restore 612, 618
         }

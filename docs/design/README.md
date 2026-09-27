@@ -23,8 +23,8 @@ create an empty TAD in anticipation.
 
 - **Camera protocol clients**: the DVRIP and V380 wire protocols, the capability registry,
   `PrivacyStrategy`. How a camera is reached is in the TAD above. Sources: ADR-20, ADR-24, ADR-29,
-  ADR-30.
+  ADR-30, ADR-60.
 - **Frigate integration**: the MQTT and REST contract consumed, `FrigateAdapter`, `config.yml`
   generation (its stream input is in `camera-connection.md`). Sources: ADR-04, ADR-05, ADR-13, ADR-16, ADR-17, ADR-18.
 - **PTZ and positions**: native presets against Vyzio-managed ones, thumbnails. Sources: ADR-21,
-  ADR-25, ADR-26, ADR-59.
+  ADR-25, ADR-26, ADR-59, ADR-60.

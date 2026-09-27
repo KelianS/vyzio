@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using System.Threading.Channels;
 
 namespace Vyzio.Tests.Services;
 
@@ -78,10 +79,36 @@ internal sealed class FakeOnvifPtzCamera(string profiles, string? configurationO
 
     public List<string> Bodies { get; } = [];
 
+    private readonly Channel<(string Body, DateTimeOffset At)> _arrivals =
+        Channel.CreateUnbounded<(string Body, DateTimeOffset At)>();
+
+    private readonly TaskCompletionSource _movesAnswered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // The clock each request is stamped with on arrival.
+    public TimeProvider Clock { get; init; } = TimeProvider.System;
+
+    // A slow camera: a continuous move is answered only once AnswerMoves is called.
+    public bool HoldsMoveAnswers { get; init; }
+
+    public void AnswerMoves() => _movesAnswered.TrySetResult();
+
+    // When the next request carrying this ONVIF element reached the camera, on its clock.
+    public async Task<DateTimeOffset> NextArrivalAsync(string element)
+    {
+        while (true)
+        {
+            var (body, at) = await _arrivals.Reader.ReadAsync();
+            if (body.Contains($"<{element}", StringComparison.Ordinal)) return at;
+        }
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(ct);
         lock (Bodies) Bodies.Add(body);
+        _arrivals.Writer.TryWrite((body, Clock.GetUtcNow()));
+        if (HoldsMoveAnswers && body.Contains("<ContinuousMove", StringComparison.Ordinal))
+            await _movesAnswered.Task.WaitAsync(ct);
 
         var answer = AnswerTo(body);
         return answer is null

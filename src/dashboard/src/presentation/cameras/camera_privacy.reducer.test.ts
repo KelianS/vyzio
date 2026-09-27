@@ -22,7 +22,7 @@ const rule: ScheduleRule = {
 }
 
 function preset(presetId: number, configured: boolean): PtzPreset {
-  return { presetId, label: '', native: false, stepsX: null, stepsY: null, configured }
+  return { presetId, label: '', native: false, panMs: null, tiltMs: null, configured }
 }
 
 describe('cameraPrivacyReducer', () => {

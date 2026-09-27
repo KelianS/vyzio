@@ -41,7 +41,10 @@ export interface CameraRepository {
   togglePrivacyMode(cameraId: string, active: boolean): Promise<Camera>
   batchTogglePrivacyMode(cameraIds: string[], active: boolean): Promise<Camera[]>
   setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera>
-  ptzStep(cameraId: string, direction: string, speed: number): Promise<void>
+  ptzStartMove(cameraId: string, direction: string, speed: number): Promise<void>
+  /** False once the server holds no move of this camera any more. */
+  ptzSignalMove(cameraId: string): Promise<boolean>
+  ptzStopMove(cameraId: string): Promise<void>
   ptzGoToPreset(cameraId: string, presetId: number): Promise<void>
   getPtzPresets(cameraId: string): Promise<{
     presets: PtzPreset[]

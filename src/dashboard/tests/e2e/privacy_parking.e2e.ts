@@ -5,8 +5,8 @@ const saved = (presetId: number) => ({
   presetId,
   label: `Position ${presetId}`,
   native: false,
-  stepsX: 0,
-  stepsY: 0,
+  panMs: 0,
+  tiltMs: 0,
   configured: true,
 })
 

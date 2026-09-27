@@ -15,6 +15,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
+    private readonly IPtzMotion _ptzMotion = Substitute.For<IPtzMotion>();
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
     private readonly ILogger<ToggleCameraPrivacyModeUseCase> _logger = Substitute.For<ILogger<ToggleCameraPrivacyModeUseCase>>();
     private readonly ToggleCameraPrivacyModeUseCase _sut;
@@ -24,7 +25,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance), _logger);
+        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _logger);
     }
 
     private static Camera MakeCamera(string id = "cam1", PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()
@@ -301,18 +302,19 @@ public class ToggleCameraPrivacyModeUseCaseTests
         var ptzBinding = MakeBinding("cam1", CameraCapability.Ptz, SupportedProtocol.V380);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(ptzBinding);
         _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
-            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, StepsX = 2, StepsY = 1 });
-        _ptzProvider.FullRangeSteps.Returns(3);
-        _ptzProvider.PtzStepAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 200, TiltMs = 100 });
+        _ptzProvider.FullRange.Returns(TimeSpan.FromMilliseconds(300));
+        _ptzProvider.OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(_ptzMotion);
+        _ptzMotion.MoveForAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(call => call.ArgAt<TimeSpan>(2));
 
         // Act
         await _sut.ExecuteAsync("cam1", active: true);
 
         // Assert
-        await _ptzProvider.Received(3).PtzStepAsync(camera, ptzBinding, PtzDirection.UpLeft, Arg.Any<int>(), Arg.Any<CancellationToken>());
-        await _ptzProvider.Received(2).PtzStepAsync(camera, ptzBinding, PtzDirection.Right, Arg.Any<int>(), Arg.Any<CancellationToken>());
-        await _ptzProvider.Received(1).PtzStepAsync(camera, ptzBinding, PtzDirection.Down, Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _ptzMotion.Received(1).MoveForAsync(PtzDirection.UpLeft, Arg.Any<int>(), TimeSpan.FromMilliseconds(300) + PtzManagedPositions.HomingMargin, Arg.Any<CancellationToken>());
+        await _ptzMotion.Received(1).MoveForAsync(PtzDirection.Right, Arg.Any<int>(), TimeSpan.FromMilliseconds(200), Arg.Any<CancellationToken>());
+        await _ptzMotion.Received(1).MoveForAsync(PtzDirection.Down, Arg.Any<int>(), TimeSpan.FromMilliseconds(100), Arg.Any<CancellationToken>());
         await _ptzProvider.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
@@ -328,7 +330,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
         var result = await _sut.ExecuteAsync("cam1", active: true);
 
         Assert.True(result!.PrivacyModeActive);
-        await _ptzProvider.DidNotReceive().PtzStepAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _ptzProvider.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
         await _cameras.Received(1).UpdateAsync(Arg.Is<Camera>(c => c.PrivacyModeActive), Arg.Any<CancellationToken>());
         await _frigateConfig.Received(1).ApplyAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<CancellationToken>());
         Assert.Contains(_logger.ReceivedCalls(), call => call.GetArguments()[0] is LogLevel.Warning
@@ -419,7 +421,7 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     public BatchToggleCameraPrivacyModeUseCaseTests()
     {
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
-        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(NullLogger<PtzManagedPositions>.Instance));
+        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance));
     }
 
     private static Camera MakeCamera(string id, PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()

@@ -200,6 +200,7 @@ export function PtzControlPanel({
       onPress(direction)
     },
     onTouchEnd: onRelease,
+    onTouchCancel: onRelease,
   })
 
   const buttonSize = 'size-[34px]'

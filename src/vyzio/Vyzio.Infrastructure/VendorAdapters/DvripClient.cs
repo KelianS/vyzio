@@ -27,36 +27,26 @@ internal sealed class DvripClient(TimeProvider time, ILogger<DvripClient> logger
     private const int ConfigSetCmd = 1040;
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(5);
 
-    // One command within 5 s, raised as refused or unreachable (ADR-56); null when the camera stays silent once it has the command.
-    public async Task<string?> ExecuteAsync(Camera camera, int cmdCode, Func<string, string> buildPayload, CancellationToken ct)
+    // Connects and logs in within 5 s, raised as refused or unreachable (ADR-56); the session then carries as many commands as needed (ADR-60).
+    public async Task<DvripSession> OpenSessionAsync(Camera camera, CancellationToken ct)
     {
         using var deadline = new CancellationTokenSource(CommandTimeout, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, deadline.Token);
-        var sent = false;
+        var tcp = new TcpClient();
         try
         {
-            using var tcp = new TcpClient();
             await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), linked.Token);
-            using var stream = tcp.GetStream();
-
-            var (sessionId, _, loginAnswer) = await LoginAsync(stream, camera, linked.Token);
+            var (sessionId, _, loginAnswer) = await LoginAsync(tcp.GetStream(), camera, linked.Token);
             if (sessionId is null)
                 throw loginAnswer is null
                     ? new CameraUnreachableException($"No DVRIP login answer from {camera.Host} (connection closed by the camera).")
                     : new CameraCommandRefusedException($"DVRIP login refused by {camera.Host} (Ret={ReadRet(loginAnswer)?.ToString(CultureInfo.InvariantCulture) ?? "unreadable"}).");
-
-            await SendPacketAsync(stream, cmdCode, buildPayload(sessionId), 2, sessionId, linked.Token);
-            sent = true;
-            return await ReceivePacketAsync(stream, linked.Token)
-                ?? throw new CameraUnreachableException($"No DVRIP answer from {camera.Host} (connection closed by the camera).");
+            return new DvripSession(tcp, sessionId, $"{camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)}", time, CommandTimeout);
         }
-        catch (OperationCanceledException) when (sent && deadline.IsCancellationRequested && !ct.IsCancellationRequested)
+        catch (Exception ex)
         {
-            // Budget cameras execute on receipt and may answer late: silence within the wait stays a success (ADR-56).
-            return null;
-        }
-        catch (Exception ex) when (ex is not CameraCommandException && (ex is not OperationCanceledException || !ct.IsCancellationRequested))
-        {
+            tcp.Dispose();
+            if (ex is CameraCommandException || (ex is OperationCanceledException && ct.IsCancellationRequested)) throw;
             var why = deadline.IsCancellationRequested ? "no answer within 5 s" : ex.Message;
             throw new CameraUnreachableException($"DVRIP service on {camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)}: {why}", ex);
         }
