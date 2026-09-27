@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -17,6 +18,10 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
     // The stop is DirectionUp with Preset=-1 whatever was moving, as python-dvr and dbuezas/icsee-ptz send it.
     private const string StopCommand = "DirectionUp";
     private const int StopStep = 5;
+    private const string PresetList = "Uart.PTZPreset.[0]";
+    // Slots 1 to 4 are Vyzio's; an ICSee keeps presets on ids up to 255 (TAD dvrip).
+    private const int FirstSpareSlot = 5;
+    private const int LastSlot = 255;
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
 
@@ -24,7 +29,94 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
     public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
     public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => await dvrip.TryLoginAsync(camera, ct);
+    {
+        DvripSession session;
+        try
+        {
+            session = await dvrip.OpenSessionAsync(camera, ct);
+        }
+        catch (CameraCommandException ex)
+        {
+            logger.LogDebug(ex, "DVRIP PTZ probe failed for {Camera}.", camera.DisplayName);
+            return false;
+        }
+
+        await using (session)
+            NativePresetsFlag.Record(binding, await DetectNativePresetsAsync(session, camera, ct));
+        return true;
+    }
+
+    // Stores a preset on a spare slot and looks for it in the camera's list, never moving it; Ability.PTZ answers 607 on an ICSee (TAD dvrip).
+    private async Task<bool> DetectNativePresetsAsync(DvripSession session, Camera camera, CancellationToken ct)
+    {
+        int slot;
+        try
+        {
+            var stored = await ReadStoredPresetsAsync(session, ct);
+            slot = stored is null ? 0 : SpareSlot(stored);
+            if (slot == 0) return false;
+        }
+        catch (CameraCommandException ex)
+        {
+            logger.LogDebug(ex, "DVRIP preset list unreadable on {Camera}.", camera.DisplayName);
+            return false;
+        }
+
+        try
+        {
+            await ExecutePtzAsync(session, camera, "SetPreset", slot, step: 0, ct);
+            var listed = (await ReadStoredPresetsAsync(session, ct))?.Contains(slot) == true;
+            logger.LogDebug("DVRIP PTZ probe for {Camera}: preset {Slot} listed after SetPreset: {Listed}.", camera.DisplayName, slot, listed);
+            return listed;
+        }
+        catch (CameraCommandException)
+        {
+            return false;
+        }
+        finally
+        {
+            await ClearProbeSlotAsync(session, camera, slot);
+        }
+    }
+
+    // The highest slot above Vyzio's four that holds no preset yet, 0 when none is free.
+    private static int SpareSlot(IReadOnlySet<int> stored)
+    {
+        for (var slot = LastSlot; slot >= FirstSpareSlot; slot--)
+            if (!stored.Contains(slot)) return slot;
+        return 0;
+    }
+
+    // Not cancelled with the probe, so the spare slot is cleared even when the probe is abandoned.
+    private async Task ClearProbeSlotAsync(DvripSession session, Camera camera, int slot)
+    {
+        try
+        {
+            await ExecutePtzAsync(session, camera, "ClearPreset", slot, step: 0, CancellationToken.None);
+        }
+        catch (CameraCommandException)
+        {
+            // Already logged; at most one preset stays on the spare slot.
+        }
+    }
+
+    // The ids of the presets the camera keeps, null when it does not say (ADR-56 silence, refusal, unreadable list).
+    private static async Task<IReadOnlySet<int>?> ReadStoredPresetsAsync(DvripSession session, CancellationToken ct)
+    {
+        var answer = await session.ExecuteAsync(
+            DvripClient.ConfigGetCmd, sessionId => JsonSerializer.Serialize(new { Name = PresetList, SessionID = sessionId }), ct);
+        if (!DvripClient.IsRetOk(answer)) return null;
+        try
+        {
+            return JsonNode.Parse(answer!)?[PresetList] is JsonArray list
+                ? list.Select(preset => preset?["Id"]?.GetValue<int>()).OfType<int>().ToHashSet()
+                : new HashSet<int>();
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+        {
+            return null;
+        }
+    }
 
     public async Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => await ExecutePtzAsync(camera, "GotoPreset", presetId, step: 0, ct);

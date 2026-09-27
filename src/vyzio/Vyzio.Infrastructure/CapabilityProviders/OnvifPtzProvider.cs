@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
@@ -48,7 +47,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             // Detect native preset support (ADR-25 Branch A/B routing).
             var presetsCount = await onvif.GetPresetsCountAsync(camera, token, ct);
             var supportsNativePresets = presetsCount > 0;
-            PersistNativePresetsFlag(binding, supportsNativePresets);
+            NativePresetsFlag.Record(binding, supportsNativePresets);
             logger.LogDebug("ONVIF PTZ probe for {Camera}: {Count} presets found, SupportsNativePresets={Supported}.",
                 camera.DisplayName, presetsCount, supportsNativePresets);
 
@@ -58,19 +57,6 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         {
             logger.LogDebug(ex, "ONVIF PTZ probe failed for {Camera}.", camera.DisplayName);
             return false;
-        }
-    }
-
-    private static void PersistNativePresetsFlag(CameraCapabilityBinding binding, bool supportsNativePresets)
-    {
-        try
-        {
-            binding.ConfigJson = BindingConfig.With(binding.ConfigJson, BindingConfig.SupportsNativePresets, supportsNativePresets);
-        }
-        catch (JsonException)
-        {
-            // An unreadable config holds nothing worth keeping; the probe writes a fresh one (ADR-25).
-            binding.ConfigJson = BindingConfig.With(null, BindingConfig.SupportsNativePresets, supportsNativePresets);
         }
     }
 

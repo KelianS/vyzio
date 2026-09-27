@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.CapabilityProviders;
@@ -16,7 +17,7 @@ public class DvripPtzProviderTests
     private static readonly TimeSpan ShortMove = TimeSpan.FromMilliseconds(100);
 
     private static DvripPtzProvider MakeProvider(TimeProvider? time = null) =>
-        new(new DvripClient(time ?? TimeProvider.System, NullLogger<DvripClient>.Instance),
+        new(new DvripClient(time ?? TimeProvider.System),
             new PtzMoveRunner(time ?? TimeProvider.System, NullLogger<PtzMoveRunner>.Instance),
             NullLogger<DvripPtzProvider>.Instance);
 
@@ -50,6 +51,168 @@ public class DvripPtzProviderTests
         var result = await MakeProvider().ProbeAsync(camera, binding, cts.Token);
 
         Assert.False(result);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldRecordNativePresets_WhenTheCameraListsThePresetItStored()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets();
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        var verified = await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.True(verified);
+        Assert.True(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldLeaveThePositionsToVyzioAndKeepPtzVerified_WhenTheCameraRefusesSetPreset()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(refusesSetPreset: true);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        fake.Binding.ConfigJson = NativePresetsConfig;
+
+        // Act
+        var verified = await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.True(verified);
+        Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldLeaveThePositionsToVyzio_WhenTheStoredPresetIsMissingFromTheList()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(listsWhatItStores: false);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldLeaveThePositionsToVyzio_WhenTheCameraRefusesToListItsPresets()
+    {
+        // Arrange
+        await using var fake = FakeDvripCamera.Start(LoginOk, _ => """{"Ret":607}""");
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldStoreThenClearASpareSlotAboveVyzios_WhenItLooksForNativePresets()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets();
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        var received = await fake.ReceivedAsync(4);
+        Assert.Equal(["Uart.PTZPreset.[0]", "SetPreset", "Uart.PTZPreset.[0]", "ClearPreset"], received.Select(command => command.Name));
+        Assert.Equal((255, 255), (received[1].Preset, received[3].Preset));
+        Assert.Empty(presets.Stored);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldClearTheProbeSlot_WhenTheCameraRefusesSetPreset()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(refusesSetPreset: true);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.Equal(["Uart.PTZPreset.[0]", "SetPreset", "ClearPreset"], await fake.CommandsAsync(3));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldClearTheProbeSlot_WhenTheStoredPresetIsMissingFromTheList()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(listsWhatItStores: false);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.Equal(["Uart.PTZPreset.[0]", "SetPreset", "Uart.PTZPreset.[0]", "ClearPreset"], await fake.CommandsAsync(4));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldKeepAPresetAlreadyStored_WhenItOccupiesTheHighestSlot()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(stored: [3, 255]);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.Equal([3, 255], presets.Stored.Order());
+        Assert.Equal<int?>(254, (await fake.ReceivedAsync(2))[1].Preset);
+    }
+
+    [Fact]
+    public async Task PtzSavePresetAsync_ShouldStoreTheSlotInTheCamera_WhenCalled()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets();
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().PtzSavePresetAsync(fake.Camera, fake.Binding, PtzPreset.ParkingSlot);
+
+        // Assert
+        Assert.Equal([PtzPreset.ParkingSlot], presets.Stored);
+    }
+
+    [Fact]
+    public async Task PtzGoToPresetAsync_ShouldRecallTheSlotStoredInTheCamera_WhenCalled()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(stored: [PtzPreset.SurveillanceSlot]);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        await MakeProvider().PtzGoToPresetAsync(fake.Camera, fake.Binding, PtzPreset.SurveillanceSlot);
+
+        // Assert
+        var recall = (await fake.ReceivedAsync(1))[0];
+        Assert.Equal(("GotoPreset", (int?)PtzPreset.SurveillanceSlot), (recall.Name, recall.Preset));
+    }
+
+    [Fact]
+    public async Task PtzSavePresetAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsSetPreset()
+    {
+        // Arrange
+        var presets = new FakeDvripPresets(refusesSetPreset: true);
+        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+
+        // Act
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
+            () => MakeProvider().PtzSavePresetAsync(fake.Camera, fake.Binding, PtzPreset.SurveillanceSlot));
+
+        // Assert
+        Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
     }
 
     // SofiaHash — pairs of raw MD5 bytes (not hex nibbles), matching python-dvr's reference
@@ -399,6 +562,7 @@ public class DvripPtzProviderTests
 
     private const string LoginOk = """{"Ret":100,"SessionID":"0x0000000B"}""";
     private const string OkAnswer = """{"Ret":100}""";
+    private const string NativePresetsConfig = """{"supports_native_presets":true}""";
 
     // Moves, lets the short move run out on the fake clock, and waits for it to end.
     private static async Task MoveBrieflyAsync(IPtzMotion motion, FakeDvripCamera fake, FakeTimeProvider time)
@@ -441,7 +605,12 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
     // A null command hangs up at the first command, hangUpAt at that command; the first silentFirst connections never answer a command; held answers wait for ReleaseAnswers.
     public static FakeDvripCamera Start(string login, string? command, int silentFirst = 0, int hangUpAt = 0, bool holdAnswers = false, TimeProvider? clock = null)
         => new(new IPAddress([127, 0, (byte)Random.Shared.Next(1, 255), (byte)Random.Shared.Next(2, 255)]),
-            new Behaviour(login, command, silentFirst, command is null ? 1 : hangUpAt, holdAnswers), clock ?? TimeProvider.System);
+            new Behaviour(login, command, silentFirst, command is null ? 1 : hangUpAt, holdAnswers, Answer: null), clock ?? TimeProvider.System);
+
+    // Answers each command as the handler says, from the request it received.
+    public static FakeDvripCamera Start(string login, Func<JsonNode, string> answer)
+        => new(new IPAddress([127, 0, (byte)Random.Shared.Next(1, 255), (byte)Random.Shared.Next(2, 255)]),
+            new Behaviour(login, Command: string.Empty, SilentFirst: 0, HangUpAt: 0, HoldAnswers: false, answer), TimeProvider.System);
 
     public void ReleaseAnswers() => _released.TrySetResult();
 
@@ -487,9 +656,10 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
             answering = SendAnswersAsync(stream, answers.Reader);
             for (var n = 1; await DvripClient.ReceivePacketAsync(stream, _stop.Token) is { } sent; n++)
             {
-                await _commands.Writer.WriteAsync(new ReceivedCommand(JsonNode.Parse(sent)!["OPPTZControl"]!["Command"]!.GetValue<string>(), _clock.GetUtcNow()), _stop.Token);
+                var request = JsonNode.Parse(sent)!;
+                await _commands.Writer.WriteAsync(Received(request, _clock.GetUtcNow()), _stop.Token);
                 if (n == behaviour.HangUpAt) break;
-                if (!silent) await answers.Writer.WriteAsync(behaviour.Command!, _stop.Token);
+                if (!silent) await answers.Writer.WriteAsync(behaviour.Answer?.Invoke(request) ?? behaviour.Command!, _stop.Token);
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
@@ -526,7 +696,58 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
         _stop.Dispose();
     }
 
-    private sealed record Behaviour(string Login, string? Command, int SilentFirst, int HangUpAt, bool HoldAnswers);
+    private static ReceivedCommand Received(JsonNode request, DateTimeOffset at)
+        => request["OPPTZControl"] is { } ptz
+            ? new(ptz["Command"]!.GetValue<string>(), at, ptz["Parameter"]!["Preset"]!.GetValue<int>())
+            : new(request["Name"]!.GetValue<string>(), at);
+
+    private sealed record Behaviour(string Login, string? Command, int SilentFirst, int HangUpAt, bool HoldAnswers, Func<JsonNode, string>? Answer);
 }
 
-internal sealed record ReceivedCommand(string Name, DateTimeOffset At);
+// A PTZ command by its command name and preset, any other request by its name.
+internal sealed record ReceivedCommand(string Name, DateTimeOffset At, int? Preset = null);
+
+// Presets kept as an ICSee keeps them (TAD dvrip): SetPreset lists the slot in Uart.PTZPreset, ClearPreset removes it.
+internal sealed class FakeDvripPresets(bool refusesSetPreset = false, bool listsWhatItStores = true, params int[] stored)
+{
+    private const string Ok = """{"Ret":100}""";
+    private const string Refused = """{"Ret":103}""";
+    private readonly HashSet<int> _stored = [.. stored];
+    private readonly Lock _gate = new();
+
+    public IReadOnlyCollection<int> Stored
+    {
+        get { lock (_gate) return [.. _stored]; }
+    }
+
+    public string Answer(JsonNode request)
+    {
+        lock (_gate)
+            return request["OPPTZControl"] is { } ptz ? Execute(ptz) : List();
+    }
+
+    private string Execute(JsonNode ptz)
+    {
+        var preset = ptz["Parameter"]!["Preset"]!.GetValue<int>();
+        switch (ptz["Command"]!.GetValue<string>())
+        {
+            case "SetPreset" when refusesSetPreset:
+                return Refused;
+            case "SetPreset":
+                if (listsWhatItStores) _stored.Add(preset);
+                return Ok;
+            case "ClearPreset":
+                _stored.Remove(preset);
+                return Ok;
+            default:
+                return Ok;
+        }
+    }
+
+    private string List() => new JsonObject
+    {
+        ["Name"] = "Uart.PTZPreset.[0]",
+        ["Ret"] = 100,
+        ["Uart.PTZPreset.[0]"] = new JsonArray([.. _stored.Order().Select(id => (JsonNode)new JsonObject { ["Id"] = id })]),
+    }.ToJsonString();
+}
