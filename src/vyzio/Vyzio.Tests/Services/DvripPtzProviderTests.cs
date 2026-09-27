@@ -240,7 +240,7 @@ public class DvripPtzProviderTests
         var error = await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
 
         // Assert
-        Assert.Contains("connection closed", error.Message, StringComparison.Ordinal);
+        Assert.Contains(fake.Camera.Host, error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
