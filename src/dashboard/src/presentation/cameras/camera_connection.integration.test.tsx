@@ -9,7 +9,7 @@ import {
   makeCameraStream,
   makeStreamLineup,
 } from '../../testing/camera_stream_fixture'
-import { failure, fakeNetwork, ok } from '../../testing/fake_network'
+import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
 import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
@@ -1478,6 +1478,38 @@ describe('CameraConnectionView', () => {
     expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Autre chemin…')
   })
 
+  it('onOpenMainPath_ShouldSayTheListCouldNotBeAsked_WhenTheRequestFails', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+
+    // Act
+    main.getByRole('combobox', { name: 'Flux' }).focus()
+    await userEvent.keyboard('{ArrowDown}')
+
+    // Assert
+    expect(
+      await stream.findByText('Vyzio n’a pas pu demander ses flux à la caméra.'),
+    ).toBeInTheDocument()
+  })
+
+  it('onAddStream_ShouldPickNothingAndHoldTheAdd_WhenTheCameraIsStillAsked', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: late(ok([lighterOffer]), 5000) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Recherche des flux…')
+    expect(form.getByRole('button', { name: 'Ajouter et vérifier' })).toBeDisabled()
+  })
+
   it('onRetryAvailableStreams_ShouldOfferTheCamerasStreams_WhenTheSecondRequestAnswers', async () => {
     // Arrange
     const network = connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
@@ -1531,7 +1563,7 @@ describe('CameraConnectionView', () => {
     expect(screen.getByRole('alertdialog')).toHaveTextContent(DETECTION_FALLS_BACK)
   })
 
-  it('onAskToRemoveStream_ShouldNotMentionDetection_WhenTheStreamDoesNotDetect', async () => {
+  it('onAskToRemoveStream_ShouldSayOnlyThatItLeavesTheList_WhenTheStreamDoesNotDetect', async () => {
     // Arrange
     const idle = makeStreamLineup([recording, { ...detecting, role: 'none' }], {
       detectsOnRecordingStream: true,
@@ -1545,7 +1577,9 @@ describe('CameraConnectionView', () => {
     await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
 
     // Assert
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Il quitte la liste.')
     expect(screen.getByRole('alertdialog')).not.toHaveTextContent(DETECTION_FALLS_BACK)
+    expect(screen.getByRole('alertdialog')).not.toHaveTextContent('Ajouter un flux')
   })
 
   it('onAddStream_ShouldSayTheNewStreamDoesNotAnswer_WhenItsCheckFails', async () => {
