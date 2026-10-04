@@ -889,7 +889,11 @@ export async function installFakeBackend(
           ? CapabilityStatus.Verified
           : CapabilityStatus.RejectedByUser
         state.ptzBinding.confirmedAt = worked ? new Date().toISOString() : null
-        if (worked && camera) camera.ptzSupported = true
+        if (worked && camera) {
+          camera.ptzSupported = true
+          // Like the real list: a confirmed capability counts as verified (ADR-66).
+          if (!camera.verifiedCapabilities.includes('ptz')) camera.verifiedCapabilities.push('ptz')
+        }
         return json(route, ptzBindingOf(state.ptzBinding))
       }
       if (rest === '/capabilities/ptz/pan-inverted' && method === 'PUT') {

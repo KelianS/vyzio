@@ -16,6 +16,12 @@ import type {
 } from '../../domain/entities/camera_image_settings.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { LiveView } from '../live_view/live_view.component'
+import { OrientationUnavailable } from '../../common/components/orientation_unavailable'
+import {
+  MOVES,
+  OrientationControl,
+  orientationControlOf,
+} from '../../common/orientation/orientation_control'
 import { ReadFailure } from '../../common/components/error_message'
 import { PtzCalibrationSection } from './components/ptz_calibration_section'
 import { CameraNotFound } from './components/camera_not_found'
@@ -55,30 +61,59 @@ export function CameraImageView() {
 
   const cameraId = camera.id
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
-  const ptzSupported = camera.ptzSupported
+  const orientation = orientationControlOf(camera)
+  const moves = MOVES[orientation]
 
   useEffect(() => {
-    presenter.onLoad(cameraId, { imageSettings: hasImageSettings, ptz: ptzSupported })
-  }, [presenter, cameraId, hasImageSettings, ptzSupported])
+    presenter.onLoad(cameraId, { imageSettings: hasImageSettings, ptz: moves })
+  }, [presenter, cameraId, hasImageSettings, moves])
 
-  const pilotage = ptzSupported ? (
-    <SettingsSection title="Pilotage" lede="Calibration et positions enregistrées.">
-      <PtzCalibrationSection
-        loading={uido.ptzLoading}
-        error={uido.ptzError}
-        calibrated={uido.calibrated}
-        currentPosition={uido.currentPosition}
-        onOpenLiveView={presenter.onOpenLiveView}
-        onRetry={() => presenter.onRetryPtz(cameraId)}
-      />
-      {uido.liveViewOpen && (
-        <Overlay
-          label={`Pilotage : ${camera.displayName}`}
-          onClose={() => presenter.onCloseLiveView(cameraId)}
-        >
-          <LiveView cameraId={cameraId} label={camera.displayName} ptzSupported />
-        </Overlay>
-      )}
+  const pilotageBody = (): ReactNode => {
+    switch (orientation) {
+      case OrientationControl.Off:
+        return null
+      case OrientationControl.Unusable:
+        return <OrientationUnavailable cameraId={cameraId} />
+      case OrientationControl.Usable:
+        return (
+          <>
+            <PtzCalibrationSection
+              loading={uido.ptzLoading}
+              error={uido.ptzError}
+              calibrated={uido.calibrated}
+              currentPosition={uido.currentPosition}
+              onOpenLiveView={presenter.onOpenLiveView}
+              onRetry={() => presenter.onRetryPtz(cameraId)}
+            />
+            {uido.liveViewOpen && (
+              <Overlay
+                label={`Pilotage : ${camera.displayName}`}
+                onClose={() => presenter.onCloseLiveView(cameraId)}
+              >
+                <LiveView
+                  cameraId={cameraId}
+                  label={camera.displayName}
+                  orientation={orientation}
+                />
+              </Overlay>
+            )}
+          </>
+        )
+      default: {
+        const unknown: never = orientation
+        return unknown
+      }
+    }
+  }
+
+  const body = pilotageBody()
+  // The lede names what the section holds, so it goes with the controls.
+  const pilotage = body ? (
+    <SettingsSection
+      title="Pilotage"
+      lede={moves ? 'Calibration et positions enregistrées.' : undefined}
+    >
+      {body}
     </SettingsSection>
   ) : null
 

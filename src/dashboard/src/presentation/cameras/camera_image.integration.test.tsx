@@ -17,7 +17,7 @@ const SAVE_PRESET = 'POST /api/cameras/camera-1/ptz/preset/save'
 const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
 
 const imageCamera = makeCamera({ verifiedCapabilities: ['image_settings'] })
-const ptzCamera = makeCamera({ ptzSupported: true })
+const ptzCamera = makeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
 
 const settings: CameraImageSettings = {
   brightness: 50,
@@ -61,6 +61,25 @@ async function raiseTheBrightness() {
 }
 
 describe('CameraImageView', () => {
+  it('CameraImageView_ShouldPointAtConnexionInsteadOfPiloting_WhenTheOrientationIsNotVerified', async () => {
+    // Arrange
+    const network = fakeNetwork({})
+
+    // Act
+    renderScreen(<CameraImageView />, imageTab(makeCamera({ ptzSupported: true })))
+
+    // Assert
+    expect(
+      await screen.findByText(/L’orientation n’est pas disponible pour le moment/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1/connexion',
+    )
+    expect(screen.queryByRole('button', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
+    expect(network.sent).toEqual([])
+  })
+
   it('onLoad_ShouldOfferEveryAdjustment_WhenTheCameraWritesThemAll', async () => {
     // Arrange
     fakeNetwork({ [SETTINGS]: ok(settings), [BINDINGS]: ok([]) })
@@ -245,7 +264,7 @@ describe('CameraImageView', () => {
     // Act
     renderScreen(
       <CameraImageView />,
-      imageTab(makeCamera({ ptzSupported: true, verifiedCapabilities: ['image_settings'] })),
+      imageTab(makeCamera({ ptzSupported: true, verifiedCapabilities: ['image_settings', 'ptz'] })),
     )
 
     // Assert

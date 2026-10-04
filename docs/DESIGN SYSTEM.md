@@ -164,6 +164,15 @@ setting on one, takes its place without a page or a layout of its own:
   (`Vous avez indique que la camera n'a pas bouge.`), then the try's line, and swaps its check for
   `Essayer a nouveau`, which tries again and asks the same question; no check or detection asks it on
   its own.
+- **Outside its card, a capability offers a control only while it works.** The live view shows the
+  joystick and the saved positions only for an Orientation that is `Fonctionne`, the one state in which
+  the camera is moved; the `Pilotage` section of `Image et pilotage` follows the same rule. An
+  Orientation in use that is in any other state, `A confirmer` and the user's "no" included, leaves no
+  dead control: one short line takes its place, `L'orientation n'est pas disponible pour le moment :
+  voir « Connexion ».`, the page name a link to the camera's `Connexion` page, where the card says why
+  and offers the way out; the detail stays on the card
+  ([ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)). A
+  switched-off Orientation shows nothing there.
 
 The page shows a camera's connection data on its three levels
 ([ADR-61](adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)), each
