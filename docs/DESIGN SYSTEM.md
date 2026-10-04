@@ -133,8 +133,9 @@ setting on one, takes its place without a page or a layout of its own:
 
 - **The title is the plain name** of what the camera does (§ UX vocabulary, Capabilities), never a
   protocol or a technical acronym.
-- **The state pill** says where the capability stands; it is a state, so a pill (§ Shape rule). The
-  stream's pill is the camera status itself, the words the camera header shows: one fact, one name.
+- **The state pill** says where the capability stands; it is a state, so a pill (§ Shape rule). Every
+  card speaks the capability words of § UX vocabulary, States, the stream's included; the camera's
+  own status stays where it sums up the camera, the camera list and the page header.
 - **The state line** justifies the pill (principle 4) and says what to do next: when it was last
   verified or last worked, or, when it failed, a plain sentence with the way out, and the diagnostic
   line under it when the failure carries one (§ Errors).
@@ -144,26 +145,28 @@ setting on one, takes its place without a page or a layout of its own:
   itself allows (`Activer` / `Desactiver`, `Retirer`, or `Configurer` while it is not set up). A check
   or a configuration runs a real test and returns a result: it is an **action**, never a draft value
   ([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md)). While the
-  stream fails, the other checks are suspended and the page says why ([SPECS](SPECS.md) 2.2). A
+  stream's own check does not say `Fonctionne` (failed, or not checked since its connection changed),
+  the other checks are suspended and the page says why ([SPECS](SPECS.md) 2.2). A
   capability whose protocol does not answer says so in its state line, in plain words, with the way
   out (wake the camera, check it is plugged in); one whose protocol refuses the account points at the
   account; any other failure offers the check again or another way to reach it.
 - **A capability's states** ([ADR-66](adr/0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)):
   `Fonctionne`, proven by the camera or confirmed by the user, its state line saying which
-  (`Verifie le ...`, `Confirme par vous le ...`); `A confirmer`, in the warn tone, when the camera
-  offers no read that proves it; `En echec`, whose line says why (the protocol, the capability not
-  there although the camera answers, or the user's own "no"); `A configurer`; `Desactivee`. A card
-  `A confirmer` swaps its check for `Essayer`: the line above the button says what the try does (a
+  (`Vérifié le ...`, `Confirmé par vous le ...`); `À confirmer`, in the warn tone, when the camera
+  offers no read that proves it; `En échec`, whose line says why (the protocol, or the capability not
+  there although the camera answers); `Non confirmée` after the user's "no", which is an answer, not a
+  failure; `À configurer`; `Désactivée` (words and tones: § UX vocabulary, States). A card
+  `À confirmer` swaps its check for `Essayer`: the line above the button says what the try does (a
   short turn and back, a cut of a few seconds), since it acts on the camera without a confirmation
-  (§ Help); then the card asks its one question in plain words (`La camera a bouge ?`,
-  `La camera s'est coupee ?`) with `Oui` and `Non`, and only then. `Essayer` is refused while the
+  (§ Help); then the card asks its one question in plain words (`La caméra a bougé ?`,
+  `La caméra s’est coupée ?`) with `Oui` and `Non`, and only then. `Essayer` is refused while the
   camera is in privacy mode, the line saying so, and suspended with the other checks. The way out of a
   capability the camera does not show, or that the user answered "no" to, is another way to reach it in
   its `Options`, or removing it (`Retirer`), Orientation included as long as it was never in use (one in use
-  is switched off with `Desactiver`). After a "no", the card says so in one line naming what the user saw
-  (`Vous avez indique que la camera n'a pas bouge.`), then the try's line, and swaps its check for
-  `Essayer a nouveau`, which tries again and asks the same question; no check or detection asks it on
-  its own.
+  is switched off with `Désactiver`). After a "no", the card says so in one line naming what the user saw
+  (`Vous avez indiqué que la caméra n’a pas bougé.`), then the try's line, and swaps its check for
+  `Essayer à nouveau`, which tries again and asks the same question, the pill back to `À confirmer`
+  until it is answered; no check or detection asks it on its own.
 - **Outside its card, a capability offers a control only while it works.** The live view shows the
   joystick and the saved positions only for an Orientation that is `Fonctionne`, the one state in which
   the camera is moved; the `Pilotage` section of `Image et pilotage` follows the same rule. An
@@ -195,8 +198,7 @@ detail once:
   the place says so and points at the cards' `Options`; when no protocol of the camera can carry a
   capability left to add, it says so and points at the same two ways as the cards.
 - **The page's `Avance` fold**: the camera's access (address, account), then one box per protocol the
-  camera speaks, with its state pill (`Repond`, `Refuse l'acces` when the account or the device number
-  is turned down, `Ne repond pas`, `Pas encore verifie`), its port, its optional
+  camera speaks, with its state pill (the protocol words of § UX vocabulary, States), its port, its optional
   `Compte specifique` and its own `Verifier`, then `Retirer`; then `Rechercher les protocoles` (SPECS
   2.3); then `Ajouter un protocole`, the manual way (a protocol
   the camera does not have yet, its port, the usual one when left empty, an optional
@@ -207,7 +209,8 @@ detail once:
 - **The stream's way out** names both places: the address and account in `Avance`, the protocol and
   the streams in the stream card's `Options`.
 - **The stream lines** ([ADR-65](adr/0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md)):
-  the stream stays one card with one pill, the camera status. Its state line adds one sentence when
+  the stream stays one card with one pill, which says whether recording and detection run as chosen:
+  a failed detection stream makes it `En échec` too. Its state line adds one sentence when
   detection is not covered as chosen: detection runs on the recording stream since no stream holds
   that role, or the detection stream failed its check, then the way out is giving detection to
   another stream in the options. In its `Options`, the protocol choice carries its cost, the list of
@@ -236,7 +239,10 @@ detail once:
 - **The stream's protocol choice over RTSP** shows nothing more while the camera lists its streams.
   When it lists none, or cannot be asked, `Configurer` is refused saying both, and the choice then
   reuses that dropdown under `Protocole`, `Autre chemin…` alone with `Chemin du flux`; `Configurer`
-  stays disabled until a path is typed.
+  stays disabled until a path is typed. When `Detecter automatiquement` leaves the stream unchosen
+  while such a protocol answers, the camera listed no stream over it: the card's state line says so
+  in plain words (`La caméra ne donne pas la liste de ses flux : indiquez le chemin du flux dans les
+  options.`) and the choice asks for the path at once.
 - A folded help panel, `Quel rôle donner à chaque flux ?`, under the list holds the task help of
   ADR-65: the default roles, said as such, which stream to analyse for which scene, how a role moves,
   what changing the protocol or adding a stream does, how a wrong path is fixed, why the dropdown can
@@ -360,6 +366,11 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`,
   `Planification`, `Acces`, `Systeme`).
+- A camera's settings are tabs under its name: `Détection`, `Conservation`, `Vie privée`,
+  `Image et pilotage`, `Connexion`. `Connexion` holds what Vyzio checks through the camera's
+  connection, its capabilities, then in `Avance` its access and protocols, with its name and its
+  removal; it keeps that name, since `Capacités` would repeat the page's own section title
+  (§ Settings screens) and leave out the access.
 - The end-of-page fold is called `Avance`. It is not a mode to switch on: it is a position.
 - The in-card fold of figures for support is called `Details techniques` (§ Technical details).
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
@@ -394,6 +405,33 @@ uses for it: `Flux video` (the stream), `Orientation` (the motorised head), `Cou
 sentence; a choice adds only `(par défaut)` to the default protocol of a capability. It appears only where a protocol is chosen or reached, the page's `Avance` fold,
 each card's `Options` fold and the form that adds a capability, and in the diagnostic line of an error ([SPECS](SPECS.md) 1.5). Help that
 names protocols or ports sits in the `Avance` fold; the help next to the cards stays in plain words.
+
+**States: one vocabulary per level.** A
+capability works or not, a protocol is reached or not: each level has one set of words, the same for
+every item of that level, and each word says one backend state, never two.
+
+| Capability level: cards and stream lines | Tone | What the backend says |
+| --- | --- | --- |
+| `Fonctionne` | ok | Proven by a read or confirmed by the user (ADR-66). The stream: its last check passed (the stream capability's verdict, never an open port alone), the camera is not offline now, and detection runs as chosen. A stream line: its last check passed |
+| `À confirmer` | warn | No read proves it: the user tries it and answers, and the question asked after `Essayer à nouveau` shows it too |
+| `Non confirmée` | neutral | The user answered "no" after a try: unused, but not a failure |
+| `En échec` | danger | The last check failed, through the protocol or because the camera does not show it. The stream: its last check failed, the camera is offline now, or the detection stream does not answer; its line names which. A stream line: its last check failed |
+| `Pas encore vérifié` | neutral | The stream not checked since the camera's connection changed, or a stream line never checked |
+| `À configurer` | neutral | No protocol chosen yet |
+| `Désactivée` | neutral | An Orientation the user switched off |
+
+| Protocol level: the `Avance` boxes | Tone | What the backend says |
+| --- | --- | --- |
+| `Accessible` | ok | The camera answers on this port and accepts the account |
+| `Accès refusé` | danger | It answers, but turns the account down, or the device number in V380 |
+| `Injoignable` | danger | Nothing answers on this port |
+| `Pas encore vérifié` | neutral | The camera was never asked through this protocol |
+
+`Pas encore vérifié` is the one word both levels share: it says the same fact, nobody asked yet.
+`Non confirmée` only reaches Orientation and Coupure matérielle, `Désactivée` only Orientation,
+`Pas encore vérifié` only the stream, so each agrees with its card. The camera's own status (`Connectée`, `Hors ligne`,
+`Erreur de configuration`...) is a third thing, the camera as a whole, surveillance included: it
+shows in the camera list and the page header, never on a card.
 
 ### Editing cycle
 
