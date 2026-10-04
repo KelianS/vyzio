@@ -6,9 +6,7 @@
 > over ONVIF on how native presets are detected (a non-empty preset list) and, on the native tier, on
 > what Vyzio keeps of a position (its record of each slot and the native token),
 > [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) on its rejected
-> option 1 (the non-empty list standing over ONVIF) and its point b) (the one write a probe may make),
-> [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) on its point
-> b) (the DVRIP preset probe as the one write a proof may make), and
+> option 1 (the non-empty list standing over ONVIF), and
 > [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) on its point c)
 > (a position counts as saved when Vyzio holds its row).
 
@@ -28,8 +26,8 @@ in between on the other tier (ADR-64 consequences).
 
 ADR-64 already gives DVRIP the target: the camera keeps exact presets, numbered, listed on request.
 Both protocols let the caller name the preset it stores: an ONVIF `SetPreset` may carry the token,
-and DVRIP stores a preset on the id it is given. An ONVIF camera may also refuse a token it did not
-assign, and a list read alone does not show it. A vendor app that offers presets numbers them too.
+and DVRIP stores a preset on the id it is given. An ONVIF camera also describes its PTZ node,
+including how many presets it can keep. A vendor app that offers presets numbers them too.
 
 ## Options compared
 
@@ -63,15 +61,15 @@ the camera there and captures the thumbnail on arrival, like any move to a saved
 over a held slot asks first, whatever the thumbnail.
 
 **e) Presets beyond the slots of SPECS 9.3 are ignored**: neither shown nor moved to, and Vyzio clears
-none of them, apart from the spare slot its own probes store and clear (point f and ADR-64).
+none of them, apart from the spare slot the DVRIP probe stores and clears (ADR-64).
 
 **f) Over ONVIF, the native tier holds as soon as the camera can store presets, even with none
-saved.** The ONVIF probe proves it with the spare-slot test of ADR-64 a), the preset stored under a
-token Vyzio picks. This proves both that the camera keeps presets and that it keeps them under a
-number Vyzio picks, so a camera that passes never meets the refusal of b) on a slot. Any other
-outcome leaves the camera on the positions Vyzio manages, where its positions can always be saved.
-This write weighs only on the tier, never on whether PTZ is verified, which ADR-66 a) settles over ONVIF
-without it.
+saved.** The ONVIF probe decides it by a read, never a write: the PTZ node of the camera's profile
+reports the number of presets it can keep, and room for at least one puts the camera on the native
+tier. A node that reports none, or a camera that does not describe its node, leaves it on the
+positions Vyzio manages. A camera that reports room but refuses a slot's number fails that save as b)
+says. The read weighs only on the tier, never on whether PTZ is verified (ADR-66 a)). DVRIP keeps the
+probe of ADR-64, which already holds with no preset saved.
 
 **g) A held slot is what the camera answers now.** The panel and the privacy parking prerequisite
 (ADR-57) both read the camera. When it does not answer, they say the positions could not be read,
@@ -89,10 +87,11 @@ whose state is unknown.
   vendor app or the user typed.
 - **Keep the non-empty list as the ONVIF criterion** (ADR-25). Rejected: a camera that can store
   presets would count its first positions in motion time and lose them once a preset exists.
-- **A read as the ONVIF proof**: the preset list answering, empty or not, and the PTZ node reporting
-  room for presets. Rejected: a camera may answer both and still refuse a preset under a number Vyzio
-  picks, which would leave it on a native tier where no save succeeds and with no way back to the
-  positions Vyzio manages (principle 5).
+- **Store then clear a spare preset over ONVIF, as ADR-64 does over DVRIP.** Rejected: ONVIF says
+  by a read whether the camera can keep presets, and ADR-66 keeps a proof to reads; the DVRIP write
+  exists only because an ICSee reports no such capacity.
+- **The preset list answering, empty or not.** Rejected: a camera that cannot store presets may still
+  answer an empty list.
 
 ## Consequences
 
@@ -103,7 +102,7 @@ whose state is unknown.
   depend on the camera answering; an offline camera already suspends its PTZ controls (SPECS 2.2).
 - ONVIF cameras that can store presets but held none now take the native tier at their next probe;
   positions they had counted read as not saved, as ADR-64 describes for a tier change.
-- Each probe of an ONVIF PTZ binding stores and removes one preset on the camera, as over DVRIP. A
-  cleanup that fails leaves at most one preset on a slot Vyzio ignores.
+- An ONVIF camera that reports room for presets yet refuses the numbers Vyzio picks cannot save its
+  positions; each save says why, and the hardware sheet of that model records it.
 - The tests of both protocols replay the captured exchanges of #92, an empty list and a held slot
   without thumbnail included.

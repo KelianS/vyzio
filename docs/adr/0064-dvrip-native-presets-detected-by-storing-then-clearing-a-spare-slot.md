@@ -1,6 +1,6 @@
 # ADR-64: DVRIP native presets are detected by storing, then clearing, a spare slot
 
-> Status: Accepted, point b), on the login deciding whether PTZ is verified, amended by [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md), the statement in its rejected option 1 that the non-empty list stands over ONVIF withdrawn, and its point b) no longer the one write a probe may make, by [ADR-69](0069-the-camera-is-the-only-source-of-truth-for-native-presets.md)
+> Status: Accepted, point b), on the login deciding whether PTZ is verified, amended by [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md), the statement in its rejected option 1 that the non-empty list stands over ONVIF withdrawn by [ADR-69](0069-the-camera-is-the-only-source-of-truth-for-native-presets.md)
 >
 > Supersedes [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) on its
 > point f) (the DVRIP probe does not look for native presets) and, over DVRIP only,
