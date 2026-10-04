@@ -1,6 +1,6 @@
 # ADR-25 — Gestion des positions PTZ : presets natifs (Branch A) vs positions Vyzio-managed (Branch B)
 
-> Statut : Superseded by [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) (where homing and position tracking live), amended by [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md), its step columns counted in motion time by [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md), its detection of native presets over DVRIP replaced by [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md)
+> Statut : Superseded by [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) (where homing and position tracking live), amended by [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md), its step columns counted in motion time by [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md), its detection of native presets over DVRIP replaced by [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md), its detection over ONVIF (a non-empty list) and what Vyzio keeps of a native position replaced by [ADR-69](0069-the-camera-is-the-only-source-of-truth-for-native-presets.md)
 
 ## Contexte
 
