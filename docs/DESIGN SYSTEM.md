@@ -191,11 +191,11 @@ detail once:
   and frame rate, else its rank, ADR-38) with its protocol and path in a tooltip, its own pill (the
   capability pills, `Désactivé` for a line switched off, `Pas encore vérifié` before its first
   check) with a short sentence and the diagnostic line of a failure, the way out being to check it
-  again or to remove it; the recording stream's failure is the camera's, whose way out the card's
-  state line already gives, so its line names none, its
-  role as a choice (`Enregistrement`, `Détection`, `Enregistrement et détection`, `Aucun`) whose
-  tooltip names what the role changes, then its actions: `Vérifier`, `Désactiver` or `Activer`,
-  `Retirer`, the word of the page's other cards and protocol boxes. `Désactiver` and `Retirer` ask
+  again or to remove it (the recording stream's failure is the camera's, whose way out the card's
+  state line already gives, so its line names none); then its role as a choice (`Enregistrement`,
+  `Détection`, `Enregistrement et détection`, `Aucun`) whose tooltip names what the role changes,
+  then its actions: `Vérifier`, `Désactiver` or `Activer`, `Retirer`, the word of the page's other
+  cards and protocol boxes. `Désactiver` and `Retirer` ask
   for a confirmation, which says, for the stream that detects, that detection moves to the
   recording stream. The line's `Vérifier` checks that stream alone, except the recording stream's,
   which is the camera's check; the card's checks the camera, every enabled stream with it. The main
