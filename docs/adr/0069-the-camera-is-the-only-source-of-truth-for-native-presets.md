@@ -70,7 +70,7 @@ saved.** The ONVIF probe proves it with the spare-slot test of ADR-64 a), the pr
 token Vyzio picks. This proves both that the camera keeps presets and that it keeps them under a
 number Vyzio picks, so a camera that passes never meets the refusal of b) on a slot. Any other
 outcome leaves the camera on the positions Vyzio manages, where its positions can always be saved.
-This write weighs only on the tier, never on whether PTZ is verified, which ADR-66 settles over ONVIF
+This write weighs only on the tier, never on whether PTZ is verified, which ADR-66 a) settles over ONVIF
 without it.
 
 **g) A held slot is what the camera answers now.** The panel and the privacy parking prerequisite
