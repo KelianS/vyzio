@@ -3,7 +3,7 @@
 Raw measurements on ICSee units. What a sheet holds: [`../WORKFLOW.md`](../WORKFLOW.md) § Document
 architecture.
 
-| Measured | Measurement |
+| Recorded | Measurement |
 |---|---|
 | 2026-09-27 | `SetPreset` and `GotoPreset` answer `Ret` 100; a recall lands on the same framing every time, and three presets recall distinctly in any order |
 | 2026-09-27 | `Uart.PTZPreset.[0]` lists the stored presets as `[{"Id": n}, ...]`; a new preset appears right after `SetPreset`, and `ClearPreset` removes it; with no preset stored, the list may read `null` |

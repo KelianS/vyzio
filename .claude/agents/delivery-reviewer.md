@@ -57,5 +57,5 @@ Needs another guardian
 ```
 
 Blocking means a rule written in one of the sources above is broken, a behaviour change is
-untested, or the system's shape changes without the SAD. Anything else is "worth fixing". Report only what you verified in the files; no finding
-without a location. An empty section is written `none`.
+untested, or the system's shape changes without the SAD. Anything else is "worth fixing". Report
+only what you verified in the files; no finding without a location. An empty section is written `none`.

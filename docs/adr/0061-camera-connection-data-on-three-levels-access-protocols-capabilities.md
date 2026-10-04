@@ -120,8 +120,7 @@ like the camera's.
 **f) Frigate reads the stream from its binding**: the transport from the stream binding, the port and
 account from that protocol's row, the paths from the streams.
 
-The screen that shows the
-three levels is framed in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability cards.
+The screen that shows the three levels is framed in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability cards.
 
 ## Options rejected
 

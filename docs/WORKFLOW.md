@@ -50,8 +50,6 @@ level between the ADR and the code. Each has its own home, nothing is copied.
 - **An accepted ADR is frozen**: only its status line changes. One exception: a link whose target no
   longer exists is fixed mechanically, repointed to the new home of what it pointed at, or removed
   with the sentence that only pointed at it. Nothing else in the ADR changes.
-- Low-level detail (byte frames, port catalogues, the SQL schema, payloads, route lists, timeouts) lives
-  in the **code**, never in a document.
 
 ## The SAD
 
@@ -94,9 +92,9 @@ Each document has a **nature**; respecting it is what stops it from swelling and
 
 ## Precedence (one piece of information, one home)
 
-Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` · the technical solution to
-`SAD.md` · the execution plan to **the issues** · how to use a feature to **the screen itself**
-(ADR-53).
+Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` · the system overview to
+`SAD.md` · a decision to its ADR · the execution plan to **the issues** · how to use a feature to
+**the screen itself** (ADR-53).
 
 Every document states its own role in its header. When in doubt, climb to the right level: vision,
 need, architecture, execution, use. Never copy information from one document into another, see the

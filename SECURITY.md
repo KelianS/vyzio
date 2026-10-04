@@ -55,8 +55,8 @@ repeated here.
 redirect. On the local network, the session cookie, the password and every preview image travel
 unencrypted, and anyone able to observe that network can read them.
 
-This is deliberate sequencing rather than an oversight: it is recorded as a target-versus-reality
-gap of the architecture document, and it is tracked in
+This is deliberate sequencing rather than an oversight: it is stated in the threat model of the
+architecture document, and it is tracked in
 [issue #67](https://github.com/KelianS/vyzio/issues/67). Until it closes, treat an installation as
 only as private as the network it sits on.
 
