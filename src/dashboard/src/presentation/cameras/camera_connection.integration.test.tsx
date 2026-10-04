@@ -13,10 +13,12 @@ import {
 import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
+import { TESTS_SUSPENDED } from './cameras.formatters'
 import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
 import {
   DETECTION_FALLS_BACK,
   RECORDING_STREAM_KEPT,
+  STREAM_NOT_LISTED,
   ROLE_CONSEQUENCES,
   streamFailure,
 } from './stream_lines'
@@ -251,16 +253,17 @@ describe('CameraConnectionView', () => {
     expect(network.sent).toContainEqual(expect.objectContaining({ route: DELETE }))
   })
 
-  it('onLoad_ShouldShowTheStreamFirstWithTheCameraStatusAndNoProtocol_WhenTheCameraHasCapabilities', async () => {
+  it('onLoad_ShouldShowTheStreamFirstInTheCapabilityWordsAndNoProtocol_WhenTheCameraHasCapabilities', async () => {
     // Arrange
-    connectionNetwork({ [BINDINGS]: ok([ptzCapability]) })
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzCapability]) })
 
     // Act
     renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
 
     // Assert
     const [stream, orientation] = await capabilityCards()
-    expect(stream).toHaveTextContent('Flux vidéoConnectée')
+    await waitFor(() => expect(stream).toHaveTextContent('Flux vidéoFonctionne'))
+    expect(stream).not.toHaveTextContent('Connectée')
     expect(orientation).toHaveTextContent('OrientationFonctionne')
     expect(stream).not.toHaveTextContent('RTSP')
     expect(orientation).not.toHaveTextContent('ONVIF')
@@ -281,7 +284,7 @@ describe('CameraConnectionView', () => {
 
     // Assert
     const [rtspBox, onvifBox] = await protocolRows()
-    expect(rtspBox).toHaveTextContent('RTSPRépond')
+    expect(rtspBox).toHaveTextContent('RTSPAccessible')
     expect(within(rtspBox).getByLabelText('Port')).toHaveValue(554)
     expect(onvifBox).toHaveTextContent('ONVIFPas encore vérifié')
     expect(within(onvifBox).getByLabelText('Port')).toHaveValue(2020)
@@ -442,7 +445,7 @@ describe('CameraConnectionView', () => {
     await userEvent.click(box.getByRole('button', { name: 'Vérifier' }))
 
     // Assert
-    expect(await box.findByText('Refuse l’accès')).toBeInTheDocument()
+    expect(await box.findByText('Accès refusé')).toBeInTheDocument()
     expect(
       box.getByText(
         'La caméra refuse le compte : vérifiez celui de la caméra, ou le compte spécifique de ce protocole.',
@@ -488,7 +491,7 @@ describe('CameraConnectionView', () => {
 
   it('onLoad_ShouldSayTheStreamFailsAndSuspendTheOtherChecks_WhenTheCameraIsOffline', async () => {
     // Arrange
-    connectionNetwork({ [BINDINGS]: ok([ptzCapability]) })
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzCapability]) })
 
     // Act
     renderScreen(
@@ -499,7 +502,8 @@ describe('CameraConnectionView', () => {
     // Assert
     const orientation = await cardOf('Orientation')
     const [stream] = await capabilityCards()
-    expect(stream).toHaveTextContent('Hors ligne')
+    expect(stream).toHaveTextContent('Flux vidéoEn échec')
+    expect(stream).not.toHaveTextContent('Hors ligne')
     expect(stream).toHaveTextContent(
       'Vyzio ne reçoit pas les images : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     )
@@ -761,7 +765,7 @@ describe('CameraConnectionView', () => {
       ),
     ).toBeDisabled()
     expect(
-      screen.getByText('Les autres capacités se vérifient une fois le flux vidéo rétabli.'),
+      screen.getByText('Les autres capacités se vérifient une fois que le flux vidéo fonctionne.'),
     ).toBeVisible()
   })
 
@@ -1031,7 +1035,9 @@ describe('CameraConnectionView', () => {
     expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Détecter automatiquement' })).toBeEnabled()
     expect(
-      screen.queryByText('Les autres capacités se vérifient une fois le flux vidéo rétabli.'),
+      screen.queryByText(
+        'Les autres capacités se vérifient une fois que le flux vidéo fonctionne.',
+      ),
     ).toBeNull()
   })
 
@@ -1312,6 +1318,110 @@ describe('CameraConnectionView', () => {
         'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.',
       ),
     ).toBeInTheDocument()
+    expect(card.getByText('En échec')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheStreamIsNotCheckedYet_WhenItsConnectionChangedSinceTheLastCheck', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(
+        makeCamera({ status: 'needs_attention', connected: false, lastReachabilityCheckAt: null }),
+      ),
+    )
+
+    // Assert
+    const card = await cardOf('Flux vidéo')
+    expect(await card.findByText('Pas encore vérifié')).toBeInTheDocument()
+    expect(
+      card.getByText('Lancez « Vérifier » pour confirmer que Vyzio reçoit les images.'),
+    ).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheStreamFailsAndSuspendTheOtherChecks_WhenOnlyThePortAnswersAfterAFailedCheck', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([
+        { ...rtspStream, verified: false, status: CapabilityStatus.Failed },
+        ptzCapability,
+      ]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Assert
+    const card = await cardOf('Flux vidéo')
+    const orientation = await cardOf('Orientation')
+    expect(await card.findByText('En échec')).toBeInTheDocument()
+    expect(orientation.getByRole('button', { name: 'Vérifier' })).toBeDisabled()
+    expect(screen.getByText(TESTS_SUSPENDED)).toBeInTheDocument()
+    expect(
+      card.getByText(
+        'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldLeaveTheOtherChecksOpen_WhenOnlyTheSurveillanceSetUpFailed', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzCapability]) })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'config_error', connected: false, ptzSupported: true })),
+    )
+
+    // Assert
+    const card = await cardOf('Flux vidéo')
+    const orientation = await cardOf('Orientation')
+    expect(await card.findByText('Fonctionne')).toBeInTheDocument()
+    expect(orientation.getByRole('button', { name: 'Vérifier' })).toBeEnabled()
+  })
+
+  it('onDetect_ShouldNotSayTheCameraListsNoStream_WhenDetectionFails', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([streamToConfigure]),
+      [DETECT]: failure(500),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraWithoutStream))
+    await cardOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
+
+    // Assert
+    expect(await screen.findByText(/capabilities\/detect · 500/)).toBeVisible()
+    expect(screen.queryByText(STREAM_NOT_LISTED)).not.toBeInTheDocument()
+  })
+
+  it('onDetect_ShouldSayTheCameraListsNoStreamAndAskForThePath_WhenDetectionLeavesTheStreamUnchosen', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([streamToConfigure]),
+      [DETECT]: ok(),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraWithoutStream))
+    await cardOf('Flux vidéo')
+    network.answer(BINDINGS, ok([streamToConfigure]))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
+
+    // Assert
+    const card = await cardOf('Flux vidéo')
+    expect(
+      await card.findByText(
+        'La caméra ne donne pas la liste de ses flux : indiquez le chemin du flux dans les options.',
+      ),
+    ).toBeInTheDocument()
+    await userEvent.click(card.getByText('Options'))
+    expect(card.getByLabelText('Chemin du flux')).toBeInTheDocument()
   })
 
   it('onAddStream_ShouldAddATypedPathAndCheckIt_WhenTheCameraListsNoStream', async () => {
@@ -1803,7 +1913,8 @@ describe('CameraConnectionView, a capability to confirm', () => {
     expect(
       await card.findByText('Vous avez indiqué que la caméra n’a pas bougé.'),
     ).toBeInTheDocument()
-    expect(card.getByText('En échec')).toBeInTheDocument()
+    expect(card.getByText('Non confirmée')).toBeInTheDocument()
+    expect(card.queryByText('En échec')).not.toBeInTheDocument()
     expect(
       card.getByText('Essayer fait tourner la caméra un peu, puis la ramène.'),
     ).toBeInTheDocument()
@@ -1830,6 +1941,8 @@ describe('CameraConnectionView, a capability to confirm', () => {
 
     // Assert
     expect(await card.findByText('La caméra a bougé ?')).toBeInTheDocument()
+    expect(card.getByText('À confirmer')).toBeInTheDocument()
+    expect(card.queryByText('Non confirmée')).not.toBeInTheDocument()
     expect(network.sent.map((request) => request.route)).toContain(TRY_PTZ)
   })
 

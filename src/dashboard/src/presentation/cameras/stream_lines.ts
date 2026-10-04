@@ -1,13 +1,16 @@
-import type { BadgeTone } from '../../common/components/badge'
 import type { ChoiceOption, SettingOption } from '../../common/settings/setting_declaration'
-import type { SupportedProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import {
   StreamRole,
   type AvailableStream,
   type CameraStream,
   type CameraStreamLineup,
 } from '../../domain/entities/camera_stream.entity'
-import { CAPABILITY_STATE_PILLS, UNCHECKED_PILL } from './capability_state'
+import { ProtocolStatus, type CameraProtocol } from '../../domain/entities/camera_protocol.entity'
+import type {
+  CameraCapabilityBinding,
+  SupportedProtocol,
+} from '../../domain/entities/camera_capability_binding.entity'
+import { CAPABILITY_STATE_PILLS, CapabilityState, type StatePill } from './capability_state'
 import { PROTOCOL_LABELS } from './protocol_labels'
 
 /** Where a stream line stands, its pill (DESIGN SYSTEM § Capability cards, stream lines). */
@@ -18,10 +21,11 @@ export const StreamLineState = {
 } as const
 export type StreamLineState = (typeof StreamLineState)[keyof typeof StreamLineState]
 
-export const STREAM_LINE_PILLS: Record<StreamLineState, { label: string; tone: BadgeTone }> = {
+/** A stream line speaks the capability level's words (DESIGN SYSTEM § UX vocabulary, States). */
+export const STREAM_LINE_PILLS: Record<StreamLineState, StatePill> = {
   working: CAPABILITY_STATE_PILLS.working,
   failed: CAPABILITY_STATE_PILLS.failed,
-  unchecked: UNCHECKED_PILL,
+  unchecked: CAPABILITY_STATE_PILLS.unchecked,
 }
 
 export function streamLineState(stream: CameraStream): StreamLineState {
@@ -42,6 +46,25 @@ const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
 export function asksStreamPath(protocol: SupportedProtocol): boolean {
   return ASKS_STREAM_PATH[protocol]
 }
+
+/** After detection, a stream still unchosen while a path-addressed protocol answers: the camera listed no stream over it (ADR-65 e). */
+export function streamNotListed(
+  binding: CameraCapabilityBinding,
+  protocols: CameraProtocol[],
+  detected: boolean,
+): boolean {
+  return (
+    detected &&
+    !binding.isConfigured &&
+    protocols.some(
+      (entry) => ASKS_STREAM_PATH[entry.protocol] && entry.status === ProtocolStatus.Answers,
+    )
+  )
+}
+
+/** What the stream card says when detection could not choose its stream for want of a listed one. */
+export const STREAM_NOT_LISTED =
+  'La caméra ne donne pas la liste de ses flux : indiquez le chemin du flux dans les options.'
 
 export const ROLE_LABELS: Record<StreamRole, string> = {
   none: 'Aucun',
@@ -109,15 +132,31 @@ export function streamQuality(stream: StreamFacts): string {
   return stream.fps !== null ? `${size} · ${stream.fps} img/s` : size
 }
 
-/** The card's one extra sentence when detection is not covered as chosen; null when it is (ADR-65 c). */
-export function streamCoverageLine(lineup: CameraStreamLineup | null): string | null {
-  if (lineup === null) return null
+/** A detection stream of its own whose check failed: detection stopped, recording did not (ADR-65 c). */
+function detectionInterrupted(lineup: CameraStreamLineup | null): boolean {
+  if (lineup === null) return false
   const detect = lineup.streams.find((stream) => stream.id === lineup.detectStreamId)
-  const detectFails =
+  return (
     detect !== undefined &&
     detect.id !== lineup.recordStreamId &&
     streamLineState(detect) === StreamLineState.Failed
-  if (detectFails)
+  )
+}
+
+/** The stream card's one state: its own check, failed as well while detection is interrupted (SPECS 2.3). */
+export function streamCardState(
+  check: CapabilityState,
+  lineup: CameraStreamLineup | null,
+): CapabilityState {
+  return check === CapabilityState.Working && detectionInterrupted(lineup)
+    ? CapabilityState.Failed
+    : check
+}
+
+/** The card's one extra sentence when detection is not covered as chosen; null when it is (ADR-65 c). */
+export function streamCoverageLine(lineup: CameraStreamLineup | null): string | null {
+  if (lineup === null) return null
+  if (detectionInterrupted(lineup))
     return 'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.'
   if (lineup.detectsOnRecordingStream) return 'La détection passe par le flux d’enregistrement.'
   return null

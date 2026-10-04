@@ -27,6 +27,7 @@ export type CameraConnectionAction =
   | { type: 'CAMERA_GONE' }
   | { type: 'DETECT_STARTED' }
   | { type: 'DETECT_FINISHED' }
+  | { type: 'DETECT_SUCCEEDED' }
   | { type: 'TASK_STARTED'; capability: Capability; task: CapabilityTask }
   | { type: 'TASK_FINISHED'; capability: Capability }
   | { type: 'QUESTION_ASKED'; capability: Capability }

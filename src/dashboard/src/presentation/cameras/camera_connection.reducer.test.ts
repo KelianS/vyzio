@@ -272,4 +272,38 @@ describe('cameraConnectionReducer', () => {
     // Assert
     expect(next.streamPathAsked).toBe(false)
   })
+
+  it('cameraConnectionReducer_ShouldRememberDetectionRan_WhenItSucceeds', () => {
+    // Arrange
+    const state = buildInitialCameraConnectionUido()
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'DETECT_SUCCEEDED' })
+
+    // Assert
+    expect(next.detected).toBe(true)
+  })
+
+  it('cameraConnectionReducer_ShouldNotClaimDetectionRan_WhenItOnlyFinishes', () => {
+    // Arrange
+    const state = { ...buildInitialCameraConnectionUido(), detecting: true }
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'DETECT_FINISHED' })
+
+    // Assert
+    expect(next.detected).toBe(false)
+    expect(next.detecting).toBe(false)
+  })
+
+  it('cameraConnectionReducer_ShouldForgetDetectionRan_WhenAnotherCameraIsRead', () => {
+    // Arrange
+    const state = { ...buildInitialCameraConnectionUido(), detected: true }
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'BINDINGS_STARTED' })
+
+    // Assert
+    expect(next.detected).toBe(false)
+  })
 })

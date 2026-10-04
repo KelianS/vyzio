@@ -1,4 +1,5 @@
 import type { BadgeTone } from '../../common/components/badge'
+import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -6,12 +7,19 @@ import type {
 } from '../../domain/entities/camera_capability_binding.entity'
 import { ProtocolStatus } from '../../domain/entities/camera_protocol.entity'
 
-/** Where a capability stands, the pill of its card (DESIGN SYSTEM § Capability cards). */
+/** A state pill: its word and its tone. */
+export interface StatePill {
+  label: string
+  tone: BadgeTone
+}
+
+/** Where a capability stands, the pill of its card and of a stream line (DESIGN SYSTEM § UX vocabulary, States). */
 export const CapabilityState = {
   Working: 'working',
   Failed: 'failed',
   ToConfirm: 'to_confirm',
   Rejected: 'rejected',
+  Unchecked: 'unchecked',
   Unconfigured: 'unconfigured',
   SwitchedOff: 'switched_off',
 } as const
@@ -25,11 +33,17 @@ export const SWITCHED_ON_AND_OFF: Record<Capability, boolean> = {
   image_settings: false,
 }
 
-export const CAPABILITY_STATE_PILLS: Record<CapabilityState, { label: string; tone: BadgeTone }> = {
+// The one word both levels share: nobody asked yet (DESIGN SYSTEM § UX vocabulary, States).
+const NOT_CHECKED_YET: StatePill = { label: 'Pas encore vérifié', tone: 'neutral' }
+
+/** The capability level's words, the same on every card and stream line. */
+export const CAPABILITY_STATE_PILLS: Record<CapabilityState, StatePill> = {
   working: { label: 'Fonctionne', tone: 'ok' },
   failed: { label: 'En échec', tone: 'danger' },
   to_confirm: { label: 'À confirmer', tone: 'warn' },
-  rejected: { label: 'En échec', tone: 'danger' },
+  // The user's no is an answer, not a failure (SPECS 2.3).
+  rejected: { label: 'Non confirmée', tone: 'neutral' },
+  unchecked: NOT_CHECKED_YET,
   unconfigured: { label: 'À configurer', tone: 'neutral' },
   switched_off: { label: 'Désactivée', tone: 'neutral' },
 }
@@ -64,6 +78,32 @@ export function capabilityState(
   return state
 }
 
+/** While its question is asked, a capability waits for the user's answer, a no given before included. */
+export function shownState(state: CapabilityState, asking: boolean): CapabilityState {
+  return asking ? CapabilityState.ToConfirm : state
+}
+
+/** The stream's own check, the camera's (ADR-65 f): never an open port alone, so the verdict of its last check rules. */
+export function streamCheckState(
+  binding: CameraCapabilityBinding,
+  camera: Camera,
+): CapabilityState {
+  if (!binding.isConfigured) return CapabilityState.Unconfigured
+  // Every connection change clears it, so nobody checked the stream since.
+  if (camera.lastReachabilityCheckAt === null) return CapabilityState.Unchecked
+  if (camera.status === CameraState.Offline) return CapabilityState.Failed
+  return STATE_OF_STATUS[binding.status]
+}
+
+/** Every other test goes through the stream's camera: while its check does not pass, they wait (SPECS 2.2). */
+export function otherTestsSuspended(
+  stream: CameraCapabilityBinding | undefined,
+  camera: Camera,
+): boolean {
+  if (stream === undefined) return !camera.connected
+  return streamCheckState(stream, camera) !== CapabilityState.Working
+}
+
 // The stream is a capability like the others, first among them and drawn on its own card.
 export const IS_STREAM: Record<Capability, boolean> = {
   stream: true,
@@ -78,20 +118,15 @@ export function streamBindingOf(
   return bindings.find((b) => IS_STREAM[b.capability])
 }
 
-/** A protocol box's pill: its last check, reach then login with its account (ADR-61). */
-const PROTOCOL_STATE_PILLS: Record<ProtocolStatus, { label: string; tone: BadgeTone }> = {
-  answers: { label: 'Répond', tone: 'ok' },
-  refused: { label: 'Refuse l’accès', tone: 'danger' },
-  unreachable: { label: 'Ne répond pas', tone: 'danger' },
+/** The protocol level's words, a box's pill: its last check, reach then login with its account (ADR-61). */
+const PROTOCOL_STATE_PILLS: Record<ProtocolStatus, StatePill> = {
+  answers: { label: 'Accessible', tone: 'ok' },
+  refused: { label: 'Accès refusé', tone: 'danger' },
+  unreachable: { label: 'Injoignable', tone: 'danger' },
 }
 
-export const UNCHECKED_PILL: { label: string; tone: BadgeTone } = {
-  label: 'Pas encore vérifié',
-  tone: 'neutral',
-}
-
-export function protocolPill(status: ProtocolStatus | null): { label: string; tone: BadgeTone } {
-  return status === null ? UNCHECKED_PILL : PROTOCOL_STATE_PILLS[status]
+export function protocolPill(status: ProtocolStatus | null): StatePill {
+  return status === null ? NOT_CHECKED_YET : PROTOCOL_STATE_PILLS[status]
 }
 
 // The way out of a failed capability depends on what its protocol said: wake it, fix the account, or try again.

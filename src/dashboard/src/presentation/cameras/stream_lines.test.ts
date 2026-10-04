@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
+import { makeCameraProtocol } from '../../testing/camera_protocol_fixture'
 import {
   makeAvailableStream,
   makeCameraStream,
@@ -11,12 +13,15 @@ import {
   addedStream,
   choiceOptions,
   roleOptions,
+  streamCardState,
   streamCoverageLine,
   streamFailure,
+  streamNotListed,
   streamLineState,
   streamQuality,
   streamReach,
 } from './stream_lines'
+import { CapabilityState } from './capability_state'
 
 const recording = makeCameraStream({ role: 'record' })
 const detecting = makeCameraStream({ id: 'sub', ordinal: 1, role: 'detect' })
@@ -95,6 +100,74 @@ describe('stream_lines', () => {
       expect(line).toBe(expected)
     },
   )
+
+  it.each([
+    {
+      name: 'streamCardState_ShouldSayFailed_WhenTheDetectionStreamFails',
+      check: CapabilityState.Working,
+      lineup: makeStreamLineup([recording, { ...detecting, verified: false }], {
+        detectStreamId: 'sub',
+      }),
+      expected: CapabilityState.Failed,
+    },
+    {
+      name: 'streamCardState_ShouldSayWorking_WhenDetectionRunsOnTheRecordingStream',
+      check: CapabilityState.Working,
+      lineup: makeStreamLineup([recording], { detectsOnRecordingStream: true }),
+      expected: CapabilityState.Working,
+    },
+    {
+      name: 'streamCardState_ShouldKeepTheCheck_WhenTheStreamItselfIsNotChecked',
+      check: CapabilityState.Unchecked,
+      lineup: makeStreamLineup([recording, { ...detecting, verified: false }], {
+        detectStreamId: 'sub',
+      }),
+      expected: CapabilityState.Unchecked,
+    },
+  ])('$name', ({ check, lineup, expected }) => {
+    // Arrange & Act
+    const state = streamCardState(check, lineup)
+
+    // Assert
+    expect(state).toBe(expected)
+  })
+
+  it.each([
+    {
+      name: 'streamNotListed_ShouldSaySo_WhenDetectionLeftTheStreamUnchosenWhileAPathProtocolAnswers',
+      binding: makeCapabilityBinding({ capability: 'stream', isConfigured: false }),
+      protocols: [makeCameraProtocol({ protocol: 'rtsp', status: 'answers' })],
+      detected: true,
+      expected: true,
+    },
+    {
+      name: 'streamNotListed_ShouldSayNothing_WhenDetectionHasNotRun',
+      binding: makeCapabilityBinding({ capability: 'stream', isConfigured: false }),
+      protocols: [makeCameraProtocol({ protocol: 'rtsp', status: 'answers' })],
+      detected: false,
+      expected: false,
+    },
+    {
+      name: 'streamNotListed_ShouldSayNothing_WhenNoPathProtocolAnswers',
+      binding: makeCapabilityBinding({ capability: 'stream', isConfigured: false }),
+      protocols: [makeCameraProtocol({ protocol: 'rtsp', status: 'unreachable' })],
+      detected: true,
+      expected: false,
+    },
+    {
+      name: 'streamNotListed_ShouldSayNothing_WhenTheStreamIsChosen',
+      binding: makeCapabilityBinding({ capability: 'stream', protocol: 'dvrip' }),
+      protocols: [makeCameraProtocol({ protocol: 'rtsp', status: 'answers' })],
+      detected: true,
+      expected: false,
+    },
+  ])('$name', ({ binding, protocols, detected, expected }) => {
+    // Arrange & Act
+    const notListed = streamNotListed(binding, protocols, detected)
+
+    // Assert
+    expect(notListed).toBe(expected)
+  })
 
   it('streamReach_ShouldNameThePathToo_WhenTheStreamGoesOverRtsp', () => {
     // Arrange

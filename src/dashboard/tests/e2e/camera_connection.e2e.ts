@@ -102,7 +102,7 @@ test.describe('CameraConnectionView three levels', () => {
     await expect(page.getByText('Protocole ajouté.')).toBeVisible()
 
     const onvif = page.getByRole('listitem', { name: 'ONVIF' })
-    await expect(onvif).toContainText('Répond')
+    await expect(onvif).toContainText('Accessible')
     await expect(
       page.getByRole('listitem', { name: 'RTSP' }).getByRole('button', { name: 'Retirer' }),
     ).toBeDisabled()
@@ -272,7 +272,7 @@ test.describe('CameraConnectionView camera without protocols', () => {
     await page.getByRole('button', { name: 'Rechercher les protocoles' }).click()
     await expect(page.getByText('Recherche terminée.')).toBeVisible()
 
-    await expect(page.getByRole('listitem', { name: 'DVRIP' })).toContainText('Répond')
+    await expect(page.getByRole('listitem', { name: 'DVRIP' })).toContainText('Accessible')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await expect(stream).toContainText('Choisissez comment Vyzio lit les images')
   })

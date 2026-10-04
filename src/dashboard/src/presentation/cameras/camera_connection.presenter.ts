@@ -379,6 +379,7 @@ export function buildCameraConnectionPresenter({
       dispatch({ type: 'DETECT_STARTED' })
       try {
         await container.detectCameraCapabilities.execute(cameraId)
+        dispatch({ type: 'DETECT_SUCCEEDED' })
         toast('Détection terminée.', 'success')
         readConnection(cameraId)
       } catch (e) {

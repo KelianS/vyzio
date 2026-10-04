@@ -21,28 +21,35 @@ export const STREAM_REPAIR =
 export const DESTRUCTIVE_OUTLINE = 'border-destructive text-destructive hover:bg-destructive/10'
 
 /** Why a capability test cannot run, next to every button it greys out (SPECS 2.2). */
-export const TESTS_SUSPENDED = 'Les autres capacités se vérifient une fois le flux vidéo rétabli.'
+export const TESTS_SUSPENDED =
+  'Les autres capacités se vérifient une fois que le flux vidéo fonctionne.'
 
-// What went wrong for each camera status that is not online, and the way out (SPECS 1.5).
+const IMAGE_DOES_NOT_ARRIVE =
+  'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.'
+
+// Why the stream's check failed, by what the camera answers now; config_error is the camera's, not the stream's (SPECS 1.5).
 const STREAM_FAILURE_LINES: Record<string, string> = {
   [CameraState.Offline]: `Vyzio ne reçoit pas les images : ${STREAM_REPAIR}`,
-  [CameraState.Degraded]:
-    'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.',
-  [CameraState.ConfigError]: 'Vyzio n’a pas pu préparer la surveillance de cette caméra.',
+  [CameraState.Degraded]: IMAGE_DOES_NOT_ARRIVE,
+  [CameraState.Online]: IMAGE_DOES_NOT_ARRIVE,
 }
 
-/** The state line of the stream card; a status with no failure line of its own has not been checked since it changed. */
-export function formatStreamStateLine(camera: Camera): string {
-  if (camera.connected) {
-    return camera.lastSuccessfulFrameAt
-      ? `Dernière image confirmée le ${formatCheckedAt(camera.lastSuccessfulFrameAt)}`
-      : 'La caméra répond.'
-  }
+/** The state line of a failed stream check; a status that says nothing more reads as a plain failed check. */
+export function formatStreamFailureLine(camera: Camera): string {
   return (
-    STREAM_FAILURE_LINES[camera.status] ??
-    'Pas encore vérifié : lancez « Vérifier » pour confirmer que Vyzio reçoit les images.'
+    STREAM_FAILURE_LINES[camera.status] ?? `La dernière vérification a échoué : ${STREAM_REPAIR}`
   )
 }
+
+/** The state line of a working stream: the last image seen, else its last check. */
+export function formatStreamWorkingLine(camera: Camera, verifiedAt: string | null): string | null {
+  if (camera.lastSuccessfulFrameAt)
+    return `Dernière image confirmée le ${formatCheckedAt(camera.lastSuccessfulFrameAt)}`
+  return verifiedAt ? `Vérifié le ${formatCheckedAt(verifiedAt)}` : null
+}
+
+/** The state line of a stream nobody checked since its connection changed. */
+export const STREAM_UNCHECKED = 'Lancez « Vérifier » pour confirmer que Vyzio reçoit les images.'
 
 export function formatCheckedAt(iso: string): string {
   return new Date(iso).toLocaleString('fr-FR', {
