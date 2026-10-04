@@ -1,6 +1,6 @@
 # Investigation — V380 Pro : mode vie privée via ONVIF (juin 2026)
 
-> Résultats des tests live sur V380 Pro 192.168.1.135.
+> Résultats des tests live sur V380 Pro 192.168.1.20.
 
 ## Ports ouverts
 

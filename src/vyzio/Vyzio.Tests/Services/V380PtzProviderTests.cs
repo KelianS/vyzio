@@ -31,7 +31,7 @@ public class V380PtzProviderTests
     {
         // Arrange
         var camera = new Camera { Id = "cam", Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = "127.0.0.1" };
-        camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 26970853;
+        camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 87654321;
         var binding = new CameraCapabilityBinding
         {
             CameraId = "cam",

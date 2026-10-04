@@ -25,7 +25,7 @@ describe('connectionValuesOf', () => {
       makeCameraProtocol({
         protocol: 'v380',
         effectivePort: 8800,
-        deviceId: 26970853,
+        deviceId: 87654321,
         hasSpecificAccount: true,
         username: 'viewer',
       }),
@@ -42,7 +42,7 @@ describe('connectionValuesOf', () => {
       specificAccount: true,
       username: 'viewer',
       password: '',
-      deviceId: '26970853',
+      deviceId: '87654321',
     })
     expect(values['protocol:rtsp'].port).toBeNull()
   })
@@ -84,10 +84,10 @@ describe('protocolInputOf', () => {
 
   it('protocolInputOf_ShouldSendTheDeviceNumber_WhenOneIsTyped', () => {
     // Arrange & Act
-    const input = protocolInputOf({ ...box, deviceId: '26970853' })
+    const input = protocolInputOf({ ...box, deviceId: '87654321' })
 
     // Assert
-    expect(input.deviceId).toBe(26970853)
+    expect(input.deviceId).toBe(87654321)
   })
 })
 
