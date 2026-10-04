@@ -93,7 +93,7 @@ public class GetCameraStatusUseCaseTests
 
         Assert.NotNull(result);
         Assert.True(result!.NeedsAttention);
-        Assert.Equal("Configuration incomplete. Ajoutez le chemin RTSP, puis lancez la verification.", result.Guidance);
+        Assert.Equal("Configuration incomplete. Le flux principal n'a pas de chemin : ajoutez le bon flux dans les options du flux video.", result.Guidance);
     }
 
     [Fact]

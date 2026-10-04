@@ -276,7 +276,9 @@ describe('CameraConnectionView', () => {
     const stream = await optionsOf('Flux vidéo')
 
     // Assert
-    expect(await streamLine('1920 × 1080 · 15 img/s')).toBeTruthy()
+    expect(
+      await stream.findByRole('listitem', { name: '1920 × 1080 · 15 img/s' }),
+    ).toBeInTheDocument()
     expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('RTSP')
     expect(stream.queryByRole('combobox', { name: 'Flux' })).not.toBeInTheDocument()
     expect(stream.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()

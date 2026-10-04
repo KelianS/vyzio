@@ -82,6 +82,7 @@ function DropdownControl({
           <SelectItem
             key={option.value}
             value={option.value}
+            title={option.hint}
             disabled={!!option.unavailable}
             // Greyed by its colour, not the primitive's fade, so the reason stays readable.
             className={cn(

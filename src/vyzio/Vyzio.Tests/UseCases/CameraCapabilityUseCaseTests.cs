@@ -1,4 +1,4 @@
-using NSubstitute;
+﻿using NSubstitute;
 using Vyzio.Core.Common;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
