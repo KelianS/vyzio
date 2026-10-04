@@ -79,7 +79,7 @@ Une phrase de contexte, si elle aide.
 - Quelques conseils courts, propres au constructeur
 ```
 
-Ni port, ni chemin de flux, ni protocole : Vyzio les trouve seul. Ni comment Vyzio fonctionne à l'intérieur, ni ce qu'il fera plus tard.
+Ni port, ni chemin de flux, ni protocole, ni comment Vyzio fonctionne à l'intérieur, ni ce qu'il fera plus tard.
 
 Les liens Markdown `[label](url)` sont cliquables dans l'UI. Les assets statiques vont dans `vendors/assets/` et sont servis via `/api/cameras/vendor-assets/<nom>`.
 

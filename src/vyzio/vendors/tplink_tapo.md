@@ -12,5 +12,5 @@ Vyzio se connecte avec un **compte caméra**, différent de votre compte Tapo ha
 ## Si cela ne fonctionne pas
 
 - Utilisez le compte caméra, pas votre compte Tapo.
-- Après une dizaine de mots de passe refusés, la caméra refuse toute connexion pendant environ vingt-cinq minutes, même avec le bon. Vérifiez l'identifiant saisi, puis patientez sans réessayer.
+- Après plusieurs mots de passe refusés, la caméra refuse toute connexion pendant environ vingt-cinq minutes, même avec le bon. Vérifiez l'identifiant saisi, puis patientez sans réessayer.
 - Certains modèles sur batterie n'ont pas de compte caméra : ils ne peuvent pas être ajoutés.
