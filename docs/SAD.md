@@ -54,7 +54,7 @@ network the user operates, never through an open port (ADR-51).
 ```mermaid
 flowchart TB
     browser(["Browser"])
-    subgraph hub["Vyzio hub, one Docker network"]
+    subgraph hub["Vyzio hub, one machine"]
         dash["Dashboard<br/>web server and static interface"]
         api["API<br/>product logic"]
         db[("Database<br/>one file, in the API's volume")]
@@ -89,7 +89,7 @@ flowchart TB
 | Dashboard | Serves the interface and relays the API and the liveness probe; the only service published to the user | Hold state, reach Frigate or a camera | ADR-08, ADR-40, ADR-42, ADR-53, ADR-55 |
 | API | The product: cameras (protocols, capabilities, streams, PTZ, privacy), the Frigate configuration and its application, profiles, notifications and commands, history read from Frigate, the owner account and sessions; the one authentication boundary | Decode video, detect, record, or keep a detection | ADR-04, ADR-07, ADR-12, ADR-22, ADR-49, ADR-50, ADR-54, ADR-61 |
 | Database | Vyzio's own data (§ 6) | Hold a detection, a frame or an embedding | ADR-06, ADR-49 |
-| MQTT broker | The event bus between Frigate and Vyzio | Leave the Docker network, persist anything | ADR-04, ADR-35 |
+| MQTT broker | The event bus between Frigate and Vyzio | Get reached from outside the machine, persist anything | ADR-04, ADR-35 |
 | Frigate | Ingests the streams, detects, recognises faces, records, keeps clips and events, serves frames and media to the API | Get reached by the user, decide what is signalled, hold Vyzio's data | ADR-01, ADR-03, ADR-34, ADR-37, ADR-39 |
 | go2rtc (inside the Frigate container) | Turns a DVRIP camera into a stream Frigate reads like any other | Get configured by the user | ADR-19 |
 
@@ -98,15 +98,15 @@ flowchart TB
 
 ## 4. Network flows
 
-Every flow the system opens. "Docker network" means a flow that never leaves the hub.
+Every flow the system opens. "Docker network" and "host loopback" mean a flow that never leaves the hub.
 
 | Source | Direction | Destination | Protocol | Port | Authentication |
 |---|---|---|---|---|---|
 | Browser, home network | to | Dashboard | HTTP, in the clear (#67) | 8080, the one published port | Owner session cookie (ADR-54) |
-| Dashboard | to | API, Docker network | HTTP | 8443 | The owner session cookie, passed through |
-| API | to | Frigate, Docker network | HTTP REST | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
+| Dashboard | to | API, host loopback | HTTP | 8443 | The owner session cookie, passed through |
+| API | to | Frigate, host loopback | HTTP REST | 5000 | None: unreachable from outside the hub |
 | Frigate | to | MQTT broker, Docker network | MQTT | 1883 | None, anonymous |
-| API | to and from | MQTT broker, Docker network | MQTT: subscribes to events, publishes live tuning | 1883 | None, anonymous |
+| API | to and from | MQTT broker, host loopback | MQTT: subscribes to events, publishes live tuning | 1883 | None, anonymous |
 | Frigate | to | Camera | RTSP | 554 by default, set per camera | Camera account, written in the generated configuration |
 | go2rtc | to | Camera | DVRIP | 34567 by default, set per camera | Camera account, DVRIP login |
 | Frigate | to | go2rtc, inside its container | RTSP | 8554, loopback | None |
@@ -115,7 +115,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Camera | DVRIP | 34567 by default, set per camera | DVRIP login |
 | API | to | Camera | V380 | TCP 8800 by default; UDP 10008 to find the device number, to the camera then its subnet broadcast | V380 handshake with the device number |
 | API | to | Camera | Tapo KLAP over HTTP | 80 by default, set per camera | KLAP handshake with the Tapo cloud account, presented to the camera only (ADR-61) |
-| API | to | Home network, discovery | ICMP, TCP connect, reverse DNS; WS-Discovery multicast (UDP 3702) and the ARP table, which do not get past the Docker bridge (#251) | A fixed set of camera ports, over the configured address ranges | None: only handshakes that need no account (ADR-32) |
+| API | to | Home network, discovery | ICMP, TCP connect, reverse DNS, WS-Discovery multicast (UDP 3702); reads the host's ARP table | A fixed set of camera ports, over the subnets of the host's own interfaces unless ranges are configured | None: only handshakes that need no account (ADR-32) |
 | API | to | Docker engine of the host | Docker API, Unix socket | none | Root-equivalent (§ 8) |
 | API | to | Telegram | HTTPS; commands fetched by long polling | 443, outbound only | Bot token (ADR-52) |
 | API | to | Discord | HTTPS and a WebSocket gateway | 443, outbound only | Bot token (ADR-52) |
@@ -251,14 +251,16 @@ exception is the image of a notification, sent to the channels the user set up (
 
 | Container | Image | Published | State | Privilege |
 |---|---|---|---|---|
-| Dashboard | Vyzio, from the project registry | One port, to the home network | None | None |
-| API | Vyzio, from the project registry | None | Database and files volume; configuration volume, shared with Frigate | Privileged, to read the accelerators (ADR-34); the host's Docker socket |
-| MQTT broker | Mosquitto | None | None | None |
-| Frigate, with go2rtc | Frigate, a pinned version | API on the host's loopback only | Configuration volume; media volume | Privileged, for the accelerators |
+| Dashboard | Vyzio, from the project registry | Listens on one port of the host, to the home network | None | None |
+| API | Vyzio, from the project registry | None: listens on the host's loopback only | Database and files volume; configuration volume, shared with Frigate | Privileged, to read the accelerators (ADR-34); the host's Docker socket |
+| MQTT broker | Mosquitto | On the host's loopback only | None | None |
+| Frigate, with go2rtc | Frigate, a pinned version | On the host's loopback only | Configuration volume; media volume | Privileged, for the accelerators |
 
-One Compose stack on one machine, one Docker network. The API exposes two anonymous probes: liveness,
-read by the container healthcheck and the only one relayed by the dashboard, and readiness (database,
-broker, Frigate), kept on the Docker network (ADR-55).
+One Compose stack on one machine. The API and the dashboard share the host's network, so discovery
+sees the home network (ADR-32) and the dashboard reaches the API on the loopback; Frigate and the
+broker share one Docker network. The API exposes two anonymous probes: liveness, read by the
+container healthcheck and the only one relayed by the dashboard, and readiness (database, broker,
+Frigate), never relayed (ADR-55).
 
 ---
 
@@ -270,7 +272,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Someone on the home network reads the traffic | **Not mitigated yet**: the entry point is plain HTTP (#67) |
 | A copy of the database file | Password hashed; camera accounts and channel tokens readable (#247) |
 | Frigate reached directly | Bound to the host's loopback, every access through the API (ADR-16, ADR-17) |
-| Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
+| Code execution in the API | Accepted: it holds the Docker socket, so the machine. It listens on the host's loopback only, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
 | A command from a stranger on a messaging channel | Only paired, revocable conversations are heard; anything else is ignored without an answer (ADR-50) |
 | A camera account locked out by guesses | Discovery and the ONVIF endpoint search present no account (ADR-32, ADR-56) |
 | Remote access exposing the home network | Overlay peer, end to end encrypted, the home network not advertised (ADR-51) |
@@ -287,7 +289,6 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | The disk fills with recordings without warning | #64 |
 | A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
 | Remote access waits for an encrypted entry point | #62, #67 |
-| Discovery misses multicast announcements and MAC hints from the Docker bridge | #251 |
 | Frigate's own outbound calls are not decided | #250 |
 | The live view is a refreshed still image (ADR-16); a real stream would add a flow from the hub to the browser | #47 |
 | The user cannot yet export or erase their data | #69 |

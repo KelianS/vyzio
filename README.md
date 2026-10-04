@@ -133,11 +133,11 @@ docker compose up -d
 Every value ships with a production-ready default. Override through `VYZIO_*` variables in
 `docker-compose.yml`:
 
-| Variable                      | Default               | Description                                             |
-| ----------------------------- | --------------------- | ------------------------------------------------------- |
-| `VYZIO_TIME_ZONE`             | system TZ             | IANA time zone, e.g. `Europe/Paris`                      |
-| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)*              | Network range scanned for cameras, e.g. `192.168.1.0/24` |
-| `VYZIO_FRIGATE_API_BASE_URL`  | `http://frigate:5000` | Internal Frigate URL; leave alone outside custom deploys |
+| Variable                      | Default                 | Description                                                      |
+| ----------------------------- | ----------------------- | ---------------------------------------------------------------- |
+| `VYZIO_TIME_ZONE`             | system TZ               | IANA time zone, e.g. `Europe/Paris`                              |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | the host's subnets      | Network range scanned for cameras instead, e.g. `192.168.1.0/24` |
+| `VYZIO_FRIGATE_API_BASE_URL`  | `http://127.0.0.1:5000` | Internal Frigate URL; leave alone outside custom deploys         |
 
 Full list in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 

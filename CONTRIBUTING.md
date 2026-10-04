@@ -27,7 +27,7 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task docs:capture` | Regenerate the README screenshots from the e2e fixtures |
 | `task pr:capture` / `task pr:screenshots` | Shoot / publish the screenshots of a pull request |
 
-Docker commands run via `wsl docker compose ...` under the hood, since Docker is only reachable through WSL on Windows dev machines.
+Docker commands run via `wsl docker compose ...` under the hood, since Docker is only reachable through WSL on Windows dev machines. The API runs on the host's network, which is WSL's: Windows reaches it on `127.0.0.1:8443`, and discovery sweeps WSL's own subnet, so under WSL's default NAT networking set `VYZIO_DISCOVERY_PROBE_CIDRS` (or switch WSL to mirrored networking) to find the cameras of your home network.
 
 ### Documentation screenshots
 
@@ -90,7 +90,7 @@ CI reports both rates on every pull request, in one comment kept up to date, and
 
 | Variable | Default | Description |
 |---|---|---|
-| `VYZIO_FRIGATE_API_BASE_URL` | `http://frigate:5000` | Frigate REST API base URL |
+| `VYZIO_FRIGATE_API_BASE_URL` | `http://127.0.0.1:5000` | Frigate REST API base URL, as the API reaches it from the host's network |
 | `VYZIO_FRIGATE_CONFIG_PATH` | `/config/config.yml` | Where Vyzio writes the generated Frigate config |
 | `VYZIO_FRIGATE_APPLY_COMMAND` | `docker restart vyzio-frigate` | Shell command run after config is written. Set to empty string to disable. |
 | `VYZIO_FRIGATE_DATABASE_PATH` | `/media/frigate/frigate.db` | Frigate SQLite DB path (read by Vyzio for clip/snapshot lookups) |
@@ -100,7 +100,8 @@ CI reports both rates on every pull request, in one comment kept up to date, and
 
 | Variable | Default | Description |
 |---|---|---|
-| `VYZIO_FRIGATE_MQTT_HOST` | `mqtt` | MQTT broker hostname |
+| `VYZIO_FRIGATE_MQTT_HOST` | `127.0.0.1` | MQTT broker hostname, as the API reaches it from the host's network |
+| `VYZIO_FRIGATE_MQTT_HOST_FOR_FRIGATE` | `mqtt` | MQTT broker hostname written into Frigate's configuration, as Frigate reaches it from the Docker network |
 | `VYZIO_FRIGATE_MQTT_PORT` | `1883` | MQTT broker port |
 | `VYZIO_FRIGATE_MQTT_TOPIC` | `frigate/events` | Topic Frigate publishes events on |
 | `VYZIO_FRIGATE_MQTT_CLIENT_ID` | `vyzio-api` | MQTT client identifier |
@@ -109,9 +110,8 @@ CI reports both rates on every pull request, in one comment kept up to date, and
 
 | Variable | Default | Description |
 |---|---|---|
-| `VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS` | `false` | Auto-detect local subnets from network interfaces |
 | `VYZIO_DISCOVERY_PROBE_HOSTS` | *(none)* | Comma-separated hosts to always probe, e.g. `192.168.1.10,192.168.1.20` |
-| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated CIDRs for unicast scan, e.g. `192.168.1.0/24` |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(the host's own subnets)* | Comma-separated CIDRs swept instead of the host's own subnets, e.g. `192.168.1.0/24` |
 | `VYZIO_DISCOVERY_RTSP_PORTS` | `554` | Comma-separated RTSP ports to test |
 | `VYZIO_DISCOVERY_RTSP_PATHS` | `/stream1,/stream2,/Streaming/Channels/101,...` | Comma-separated RTSP paths to probe |
 | `VYZIO_DISCOVERY_HTTP_PORTS` | `80,443,8080` | Comma-separated HTTP ports to test |
@@ -173,7 +173,7 @@ Use it as the single source of truth for sequencing documentation, implementatio
 ## Frigate responsibilities in dev
 
 - Frigate owns video ingestion, detection, local recordings, and its own SQLite state.
-- MQTT is provided by a dedicated Mosquitto broker on the Docker network; Frigate publishes there and Vyzio can consume the same broker in later slices.
+- MQTT is provided by a dedicated Mosquitto broker on the Docker network; Frigate publishes there, and the API, on the host's network, reaches it through the port published on the host's loopback.
 - The sample camera stays disabled until a real RTSP stream is available; enabling it is the only manual step needed to validate a test stream locally.
 - The mock overlay can enable `test_camera` automatically against a synthetic RTSP source when no physical camera is available.
 - The effective product config is always Vyzio-managed: `FrigateConfigApplier` generates `config.yml` from the camera list, written to the shared `vyzio-config` volume.

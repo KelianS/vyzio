@@ -32,8 +32,8 @@ a week rather than within a day. You will be credited in the advisory unless you
 ## What Vyzio assumes
 
 **Vyzio is built for a home network you trust, on a machine you own.** The whole system sits behind
-one entry point and one authentication boundary: the dashboard container is the only service
-published, the API is reachable only from the Docker network, and Frigate is bound to `127.0.0.1`
+one entry point and one authentication boundary: the dashboard is the only service the home
+network reaches, the API listens on the host's `127.0.0.1` only, and Frigate is bound to `127.0.0.1`
 and never routable from outside. Nothing is reachable before an owner password has been set.
 
 **Vyzio also assumes the machine is yours to give.** Its API container carries the host's Docker
@@ -43,7 +43,7 @@ there, since the restriction applies to the file and not to the commands sent th
 executes code inside `vyzio-api` therefore holds the machine.
 
 That is a deliberate trade for a product meant to install itself without asking anyone to write YAML,
-and it is bounded on the side that matters: the container is not published, and the command it runs is
+and it is bounded on the side that matters: the API listens on the host's loopback only, and the command it runs is
 read from the environment when the process starts, never from a request. No route can choose it.
 
 The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) § Threat model and is not
