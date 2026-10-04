@@ -171,7 +171,7 @@ la même réponse, faute de quoi le geste enfermerait dehors celui qui le fait.
   de l'accès distant ([ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)) ;
   après cet ADR, il devient le **seul** écart entre la cible et la réalité ([SAD](../SAD.md) §8).
 - **Le premier écran du produit change.** Une installation neuve ouvre sur la création du mot de
-  passe, avant l'ajout de la première caméra ([SAD](../SAD.md) §8.2).
+  passe, avant l'ajout de la première caméra ([SPECS](../SPECS.md) 8.3).
 - **Un écran qu'on ne peut pas franchir porte son aide sur place** : la connexion et la création du
   compte sont exactement le cas prévu par
   [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) — l'aide y vit dans
