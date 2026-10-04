@@ -476,6 +476,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 
 - les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) : c'est le parcours d'usage quotidien ;
 - si la caméra est hors ligne, les contrôles sont suspendus avec un message explicite (cf. §2.2) ;
+- les contrôles et les positions n'apparaissent, dans la vue live comme dans la section Pilotage des réglages de la caméra, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (§2.3) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir ([DESIGN SYSTEM](DESIGN%20SYSTEM.md) § Capability cards) ;
 - certaines caméras tournent à l'envers de la flèche pressée (leur firmware inverse le sens horizontal) : l'utilisateur peut inverser gauche et droite sur la capacité PTZ de la caméra ; Vyzio ne devine pas ce sens, et le réglage ne change ni le haut et le bas, ni les positions enregistrées ;
 - les positions enregistrées et leurs miniatures sont décrites en §9.3 et §9.4.
 
