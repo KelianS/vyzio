@@ -191,10 +191,11 @@ detail once:
   pill (the capability pills, `Désactivé` for a line switched off, `Pas encore vérifié` before its
   first check) with a short sentence and the diagnostic line of a failure, its role as a choice
   (`Enregistrement`, `Détection`, `Enregistrement et détection`, `Aucun`) whose tooltip names what
-  the role changes, then its actions: `Vérifier`, `Désactiver` or `Activer`, `Supprimer` with a
-  confirmation. The main stream's path is a declared setting on its own line over RTSP, the one place
-  it is shown. The stream that records is offered only the roles that record, and keeps `Désactiver`
-  and `Supprimer` disabled, the reason in a tooltip next to them; a line switched off shows no role.
+  the role changes, then its actions: `Vérifier`, `Désactiver` or `Activer`, `Retirer` with a
+  confirmation, the word of the page's other cards and protocol boxes. The line's `Vérifier` checks
+  that stream alone; the card's checks the camera, every enabled stream with it. The main stream's
+  path is a declared setting on its own line over RTSP, the one place it is shown. The stream that records is offered only the roles that record, and keeps `Désactiver`
+  and `Retirer` disabled, the reason in a tooltip next to them; a line switched off shows no role.
   `Ajouter un flux` closes the list: a protocol among the camera's stream protocols, a path over RTSP
   or a quality over DVRIP, a role, checked at once. A folded help panel under the list says the task:
   the default roles, said as such, how a role moves from one stream to another, and what changing the
