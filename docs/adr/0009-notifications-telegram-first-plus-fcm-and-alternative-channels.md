@@ -1,6 +1,6 @@
 # ADR-09 — Notifications : Telegram (prioritaire) + FCM + canaux alternatifs
 
-> Statut : Accepté
+> Statut : Accepté, amendé par [ADR-63](0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md) (plages horaires)
 
 ## Contexte
 

@@ -195,10 +195,9 @@ Compose deployment) is in place.
 
 What a 1.0 still waits on is tracked in the
 [issues](https://github.com/KelianS/vyzio/issues), notably
-[encrypted transport](https://github.com/KelianS/vyzio/issues/67),
-[per-camera areas of interest](https://github.com/KelianS/vyzio/issues/68), and
-[data export and erasure](https://github.com/KelianS/vyzio/issues/69). The transport gap is the one
-to read before deploying: [`SECURITY.md`](SECURITY.md) says what it means in practice.
+[per-camera areas of interest](https://github.com/KelianS/vyzio/issues/68) and
+[data export and erasure](https://github.com/KelianS/vyzio/issues/69). Read
+[`SECURITY.md`](SECURITY.md) before deploying: the home network is served in the clear, by design.
 
 ---
 
