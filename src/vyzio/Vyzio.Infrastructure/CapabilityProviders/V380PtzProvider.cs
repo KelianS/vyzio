@@ -9,7 +9,7 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // Each step sends one 16-byte PTZ packet on the stream connection (~100ms movement).
 // Continuous move is not supported — the protocol requires a persistent stream loop for
 // sustained movement, which is not implemented here (step-based PTZ is sufficient, ADR-22).
-// The device id comes from V380DeviceIdBootstrap (docs/design/camera-connection.md).
+// The device id comes from V380DeviceIdBootstrap (ADR-61).
 internal sealed class V380PtzProvider(
     V380Client client,
     PtzMoveRunner runner,

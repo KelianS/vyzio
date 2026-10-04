@@ -61,7 +61,7 @@ public sealed class OnvifEndpointResolverTests
     };
 
     [Fact]
-    public async Task ResolveAsync_ShouldFindTheServiceOnItsRealPortAndPath_WhenTheyAreNotTheCommonConvention()
+    public async Task ResolveAsync_ShouldFindTheServiceOnItsRealPortAndPath_WhenATapoC200ServesItOffTheCommonConvention()
     {
         var (resolver, _) = MakeResolver((url, _) =>
             url.Port == 2020 && url.AbsolutePath == "/onvif/service"
