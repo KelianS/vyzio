@@ -50,6 +50,9 @@ export function surveillanceEntryOf(camera: Pick<Camera, 'validationState'>): Su
       return SurveillanceEntry.AwaitsStream
     case CameraValidation.Draft:
       return SurveillanceEntry.AwaitsRestart
+    // Leaving surveillance at the next restart, it is still watched until then.
+    case CameraValidation.PendingRemoval:
+    case CameraValidation.Validated:
     default:
       return SurveillanceEntry.Watched
   }

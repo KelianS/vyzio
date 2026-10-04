@@ -1,5 +1,5 @@
 import type { Camera } from '../entities/camera.entity'
-import type { NewCameraInput } from '../entities/camera_draft_input.entity'
+import type { NewCameraInput } from '../entities/camera_input.entity'
 import type { CameraRepository } from '../ports/camera.port'
 
 export class CreateCamera {

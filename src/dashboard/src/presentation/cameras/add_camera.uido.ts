@@ -1,4 +1,4 @@
-import type { NewCameraInput } from '../../domain/entities/camera_draft_input.entity'
+import type { NewCameraInput } from '../../domain/entities/camera_input.entity'
 import type { AppError } from '../../common/errors/app_error'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 

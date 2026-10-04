@@ -119,8 +119,9 @@ describe('AddCameraView', () => {
 
     // Assert
     const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('La demande n’a pas abouti')
     expect(alert).toHaveTextContent('POST /api/cameras · 400')
-    expect(router.state.location.pathname).not.toBe('/settings/cameras/camera-9')
+    expect(router.state.location.pathname).toBe('/')
     expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeEnabled()
   })
 

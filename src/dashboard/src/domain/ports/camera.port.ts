@@ -1,4 +1,4 @@
-import type { CameraUpdateInput, NewCameraInput } from '../entities/camera_draft_input.entity'
+import type { CameraUpdateInput, NewCameraInput } from '../entities/camera_input.entity'
 import type {
   CameraProtocol,
   CameraProtocolAddition,

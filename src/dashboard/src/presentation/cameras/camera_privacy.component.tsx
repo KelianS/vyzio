@@ -16,6 +16,10 @@ import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
 import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
 import { surveillanceEntryOf } from '../../common/camera/camera_status'
+import {
+  OrientationControl,
+  orientationControlOf,
+} from '../../common/orientation/orientation_control'
 import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { buildPrivacySettings, STRATEGY_LABEL } from './camera_privacy_settings'
 import { POSITIONS_UNREAD } from './cameras.formatters'
@@ -72,7 +76,7 @@ export function CameraPrivacyView() {
           />
         )}
         {/* Orientation à l'écart needs positions, saved from the live view (SPECS 9.3). */}
-        {camera.ptzSupported && (
+        {orientationControlOf(camera) === OrientationControl.Usable && (
           <SurveillanceFirstNotice
             cameraId={camera.id}
             entry={surveillanceEntryOf(camera)}

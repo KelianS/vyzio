@@ -53,7 +53,7 @@ export function buildCameraConnectionPresenter({
   const nextStreamsRead = latestOnly()
   // Per protocol: opening a dropdown twice must not let the older answer land last.
   const nextAvailableRead: Partial<Record<StreamProtocol, () => () => boolean>> = {}
-  // Once per camera: a remount or a re-read list must not run it again behind the user's back.
+  // Once per camera while the tab is open: a re-read list keeps detectedAt null until the reread lands.
   const detectedOnArrival = new Set<string>()
 
   /** The stream lines of the stream card; after an action a failed reread keeps them and goes to a toast. */
