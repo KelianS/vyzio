@@ -156,5 +156,6 @@ they describe, and a camera without a stream binding has no stream to show.
 - ⚠️ A stream the camera no longer serves stays listed, failing, until the user removes it
 - ⚠️ An RTSP camera that lists no stream needs its path typed when its stream protocol is chosen,
   and detection does not bind its stream over RTSP
-- ⚠️ The clean schema drops the existing streams and detect choices: they are found again at the next
-  verification, with the defaults of d)
+- ⚠️ The clean schema drops the existing streams, detect choices and stream bindings: each camera's
+  stream is chosen again, by detection or by the user, which lays its streams out with the defaults
+  of d)
