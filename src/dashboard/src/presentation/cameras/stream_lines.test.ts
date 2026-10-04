@@ -116,10 +116,7 @@ describe('stream_lines', () => {
   )
 
   it.each([
-    [
-      true,
-      'Ce flux ne répond pas : relancez sa vérification, ou confiez l’enregistrement à un autre flux.',
-    ],
+    [true, 'Ce flux ne répond pas.'],
     [false, 'Ce flux ne répond pas : relancez sa vérification, ou retirez-le.'],
   ])(
     'streamFailure_ShouldNameAWayOutTheLineAllows_WhenGivenWhetherTheStreamRecords (records: %s)',

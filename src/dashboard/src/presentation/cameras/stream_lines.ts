@@ -61,10 +61,10 @@ export const ROLE_CONSEQUENCES: Record<StreamRole, string> = {
 export const RECORDING_STREAM_KEPT =
   'Ce flux enregistre : confiez l’enregistrement à un autre flux avant de le désactiver ou de le retirer.'
 
-/** A failed line's way out; the recording stream is not removed before recording moves (ADR-65 b). */
+/** A failed line's way out; the recording stream's failure is the camera's, whose card already names it. */
 export function streamFailure(records: boolean): string {
   return records
-    ? 'Ce flux ne répond pas : relancez sa vérification, ou confiez l’enregistrement à un autre flux.'
+    ? 'Ce flux ne répond pas.'
     : 'Ce flux ne répond pas : relancez sa vérification, ou retirez-le.'
 }
 
@@ -118,7 +118,7 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
   return null
 }
 
-/** A stream added by hand takes the next rank (ADR-65), so it is the lineup's highest. */
+/** A stream added by hand takes the next rank (StreamLineup.Add), so it is the lineup's highest. */
 export function addedStream(lineup: CameraStreamLineup): CameraStream | undefined {
   return lineup.streams.reduce<CameraStream | undefined>(
     (highest, stream) =>

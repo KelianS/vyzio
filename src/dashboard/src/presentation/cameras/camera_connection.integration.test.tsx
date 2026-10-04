@@ -1139,6 +1139,27 @@ describe('CameraConnectionView', () => {
     expect(sub.getByText(/timeout/)).toBeInTheDocument()
   })
 
+  it('onLoad_ShouldLeaveTheWayOutToTheCard_WhenTheRecordingStreamFailedItsCheck', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(
+        makeStreamLineup([{ ...recording, verified: false }, detecting], {
+          detectStreamId: 'sub',
+        }),
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+    expect(main.getByText(streamFailure(true))).toBeInTheDocument()
+    expect(main.queryByText(streamFailure(false))).not.toBeInTheDocument()
+  })
+
   it('onAskStreamReach_ShouldNameTheProtocolAndPath_WhenTheUserOpensTheTooltip', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
