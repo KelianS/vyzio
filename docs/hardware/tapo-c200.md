@@ -5,6 +5,8 @@ architecture.
 
 | Recorded | Measurement |
 |---|---|
+| 2026-10-04 | A wrong ONVIF password gets an HTTP 400 `ter:NotAuthorized` fault, not a 401 |
+| 2026-10-04 | ONVIF `SetPreset` on a free token stores the preset under that token, and `RemovePreset` removes it |
 | 2026-09-25 | ONVIF serves every service on one endpoint, `/onvif/service`; the per-service paths answer 404 |
 | 2026-09-25 | While privacy mode is on, an ONVIF PTZ command gets a malformed HTTP answer, not a SOAP fault |
 | 2026-09-25 | After 10 failed logins, the account cools down for about 25 minutes |
