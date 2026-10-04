@@ -9,11 +9,13 @@ internal sealed class OnvifImageSettingsProvider(OnvifClient onvif) : IImageSett
 {
     public SupportedProtocol Protocol => SupportedProtocol.Onvif;
 
-    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    // The settings read back are the proof (ADR-66).
+    public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var token = await onvif.GetVideoSourceTokenAsync(camera, ct);
-        var settings = await onvif.GetImagingSettingsAsync(camera, token, ct);
-        return settings is not null;
+        return await onvif.GetImagingSettingsAsync(camera, token, ct) is not null
+            ? CapabilityProof.Proven()
+            : CapabilityProof.Missing($"ONVIF: {camera.Host} returned no imaging settings for video source '{token}'.");
     }
 
     public async Task<CameraImageSettings?> GetImageSettingsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)

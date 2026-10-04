@@ -1,6 +1,6 @@
 # ADR-64: DVRIP native presets are detected by storing, then clearing, a spare slot
 
-> Status: Accepted
+> Status: Accepted, point b), on the login deciding whether PTZ is verified, amended by [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)
 >
 > Supersedes [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) on its
 > point f) (the DVRIP probe does not look for native presets) and, over DVRIP only,

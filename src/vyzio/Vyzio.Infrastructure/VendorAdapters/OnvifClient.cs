@@ -82,10 +82,10 @@ internal sealed class OnvifClient(
     }
 
     // Returns the first media profile's token, and its PTZ configuration token or null when it has none.
-    public async Task<(string ProfileToken, string? PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct)
+    public async Task<(string ProfileToken, string? PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct, bool throwOnFailure = false)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
-        var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct);
+        var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct, throwOnFailure: throwOnFailure);
 
         var profileToken = "profile1";
         string? ptzConfigToken = null;
@@ -206,15 +206,15 @@ internal sealed class OnvifClient(
             ? (int)Math.Round(value)
             : null;
 
-    // Returns raw GetConfigurationOptions XML for PTZ capability detection.
-    public Task<string?> GetPtzConfigurationOptionsAsync(Camera camera, string configToken, CancellationToken ct)
+    // Returns raw GetConfigurationOptions XML; throwOnFailure where the PTZ proof must tell silence from an answer (ADR-66).
+    public Task<string?> GetPtzConfigurationOptionsAsync(Camera camera, string configToken, CancellationToken ct, bool throwOnFailure = false)
     {
         var body = $"""
             <GetConfigurationOptions xmlns="http://www.onvif.org/ver20/ptz/wsdl">
               <ConfigurationToken>{configToken}</ConfigurationToken>
             </GetConfigurationOptions>
             """;
-        return PostSoapAsync(camera, OnvifService.Ptz, body, ct);
+        return PostSoapAsync(camera, OnvifService.Ptz, body, ct, throwOnFailure: throwOnFailure);
     }
 
     // Returns (pan, tilt) in ONVIF normalized space [-1, 1], or null if unsupported.

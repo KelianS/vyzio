@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20261004152623_StreamsUnderTheStreamBinding")]
+    [Migration("20261004165023_StreamsUnderTheStreamBinding")]
     partial class StreamsUnderTheStreamBinding
     {
         /// <inheritdoc />
@@ -235,6 +235,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("config_json");
 
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("confirmed_at");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
@@ -252,6 +256,17 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("protocol");
 
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("rejected_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("failed")
+                        .HasColumnName("status");
+
                     b.Property<DateTime?>("StreamsFoundAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("streams_found_at");
@@ -259,10 +274,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("updated_at");
-
-                    b.Property<bool>("Verified")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("verified");
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("TEXT")

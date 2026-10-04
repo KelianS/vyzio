@@ -28,22 +28,14 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
     // Estimate, unmeasured on the hardware (ADR-60).
     public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
-    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    // A session that does not open fails the check with its reason; a preset stored then listed is the proof (ADR-66).
+    public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        DvripSession session;
-        try
-        {
-            session = await dvrip.OpenSessionAsync(camera, ct);
-        }
-        catch (CameraCommandException ex)
-        {
-            logger.LogDebug(ex, "DVRIP PTZ probe failed for {Camera}.", camera.DisplayName);
-            return false;
-        }
-
-        await using (session)
-            NativePresetsFlag.Record(binding, await DetectNativePresetsAsync(session, camera, ct));
-        return true;
+        await using var session = await dvrip.OpenSessionAsync(camera, ct);
+        var native = await DetectNativePresetsAsync(session, camera, ct);
+        NativePresetsFlag.Record(binding, native);
+        // A camera that keeps no preset may still turn: never Missing (ADR-66 b).
+        return native ? CapabilityProof.Proven() : CapabilityProof.Unprovable();
     }
 
     // Stores a preset on a spare slot and looks for it in the camera's list, never moving it; Ability.PTZ answers 607 on an ICSee (ADR-64).

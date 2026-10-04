@@ -284,6 +284,22 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
+  async tryCapability(cameraId: string, capability: Capability): Promise<void> {
+    await postJson<null>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/try`,
+    )
+  }
+
+  async confirmCapability(
+    cameraId: string,
+    capability: Capability,
+    worked: boolean,
+  ): Promise<CameraCapabilityBinding> {
+    return postJson<CameraCapabilityBinding>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}/confirm`,
+      { worked },
+    )
+  }
   async removeCapability(cameraId: string, capability: Capability): Promise<void> {
     await deleteReq(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`)
   }

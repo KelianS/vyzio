@@ -98,8 +98,8 @@ Two send paths, and the difference matters.
 
 - **Queries** (`GetProfiles`, `GetStatus`, `GetPresets`, `GetImagingSettings`) read the response.
   With `throwOnFailure: true` a failure is raised instead of returning nothing, so the imaging probe
-  can say *why* instead of reporting an unsupported capability. The PTZ probe asks without it and
-  reads silence as no PTZ (below).
+  can say *why* instead of reporting an unsupported capability. The PTZ proof asks with it too:
+  silence or a refusal fails the check, never reads as no PTZ (below).
 - **Commands** (moves, presets, `SetImagingSettings`) wait 1.5 s for an answer, 300 ms for the start of
   a continuous move, which a press stops on release, never before a minimum time,
   and a recall after the time it replays
@@ -126,19 +126,20 @@ never on the status, which a proxy in front of the API also sends.
 A binding is `verified` only after a real test ([SAD](../SAD.md#7-data-model) section 7,
 [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)), and answering
 ONVIF is not doing PTZ over it: a camera can serve its media profiles over ONVIF with no PTZ service
-behind them. `OnvifPtzProvider.ProbeAsync` verifies on the camera's own PTZ description, never on a
-guess:
+behind them. `OnvifPtzProvider.ProveAsync` proves PTZ on the camera's own PTZ description, never on a
+guess, and returns a proof outcome
+([ADR-66](../adr/0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)):
 
-1. `GetProfiles`: the first media profile must carry a `PTZConfiguration` token. Without one the probe
-   answers no; no default token is substituted.
-2. `GetConfigurationOptions` on that token must answer with `PTZConfigurationOptions`. Silence, a
-   refusal or an answer without them, and the probe answers no. The same answer says whether
+1. `GetProfiles`: the first media profile must carry a `PTZConfiguration` token. Without one the PTZ
+   capability is `Missing`; no default token is substituted.
+2. `GetConfigurationOptions` on that token must answer with `PTZConfigurationOptions`. An answer
+   without them is `Missing`; silence or a refusal is raised and fails the check. The same answer says whether
    `RelativeMove` is offered.
 3. `GetPresets` counts the native presets
-   ([ADR-25](../adr/0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)); it does not weigh on the verdict.
+   ([ADR-25](../adr/0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)); it does not weigh on the outcome, `Proven` once step 2 passed.
 
-The probe never moves the camera: a pan at onboarding is a side effect the user did not ask for. A no
-lets the cascade move on to the next candidate protocol; a binding the user chose by hand keeps its
+The proof never moves the camera: a pan at onboarding is a side effect the user did not ask for. Any
+outcome but `Proven` lets the cascade move on to the next candidate protocol; a binding the user chose by hand keeps its
 protocol whatever the verdict (ADR-28).
 
 ## Known camera behaviours
@@ -147,7 +148,7 @@ protocol whatever the verdict (ADR-28).
 |---|---|---|
 | One endpoint for every service (Tapo) | Per-service paths 404 | `XAddr` fallback, above |
 | PTZ refused while privacy mode is on (Tapo) | Malformed HTTP answer, not a SOAP fault | Raised as a refusal, never as a missing capability |
-| Speaks ONVIF without PTZ over it (some ICSee units) | Media profile carries no `PTZConfiguration` | The PTZ probe answers no, the cascade falls through to DVRIP |
+| Speaks ONVIF without PTZ over it (some ICSee units) | Media profile carries no `PTZConfiguration` | The PTZ proof finds it `Missing`, the cascade falls through to DVRIP |
 | Answers a command in 2 to 3 seconds (V380) | Full await would stall every move | Timeout treated as success |
 | `RelativeMove` absent | No bounded move to repeat | `GetConfigurationOptions` read when the profile carries a PTZ configuration, a real answer kept for the request; without one, `OnvifPtzProvider` falls back to a continuous move, held until release for a press and timed for a recall ([ADR-60](../adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)) |
 

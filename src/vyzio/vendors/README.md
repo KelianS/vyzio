@@ -46,7 +46,8 @@ V380Pro → Ptz/[V380]
 
 Plusieurs protocoles pour une même capacité forment une **cascade**, essayée dans l'ordre écrit
 (ADR-28). Le preset déclare ce qui est *attendu* pour la marque ; chaque capacité est ensuite
-**vérifiée par probe** sur le matériel réel avant d'être activable, et un probe échoué ne bloque
+**vérifiée par probe** sur le matériel réel avant d'être activable (une preuve lue sur la caméra, ou,
+quand aucune lecture ne la prouve, l'essai confirmé par l'utilisateur), et un probe échoué ne bloque
 pas les autres.
 
 La vie privée n'est plus une capacité, à l'exception de `HardwarePrivacy` : `PtzParking` s'appuie

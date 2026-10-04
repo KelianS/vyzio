@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CapabilityStatus } from '../../domain/entities/camera_capability_binding.entity'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import {
   CapabilityState,
@@ -32,6 +33,46 @@ describe('capabilityState', () => {
       binding: makeCapabilityBinding({ capability: 'ptz', verified: false }),
       switchedOn: true,
       expected: CapabilityState.Failed,
+    },
+    {
+      name: 'capabilityState_ShouldSayToConfirm_WhenNoReadCanProveTheCapability',
+      binding: makeCapabilityBinding({
+        capability: 'hardware_privacy',
+        verified: false,
+        status: CapabilityStatus.ToConfirm,
+      }),
+      switchedOn: true,
+      expected: CapabilityState.ToConfirm,
+    },
+    {
+      name: 'capabilityState_ShouldSayToConfirmRatherThanSwitchedOff_WhenOrientationWasNeverConfirmed',
+      binding: makeCapabilityBinding({
+        capability: 'ptz',
+        verified: false,
+        status: CapabilityStatus.ToConfirm,
+      }),
+      switchedOn: false,
+      expected: CapabilityState.ToConfirm,
+    },
+    {
+      name: 'capabilityState_ShouldSayFailed_WhenTheCameraAnswersWithoutTheCapability',
+      binding: makeCapabilityBinding({
+        capability: 'ptz',
+        verified: false,
+        status: CapabilityStatus.Missing,
+      }),
+      switchedOn: true,
+      expected: CapabilityState.Failed,
+    },
+    {
+      name: 'capabilityState_ShouldSayRejectedRatherThanSwitchedOff_WhenTheUserAnsweredNo',
+      binding: makeCapabilityBinding({
+        capability: 'ptz',
+        verified: false,
+        status: CapabilityStatus.RejectedByUser,
+      }),
+      switchedOn: false,
+      expected: CapabilityState.Rejected,
     },
     {
       name: 'capabilityState_ShouldSayWorking_WhenTheLastTestPassed',
@@ -103,7 +144,23 @@ describe('capabilityFailureLine', () => {
     },
   ])('$name', ({ status, start }) => {
     // Arrange & Act
-    const line = capabilityFailureLine(status)
+    const line = capabilityFailureLine(status, CapabilityStatus.Failed)
+
+    // Assert
+    expect(line.startsWith(start)).toBe(true)
+  })
+})
+
+describe('capabilityFailureLine over the capability level', () => {
+  it.each([
+    {
+      name: 'capabilityFailureLine_ShouldSayTheCameraLacksIt_WhenTheCameraAnswersWithoutTheCapability',
+      status: CapabilityStatus.Missing,
+      start: 'La caméra répond, mais ne montre pas cette capacité',
+    },
+  ])('$name', ({ status, start }) => {
+    // Arrange & Act
+    const line = capabilityFailureLine('answers', status)
 
     // Assert
     expect(line.startsWith(start)).toBe(true)

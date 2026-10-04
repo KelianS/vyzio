@@ -12,6 +12,37 @@ namespace Vyzio.Tests.Services;
 // without needing to guess which one a given firmware actually returns.
 public class DvripImageSettingsProviderTests
 {
+    private const string LoginOk = """{"Ret":100,"SessionID":"0x0000000B"}""";
+
+    private static DvripImageSettingsProvider MakeProvider() => new(new DvripClient(TimeProvider.System));
+
+    [Fact]
+    public async Task ProveAsync_ShouldProveImageSettings_WhenTheCameraReadsBackItsBrightness()
+    {
+        // Arrange
+        await using var fake = FakeDvripCamera.Start(LoginOk, """{"Ret":100,"Name":"AVEnc.VideoColor.[0]","AVEnc.VideoColor.[0]":{"Brightness":50}}""");
+
+        // Act
+        var proof = await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.Equal(ProofOutcome.Proven, proof.Outcome);
+    }
+
+    [Fact]
+    public async Task ProveAsync_ShouldFindImageSettingsMissing_WhenTheCameraAnswersDvripWithoutABrightness()
+    {
+        // Arrange
+        await using var fake = FakeDvripCamera.Start(LoginOk, """{"Ret":100,"Name":"AVEnc.VideoColor.[0]","AVEnc.VideoColor.[0]":{}}""");
+
+        // Act
+        var proof = await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
+
+        // Assert
+        Assert.Equal(ProofOutcome.Missing, proof.Outcome);
+        Assert.Contains("Brightness", proof.Detail, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void FindIntProperty_ShouldReturnTheValue_WhenThePropertyIsFlat()
     {

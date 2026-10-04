@@ -28,6 +28,8 @@ import { SaveRecordingSettings } from '../../domain/usecases/save_recording_sett
 import { GetPtzPresets } from '../../domain/usecases/get_ptz_presets.use_case'
 import { GetVendorAssistance } from '../../domain/usecases/get_vendor_assistance.use_case'
 import { ProbeCameraCapability } from '../../domain/usecases/probe_camera_capability.use_case'
+import { TryCameraCapability } from '../../domain/usecases/try_camera_capability.use_case'
+import { ConfirmCameraCapability } from '../../domain/usecases/confirm_camera_capability.use_case'
 import { PtzCalibrate } from '../../domain/usecases/ptz_calibrate.use_case'
 import { PtzGoToPreset } from '../../domain/usecases/ptz_go_to_preset.use_case'
 import { PtzSaveCurrentAsPreset } from '../../domain/usecases/ptz_save_current_as_preset.use_case'
@@ -65,6 +67,8 @@ export interface CamerasContainer {
   getCameraCapabilities: GetCameraCapabilities
   configureCameraCapability: ConfigureCameraCapability
   probeCameraCapability: ProbeCameraCapability
+  tryCameraCapability: TryCameraCapability
+  confirmCameraCapability: ConfirmCameraCapability
   removeCameraCapability: RemoveCameraCapability
   setPtzPanInverted: SetPtzPanInverted
   getCameraStreams: GetCameraStreams
@@ -120,6 +124,8 @@ export function makeCamerasContainer(
     getCameraCapabilities: new GetCameraCapabilities(cameraRepository),
     configureCameraCapability: new ConfigureCameraCapability(cameraRepository),
     probeCameraCapability: new ProbeCameraCapability(cameraRepository),
+    tryCameraCapability: new TryCameraCapability(cameraRepository),
+    confirmCameraCapability: new ConfirmCameraCapability(cameraRepository),
     removeCameraCapability: new RemoveCameraCapability(cameraRepository),
     setPtzPanInverted: new SetPtzPanInverted(cameraRepository),
     getCameraStreams: new GetCameraStreams(cameraStreamRepository),

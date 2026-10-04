@@ -15,7 +15,7 @@ internal static class PtzBinding
         CameraId = "cam1",
         Capability = CameraCapability.Ptz,
         Protocol = SupportedProtocol.Onvif,
-        Verified = true,
+        Status = CapabilityStatus.Verified,
         ConfigJson = configJson,
     };
 }

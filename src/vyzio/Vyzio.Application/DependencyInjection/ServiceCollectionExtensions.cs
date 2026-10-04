@@ -78,6 +78,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SetCameraPrivacyStrategyUseCase>();
         services.AddScoped<SetPtzPanInvertedUseCase>();
         services.AddScoped<ProbeCameraCapabilityUseCase>();
+        services.AddScoped<TryCameraCapabilityUseCase>();
+        services.AddScoped<ConfirmCameraCapabilityUseCase>();
         services.AddScoped<ConfigureCameraCapabilityUseCase>();
         services.AddScoped<GetCameraCapabilitiesUseCase>();
         services.AddScoped<RemoveCameraCapabilityUseCase>();

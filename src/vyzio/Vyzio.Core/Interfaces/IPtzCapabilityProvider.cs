@@ -10,8 +10,8 @@ public interface IPtzCapabilityProvider
     // Motion time in one direction that covers the whole mechanical range from anywhere, an estimate until measured (ADR-60).
     TimeSpan FullRange { get; }
 
-    // The real check against the camera; Verified is only ever set from its answer, never declared.
-    Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
+    // The capability's read-only proof, once its protocol answered; never a login, never a move (ADR-66).
+    Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 

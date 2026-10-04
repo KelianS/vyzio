@@ -148,6 +148,22 @@ setting on one, takes its place without a page or a layout of its own:
   capability whose protocol does not answer says so in its state line, in plain words, with the way
   out (wake the camera, check it is plugged in); one whose protocol refuses the account points at the
   account; any other failure offers the check again or another way to reach it.
+- **A capability's states** ([ADR-66](adr/0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)):
+  `Fonctionne`, proven by the camera or confirmed by the user, its state line saying which
+  (`Verifie le ...`, `Confirme par vous le ...`); `A confirmer`, in the warn tone, when the camera
+  offers no read that proves it; `En echec`, whose line says why (the protocol, the capability not
+  there although the camera answers, or the user's own "no"); `A configurer`; `Desactivee`. A card
+  `A confirmer` swaps its check for `Essayer`: the line above the button says what the try does (a
+  short turn and back, a cut of a few seconds), since it acts on the camera without a confirmation
+  (§ Help); then the card asks its one question in plain words (`La camera a bouge ?`,
+  `La camera s'est coupee ?`) with `Oui` and `Non`, and only then. `Essayer` is refused while the
+  camera is in privacy mode, the line saying so, and suspended with the other checks. The way out of a
+  capability the camera does not show, or that the user answered "no" to, is another way to reach it in
+  its `Options`, or removing it (`Retirer`), Orientation included as long as it was never in use (one in use
+  is switched off with `Desactiver`). After a "no", the card says so in one line naming what the user saw
+  (`Vous avez indique que la camera n'a pas bouge.`), then the try's line, and swaps its check for
+  `Essayer a nouveau`, which tries again and asks the same question; no check or detection asks it on
+  its own.
 
 The page shows a camera's connection data on its three levels
 ([ADR-61](adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)), each

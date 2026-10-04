@@ -26,6 +26,14 @@ const KNOWN_REFUSALS = new Map<string, string>([
     'Cette caméra n’a pas ce protocole : lancez « Détecter automatiquement », ou ajoutez-le dans Avancé',
   ],
   [
+    ApiErrorCode.NothingToConfirm,
+    'Cette capacité n’est plus à confirmer : son état vient d’être mis à jour',
+  ],
+  [
+    ApiErrorCode.PrivacyModeActive,
+    'La caméra est en mode vie privée : rendez-lui la vue avant de l’essayer',
+  ],
+  [
     ApiErrorCode.ParkingPositionsMissing,
     'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
   ],

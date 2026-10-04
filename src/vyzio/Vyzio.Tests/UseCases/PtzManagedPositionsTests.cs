@@ -22,7 +22,7 @@ public class PtzManagedPositionsTests
         CameraId = "cam1",
         Capability = CameraCapability.Ptz,
         Protocol = SupportedProtocol.Dvrip,
-        Verified = true,
+        Status = CapabilityStatus.Verified,
     };
 
     public PtzManagedPositionsTests()
@@ -74,6 +74,35 @@ public class PtzManagedPositionsTests
 
     private void MoveForThrows(PtzDirection direction, Exception error)
         => _motion.MoveForAsync(direction, Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).ThrowsAsync(error);
+
+    [Fact]
+    public async Task NudgeAsync_ShouldTurnRightAndBackThenDownAndBack_WhenTheUserTriesPtz()
+    {
+        // Act
+        await _sut.NudgeAsync(_camera, _binding, _provider, Ms(800), CancellationToken.None);
+
+        // Assert
+        Received.InOrder(() =>
+        {
+            _motion.MoveForAsync(PtzDirection.Right, Arg.Any<int>(), Ms(800), Arg.Any<CancellationToken>());
+            _motion.MoveForAsync(PtzDirection.Left, Arg.Any<int>(), Ms(800), Arg.Any<CancellationToken>());
+            _motion.MoveForAsync(PtzDirection.Down, Arg.Any<int>(), Ms(800), Arg.Any<CancellationToken>());
+            _motion.MoveForAsync(PtzDirection.Up, Arg.Any<int>(), Ms(800), Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public async Task NudgeAsync_ShouldForgetTheCountedPosition_WhenTheCameraWasHomed()
+    {
+        // Arrange
+        await Home();
+
+        // Act
+        await _sut.NudgeAsync(_camera, _binding, _provider, Ms(800), CancellationToken.None);
+
+        // Assert
+        Assert.Null(_sut.Current("cam1"));
+    }
 
     [Fact]
     public async Task HomeAsync_ShouldMoveUpLeftForTheFullRangePlusTheMarginAndSetTheOrigin_WhenThePositionIsUnknown()

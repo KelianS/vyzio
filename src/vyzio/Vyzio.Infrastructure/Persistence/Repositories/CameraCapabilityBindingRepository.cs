@@ -29,7 +29,9 @@ public sealed class CameraCapabilityBindingRepository(VyzioDbContext db) : ICame
         {
             existing.Protocol = binding.Protocol;
             existing.ConfigJson = binding.ConfigJson;
-            existing.Verified = binding.Verified;
+            existing.Status = binding.Status;
+            existing.ConfirmedAt = binding.ConfirmedAt;
+            existing.RejectedAt = binding.RejectedAt;
             existing.ManuallyConfigured = binding.ManuallyConfigured;
             existing.VerifiedAt = binding.VerifiedAt;
             existing.LastError = binding.LastError;
@@ -53,6 +55,6 @@ public sealed class CameraCapabilityBindingRepository(VyzioDbContext db) : ICame
 
     public async Task<IReadOnlyList<CameraCapabilityBinding>> GetAllVerifiedAsync(CancellationToken ct = default)
         => await db.CameraCapabilityBindings
-            .Where(b => b.Verified)
+            .Where(b => b.Status == CapabilityStatus.Verified)
             .ToListAsync(ct);
 }
