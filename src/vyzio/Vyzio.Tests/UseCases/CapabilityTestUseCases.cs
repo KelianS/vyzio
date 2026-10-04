@@ -50,10 +50,19 @@ internal static class CapabilityTestUseCases
         return verifier;
     }
 
-    private static ICameraStreamEnumerator NothingEnumerated()
+    public static ICameraStreamEnumerator NothingEnumerated()
     {
         var enumerator = Substitute.For<ICameraStreamEnumerator>();
         enumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns([]);
+        return enumerator;
+    }
+
+    // A camera that lists one stream, so a stream can be laid out over RTSP (ADR-65 e).
+    public static ICameraStreamEnumerator ListsOneStream(string path = "/stream1")
+    {
+        var enumerator = Substitute.For<ICameraStreamEnumerator>();
+        enumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>())
+            .Returns([new EnumeratedScene("scene", [new EnumeratedStream(path, 1920, 1080, 25)])]);
         return enumerator;
     }
 
@@ -63,7 +72,8 @@ internal static class CapabilityTestUseCases
         ICapabilityProviderRegistry registry,
         ICameraProtocolEndpointCache endpointCache,
         ICameraProtocolProbe? protocols = null,
-        ICameraVerifier? verifier = null)
+        ICameraVerifier? verifier = null,
+        ICameraStreamEnumerator? enumerator = null)
     {
         var answers = protocols ?? AnsweringProbe();
         return new(
@@ -74,7 +84,9 @@ internal static class CapabilityTestUseCases
             endpointCache,
             new DetectionPlan(registry),
             Search(registry, answers),
-            Substitute.For<IFrigateConfigApplier>());
+            Substitute.For<IFrigateConfigApplier>(),
+            enumerator ?? ListsOneStream(),
+            TimeProvider.System);
     }
 
     public static CameraProtocolSearch Search(ICapabilityProviderRegistry registry, ICameraProtocolProbe? protocols = null)

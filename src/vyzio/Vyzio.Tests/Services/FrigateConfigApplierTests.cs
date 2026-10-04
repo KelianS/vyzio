@@ -418,8 +418,8 @@ public sealed class FrigateConfigApplierTests : IDisposable
     public async Task ApplyAsync_ShouldEmitTheDetectResolutionOnlyIfKnown_WhenTheStreamDidOrDidNotReportItsSize()
     {
         var withSize = MakeValidatedCamera("front-door");
-        withSize.MainStream!.Width = 640;
-        withSize.MainStream.Height = 480;
+        withSize.Streams.First().Width = 640;
+        withSize.Streams.First().Height = 480;
 
         var yaml = await ApplyAndReadYamlAsync([withSize]);
         Assert.Contains("width: 640", yaml, StringComparison.OrdinalIgnoreCase);

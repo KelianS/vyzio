@@ -112,10 +112,6 @@ public class Camera
     public IReadOnlyCollection<CameraStream> Streams
         => StreamBinding?.Streams.OrderBy(stream => stream.Ordinal).ToList() ?? [];
 
-    // The lowest rank: the stream onboarding created, whose path the user entered.
-    [NotMapped]
-    public CameraStream? MainStream => Streams.FirstOrDefault();
-
     // The stream holding the record role; StreamLineup keeps exactly one (ADR-65).
     [NotMapped]
     public CameraStream? RecordStream => Streams.FirstOrDefault(stream => stream.Records);

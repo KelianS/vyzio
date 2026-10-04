@@ -15,21 +15,29 @@ public sealed record StreamOffer(int Rank, string? Path, int? Width, int? Height
 // The one place that changes a stream binding's streams, and holds its guard: exactly one stream records (ADR-65).
 public static class StreamLineup
 {
-    // One main stream over the protocol, recording and detecting, the others to be found again (ADR-65 e).
-    public static CameraStream ResetTo(CameraCapabilityBinding binding, SupportedProtocol protocol, string? mainPath)
+    // One stream over the protocol, recording and detecting: DVRIP's main quality or a typed RTSP path (ADR-65 e).
+    public static CameraStream ResetTo(CameraCapabilityBinding binding, SupportedProtocol protocol, string? path)
     {
         binding.Streams.Clear();
         binding.StreamsFoundAt = null;
-        var main = new CameraStream
+        var stream = new CameraStream
         {
             BindingId = binding.Id,
             Ordinal = 0,
             Protocol = protocol,
-            Path = mainPath,
+            Path = path,
             Role = StreamRole.RecordAndDetect,
         };
-        binding.Streams.Add(main);
-        return main;
+        binding.Streams.Add(stream);
+        return stream;
+    }
+
+    // The streams the camera reports over the protocol replace every stream, with the defaults (ADR-65 d, e).
+    public static void ResetToFound(CameraCapabilityBinding binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found, DateTimeOffset at)
+    {
+        binding.Streams.Clear();
+        binding.StreamsFoundAt = null;
+        AddFound(binding, protocol, found, at);
     }
 
     // The streams the camera reports, most detailed first: added once, then only their size is refreshed (ADR-65 e).
@@ -37,17 +45,17 @@ public static class StreamLineup
     {
         if (found.Count == 0) return;
 
-        if (binding.StreamsFoundAt is null) AddFound(binding, found, at);
+        if (binding.StreamsFoundAt is null) AddFound(binding, binding.Protocol, found, at);
 
         foreach (var stream in binding.Streams)
         {
             // A size is only adopted for the address it describes: vendors alias their streams (ADR-38).
             var match = found.FirstOrDefault(entry => PathsMatch(stream.Path, entry.Path));
-            if (match is null && stream.Ordinal != 0) continue;
+            if (match is null) continue;
 
-            stream.Width = match?.Width;
-            stream.Height = match?.Height;
-            stream.Fps = match?.Fps;
+            stream.Width = match.Width;
+            stream.Height = match.Height;
+            stream.Fps = match.Fps;
             stream.UpdatedAt = at;
         }
     }
@@ -71,9 +79,9 @@ public static class StreamLineup
     }
 
     // What the camera serves over a protocol, ranked in the order found, each with the line it already is (ADR-65 e).
-    public static IReadOnlyList<StreamOffer> Offer(CameraCapabilityBinding binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found)
+    public static IReadOnlyList<StreamOffer> Offer(CameraCapabilityBinding? binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found)
         => [.. found.Select((entry, rank) => new StreamOffer(rank, entry.Path, entry.Width, entry.Height, entry.Fps,
-            binding.Streams.FirstOrDefault(stream => stream.Protocol == protocol && PathsMatch(stream.Path, entry.Path))?.Id))];
+            binding?.Streams.FirstOrDefault(stream => stream.Protocol == protocol && PathsMatch(stream.Path, entry.Path))?.Id))];
 
     // A stream added by the user, at the next free rank; its role is taken from whichever stream had it.
     public static CameraStream Add(CameraCapabilityBinding binding, SupportedProtocol protocol, string? path, StreamRole role)
@@ -91,15 +99,14 @@ public static class StreamLineup
         return stream;
     }
 
-    private static void AddFound(CameraCapabilityBinding binding, IReadOnlyList<EnumeratedStream> found, DateTimeOffset at)
+    private static void AddFound(CameraCapabilityBinding binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found, DateTimeOffset at)
     {
-        // Only a lineup still as onboarding left it takes the defaults: the user's choices are never redone.
+        // Only a lineup still as its layout left it takes the defaults: the user's choices are never redone.
         var untouched = binding.Streams.Count == 0
                         || (binding.Streams.Count == 1 && binding.Streams.Single().Role == StreamRole.RecordAndDetect);
         var next = binding.Streams.Count == 0 ? 0 : binding.Streams.Max(entry => entry.Ordinal) + 1;
 
-        // The first reported stream is the main one, whose path is what the user entered and verified.
-        foreach (var entry in found.Skip(binding.Streams.Count == 0 ? 0 : 1))
+        foreach (var entry in found)
         {
             if (binding.Streams.Any(stream => PathsMatch(stream.Path, entry.Path))) continue;
 
@@ -107,7 +114,7 @@ public static class StreamLineup
             {
                 BindingId = binding.Id,
                 Ordinal = next++,
-                Protocol = binding.Protocol,
+                Protocol = protocol,
                 Path = entry.Path,
                 Width = entry.Width,
                 Height = entry.Height,

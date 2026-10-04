@@ -15,12 +15,12 @@ public class CameraStream
 
     public CameraCapabilityBinding? Binding { get; set; }
 
-    // 0 = most detailed as enumerated; a stream declared by hand takes the next free rank.
+    // 0 = most detailed as enumerated; a stream added by the user takes the next free rank.
     public int Ordinal { get; set; }
 
     public SupportedProtocol Protocol { get; set; }
 
-    // RTSP path, or the DVRIP query suffix. Null is legitimate: some cameras serve at the connection root.
+    // Always set over RTSP (ADR-65 e); over DVRIP null for the main quality, else the secondary query.
     [MaxLength(500)]
     public string? Path { get; set; }
 

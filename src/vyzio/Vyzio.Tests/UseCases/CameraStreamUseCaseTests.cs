@@ -69,8 +69,25 @@ public class CameraStreamUseCaseTests
         // Assert
         Assert.Equal(StreamOutcome.Done, result.Outcome);
         Assert.Equal(["/stream1", "/stream2"], result.Streams!.Select(offer => offer.Path));
-        Assert.Equal(camera.MainStream!.Id, result.Streams![0].StreamId);
+        Assert.Equal(camera.Streams.First().Id, result.Streams![0].StreamId);
         Assert.Null(result.Streams![1].StreamId);
+    }
+
+    [Fact]
+    public async Task ListAvailable_ShouldOfferWhatTheCameraServes_WhenItsStreamIsNotConfiguredYet()
+    {
+        // Arrange
+        var camera = new Camera { Id = "cam1", Slug = "porch", FrigateCameraName = "porch", DisplayName = "Porch", Host = "192.168.1.20" };
+        camera.EnsureProtocol(SupportedProtocol.Rtsp);
+        _cameras.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+        GivenTheCameraServes(SupportedProtocol.Rtsp, new EnumeratedStream("/stream1", 1920, 1080, 15));
+
+        // Act
+        var result = await AvailableUseCase().ExecuteAsync(camera.Id, "rtsp");
+
+        // Assert
+        Assert.Equal(StreamOutcome.Done, result.Outcome);
+        Assert.Null(Assert.Single(result.Streams!).StreamId);
     }
 
     [Fact]
@@ -182,6 +199,20 @@ public class CameraStreamUseCaseTests
     }
 
     [Fact]
+    public async Task Add_ShouldRefuse_WhenAnRtspStreamHasNoPath()
+    {
+        // Arrange
+        var camera = GivenCamera();
+
+        // Act
+        var result = await AddUseCase().ExecuteAsync(camera.Id, new AddCameraStreamRequest("rtsp", "  ", "none"));
+
+        // Assert
+        Assert.Equal(StreamOutcome.PathRequired, result.Outcome);
+        Assert.Single(camera.Streams);
+    }
+
+    [Fact]
     public async Task Add_ShouldCheckTheStreamAtOnceAndRewriteTheConfiguration_WhenItTakesARole()
     {
         // Arrange
@@ -206,7 +237,7 @@ public class CameraStreamUseCaseTests
         var useCase = new SetCameraStreamRoleUseCase(_cameras, _frigate);
 
         // Act
-        var result = await useCase.ExecuteAsync(camera.Id, camera.MainStream!.Id, new SetCameraStreamRoleRequest("detect"));
+        var result = await useCase.ExecuteAsync(camera.Id, camera.Streams.First().Id, new SetCameraStreamRoleRequest("detect"));
 
         // Assert
         Assert.Equal(StreamOutcome.StreamRecords, result.Outcome);
@@ -221,7 +252,7 @@ public class CameraStreamUseCaseTests
         var useCase = new SetCameraStreamRoleUseCase(_cameras, _frigate);
 
         // Act
-        var result = await useCase.ExecuteAsync(camera.Id, camera.MainStream!.Id, new SetCameraStreamRoleRequest("archive"));
+        var result = await useCase.ExecuteAsync(camera.Id, camera.Streams.First().Id, new SetCameraStreamRoleRequest("archive"));
 
         // Assert
         Assert.Equal(StreamOutcome.UnknownRole, result.Outcome);
@@ -285,7 +316,7 @@ public class CameraStreamUseCaseTests
         var camera = GivenCamera();
 
         // Act
-        await CheckUseCase().ExecuteAsync(camera.Id, camera.MainStream!.Id);
+        await CheckUseCase().ExecuteAsync(camera.Id, camera.Streams.First().Id);
 
         // Assert
         Assert.Equal("online", camera.Status);

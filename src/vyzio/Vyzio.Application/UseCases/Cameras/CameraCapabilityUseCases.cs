@@ -143,7 +143,8 @@ internal static class CameraEndpointForgetting
     }
 }
 
-public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol);
+// StreamPath: the first stream's path over RTSP, typed when the camera lists no stream (ADR-65 e).
+public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? StreamPath = null);
 
 // A capability goes through a protocol the camera has; another one is added first (ADR-61 d).
 public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
@@ -162,7 +163,9 @@ public sealed class ConfigureCameraCapabilityUseCase(
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfigApplier,
-    ProbeCameraCapabilityUseCase probe)
+    ProbeCameraCapabilityUseCase probe,
+    ICameraStreamEnumerator streamEnumerator,
+    TimeProvider time)
 {
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, ConfigureCameraCapabilityRequest request, CancellationToken ct = default)
     {
@@ -186,9 +189,10 @@ public sealed class ConfigureCameraCapabilityUseCase(
             Capability = capability,
         };
 
-        // A new stream protocol replaces the streams by one main stream, to be found again over it (ADR-65 e).
-        if (capability == CameraCapability.Stream && protocolChanged)
-            StreamLineup.ResetTo(binding, protocol, camera.MainStream?.Path);
+        // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-65 e).
+        if (capability == CameraCapability.Stream && protocolChanged
+            && !await StreamLayout.TryLayOutAsync(camera, binding, protocol, request.StreamPath, streamEnumerator, time, ct))
+            throw new StreamPathRequiredException();
 
         binding.Protocol = protocol;
         // The swap is the user's; what the former protocol found about the camera (native presets) is not.

@@ -25,7 +25,7 @@ public class StreamLineupTests
 
         // Assert
         Assert.Equal(StreamChange.Done, change);
-        Assert.Equal(StreamRole.Detect, camera.MainStream!.Role);
+        Assert.Equal(StreamRole.Detect, camera.Streams.First().Role);
         Assert.Same(sub, camera.RecordStream);
     }
 
@@ -36,11 +36,11 @@ public class StreamLineupTests
         var camera = MakeCamera();
 
         // Act
-        var change = StreamLineup.SetRole(camera.StreamBinding!, camera.MainStream!, StreamRole.Detect);
+        var change = StreamLineup.SetRole(camera.StreamBinding!, camera.Streams.First(), StreamRole.Detect);
 
         // Assert
         Assert.Equal(StreamChange.StreamRecords, change);
-        Assert.Equal(StreamRole.RecordAndDetect, camera.MainStream!.Role);
+        Assert.Equal(StreamRole.RecordAndDetect, camera.Streams.First().Role);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class StreamLineupTests
 
         // Assert
         Assert.True(camera.DetectsOnRecordingStream);
-        Assert.Same(camera.MainStream, camera.DetectStream);
+        Assert.Same(camera.Streams.First(), camera.DetectStream);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class StreamLineupTests
         var offers = StreamLineup.Offer(camera.StreamBinding!, SupportedProtocol.Rtsp, found);
 
         // Assert
-        Assert.Equal(camera.MainStream!.Id, offers[0].StreamId);
+        Assert.Equal(camera.Streams.First().Id, offers[0].StreamId);
         Assert.Null(offers[1].StreamId);
         Assert.Equal(1, offers[1].Rank);
     }
@@ -95,7 +95,7 @@ public class StreamLineupTests
         var camera = MakeCamera();
 
         // Act
-        var change = StreamLineup.Remove(camera.StreamBinding!, camera.MainStream!);
+        var change = StreamLineup.Remove(camera.StreamBinding!, camera.Streams.First());
 
         // Assert
         Assert.Equal(StreamChange.StreamRecords, change);
@@ -112,7 +112,7 @@ public class StreamLineupTests
         var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
 
         // Assert
-        Assert.Equal(StreamRole.Record, camera.MainStream!.Role);
+        Assert.Equal(StreamRole.Record, camera.Streams.First().Role);
         Assert.Equal(1, sub.Ordinal);
         Assert.Same(sub, camera.DetectStream);
     }
@@ -127,13 +127,45 @@ public class StreamLineupTests
         binding.StreamsFoundAt = DateTimeOffset.UnixEpoch;
 
         // Act
-        StreamLineup.ResetTo(binding, SupportedProtocol.Dvrip, mainPath: null);
+        StreamLineup.ResetTo(binding, SupportedProtocol.Dvrip, path: null);
 
         // Assert
         var main = Assert.Single(camera.Streams);
         Assert.Equal(SupportedProtocol.Dvrip, main.Protocol);
         Assert.Equal(StreamRole.RecordAndDetect, main.Role);
         Assert.Null(binding.StreamsFoundAt);
+    }
+
+    [Fact]
+    public void ResetToFound_ShouldReplaceEveryStreamByTheFoundOnesWithTheDefaults_WhenTheCameraListsThem()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        var binding = camera.StreamBinding!;
+        StreamLineup.Add(binding, SupportedProtocol.Rtsp, "/custom", StreamRole.Detect);
+
+        // Act
+        StreamLineup.ResetToFound(binding, SupportedProtocol.Rtsp, [new EnumeratedStream("/main", 1920, 1080, 25), new EnumeratedStream("/sub", 640, 360, 25)], DateTimeOffset.UnixEpoch);
+
+        // Assert
+        Assert.Equal(["/main", "/sub"], camera.Streams.Select(stream => stream.Path));
+        Assert.Equal("/main", camera.RecordStream!.Path);
+        Assert.Equal("/sub", camera.DetectStream!.Path);
+        Assert.Equal(DateTimeOffset.UnixEpoch, binding.StreamsFoundAt);
+    }
+
+    [Fact]
+    public void ApplyFound_ShouldAddTheFirstReportedStream_WhenItIsNotListedYet()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        var binding = camera.StreamBinding!;
+
+        // Act
+        StreamLineup.ApplyFound(binding, [new EnumeratedStream("/main", 1920, 1080, 25), new EnumeratedStream("/stream1", 640, 360, 25)], DateTimeOffset.UnixEpoch);
+
+        // Assert
+        Assert.Equal(["/stream1", "/main"], camera.Streams.Select(stream => stream.Path));
     }
 
     [Fact]

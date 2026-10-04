@@ -17,6 +17,7 @@ public enum StreamOutcome
     ProtocolNotOnCamera,
     StreamRecords,
     UnknownPath,
+    PathRequired,
 }
 
 public sealed record StreamResult(StreamOutcome Outcome, CameraStreamsDto? Streams = null);
@@ -29,7 +30,7 @@ public sealed class GetCameraStreamsUseCase(ICameraRepository cameras)
         => await cameras.GetByIdAsync(cameraId, ct) is { } camera ? CameraStreamsDto.From(camera) : null;
 }
 
-// What the camera serves over a protocol, asked on demand once that protocol answers (ADR-61 c, ADR-65 e).
+// What the camera serves over a protocol, asked on demand once that protocol answers, binding or not (ADR-61 c, ADR-65 e).
 public sealed class ListAvailableCameraStreamsUseCase(
     ICameraRepository cameras,
     ICapabilityProviderRegistry registry,
@@ -44,7 +45,6 @@ public sealed class ListAvailableCameraStreamsUseCase(
 
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return new AvailableStreamsResult(StreamOutcome.CameraNotFound);
-        if (camera.StreamBinding is not { } binding) return new AvailableStreamsResult(StreamOutcome.NotConfigured);
         if (camera.Protocol(protocol) is null) return new AvailableStreamsResult(StreamOutcome.ProtocolNotOnCamera);
 
         var answer = await protocolCheck.CheckAsync(camera, protocol, run: null, ct);
@@ -53,7 +53,7 @@ public sealed class ListAvailableCameraStreamsUseCase(
         // Only this camera's scene (ADR-38); over DVRIP the two qualities are known by convention when it lists none.
         var found = scenes.Count > 0 ? scenes[0].Streams : protocol == SupportedProtocol.Dvrip ? DvripQualities : [];
         return new AvailableStreamsResult(StreamOutcome.Done,
-            [.. StreamLineup.Offer(binding, protocol, found).Select(AvailableStreamDto.From)]);
+            [.. StreamLineup.Offer(camera.StreamBinding, protocol, found).Select(AvailableStreamDto.From)]);
     }
 
     private static readonly IReadOnlyList<EnumeratedStream> DvripQualities =
@@ -85,6 +85,9 @@ public sealed class AddCameraStreamUseCase(
         var path = protocol == SupportedProtocol.Rtsp
             ? CameraDraftFactory.NormalizeStreamPath(request.Path)
             : CameraDraftFactory.NormalizeOptional(request.Path);
+        // An RTSP stream is addressed by its path, never by the connection root (ADR-65 e).
+        if (protocol == SupportedProtocol.Rtsp && path is null)
+            return new StreamResult(StreamOutcome.PathRequired);
         if (protocol == SupportedProtocol.Dvrip && path is not (null or CameraStream.DvripSecondaryQuery))
             return new StreamResult(StreamOutcome.UnknownPath);
         var stream = StreamLineup.Add(binding, protocol, path, role);
@@ -141,6 +144,44 @@ public sealed class CheckCameraStreamUseCase(
         return verified is null
             ? new StreamResult(StreamOutcome.CameraNotFound)
             : new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(verified));
+    }
+}
+
+// Over RTSP the camera listed no stream and no path was typed: nothing to lay out (ADR-65 e).
+public sealed class StreamPathRequiredException()
+    : Exception("The camera lists no stream over RTSP: type the stream's path.");
+
+// Lays the streams out over a newly chosen stream protocol; an RTSP stream always has a path (ADR-65 e).
+internal static class StreamLayout
+{
+    // False when nothing could be laid out: over RTSP, no typed path and no stream listed.
+    public static async Task<bool> TryLayOutAsync(
+        Camera camera,
+        CameraCapabilityBinding binding,
+        SupportedProtocol protocol,
+        string? typedPath,
+        ICameraStreamEnumerator enumerator,
+        TimeProvider time,
+        CancellationToken ct)
+    {
+        if (protocol != SupportedProtocol.Rtsp)
+        {
+            StreamLineup.ResetTo(binding, protocol, path: null);
+            return true;
+        }
+
+        if (CameraDraftFactory.NormalizeStreamPath(typedPath) is { } path)
+        {
+            StreamLineup.ResetTo(binding, protocol, path);
+            return true;
+        }
+
+        var scenes = await enumerator.EnumerateAsync(camera, protocol, ct);
+        // Only this camera's scene: other lenses become cameras of their own through onboarding (ADR-38).
+        if (scenes.Count == 0 || scenes[0].Streams.Count == 0) return false;
+
+        StreamLineup.ResetToFound(binding, protocol, scenes[0].Streams, time.GetUtcNow());
+        return true;
     }
 }
 

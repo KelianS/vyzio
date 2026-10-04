@@ -51,7 +51,7 @@ public class CameraStreamsEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task AddStream_ShouldCheckItAndGiveItDetection_WhenItIsDeclaredWithTheDetectRole()
+    public async Task AddStream_ShouldCheckItAndGiveItDetection_WhenItIsAddedWithTheDetectRole()
     {
         // Arrange
         using var client = _factory.CreateClient();

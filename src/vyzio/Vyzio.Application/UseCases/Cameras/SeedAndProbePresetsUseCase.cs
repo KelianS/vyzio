@@ -20,7 +20,9 @@ public sealed class SeedAndProbePresetsUseCase(
     ICameraProtocolEndpointCache endpointCache,
     DetectionPlan detectionPlan,
     CameraProtocolSearch protocolSearch,
-    IFrigateConfigApplier frigateConfigApplier)
+    IFrigateConfigApplier frigateConfigApplier,
+    ICameraStreamEnumerator streamEnumerator,
+    TimeProvider time)
 {
     public async Task ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -113,26 +115,33 @@ public sealed class SeedAndProbePresetsUseCase(
 
         var binding = new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Stream };
         var verified = false;
+        SupportedProtocol? fallback = null;
+        SupportedProtocol? lastTried = null;
         foreach (var protocol in answering)
         {
-            verified = await TryStreamAsync(binding, protocol, run, ct);
+            var tried = await TryStreamAsync(camera, binding, protocol, run, ct);
+            if (tried is null) continue;
+            verified = tried.Value;
             if (verified) break;
+            fallback ??= protocol;
+            lastTried = protocol;
         }
 
-        // With no stream check passing, the stream stays on the first protocol that answered, with its reason.
-        if (!verified && answering.Count > 1)
-            await TryStreamAsync(binding, answering[0], run, ct);
+        // With no stream check passing, the stream stays on the first protocol it was laid out on, with its reason.
+        if (!verified && fallback is { } first && first != lastTried)
+            await TryStreamAsync(camera, binding, first, run, ct);
 
         await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
     }
 
-    private async Task<bool> TryStreamAsync(CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
+    // Null when no stream could be laid out over the protocol: RTSP is only bound with the streams the camera lists (ADR-65 e).
+    private async Task<bool?> TryStreamAsync(Camera camera, CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
     {
+        if (!await StreamLayout.TryLayOutAsync(camera, binding, protocol, typedPath: null, streamEnumerator, time, ct)) return null;
+
         binding.Protocol = protocol;
         binding.Verified = false;
         binding.LastError = null;
-        // A stream bound by detection starts as onboarding leaves one: a main stream, found out at its check (ADR-65).
-        StreamLineup.ResetTo(binding, protocol, mainPath: null);
         await bindings.SaveAsync(binding, ct);
 
         var result = await probe.ExecuteAsync(binding.CameraId, CameraCapability.Stream, run: run, ct: ct);

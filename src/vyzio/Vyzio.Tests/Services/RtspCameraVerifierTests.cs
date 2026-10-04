@@ -54,7 +54,7 @@ public class RtspCameraVerifierTests
             DisplayName = "Front Door",
             Host = "127.0.0.1",
         }.WithStream(SupportedProtocol.Rtsp, port, "/stream1");
-        var result = await sut.VerifyAsync(camera, camera.MainStream).ObservedAsync();
+        var result = await sut.VerifyAsync(camera, camera.Streams.First()).ObservedAsync();
 
         await serverTask;
 

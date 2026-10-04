@@ -45,6 +45,7 @@ public static class CameraStreamsEndpoints
         StreamOutcome.UnknownRole => Results.BadRequest(new { error = "unknown_role", message = "Unknown stream role." }),
         StreamOutcome.ProtocolNotOnCamera => Results.Conflict(new { error = "protocol_not_on_camera", message = "The camera has no row for this protocol." }),
         StreamOutcome.StreamRecords => Results.Conflict(new { error = "stream_records", message = "This stream records: give recording to another stream first." }),
+        StreamOutcome.PathRequired => Results.BadRequest(new { error = "stream_path_required", message = "Over RTSP a stream is addressed by its path." }),
         StreamOutcome.UnknownPath => Results.BadRequest(new { error = "unknown_stream_path", message = "Over DVRIP a stream is one of its qualities, never a typed path." }),
         _ => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
     };

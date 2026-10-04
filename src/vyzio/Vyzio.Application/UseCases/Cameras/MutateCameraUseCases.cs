@@ -40,7 +40,9 @@ public sealed class CreateCameraUseCase(
     ICameraRepository cameras,
     ICameraCapabilityOnboardingQueue onboardingQueue,
     IFrigateConfigApplier frigateConfigApplier,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    ICameraStreamEnumerator streamEnumerator,
+    TimeProvider time)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
     {
@@ -51,6 +53,11 @@ public sealed class CreateCameraUseCase(
         var slug = await EnsureUniqueSlugAsync(baseSlug, ct);
 
         var camera = CameraDraftFactory.Build(request, slug, registry.GetRegisteredProtocols(CameraCapability.Stream));
+
+        // Over RTSP without a typed path, the streams the camera lists are laid out, else the path is asked for (ADR-65 e).
+        if (camera.StreamBinding is { Protocol: SupportedProtocol.Rtsp } binding && camera.RecordStream?.Path is null
+            && !await StreamLayout.TryLayOutAsync(camera, binding, SupportedProtocol.Rtsp, typedPath: null, streamEnumerator, time, ct))
+            throw new StreamPathRequiredException();
 
         await cameras.AddAsync(camera, ct);
 

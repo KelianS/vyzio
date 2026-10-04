@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.Configuration;
 namespace Vyzio.Api.Endpoints;
 
 // Request types for capability and protocol endpoints (ADR-61)
-file sealed record ConfigureCameraCapabilityRequest(string Protocol);
+file sealed record ConfigureCameraCapabilityRequest(string Protocol, string? StreamPath = null);
 
 // Request types for privacy endpoints
 file sealed record TogglePrivacyRequest(bool Active);
@@ -59,6 +59,10 @@ public static class CamerasEndpoints
             {
                 var dto = await useCase.ExecuteAsync(request, ct);
                 return Results.Created($"/api/cameras/{dto.Id}", dto);
+            }
+            catch (StreamPathRequiredException ex)
+            {
+                return Results.BadRequest(new { error = "stream_path_required", message = ex.Message });
             }
             catch (ArgumentException ex)
             {
@@ -263,12 +267,16 @@ public static class CamerasEndpoints
         {
             try
             {
-                var binding = await useCase.ExecuteAsync(id, new Vyzio.Application.UseCases.Cameras.ConfigureCameraCapabilityRequest(capability, request.Protocol), ct);
+                var binding = await useCase.ExecuteAsync(id, new Vyzio.Application.UseCases.Cameras.ConfigureCameraCapabilityRequest(capability, request.Protocol, request.StreamPath), ct);
                 return binding is null ? Results.NotFound() : Results.Ok(binding);
             }
             catch (ProtocolNotOnCameraException ex)
             {
                 return Results.Conflict(new { error = "protocol_not_on_camera", message = ex.Message });
+            }
+            catch (StreamPathRequiredException ex)
+            {
+                return Results.BadRequest(new { error = "stream_path_required", message = ex.Message });
             }
             catch (ArgumentException ex)
             {
