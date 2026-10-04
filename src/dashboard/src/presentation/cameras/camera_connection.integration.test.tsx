@@ -13,7 +13,7 @@ import {
   DETECTION_FALLS_BACK,
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
-  STREAM_FAILED,
+  streamFailure,
 } from './stream_lines'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
@@ -1135,7 +1135,7 @@ describe('CameraConnectionView', () => {
 
     // Assert
     const sub = await streamLine('640 × 360 · 10 img/s')
-    expect(sub.getByText(STREAM_FAILED)).toBeInTheDocument()
+    expect(sub.getByText(streamFailure(false))).toBeInTheDocument()
     expect(sub.getByText(/timeout/)).toBeInTheDocument()
   })
 
@@ -1329,9 +1329,29 @@ describe('CameraConnectionView', () => {
     )
   })
 
-  it('onAskToRemoveStream_ShouldSayDetectionMovesToTheRecordingStream_WhenTheStreamDetects', async () => {
+  it.each(['Désactiver', 'Retirer'])(
+    'onAskToTakeStreamAway_ShouldSayDetectionMovesToTheRecordingStream_WhenTheStreamDetects (%s)',
+    async (action) => {
+      // Arrange
+      connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+      renderScreen(<CameraConnectionView />, connectionTab())
+      await optionsOf('Flux vidéo')
+      const sub = await streamLine('640 × 360 · 10 img/s')
+
+      // Act
+      await userEvent.click(sub.getByRole('button', { name: action }))
+
+      // Assert
+      expect(screen.getByRole('alertdialog')).toHaveTextContent(DETECTION_FALLS_BACK)
+    },
+  )
+
+  it('onAskToRemoveStream_ShouldNotMentionDetection_WhenTheStreamDoesNotDetect', async () => {
     // Arrange
-    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    const idle = makeStreamLineup([recording, { ...detecting, role: 'none' }], {
+      detectsOnRecordingStream: true,
+    })
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(idle) })
     renderScreen(<CameraConnectionView />, connectionTab())
     await optionsOf('Flux vidéo')
     const sub = await streamLine('640 × 360 · 10 img/s')
@@ -1340,7 +1360,30 @@ describe('CameraConnectionView', () => {
     await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
 
     // Assert
-    expect(screen.getByRole('alertdialog')).toHaveTextContent(DETECTION_FALLS_BACK)
+    expect(screen.getByRole('alertdialog')).not.toHaveTextContent(DETECTION_FALLS_BACK)
+  })
+
+  it('onAddStream_ShouldSayTheNewStreamDoesNotAnswer_WhenItsCheckFails', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'POST /api/cameras/camera-1/streams': ok(
+        makeStreamLineup([recording, { ...detecting, role: 'none', verified: false }]),
+      ),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    await userEvent.type(form.getByLabelText('Chemin du flux'), '/stream2')
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux ajouté, mais il ne répond pas.')).toBeInTheDocument()
+    expect(screen.queryByText('Flux ajouté.')).not.toBeInTheDocument()
   })
 
   it('onRemoveStream_ShouldKeepTheLine_WhenTheRemovalFails', async () => {

@@ -61,7 +61,12 @@ export const ROLE_CONSEQUENCES: Record<StreamRole, string> = {
 export const RECORDING_STREAM_KEPT =
   'Ce flux enregistre : confiez l’enregistrement à un autre flux avant de le désactiver ou de le retirer.'
 
-export const STREAM_FAILED = 'Ce flux ne répond pas : relancez sa vérification.'
+/** A failed line's way out; the recording stream is not removed before recording moves (ADR-65 b). */
+export function streamFailure(records: boolean): string {
+  return records
+    ? 'Ce flux ne répond pas : relancez sa vérification, ou confiez l’enregistrement à un autre flux.'
+    : 'Ce flux ne répond pas : relancez sa vérification, ou retirez-le.'
+}
 
 // Said in the confirmation that takes the detection stream away: the analysis falls back (ADR-65 c).
 export const DETECTION_FALLS_BACK = 'La détection passera par le flux d’enregistrement.'
@@ -111,6 +116,15 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
     return 'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.'
   if (lineup.detectsOnRecordingStream) return 'La détection passe par le flux d’enregistrement.'
   return null
+}
+
+/** A stream added by hand takes the next rank (ADR-65), so it is the lineup's highest. */
+export function addedStream(lineup: CameraStreamLineup): CameraStream | undefined {
+  return lineup.streams.reduce<CameraStream | undefined>(
+    (highest, stream) =>
+      highest === undefined || stream.ordinal > highest.ordinal ? stream : highest,
+    undefined,
+  )
 }
 
 /** Over DVRIP a stream is picked by its quality, the convention of ADR-38, never a typed query. */

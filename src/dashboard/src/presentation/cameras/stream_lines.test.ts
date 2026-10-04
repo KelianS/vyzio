@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { makeCameraStream, makeStreamLineup } from '../../testing/camera_stream_fixture'
 import {
   StreamLineState,
+  addedStream,
   roleOptions,
   streamCoverageLine,
+  streamFailure,
   streamLineState,
   streamQuality,
   streamReach,
@@ -112,4 +114,36 @@ describe('stream_lines', () => {
       expect(reach).toBe(expected)
     },
   )
+
+  it.each([
+    [
+      true,
+      'Ce flux ne répond pas : relancez sa vérification, ou confiez l’enregistrement à un autre flux.',
+    ],
+    [false, 'Ce flux ne répond pas : relancez sa vérification, ou retirez-le.'],
+  ])(
+    'streamFailure_ShouldNameAWayOutTheLineAllows_WhenGivenWhetherTheStreamRecords (records: %s)',
+    (records, expected) => {
+      // Arrange & Act
+      const sentence = streamFailure(records)
+
+      // Assert
+      expect(sentence).toBe(expected)
+    },
+  )
+
+  it('addedStream_ShouldBeTheHighestRank_WhenTheLineupIsListedInAnyOrder', () => {
+    // Arrange
+    const lineup = makeStreamLineup([
+      detecting,
+      makeCameraStream({ id: 'third', ordinal: 2 }),
+      recording,
+    ])
+
+    // Act
+    const added = addedStream(lineup)
+
+    // Assert
+    expect(added?.id).toBe('third')
+  })
 })

@@ -28,10 +28,10 @@ import {
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
   ROLE_LABELS,
-  STREAM_FAILED,
   STREAM_LINE_PILLS,
   StreamLineState,
   roleOptions,
+  streamFailure,
   streamLineState,
   streamQuality,
   streamReach,
@@ -117,9 +117,10 @@ export function StreamLines({
         </p>
         <p>
           Sur une caméra large, jardin, garage, allée, gardez le flux le plus léger en détection.
-          Pour reconnaître les gens, entrée, couloir, salon, donnez la détection au flux le plus
-          détaillé, surtout si les visages y apparaissent à plusieurs mètres. Si Vyzio devient lent,
-          vérifiez qu’aucune caméra n’analyse son flux le plus détaillé sans raison.
+          Pour reconnaître les gens, entrée, couloir, salon, donnez « Enregistrement et détection »
+          au flux le plus détaillé, surtout si les visages y apparaissent à plusieurs mètres. Si
+          Vyzio devient lent, vérifiez qu’aucune caméra n’analyse son flux le plus détaillé sans
+          raison.
         </p>
         <p>Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait.</p>
         <p>
@@ -152,8 +153,7 @@ function StreamLine({
   const [confirmRemove, setConfirmRemove] = useState(false)
   const state = streamLineState(stream)
   const records = stream.id === lineup.recordStreamId
-  // Only the stream that detects apart from the recording one moves the analysis when it goes.
-  const fallback = stream.id === lineup.detectStreamId && !records ? ` ${DETECTION_FALLS_BACK}` : ''
+  const fallback = stream.id === lineup.detectStreamId ? ` ${DETECTION_FALLS_BACK}` : ''
   const quality = streamQuality(stream)
 
   return (
@@ -171,7 +171,7 @@ function StreamLine({
       {mainPath && <SettingRow setting={mainPath} />}
       {state === StreamLineState.Failed && (
         <div className="text-sm text-destructive">
-          <p>{STREAM_FAILED}</p>
+          <p>{streamFailure(records)}</p>
           {stream.lastError && <DiagnosticLine text={scrubSecrets(stream.lastError)} />}
         </div>
       )}

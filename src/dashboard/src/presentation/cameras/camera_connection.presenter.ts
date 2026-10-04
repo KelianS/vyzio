@@ -29,6 +29,7 @@ import {
   protocolKey,
   type ConnectionValues,
 } from './camera_connection_values'
+import { addedStream } from './stream_lines'
 
 export interface CameraConnectionPresenterContext {
   container: CamerasContainer
@@ -233,7 +234,14 @@ export function buildCameraConnectionPresenter({
       try {
         const streams = await container.addCameraStream.execute(cameraId, addition)
         if (isLatest()) dispatch({ type: 'STREAMS_LOADED', streams })
-        toast('Flux ajouté.', 'success')
+        const added = addedStream(streams)
+        if (added && !added.verified)
+          toast(
+            'Flux ajouté, mais il ne répond pas.',
+            'error',
+            added.lastError ? scrubSecrets(added.lastError) : undefined,
+          )
+        else toast('Flux ajouté.', 'success')
         dispatch({ type: 'STREAM_FORM_CLOSED' })
         refreshSurveillance(hubContainer)
       } catch (e) {
