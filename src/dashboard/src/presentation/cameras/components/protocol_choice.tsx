@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '../../../common/ui/select'
 
-/** The protocol a capability goes through, inside its card's Options fold (DESIGN SYSTEM § Capability cards). */
+/** The protocol a capability goes through, inside its card's Options fold (SPECS 2.3). */
 export function ProtocolChoice({
   options,
   current,

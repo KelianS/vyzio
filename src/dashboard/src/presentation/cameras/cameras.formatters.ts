@@ -2,7 +2,7 @@ import type { BadgeTone } from '../../common/components/badge'
 import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
 
-/** Plain names, the words the rest of the product uses for each capability (DESIGN SYSTEM § Capabilities). */
+/** Plain names, the words the rest of the product uses for each capability (DESIGN SYSTEM § Shared words). */
 export const CAPABILITY_LABELS: Record<Capability, string> = {
   stream: 'Flux vidéo',
   ptz: 'Orientation',
@@ -13,7 +13,7 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
 /** The video stream, the capability every other one depends on. */
 export const STREAM_LABEL = CAPABILITY_LABELS.stream
 
-/** The way out of a stream that does not answer, wherever it is said: both places it can be fixed (DESIGN SYSTEM § Capability cards). */
+/** The way out of a stream that does not answer, wherever it is said: both places it can be fixed (SPECS 2.3). */
 export const STREAM_REPAIR =
   'vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.'
 

@@ -157,7 +157,7 @@ const router = createBrowserRouter([
                 // Carries the name of the open camera, and its tabs.
                 handle: OWN_HEADER,
                 children: [
-                  // A camera always opens on Connexion (DESIGN SYSTEM § Navigation).
+                  // A camera always opens on Connexion (SPECS 2.2).
                   { index: true, element: <Navigate to="connexion" replace /> },
                   { path: 'connexion', element: <CameraConnectionView /> },
                   { path: 'vie-privee', element: <CameraPrivacyView /> },

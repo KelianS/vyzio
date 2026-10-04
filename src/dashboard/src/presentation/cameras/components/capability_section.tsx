@@ -182,7 +182,7 @@ export function CapabilitySection({
         />
       )}
 
-      {/* Adding a capability closes the list: it is a capability's own action (DESIGN SYSTEM § Capability cards). */}
+      {/* Adding a capability closes the list: it is a capability's own action (SPECS 2.3). */}
       <div className="flex flex-wrap items-center gap-2">
         <ManualCapability
           bindings={bindings}
@@ -632,7 +632,7 @@ function BindingCard({
         ) : (
           <>
             {tryButton('Essayer')}
-            {/* Never in use, so nothing to switch off: a camera without it is removed (DESIGN SYSTEM § Capability cards). */}
+            {/* Never in use, so nothing to switch off: a camera without it is removed (SPECS 2.3). */}
             {removeButton()}
           </>
         )

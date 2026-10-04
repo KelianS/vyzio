@@ -215,7 +215,7 @@ test.describe('CameraConnectionView stream lines', () => {
   })
 })
 
-// The stream is checked like any other capability, from its own card (DESIGN SYSTEM § Capability cards).
+// The stream is checked like any other capability, from its own card (SPECS 2.3).
 test.describe('CameraConnectionView capability cards', () => {
   test('CameraConnectionView_ShouldConfirmEachCapabilityWorks_WhenTheUserChecksThem', async ({
     page,

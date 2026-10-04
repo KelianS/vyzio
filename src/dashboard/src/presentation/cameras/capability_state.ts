@@ -13,7 +13,7 @@ export interface StatePill {
   tone: BadgeTone
 }
 
-/** Where a capability stands, the pill of its card and of a stream line (DESIGN SYSTEM § UX vocabulary, States). */
+/** Where a capability stands, the pill of its card and of a stream line (SPECS 2.3). */
 export const CapabilityState = {
   Working: 'working',
   Failed: 'failed',
@@ -33,7 +33,7 @@ export const SWITCHED_ON_AND_OFF: Record<Capability, boolean> = {
   image_settings: false,
 }
 
-// The one word both levels share: nobody asked yet (DESIGN SYSTEM § UX vocabulary, States).
+// The one word both levels share: nobody asked yet (SPECS 2.3).
 const NOT_CHECKED_YET: StatePill = { label: 'Pas encore vérifié', tone: 'neutral' }
 
 /** The capability level's words, the same on every card and stream line. */
