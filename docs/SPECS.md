@@ -489,22 +489,25 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 
 ---
 
-## 12. Perimetre MVP
+## 12. Périmètre produit
 
-### 12.1 Inclus dans le MVP
+Ce que Vyzio couvre, et ce qu'il ne cherche pas à couvrir. Le contenu d'une version donnée ne vit
+pas ici : il vit dans son jalon GitHub ([WORKFLOW](WORKFLOW.md) § Releases, one milestone each).
 
-- ajout et gestion de cameras existantes ;
-- surveillance locale avec notifications sur evenements prioritaires ;
+### 12.1 Ce que Vyzio couvre
+
+- ajout et gestion de caméras existantes ;
+- surveillance locale avec notifications sur événements prioritaires ;
 - gestion de profils connus ;
-- historique consultable et retention configurable ;
-- interface web unifiee pour les parcours principaux.
+- historique consultable et rétention configurable ;
+- interface web unifiée pour les parcours principaux.
 
-### 12.2 Hors MVP initial
+### 12.2 Hors périmètre
 
 - couverture exhaustive de tous les usages experts d'un NVR ;
-- exposition de chaque capacite avancee dans une UI Vyzio 100 % custom ;
-- automatisations complexes et scenarios tres specialises ;
-- experiences distantes avancees qui compliquent la promesse locale par defaut.
+- exposition de chaque capacité avancée dans une UI Vyzio 100 % custom ;
+- automatisations complexes et scénarios très spécialisés ;
+- expériences distantes avancées qui compliquent la promesse locale par défaut.
 
 ---
 

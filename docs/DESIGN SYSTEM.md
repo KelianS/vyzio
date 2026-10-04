@@ -8,14 +8,14 @@ because they are the strings the user reads, not prose to translate.
 The Vyzio Hub must feel reassuring, readable and domestic, without borrowing the aesthetics of an
 expert NVR tool.
 
-The MVP design rests on a light, bright, calm interface with a simple visual hierarchy:
+The design rests on a light, bright, calm interface with a simple visual hierarchy:
 
 - a system state visible immediately;
 - recent events readable at a glance;
 - explicit primary actions;
 - an advanced route into Frigate, present but secondary.
 
-## MVP palette
+## Palette
 
 - `--bg-canvas: #f4efe6`: the main background, warm rather than clinical.
 - `--bg-elevated: #fffaf2`: primary surfaces.
