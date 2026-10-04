@@ -10,22 +10,33 @@ Conclusions des tests précédents :
   - 0xe9 @ byte[8] = PAN GAUCHE (coords écran)
   - Tilt haut/bas et nombre minimal de paquets : à confirmer.
 
-Usage :
-    python probe_v380_ptz_8800.py
+Usage:
+    VYZIO_PROBE_HOST=<camera ip> VYZIO_PROBE_USER=<user> VYZIO_PROBE_PASS=<password> \
+    VYZIO_PROBE_DEVICE_ID=<v380 device id> python probe_v380_ptz_8800.py
 """
 
+import os
 import socket
 import struct
 import time
 import string
 import random
+import sys
 from Crypto.Cipher import AES
 
-HOST = '192.168.1.135'
+
+def required_env(name):
+    value = os.environ.get(name)
+    if not value:
+        sys.exit(f'Missing environment variable {name} (see the usage at the top of this script).')
+    return value
+
+
+HOST = required_env('VYZIO_PROBE_HOST')
 PORT = 8800
-USER = 'admin'
-PASS = 'Password1'
-DEVICE_ID = 26970853
+USER = required_env('VYZIO_PROBE_USER')
+PASS = required_env('VYZIO_PROBE_PASS')
+DEVICE_ID = int(required_env('VYZIO_PROBE_DEVICE_ID'))
 STATIC_KEY = b'macrovideo+*#!^@'
 CHARSET = (string.ascii_letters + string.digits + '!@#$%^&*()_+-=').encode()
 
