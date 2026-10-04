@@ -131,6 +131,7 @@ def run(context):
         info = (answer or {}).get("SystemInfo") or {}
         if info.get("SerialNo"):
             context.serials.append(info["SerialNo"])
+        context.firmware = context.firmware or info.get("SoftWareVersion")
     if connection:
         connection.close()
 

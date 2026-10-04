@@ -17,14 +17,16 @@ internal sealed partial class FixtureHygiene
     private readonly IReadOnlyList<string> _passwords;
     private readonly HashSet<string> _sofiaHashes;
     private readonly string _macPrefix;
+    private readonly string _adminToken;
 
-    private FixtureHygiene(string username, string probeUsername, IReadOnlyList<string> passwords, string probePassword, string macPrefix)
+    private FixtureHygiene(string username, string probeUsername, IReadOnlyList<string> passwords, string probePassword, string macPrefix, string adminToken)
     {
         _username = username;
         _probeUsername = probeUsername;
         _passwords = passwords;
         _sofiaHashes = [.. passwords.Append(probePassword).Select(DvripClient.SofiaHash)];
         _macPrefix = Bare(macPrefix);
+        _adminToken = adminToken;
     }
 
     public static FixtureHygiene FromNeutralValues()
@@ -38,7 +40,8 @@ internal sealed partial class FixtureHygiene
             probe.GetProperty("username").GetString()!,
             [account.GetProperty("password").GetString()!, root.GetProperty("refusedPassword").GetString()!],
             probe.GetProperty("password").GetString()!,
-            root.GetProperty("macPrefix").GetString()!);
+            root.GetProperty("macPrefix").GetString()!,
+            root.GetProperty("dvripAdminToken").GetString()!);
     }
 
     // The kind of each leak, never its value: a CI log is public.
@@ -91,6 +94,7 @@ internal sealed partial class FixtureHygiene
         if (WsUsername().Matches(text).Any(match => match.Groups[1].Value != _username)) yield return "WS-Security username";
         if (DvripUsername().Matches(text).Any(match => match.Groups[1].Value != _username && match.Groups[1].Value != _probeUsername)) yield return "DVRIP username";
         if (DvripPassword().Matches(text).Any(match => !_sofiaHashes.Contains(match.Groups[1].Value))) yield return "DVRIP password hash";
+        if (DvripAdminToken().Matches(text).Any(match => match.Groups[1].Value != _adminToken)) yield return "DVRIP admin token";
         if (UrlPassword().Matches(text).Any(match => match.Groups[1].Value.Length > 0 && !_passwords.Contains(match.Groups[1].Value))) yield return "password in an address";
         if (BasicAuthorization().Matches(text).Any(match => !_passwords.Any(password => DecodedBasic(match.Groups[1].Value) == $"{_username}:{password}"))) yield return "Basic authorization";
         var tokens = WsToken().Matches(text);
@@ -175,6 +179,9 @@ internal sealed partial class FixtureHygiene
 
     [GeneratedRegex(@"""PassWord""\s*:\s*""([^""]*)""")]
     private static partial Regex DvripPassword();
+
+    [GeneratedRegex(@"""AdminToken""\s*:\s*""([^""]*)""")]
+    private static partial Regex DvripAdminToken();
 
     [GeneratedRegex(@"password=([^&_\s""<]*)", RegexOptions.IgnoreCase)]
     private static partial Regex UrlPassword();

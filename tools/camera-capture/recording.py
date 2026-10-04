@@ -27,6 +27,7 @@ HOSTNAMES = [
     re.compile(r'"Host[Nn]ame"\s*:\s*"([^"]+)"'),
     re.compile(r"<(?:\w+:)?HostnameInformation>.*?<(?:\w+:)?Name>([^<]+)<", re.DOTALL),
 ]
+DVRIP_ADMIN_TOKEN = re.compile(r'"AdminToken"\s*:\s*"([^"]+)"')
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,8 @@ class Scrubber:
         for pattern in HOSTNAMES:
             for match in pattern.finditer(text):
                 self.literals[match.group(1)] = NEUTRAL_VALUES["hostname"]
+        for match in DVRIP_ADMIN_TOKEN.finditer(text):
+            self.literals[match.group(1)] = NEUTRAL_VALUES["dvripAdminToken"]
 
     def learn_mac(self, mac):
         bare = re.sub(r"[:-]", "", mac).lower()

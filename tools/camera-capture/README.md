@@ -24,7 +24,7 @@ camera and removed it in the same transcript.
   [`neutral-values.json`](../../src/vyzio/Vyzio.Tests/Contracts/Fixtures/neutral-values.json):
   the WS-Security digest, the DVRIP Sofia hash, the V380 encrypted password and the RTSP Digest
   response are computed again from it, with the nonce of the real exchange, so a replay matches.
-- Serials, hostnames, MAC addresses, private IPv4 and IPv6 addresses, UUIDs, DVRIP session ids,
+- Serials, hostnames, MAC addresses, private IPv4 and IPv6 addresses, UUIDs, DVRIP session ids and admin tokens,
   the V380 device number and ticket are replaced by the stable values of the same file, in text and in
   binary frames alike.
 - No video is ever recorded: RTSP stops at `DESCRIBE`, V380 at the authentication frame.
