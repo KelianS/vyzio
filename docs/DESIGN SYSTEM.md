@@ -161,8 +161,9 @@ setting on one, takes its place without a page or a layout of its own:
   capability the camera does not show, or that the user answered "no" to, is another way to reach it in
   its `Options`, or removing it (`Retirer`), Orientation included as long as it was never in use (one in use
   is switched off with `Desactiver`). After a "no", the card says so in one line naming what the user saw
-  (`Vous avez indique que la camera n'a pas bouge.`) and swaps its check for `Essayer a nouveau`, which
-  tries again and asks the same question; no check or detection asks it on its own.
+  (`Vous avez indique que la camera n'a pas bouge.`), then the try's line, and swaps its check for
+  `Essayer a nouveau`, which tries again and asks the same question; no check or detection asks it on
+  its own.
 
 The page shows a camera's connection data on its three levels
 ([ADR-61](adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)), each

@@ -122,9 +122,9 @@ protocol with a registered provider:
 3. Each capability tries, in priority order, only the candidates that answered, and keeps the first
    that proves it, otherwise the first where it is to confirm (ADR-66). A capability the user
    configured by hand, or proven or confirmed on a candidate, keeps its protocol and is only tested
-   again. A capability the user rejected on a candidate looks for a proof on every candidate and
-   keeps only that; otherwise it goes back to its protocol, `RejectedAt` kept, and is checked there,
-   never removed. When none proves it or leaves it to confirm, a preset capability stays unverified
+   again. A capability the user rejected on a candidate looks for a proof on the other candidates
+   first and keeps only that; otherwise it goes back to its protocol with `RejectedAt`, even when the
+   detection stops halfway, and is checked there last, never removed. When none proves it or leaves it to confirm, a preset capability stays unverified
    with the reason; a blind one is removed, and so is a blind one left to confirm.
 4. A protocol row that could not be reached, that no binding uses and that holds no port, account or
    device id the user entered is removed. A refused one stays: the camera speaks it.
