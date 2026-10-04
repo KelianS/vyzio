@@ -159,7 +159,8 @@ refreshed (the main stream's size only when its path matches, ADR-38); nothing i
 many streams go through it, then asks `ICameraVerifier` about that stream: over RTSP
 an `OPTIONS` on its path, over DVRIP its port. Each stream records `Verified`, `CheckedAt` and
 `LastError`; the recording stream's result is the camera's and the binding's. `CheckCameraStreamUseCase`
-checks one stream alone.
+checks one stream alone; the recording stream's check is the camera's, so it runs the whole
+verification.
 
 **Per stream use cases** (`CameraStreamUseCases.cs`): list, add (a protocol among the camera's rows
 that can carry a stream, a path over RTSP or, over DVRIP, the secondary stream stored as
