@@ -4,7 +4,11 @@
 >
 > Amends [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)
 > on its first consequence: an encrypted entry point is no longer a prerequisite to remote access,
-> the overlay's tunnel carries that confidentiality.
+> the overlay's tunnel carries that confidentiality;
+> [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) on its
+> first consequence and its cookie: the clear transport is the target, not a gap, and the session
+> cookie is never marked secure-only; and replaces the TLS clause of
+> [ADR-10](0010-authentication-jwt-and-bcrypt.md) (a self-signed certificate, option A below).
 
 ## Context
 
@@ -65,6 +69,7 @@ the issuance problem of A or B to do so.
 - ✅ Remote access no longer waits on the transport: #62 can be delivered on the overlay as it is
 - ⚠️ Anyone able to observe the home network, a shared or compromised Wi-Fi for instance, can read the
   session cookie, the password and the preview images
-- ⚠️ Browsers mark the page as not secure in their address bar, a discreet mention rather than a
-  warning page
-- ⚠️ A browser feature reserved to secure pages is out of reach on the home network address
+- ⚠️ Browsers mark the page as not secure in their address bar, and some flag the password field of
+  the login screen: discreet mentions rather than a warning page
+- ⚠️ No browser feature reserved to secure pages, an installable app or web push for instance, is
+  available, at home or through the overlay

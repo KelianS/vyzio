@@ -119,7 +119,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Docker engine of the host | Docker API, Unix socket | none | Root-equivalent (§ 8) |
 | API | to | Telegram | HTTPS; commands fetched by long polling | 443, outbound only | Bot token (ADR-52) |
 | API | to | Discord | HTTPS and a WebSocket gateway | 443, outbound only | Bot token (ADR-52) |
-| Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted | none opened on the router | Overlay membership, then the owner session (ADR-51, not delivered, #62) |
+| Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted, HTTP inside (ADR-67) | none opened on the router | Overlay membership, then the owner session (ADR-51, not delivered, #62) |
 | Frigate | to | GitHub | HTTPS: release version check, Frigate's default | 443 | None (#250) |
 | Frigate | to | GitHub | HTTPS: face recognition models, once, when first enabled | 443 | None (#250) |
 | Host | to | Image registry | HTTPS | 443, at install and update only | None, public images |

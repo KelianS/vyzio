@@ -19,7 +19,7 @@ references these ADRs rather than copying them.
 | [ADR-07](0007-api-asp-net-core.md) | API: ASP.NET Core | Accepted |
 | [ADR-08](0008-dashboard-react-and-typescript.md) | Dashboard: React + TypeScript | Accepted |
 | [ADR-09](0009-notifications-telegram-first-plus-fcm-and-alternative-channels.md) | Notifications: Telegram (primary) + FCM + alternative channels | Accepted, amended by ADR-63 (hour ranges) |
-| [ADR-10](0010-authentication-jwt-and-bcrypt.md) | Authentication: JWT + bcrypt | Accepted |
+| [ADR-10](0010-authentication-jwt-and-bcrypt.md) | Authentication: JWT + bcrypt | Accepted, its TLS clause (self-signed certificate) replaced by ADR-67 |
 | [ADR-11](0011-non-technical-ux-strategy-simplified-vyzio-hub-plus-advanced-frigate.md) | Non-technical UX strategy: simplified Vyzio Hub + advanced Frigate | Accepted |
 | [ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md) | Camera management driven by Vyzio, applied to Frigate | Accepted |
 | [ADR-13](0013-profile-photos-stored-by-vyzio-synced-through-the-frigate-rest-api.md) | Profile photos: stored by Vyzio, synced through the Frigate REST API | Accepted |
@@ -63,7 +63,7 @@ references these ADRs rather than copying them.
 | [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md) | Remote access to the interface: a NetBird overlay network, guided by Vyzio but operated by the user | Accepted, amended by ADR-67 (the overlay carries the remote confidentiality) |
 | [ADR-52](0052-the-inbound-direction-uses-the-channels-native-bot-credentials-declared-per-direction.md) | The inbound direction uses the channel's native bot: credentials declared per direction | Accepted |
 | [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) | User documentation lives in the interface: three levels of help | Accepted |
-| [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted |
+| [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted, amended by ADR-67 (clear transport as the target, the cookie without `Secure`) |
 | [ADR-55](0055-health-split-into-liveness-and-readiness-both-anonymous-only-liveness-relayed.md) | Health split into liveness and readiness, both anonymous, only liveness relayed | Accepted |
 | [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md) | The ONVIF endpoint is asked of the camera, never assumed by convention | Accepted, amended by ADR-61 |
 | [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) | Privacy parking goes to the Parking slot, and back to Surveillance | Accepted |

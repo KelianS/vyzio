@@ -49,9 +49,9 @@ read from the environment when the process starts, never from a request. No rout
 **On the home network, the interface is served over plain HTTP, and that is deliberate.** There is no
 TLS, no certificate and no redirect, so the session cookie, the password and every preview image
 travel unencrypted, and anyone able to observe that network can read them. An installation is
-exactly as private as the network it sits on: its Wi-Fi encryption, and who is on it. From outside
-the home, the interface is reached only through the overlay network below, whose tunnel encrypts end
-to end. Why, and the certificate options set aside:
+exactly as private as the network it sits on: its Wi-Fi encryption, and who is on it. Once remote
+access ships ([issue #62](https://github.com/KelianS/vyzio/issues/62)), the interface is reached from
+outside only through the overlay network below, whose tunnel encrypts end to end. Why, and the certificate options set aside:
 [ADR-67](docs/adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md).
 
 The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) § Threat model and is not

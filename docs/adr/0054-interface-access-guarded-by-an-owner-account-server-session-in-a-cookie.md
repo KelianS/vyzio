@@ -1,6 +1,6 @@
 # ADR-54 — L'accès à l'interface est gardé par un compte propriétaire, session serveur en cookie
 
-> Statut : Accepté
+> Statut : Accepté, amendé par [ADR-67](0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md) (le transport en clair est la cible, plus un écart ; le cookie reste sans `Secure`)
 
 ## Contexte
 
