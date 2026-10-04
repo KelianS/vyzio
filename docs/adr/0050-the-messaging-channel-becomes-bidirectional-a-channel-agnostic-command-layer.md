@@ -107,6 +107,6 @@ Comme partout, la restitution ne nomme jamais le moteur de détection sous-jacen
   et que personne d'autre ne détient — même raisonnement que le journal des notifications
   ([ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md)).
   Il est aussi la seule trace exploitable si un appairage fuit.
-- **La déclaration de commande sert au-delà du chat.** La même surface alimentera les intégrations
-  tierces via MQTT ([ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md)) sans être
-  redéclarée.
+- **La déclaration de commande sert au-delà du chat.** La même surface peut alimenter une intégration
+  tierce sans être redéclarée ; Vyzio n'en expose aucune par MQTT
+  ([ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md)).

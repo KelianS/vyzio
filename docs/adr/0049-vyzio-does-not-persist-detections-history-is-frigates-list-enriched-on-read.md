@@ -95,9 +95,9 @@ réessaie**, portée par la récupération du média elle-même. L'attente forfa
 ### Republier un événement enrichi reste une fonctionnalité, pas de la plomberie
 
 Rediffuser `frigate/events` sous un autre nom n'apporte rien. Un topic `vyzio/…` ne se justifie que
-s'il porte ce que Frigate n'a pas — le profil résolu et son mode d'alerte — au bénéfice d'une
-intégration externe type Home Assistant, comme le prévoit
-[ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md). C'est un besoin produit distinct,
+s'il porte ce que Frigate n'a pas, le profil résolu et son mode d'alerte, au bénéfice d'une
+intégration externe type Home Assistant. Vyzio n'en publie aucun
+([ADR-05](0005-vyzio-inter-service-communication-mqtt-and-channels.md)). C'est un besoin produit distinct,
 il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline.
 
 ## Conséquences

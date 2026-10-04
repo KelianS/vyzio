@@ -1,36 +1,36 @@
-# Catalogue constructeur
+# Vendor catalogue
 
-Ce dossier est la **source unique** pour tout ce qui concerne le support d'une marque ou d'un modèle de caméra dans Vyzio :
-- La documentation utilisateur affichée dans l'interface lors de la découverte
-- Les capacités déclarées pour chaque marque (PTZ, vie privée matérielle, réglages image)
-- La liste officielle du matériel reconnu
+This folder is the **single source** for everything about supporting a camera brand or model in Vyzio:
+- The user documentation the interface shows during discovery
+- The capabilities declared for each brand (PTZ, hardware privacy, image settings)
+- The official list of recognised hardware
 
 ---
 
-## Matériel supporté
+## Supported hardware
 
-| Famille (`VendorFamily`) | id | Nom affiché | Vie privée atteignable | PTZ | Réglages image |
+| Family (`VendorFamily`) | id | Display name | Reachable privacy | PTZ | Image settings |
 |---|---|---|---|---|---|
-| `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **PTZ parking**. La coupure matérielle existe mais son protocole n'est pas encore validé sur du matériel (issue #88) | Oui via ONVIF, vérifié sur C200 | Luminosité, contraste, saturation, netteté et IR via ONVIF |
-| `Icsee` | `icsee` | ICSee / XMEye | **PTZ parking** | Oui, ONVIF essayé en premier, repli DVRIP (ADR-28) | Luminosité, contraste, saturation via DVRIP (ADR-29). Netteté et IR non disponibles |
-| `V380Pro` | `v380_pro` | V380 PRO | **PTZ parking** | Oui via V380 | Non confirmé sur le matériel testé, configurable à la main |
+| `TplinkTapo` | `tplink_tapo` | TP-Link Tapo | **PTZ parking**. The hardware cut exists but its protocol is not yet validated on hardware (issue #88) | Yes through ONVIF, checked on a C200 | Brightness, contrast, saturation, sharpness and IR through ONVIF |
+| `Icsee` | `icsee` | ICSee / XMEye | **PTZ parking** | Yes, ONVIF tried first, DVRIP fallback (ADR-28) | Brightness, contrast, saturation through DVRIP (ADR-29). Sharpness and IR unavailable |
+| `V380Pro` | `v380_pro` | V380 PRO | **PTZ parking** | Yes through V380 | Not confirmed on the tested hardware, configurable by hand |
 
-> **« Coupure matérielle »** : Vyzio commande l'API locale du constructeur. Le capteur ou le cache physique est désactivé, signal non falsifiable.
+> **Hardware cut**: Vyzio drives the vendor's local API. The sensor or the physical shutter is turned off, a signal that cannot be faked.
 >
-> **« PTZ parking »** : Vyzio commande physiquement la rotation de la caméra vers sa position Parking enregistrée, et désactive simultanément l'enregistrement ; à la fin, il la ramène sur sa position Surveillance (ADR-57). Double protection : la caméra ne voit plus rien ET Vyzio n'enregistre plus.
+> **PTZ parking**: Vyzio physically turns the camera to its saved Parking position and stops recording at the same time; at the end, it brings it back to its Surveillance position (ADR-57). Double protection: the camera sees nothing AND Vyzio records nothing.
 
-La colonne « vie privée » dit ce que la marque rend **atteignable**, pas ce qui est appliqué. La
-stratégie effective est un réglage par caméra (`Camera.PrivacyStrategy`, `SoftwareBlur` par défaut),
-jamais déduite de la marque : `Hardware` exige un binding `HardwarePrivacy` vérifié, `PtzParking`
-un binding `Ptz` vérifié.
+The privacy column says what the brand makes **reachable**, not what is applied. The effective
+strategy is a per-camera setting (`Camera.PrivacyStrategy`, `SoftwareBlur` by default), never
+deduced from the brand: `Hardware` requires a verified `HardwarePrivacy` binding, `PtzParking` a
+verified `Ptz` binding.
 
-Les valeurs `VendorFamily` dans le code C# (enum `Vyzio.Core.Entities.VendorFamily`) sont converties vers ces valeurs DB par `JsonNamingPolicy.SnakeCaseLower`. Le nom du fichier `.md` doit correspondre à la valeur DB.
+The `VendorFamily` values in the C# code (enum `Vyzio.Core.Entities.VendorFamily`) are converted to these DB values by `JsonNamingPolicy.SnakeCaseLower`. The `.md` file name must match the DB value.
 
 ---
 
-## Modèle de capacités (ADR-22, mis à jour par ADR-24)
+## Capability model (ADR-22, updated by ADR-24)
 
-Chaque marque est définie comme un **preset de capacités**, pas comme un adaptateur monolithique. Une capacité (ex. `Ptz`) est indépendante de la marque : elle est résolue par **protocole réseau** (`SupportedProtocol` : `Onvif`, `V380`, `Dvrip`, `TapoKlap`, `Rtsp`).
+Each brand is defined as a **capability preset**, not as a monolithic adapter. A capability (e.g. `Ptz`) is independent of the brand: it is resolved by **network protocol** (`SupportedProtocol`: `Onvif`, `V380`, `Dvrip`, `TapoKlap`, `Rtsp`).
 
 <!-- vendor-presets:start -->
 ```
@@ -40,94 +40,83 @@ V380Pro → Ptz/[V380]
 ```
 <!-- vendor-presets:end -->
 
-> Ce bloc est rendu depuis `VendorCapabilityPresets.All` et vérifié par
-> `VendorCatalogDocumentationTests`. Ne pas le modifier à la main : le test échoue en affichant le
-> texte attendu, à coller ici tel quel.
+> This block is rendered from `VendorCapabilityPresets.All` and checked by
+> `VendorCatalogDocumentationTests`. Do not edit it by hand: the test fails and prints the expected
+> text, to paste here as is.
 
-Plusieurs protocoles pour une même capacité forment une **cascade**, essayée dans l'ordre écrit
-(ADR-28). Le preset déclare ce qui est *attendu* pour la marque ; chaque capacité est ensuite
-**vérifiée par probe** sur le matériel réel avant d'être activable (une preuve lue sur la caméra, ou,
-quand aucune lecture ne la prouve, l'essai confirmé par l'utilisateur), et un probe échoué ne bloque
-pas les autres.
+Several protocols for one capability form a **cascade**, tried in the written order (ADR-28). The
+preset declares what is *expected* for the brand; each capability is then **verified by a probe**
+on the real hardware before it can be enabled (a proof read on the camera or, when no reading proves
+it, the trial confirmed by the user), and a failed probe does not block the others.
 
-La vie privée n'est plus une capacité, à l'exception de `HardwarePrivacy` : `PtzParking` s'appuie
-sur le binding `Ptz` existant. Les capacités volontairement absentes d'un preset, et la raison de
-leur absence, sont commentées dans `VendorCapabilityPresets.cs`.
+Privacy is no longer a capability, except `HardwarePrivacy`: `PtzParking` relies on the existing
+`Ptz` binding. Capabilities deliberately left out of a preset, and why, are commented in
+`VendorCapabilityPresets.cs`.
 
 ---
 
-## Ajouter un constructeur
+## Adding a vendor
 
-### 1. Créer la fiche `vendors/<vendorFamily>.md`
+### 1. Create the sheet `vendors/<vendorFamily>.md`
 
-Le nom du fichier doit correspondre à la valeur DB de `VendorFamily` (ex. `tplink_tapo.md`).
+The file name must match the DB value of `VendorFamily` (e.g. `tplink_tapo.md`).
 
-La fiche doit contenir **au minimum** ces sections :
+The sheet is served as is to the user while adding the camera, so it is written in French, as all
+interface text. It says only what cannot be done from Vyzio, in the vendor app, and holds
+**exactly** these two sections, on the model of `v380_pro.md`:
 
 ```md
 # Nom du constructeur
 
-Contexte : quelques phrases sur pourquoi ce modèle demande une configuration particulière.
+## Avant d'ajouter la caméra
 
-## Ce qu'il faut avant de commencer
+Une phrase de contexte, si elle aide.
 
-- Prérequis matériels et logiciels
-
-## Etapes d'activation RTSP
-
-1. Etape 1
-2. Etape 2
-
-## Si Vyzio demande une adresse de flux
-
-Format(s) RTSP connus pour ce constructeur.
-
-## Mode vie privée
-
-**Niveau de garantie : [Coupure matérielle | PTZ parking | Enregistrement désactivé]**
-
-Expliquer en une ou deux phrases ce que Vyzio fait pour cette marque.
+1. Ce qu'il faut faire dans l'application du constructeur, étape par étape
+2. Revenez ici : Vyzio vous demandera l'identifiant et le mot de passe.
 
 ## Si cela ne fonctionne pas
 
-Conseils de dépannage spécifiques au constructeur.
+- Quelques conseils courts, propres au constructeur
 ```
 
-Les liens Markdown `[label](url)` sont cliquables dans l'UI. Les assets statiques vont dans `vendors/assets/` et sont servis via `/api/cameras/vendor-assets/<nom>`.
+No port, no stream path, no protocol, nothing on how Vyzio works inside, nothing on what it will do later.
+
+Markdown links `[label](url)` are clickable in the UI. Static assets go in `vendors/assets/` and are served at `/api/cameras/vendor-assets/<name>`.
 
 ---
 
-### 2. Ajouter la valeur dans l'enum `VendorFamily`
+### 2. Add the value to the `VendorFamily` enum
 
-Dans `Vyzio.Core/Entities/VendorFamily.cs`. Le nom du membre est en PascalCase :
-`JsonNamingPolicy.SnakeCaseLower` en dérive la valeur DB (`MonConstructeur` → `"mon_constructeur"`),
-et le nom du fichier `.md` doit correspondre à cette valeur.
-
----
-
-### 3. Enregistrer la détection réseau
-
-Dans `Vyzio.Infrastructure/Services/CameraDiscovery/` :
-
-- `AssistedCameraDiscoveryKnownDevices.cs` : l'empreinte (nom mDNS, hostname, OUI MAC) dans `DetectVendorFamily`, le nom d'affichage dans `FormatVendorFamily`
-- `AssistedCameraDiscoveryIdentifier.cs` : le niveau de support dans `DetermineSupportLevel` (`"guided"` ou `"basic"`)
+In `Vyzio.Core/Entities/VendorFamily.cs`. The member name is PascalCase:
+`JsonNamingPolicy.SnakeCaseLower` derives the DB value from it (`MyVendor` → `"my_vendor"`), and the
+`.md` file name must match that value.
 
 ---
 
-### 4. Déclarer le preset de capacités
+### 3. Register network detection
 
-Dans `Vyzio.Core/Entities/VendorCapabilityPresets.cs`, sur le modèle des entrées existantes : une
-capacité, et la liste ordonnée des protocoles à essayer pour elle.
+In `Vyzio.Infrastructure/Services/CameraDiscovery/`:
 
-Si le protocole n'existe pas encore, créer le provider correspondant (`IPtzCapabilityProvider`,
-`IPrivacyCapabilityProvider`, `IImageSettingsCapabilityProvider`) dans
-`Vyzio.Infrastructure/CapabilityProviders/` et l'enregistrer dans
-`Vyzio.Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs`. **L'ordre
-d'enregistrement DI est l'ordre d'essai** en détection à l'aveugle, ONVIF en premier (ADR-28).
+- `AssistedCameraDiscoveryKnownDevices.cs`: the fingerprint (mDNS name, hostname, MAC OUI) in `DetectVendorFamily`, the display name in `FormatVendorFamily`
+- `AssistedCameraDiscoveryIdentifier.cs`: the support level in `DetermineSupportLevel` (`"guided"` or `"basic"`)
 
 ---
 
-### 5. Mettre à jour ce README
+### 4. Declare the capability preset
 
-Le tableau « Matériel supporté » à la main, le bloc de capacités en relançant `dotnet test` : le
-test échoue en affichant le bloc attendu.
+In `Vyzio.Core/Entities/VendorCapabilityPresets.cs`, on the model of the existing entries: a
+capability, and the ordered list of protocols to try for it.
+
+If the protocol does not exist yet, create the matching provider (`IPtzCapabilityProvider`,
+`IPrivacyCapabilityProvider`, `IImageSettingsCapabilityProvider`) in
+`Vyzio.Infrastructure/CapabilityProviders/` and register it in
+`Vyzio.Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs`. **The DI registration
+order is the trial order** in blind detection, ONVIF first (ADR-28).
+
+---
+
+### 5. Update this README
+
+The "Supported hardware" table by hand, the capability block by re-running `dotnet test`: the test
+fails and prints the expected block.

@@ -183,7 +183,7 @@ const WELCOME_STEPS = [
   },
   {
     title: 'Recevoir les notifications',
-    body: 'Sur Telegram, aux heures que vous fixez.',
+    body: 'Sur Telegram ou Discord, aux heures que vous fixez.',
   },
 ]
 

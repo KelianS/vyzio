@@ -150,4 +150,4 @@ La reponse de `/api/cameras` est etendue avec `privacyModeActive`, `privacyModeS
 - ✅ Batch toggle avec un seul reload Frigate
 - ⚠️ Reload Frigate : breve coupure (~1–3s) sur toutes les cameras — l'UI indique que l'operation est en cours
 - ⚠️ Cameras sans adaptateur vendor : l'UI indique explicitement que la coupure est Frigate uniquement (flux RTSP brut potentiellement accessible si quelqu'un connait l'IP)
-- ⚠️ Les credentials cameras (ADR-12) sont deja protegees via `DataProtection` — l'adaptateur vendor les consomme via le meme mecanisme
+- ⚠️ Les credentials cameras (ADR-12) sont stockees en clair ; l'adaptateur vendor les lit dans la meme base

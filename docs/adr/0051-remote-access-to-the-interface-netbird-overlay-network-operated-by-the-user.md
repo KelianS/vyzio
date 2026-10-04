@@ -49,7 +49,7 @@ domaine. Il **guide**, il n'héberge pas.
 
 Le chemin recommandé est un réseau overlay **NetBird**, sur un compte qui appartient à l'utilisateur.
 Le produit l'assiste : l'interface explique la création du compte, demande la **clé d'appairage**
-générée chez NetBird, la conserve chiffrée (`DataProtection`, comme les identifiants caméra),
+générée chez NetBird, la conserve en clair dans la base, comme les identifiants caméra,
 raccorde le hub au réseau, puis affiche l'état de la connexion et l'adresse d'accès.
 
 Ce partage de responsabilité est le cœur de la décision : l'utilisateur reste client de son

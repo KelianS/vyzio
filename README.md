@@ -10,8 +10,8 @@
 
 Vyzio is self-hosted home video surveillance for people who do not want to become network
 administrators. It runs on a machine you own, recognises the people who live there, and sends
-you the handful of alerts that actually matter, with no cloud account, no subscription, and no
-footage leaving your network.
+you the handful of alerts that actually matter, with no cloud account, no subscription, and
+nothing leaving your network unless you chose to send it.
 
 It builds on [Frigate](https://frigate.video/) for local video analysis, and spends its own
 effort on everything Frigate deliberately leaves to you: discovering the cameras already on your
@@ -61,8 +61,9 @@ Cameras, and the people the system knows about:
 - **One place to drive every camera.** PTZ, hardware privacy mode, image settings and scheduled
   privacy windows. No more one vendor app per camera.
 - **Local recording.** Clips and history live on your disk, under your retention rules.
-- **Offline first.** The system keeps running without internet. Notifications are delivered once
-  the network comes back.
+- **Offline first.** The system keeps running without internet. Notifications need it: one that
+  fails while the network is down is not sent again
+  ([issue #51](https://github.com/KelianS/vyzio/issues/51)).
 - **Guided setup.** Network discovery finds the cameras, and the interface walks through the
   rest. No configuration file to hand-write.
 

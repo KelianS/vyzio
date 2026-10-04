@@ -17,7 +17,7 @@ usable by a non-technical household and keeps it invisible.
 | Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) 8.2) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate opens no flow to the internet, and any of its features that would reach it needs its own decision (§ 4) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50, ADR-70 |
 | Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) 5.3) | No cloud service in any critical path; the messaging channels and remote access need internet; no model is downloaded at run time, those Frigate does not carry ship with Vyzio | ADR-01, ADR-06, ADR-09, ADR-34, ADR-70 |
 | Target hardware | A modest machine at home: a mini PC, a Raspberry Pi 5, a NAS | One Compose stack, one database file, the detector picked from the hardware found, with a CPU fallback | ADR-06, ADR-34, ADR-37 |
-| Latency | A person signalled while still in view | Vyzio adds no step on the image path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards | ADR-03, ADR-04 |
+| Latency | A person signalled while still in view ([SPECS](SPECS.md) 5.2) | Vyzio adds no step on the image path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards | ADR-03, ADR-04 |
 | Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) 1.3) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-12, ADR-22, ADR-28, ADR-44, ADR-61 |
 | Resilience | A lost camera or a restarting Frigate is visible, never silent ([SPECS](SPECS.md) 2.2) | The API stays alive while Frigate restarts; camera reachability is watched apart from Frigate; Vyzio observes and shows, it never removes or reloads a camera on its own | ADR-23, ADR-55 |
 | Diagnosable errors | A plain sentence, then the detail support needs ([SPECS](SPECS.md) 1.5) | A camera that refuses is told apart from one that cannot be reached, from the protocol client up to the screen | ADR-56 |
@@ -271,7 +271,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 |---|---|
 | Someone on the home network opens the interface | Owner account, server session in an `httpOnly` cookie, revocable, login rate limited (ADR-54) |
 | Someone on the home network reads the traffic | Accepted: the home network is served over HTTP, its confidentiality is that network's; from outside, only the overlay's encrypted tunnel (ADR-67) |
-| A copy of the database file | Password hashed; camera accounts and channel tokens readable (#247) |
+| A copy of the database file or of the generated Frigate configuration | Password hashed; camera accounts readable in both, channel tokens in the database (#247) |
 | Frigate reached directly | Bound to the host's loopback, every access through the API (ADR-16, ADR-17) |
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
 | A command from a stranger on a messaging channel | Only paired, revocable conversations are heard; anything else is ignored without an answer (ADR-50) |
