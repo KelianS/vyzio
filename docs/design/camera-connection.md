@@ -93,21 +93,23 @@ What each provider reads:
 
 `CapabilityVerdict` turns the proof into the binding's `Status` (`CapabilityStatus`): `Proven` gives
 `Verified`, `Missing` gives `Missing` with the camera's answer in `LastError`, `Unprovable` gives
-`ToConfirm`, or `Verified` when `ConfirmedAt` holds the user's confirmation over this protocol. A
-failure gives `Failed`. `Verified` is read from `Status`, never written. `ConfirmedAt` survives every
-check that does not prove the capability, and is cleared by a proof, by a protocol change
-(`CapabilityVerdict.Reset`, from `ConfigureCameraCapabilityUseCase` and detection) and by a "no".
+`ToConfirm`, or `Verified` when `ConfirmedAt` holds the user's "yes" over this protocol, or
+`RejectedByUser` when `RejectedAt` holds their "no". A failure gives `Failed`. `Verified` is read from
+`Status`, never written. `ConfirmedAt` and `RejectedAt` survive every check that does not prove the
+capability; a proof and a protocol change (`CapabilityVerdict.Reset`, from
+`ConfigureCameraCapabilityUseCase` and detection) clear both, and each answer clears the other.
 
 ## Trying and confirming a capability
 
-`TryCameraCapabilityUseCase` acts on a binding in `ToConfirm` only, and never on a camera in privacy
+`TryCameraCapabilityUseCase` acts on a binding in `ToConfirm` or `RejectedByUser` only, and never on a camera in privacy
 mode (`privacy_mode_active`): PTZ turns right and back, then down and back, for
 `CapabilityTry.PtzNudge` each at the replay speed, through `PtzManagedPositions.NudgeAsync`, which forgets the counted position so the next
 recall homes first (ADR-60); the hardware cut closes, waits `CapabilityTry.CutHold` on the injected
 `TimeProvider`, then opens, the opening attempted even when the wait is cancelled. It records nothing.
-`ConfirmCameraCapabilityUseCase` takes the user's answer on a binding in `ToConfirm`
-(`nothing_to_confirm` otherwise): yes sets `Verified`, `VerifiedAt` and `ConfirmedAt`, and the PTZ
-panel like a proof does; no sets `RejectedByUser` and clears `ConfirmedAt`.
+`ConfirmCameraCapabilityUseCase` takes the user's answer on a binding in either state
+(`nothing_to_confirm` otherwise): yes sets `Verified`, `VerifiedAt` and `ConfirmedAt`, clears
+`RejectedAt`, and sets the PTZ panel like a proof does; no sets `RejectedByUser` and `RejectedAt`, and
+clears `ConfirmedAt`.
 
 ## Detection
 
@@ -120,8 +122,10 @@ protocol with a registered provider:
 3. Each capability tries, in priority order, only the candidates that answered, and keeps the first
    that proves it, otherwise the first where it is to confirm (ADR-66). A capability the user
    configured by hand, or proven or confirmed on a candidate, keeps its protocol and is only tested
-   again. When none proves it or leaves it to confirm, a preset capability stays unverified with the
-   reason; a blind one is removed, and so is a blind one left to confirm.
+   again. A capability the user rejected on a candidate looks for a proof on every candidate and
+   keeps only that; otherwise it goes back to its protocol, `RejectedAt` kept, and is checked there,
+   never removed. When none proves it or leaves it to confirm, a preset capability stays unverified
+   with the reason; a blind one is removed, and so is a blind one left to confirm.
 4. A protocol row that could not be reached, that no binding uses and that holds no port, account or
    device id the user entered is removed. A refused one stays: the camera speaks it.
 

@@ -62,16 +62,19 @@ provider reads is in the TAD [`design/camera-connection.md`](../design/camera-co
 **c) A capability has one state, from its last check or the user's answer**: verified, to confirm,
 missing, failed, or rejected by the user. Only verified makes it usable (the joystick, privacy
 parking, the hardware cut, image settings). An unprovable outcome gives "to confirm", unless the user
-already confirmed the capability over this protocol: the confirmation is kept across later checks,
-including a camera that stopped answering for a while, and is cleared by a change of protocol and by a
-"no".
+already answered over this protocol: a "yes" keeps it verified, a "no" keeps it rejected by the user.
+The answer is stored on the binding with its date, next to the state. It is kept across later checks,
+including a camera that stopped answering for a while; it is replaced by the user's next answer,
+cleared by a change of protocol, and outranked by a proof: a capability the camera proves is verified,
+whatever the user answered.
 
 **d) The user confirms by trying.** A capability to confirm offers a **try**, a real use the user
 starts, which is not a probe: the head turns a little right and back, then a little down and back,
 so that a head that only pans or only tilts still moves; the hardware cut closes for a few seconds,
 then opens. Then it asks one plain question, and the answer is the user's: yes makes it
 verified, confirmed by the user, with the date; no makes it rejected by the user, unusable, with the
-way out. A check after a "no" goes back to "to confirm", so the user can try again. The try is refused
+way out. A capability rejected by the user offers the try again, on purpose: the same try, then the
+same question, whose "yes" replaces the "no". The try is refused
 while the camera is in privacy mode (it would uncover or move a camera the user covered) and suspended,
 like every check, while the stream fails. A try over PTZ forgets the position Vyzio counts for that
 camera (ADR-60), so the next recall homes first, and the calibration stays valid.
@@ -80,7 +83,10 @@ camera (ADR-60), so the next recall homes first, and the calibration stays valid
 proves the capability; failing that, the first where it is to confirm; failing that, what ADR-28 did.
 A recognised brand's preset keeps a capability to confirm on its card. A blind detection keeps only a
 proven one, as it drops a failed one: a camera with no sign of a motorised head gets no Orientation
-card to deal with, and the user adds it by hand, which then offers the try.
+card to deal with, and the user adds it by hand, which then offers the try. A detection never brings
+back a capability the user rejected over a candidate: it still looks for a proof on every candidate,
+and only a proof replaces the "no"; otherwise the capability stays rejected on its protocol. Removing a
+capability forgets the answer: added again by hand, it starts to confirm.
 
 The screen's states, words and gestures are in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability
 cards; the product rule in [SPECS](../SPECS.md) 2.3.
@@ -101,6 +107,10 @@ camera too, but only when the user asks, knowing it will.
 `Uart.PTZPreset` on a fixed lens as well; a stored and listed preset asks more of the camera, and
 costs nothing more, since ADR-64 already stores one.
 
+**Forgetting the "no" at the next check.** A fixed-lens camera would be "to confirm" again after
+every detection, and the user would answer the same "no" each time. The try on purpose of d) gives the
+same way back without asking twice.
+
 **Two flags, `Verified` and a "to confirm" flag.** Two booleans hold states that exclude each other,
 and a card would have to reconcile them; one state names each case once.
 
@@ -109,6 +119,7 @@ and a card would have to reconcile them; one state names each case once.
 - ✅ A camera that answers a protocol but lacks a capability is never shown with it verified
 - ✅ A capability no read can show stays within reach: the user tries it once and it works from then on
 - ✅ Each failed card says why: the protocol, the capability missing, or the user's own "no"
+- ✅ The user answers "no" once: no check or detection asks again, and the try on purpose stays there
 - ⚠️ ICSee cameras that keep no preset, V380 heads and Tapo cameras are "to confirm" until the user
   tries them; until then no joystick and no privacy parking on them
 - ⚠️ A confirmed capability rests on the user's observation: its card says so, with the date, and a
