@@ -40,7 +40,7 @@ references these ADRs rather than copying them.
 | [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) | Cascading multi-protocol capability detection + the `ManuallyConfigured` flag | Accepted, amended by ADR-61 and ADR-66 |
 | [ADR-29](0029-dvrip-a-shared-dvripclient-image-settings-and-ptz-move-stop.md) | DVRIP: a shared `DvripClient`, image settings (`AVEnc.VideoColor.[0]`), PTZ Move/Stop | Accepted (the PTZ move then stop was replaced by ADR-60) |
 | [ADR-30](0030-native-v380-image-settings-rejected-imagesettings-through-onvif-only.md) | Native V380 image settings rejected, `ImageSettings` through ONVIF only | Accepted, amended by ADR-61 |
-| [ADR-31](0031-manual-vendor-override-at-onboarding.md) | Manual vendor override at onboarding | Accepted |
+| [ADR-31](0031-manual-vendor-override-at-onboarding.md) | Manual vendor override at onboarding | Accepted, amended by ADR-68 (the brand selector leaves the add screen) |
 | [ADR-32](0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) | Three-stage network discovery pipeline: identification, enrichment, interpretation | Accepted |
 | [ADR-33](0033-detection-engine-status-exposed-on-the-hub.md) | Detection engine status exposed on the Hub: a restart tracker + `/api/system/stats` enrichment | Accepted |
 | [ADR-34](0034-automatic-hardware-adaptation-of-the-frigate-detector.md) | Automatic hardware adaptation of the Frigate detector: Coral, then Intel GPU (`onnx` + YOLOX), then CPU (native, capped FPS) | Accepted |
@@ -70,9 +70,10 @@ references these ADRs rather than copying them.
 | [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted, amended by ADR-63 (channel hours) |
 | [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) | PTZ positions are resolved above the protocol, providers only move | Accepted (counting steps, the provider primitives and how long a move lasts were replaced by ADR-60, no native presets over DVRIP by ADR-64) |
 | [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md) | PTZ positions are counted in motion time, on a session held for each move | Accepted |
-| [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) | A camera's connection data on three levels: access, protocols, capabilities | Accepted, amended by ADR-65 (streams under the stream binding, a stream's path fixed once added) and ADR-66 (the capability's proof) |
+| [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) | A camera's connection data on three levels: access, protocols, capabilities | Accepted, amended by ADR-65 (streams under the stream binding, a stream's path fixed once added), ADR-66 (the capability's proof) and ADR-68 (no stream bound when the camera is added) |
 | [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) | Privacy strategy: no "none" value, software stop by default | Accepted |
 | [ADR-63](0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md) | A scheduled rule is a type, a target set and a weekly range, planned in one calendar | Accepted |
 | [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) | DVRIP native presets are detected by storing, then clearing, a spare slot | Accepted, amended by ADR-66 (the login deciding PTZ verified) |
-| [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) | Each video stream is a checked object with a role, under the stream binding | Accepted |
+| [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) | Each video stream is a checked object with a role, under the stream binding | Accepted, amended by ADR-68 (no path entered when the camera is added) |
 | [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) | A capability is proven by a read, or confirmed by the user after trying it | Accepted |
+| [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) | A camera is created from its access alone | Accepted |

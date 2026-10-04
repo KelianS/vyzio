@@ -1,6 +1,6 @@
 # ADR-65: Each video stream is a checked object with a role, under the stream binding
 
-> Status: Accepted
+> Status: Accepted, amended by [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (point e: no stream path entered when the camera is added, none required)
 >
 > Amends [ADR-38](0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md)
 > on who holds the `record` and `detect` roles (a role per stream instead of the most detailed stream

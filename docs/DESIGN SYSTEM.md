@@ -366,11 +366,17 @@ A label states the **nature** of a screen, viewing or configuring, never the aud
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Reglages`, then a section (`Cameras`, `Detection`, `Conservation`, `Notifications`,
   `Planification`, `Acces`, `Systeme`).
-- A camera's settings are tabs under its name: `Détection`, `Conservation`, `Vie privée`,
-  `Image et pilotage`, `Connexion`. `Connexion` holds what Vyzio checks through the camera's
+- A camera's settings are tabs under its name, in the order a new camera is set up: `Connexion`,
+  `Vie privée`, `Détection`, `Image et pilotage`, `Conservation`. The page always opens on
+  `Connexion`. `Connexion` holds what Vyzio checks through the camera's
   connection, its capabilities, then in `Avance` its access and protocols, with its name and its
   removal; it keeps that name, since `Capacités` would repeat the page's own section title
   (§ Settings screens) and leave out the access.
+- The camera page is **where a new camera is set up**
+  ([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md)): adding a camera asks only for
+  its access, then opens its page, with the same tabs and cards as for any camera. The page guides by
+  each tab's own state, never by a wizard. A tab not set yet shows nothing more: no badge, no
+  reminder; it holds its defaults.
 - The end-of-page fold is called `Avance`. It is not a mode to switch on: it is a position.
 - The in-card fold of figures for support is called `Details techniques` (§ Technical details).
 - Banned as navigation entries: `Expert` (it names an audience, not a content), and `Alertes` for a
@@ -431,7 +437,9 @@ every item of that level, and each word says one backend state, never two.
 `Non confirmée` only reaches Orientation and Coupure matérielle, `Désactivée` only Orientation,
 `Pas encore vérifié` only the stream, so each agrees with its card. The camera's own status (`Connectée`, `Hors ligne`,
 `Erreur de configuration`...) is a third thing, the camera as a whole, surveillance included: it
-shows in the camera list and the page header, never on a card.
+shows in the camera list and the page header, never on a card. A camera whose stream never worked
+is `À configurer` there, neutral; on the hub its tile says the same word and leads to its page,
+without attempting an image.
 
 ### Editing cycle
 
