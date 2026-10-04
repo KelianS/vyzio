@@ -9,11 +9,35 @@ export const StreamProtocol = {
 
 export type StreamProtocol = (typeof StreamProtocol)[keyof typeof StreamProtocol]
 
+/** Where a capability stands after its last check or the user's answer; only verified makes it usable (ADR-66). */
+export const CapabilityStatus = {
+  Failed: 'failed',
+  Verified: 'verified',
+  ToConfirm: 'to_confirm',
+  Missing: 'missing',
+  RejectedByUser: 'rejected_by_user',
+} as const
+
+export type CapabilityStatus = (typeof CapabilityStatus)[keyof typeof CapabilityStatus]
+
+/** The statuses a try applies to: never tried yet, or tried again on purpose after the user's no (ADR-66 d). */
+export const ASKABLE: Record<CapabilityStatus, boolean> = {
+  to_confirm: true,
+  rejected_by_user: true,
+  verified: false,
+  missing: false,
+  failed: false,
+}
+
 export interface CameraCapabilityBinding {
   capability: Capability
   protocol: SupportedProtocol
   configJson: string | null
   verified: boolean
+  /** Why it is usable or not: proven, to confirm, missing, the user's no (ADR-66). */
+  status: CapabilityStatus
+  /** When the user confirmed it after a try; null when the camera proved it or nobody confirmed it. */
+  confirmedAt: string | null
   verifiedAt: string | null
   lastError: string | null
   isPreset: boolean

@@ -62,6 +62,14 @@ export interface CameraRepository {
     protocol: SupportedProtocol,
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
+  /** A real use of a capability to confirm, started by the user; records nothing (ADR-66). */
+  tryCapability(cameraId: string, capability: Capability): Promise<void>
+  /** The user's answer after a try: whether the camera did what was asked. */
+  confirmCapability(
+    cameraId: string,
+    capability: Capability,
+    worked: boolean,
+  ): Promise<CameraCapabilityBinding>
   removeCapability(cameraId: string, capability: Capability): Promise<void>
   setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding>
   setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding>

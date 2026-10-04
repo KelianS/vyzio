@@ -24,8 +24,13 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
     // Estimate, unmeasured on Tapo pan-tilt hardware like the move itself (ADR-60).
     public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
-    public async Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-        => await AuthenticateAsync(camera, ct) is not null;
+    // No read of the lens cut is validated on hardware: the handshake is the protocol's, so the user confirms (ADR-66).
+    Task<CapabilityProof> IPrivacyCapabilityProvider.ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct)
+        => Task.FromResult(CapabilityProof.Unprovable());
+
+    // No read of the motor is validated on hardware either (ADR-66).
+    Task<CapabilityProof> IPtzCapabilityProvider.ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct)
+        => Task.FromResult(CapabilityProof.Unprovable());
 
     public async Task SetPrivacyModeAsync(Camera camera, CameraCapabilityBinding binding, bool active, CancellationToken ct = default)
     {

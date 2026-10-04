@@ -25,8 +25,18 @@ public class CameraCapabilityBinding
     // The capability's own settings (BindingConfig); how to reach the protocol is on CameraProtocol (ADR-61).
     public string? ConfigJson { get; set; }
 
-    // Result of the last real probe — never set declaratively.
-    public bool Verified { get; set; }
+    // Result of the last check or of the user's answer, never set declaratively (ADR-66).
+    public CapabilityStatus Status { get; set; }
+
+    // Usable: proven, or confirmed by the user; read from Status, never written.
+    [NotMapped]
+    public bool Verified => Status == CapabilityStatus.Verified;
+
+    // When the user confirmed the capability over this protocol; kept across checks, cleared by a proof, a protocol change or a "no".
+    public DateTimeOffset? ConfirmedAt { get; set; }
+
+    // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-66 c).
+    public DateTimeOffset? RejectedAt { get; set; }
 
     // True when the protocol was picked explicitly by the user (manual configure/edit path,
     // ADR-28) rather than seeded from a vendor preset. SeedAndProbePresetsUseCase must never

@@ -76,6 +76,34 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task TryCapability_ShouldRefuseWithItsCode_WhenTheCapabilityHasNothingToConfirm()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/api/cameras/camera-1/capabilities/ptz/try", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("nothing_to_confirm", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ConfirmCapability_ShouldRefuseWithItsCode_WhenTheCapabilityHasNothingToConfirm()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/capabilities/stream/confirm", new { worked = true });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("nothing_to_confirm", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ConfigureCapability_ShouldRefuseWithItsCode_WhenTheCameraDoesNotHaveTheProtocol()
     {
         // Arrange

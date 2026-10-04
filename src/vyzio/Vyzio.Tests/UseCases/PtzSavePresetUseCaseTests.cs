@@ -23,7 +23,7 @@ public class PtzSavePresetUseCaseTests
             CameraId = "cam1",
             Capability = CameraCapability.Ptz,
             Protocol = SupportedProtocol.Onvif,
-            Verified = true,
+            Status = CapabilityStatus.Verified,
             ConfigJson = """{"supports_native_presets":true}""",
         };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);

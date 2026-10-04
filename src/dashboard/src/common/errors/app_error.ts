@@ -25,6 +25,8 @@ export const ApiErrorCode = {
   ScheduleNoTarget: 'schedule_no_target',
   ScheduleUnknownTarget: 'schedule_unknown_target',
   ProtocolNotOnCamera: 'protocol_not_on_camera',
+  NothingToConfirm: 'nothing_to_confirm',
+  PrivacyModeActive: 'privacy_mode_active',
 } as const
 
 /** What support reads under the sentence (SPECS 1.5), and the code the API named, if any. */

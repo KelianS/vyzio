@@ -2,7 +2,8 @@
 
 > Statut : Accepté, modifié par [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md),
 > par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) (`Camera.SupportedProtocols`, ID V380)
-> et par [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) (`PrivacyStrategy.None`).
+> par [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) (`PrivacyStrategy.None`)
+> et par [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) (point 5 : `V380PtzProvider` ne reçoit plus `OnvifClient`, sa preuve ne parle plus à la caméra).
 
 ## Contexte
 

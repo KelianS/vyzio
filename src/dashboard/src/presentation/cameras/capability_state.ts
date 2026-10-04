@@ -2,6 +2,7 @@ import type { BadgeTone } from '../../common/components/badge'
 import type {
   CameraCapabilityBinding,
   Capability,
+  CapabilityStatus,
 } from '../../domain/entities/camera_capability_binding.entity'
 import { ProtocolStatus } from '../../domain/entities/camera_protocol.entity'
 
@@ -9,6 +10,8 @@ import { ProtocolStatus } from '../../domain/entities/camera_protocol.entity'
 export const CapabilityState = {
   Working: 'working',
   Failed: 'failed',
+  ToConfirm: 'to_confirm',
+  Rejected: 'rejected',
   Unconfigured: 'unconfigured',
   SwitchedOff: 'switched_off',
 } as const
@@ -25,18 +28,40 @@ export const SWITCHED_ON_AND_OFF: Record<Capability, boolean> = {
 export const CAPABILITY_STATE_PILLS: Record<CapabilityState, { label: string; tone: BadgeTone }> = {
   working: { label: 'Fonctionne', tone: 'ok' },
   failed: { label: 'En échec', tone: 'danger' },
+  to_confirm: { label: 'À confirmer', tone: 'warn' },
+  rejected: { label: 'En échec', tone: 'danger' },
   unconfigured: { label: 'À configurer', tone: 'neutral' },
   switched_off: { label: 'Désactivée', tone: 'neutral' },
 }
 
-/** A switch the user turned off wins over the last test: the capability is not in use, whatever it answered. */
+// Proven or confirmed works; to confirm waits for the user's try; the user's no is kept apart, the rest failed (ADR-66).
+const STATE_OF_STATUS: Record<CapabilityStatus, CapabilityState> = {
+  verified: CapabilityState.Working,
+  to_confirm: CapabilityState.ToConfirm,
+  failed: CapabilityState.Failed,
+  missing: CapabilityState.Failed,
+  rejected_by_user: CapabilityState.Rejected,
+}
+
+// What the camera showed or the user answered was never in use, so no switch hides it (ADR-66).
+const WINS_OVER_THE_SWITCH: Record<CapabilityStatus, boolean> = {
+  to_confirm: true,
+  missing: true,
+  rejected_by_user: true,
+  verified: false,
+  failed: false,
+}
+
+/** A switch the user turned off wins over the last test, not over the capability's own verdict. */
 export function capabilityState(
   binding: CameraCapabilityBinding,
   switchedOn: boolean,
 ): CapabilityState {
   if (!binding.isConfigured) return CapabilityState.Unconfigured
+  const state = STATE_OF_STATUS[binding.status]
+  if (WINS_OVER_THE_SWITCH[binding.status]) return state
   if (SWITCHED_ON_AND_OFF[binding.capability] && !switchedOn) return CapabilityState.SwitchedOff
-  return binding.verified ? CapabilityState.Working : CapabilityState.Failed
+  return state
 }
 
 // The stream is a capability like the others, first among them and drawn on its own card.
@@ -79,9 +104,22 @@ const FAILURE_LINES: Record<ProtocolStatus, string> = {
     'La dernière vérification a échoué : relancez-la, ou choisissez une autre façon de la joindre dans ses options.',
 }
 
+// A camera that answered without the capability says so before what the protocol said (ADR-66).
+const STATUS_FAILURE_LINES: Record<CapabilityStatus, string | null> = {
+  missing:
+    'La caméra répond, mais ne montre pas cette capacité : choisissez une autre façon de la joindre dans ses options.',
+  rejected_by_user: null,
+  failed: null,
+  verified: null,
+  to_confirm: null,
+}
+
 /** The plain sentence of a failed capability card (SPECS 1.5); a protocol not checked yet reads as a plain failure. */
-export function capabilityFailureLine(status: ProtocolStatus | null): string {
-  return FAILURE_LINES[status ?? ProtocolStatus.Answers]
+export function capabilityFailureLine(
+  protocolStatus: ProtocolStatus | null,
+  status: CapabilityStatus,
+): string {
+  return STATUS_FAILURE_LINES[status] ?? FAILURE_LINES[protocolStatus ?? ProtocolStatus.Answers]
 }
 
 // The stream card keeps its own sentence unless its protocol said why, then speaks the cards' plain words.

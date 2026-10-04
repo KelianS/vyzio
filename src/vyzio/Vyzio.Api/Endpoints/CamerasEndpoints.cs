@@ -23,6 +23,7 @@ file sealed record PtzMoveApiRequest(string Direction, int Speed = 50);
 file sealed record PtzPresetApiRequest(int PresetId);
 file sealed record PrivacyStrategyApiRequest(string Strategy);
 file sealed record PtzPanInvertedApiRequest(bool Inverted);
+file sealed record CapabilityAnswerApiRequest(bool Worked);
 
 public static class CamerasEndpoints
 {
@@ -321,6 +322,46 @@ public static class CamerasEndpoints
             // The gesture after changing something on the camera: re-resolve, never trust the cache (ADR-56).
             var result = await useCase.ExecuteAsync(id, cap, rediscoverEndpoints: true, ct: ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
+        // The user's try of a capability to confirm, then their answer (ADR-66 d).
+        group.MapPost("/{id}/capabilities/{capability}/try", async (
+            string id,
+            string capability,
+            TryCameraCapabilityUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
+                return Results.BadRequest(new { error = "unknown_capability", message = $"Unknown capability: {capability}" });
+
+            return await useCase.ExecuteAsync(id, cap, ct) switch
+            {
+                CapabilityTryOutcome.Done => Results.NoContent(),
+                CapabilityTryOutcome.NotFound => Results.NotFound(),
+                CapabilityTryOutcome.NothingToConfirm => Results.Conflict(new { error = "nothing_to_confirm", message = $"The {capability} capability has nothing to confirm." }),
+                CapabilityTryOutcome.PrivacyModeActive => Results.Conflict(new { error = "privacy_mode_active", message = "The camera is in privacy mode: a try would move or uncover it." }),
+                var outcome => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
+            };
+        });
+
+        group.MapPost("/{id}/capabilities/{capability}/confirm", async (
+            string id,
+            string capability,
+            CapabilityAnswerApiRequest request,
+            ConfirmCameraCapabilityUseCase useCase,
+            CancellationToken ct) =>
+        {
+            if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
+                return Results.BadRequest(new { error = "unknown_capability", message = $"Unknown capability: {capability}" });
+
+            var result = await useCase.ExecuteAsync(id, cap, request.Worked, ct);
+            return result.Outcome switch
+            {
+                CapabilityAnswerOutcome.Recorded => Results.Ok(result.Binding),
+                CapabilityAnswerOutcome.NotFound => Results.NotFound(),
+                CapabilityAnswerOutcome.NothingToConfirm => Results.Conflict(new { error = "nothing_to_confirm", message = $"The {capability} capability has nothing to confirm." }),
+                var outcome => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
+            };
         });
 
         group.MapPost("/{id}/capabilities/detect", async (

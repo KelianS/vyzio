@@ -1,6 +1,6 @@
 # ADR-61: A camera's connection data on three levels: access, protocols, capabilities
 
-> Status: Accepted
+> Status: Accepted, point c) (the provider probe as the capability's proof) amended by [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)
 >
 > Amends [ADR-19](0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md) and
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)

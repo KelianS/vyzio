@@ -9,9 +9,8 @@ public interface IImageSettingsCapabilityProvider
 {
     SupportedProtocol Protocol { get; }
 
-    // Executes a real connectivity/capability check against the camera. Verified must only
-    // ever be set to true as a result of this call — never declaratively.
-    Task<bool> ProbeAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
+    // The capability's read-only proof, once its protocol answered; never a login, never a move (ADR-66).
+    Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     // Returns null if the camera did not return usable settings (unreachable, malformed response).
     Task<CameraImageSettings?> GetImageSettingsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);

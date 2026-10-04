@@ -51,6 +51,8 @@ interface CapabilityIntents {
   onTogglePtz: () => Promise<void>
   onSetPanInverted: (inverted: boolean) => void
   onRemove: (capability: Capability) => Promise<void>
+  onTry: (capability: Capability) => void
+  onAnswer: (capability: Capability, worked: boolean) => void
   onOpenManual: () => void
   onCloseManual: () => void
   onConfigureManually: (capability: Capability, protocol: SupportedProtocol) => void
@@ -69,6 +71,8 @@ interface CapabilitySectionProps {
   /** Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2). */
   testsSuspended: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
+  /** The capabilities tried, whose card asks whether it worked. */
+  asking: Partial<Record<Capability, true>>
   manualFormOpen: boolean
   manualConfiguring: boolean
   /** The stream's main path, a declared setting that follows the page's draft (ADR-41). */
@@ -96,6 +100,7 @@ export function CapabilitySection({
   verifyingStream,
   testsSuspended,
   pending,
+  asking,
   manualFormOpen,
   manualConfiguring,
   streamPath,
@@ -129,6 +134,7 @@ export function CapabilitySection({
                 protocols={protocols}
                 protocolsRead={protocolsRead}
                 task={pending[b.capability]}
+                asking={asking[b.capability] === true}
                 testsSuspended={testsSuspended}
                 intents={intents}
               />
@@ -268,6 +274,32 @@ function StreamCard({
   )
 }
 
+/** What the try does to the camera, said before it acts (ADR-66 d); only what no read can prove is ever tried. */
+const TRY_COSTS: Record<Capability, string | null> = {
+  ptz: 'Essayer fait tourner la caméra un peu, puis la ramène.',
+  hardware_privacy: 'Essayer coupe la caméra quelques secondes.',
+  stream: null,
+  image_settings: null,
+}
+
+/** The one question after the try, in plain words; the answer is the user's. */
+const TRY_QUESTIONS: Record<Capability, string | null> = {
+  ptz: 'La caméra a bougé ?',
+  hardware_privacy: 'La caméra s’est coupée ?',
+  stream: null,
+  image_settings: null,
+}
+
+/** What the user answered, recalled in their words; the card offers to try again on purpose (ADR-66 d). */
+const USERS_NO: Record<Capability, string | null> = {
+  ptz: 'Vous avez indiqué que la caméra n’a pas bougé.',
+  hardware_privacy: 'Vous avez indiqué que la caméra ne s’est pas coupée.',
+  stream: null,
+  image_settings: null,
+}
+
+const TRY_REFUSED_IN_PRIVACY = 'Rendez la vue à la caméra pour l’essayer.'
+
 /** Where a camera's positions are kept, and what it costs when Vyzio keeps them (SPECS 9.3). */
 const POSITIONS_IN_CAMERA = 'Cette caméra garde elle-même ses positions enregistrées.'
 const POSITIONS_KEPT_BY_VYZIO =
@@ -297,6 +329,8 @@ interface BindingCardProps {
   protocols: CameraProtocol[]
   protocolsRead: boolean
   task: CapabilityTask | undefined
+  /** Tried: the card asks its one question instead of offering the try. */
+  asking: boolean
   testsSuspended: boolean
   intents: CapabilityIntents
 }
@@ -307,6 +341,7 @@ function BindingCard({
   protocols,
   protocolsRead,
   task,
+  asking,
   testsSuspended,
   intents,
 }: BindingCardProps) {
@@ -318,6 +353,8 @@ function BindingCard({
   const toggling = task === CapabilityTask.TogglePtz
   const panSaving = task === CapabilityTask.SetPanInverted
   const removing = task === CapabilityTask.Remove
+  const trying = task === CapabilityTask.Try
+  const answering = task === CapabilityTask.Answer
 
   const label = CAPABILITY_LABELS[binding.capability]
   const state = capabilityState(binding, camera.ptzSupported)
@@ -337,15 +374,43 @@ function BindingCard({
   function stateLine() {
     switch (state) {
       case CapabilityState.Working:
+        // Confirmed by the user rests on their word, and says so (ADR-66).
+        if (binding.confirmedAt)
+          return (
+            <p className="text-sm text-muted-foreground">
+              Confirmé par vous le {formatCheckedAt(binding.confirmedAt)}
+            </p>
+          )
         return verifiedAtLabel ? (
           <p className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</p>
         ) : null
+      case CapabilityState.ToConfirm:
+        if (asking)
+          return <p className="text-sm font-medium">{TRY_QUESTIONS[binding.capability]}</p>
+        // The try acts on the camera without a confirmation: its cost is said above the button (DESIGN SYSTEM § Help).
+        return (
+          <p className="text-sm text-muted-foreground">
+            {camera.privacyModeActive ? TRY_REFUSED_IN_PRIVACY : TRY_COSTS[binding.capability]}
+          </p>
+        )
+      case CapabilityState.Rejected:
+        if (asking)
+          return <p className="text-sm font-medium">{TRY_QUESTIONS[binding.capability]}</p>
+        return (
+          <div className="text-sm text-muted-foreground">
+            <p>{USERS_NO[binding.capability]}</p>
+            {/* Trying again acts on the camera too: its cost stays above the button (DESIGN SYSTEM § Help). */}
+            <p>
+              {camera.privacyModeActive ? TRY_REFUSED_IN_PRIVACY : TRY_COSTS[binding.capability]}
+            </p>
+          </div>
+        )
       case CapabilityState.Failed:
         // The camera's answer is support detail: a plain sentence leads (SPECS 1.5).
         return (
           <div className="text-sm text-destructive">
             {/* Silence, a refused account or a failed test each have their own way out (ADR-61). */}
-            <p>{capabilityFailureLine(protocol?.status ?? null)}</p>
+            <p>{capabilityFailureLine(protocol?.status ?? null, binding.status)}</p>
             {binding.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
           </div>
         )
@@ -360,6 +425,74 @@ function BindingCard({
         return unknownState
       }
     }
+  }
+
+  function answerButtons() {
+    return (
+      <>
+        <Button
+          type="button"
+          size="sm"
+          disabled={answering}
+          onClick={() => intents.onAnswer(binding.capability, true)}
+        >
+          Oui
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={answering}
+          onClick={() => intents.onAnswer(binding.capability, false)}
+        >
+          Non
+        </Button>
+      </>
+    )
+  }
+
+  function tryButton(label: string) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={trying || testsSuspended || camera.privacyModeActive}
+        onClick={() => intents.onTry(binding.capability)}
+      >
+        {trying ? 'Essai…' : label}
+      </Button>
+    )
+  }
+
+  function removeButton() {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={DESTRUCTIVE_OUTLINE}
+        onClick={() => setConfirmRemove(true)}
+      >
+        Retirer
+      </Button>
+    )
+  }
+
+  // Only an orientation in use is switched off; one never in use is removed like the others.
+  function wayOutButton() {
+    if (!switchedOnAndOff || !camera.ptzSupported) return removeButton()
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={DESTRUCTIVE_OUTLINE}
+        onClick={() => setConfirmDisable(true)}
+      >
+        Désactiver
+      </Button>
+    )
   }
 
   function actions() {
@@ -390,6 +523,26 @@ function BindingCard({
             {toggling ? 'Activation…' : 'Activer'}
           </Button>
         )
+      case CapabilityState.ToConfirm:
+        return asking ? (
+          answerButtons()
+        ) : (
+          <>
+            {tryButton('Essayer')}
+            {/* Never in use, so nothing to switch off: a camera without it is removed (DESIGN SYSTEM § Capability cards). */}
+            {removeButton()}
+          </>
+        )
+      case CapabilityState.Rejected:
+        // The user's no stands until they try again on purpose (ADR-66 d).
+        return asking ? (
+          answerButtons()
+        ) : (
+          <>
+            {tryButton('Essayer à nouveau')}
+            {wayOutButton()}
+          </>
+        )
       case CapabilityState.Working:
       case CapabilityState.Failed:
         return (
@@ -403,27 +556,7 @@ function BindingCard({
             >
               {verifying ? 'Vérification…' : 'Vérifier'}
             </Button>
-            {switchedOnAndOff ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={DESTRUCTIVE_OUTLINE}
-                onClick={() => setConfirmDisable(true)}
-              >
-                Désactiver
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={DESTRUCTIVE_OUTLINE}
-                onClick={() => setConfirmRemove(true)}
-              >
-                Retirer
-              </Button>
-            )}
+            {wayOutButton()}
           </>
         )
       default: {

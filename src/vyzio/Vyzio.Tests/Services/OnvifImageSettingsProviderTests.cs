@@ -67,7 +67,7 @@ public class OnvifImageSettingsProviderTests
         CameraId = "cam1",
         Capability = CameraCapability.ImageSettings,
         Protocol = SupportedProtocol.Onvif,
-        Verified = false,
+        Status = CapabilityStatus.Failed,
     };
 
     private static (OnvifImageSettingsProvider provider, List<HttpRequestMessage> requests) MakeProvider()
@@ -90,13 +90,16 @@ public class OnvifImageSettingsProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldReturnTrue_WhenTheVideoSourceTokenAndItsSettingsResolve()
+    public async Task ProveAsync_ShouldProveImageSettings_WhenTheVideoSourceTokenAndItsSettingsResolve()
     {
+        // Arrange
         var (provider, _) = MakeProvider();
 
-        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding());
+        // Act
+        var result = await provider.ProveAsync(MakeCamera(), MakeBinding());
 
-        Assert.True(result);
+        // Assert
+        Assert.Equal(ProofOutcome.Proven, result.Outcome);
     }
 
     [Fact]

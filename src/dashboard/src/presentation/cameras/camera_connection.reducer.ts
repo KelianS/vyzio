@@ -1,3 +1,8 @@
+import {
+  ASKABLE,
+  type CameraCapabilityBinding,
+  type Capability,
+} from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraConnectionAction } from './camera_connection.actions'
 import type { CameraConnectionUido } from './camera_connection.uido'
 
@@ -27,8 +32,14 @@ export function cameraConnectionReducer(
 
     case 'BINDINGS_STARTED':
       return { ...state, bindingsLoading: true, bindingsError: null, cameraGone: false }
+    // A question stays only on a capability a try applies to: an answer or a check elsewhere closed it.
     case 'BINDINGS_LOADED':
-      return { ...state, bindingsLoading: false, bindings: action.bindings }
+      return {
+        ...state,
+        bindingsLoading: false,
+        bindings: action.bindings,
+        asking: stillAsking(state.asking, action.bindings),
+      }
     // An unread list is not an empty one: every capability would be offered to add by hand.
     case 'BINDINGS_FAILED':
       return { ...state, bindingsLoading: false, bindings: [], bindingsError: action.error }
@@ -45,6 +56,14 @@ export function cameraConnectionReducer(
       const pending = { ...state.pending }
       delete pending[action.capability]
       return { ...state, pending }
+    }
+
+    case 'QUESTION_ASKED':
+      return { ...state, asking: { ...state.asking, [action.capability]: true } }
+    case 'QUESTION_CLOSED': {
+      const asking = { ...state.asking }
+      delete asking[action.capability]
+      return { ...state, asking }
     }
 
     case 'MANUAL_OPENED':
@@ -100,4 +119,15 @@ export function cameraConnectionReducer(
       return { ...state, removing }
     }
   }
+}
+
+function stillAsking(
+  asking: Partial<Record<Capability, true>>,
+  bindings: CameraCapabilityBinding[],
+): Partial<Record<Capability, true>> {
+  return Object.fromEntries(
+    bindings
+      .filter((b) => asking[b.capability] && ASKABLE[b.status])
+      .map((b) => [b.capability, true]),
+  )
 }

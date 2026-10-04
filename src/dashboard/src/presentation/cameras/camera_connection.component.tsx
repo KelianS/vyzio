@@ -163,6 +163,7 @@ export function CameraConnectionView() {
             verifyingStream={uido.verifying}
             testsSuspended={testsSuspended}
             pending={uido.pending}
+            asking={uido.asking}
             manualFormOpen={uido.manualFormOpen}
             manualConfiguring={uido.manualConfiguring}
             streamPath={streamPath}
@@ -176,6 +177,9 @@ export function CameraConnectionView() {
               onTogglePtz: () => presenter.onTogglePtz(camera),
               onSetPanInverted: (inverted) => void presenter.onSetPanInverted(cameraId, inverted),
               onRemove: (capability) => presenter.onRemove(cameraId, capability),
+              onTry: (capability) => void presenter.onTry(cameraId, capability),
+              onAnswer: (capability, worked) =>
+                void presenter.onAnswer(cameraId, capability, worked),
               onOpenManual: presenter.onOpenManual,
               onCloseManual: presenter.onCloseManual,
               onConfigureManually: (capability, protocol) =>
@@ -197,6 +201,22 @@ export function CameraConnectionView() {
             <p>
               Une capacité dont la vérification échoue n’est jamais proposée comme active, et la
               vérification se relance à tout moment.
+            </p>
+          </HelpPanel>
+
+          <HelpPanel title="Une capacité est à confirmer, pourquoi ?">
+            <p>
+              Certaines caméras ne permettent pas à Vyzio de lire la preuve d’une capacité. Vyzio ne
+              la suppose pas : il vous la fait essayer une fois, et votre réponse décide.
+            </p>
+            <p>
+              Regardez la caméra, ou son image sur un autre écran, avant de lancer « Essayer ». Si
+              elle n’a rien fait, répondez « Non » : la capacité reste inutilisée. Vyzio retient
+              votre réponse et ne vous repose pas la question de lui-même.
+            </p>
+            <p>
+              Ensuite, « Essayer à nouveau » refait l’essai et repose la question, ses options
+              permettent de la joindre autrement, et « Retirer » l’enlève si la caméra ne l’a pas.
             </p>
           </HelpPanel>
         </SettingsSection>

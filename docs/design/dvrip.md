@@ -29,8 +29,9 @@ session the camera dropped is reopened before the next command, never within a m
 
 ## The PTZ probe
 
-A PTZ binding over DVRIP is `verified` once a session opens with the DVRIP account. On that same
-session, the probe then asks whether the camera keeps presets of its own, without moving it:
+The protocol check has already logged in with the DVRIP account; a login proves no capability
+([ADR-66](../adr/0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)). The
+probe opens a session and asks whether the camera keeps presets of its own, without moving it:
 
 1. Read the stored presets, `Uart.PTZPreset.[0]` through `ConfigGet`. An answer that lacks the list key
    ends the probe here, since no slot is known to be free; an empty or null list means none is stored.
@@ -40,10 +41,11 @@ session, the probe then asks whether the camera keeps presets of its own, withou
 3. `SetPreset` on that slot, then read the list again: the slot must be listed.
 4. `ClearPreset` on that slot, even when step 3 failed.
 
-When the slot is listed, the probe records `supports_native_presets: true` on the binding, and the
-positions take the first tier. Any other outcome (a refusal, silence, an unreadable list, a slot
-missing from it) records `false`, and the positions stay with Vyzio (third tier); the PTZ binding stays
-verified either way. Why a probe may store a preset, and the options rejected, are in
+When the slot is listed, the probe records `supports_native_presets: true` on the binding, the
+positions take the first tier, and the stored preset is the PTZ proof (`Proven`). Any other outcome (a
+refusal, silence, an unreadable list, a slot missing from it) records `false`, the positions stay with
+Vyzio (third tier), and the PTZ capability is `Unprovable`, left for the user to confirm. A session that
+does not open fails the check with its reason. Why a probe may store a preset, and the options rejected, are in
 [ADR-64](../adr/0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md).
 A failed cleanup is logged and leaves at most one preset on the spare slot.
 

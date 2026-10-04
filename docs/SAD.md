@@ -298,7 +298,7 @@ read, never keeping a copy (ADR-49).
 | `Camera` | A camera: **one scene**, its identity and access (name, address, account), status, privacy mode (ADR-38, ADR-61) | <- `CameraProtocol`, `CameraCapabilityBinding`, `ProfileCameraLink`, `CameraStream` |
 | `CameraProtocol` | A protocol the camera speaks: how to reach it (port, address, device id, an optional specific account overriding the camera's) and whether it answers (ADR-61) | -> `Camera` |
 | `CameraStream` | A quality of the video stream capability: path, measured resolution (ADR-38) | -> `Camera` |
-| `CameraCapabilityBinding` | A capability (video stream, PTZ, hardware privacy, image) decoupled from the brand, bound to one protocol, **tested and never declarative** (ADR-22/24/28/61) | -> `Camera` |
+| `CameraCapabilityBinding` | A capability (video stream, PTZ, hardware privacy, image) decoupled from the brand, bound to one protocol, **tested and never declarative** (ADR-22/24/28/61/66) | -> `Camera` |
 | `ScheduleRule` | A scheduled rule of the house: a **type**, a weekly range (days, start, end in the installation's clock) and targets; the type declares what the targets are and what the range does to them (ADR-63) | <- `ScheduleRuleTarget` |
 | `ScheduleRuleTarget` | One thing a rule targets, a camera or a channel as its type declares; no foreign key, so a target that disappears simply stops being targeted (ADR-63) | -> `ScheduleRule` |
 | `RecordingSettings` | The installation's retention durations, overridable per camera (ADR-39) | singleton |
@@ -320,7 +320,9 @@ entities folder.
   without a password is one whose host has just removed it, and it opens nothing until a new one is
   chosen.
 - A camera capability is never enabled without a real test passing (`verified`, ADR-28), and its
-  test first requires its protocol to answer (ADR-61).
+  test first requires its protocol to answer (ADR-61). The test is a read-only proof of the capability
+  (the one write, undone at once, is ADR-64's), never a login; where no proof exists, the
+  capability waits for the user to try it and confirm it (ADR-66).
 - A connection detail lives on **one level**: the camera (access), one of its protocols (how to
   reach it), or one of its capabilities (its settings), never on two (ADR-61).
 - A `Camera` describes **a single scene**: its `CameraStream` rows are qualities of it, never different
