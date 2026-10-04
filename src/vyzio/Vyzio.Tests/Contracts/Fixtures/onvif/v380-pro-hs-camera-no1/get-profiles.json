@@ -1,0 +1,45 @@
+{
+  "protocol": "onvif",
+  "scenario": "get-profiles",
+  "description": "The media profiles, their sources, encoders and PTZ configuration.",
+  "transport": "http",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "request",
+      "method": "POST",
+      "path": "/onvif/Media",
+      "headers": [
+        [
+          "Content-Type",
+          "application/soap+xml; charset=utf-8; action=\"http://www.onvif.org/ver10/media/wsdl/GetProfiles\""
+        ]
+      ],
+      "body": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"\n            xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n            xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-utility-1.0.xsd\">\n  <s:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>fixture-user</wsse:Username>\n        <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">LIweQ2W6iAY7avNmC91i1sDuBeQ=</wsse:Password>\n        <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">lnKf08iKUT2Du3hcIYJbig==</wsse:Nonce>\n        <wsu:Created>2026-10-04T20:08:21Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </s:Header>\n  <s:Body>\n    <GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>\n  </s:Body>\n</s:Envelope>"
+    },
+    {
+      "direction": "response",
+      "status": 200,
+      "reason": "OK",
+      "headers": [
+        [
+          "Server",
+          "gSOAP/2.8"
+        ],
+        [
+          "Content-Type",
+          "application/soap+xml; charset=utf-8; action=\"http://www.onvif.org/ver10/media/wsdl/GetProfiles\""
+        ],
+        [
+          "Content-Length",
+          "5619"
+        ],
+        [
+          "Connection",
+          "close"
+        ]
+      ],
+      "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:wsdd=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:chan=\"http://schemas.microsoft.com/ws/2005/02/duplex\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\" xmlns:c14n=\"http://www.w3.org/2001/10/xml-exc-c14n#\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" xmlns:xenc=\"http://www.w3.org/2001/04/xmlenc#\" xmlns:wsc=\"http://schemas.xmlsoap.org/ws/2005/02/sc\" xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:xmime=\"http://tempuri.org/xmime.xsd\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:tt=\"http://www.onvif.org/ver10/schema\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\" xmlns:tev=\"http://www.onvif.org/ver10/events/wsdl\" xmlns:wsnt=\"http://docs.oasis-open.org/wsn/b-2\" xmlns:timg=\"http://www.onvif.org/ver20/imaging/wsdl\" xmlns:tmd=\"http://www.onvif.org/ver10/deviceIO/wsdl\" xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\" xmlns:trc=\"http://www.onvif.org/ver10/recording/wsdl\" xmlns:trt=\"http://www.onvif.org/ver10/media/wsdl\"><SOAP-ENV:Header></SOAP-ENV:Header><SOAP-ENV:Body><trt:GetProfilesResponse><trt:Profiles fixed=\"false\" token=\"stream0_0\"><tt:Name>stream0_0</tt:Name><tt:VideoSourceConfiguration token=\"VideoSourceConfiguration0\"><tt:Name>VideoSourceConfiguration0</tt:Name><tt:UseCount>2</tt:UseCount><tt:SourceToken>VideoSource0</tt:SourceToken><tt:Bounds height=\"1080\" width=\"1920\" y=\"0\" x=\"0\"></tt:Bounds></tt:VideoSourceConfiguration><tt:AudioSourceConfiguration token=\"AudioSourceConfiguration0\"><tt:Name>AudioSourceConfiguration0</tt:Name><tt:UseCount>2</tt:UseCount><tt:SourceToken>AudioSource0</tt:SourceToken></tt:AudioSourceConfiguration><tt:VideoEncoderConfiguration token=\"VideoEncoderConfiguration0_0\"><tt:Name>VideoEncoderConfiguration0_0</tt:Name><tt:UseCount>2</tt:UseCount><tt:Encoding>H264</tt:Encoding><tt:Resolution><tt:Width>1920</tt:Width><tt:Height>1080</tt:Height></tt:Resolution><tt:Quality>5</tt:Quality><tt:RateControl><tt:FrameRateLimit>20</tt:FrameRateLimit><tt:EncodingInterval>1</tt:EncodingInterval><tt:BitrateLimit>1400</tt:BitrateLimit></tt:RateControl><tt:H264><tt:GovLength>60</tt:GovLength><tt:H264Profile>High</tt:H264Profile></tt:H264><tt:Multicast/><tt:SessionTimeout>PT0S</tt:SessionTimeout></tt:VideoEncoderConfiguration><tt:AudioEncoderConfiguration token=\"AudioEncoderConfiguration0\"><tt:Name>AudioEncoderConfiguration0</tt:Name><tt:UseCount>2</tt:UseCount><tt:Encoding>AAC</tt:Encoding><tt:Bitrate>16</tt:Bitrate><tt:SampleRate>8000</tt:SampleRate><tt:Multicast/><tt:SessionTimeout>PT0H0M0.010S</tt:SessionTimeout></tt:AudioEncoderConfiguration><tt:PTZConfiguration token=\"Anv_ptz_0\"><tt:Name>Anv_ptz_0</tt:Name><tt:UseCount>2</tt:UseCount><tt:NodeToken>Anv_ptz_node_0</tt:NodeToken><tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace><tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace><tt:DefaultPTZTimeout>PT0H0M0.010S</tt:DefaultPTZTimeout></tt:PTZConfiguration></trt:Profiles><trt:Profiles fixed=\"false\" token=\"stream0_1\"><tt:Name>stream0_1</tt:Name><tt:VideoSourceConfiguration token=\"VideoSourceConfiguration1\"><tt:Name>VideoSourceConfiguration1</tt:Name><tt:UseCount>2</tt:UseCount><tt:SourceToken>VideoSource0</tt:SourceToken><tt:Bounds height=\"480\" width=\"640\" y=\"0\" x=\"0\"></tt:Bounds></tt:VideoSourceConfiguration><tt:AudioSourceConfiguration token=\"AudioSourceConfiguration1\"><tt:Name>AudioSourceConfiguration1</tt:Name><tt:UseCount>2</tt:UseCount><tt:SourceToken>AudioSource0</tt:SourceToken></tt:AudioSourceConfiguration><tt:VideoEncoderConfiguration token=\"VideoEncoderConfiguration0_1\"><tt:Name>VideoEncoderConfiguration0_1</tt:Name><tt:UseCount>2</tt:UseCount><tt:Encoding>H264</tt:Encoding><tt:Resolution><tt:Width>640</tt:Width><tt:Height>480</tt:Height></tt:Resolution><tt:Quality>5</tt:Quality><tt:RateControl><tt:FrameRateLimit>25</tt:FrameRateLimit><tt:EncodingInterval>1</tt:EncodingInterval><tt:BitrateLimit>640</tt:BitrateLimit></tt:RateControl><tt:H264><tt:GovLength>60</tt:GovLength><tt:H264Profile>Main</tt:H264Profile></tt:H264><tt:Multicast/><tt:SessionTimeout>PT0S</tt:SessionTimeout></tt:VideoEncoderConfiguration><tt:AudioEncoderConfiguration token=\"AudioEncoderConfiguration1\"><tt:Name>AudioEncoderConfiguration1</tt:Name><tt:UseCount>2</tt:UseCount><tt:Encoding>AAC</tt:Encoding><tt:Bitrate>16</tt:Bitrate><tt:SampleRate>8000</tt:SampleRate><tt:Multicast/><tt:SessionTimeout>PT0H0M0.010S</tt:SessionTimeout></tt:AudioEncoderConfiguration><tt:PTZConfiguration token=\"Anv_ptz_1\"><tt:Name>Anv_ptz_1</tt:Name><tt:UseCount>2</tt:UseCount><tt:NodeToken>Anv_ptz_node_1</tt:NodeToken><tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace><tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace><tt:DefaultPTZTimeout>PT0H0M0.010S</tt:DefaultPTZTimeout></tt:PTZConfiguration></trt:Profiles></trt:GetProfilesResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>\r\n"
+    }
+  ]
+}

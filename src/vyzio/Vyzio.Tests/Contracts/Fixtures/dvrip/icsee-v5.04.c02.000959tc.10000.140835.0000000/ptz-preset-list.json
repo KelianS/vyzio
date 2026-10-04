@@ -1,0 +1,29 @@
+{
+  "protocol": "dvrip",
+  "scenario": "ptz-preset-list",
+  "description": "Uart.PTZPreset.[0]: the presets the camera keeps.",
+  "transport": "tcp",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "sent",
+      "header": "ff00000000000000000000000000e8035f000000",
+      "body": "{\"LoginType\":\"DVRIP-Web\",\"UserName\":\"fixture-user\",\"PassWord\":\"tOSCqdfz\",\"EncryptType\":\"MD5\"}\n\u0000"
+    },
+    {
+      "direction": "received",
+      "header": "ff01000042000000000000000000e903bf000000",
+      "body": "{ \"AdminToken\" : \"Zml4dHVyZS1hZG1pbi10b2tlbi0wMDAwMDAwMDAwMDA=\", \"AliveInterval\" : 30, \"ChannelNum\" : 1, \"DeviceType \" : \"IPC\", \"ExtraChannel\" : 0, \"Ret\" : 100, \"SessionID\" : \"0x00000042\" }\n\u0000"
+    },
+    {
+      "direction": "sent",
+      "header": "ff00000042000000020000000000120438000000",
+      "body": "{\"Name\":\"Uart.PTZPreset.[0]\",\"SessionID\":\"0x00000042\"}\n\u0000"
+    },
+    {
+      "direction": "received",
+      "header": "ff01000042000000020000000000130483000000",
+      "body": "{ \"Name\" : \"Uart.PTZPreset.[0]\", \"Ret\" : 100, \"SessionID\" : \"0x00000042\", \"Uart.PTZPreset.[0]\" : [ { \"Id\" : 1 }, { \"Id\" : 2 } ] }\n\u0000"
+    }
+  ]
+}

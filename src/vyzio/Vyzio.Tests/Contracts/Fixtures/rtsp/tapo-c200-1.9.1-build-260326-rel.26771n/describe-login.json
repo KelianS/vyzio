@@ -1,0 +1,25 @@
+{
+  "protocol": "rtsp",
+  "scenario": "describe-login",
+  "description": "DESCRIBE unauthenticated, then answered with the account: the SDP.",
+  "transport": "tcp",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "sent",
+      "text": "DESCRIBE rtsp://192.0.2.10:554/stream1 RTSP/1.0\r\nCSeq: 1\r\nAccept: application/sdp\r\nUser-Agent: Vyzio\r\n\r\n"
+    },
+    {
+      "direction": "received",
+      "text": "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nDate: Sun, Oct 04 2026 20:08:30 GMT\r\nWWW-Authenticate: Basic realm=\"TP-Link IP-Camera\"\r\nWWW-Authenticate: Digest realm=\"TP-Link IP-Camera\", nonce=\"4f52c15a795a795833489d43cd1acc5a\"\r\n\r\n"
+    },
+    {
+      "direction": "sent",
+      "text": "DESCRIBE rtsp://192.0.2.10:554/stream1 RTSP/1.0\r\nCSeq: 2\r\nAccept: application/sdp\r\nUser-Agent: Vyzio\r\nAuthorization: Digest username=\"fixture-user\", realm=\"TP-Link IP-Camera\", nonce=\"4f52c15a795a795833489d43cd1acc5a\", uri=\"rtsp://192.0.2.10:554/stream1\", response=\"5c2bfb47317e950635671052f4700b3f\"\r\n\r\n"
+    },
+    {
+      "direction": "received",
+      "text": "RTSP/1.0 200 OK\r\nCSeq: 2\r\nDate: Sun, Oct 04 2026 20:08:30 GMT\r\nContent-Base: rtsp://192.0.2.10:554/stream1/\r\nContent-Type: application/sdp\r\nContent-Length: 410\r\n\r\nv=0\r\no=- 14665860 31787219 1 IN IP4 192.0.2.10\r\ns=Session streamed by \"TP-Link RTSP Server\"\r\nt=0 0\r\nm=video 0 RTP/AVP 96\r\nc=IN IP4 0.0.0.0\r\nb=AS:4096\r\na=range:npt=0-\r\na=control:track1\r\na=rtpmap:96 H264/90000\r\na=fmtp:96 packetization-mode=1; profile-level-id=4D0033; sprop-parameter-sets=J00AM+dAKALdNQEBAfAAAAMAcAAADIMAAAZ8IAAJuj3//Ao=,KO48gA==\r\nm=audio 0 RTP/AVP 8\r\na=rtpmap:8 PCMA/8000\r\na=control:track2\r\n"
+    }
+  ]
+}

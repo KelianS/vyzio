@@ -1,0 +1,20 @@
+{
+  "captured": "2026-10-04",
+  "script": "python tools/camera-capture/capture.py --model v380-pro --protocols onvif,v380,rtsp",
+  "commit": "5935c07351301c4f93b78bd732d2736e4fc278cb",
+  "protocol": "rtsp",
+  "model": "v380-pro",
+  "firmware": "HS-Camera_No1",
+  "scenarios": [
+    {
+      "file": "discovery-options.json",
+      "description": "The path-agnostic OPTIONS fingerprint of discovery.",
+      "writes": false
+    },
+    {
+      "file": "describe-login.json",
+      "description": "DESCRIBE unauthenticated, then answered with the account: the SDP.",
+      "writes": false
+    }
+  ]
+}

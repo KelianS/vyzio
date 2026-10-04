@@ -1,0 +1,17 @@
+{
+  "protocol": "rtsp",
+  "scenario": "describe-login",
+  "description": "DESCRIBE unauthenticated, then answered with the account: the SDP.",
+  "transport": "tcp",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "sent",
+      "text": "DESCRIBE rtsp://192.0.2.10:554/live/ch00_1 RTSP/1.0\r\nCSeq: 1\r\nAccept: application/sdp\r\nUser-Agent: Vyzio\r\n\r\n"
+    },
+    {
+      "direction": "received",
+      "text": "RTSP/1.0 200 OK\r\nCSeq: 1\r\nContent-Type: application/sdp\r\nContent-Length: 572\r\n\r\nv=0\r\ns=streamed by the macro-video rtsp server\r\nt=0 0\r\na=control:*\r\na=range:npt=0-\r\na=x-qt-text-nam:streamed by the macro-video rtsp server\r\nc=IN IP4 0.0.0.0\r\nm=video 0 RTP/AVP 96\r\nb=AS:500\r\na=rtpmap:96 H264/90000\r\na=fmtp:96 profile-level-id=ZAAp;packetization-mode=1;sprop-parameter-sets=J2QAKawa0A8ARPyzcBAQFAAAAwAEAAADAGI8UIqA,KO4JJIk=\r\na=control:track1\r\nm=audio 0 RTP/AVP 97\r\nc=IN IP4 0.0.0.0\r\nb=AS:96\r\na=rtpmap:97 MPEG4-GENERIC/8000\r\na=fmtp:97 streamtype=5;profile-level-id=1;mode=AAC-hbr;sizelength=13;indexlength=3;indexdeltalength=3;config=1588\r\na=control:track2\r\n"
+    }
+  ]
+}

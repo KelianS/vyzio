@@ -1,0 +1,19 @@
+{
+  "protocol": "dvrip",
+  "scenario": "discovery-banner",
+  "description": "The credential-free discovery probe and the first answer bytes.",
+  "transport": "tcp",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "sent",
+      "header": "ff01000000000000000000000000e80352000000",
+      "body": "{\"EncryptType\":\"MD5\",\"LoginType\":\"DVRIP\",\"PassWord\":\"tlJwpbo6\",\"UserName\":\"admin\"}"
+    },
+    {
+      "direction": "received",
+      "header": "ff01000000000000000000000000e9033a000000",
+      "body": "{ \"Name\" : \"\", \"Ret\" : 205, \"SessionID\" : \"0x00000000\" }\n\u0000"
+    }
+  ]
+}
