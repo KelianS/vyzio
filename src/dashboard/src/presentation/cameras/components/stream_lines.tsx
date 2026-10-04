@@ -230,7 +230,7 @@ function StreamLine({
           disabled={records || task !== undefined}
           onClick={() => setConfirmRemove(true)}
         >
-          Supprimer
+          Retirer
         </Button>
         {records && (
           <HelpTrigger
@@ -256,9 +256,9 @@ function StreamLine({
       )}
       {confirmRemove && (
         <ConfirmModal
-          title="Supprimer ce flux ?"
+          title="Retirer ce flux ?"
           body="Il quitte la liste et ne revient pas de lui-même."
-          confirmLabel="Supprimer"
+          confirmLabel="Retirer"
           tone="danger"
           loading={task === StreamTask.Remove}
           onConfirm={async () => {

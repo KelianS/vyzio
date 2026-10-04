@@ -191,14 +191,14 @@ test.describe('CameraConnectionView stream lines', () => {
     await stream.getByText('Options').click()
     const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
     const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
-    await expect(main.getByRole('button', { name: 'Supprimer' })).toBeDisabled()
+    await expect(main.getByRole('button', { name: 'Retirer' })).toBeDisabled()
 
     await sub.getByRole('combobox', { name: 'Rôle' }).click()
     await page.getByRole('option', { name: 'Enregistrement et détection' }).click()
 
     await expect(main.getByRole('combobox', { name: 'Rôle' })).toContainText('Aucun')
-    await expect(main.getByRole('button', { name: 'Supprimer' })).toBeEnabled()
-    await expect(sub.getByRole('button', { name: 'Supprimer' })).toBeDisabled()
+    await expect(main.getByRole('button', { name: 'Retirer' })).toBeEnabled()
+    await expect(sub.getByRole('button', { name: 'Retirer' })).toBeDisabled()
   })
 })
 

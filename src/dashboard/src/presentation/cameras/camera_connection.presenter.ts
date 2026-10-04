@@ -197,7 +197,7 @@ export function buildCameraConnectionPresenter({
         container.removeCameraStream.execute(cameraId, streamId),
       )
       if (!done) return
-      toast('Flux supprimé.', 'success')
+      toast('Flux retiré.', 'success')
       refreshSurveillance(hubContainer)
     },
 

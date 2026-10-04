@@ -1173,7 +1173,7 @@ describe('CameraConnectionView', () => {
     // Assert
     const main = await streamLine('1920 × 1080 · 15 img/s')
     expect(main.getByRole('button', { name: 'Désactiver' })).toBeDisabled()
-    expect(main.getByRole('button', { name: 'Supprimer' })).toBeDisabled()
+    expect(main.getByRole('button', { name: 'Retirer' })).toBeDisabled()
   })
 
   it('onAskWhyKept_ShouldSendRecordingElsewhereFirst_WhenTheStreamRecords', async () => {
@@ -1332,14 +1332,14 @@ describe('CameraConnectionView', () => {
     const sub = await streamLine('640 × 360 · 10 img/s')
 
     // Act
-    await userEvent.click(sub.getByRole('button', { name: 'Supprimer' }))
+    await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
     await userEvent.click(
-      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Supprimer' }),
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Retirer' }),
     )
 
     // Assert
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-    expect(screen.queryByText('Flux supprimé.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Flux retiré.')).not.toBeInTheDocument()
     expect(await streamLine('640 × 360 · 10 img/s')).toBeTruthy()
   })
 
