@@ -235,13 +235,16 @@ public sealed class FrigateConfigApplier(
             }
         }
 
-        FrigateGo2rtcConfig? go2rtc = dvripStreams.Count > 0
-            ? new FrigateGo2rtcConfig { Streams = dvripStreams }
-            : null;
+        // Always written: without candidates, Frigate gives go2rtc a STUN one, which would ask a public server (ADR-70).
+        var go2rtc = new FrigateGo2rtcConfig
+        {
+            Streams = dvripStreams.Count > 0 ? dvripStreams : null,
+            Webrtc = new FrigateWebrtcConfig { Candidates = [], IceServers = [] },
+        };
 
-        // Enable face_recognition globally when at least one active camera is configured
+        // On with the first active camera; the small model's files ship with Vyzio, the large one stays off (ADR-70).
         FrigateFaceRecognitionConfig? faceRecognition = activeCameras.Any(c => c.Value.Enabled)
-            ? new FrigateFaceRecognitionConfig { Enabled = true }
+            ? new FrigateFaceRecognitionConfig { Enabled = true, ModelSize = "small" }
             : null;
 
         var document = new FrigateDocument
@@ -255,6 +258,8 @@ public sealed class FrigateConfigApplier(
             {
                 Path = settings.Frigate.DatabasePath,
             },
+            // Frigate would ask GitHub for its latest release at every start (ADR-70).
+            Telemetry = new FrigateTelemetryConfig { VersionCheck = false },
             Ffmpeg = BuildFfmpeg(plan.HwAccel),
             Detectors = BuildDetectors(detectorKind),
             Model = BuildModel(detectorKind),
@@ -424,18 +429,31 @@ public sealed class FrigateConfigApplier(
     {
         public required FrigateMqttConfig Mqtt { get; init; }
         public required FrigateDatabaseConfig Database { get; init; }
+        public required FrigateTelemetryConfig Telemetry { get; init; }
         public FrigateFfmpegGlobalConfig? Ffmpeg { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
         public FrigateModelConfig? Model { get; init; }
         public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
-        public FrigateGo2rtcConfig? Go2rtc { get; init; }
+        public required FrigateGo2rtcConfig Go2rtc { get; init; }
         public FrigateRecordConfig? Record { get; init; }
         public required Dictionary<string, FrigateCameraConfig> Cameras { get; init; }
     }
 
     private sealed class FrigateGo2rtcConfig
     {
-        public required Dictionary<string, List<string>> Streams { get; init; }
+        public Dictionary<string, List<string>>? Streams { get; init; }
+        public required FrigateWebrtcConfig Webrtc { get; init; }
+    }
+
+    private sealed class FrigateWebrtcConfig
+    {
+        public required List<string> Candidates { get; init; }
+        public required List<string> IceServers { get; init; }
+    }
+
+    private sealed class FrigateTelemetryConfig
+    {
+        public required bool VersionCheck { get; init; }
     }
 
     private sealed class FrigateMqttConfig
@@ -477,6 +495,7 @@ public sealed class FrigateConfigApplier(
     private sealed class FrigateFaceRecognitionConfig
     {
         public required bool Enabled { get; init; }
+        public required string ModelSize { get; init; }
     }
 
     private sealed class FrigateCameraConfig

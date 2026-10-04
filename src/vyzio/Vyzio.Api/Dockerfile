@@ -30,7 +30,7 @@ LABEL org.opencontainers.image.revision="${VYZIO_REVISION}"
 # docker-cli: restart Frigate on config apply
 # tzdata: IANA timezone database (Europe/Paris, etc.)
 # icu-libs: .NET globalization, disabled by default in Alpine-based images
-# curl: fetch bundled detection models at build time (below)
+# curl: fetch bundled detection and face models at build time (below)
 # libcrypto3/libssl3: already present, floored to the CVE-2026-14456 fix that Alpine ships and the
 # .NET base image has not been rebuilt with yet. A floor rather than a pin: it fails the build if
 # the fix is gone, and survives Alpine moving past it. Drop once the base image catches up.
@@ -46,6 +46,18 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 # variant.
 RUN mkdir -p /app/models \
 	&& curl -fsSL -o /app/models/yolox_s.onnx https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx
+
+# Frigate's small face model files, pinned by digest, so Frigate never downloads them; licences in ADR-70.
+ARG FACE_MODELS_URL=https://github.com/NickM-27/facenet-onnx/releases/download/v1.0
+RUN mkdir -p /app/models/facedet \
+	&& curl -fsSL -o /app/models/facedet/facedet.onnx "${FACE_MODELS_URL}/facedet.onnx" \
+	&& curl -fsSL -o /app/models/facedet/landmarkdet.yaml "${FACE_MODELS_URL}/landmarkdet.yaml" \
+	&& curl -fsSL -o /app/models/facedet/facenet.tflite "${FACE_MODELS_URL}/facenet.tflite" \
+	&& printf '%s  %s\n' \
+		321aa5a6afabf7ecc46a3d06bfab2b579dc96eb5c3be7edd365fa04502ad9294 /app/models/facedet/facedet.onnx \
+		70dd8b1657c42d1595d6bd13d97d932877b3bed54a95d3c4733a0f740d1fd66b /app/models/facedet/landmarkdet.yaml \
+		54660297ebad23b7106a8ccd05f2f2f616b3d39bf7d7e82e148cf8ed7e27ae1a /app/models/facedet/facenet.tflite \
+		| sha256sum -c -
 
 COPY --from=build /app/publish .
 COPY src/vyzio/vendors /app/vendors
