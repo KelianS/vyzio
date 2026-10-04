@@ -226,7 +226,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - le produit doit supporter au moins un canal de notification utilisable par un public non-tech ;
 - plusieurs canaux pourront coexister selon les besoins utilisateur ;
 - chaque notification importante doit contenir un contexte minimum : type d'evenement, camera, heure, apercu si autorise ;
-- une personne est signalee pendant qu'elle est encore dans le champ de la camera ;
+- une notification de personne part pendant que la personne est encore dans le champ de la camera ;
 - l'utilisateur doit pouvoir regler une certitude minimale de notification, et planifier des plages **sans notification** dans la planification de la maison (§7.3) : pendant une telle plage, les canaux vises n'envoient rien, tandis que la detection, l'enregistrement et l'historique continuent ; une notification tombee dans la plage est abandonnee, jamais differee a sa fin ; seules les notifications de detection se taisent, jamais les reponses aux commandes (§5.4) ;
 - si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
 - la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;

@@ -268,7 +268,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 |---|---|
 | Someone on the home network opens the interface | Owner account, server session in an `httpOnly` cookie, revocable, login rate limited (ADR-54) |
 | Someone on the home network reads the traffic | **Not mitigated yet**: the entry point is plain HTTP (#67) |
-| A copy of the database file | Password hashed; camera accounts and channel tokens readable (#247) |
+| A copy of the database file or of the generated Frigate configuration | Password hashed; camera accounts readable in both, channel tokens in the database; accepted |
 | Frigate reached directly | Bound to the host's loopback, every access through the API (ADR-16, ADR-17) |
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
 | A command from a stranger on a messaging channel | Only paired, revocable conversations are heard; anything else is ignored without an answer (ADR-50) |

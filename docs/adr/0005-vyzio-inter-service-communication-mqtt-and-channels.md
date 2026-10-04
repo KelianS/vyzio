@@ -26,15 +26,7 @@ Les composants Vyzio (règles métier, storage, notification) doivent réagir au
 
 **MQTT (broker Mosquitto dédié) entre Frigate et Vyzio, une file en mémoire (Channels) entre les services de Vyzio.**
 
-Vyzio souscrit aux événements de Frigate et lui publie ses commandes de réglage à chaud. Vyzio ne publie aucun topic qui lui soit propre : ses services se passent les événements par une file en mémoire, dans le même processus.
-
-```
-Topics MQTT Frigate consommés par Vyzio :
-frigate/events                    → détections Frigate
-
-Topics MQTT Frigate publiés par Vyzio :
-frigate/{camera}/motion_contour_area/set  → sensibilité de détection (ADR-35)
-```
+Vyzio souscrit aux événements de détection de Frigate et lui publie la commande de sensibilité de détection (ADR-35). Vyzio ne publie aucun topic qui lui soit propre : ses services se passent les événements par une file en mémoire, dans le même processus.
 
 **Redis Streams** est documenté comme évolution v2 si le besoin de persistance ou de replay d'événements se confirme.
 
@@ -44,6 +36,6 @@ frigate/{camera}/motion_contour_area/set  → sensibilité de détection (ADR-35
 - ✅ Continuité avec Frigate — une seule technologie de messagerie dans le système
 - ✅ Composants Vyzio découplés : l'ingestion des événements Frigate dépose dans une file en mémoire que le service de notification consomme
 - ⚠️ Aucun événement Vyzio n'est exposé aux intégrations tierces, et le broker n'est pas joignable hors du réseau Docker interne
-- ✅ Testabilité : un broker MQTT léger (Mosquitto en container test) remplace le mock
+- ⚠️ Testabilité : le contrat avec Frigate est testé contre des doubles, sans broker MQTT réel
 - ⚠️ MQTT QoS 1 : at-least-once, pas exactly-once — les services doivent être idempotents sur réception
 - ⚠️ Pas de persistance native des événements en vol si le broker redémarre — mitigé par QoS 1 et sessions persistantes
