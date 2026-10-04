@@ -9,7 +9,7 @@
 > - Le header binaire fait **20 octets**, pas 22 (`cmd`/`dataLen` à des offsets différents).
 > - `ConfigSet` est le code **1040**, pas 1044 (1044 est une variante de `ConfigGet` — « config par défaut usine »).
 > - Le login attend le champ JSON `"UserName"`, pas `"Name"`.
-> - `sofia_hash` apparie des **paires d'octets bruts** du digest MD5 (8 caractères en sortie), pas des paires de nibbles hexadécimaux (16 caractères) — `sofia_hash("a4m3h5") == "S8jyn9CB"`, pas `"6DDKEOQCGQGGILIK"`.
+> - `sofia_hash` apparie des **paires d'octets bruts** du digest MD5 (8 caractères en sortie), pas des paires de nibbles hexadécimaux (16 caractères) — `sofia_hash("password") == "mF95aD4o"`.
 > - Le payload `OPPTZControl` de la section PTZ ci-dessous inclut un champ `"Action"` et un objet `"POINT"` qui **n'existent pas** dans `DVRIPCam.ptz()` (la vraie méthode n'a ni l'un ni l'autre, et `"Pattern"` vaut `"Start"`, pas `"SetBegin"`).
 > - **Le vrai mécanisme d'arrêt PTZ** (trouvé via l'intégration Home Assistant [`dbuezas/icsee-ptz`](https://github.com/dbuezas/icsee-ptz), pas dans ce document ni dans `python-dvr` seul) : `ptz("DirectionUp", preset=-1)` — `Preset=-1` est le sentinel d'arrêt, `Command` reste toujours `"DirectionUp"` peu importe la direction en cours. Un mouvement normal utilise `Preset=0`. Voir SAD ADR-29 pour le détail complet.
 >
@@ -40,9 +40,9 @@ Codes de commande pertinents (source : python-dvr) :
 
 Codes de retour : 100=OK, 102=format invalide, 103=non implémenté, 606=écriture bloquée par firmware.
 
-**Sofia hash (mot de passe DVRIP) :** paires de nibbles MD5 sommées mod 62, mappées sur `[0-9A-Za-z]`. Exemple validé : `sofia_hash("a4m3h5") == "6DDKEOQCGQGGILIK"`.
+**Sofia hash (mot de passe DVRIP) :** paires de nibbles MD5 sommées mod 62, mappées sur `[0-9A-Za-z]`.
 
-**Compte :** le compte fourni par l'app ICSee (`ubas`) est dans le groupe `admin` avec toutes les autorités.
+**Compte :** le compte fourni par l'app ICSee est dans le groupe `admin` avec toutes les autorités.
 
 ## Commandes testées pour couper le flux
 

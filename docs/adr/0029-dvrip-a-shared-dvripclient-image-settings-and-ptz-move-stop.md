@@ -13,7 +13,7 @@ ICSee n'expose aucun service ONVIF (port 8899 refusé) — `ImageSettings/Onvif`
 **Protocole confirmé contre une caméra ICSee réelle** (comparaison directe avec la bibliothèque de référence `python-dvr`, puis test en direct) :
 - Header binaire **20 octets** : `head(1)=0xFF version(1)=0x00 pad(2) session(4LE) seq(4LE) pad(2) cmd(2LE) dataLen(4LE)`.
 - Login : champ JSON `"UserName"` (pas `"Name"`).
-- `SofiaHash` : paires d'**octets bruts** du digest MD5 (8 caractères en sortie) — `sofia_hash("a4m3h5") == "S8jyn9CB"`.
+- `SofiaHash` : paires d'**octets bruts** du digest MD5 (8 caractères en sortie) — `sofia_hash("password") == "mF95aD4o"`.
 - Codes de commande : Login=1000, ConfigGet=1042, ConfigSet=**1040**, OPPTZControl=1400.
 
 ```csharp
