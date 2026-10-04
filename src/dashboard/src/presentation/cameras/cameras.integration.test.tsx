@@ -23,7 +23,7 @@ describe('CamerasView', () => {
     // Assert
     expect(screen.getByRole('link', { name: /Front Door/ })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-1/detection',
+      '/settings/cameras/camera-1',
     )
     expect(screen.getByRole('link', { name: 'Ajouter une caméra' })).toBeInTheDocument()
   })
