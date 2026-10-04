@@ -415,6 +415,24 @@ public class CapabilityDetectionTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheUsersNoOnItsProtocol_WhenTheDetectionStopsOnAnotherCandidate()
+    {
+        // Arrange
+        CameraIs(VendorFamily.Icsee);
+        _stored = RejectedOver(SupportedProtocol.Dvrip);
+        _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Protocol == SupportedProtocol.Onvif), Arg.Any<CancellationToken>()))
+            .Do(_ => throw new OperationCanceledException());
+
+        // Act
+        var stopped = await Record.ExceptionAsync(DetectAsync);
+
+        // Assert
+        Assert.IsType<OperationCanceledException>(stopped);
+        Assert.Equal(SupportedProtocol.Dvrip, _stored!.Protocol);
+        Assert.Equal(Rejected, _stored.RejectedAt);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldKeepTheUsersNo_WhenTheCameraIsUnrecognised()
     {
         // Arrange
