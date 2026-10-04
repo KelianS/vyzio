@@ -10,11 +10,11 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
  * screen added: putting up a titled frame is the spontaneous gesture.
  */
 const CAMERA_TABS = [
-  ['detection', 'Détection'],
-  ['conservation', 'Conservation'],
-  ['vie-privee', 'Vie privée'],
-  ['image', 'Image et pilotage'],
   ['connexion', 'Connexion'],
+  ['vie-privee', 'Vie privée'],
+  ['detection', 'Détection'],
+  ['image', 'Image et pilotage'],
+  ['conservation', 'Conservation'],
 ] as const
 
 test.describe('A page is named once', () => {
