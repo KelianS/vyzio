@@ -2,7 +2,9 @@ import { test, expect, type Page } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 async function openTheLiveView(page: Page) {
-  const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
+  const state = createFakeBackendState({
+    cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+  })
   await installFakeBackend(page, state)
   await page.goto('/settings/cameras/camera-1/image')
   await page.getByRole('button', { name: 'Piloter la caméra' }).click()

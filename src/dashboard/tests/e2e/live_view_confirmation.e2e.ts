@@ -2,7 +2,9 @@ import { test, expect, type Locator, type Page } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 function ptzCameraWithOneSavedPosition() {
-  const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
+  const state = createFakeBackendState({
+    cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+  })
   state.ptz = {
     presets: [
       {

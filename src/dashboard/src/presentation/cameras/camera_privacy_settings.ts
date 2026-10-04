@@ -1,6 +1,7 @@
 import type { ChoiceOption, SettingDeclaration } from '../../common/settings/setting_declaration'
 import { PrivacyStrategy, type Camera } from '../../domain/entities/camera.entity'
 import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
+import { ORIENTATION } from '../../common/orientation/orientation_control'
 
 /** What the user has set up on the camera; null while it is not known. */
 export interface PrivacySetup {
@@ -16,7 +17,6 @@ interface StrategyDefinition {
   readonly unavailable: (camera: Camera, setup: PrivacySetup) => string | null
 }
 
-const ORIENTATION: Capability = 'ptz'
 const HARDWARE_PRIVACY: Capability = 'hardware_privacy'
 
 const NOTHING_KEPT = 'Vyzio n’enregistre plus, ne détecte plus et ne notifie plus.'
