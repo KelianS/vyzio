@@ -7,11 +7,12 @@ public enum StreamChange
     Done,
     // The stream records: another stream must take recording first (ADR-65 b).
     StreamRecords,
-    // A disabled stream holds no role (ADR-65 b).
-    StreamDisabled,
 }
 
-// The one place that changes a stream binding's streams, and holds its guard: exactly one enabled stream records (ADR-65).
+// A stream the camera serves, offered on demand by quality; StreamId names the line it already is, if any (ADR-65 e).
+public sealed record StreamOffer(int Rank, string? Path, int? Width, int? Height, int? Fps, string? StreamId);
+
+// The one place that changes a stream binding's streams, and holds its guard: exactly one stream records (ADR-65).
 public static class StreamLineup
 {
     // One main stream over the protocol, recording and detecting, the others to be found again (ADR-65 e).
@@ -53,21 +54,10 @@ public static class StreamLineup
 
     public static StreamChange SetRole(CameraCapabilityBinding binding, CameraStream stream, StreamRole role)
     {
-        if (!stream.Enabled && role != StreamRole.None) return StreamChange.StreamDisabled;
         if (stream.Records && !role.Records()) return StreamChange.StreamRecords;
 
         TakeRoles(binding, stream, role);
         stream.Role = role;
-        stream.UpdatedAt = DateTimeOffset.UtcNow;
-        return StreamChange.Done;
-    }
-
-    public static StreamChange SetEnabled(CameraStream stream, bool enabled)
-    {
-        if (!enabled && stream.Records) return StreamChange.StreamRecords;
-
-        stream.Enabled = enabled;
-        if (!enabled) stream.Role = StreamRole.None;
         stream.UpdatedAt = DateTimeOffset.UtcNow;
         return StreamChange.Done;
     }
@@ -80,7 +70,12 @@ public static class StreamLineup
         return StreamChange.Done;
     }
 
-    // A stream declared by hand, at the next free rank; its role is taken from whichever stream had it.
+    // What the camera serves over a protocol, most detailed first, each with the line it already is (ADR-65 e).
+    public static IReadOnlyList<StreamOffer> Offer(CameraCapabilityBinding binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found)
+        => [.. found.Select((entry, rank) => new StreamOffer(rank, entry.Path, entry.Width, entry.Height, entry.Fps,
+            binding.Streams.FirstOrDefault(stream => stream.Protocol == protocol && PathsMatch(stream.Path, entry.Path))?.Id))];
+
+    // A stream added by the user, at the next free rank; its role is taken from whichever stream had it.
     public static CameraStream Add(CameraCapabilityBinding binding, SupportedProtocol protocol, string? path, StreamRole role)
     {
         var stream = new CameraStream

@@ -364,10 +364,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("enabled");
-
                     b.Property<int?>("Fps")
                         .HasColumnType("INTEGER")
                         .HasColumnName("fps");

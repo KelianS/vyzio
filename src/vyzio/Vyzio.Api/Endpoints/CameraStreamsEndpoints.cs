@@ -3,7 +3,7 @@ using Vyzio.Application.UseCases.Cameras;
 
 namespace Vyzio.Api.Endpoints;
 
-// The stream lines under a camera's stream binding (ADR-65); every answer carries the whole lineup.
+// The stream lines under a camera's stream binding (ADR-65); every change answers with the whole lineup.
 public static class CameraStreamsEndpoints
 {
     public static IEndpointRouteBuilder MapCameraStreams(this IEndpointRouteBuilder app)
@@ -13,13 +13,16 @@ public static class CameraStreamsEndpoints
         group.MapGet("", async (string id, GetCameraStreamsUseCase useCase, CancellationToken ct) =>
             await useCase.ExecuteAsync(id, ct) is { } streams ? Results.Ok(streams) : Results.NotFound());
 
+        group.MapGet("/available", async (string id, string protocol, ListAvailableCameraStreamsUseCase useCase, CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(id, protocol, ct);
+            return result.Outcome == StreamOutcome.Done ? Results.Ok(result.Streams) : ToError(result.Outcome);
+        });
+
         group.MapPost("", async (string id, AddCameraStreamRequest request, AddCameraStreamUseCase useCase, CancellationToken ct) =>
             ToResult(await useCase.ExecuteAsync(id, request, ct)));
 
         group.MapPut("/{streamId}/role", async (string id, string streamId, SetCameraStreamRoleRequest request, SetCameraStreamRoleUseCase useCase, CancellationToken ct) =>
-            ToResult(await useCase.ExecuteAsync(id, streamId, request, ct)));
-
-        group.MapPut("/{streamId}/enabled", async (string id, string streamId, SetCameraStreamEnabledRequest request, SetCameraStreamEnabledUseCase useCase, CancellationToken ct) =>
             ToResult(await useCase.ExecuteAsync(id, streamId, request, ct)));
 
         group.MapDelete("/{streamId}", async (string id, string streamId, RemoveCameraStreamUseCase useCase, CancellationToken ct) =>
@@ -31,16 +34,18 @@ public static class CameraStreamsEndpoints
         return app;
     }
 
-    private static IResult ToResult(StreamResult result) => result.Outcome switch
+    private static IResult ToResult(StreamResult result)
+        => result.Outcome == StreamOutcome.Done ? Results.Ok(result.Streams) : ToError(result.Outcome);
+
+    private static IResult ToError(StreamOutcome outcome) => outcome switch
     {
-        StreamOutcome.Done => Results.Ok(result.Streams),
         StreamOutcome.CameraNotFound or StreamOutcome.StreamNotFound => Results.NotFound(),
         StreamOutcome.NotConfigured => Results.Conflict(new { error = "stream_not_configured", message = "The camera's stream protocol is not chosen yet." }),
         StreamOutcome.UnknownProtocol => Results.BadRequest(new { error = "unknown_protocol", message = "No stream provider speaks this protocol." }),
         StreamOutcome.UnknownRole => Results.BadRequest(new { error = "unknown_role", message = "Unknown stream role." }),
         StreamOutcome.ProtocolNotOnCamera => Results.Conflict(new { error = "protocol_not_on_camera", message = "The camera has no row for this protocol." }),
         StreamOutcome.StreamRecords => Results.Conflict(new { error = "stream_records", message = "This stream records: give recording to another stream first." }),
-        StreamOutcome.StreamDisabled => Results.Conflict(new { error = "stream_disabled", message = "A disabled stream holds no role." }),
-        _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
+        StreamOutcome.UnknownPath => Results.BadRequest(new { error = "unknown_stream_path", message = "Over DVRIP a stream is one of its qualities, never a typed path." }),
+        _ => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
     };
 }

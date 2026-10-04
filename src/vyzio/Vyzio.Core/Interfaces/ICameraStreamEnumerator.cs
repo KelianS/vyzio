@@ -11,10 +11,10 @@ public sealed record EnumeratedStream(string? Path, int? Width, int? Height, int
 // ONVIF VideoSource token — and is opaque to Vyzio beyond grouping.
 public sealed record EnumeratedScene(string SceneKey, IReadOnlyList<EnumeratedStream> Streams);
 
-// Asks a camera what video streams it actually serves (ADR-38). Never throws on an unreachable or
+// Asks a camera what video streams it actually serves over a stream protocol (ADR-38). Never throws on an unreachable or
 // uncooperative camera: an empty result means "could not enumerate", which callers must treat as
 // "keep the single stream we already have", not as an error.
 public interface ICameraStreamEnumerator
 {
-    Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default);
+    Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default);
 }

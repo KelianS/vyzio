@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20260927182927_StreamsUnderTheStreamBinding")]
+    [Migration("20261004152623_StreamsUnderTheStreamBinding")]
     partial class StreamsUnderTheStreamBinding
     {
         /// <inheritdoc />
@@ -366,10 +366,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
-
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("enabled");
 
                     b.Property<int?>("Fps")
                         .HasColumnType("INTEGER")

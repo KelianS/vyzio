@@ -24,7 +24,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                     height = table.Column<int>(type: "INTEGER", nullable: true),
                     fps = table.Column<int>(type: "INTEGER", nullable: true),
                     role = table.Column<string>(type: "TEXT", nullable: false),
-                    enabled = table.Column<bool>(type: "INTEGER", nullable: false),
                     verified = table.Column<bool>(type: "INTEGER", nullable: false),
                     checked_at = table.Column<DateTime>(type: "TEXT", nullable: true),
                     last_error = table.Column<string>(type: "TEXT", nullable: true),

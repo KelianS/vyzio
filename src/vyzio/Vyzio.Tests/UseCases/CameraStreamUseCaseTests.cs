@@ -41,12 +41,83 @@ public class CameraStreamUseCaseTests
     private AddCameraStreamUseCase AddUseCase()
         => new(_cameras, CapabilityTestUseCases.StreamRegistry(), Check(), _verifier, _frigate);
 
+    private readonly ICameraStreamEnumerator _enumerator = Substitute.For<ICameraStreamEnumerator>();
+
     private CheckCameraStreamUseCase CheckUseCase()
     {
-        var enumerator = Substitute.For<ICameraStreamEnumerator>();
-        enumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns([]);
-        var verify = new VerifyCameraUseCase(_cameras, _bindings, _verifier, enumerator, Check(), TimeProvider.System);
+        var verify = new VerifyCameraUseCase(_cameras, _bindings, _verifier, _enumerator, Check(), TimeProvider.System);
         return new CheckCameraStreamUseCase(_cameras, verify, Check(), _verifier);
+    }
+
+    private ListAvailableCameraStreamsUseCase AvailableUseCase()
+        => new(_cameras, CapabilityTestUseCases.StreamRegistry(), Check(), _enumerator);
+
+    private void GivenTheCameraServes(SupportedProtocol protocol, params EnumeratedStream[] streams)
+        => _enumerator.EnumerateAsync(Arg.Any<Camera>(), protocol, Arg.Any<CancellationToken>())
+            .Returns([new EnumeratedScene("scene", streams)]);
+
+    [Fact]
+    public async Task ListAvailable_ShouldOfferWhatTheCameraServes_WhenTheProtocolAnswers()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        GivenTheCameraServes(SupportedProtocol.Rtsp, new("/stream1", 1920, 1080, 15), new("/stream2", 640, 360, 15));
+
+        // Act
+        var result = await AvailableUseCase().ExecuteAsync(camera.Id, "rtsp");
+
+        // Assert
+        Assert.Equal(StreamOutcome.Done, result.Outcome);
+        Assert.Equal(["/stream1", "/stream2"], result.Streams!.Select(offer => offer.Path));
+        Assert.Equal(camera.MainStream!.Id, result.Streams![0].StreamId);
+        Assert.Null(result.Streams![1].StreamId);
+    }
+
+    [Fact]
+    public async Task ListAvailable_ShouldAskTheCameraNothing_WhenTheProtocolDoesNotAnswer()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        GivenTheCameraServes(SupportedProtocol.Rtsp, new EnumeratedStream("/stream2", 640, 360, 15));
+        _protocols.ProbeAsync(camera, SupportedProtocol.Rtsp, Arg.Any<CancellationToken>())
+            .Returns(ProtocolAnswer.Unreachable("no answer on port 554"));
+
+        // Act
+        var result = await AvailableUseCase().ExecuteAsync(camera.Id, "rtsp");
+
+        // Assert
+        Assert.Empty(result.Streams!);
+        Assert.Equal("no answer on port 554", camera.Protocol(SupportedProtocol.Rtsp)!.LastError);
+        await _enumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ListAvailable_ShouldOfferBothDvripQualities_WhenTheCameraListsNone()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+        _enumerator.EnumerateAsync(Arg.Any<Camera>(), SupportedProtocol.Dvrip, Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        var result = await AvailableUseCase().ExecuteAsync(camera.Id, "dvrip");
+
+        // Assert
+        Assert.Equal([null, CameraStream.DvripSecondaryQuery], result.Streams!.Select(offer => offer.Path));
+    }
+
+    [Fact]
+    public async Task ListAvailable_ShouldRefuse_WhenTheCameraHasNoRowForTheProtocol()
+    {
+        // Arrange
+        var camera = GivenCamera();
+
+        // Act
+        var result = await AvailableUseCase().ExecuteAsync(camera.Id, "dvrip");
+
+        // Assert
+        Assert.Equal(StreamOutcome.ProtocolNotOnCamera, result.Outcome);
+        await _protocols.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -71,11 +142,26 @@ public class CameraStreamUseCaseTests
         camera.EnsureProtocol(SupportedProtocol.Dvrip);
 
         // Act
-        await AddUseCase().ExecuteAsync(camera.Id, new AddCameraStreamRequest("dvrip", "ignored", "none", Secondary: true));
+        await AddUseCase().ExecuteAsync(camera.Id, new AddCameraStreamRequest("dvrip", CameraStream.DvripSecondaryQuery, "none"));
 
         // Assert
         var added = camera.Streams.Single(stream => stream.Protocol == SupportedProtocol.Dvrip);
         Assert.Equal(CameraStream.DvripSecondaryQuery, added.Path);
+    }
+
+    [Fact]
+    public async Task Add_ShouldRefuse_WhenADvripStreamIsATypedPath()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+
+        // Act
+        var result = await AddUseCase().ExecuteAsync(camera.Id, new AddCameraStreamRequest("dvrip", "/typed", "none"));
+
+        // Assert
+        Assert.Equal(StreamOutcome.UnknownPath, result.Outcome);
+        Assert.Single(camera.Streams);
     }
 
     [Fact]
@@ -125,15 +211,15 @@ public class CameraStreamUseCaseTests
     }
 
     [Fact]
-    public async Task SetEnabled_ShouldSayDetectionFallsBack_WhenTheDetectStreamIsDisabled()
+    public async Task Remove_ShouldSayDetectionFallsBack_WhenTheDetectStreamIsRemoved()
     {
         // Arrange
         var camera = GivenCamera();
         var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
-        var useCase = new SetCameraStreamEnabledUseCase(_cameras, _frigate);
+        var useCase = new RemoveCameraStreamUseCase(_cameras, _frigate);
 
         // Act
-        var result = await useCase.ExecuteAsync(camera.Id, sub.Id, new SetCameraStreamEnabledRequest(false));
+        var result = await useCase.ExecuteAsync(camera.Id, sub.Id);
 
         // Assert
         Assert.Equal(StreamOutcome.Done, result.Outcome);

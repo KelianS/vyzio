@@ -44,48 +44,48 @@ public class StreamLineupTests
     }
 
     [Fact]
-    public void SetRole_ShouldRefuse_WhenTheStreamIsDisabled()
-    {
-        // Arrange
-        var camera = MakeCamera();
-        var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.None);
-        StreamLineup.SetEnabled(sub, enabled: false);
-
-        // Act
-        var change = StreamLineup.SetRole(camera.StreamBinding!, sub, StreamRole.Detect);
-
-        // Assert
-        Assert.Equal(StreamChange.StreamDisabled, change);
-    }
-
-    [Fact]
-    public void SetEnabled_ShouldRefuse_WhenTheStreamRecords()
-    {
-        // Arrange
-        var camera = MakeCamera();
-
-        // Act
-        var change = StreamLineup.SetEnabled(camera.MainStream!, enabled: false);
-
-        // Assert
-        Assert.Equal(StreamChange.StreamRecords, change);
-        Assert.True(camera.MainStream!.Enabled);
-    }
-
-    [Fact]
-    public void SetEnabled_ShouldLeaveDetectionOnTheRecordingStream_WhenTheDetectStreamIsDisabled()
+    public void Remove_ShouldLeaveDetectionOnTheRecordingStream_WhenTheDetectStreamIsRemoved()
     {
         // Arrange
         var camera = MakeCamera();
         var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
 
         // Act
-        StreamLineup.SetEnabled(sub, enabled: false);
+        StreamLineup.Remove(camera.StreamBinding!, sub);
 
         // Assert
-        Assert.Equal(StreamRole.None, sub.Role);
         Assert.True(camera.DetectsOnRecordingStream);
         Assert.Same(camera.MainStream, camera.DetectStream);
+    }
+
+    [Fact]
+    public void Offer_ShouldNameTheLineAStreamAlreadyIs_WhenItsPathIsListed()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        EnumeratedStream[] found = [new("/stream1", 1920, 1080, 15), new("/stream2", 640, 360, 15)];
+
+        // Act
+        var offers = StreamLineup.Offer(camera.StreamBinding!, SupportedProtocol.Rtsp, found);
+
+        // Assert
+        Assert.Equal(camera.MainStream!.Id, offers[0].StreamId);
+        Assert.Null(offers[1].StreamId);
+        Assert.Equal(1, offers[1].Rank);
+    }
+
+    [Fact]
+    public void Offer_ShouldNotMatchALine_WhenTheLineGoesThroughAnotherProtocol()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        EnumeratedStream[] found = [new("/stream1", null, null, null)];
+
+        // Act
+        var offers = StreamLineup.Offer(camera.StreamBinding!, SupportedProtocol.Dvrip, found);
+
+        // Assert
+        Assert.Null(offers[0].StreamId);
     }
 
     [Fact]

@@ -34,8 +34,6 @@ public class CameraStream
     // Changed only through StreamLineup, which holds the one-recording-stream guard (ADR-65).
     public StreamRole Role { get; set; }
 
-    public bool Enabled { get; set; } = true;
-
     public bool Verified { get; set; }
 
     public DateTimeOffset? CheckedAt { get; set; }
@@ -51,7 +49,7 @@ public class CameraStream
 
     public bool HasKnownResolution => Width is > 0 && Height is > 0;
 
-    public bool Records => Enabled && Role.Records();
+    public bool Records => Role.Records();
 
-    public bool Detects => Enabled && Role.Detects();
+    public bool Detects => Role.Detects();
 }

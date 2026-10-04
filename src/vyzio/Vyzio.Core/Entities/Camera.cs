@@ -116,11 +116,11 @@ public class Camera
     [NotMapped]
     public CameraStream? MainStream => Streams.FirstOrDefault();
 
-    // The enabled stream holding the record role; StreamLineup keeps exactly one (ADR-65).
+    // The stream holding the record role; StreamLineup keeps exactly one (ADR-65).
     [NotMapped]
     public CameraStream? RecordStream => Streams.FirstOrDefault(stream => stream.Records);
 
-    // The enabled stream holding the detect role, else the recording stream (ADR-65 c).
+    // The stream holding the detect role, else the recording stream (ADR-65 c).
     [NotMapped]
     public CameraStream? DetectStream => Streams.FirstOrDefault(stream => stream.Detects) ?? RecordStream;
 

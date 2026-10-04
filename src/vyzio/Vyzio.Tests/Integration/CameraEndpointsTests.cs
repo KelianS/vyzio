@@ -575,7 +575,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
     // single stream onboarding gave it.
     private sealed class StubCameraStreamEnumerator : ICameraStreamEnumerator
     {
-        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default)
+        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<EnumeratedScene>>([]);
     }
 

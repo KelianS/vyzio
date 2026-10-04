@@ -13,7 +13,9 @@ public class CameraStreamsEndpointsTests : IClassFixture<CamerasApiFactory>
         _factory.ResetState();
     }
 
-    private sealed record StreamLine(string Id, string Protocol, string? Path, string Role, bool Enabled, bool Verified);
+    private sealed record StreamLine(string Id, string Protocol, string? Path, string Role, bool Verified);
+
+    private sealed record AvailableStream(int Rank, string? Path, string? StreamId);
 
     private sealed record LineupResponse(StreamLine[] Streams, string? RecordStreamId, string? DetectStreamId, bool DetectsOnRecordingStream);
 
@@ -68,7 +70,34 @@ public class CameraStreamsEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task DisableStream_ShouldFallBackToTheRecordingStream_WhenTheDetectStreamIsDisabled()
+    public async Task GetAvailableStreams_ShouldAnswerAnEmptyList_WhenTheCameraListsNothingOverRtsp()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var available = await client.GetFromJsonAsync<AvailableStream[]>("/api/cameras/camera-1/streams/available?protocol=rtsp");
+
+        // Assert
+        Assert.Empty(available!);
+    }
+
+    [Fact]
+    public async Task GetAvailableStreams_ShouldRefuseWithItsCode_WhenNoStreamProviderSpeaksTheProtocol()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/cameras/camera-1/streams/available?protocol=onvif");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("unknown_protocol", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RemoveStream_ShouldFallBackToTheRecordingStream_WhenTheDetectStreamIsRemoved()
     {
         // Arrange
         using var client = _factory.CreateClient();
@@ -76,7 +105,7 @@ public class CameraStreamsEndpointsTests : IClassFixture<CamerasApiFactory>
             new { protocol = "rtsp", path = "stream2", role = "detect" })).Content.ReadFromJsonAsync<LineupResponse>();
 
         // Act
-        var response = await client.PutAsJsonAsync($"/api/cameras/camera-1/streams/{added!.DetectStreamId}/enabled", new { enabled = false });
+        var response = await client.DeleteAsync($"/api/cameras/camera-1/streams/{added!.DetectStreamId}");
 
         // Assert
         response.EnsureSuccessStatusCode();

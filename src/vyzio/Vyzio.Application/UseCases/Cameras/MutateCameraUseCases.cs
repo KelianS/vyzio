@@ -138,13 +138,13 @@ public sealed class VerifyCameraUseCase(
         // The one moment the camera is known reachable: Vyzio asks what it serves, with no extra gesture (ADR-38, ADR-65 e).
         if (result.Connected && camera.StreamBinding is { } binding)
         {
-            var scenes = await streamEnumerator.EnumerateAsync(camera, ct);
+            var scenes = await streamEnumerator.EnumerateAsync(camera, binding.Protocol, ct);
             // Only this camera's scene: other lenses become cameras of their own through onboarding (ADR-38).
             if (scenes.Count > 0) StreamLineup.ApplyFound(binding, scenes[0].Streams, time.GetUtcNow());
         }
 
-        // Every enabled stream is checked; the recording one was, as the camera's own check (ADR-65 f).
-        foreach (var other in camera.Streams.Where(entry => entry.Enabled && entry != camera.RecordStream).ToList())
+        // Every stream is checked; the recording one was, as the camera's own check (ADR-65 f).
+        foreach (var other in camera.Streams.Where(entry => entry != camera.RecordStream).ToList())
         {
             await StreamVerification.CheckStreamAsync(camera, other, protocolCheck, verifier, run, ct);
         }

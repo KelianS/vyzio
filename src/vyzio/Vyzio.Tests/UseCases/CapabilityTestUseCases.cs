@@ -53,7 +53,7 @@ internal static class CapabilityTestUseCases
     private static ICameraStreamEnumerator NothingEnumerated()
     {
         var enumerator = Substitute.For<ICameraStreamEnumerator>();
-        enumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns([]);
+        enumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns([]);
         return enumerator;
     }
 

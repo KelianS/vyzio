@@ -16,10 +16,12 @@ public enum StreamOutcome
     UnknownRole,
     ProtocolNotOnCamera,
     StreamRecords,
-    StreamDisabled,
+    UnknownPath,
 }
 
 public sealed record StreamResult(StreamOutcome Outcome, CameraStreamsDto? Streams = null);
+
+public sealed record AvailableStreamsResult(StreamOutcome Outcome, IReadOnlyList<AvailableStreamDto>? Streams = null);
 
 public sealed class GetCameraStreamsUseCase(ICameraRepository cameras)
 {
@@ -27,7 +29,38 @@ public sealed class GetCameraStreamsUseCase(ICameraRepository cameras)
         => await cameras.GetByIdAsync(cameraId, ct) is { } camera ? CameraStreamsDto.From(camera) : null;
 }
 
-// A stream the camera did not report, declared by hand and checked at once (ADR-65 e).
+// What the camera serves over a protocol, asked on demand once that protocol answers (ADR-61 c, ADR-65 e).
+public sealed class ListAvailableCameraStreamsUseCase(
+    ICameraRepository cameras,
+    ICapabilityProviderRegistry registry,
+    CameraProtocolCheck protocolCheck,
+    ICameraStreamEnumerator enumerator)
+{
+    public async Task<AvailableStreamsResult> ExecuteAsync(string cameraId, string protocolName, CancellationToken ct = default)
+    {
+        if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocolName, out var protocol)
+            || !registry.GetRegisteredProtocols(CameraCapability.Stream).Contains(protocol))
+            return new AvailableStreamsResult(StreamOutcome.UnknownProtocol);
+
+        var camera = await cameras.GetByIdAsync(cameraId, ct);
+        if (camera is null) return new AvailableStreamsResult(StreamOutcome.CameraNotFound);
+        if (camera.StreamBinding is not { } binding) return new AvailableStreamsResult(StreamOutcome.NotConfigured);
+        if (camera.Protocol(protocol) is null) return new AvailableStreamsResult(StreamOutcome.ProtocolNotOnCamera);
+
+        var answer = await protocolCheck.CheckAsync(camera, protocol, run: null, ct);
+        await cameras.UpdateAsync(camera, ct);
+        var scenes = answer.Status == ProtocolStatus.Answers ? await enumerator.EnumerateAsync(camera, protocol, ct) : [];
+        // Only this camera's scene (ADR-38); over DVRIP the two qualities are known by convention when it lists none.
+        var found = scenes.Count > 0 ? scenes[0].Streams : protocol == SupportedProtocol.Dvrip ? DvripQualities : [];
+        return new AvailableStreamsResult(StreamOutcome.Done,
+            [.. StreamLineup.Offer(binding, protocol, found).Select(AvailableStreamDto.From)]);
+    }
+
+    private static readonly IReadOnlyList<EnumeratedStream> DvripQualities =
+        [new(null, null, null, null), new(CameraStream.DvripSecondaryQuery, null, null, null)];
+}
+
+// A stream the user adds, picked from what the camera serves or typed over RTSP, checked at once (ADR-65 e).
 public sealed class AddCameraStreamUseCase(
     ICameraRepository cameras,
     ICapabilityProviderRegistry registry,
@@ -51,7 +84,9 @@ public sealed class AddCameraStreamUseCase(
 
         var path = protocol == SupportedProtocol.Rtsp
             ? CameraDraftFactory.NormalizeStreamPath(request.Path)
-            : request.Secondary ? CameraStream.DvripSecondaryQuery : null;
+            : CameraDraftFactory.NormalizeOptional(request.Path);
+        if (protocol == SupportedProtocol.Dvrip && path is not (null or CameraStream.DvripSecondaryQuery))
+            return new StreamResult(StreamOutcome.UnknownPath);
         var stream = StreamLineup.Add(binding, protocol, path, role);
         await StreamVerification.CheckStreamAsync(camera, stream, protocolCheck, verifier, run: null, ct);
 
@@ -72,13 +107,6 @@ public sealed class SetCameraStreamRoleUseCase(ICameraRepository cameras, IFriga
         return await CameraStreamChange.ApplyAsync(cameras, frigateConfigApplier, cameraId, streamId,
             (binding, stream) => StreamLineup.SetRole(binding, stream, role), ct);
     }
-}
-
-public sealed class SetCameraStreamEnabledUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
-{
-    public Task<StreamResult> ExecuteAsync(string cameraId, string streamId, SetCameraStreamEnabledRequest request, CancellationToken ct = default)
-        => CameraStreamChange.ApplyAsync(cameras, frigateConfigApplier, cameraId, streamId,
-            (_, stream) => StreamLineup.SetEnabled(stream, request.Enabled), ct);
 }
 
 public sealed class RemoveCameraStreamUseCase(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier)
@@ -137,8 +165,6 @@ internal static class CameraStreamChange
         {
             case StreamChange.StreamRecords:
                 return new StreamResult(StreamOutcome.StreamRecords, CameraStreamsDto.From(camera));
-            case StreamChange.StreamDisabled:
-                return new StreamResult(StreamOutcome.StreamDisabled, CameraStreamsDto.From(camera));
             case StreamChange.Done:
                 break;
             default:

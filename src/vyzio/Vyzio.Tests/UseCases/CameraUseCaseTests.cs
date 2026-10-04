@@ -340,7 +340,7 @@ public class VerifyCameraUseCaseTests
 
     public VerifyCameraUseCaseTests()
     {
-        _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>())
             .Returns([]);
         _sut = new VerifyCameraUseCase(_repo, _bindings, _verifier, _streamEnumerator, new CameraProtocolCheck(_protocols, TimeProvider.System), TimeProvider.System);
     }
@@ -388,7 +388,7 @@ public class VerifyCameraUseCaseTests
     }
 
     private void GivenEnumeratedStreams(params EnumeratedStream[] streams)
-        => _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        => _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>())
             .Returns([new EnumeratedScene("source0", streams)]);
 
     [Fact]
@@ -512,18 +512,17 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldLeaveADisabledStreamUnchecked_WhenTheCameraIsVerified()
+    public async Task ExecuteAsync_ShouldCheckAStreamWithNoRole_WhenTheCameraIsVerified()
     {
         // Arrange
         var camera = GivenReachableCamera();
         var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.None);
-        StreamLineup.SetEnabled(sub, enabled: false);
 
         // Act
         await _sut.ExecuteAsync(camera.Id);
 
         // Assert
-        Assert.Null(sub.CheckedAt);
+        Assert.NotNull(sub.CheckedAt);
     }
 
     [Fact]
@@ -584,7 +583,7 @@ public class VerifyCameraUseCaseTests
         await _sut.ExecuteAsync(camera.Id);
 
         Assert.Equal("/stream1", camera.MainStream?.Path);
-        await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+        await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
     }
 }
 

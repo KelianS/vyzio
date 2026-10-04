@@ -384,12 +384,11 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldDetectOnTheRecordingStream_WhenTheDetectStreamIsDisabled()
+    public async Task ApplyAsync_ShouldDetectOnTheRecordingStream_WhenNoOtherStreamHoldsARole()
     {
         // Arrange
         var camera = MakeValidatedCamera("front-door");
-        var sub = AddStream(camera, "/stream2", StreamRole.Detect, 640, 360);
-        StreamLineup.SetEnabled(sub, enabled: false);
+        AddStream(camera, "/stream2", StreamRole.None, 640, 360);
 
         // Act
         var yaml = await ApplyAndReadYamlAsync([camera]);

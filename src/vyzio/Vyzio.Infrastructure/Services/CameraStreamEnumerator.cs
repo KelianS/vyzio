@@ -13,12 +13,12 @@ internal sealed class CameraStreamEnumerator(
     DvripClient dvripClient,
     ILogger<CameraStreamEnumerator> logger) : ICameraStreamEnumerator
 {
-    public async Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default)
+    public async Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default)
     {
         try
         {
             // The stream's transport decides how streams are enumerated; ONVIF is asked ungated, a fast failure meaning nothing.
-            return camera.StreamBinding?.Protocol == SupportedProtocol.Dvrip
+            return protocol == SupportedProtocol.Dvrip
                 ? await EnumerateOverDvripAsync(camera, ct)
                 : await EnumerateOverOnvifAsync(camera, ct);
         }
