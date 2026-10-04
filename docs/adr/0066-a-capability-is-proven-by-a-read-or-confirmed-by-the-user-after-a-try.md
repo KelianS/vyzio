@@ -1,6 +1,6 @@
 # ADR-66: A capability is proven by a read, or confirmed by the user after trying it
 
-> Status: Accepted
+> Status: Accepted, point b) amended by [ADR-69](0069-the-camera-is-the-only-source-of-truth-for-native-presets.md) (the ONVIF native-preset probe is a second write, undone within the probe)
 >
 > Amends [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) on its
 > point c) (the capability's provider probe stays the proof until #221),
