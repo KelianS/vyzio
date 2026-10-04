@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
-// The V380 device id, in one place for every V380 caller; its order is in docs/design/camera-connection.md.
+// The V380 device id, in one place for every V380 caller (ADR-61).
 internal static class V380DeviceIdBootstrap
 {
     // The row first, then the ONVIF serial (bytes 2..5, big-endian); UDP discovery stays with V380Client.

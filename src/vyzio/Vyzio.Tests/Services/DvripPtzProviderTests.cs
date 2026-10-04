@@ -52,7 +52,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProveAsync_ShouldProvePtzAndRecordNativePresets_WhenTheCameraListsThePresetItStored()
+    public async Task ProveAsync_ShouldProvePtzAndRecordNativePresets_WhenAnIcseeListsThePresetItStored()
     {
         // Arrange
         var presets = new FakeDvripPresets();
@@ -124,7 +124,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProveAsync_ShouldRecordNativePresets_WhenTheCameraReportsANullListBeforeStoringOne()
+    public async Task ProveAsync_ShouldRecordNativePresets_WhenAnIcseeReportsANullListBeforeStoringOne()
     {
         // Arrange
         var presets = new FakeDvripPresets(listsNullWhenEmpty: true);
@@ -736,7 +736,7 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
 // A PTZ command by its command name and preset, any other request by its name.
 internal sealed record ReceivedCommand(string Name, DateTimeOffset At, int? Preset = null);
 
-// Presets kept as an ICSee keeps them (TAD dvrip): SetPreset lists the slot in Uart.PTZPreset, ClearPreset removes it; an empty list may read null.
+// Presets kept as an ICSee keeps them (docs/hardware/icsee.md): SetPreset lists the slot in Uart.PTZPreset, ClearPreset removes it; an empty list may read null.
 internal sealed class FakeDvripPresets(bool refusesSetPreset = false, bool listsWhatItStores = true, bool listsNullWhenEmpty = false, params int[] stored)
 {
     private const string Ok = """{"Ret":100}""";

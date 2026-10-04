@@ -13,7 +13,7 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 // message (same rationale as CameraCommandException, ADR-28 follow-up).
 public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
 
-// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client, singleton and stateless: how it is used is in docs/design/dvrip.md.
+// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client, singleton and stateless (ADR-29).
 internal sealed class DvripClient(TimeProvider time)
 {
     private const int LoginCmd = 1000;

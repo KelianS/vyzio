@@ -51,7 +51,7 @@ public class OnvifPtzCascadeTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldBindPtzToDvrip_WhenTheOnvifProfileCarriesNoPtzConfiguration()
+    public async Task ExecuteAsync_ShouldBindPtzToDvrip_WhenAnIcseeOnvifProfileCarriesNoPtzConfiguration()
     {
         // Arrange
         var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));

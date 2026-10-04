@@ -180,8 +180,8 @@ video analysis, the whole thing running under Docker Compose. Tests are xUnit, V
 Playwright; `Taskfile.yml` at the root drives both sides.
 
 Both sides follow the same clean architecture, cut into vertical slices whose folders carry the
-same names. The layout and its boundaries are in [`docs/SAD.md`](docs/SAD.md), every structural
-decision and the options rejected with it in [`docs/adr/`](docs/adr/), and how to run it in
+same names. The system's containers, flows and data are in [`docs/SAD.md`](docs/SAD.md), every
+structural decision and the options rejected with it in [`docs/adr/`](docs/adr/), and how to run it in
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
@@ -222,9 +222,9 @@ Everything else is English: code, comments, commits, pull requests, issue titles
 | Document                                           | What it holds                            |
 | -------------------------------------------------- | ---------------------------------------- |
 | [`docs/SPECS.md`](docs/SPECS.md)                   | What the product does, and for whom      |
-| [`docs/SAD.md`](docs/SAD.md)                       | Architecture, boundaries, target state   |
+| [`docs/SAD.md`](docs/SAD.md)                       | System overview, flows, data, threats    |
 | [`docs/adr/`](docs/adr/)                           | Structural decisions and their rationale |
-| [`docs/design/`](docs/design/)                     | How individual components work           |
+| [`docs/hardware/`](docs/hardware/)                 | Measurements of each camera model        |
 | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) | Interface tokens, components and intent  |
 | [`docs/WORKFLOW.md`](docs/WORKFLOW.md)             | Process and documentation governance     |
 

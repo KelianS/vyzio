@@ -16,7 +16,7 @@ camera stores itself.
 
 The hardware answered (#220): an ICSee stores a preset on `SetPreset`, lands on the same framing on
 every `GotoPreset`, lists what it stores in `Uart.PTZPreset`, and removes a preset on `ClearPreset`.
-The measurements are in the [DVRIP TAD](../design/dvrip.md). The vendor app offers no preset
+The measurements are in the [ICSee sheet](../hardware/icsee.md). The vendor app offers no preset
 feature, so a new camera holds none, and the camera reports no capability flag that says it could.
 
 ## Options compared
@@ -31,8 +31,7 @@ feature, so a new camera holds none, and the camera reports no capability flag t
 the binding, without moving the camera: it stores a preset on a slot outside the four Vyzio uses and
 not already taken, checks the camera then lists that slot, and clears it whatever happened before.
 When the slot is listed, `supports_native_presets` is recorded and the camera's positions take the
-first tier of ADR-59; any other outcome records its absence and they stay with Vyzio. The steps are
-in the TAD.
+first tier of ADR-59; any other outcome records its absence and they stay with Vyzio.
 
 **b) This is the one write a probe may make**, and only because it is undone within the probe: it
 adds nothing the camera keeps and weighs on the route of the positions, never on whether the PTZ

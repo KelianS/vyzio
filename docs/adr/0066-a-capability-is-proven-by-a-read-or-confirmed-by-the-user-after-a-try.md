@@ -56,8 +56,7 @@ fails the check with its reason, as before.
 unprovable. A proof never moves the camera and never changes its state; the one write allowed stays
 the DVRIP native-preset probe of ADR-64, undone within the probe. Over DVRIP, a preset stored then
 listed is the PTZ proof: a camera that keeps a PTZ preset has a motorised head. Any other outcome of
-that probe is unprovable, never missing, since an ICSee that keeps no preset can still turn. What each
-provider reads is in the TAD [`design/camera-connection.md`](../design/camera-connection.md).
+that probe is unprovable, never missing, since an ICSee that keeps no preset can still turn.
 
 **c) A capability has one state, from its last check or the user's answer**: verified, to confirm,
 missing, failed, or rejected by the user. Only verified makes it usable (the joystick, privacy

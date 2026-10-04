@@ -105,7 +105,7 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldReportARefusal_WhenTheCameraAnswersWithAMalformedResponse()
+    public async Task StopAsync_ShouldReportARefusal_WhenATapoC200InPrivacyModeAnswersWithAMalformedResponse()
     {
         var provider = MakeProviderAnsweringStop(
             _ => throw new HttpRequestException(HttpRequestError.InvalidResponse, "The response ended prematurely."),
@@ -140,7 +140,7 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task StoppedAsync_ShouldCountTheCommandAsDone_WhenTheCameraIsSilentPastTheTimeout()
+    public async Task StoppedAsync_ShouldCountTheCommandAsDone_WhenAV380ProIsSilentPastTheTimeout()
     {
         // Arrange
         var time = new FakeTimeProvider();

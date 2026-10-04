@@ -108,9 +108,7 @@ A single stream can be checked alone.
 the `detect` input the detect stream or, without one, the recording stream; each input is built from its
 own stream's protocol, port and account. `detect.width/height` follow ADR-38 on the analysed stream.
 
-How the streams are stored, checked, found and served is in the TAD
-[`design/camera-connection.md`](../design/camera-connection.md) § The streams. The stream lines sit in
-the stream card's `Options` ([DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability cards).
+The stream lines sit in the stream card's `Options` ([DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability cards).
 
 ## Options rejected
 

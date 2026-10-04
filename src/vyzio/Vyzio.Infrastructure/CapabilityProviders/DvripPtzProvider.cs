@@ -19,7 +19,7 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
     private const string StopCommand = "DirectionUp";
     private const int StopStep = 5;
     private const string PresetList = "Uart.PTZPreset.[0]";
-    // Slots 1 to 4 are Vyzio's; an ICSee keeps presets on ids up to 255 (TAD dvrip).
+    // Slots 1 to 4 are Vyzio's; an ICSee keeps presets on ids up to 255 (docs/hardware/icsee.md, ADR-64).
     private const int FirstSpareSlot = 5;
     private const int LastSlot = 255;
 

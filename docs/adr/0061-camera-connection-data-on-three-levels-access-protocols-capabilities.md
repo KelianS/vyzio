@@ -120,9 +120,7 @@ like the camera's.
 **f) Frigate reads the stream from its binding**: the transport from the stream binding, the port and
 account from that protocol's row, the paths from the streams.
 
-How each level is read and written, the check per protocol and the rows' lifecycle are in
-the TAD [`design/camera-connection.md`](../design/camera-connection.md). The screen that shows the
-three levels is framed in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability cards.
+The screen that shows the three levels is framed in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability cards.
 
 ## Options rejected
 
