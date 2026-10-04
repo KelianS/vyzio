@@ -9,11 +9,12 @@ function draftFromCandidate(state: AddCameraUido, candidate: DiscoveredCamera) {
     ...state.form,
     displayName: candidate.displayName,
     host: candidate.host,
-    port: candidate.port,
     sourceType: candidate.sourceType,
-    streamPath: candidate.streamPath,
     vendorFamily: candidate.vendorFamily,
-    streamProtocol: StreamProtocol.Rtsp,
+    // The stream discovery found ready, whatever its protocol, is the one the camera is born with (ADR-61 b).
+    port: candidate.stream?.port ?? candidate.port,
+    streamPath: candidate.stream ? candidate.stream.path : candidate.streamPath,
+    streamProtocol: candidate.stream?.protocol ?? StreamProtocol.Rtsp,
   }
 }
 
@@ -34,7 +35,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'none' },
         form: emptyCameraDraft,
-        dvripMode: false,
         verification: null,
         message: null,
         error: null,
@@ -45,7 +45,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'manual' },
         form: emptyCameraDraft,
-        dvripMode: false,
         verification: null,
         message: null,
         error: null,
@@ -56,27 +55,9 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
-        dvripMode: false,
         verification: null,
         message: null,
         error: null,
-      }
-
-    case 'DVRIP_MODE_TOGGLED':
-      return {
-        ...state,
-        dvripMode: action.enabled,
-        verification: null,
-        message: null,
-        error: null,
-        form: action.enabled
-          ? { ...state.form, port: 34567, streamPath: null, streamProtocol: StreamProtocol.Dvrip }
-          : {
-              ...state.form,
-              port: action.fallbackPort,
-              streamPath: action.fallbackStreamPath,
-              streamProtocol: StreamProtocol.Rtsp,
-            },
       }
 
     case 'DISCOVERY_STARTED':
@@ -110,7 +91,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         discoveryResults: results,
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
-        dvripMode: false,
         verification: null,
         message: action.message,
       }

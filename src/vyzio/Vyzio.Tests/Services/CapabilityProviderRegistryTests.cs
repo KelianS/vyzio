@@ -46,6 +46,34 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
+    public void ResolveStream_ShouldReturnTheMatchingProvider_WhenSeveralStreamProtocolsAreRegistered()
+    {
+        // Arrange
+        var rtsp = MakeStream(SupportedProtocol.Rtsp);
+        var dvrip = MakeStream(SupportedProtocol.Dvrip);
+        var sut = new CapabilityProviderRegistry([], [], [], [rtsp, dvrip]);
+
+        // Act
+        var provider = sut.ResolveStream(SupportedProtocol.Dvrip);
+
+        // Assert
+        Assert.Same(dvrip, provider);
+    }
+
+    [Fact]
+    public void ResolveStream_ShouldThrow_WhenNoStreamProviderIsRegisteredForTheProtocol()
+    {
+        // Arrange
+        var sut = new CapabilityProviderRegistry([], [], [], [MakeStream(SupportedProtocol.Rtsp)]);
+
+        // Act
+        var resolve = () => sut.ResolveStream(SupportedProtocol.Onvif);
+
+        // Assert
+        Assert.Throws<InvalidOperationException>(resolve);
+    }
+
+    [Fact]
     public void ResolvePtz_ShouldReturnTheProvider_WhenItsProtocolIsRegistered()
     {
         var onvif = MakePtz(SupportedProtocol.Onvif);

@@ -35,8 +35,6 @@ export const emptyCameraDraft: AddCameraForm = {
 export interface AddCameraUido {
   selection: AddCameraSelection
   form: AddCameraForm
-  /** Fallback when the standard stream is unreachable (ICSee and similar). */
-  dvripMode: boolean
 
   discoveryResults: DiscoveredCamera[]
   discovering: boolean
@@ -60,7 +58,6 @@ export function buildInitialAddCameraUido(): AddCameraUido {
   return {
     selection: { kind: 'none' },
     form: emptyCameraDraft,
-    dvripMode: false,
 
     discoveryResults: [],
     discovering: false,

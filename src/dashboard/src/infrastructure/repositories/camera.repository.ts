@@ -81,6 +81,7 @@ interface DiscoveredCameraDto {
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentationDto | null
   technicalDetails?: DiscoveryTechnicalDetailsDto | null
+  stream: DiscoveredCamera['stream']
 }
 
 interface DetectedPortSignalDto {
@@ -436,6 +437,7 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     supportLevel: camera.supportLevel,
     vendorFamily: camera.vendorFamily,
     qualificationReasons: camera.qualificationReasons,
+    stream: camera.stream,
     vendorDocumentation: camera.vendorDocumentation
       ? {
           vendorFamily: camera.vendorDocumentation.vendorFamily,

@@ -1,3 +1,5 @@
+import type { StreamProtocol } from './camera_capability_binding.entity'
+
 interface VendorDocumentation {
   vendorFamily: string
   markdown: string
@@ -22,6 +24,13 @@ interface DiscoveryTechnicalDetails {
   capabilities: DetectedCapability[]
 }
 
+/** The stream discovery found reachable as is: its protocol, port, and path over RTSP (ADR-61 b). */
+interface DiscoveredStream {
+  protocol: StreamProtocol
+  port: number
+  path: string | null
+}
+
 export interface DiscoveredCamera {
   displayName: string
   host: string
@@ -39,4 +48,6 @@ export interface DiscoveredCamera {
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentation | null
   technicalDetails?: DiscoveryTechnicalDetails | null
+  /** Null while no protocol can serve the stream: the camera is still to prepare. */
+  stream: DiscoveredStream | null
 }

@@ -87,6 +87,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - lorsque Vyzio ne parvient pas a reconnaitre automatiquement le constructeur d'un equipement detecte, l'utilisateur doit pouvoir selectionner manuellement une marque connue durant l'onboarding afin de pre-remplir les capacites et le protocole de communication associes, sans devoir declarer chaque capacite une par une (cf. 2.3 pour la declaration capacite par capacite quand la marque elle-meme n'est pas connue) ;
 - le produit doit guider l'utilisateur quand RTSP ou ONVIF doivent etre actives, avec une notice adaptee au constructeur detecte quand cette information est disponible ;
 - pour les cameras dont le protocole natif n'est pas RTSP, le systeme doit proposer un mode d'integration alternatif transparent pour l'utilisateur, sans exiger de manipulation technique manuelle ;
+- un candidat de la decouverte est presente comme pret des que son flux video est joignable par l'un des protocoles qui savent le porter (RTSP ou un protocole proprietaire), et son ajout part de ce protocole sans que l'utilisateur ait a le choisir ; il reste a preparer seulement quand aucun ne le permet ;
 - le produit doit exposer une liste des constructeurs ou modeles officiellement supportes et l'utiliser pour rassurer l'utilisateur pendant l'onboarding ;
 - chaque camera doit avoir un nom, un statut visible et une configuration editable ;
 - l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
