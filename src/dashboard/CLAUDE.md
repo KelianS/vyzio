@@ -93,8 +93,7 @@ in `presentation/` and `common/` except presenters and screen components.
   restarts (ADR-40, ADR-53).
 - A feature's help is written in the screen, never in a markdown file
   ([ADR-53](../../docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
-- Keep screens light, per the [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) § Intent and § Settings
-  screens.
+- Keep screens light, per the [DESIGN SYSTEM](../../docs/DESIGN%20SYSTEM.md) § Intent and § Patterns.
 
 ## Error handling (mandatory)
 

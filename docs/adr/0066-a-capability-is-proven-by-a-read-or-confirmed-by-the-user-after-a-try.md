@@ -87,8 +87,7 @@ back a capability the user rejected over a candidate: it still looks for a proof
 and only a proof replaces the "no"; otherwise the capability stays rejected on its protocol. Removing a
 capability forgets the answer: added again by hand, it starts to confirm.
 
-The screen's states, words and gestures are in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Capability
-cards; the product rule in [SPECS](../SPECS.md) 2.3.
+The screen's states, words and gestures, and the product rule, are in [SPECS](../SPECS.md) 2.3.
 
 ## Options rejected
 

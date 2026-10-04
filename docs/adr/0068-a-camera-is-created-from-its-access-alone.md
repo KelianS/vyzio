@@ -81,7 +81,7 @@ camera apart.
 
 **f) The camera page is where a new camera is set up**, with the same components as for any camera.
 Privacy mode and PTZ positions are set on its tabs, not in an add step. How the page reads for a new
-camera is framed in the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md).
+camera is framed in [SPECS](../SPECS.md) 2.2.
 
 ## Options rejected
 
