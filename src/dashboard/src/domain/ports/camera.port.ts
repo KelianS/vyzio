@@ -56,10 +56,12 @@ export interface CameraRepository {
   capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void>
   // Capability bindings (ADR-22)
   getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
+  /** streamPath: the first stream's path over RTSP, when the camera lists no stream (ADR-65 e). */
   configureCapability(
     cameraId: string,
     capability: Capability,
     protocol: SupportedProtocol,
+    streamPath: string | null,
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
   /** A real use of a capability to confirm, started by the user; records nothing (ADR-66). */

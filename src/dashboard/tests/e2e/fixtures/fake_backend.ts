@@ -522,6 +522,56 @@ function availableOf(state: FakeBackendState, protocol: string) {
   }))
 }
 
+// What an added stream's path may be over each protocol, and the refusal otherwise, as the real server answers.
+const PATH_ACCEPTED: Partial<Record<string, (path: string) => boolean>> = {
+  rtsp: (path) => path.trim() !== '',
+  dvrip: (path) => DVRIP_SERVED.some((entry) => (entry.path ?? '') === path),
+}
+// Only an RTSP stream is addressed by a path; a DVRIP one is a quality.
+const ADDRESSED_BY_PATH: Partial<Record<string, boolean>> = { rtsp: true }
+const PATH_REFUSAL: Partial<Record<string, string>> = {
+  rtsp: 'stream_path_required',
+  dvrip: 'unknown_stream_path',
+}
+
+/** The streams laid out over a newly chosen protocol, as the real server does; null when a path is needed (ADR-65 e). */
+function layOut(
+  state: FakeBackendState,
+  protocol: string,
+  streamPath: string | null,
+): FakeStream[] | null {
+  const line = (path: string | null): FakeStream =>
+    makeFakeStream({
+      id: 'main',
+      protocol,
+      path,
+      width: null,
+      height: null,
+      fps: null,
+      role: 'record_and_detect',
+    })
+  if (!ADDRESSED_BY_PATH[protocol]) return [line(null)]
+  if (streamPath) return [line(streamPath)]
+  if (state.servedStreams.length === 0) return null
+  const last = state.servedStreams.length - 1
+  return state.servedStreams.map((entry, ordinal) =>
+    makeFakeStream({
+      ...entry,
+      id: `stream-${ordinal + 1}`,
+      ordinal,
+      protocol,
+      role:
+        last === 0
+          ? 'record_and_detect'
+          : ordinal === 0
+            ? 'record'
+            : ordinal === last
+              ? 'detect'
+              : 'none',
+    }),
+  )
+}
+
 /** Giving a role takes it from the other streams, as the real server does. */
 function giveRole(streams: FakeStream[], target: FakeStream, role: FakeStream['role']) {
   for (const other of streams) {
@@ -895,6 +945,13 @@ export async function installFakeBackend(
         if (!state.protocols.some((p) => p.protocol === chosen)) {
           return json(route, { error: 'protocol_not_on_camera' }, 409)
         }
+        const changed =
+          state.streamBinding.configured === false || state.streamBinding.protocol !== chosen
+        if (changed) {
+          const laidOut = layOut(state, chosen, (postData?.streamPath as string | null) ?? null)
+          if (!laidOut) return json(route, { error: 'stream_path_required' }, 400)
+          state.streams = laidOut
+        }
         state.streamBinding.protocol = chosen
         state.streamBinding.configured = true
         return json(route, streamBindingOf(state.streamBinding))
@@ -1008,6 +1065,10 @@ export async function installFakeBackend(
           protocol: string
           path: string | null
           role: FakeStream['role']
+        }
+        // Like the real one: over RTSP a path, over DVRIP one of its two qualities (ADR-65 e).
+        if (!PATH_ACCEPTED[body.protocol]?.(body.path ?? '')) {
+          return json(route, { error: PATH_REFUSAL[body.protocol] ?? 'unknown_protocol' }, 400)
         }
         const served = state.servedStreams.find((entry) => entry.path === body.path)
         const added = makeFakeStream({

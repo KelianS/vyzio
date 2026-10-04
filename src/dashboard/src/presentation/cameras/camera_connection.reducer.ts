@@ -141,6 +141,8 @@ export function cameraConnectionReducer(
       return { ...state, addingStream: true }
     case 'STREAM_ADD_FINISHED':
       return { ...state, addingStream: false }
+    case 'STREAM_PATH_ASKED':
+      return { ...state, streamPathAsked: action.asked }
     // Asked again each time: the camera's answer may have changed since (ADR-65 e).
     case 'AVAILABLE_STREAMS_STARTED': {
       const availableStreams = { ...state.availableStreams }

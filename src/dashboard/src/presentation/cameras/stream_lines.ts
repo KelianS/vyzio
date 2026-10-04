@@ -38,6 +38,11 @@ const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
   tapo_klap: false,
 }
 
+/** Whether a stream over this protocol is addressed by a path, so one may be typed. */
+export function asksStreamPath(protocol: SupportedProtocol): boolean {
+  return ASKS_STREAM_PATH[protocol]
+}
+
 export const ROLE_LABELS: Record<StreamRole, string> = {
   none: 'Aucun',
   record: 'Enregistrement',
@@ -118,7 +123,7 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
   return null
 }
 
-/** A stream added by hand takes the next rank (StreamLineup.Add), so it is the lineup's highest. */
+/** A stream added by the user takes the next rank (StreamLineup.Add), so it is the lineup's highest. */
 export function addedStream(lineup: CameraStreamLineup): CameraStream | undefined {
   return lineup.streams.reduce<CameraStream | undefined>(
     (highest, stream) =>

@@ -261,4 +261,15 @@ describe('cameraConnectionReducer', () => {
     // Assert
     expect(next.streamTasks).toEqual({ sub: StreamTask.Remove })
   })
+
+  it('cameraConnectionReducer_ShouldStopAskingForAPath_WhenTheStreamProtocolIsApplied', () => {
+    // Arrange
+    const state = { ...buildInitialCameraConnectionUido(), streamPathAsked: true }
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'STREAM_PATH_ASKED', asked: false })
+
+    // Assert
+    expect(next.streamPathAsked).toBe(false)
+  })
 })

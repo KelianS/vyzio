@@ -68,6 +68,8 @@ export interface CameraConnectionUido {
   streamTasks: Partial<Record<string, StreamTask>>
   streamFormOpen: boolean
   addingStream: boolean
+  /** The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-65 e). */
+  streamPathAsked: boolean
   /** What the camera serves, by protocol, asked on demand; absent while it is being asked (ADR-65 e). */
   availableStreams: Partial<Record<StreamProtocol, AvailableStream[]>>
   /** A request for that list that failed: never read as an empty list. */
@@ -106,6 +108,7 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     streamTasks: {},
     streamFormOpen: false,
     addingStream: false,
+    streamPathAsked: false,
     availableStreams: {},
     availableStreamsErrors: {},
   }

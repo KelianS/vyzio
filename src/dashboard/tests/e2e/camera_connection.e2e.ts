@@ -125,7 +125,7 @@ test.describe('CameraConnectionView three levels', () => {
     await expect(page.getByText('Configurer manuellement')).toBeVisible()
   })
 
-  test('CameraConnectionView_ShouldShowEachStreamFixedWithItsPathInTheTooltip_WhenTheStreamOptionsOpen', async ({
+  test('CameraConnectionView_ShouldShowAStreamPathInItsQualityTooltip_WhenTheStreamOptionsOpen', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -137,7 +137,6 @@ test.describe('CameraConnectionView three levels', () => {
     await main.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }).click()
 
     await expect(page.getByText('Par RTSP, chemin /Streaming/Channels/101.')).toBeVisible()
-    await expect(stream.getByRole('combobox', { name: 'Flux', exact: true })).toHaveCount(0)
     await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
   })
 })
@@ -183,6 +182,36 @@ test.describe('CameraConnectionView stream lines', () => {
     await expect(main.getByRole('combobox', { name: 'Rôle' })).toContainText('Aucun')
     await expect(main.getByRole('button', { name: 'Retirer' })).toBeEnabled()
     await expect(sub.getByRole('button', { name: 'Retirer' })).toBeDisabled()
+  })
+
+  test('CameraConnectionView_ShouldLayOutTheTypedStream_WhenTheCameraListsNoStreamOverRtsp', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
+    state.protocols = [
+      makeFakeProtocol(),
+      makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 }),
+    ]
+    state.streamBinding.protocol = 'dvrip'
+    state.streams = [
+      { ...state.streams[0], protocol: 'dvrip', path: null, width: null, height: null, fps: null },
+    ]
+    state.servedStreams = []
+    await installFakeBackend(page, state)
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByText('Options').click()
+
+    await stream.getByRole('combobox', { name: 'Protocole' }).click()
+    await page.getByRole('option', { name: 'RTSP' }).click()
+    await stream.getByRole('button', { name: 'Configurer' }).click()
+    await expect(stream.getByRole('button', { name: 'Configurer' })).toBeDisabled()
+    await stream.getByRole('textbox', { name: 'Chemin du flux' }).fill('/live')
+    await stream.getByRole('button', { name: 'Configurer' }).click()
+
+    const line = stream.getByRole('listitem', { name: 'Flux principal' })
+    await line.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }).click()
+    await expect(page.getByText('Par RTSP, chemin /live.')).toBeVisible()
   })
 })
 

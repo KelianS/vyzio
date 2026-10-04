@@ -27,6 +27,7 @@ export const ApiErrorCode = {
   ProtocolNotOnCamera: 'protocol_not_on_camera',
   NothingToConfirm: 'nothing_to_confirm',
   PrivacyModeActive: 'privacy_mode_active',
+  StreamPathRequired: 'stream_path_required',
 } as const
 
 /** What support reads under the sentence (SPECS 1.5), and the code the API named, if any. */

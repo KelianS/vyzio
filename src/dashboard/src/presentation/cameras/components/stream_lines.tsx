@@ -35,6 +35,7 @@ import {
   streamLineState,
   streamQuality,
   streamReach,
+  type StreamChoice,
 } from '../stream_lines'
 import { Picker } from './protocol_choice'
 
@@ -129,9 +130,9 @@ export function StreamLines({
           gardé sans servir a le rôle « Aucun ».
         </p>
         <p>
-          Après un changement de protocole, Vyzio retrouve les flux de la caméra à la vérification
-          suivante. « Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste,
-          y compris un flux retiré.
+          Changer de protocole remplace les flux par ceux que la caméra sert par ce protocole. «
+          Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste, y compris un
+          flux retiré.
         </p>
         <p>
           Un chemin erroné se corrige en ajoutant le bon flux avec le rôle « Enregistrement », puis
@@ -321,12 +322,14 @@ function AddStreamForm({
   const selected =
     selectable.find((choice) => choice.key === picked) ??
     (available[protocol] === undefined ? undefined : selectable.at(0))
+  // A typed path is the stream's identity: nothing is added without one (ADR-65 e).
+  const pathMissing = selected?.other === true && typed.trim() === ''
 
   function add() {
-    if (!selected) return
+    if (!selected || pathMissing) return
     onAdd({
       protocol,
-      path: selected.other ? typed.trim() || null : selected.path,
+      path: selected.other ? typed.trim() : selected.path,
       role,
     })
   }
@@ -351,32 +354,18 @@ function AddStreamForm({
             }}
           />
         </label>
-        {choices.length > 0 ? (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Flux</span>
-            <Picker
-              value={(selected ?? choices[0]).key}
-              options={choiceOptions(choices)}
-              onChange={setPicked}
-            />
-          </label>
-        ) : (
-          !error && <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
-        )}
-        {error && <ListFailure error={error} onRetry={() => onList(protocol)} />}
-        {selected?.other && (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Chemin du flux</span>
-            <Input
-              placeholder="/stream2"
-              value={typed}
-              onChange={(event) => {
-                setTyped(event.target.value)
-                setPicked(OTHER_PATH.key)
-              }}
-            />
-          </label>
-        )}
+        <StreamPicker
+          choices={choices}
+          selected={selected}
+          typed={typed}
+          error={error}
+          onPick={setPicked}
+          onType={(value) => {
+            setTyped(value)
+            setPicked(OTHER_PATH.key)
+          }}
+          onRetry={() => onList(protocol)}
+        />
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground">Rôle</span>
           <Picker
@@ -393,7 +382,7 @@ function AddStreamForm({
             type="button"
             variant="outline"
             size="sm"
-            disabled={adding || !selected}
+            disabled={adding || !selected || pathMissing}
             onClick={add}
           >
             {adding ? 'Vérification…' : 'Ajouter et vérifier'}
@@ -404,6 +393,53 @@ function AddStreamForm({
         </div>
       </div>
     </div>
+  )
+}
+
+/** The « Flux » dropdown of a stream choice, its failure and, on « Autre chemin… », the typed path (DESIGN SYSTEM § Capability cards). */
+export function StreamPicker({
+  choices,
+  selected,
+  typed,
+  error,
+  onPick,
+  onType,
+  onRetry,
+}: {
+  choices: StreamChoice[]
+  selected: StreamChoice | undefined
+  typed: string
+  error?: AppError
+  onPick: (key: string) => void
+  onType: (path: string) => void
+  onRetry?: () => void
+}) {
+  return (
+    <>
+      {choices.length > 0 ? (
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-muted-foreground">Flux</span>
+          <Picker
+            value={(selected ?? choices[0]).key}
+            options={choiceOptions(choices)}
+            onChange={onPick}
+          />
+        </label>
+      ) : (
+        !error && <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
+      )}
+      {error && onRetry && <ListFailure error={error} onRetry={onRetry} />}
+      {selected?.other && (
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-muted-foreground">Chemin du flux</span>
+          <Input
+            placeholder="/stream2"
+            value={typed}
+            onChange={(event) => onType(event.target.value)}
+          />
+        </label>
+      )}
+    </>
   )
 }
 

@@ -44,8 +44,8 @@ import { NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
 import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
 import { ManualCapability } from './manual_capability_form'
-import { StreamLines, type StreamLineIntents } from './stream_lines'
-import { streamCoverageLine } from '../stream_lines'
+import { StreamLines, StreamPicker, type StreamLineIntents } from './stream_lines'
+import { OTHER_PATH, asksStreamPath, streamCoverageLine } from '../stream_lines'
 
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
@@ -53,8 +53,12 @@ interface CapabilityIntents {
   onDetect: () => void
   onVerifyStream: () => void
   onVerify: (capability: Capability) => void
-  /** Resolves true when the camera answered through the protocol. */
-  onConfigure: (capability: Capability, protocol: SupportedProtocol) => Promise<boolean>
+  /** Resolves true when the camera answered through the protocol; streamPath only for the stream over RTSP. */
+  onConfigure: (
+    capability: Capability,
+    protocol: SupportedProtocol,
+    streamPath?: string | null,
+  ) => Promise<boolean>
   onTogglePtz: () => Promise<void>
   onSetPanInverted: (inverted: boolean) => void
   onRemove: (capability: Capability) => Promise<void>
@@ -97,6 +101,8 @@ interface StreamLinesState {
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
+  /** The camera listed no stream over RTSP: its protocol choice asks for the first one's path (ADR-65 e). */
+  pathAsked: boolean
   intents: StreamLineIntents
 }
 
@@ -132,7 +138,9 @@ export function CapabilitySection({
           configuring={pending.stream === CapabilityTask.Configure}
           streams={streams}
           onVerify={intents.onVerifyStream}
-          onConfigure={(protocol) => intents.onConfigure('stream', protocol)}
+          onConfigure={(protocol, streamPath) =>
+            intents.onConfigure('stream', protocol, streamPath)
+          }
         />
         {read &&
           bindings
@@ -216,8 +224,10 @@ function StreamCard({
   configuring: boolean
   streams: StreamLinesState
   onVerify: () => void
-  onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
+  onConfigure: (protocol: SupportedProtocol, streamPath: string | null) => Promise<boolean>
 }) {
+  const [typed, setTyped] = useState('')
+  const typing = (picked: SupportedProtocol) => streams.pathAsked && asksStreamPath(picked)
   const coverage = binding?.isConfigured ? streamCoverageLine(streams.lineup) : null
   const unconfigured = binding ? !binding.isConfigured : false
   const protocol = protocols.find((entry) => entry.protocol === binding?.protocol)
@@ -238,7 +248,8 @@ function StreamCard({
           <>
             {binding.isConfigured && (
               <p className="text-sm text-muted-foreground">
-                Changer de protocole remplace la liste des flux, y compris ceux ajoutés à la main.
+                Changer de protocole remplace la liste des flux, y compris ceux que vous avez
+                ajoutés.
               </p>
             )}
             <ProtocolChoice
@@ -247,7 +258,23 @@ function StreamCard({
               configured={binding.isConfigured}
               configuring={configuring}
               disabled={false}
-              onConfigure={onConfigure}
+              detail={(picked) =>
+                typing(picked)
+                  ? {
+                      node: (
+                        <StreamPicker
+                          choices={[OTHER_PATH]}
+                          selected={OTHER_PATH}
+                          typed={typed}
+                          onPick={() => undefined}
+                          onType={setTyped}
+                        />
+                      ),
+                      ready: typed.trim() !== '',
+                    }
+                  : null
+              }
+              onConfigure={(picked) => onConfigure(picked, typing(picked) ? typed.trim() : null)}
             />
             {binding.isConfigured && (
               <StreamLines

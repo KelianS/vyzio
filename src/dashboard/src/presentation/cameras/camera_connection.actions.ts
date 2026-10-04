@@ -58,6 +58,7 @@ export type CameraConnectionAction =
   | { type: 'STREAM_FORM_CLOSED' }
   | { type: 'STREAM_ADD_STARTED' }
   | { type: 'STREAM_ADD_FINISHED' }
+  | { type: 'STREAM_PATH_ASKED'; asked: boolean }
   | { type: 'AVAILABLE_STREAMS_STARTED'; protocol: StreamProtocol }
   | { type: 'AVAILABLE_STREAMS_LOADED'; protocol: StreamProtocol; streams: AvailableStream[] }
   | { type: 'AVAILABLE_STREAMS_FAILED'; protocol: StreamProtocol; error: AppError }

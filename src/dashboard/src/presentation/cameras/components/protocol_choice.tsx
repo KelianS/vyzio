@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { ChoiceOption } from '../../../common/settings/setting_declaration'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import type { ProtocolOption } from '../protocol_labels'
@@ -18,6 +18,7 @@ export function ProtocolChoice({
   configured,
   configuring,
   disabled,
+  detail,
   onConfigure,
 }: {
   /** Never empty: the card says why instead when the camera has no protocol for it. */
@@ -26,6 +27,8 @@ export function ProtocolChoice({
   configured: boolean
   configuring: boolean
   disabled: boolean
+  /** What the picked protocol still asks for under the choice; « Configurer » waits until it is ready. */
+  detail?: (picked: SupportedProtocol) => { node: ReactNode; ready: boolean } | null
   /** Resolves true when the camera answered through the protocol. */
   onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
 }) {
@@ -34,26 +37,30 @@ export function ProtocolChoice({
   const selected = options.some((option) => option.value === picked) ? picked : options[0].value
   // The saved protocol, already tested: choosing it again would only repeat « Vérifier ».
   const unchanged = configured && selected === current
+  const asked = unchanged ? null : (detail?.(selected) ?? null)
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-        <span className="text-muted-foreground">Protocole</span>
-        <Picker
-          value={selected}
-          options={options}
-          onChange={(value) => setPicked(value as SupportedProtocol)}
-        />
-      </label>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={unchanged || configuring || disabled}
-        onClick={() => void onConfigure(selected)}
-      >
-        {configuring ? 'Configuration…' : 'Configurer'}
-      </Button>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+          <span className="text-muted-foreground">Protocole</span>
+          <Picker
+            value={selected}
+            options={options}
+            onChange={(value) => setPicked(value as SupportedProtocol)}
+          />
+        </label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={unchanged || configuring || disabled || asked?.ready === false}
+          onClick={() => void onConfigure(selected)}
+        >
+          {configuring ? 'Configuration…' : 'Configurer'}
+        </Button>
+      </div>
+      {asked?.node}
     </div>
   )
 }

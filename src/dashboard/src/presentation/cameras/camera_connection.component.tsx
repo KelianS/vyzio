@@ -160,6 +160,7 @@ export function CameraConnectionView() {
               tasks: uido.streamTasks,
               formOpen: uido.streamFormOpen,
               adding: uido.addingStream,
+              pathAsked: uido.streamPathAsked,
               intents: {
                 onRetryRead: () => presenter.onLoad(cameraId),
                 onSetRole: (streamId, role) =>
@@ -178,8 +179,8 @@ export function CameraConnectionView() {
               onDetect: () => void presenter.onDetect(cameraId),
               onVerifyStream: () => void presenter.onVerify(cameraId),
               onVerify: (capability) => void presenter.onVerifyCapability(cameraId, capability),
-              onConfigure: (capability, protocol) =>
-                presenter.onConfigure(cameraId, capability, protocol),
+              onConfigure: (capability, protocol, streamPath) =>
+                presenter.onConfigure(cameraId, capability, protocol, streamPath),
               onTogglePtz: () => presenter.onTogglePtz(camera),
               onSetPanInverted: (inverted) => void presenter.onSetPanInverted(cameraId, inverted),
               onRemove: (capability) => presenter.onRemove(cameraId, capability),

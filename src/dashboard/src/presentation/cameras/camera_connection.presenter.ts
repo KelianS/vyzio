@@ -31,6 +31,7 @@ import {
   protocolKey,
   type ConnectionValues,
 } from './camera_connection_values'
+import { IS_STREAM } from './capability_state'
 import { addedStream } from './stream_lines'
 
 export interface CameraConnectionPresenterContext {
@@ -152,6 +153,9 @@ export function buildCameraConnectionPresenter({
       toastError(toast, error)
       // A page left open offered a protocol the camera no longer has: show its protocols as they are.
       if (error.code === ApiErrorCode.ProtocolNotOnCamera) readProtocols(cameraId, true)
+      // The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-65 e).
+      if (error.code === ApiErrorCode.StreamPathRequired)
+        dispatch({ type: 'STREAM_PATH_ASKED', asked: true })
       // The capability was checked or answered elsewhere: show where it stands now.
       if (error.code === ApiErrorCode.NothingToConfirm) readBindings(cameraId, true)
       return undefined
@@ -239,7 +243,7 @@ export function buildCameraConnectionPresenter({
       readBindings(cameraId, true)
     },
 
-    /** Asks the camera what it serves over a protocol, each time a stream dropdown or the add form opens (ADR-65 e). */
+    /** Asks the camera what it serves over a protocol, each time the add form opens or changes protocol (ADR-65 e). */
     async onListAvailableStreams(cameraId: string, protocol: StreamProtocol) {
       const isLatest = (nextAvailableRead[protocol] ??= latestOnly())()
       dispatch({ type: 'AVAILABLE_STREAMS_STARTED', protocol })
@@ -259,7 +263,7 @@ export function buildCameraConnectionPresenter({
       dispatch({ type: 'STREAM_FORM_CLOSED' })
     },
 
-    /** Declares a stream the camera did not report, checked at once. */
+    /** Adds a stream picked from what the camera serves or typed over RTSP, checked at once. */
     async onAddStream(cameraId: string, addition: CameraStreamAddition) {
       dispatch({ type: 'STREAM_ADD_STARTED' })
       const isLatest = nextStreamsRead()
@@ -385,11 +389,17 @@ export function buildCameraConnectionPresenter({
     },
 
     /** Tests the capability through the protocol; resolves true when the camera answered. */
-    async onConfigure(cameraId: string, capability: Capability, protocol: SupportedProtocol) {
+    async onConfigure(
+      cameraId: string,
+      capability: Capability,
+      protocol: SupportedProtocol,
+      streamPath: string | null = null,
+    ) {
       const binding = await runTask(cameraId, capability, CapabilityTask.Configure, () =>
-        container.configureCameraCapability.execute(cameraId, capability, protocol),
+        container.configureCameraCapability.execute(cameraId, capability, protocol, streamPath),
       )
       if (!binding) return false
+      if (IS_STREAM[capability]) dispatch({ type: 'STREAM_PATH_ASKED', asked: false })
       announceTest(binding)
       return binding.verified
     },
