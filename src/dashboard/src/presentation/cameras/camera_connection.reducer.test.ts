@@ -48,6 +48,22 @@ describe('cameraConnectionReducer', () => {
     expect(next.availableStreams).toEqual({ dvrip: [] })
   })
 
+  it('cameraConnectionReducer_ShouldKeepTheFailureApartFromAnEmptyList_WhenTheRequestFails', () => {
+    // Arrange
+    const state = buildInitialCameraConnectionUido()
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'AVAILABLE_STREAMS_FAILED',
+      protocol: 'dvrip',
+      error: readError,
+    })
+
+    // Assert
+    expect(next.availableStreams).toEqual({ dvrip: [] })
+    expect(next.availableStreamsErrors).toEqual({ dvrip: readError })
+  })
+
   it('cameraConnectionReducer_ShouldCloseTheQuestion_WhenTheDeleteFinishes', () => {
     // Arrange
     const state = { ...buildInitialCameraConnectionUido(), confirmDelete: true, deleting: true }

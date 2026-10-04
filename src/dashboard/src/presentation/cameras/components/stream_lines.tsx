@@ -64,6 +64,7 @@ export function StreamLines({
   protocols,
   mainPath,
   available,
+  availableErrors,
   tasks,
   formOpen,
   adding,
@@ -78,6 +79,7 @@ export function StreamLines({
   mainPath: SettingDeclaration
   /** What the camera serves, by protocol; absent while it is asked. */
   available: Partial<Record<StreamProtocol, AvailableStream[]>>
+  availableErrors: Partial<Record<StreamProtocol, AppError>>
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
@@ -104,6 +106,7 @@ export function StreamLines({
               // The lowest rank holds the path the user entered (ADR-65): shown once, as its setting.
               mainPath={index === 0 && ASKS_STREAM_PATH[stream.protocol] ? mainPath : null}
               available={available[stream.protocol]}
+              availableError={availableErrors[stream.protocol]}
               task={tasks[stream.id]}
               intents={intents}
             />
@@ -115,6 +118,7 @@ export function StreamLines({
           protocols={protocols}
           lineup={lineup}
           available={available}
+          availableErrors={availableErrors}
           open={formOpen}
           adding={adding}
           intents={intents}
@@ -159,6 +163,7 @@ function StreamLine({
   lineup,
   mainPath,
   available,
+  availableError,
   task,
   intents,
 }: {
@@ -166,6 +171,7 @@ function StreamLine({
   lineup: CameraStreamLineup
   mainPath: SettingDeclaration | null
   available: AvailableStream[] | undefined
+  availableError: AppError | undefined
   task: StreamTask | undefined
   intents: StreamLineIntents
 }) {
@@ -193,6 +199,7 @@ function StreamLine({
           stream={stream}
           lineup={lineup}
           available={available}
+          error={availableError}
           onOpen={() => intents.onListAvailable(stream.protocol)}
         />
       )}
@@ -247,7 +254,7 @@ function StreamLine({
       {confirmRemove && (
         <ConfirmModal
           title="Retirer ce flux ?"
-          body={`Il quitte la liste ; « Ajouter un flux » peut le reprendre.${fallback}`}
+          body={`Il quitte la liste.${fallback}`}
           confirmLabel="Retirer"
           tone="danger"
           loading={task === StreamTask.Remove}
@@ -268,20 +275,24 @@ function MainPathChoice({
   stream,
   lineup,
   available,
+  error,
   onOpen,
 }: {
   setting: SettingDeclaration
   stream: CameraStream
   lineup: CameraStreamLineup
   available: AvailableStream[] | undefined
+  error: AppError | undefined
   onOpen: () => void
 }) {
   const [typing, setTyping] = useState(false)
   const choices = mainPathChoices(available, lineup, stream)
   const selected = typing ? OTHER_PATH : choiceOfPath(choices, String(setting.value))
 
+  // One name for this dropdown and the form's, the typed field keeping the setting's own (DESIGN SYSTEM § stream lines).
   const choice: SettingDeclaration = {
     ...setting,
+    label: 'Flux',
     nature: { kind: 'choice', options: choiceOptions(choices), onOpen },
     value: selected.key,
     onChange: (key) => {
@@ -295,15 +306,9 @@ function MainPathChoice({
   return (
     <>
       <SettingRow setting={choice} />
+      {error && <ListFailure error={error} onRetry={onOpen} />}
       {selected.other && (
-        <SettingRow
-          setting={{
-            ...setting,
-            id: `${setting.id}-other`,
-            label: 'Autre chemin',
-            help: undefined,
-          }}
-        />
+        <SettingRow setting={{ ...setting, id: `${setting.id}-other`, help: undefined }} />
       )}
     </>
   )
@@ -313,6 +318,7 @@ function AddStream({
   protocols,
   lineup,
   available,
+  availableErrors,
   open,
   adding,
   intents,
@@ -320,6 +326,7 @@ function AddStream({
   protocols: ProtocolOption[]
   lineup: CameraStreamLineup
   available: Partial<Record<StreamProtocol, AvailableStream[]>>
+  availableErrors: Partial<Record<StreamProtocol, AppError>>
   open: boolean
   adding: boolean
   intents: StreamLineIntents
@@ -331,6 +338,7 @@ function AddStream({
       first={first}
       lineup={lineup}
       available={available}
+      availableErrors={availableErrors}
       adding={adding}
       onList={intents.onListAvailable}
       onAdd={intents.onAdd}
@@ -358,6 +366,7 @@ function AddStreamForm({
   first,
   lineup,
   available,
+  availableErrors,
   adding,
   onList,
   onAdd,
@@ -367,6 +376,7 @@ function AddStreamForm({
   first: StreamProtocol
   lineup: CameraStreamLineup
   available: Partial<Record<StreamProtocol, AvailableStream[]>>
+  availableErrors: Partial<Record<StreamProtocol, AppError>>
   adding: boolean
   onList: (protocol: StreamProtocol) => void
   onAdd: (addition: CameraStreamAddition) => void
@@ -378,8 +388,11 @@ function AddStreamForm({
   const [role, setRole] = useState<StreamRole>(StreamRole.None)
   const choices = addChoices(available[protocol], lineup, protocol)
   const selectable = choices.filter((choice) => !choice.waiting)
-  // Until the user picks, the first stream the camera offers, else « Autre chemin… ».
-  const selected = selectable.find((choice) => choice.key === picked) ?? selectable.at(0)
+  const error = availableErrors[protocol]
+  // Until the user picks, nothing while the camera is asked, then the first it offers, else « Autre chemin… ».
+  const selected =
+    selectable.find((choice) => choice.key === picked) ??
+    (available[protocol] === undefined ? undefined : selectable.at(0))
 
   function add() {
     if (!selected) return
@@ -420,8 +433,9 @@ function AddStreamForm({
             />
           </label>
         ) : (
-          <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
+          !error && <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
         )}
+        {error && <ListFailure error={error} onRetry={() => onList(protocol)} />}
         {selected?.other && (
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground">Chemin du flux</span>
@@ -462,5 +476,16 @@ function AddStreamForm({
         </div>
       </div>
     </div>
+  )
+}
+
+/** The camera could not be asked for its streams: said where the list would be, never as an empty list. */
+function ListFailure({ error, onRetry }: { error: AppError; onRetry: () => void }) {
+  return (
+    <ReadFailure
+      error={error}
+      onRetry={onRetry}
+      subject="Vyzio n’a pas pu demander ses flux à la caméra."
+    />
   )
 }

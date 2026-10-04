@@ -82,7 +82,7 @@ export function Picker({
             key={option.value}
             value={option.value}
             title={option.hint}
-            disabled={option.unavailable !== undefined}
+            disabled={!!option.unavailable}
           >
             {option.label}
           </SelectItem>

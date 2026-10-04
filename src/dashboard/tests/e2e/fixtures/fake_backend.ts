@@ -969,7 +969,8 @@ export async function installFakeBackend(
         return json(route, lineupOf(state.streams))
       }
       if (rest === '/streams/available' && method === 'GET') {
-        const protocol = new URL(route.request().url()).searchParams.get('protocol') ?? 'rtsp'
+        const protocol = new URL(route.request().url()).searchParams.get('protocol')
+        if (!protocol) return json(route, { error: 'unknown_protocol' }, 400)
         return json(route, availableOf(state, protocol))
       }
       if (rest === '/streams' && method === 'POST') {

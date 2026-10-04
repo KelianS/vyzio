@@ -133,7 +133,7 @@ test.describe('CameraConnectionView three levels', () => {
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
 
     await stream.getByText('Options').click()
-    await stream.getByRole('combobox', { name: 'Chemin du flux' }).click()
+    await stream.getByRole('combobox', { name: 'Flux', exact: true }).click()
     await page.getByRole('option', { name: '320 × 180 · 5 img/s' }).click()
 
     const bar = page.getByRole('region', { name: 'Modifications en attente' })
@@ -141,7 +141,7 @@ test.describe('CameraConnectionView three levels', () => {
 
     await bar.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(bar).toBeHidden()
-    await expect(stream.getByRole('combobox', { name: 'Chemin du flux' })).toContainText(
+    await expect(stream.getByRole('combobox', { name: 'Flux', exact: true })).toContainText(
       '320 × 180 · 5 img/s',
     )
   })
@@ -160,7 +160,7 @@ test.describe('CameraConnectionView three levels', () => {
     await stream.getByText('Options').click()
 
     await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')
-    await expect(stream.getByRole('combobox', { name: 'Chemin du flux' })).toHaveCount(0)
+    await expect(stream.getByRole('combobox', { name: 'Flux', exact: true })).toHaveCount(0)
   })
 })
 

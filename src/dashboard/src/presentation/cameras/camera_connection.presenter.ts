@@ -49,6 +49,8 @@ export function buildCameraConnectionPresenter({
   const nextBindingsRead = latestOnly()
   const nextProtocolsRead = latestOnly()
   const nextStreamsRead = latestOnly()
+  // Per protocol: opening a dropdown twice must not let the older answer land last.
+  const nextAvailableRead: Partial<Record<StreamProtocol, () => () => boolean>> = {}
 
   /** The stream lines of the stream card; after an action a failed reread keeps them and goes to a toast. */
   function readStreams(cameraId: string, listShown = false) {
@@ -212,13 +214,17 @@ export function buildCameraConnectionPresenter({
       readBindings(cameraId, true)
     },
 
-    /** Asks the camera what it serves over a protocol; a failure leaves only « Autre chemin… », its help says why. */
+    /** Asks the camera what it serves over a protocol, each time a stream dropdown or the add form opens (ADR-65 e). */
     async onListAvailableStreams(cameraId: string, protocol: StreamProtocol) {
+      const isLatest = (nextAvailableRead[protocol] ??= latestOnly())()
       dispatch({ type: 'AVAILABLE_STREAMS_STARTED', protocol })
-      const streams = await container.getAvailableCameraStreams
-        .execute(cameraId, protocol)
-        .catch(() => [])
-      dispatch({ type: 'AVAILABLE_STREAMS_LOADED', protocol, streams })
+      try {
+        const streams = await container.getAvailableCameraStreams.execute(cameraId, protocol)
+        if (isLatest()) dispatch({ type: 'AVAILABLE_STREAMS_LOADED', protocol, streams })
+      } catch (e) {
+        if (isLatest())
+          dispatch({ type: 'AVAILABLE_STREAMS_FAILED', protocol, error: toAppError(e) })
+      }
     },
 
     onOpenStreamForm() {

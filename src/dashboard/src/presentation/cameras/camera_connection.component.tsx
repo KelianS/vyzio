@@ -171,6 +171,7 @@ export function CameraConnectionView() {
               loading: uido.streamsLoading,
               readError: uido.streamsError,
               available: uido.availableStreams,
+              availableErrors: uido.availableStreamsErrors,
               tasks: uido.streamTasks,
               formOpen: uido.streamFormOpen,
               adding: uido.addingStream,

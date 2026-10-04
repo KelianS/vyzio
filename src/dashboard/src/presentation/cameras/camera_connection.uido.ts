@@ -66,6 +66,8 @@ export interface CameraConnectionUido {
   addingStream: boolean
   /** What the camera serves, by protocol, asked on demand; absent while it is being asked (ADR-65 e). */
   availableStreams: Partial<Record<StreamProtocol, AvailableStream[]>>
+  /** A request for that list that failed: never read as an empty list. */
+  availableStreamsErrors: Partial<Record<StreamProtocol, AppError>>
 }
 
 export function buildInitialCameraConnectionUido(): CameraConnectionUido {
@@ -100,5 +102,6 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     streamFormOpen: false,
     addingStream: false,
     availableStreams: {},
+    availableStreamsErrors: {},
   }
 }

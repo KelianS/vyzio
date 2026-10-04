@@ -285,7 +285,7 @@ describe('CameraConnectionView', () => {
     const stream = await optionsOf('Flux vidéo')
 
     // Assert
-    expect(stream.getByRole('combobox', { name: 'Chemin du flux' })).toHaveTextContent(
+    expect(stream.getByRole('combobox', { name: 'Flux' })).toHaveTextContent(
       '1920 × 1080 · 15 img/s',
     )
     expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('RTSP')
@@ -305,7 +305,7 @@ describe('CameraConnectionView', () => {
 
     // Assert
     expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('DVRIP')
-    expect(stream.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
+    expect(stream.queryByRole('combobox', { name: 'Flux' })).not.toBeInTheDocument()
   })
 
   it('onLoad_ShouldAskToChooseHowTheStreamIsRead_WhenTheStreamHasNoProtocolYet', async () => {
@@ -482,7 +482,7 @@ describe('CameraConnectionView', () => {
     })
     renderScreen(<CameraConnectionView />, connectionTab())
     const stream = await optionsOf('Flux vidéo')
-    await pick(stream.getByRole('combobox', { name: 'Chemin du flux' }), '640 × 360 · 15 img/s')
+    await pick(stream.getByRole('combobox', { name: 'Flux' }), '640 × 360 · 15 img/s')
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -507,9 +507,9 @@ describe('CameraConnectionView', () => {
     })
     renderScreen(<CameraConnectionView />, connectionTab())
     const stream = await optionsOf('Flux vidéo')
-    await pick(stream.getByRole('combobox', { name: 'Chemin du flux' }), 'Autre chemin…')
-    await userEvent.clear(stream.getByLabelText('Autre chemin'))
-    await userEvent.type(stream.getByLabelText('Autre chemin'), '/live')
+    await pick(stream.getByRole('combobox', { name: 'Flux' }), 'Autre chemin…')
+    await userEvent.clear(stream.getByLabelText('Chemin du flux'))
+    await userEvent.type(stream.getByLabelText('Chemin du flux'), '/live')
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -1355,7 +1355,7 @@ describe('CameraConnectionView', () => {
     const stream = await optionsOf('Flux vidéo')
     await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
     const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
-    await userEvent.type(form.getByLabelText('Chemin du flux'), '/stream2')
+    await userEvent.type(await form.findByLabelText('Chemin du flux'), '/stream2')
 
     // Act
     await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
@@ -1460,6 +1460,43 @@ describe('CameraConnectionView', () => {
     )
   })
 
+  it('onAddStream_ShouldSayTheListCouldNotBeAskedAndKeepATypedPath_WhenTheRequestFails', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    expect(
+      await form.findByText('Vyzio n’a pas pu demander ses flux à la caméra.'),
+    ).toBeInTheDocument()
+    expect(form.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+    expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Autre chemin…')
+  })
+
+  it('onRetryAvailableStreams_ShouldOfferTheCamerasStreams_WhenTheSecondRequestAnswers', async () => {
+    // Arrange
+    const network = connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    network.answer(AVAILABLE, ok([mainOffer, lighterOffer]))
+
+    // Act
+    await userEvent.click(await form.findByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    await waitFor(() =>
+      expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('640 × 360'),
+    )
+    expect(form.queryByText('Vyzio n’a pas pu demander ses flux à la caméra.')).toBeNull()
+  })
+
   it('onAddStream_ShouldSayNothingIsLeftToAdd_WhenEveryDvripQualityIsListed', async () => {
     // Arrange
     connectionNetwork({
@@ -1524,7 +1561,7 @@ describe('CameraConnectionView', () => {
     const stream = await optionsOf('Flux vidéo')
     await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
     const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
-    await userEvent.type(form.getByLabelText('Chemin du flux'), '/stream2')
+    await userEvent.type(await form.findByLabelText('Chemin du flux'), '/stream2')
 
     // Act
     await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))

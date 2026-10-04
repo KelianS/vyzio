@@ -91,6 +91,7 @@ interface StreamLinesState {
   loading: boolean
   readError: AppError | null
   available: Partial<Record<StreamProtocol, AvailableStream[]>>
+  availableErrors: Partial<Record<StreamProtocol, AppError>>
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
@@ -256,6 +257,7 @@ function StreamCard({
                 protocols={choices}
                 mainPath={streamPath}
                 available={streams.available}
+                availableErrors={streams.availableErrors}
                 tasks={streams.tasks}
                 formOpen={streams.formOpen}
                 adding={streams.adding}

@@ -70,7 +70,7 @@ public static class StreamLineup
         return StreamChange.Done;
     }
 
-    // What the camera serves over a protocol, most detailed first, each with the line it already is (ADR-65 e).
+    // What the camera serves over a protocol, ranked in the order found, each with the line it already is (ADR-65 e).
     public static IReadOnlyList<StreamOffer> Offer(CameraCapabilityBinding binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found)
         => [.. found.Select((entry, rank) => new StreamOffer(rank, entry.Path, entry.Width, entry.Height, entry.Fps,
             binding.Streams.FirstOrDefault(stream => stream.Protocol == protocol && PathsMatch(stream.Path, entry.Path))?.Id))];

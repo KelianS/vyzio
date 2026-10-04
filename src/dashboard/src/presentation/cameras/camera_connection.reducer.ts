@@ -125,13 +125,25 @@ export function cameraConnectionReducer(
     // Asked again each time: the camera's answer may have changed since (ADR-65 e).
     case 'AVAILABLE_STREAMS_STARTED': {
       const availableStreams = { ...state.availableStreams }
+      const availableStreamsErrors = { ...state.availableStreamsErrors }
       delete availableStreams[action.protocol]
-      return { ...state, availableStreams }
+      delete availableStreamsErrors[action.protocol]
+      return { ...state, availableStreams, availableStreamsErrors }
     }
     case 'AVAILABLE_STREAMS_LOADED':
       return {
         ...state,
         availableStreams: { ...state.availableStreams, [action.protocol]: action.streams },
+      }
+    // Nothing to offer but a typed path, and the failure said where the list would have been.
+    case 'AVAILABLE_STREAMS_FAILED':
+      return {
+        ...state,
+        availableStreams: { ...state.availableStreams, [action.protocol]: [] },
+        availableStreamsErrors: {
+          ...state.availableStreamsErrors,
+          [action.protocol]: action.error,
+        },
       }
   }
 }

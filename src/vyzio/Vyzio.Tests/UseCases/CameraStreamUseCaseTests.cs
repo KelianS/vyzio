@@ -107,6 +107,23 @@ public class CameraStreamUseCaseTests
     }
 
     [Fact]
+    public async Task ListAvailable_ShouldStillOfferBothDvripQualities_WhenTheProtocolDoesNotAnswer()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+        _protocols.ProbeAsync(camera, SupportedProtocol.Dvrip, Arg.Any<CancellationToken>())
+            .Returns(ProtocolAnswer.Unreachable("no answer on port 34567"));
+
+        // Act
+        var result = await AvailableUseCase().ExecuteAsync(camera.Id, "dvrip");
+
+        // Assert
+        Assert.Equal([null, CameraStream.DvripSecondaryQuery], result.Streams!.Select(offer => offer.Path));
+        await _enumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ListAvailable_ShouldRefuse_WhenTheCameraHasNoRowForTheProtocol()
     {
         // Arrange
