@@ -124,8 +124,8 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 
 No flow enters the house from the internet: the channels are fetched from inside, and remote access
 is an overlay peer, not a published port. No outbound flow carries an image, except a notification's.
-Frigate and go2rtc open none to the internet: no version check, no model download, no STUN
-(ADR-70, not delivered, #250).
+Frigate and go2rtc open none to the internet once Vyzio has written their configuration: no version check, no model download, no STUN
+(ADR-70).
 
 ---
 

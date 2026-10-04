@@ -4,46 +4,82 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.Services;
 
-// YOLOX (Apache-2.0 — no redistribution concern, unlike YOLOv9's GPL-3.0, ADR-34) is bundled into the
-// vyzio-api image at build time (Vyzio.Api/Dockerfile) under BundledModelsDirectory. Frigate runs in a
-// separate container and only shares the config volume, so the relevant file is copied there once,
-// on demand — not on every config write. Only the Openvino/Intel-GPU tier uses it: field testing
-// showed even the smallest YOLOX variant overloads the CPU-only tier (ADR-34).
-public sealed class FrigateModelAssetInstaller(ILogger<FrigateModelAssetInstaller> logger) : IFrigateModelAssetInstaller
+// Copies the models bundled in the image into Frigate's model cache, once, so Frigate never downloads them (ADR-34, ADR-70).
+public sealed class FrigateModelAssetInstaller : IFrigateModelAssetInstaller
 {
-    private const string BundledModelsDirectory = "/app/models";
+    private const string DefaultBundledModelsDirectory = "/app/models";
 
-    private static readonly IReadOnlyDictionary<FrigateDetectorKind, string> ModelFileNames = new Dictionary<FrigateDetectorKind, string>
+    // Only the Intel GPU tier needs a model Frigate does not carry: YOLOX overloads the CPU-only tier (ADR-34).
+    private static readonly IReadOnlyDictionary<FrigateDetectorKind, string> DetectorModelFiles = new Dictionary<FrigateDetectorKind, string>
     {
         [FrigateDetectorKind.Openvino] = "yolox_s.onnx",
     };
 
+    // Where Frigate's small face model looks for its files, relative to its model cache (ADR-70).
+    internal static readonly IReadOnlyList<string> FaceRecognitionModelFiles =
+    [
+        Path.Combine("facedet", "facedet.onnx"),
+        Path.Combine("facedet", "landmarkdet.yaml"),
+        Path.Combine("facedet", "facenet.tflite"),
+    ];
+
+    private const UnixFileMode SharedDirectoryMode =
+        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+        UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+        UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+
+    private const UnixFileMode SharedFileMode =
+        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
+
+    private readonly ILogger<FrigateModelAssetInstaller> _logger;
+    private readonly string _bundledModelsDirectory;
+
+    public FrigateModelAssetInstaller(ILogger<FrigateModelAssetInstaller> logger)
+        : this(logger, DefaultBundledModelsDirectory)
+    {
+    }
+
+    internal FrigateModelAssetInstaller(ILogger<FrigateModelAssetInstaller> logger, string bundledModelsDirectory)
+    {
+        _logger = logger;
+        _bundledModelsDirectory = bundledModelsDirectory;
+    }
+
     public async Task EnsureInstalledAsync(FrigateDetectorKind detectorKind, string configDirectory, CancellationToken ct = default)
     {
-        if (!ModelFileNames.TryGetValue(detectorKind, out var fileName))
-            return;
-
         var modelCacheDirectory = Path.Combine(configDirectory, "model_cache");
         Directory.CreateDirectory(modelCacheDirectory);
-        // frigate (privileged, runs as root) shares this volume with vyzio-api (non-root) — the
-        // entrypoint reclaims ownership of the volume at startup (see entrypoint.sh), so this is only
-        // a best-effort top-up if a path was created after that with different ownership; never fail
-        // the request over it.
-        TrySetUnixFileMode(modelCacheDirectory,
-            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-            UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-            UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute);
+        TrySetUnixFileMode(modelCacheDirectory, SharedDirectoryMode);
 
-        var destinationPath = Path.Combine(modelCacheDirectory, fileName);
+        if (DetectorModelFiles.TryGetValue(detectorKind, out var detectorModel))
+            await InstallAsync(detectorModel, modelCacheDirectory, ct);
+
+        foreach (var faceModel in FaceRecognitionModelFiles)
+            await InstallAsync(faceModel, modelCacheDirectory, ct);
+    }
+
+    private async Task InstallAsync(string relativePath, string modelCacheDirectory, CancellationToken ct)
+    {
+        var destinationPath = Path.Combine(modelCacheDirectory, relativePath);
+        var destinationDirectory = Path.GetDirectoryName(destinationPath)!;
+        Directory.CreateDirectory(destinationDirectory);
+        // Shared with Frigate (root): a best-effort top-up of what the entrypoint reclaims at startup.
+        TrySetUnixFileMode(destinationDirectory, SharedDirectoryMode);
+
         if (File.Exists(destinationPath))
             return;
 
-        var sourcePath = Path.Combine(BundledModelsDirectory, fileName);
-        await using var source = File.OpenRead(sourcePath);
-        await using var destination = File.Create(destinationPath);
-        await source.CopyToAsync(destination, ct);
+        var sourcePath = Path.Combine(_bundledModelsDirectory, relativePath);
+        // Frigate only checks that the file exists, so it must never see a partial copy.
+        var partialPath = $"{destinationPath}.part";
+        await using (var source = File.OpenRead(sourcePath))
+        await using (var destination = File.Create(partialPath))
+        {
+            await source.CopyToAsync(destination, ct);
+        }
 
-        TrySetUnixFileMode(destinationPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+        File.Move(partialPath, destinationPath, overwrite: true);
+        TrySetUnixFileMode(destinationPath, SharedFileMode);
     }
 
     private void TrySetUnixFileMode(string path, UnixFileMode mode)
@@ -57,7 +93,7 @@ public sealed class FrigateModelAssetInstaller(ILogger<FrigateModelAssetInstalle
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
-            logger.LogWarning(ex, "Could not set permissions on {Path} — likely already owned by another user; continuing.", path);
+            _logger.LogWarning(ex, "Could not set permissions on {Path}, likely owned by another user; continuing.", path);
         }
     }
 }

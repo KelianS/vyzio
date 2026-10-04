@@ -4,6 +4,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
+using YamlDotNet.RepresentationModel;
 
 namespace Vyzio.Tests.Services;
 
@@ -135,13 +136,92 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldEmitNoGo2rtcSection_WhenEveryCameraStreamsOverRtsp()
+    public async Task ApplyAsync_ShouldEmitNoGo2rtcStream_WhenEveryCameraStreamsOverRtsp()
     {
         var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
 
-        Assert.DoesNotContain("go2rtc", yaml, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(FindNode(yaml, "go2rtc", "streams"));
+        Assert.DoesNotContain("127.0.0.1:8554", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("rtsp://", yaml, StringComparison.OrdinalIgnoreCase);
     }
+
+    // Nothing Frigate starts on its own may reach the internet (ADR-70).
+
+    [Fact]
+    public async Task ApplyAsync_ShouldTurnOffFrigatesVersionCheck_WhenTheConfigIsWritten()
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal("false", ScalarAt(yaml, "telemetry", "version_check"));
+    }
+
+    [Theory]
+    [InlineData(SupportedProtocol.Rtsp)]
+    [InlineData(SupportedProtocol.Dvrip)]
+    public async Task ApplyAsync_ShouldGiveGo2rtcNoWebrtcCandidateNorIceServer_WhenTheConfigIsWritten(SupportedProtocol protocol)
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("garden", protocol, null)];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Empty(SequenceAt(yaml, "go2rtc", "webrtc", "candidates"));
+        Assert.Empty(SequenceAt(yaml, "go2rtc", "webrtc", "ice_servers"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldGiveGo2rtcNoWebrtcCandidateNorIceServer_WhenNoCameraIsConfigured()
+    {
+        // Arrange
+        Camera[] cameras = [];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Empty(SequenceAt(yaml, "go2rtc", "webrtc", "candidates"));
+        Assert.Empty(SequenceAt(yaml, "go2rtc", "webrtc", "ice_servers"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldAskForTheSmallFaceModel_WhenACameraIsActive()
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal("true", ScalarAt(yaml, "face_recognition", "enabled"));
+        Assert.Equal("small", ScalarAt(yaml, "face_recognition", "model_size"));
+    }
+
+    private static YamlNode? FindNode(string yaml, params string[] path)
+    {
+        var stream = new YamlStream();
+        stream.Load(new StringReader(yaml));
+        YamlNode? node = stream.Documents[0].RootNode;
+        foreach (var key in path)
+        {
+            node = node is YamlMappingNode mapping && mapping.Children.TryGetValue(new YamlScalarNode(key), out var child) ? child : null;
+        }
+
+        return node;
+    }
+
+    private static string? ScalarAt(string yaml, params string[] path) =>
+        Assert.IsType<YamlScalarNode>(FindNode(yaml, path)).Value;
+
+    private static IEnumerable<YamlNode> SequenceAt(string yaml, params string[] path) =>
+        Assert.IsType<YamlSequenceNode>(FindNode(yaml, path)).Children;
 
     [Fact]
     public async Task ApplyAsync_ShouldEmitAGo2rtcSection_WhenACameraStreamsOverDvrip()
