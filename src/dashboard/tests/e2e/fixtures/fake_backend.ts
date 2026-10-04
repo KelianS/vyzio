@@ -1,5 +1,8 @@
 import type { Page, Route } from '@playwright/test'
-import { CapabilityStatus } from '../../../src/domain/entities/camera_capability_binding.entity'
+import {
+  ASKABLE,
+  CapabilityStatus,
+} from '../../../src/domain/entities/camera_capability_binding.entity'
 
 export interface FakeCamera {
   id: string
@@ -871,14 +874,14 @@ export async function installFakeBackend(
         return state.ptzBinding ? json(route, ptzBindingOf(state.ptzBinding)) : json(route, {}, 404)
       }
       if (rest === '/capabilities/ptz/try' && method === 'POST') {
-        // Like the real one: only a capability to confirm is tried, and it records nothing.
-        if (state.ptzBinding?.status !== CapabilityStatus.ToConfirm) {
+        // Like the real one: only a capability to confirm, or one the user said no to, is tried; it records nothing.
+        if (!state.ptzBinding?.status || !ASKABLE[state.ptzBinding.status]) {
           return json(route, { error: 'nothing_to_confirm' }, 409)
         }
         return route.fulfill({ status: 204 })
       }
       if (rest === '/capabilities/ptz/confirm' && method === 'POST') {
-        if (!state.ptzBinding || state.ptzBinding.status !== CapabilityStatus.ToConfirm) {
+        if (!state.ptzBinding?.status || !ASKABLE[state.ptzBinding.status]) {
           return json(route, { error: 'nothing_to_confirm' }, 409)
         }
         const worked = Boolean(postData?.worked)

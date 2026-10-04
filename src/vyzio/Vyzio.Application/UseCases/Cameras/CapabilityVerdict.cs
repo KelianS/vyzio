@@ -13,6 +13,7 @@ internal static class CapabilityVerdict
                 // A proof outranks the user's word: the card then says the camera showed it.
                 binding.Status = CapabilityStatus.Verified;
                 binding.ConfirmedAt = null;
+                binding.RejectedAt = null;
                 binding.LastError = null;
                 break;
             case ProofOutcome.Missing:
@@ -20,7 +21,7 @@ internal static class CapabilityVerdict
                 binding.LastError = proof.Detail;
                 break;
             case ProofOutcome.Unprovable:
-                binding.Status = binding.ConfirmedAt is null ? CapabilityStatus.ToConfirm : CapabilityStatus.Verified;
+                binding.Status = Remembered(binding);
                 binding.LastError = null;
                 break;
             default:
@@ -28,7 +29,14 @@ internal static class CapabilityVerdict
         }
     }
 
-    // The confirmation survives a failure: a camera asleep for a while keeps what the user saw (ADR-66 c).
+    // The user's answer stands until a proof: a check never asks the question again (ADR-66 c).
+    private static CapabilityStatus Remembered(CameraCapabilityBinding binding)
+    {
+        if (binding.ConfirmedAt is not null) return CapabilityStatus.Verified;
+        return binding.RejectedAt is null ? CapabilityStatus.ToConfirm : CapabilityStatus.RejectedByUser;
+    }
+
+    // The answer survives a failure: a camera asleep for a while keeps what the user saw (ADR-66 c).
     public static void Fail(CameraCapabilityBinding binding, string? reason)
     {
         binding.Status = CapabilityStatus.Failed;
@@ -45,16 +53,25 @@ internal static class CapabilityVerdict
     // Before a check on another protocol: what the former one showed, or the user confirmed, no longer holds.
     public static void Reset(CameraCapabilityBinding binding, SupportedProtocol protocol)
     {
-        if (binding.Protocol != protocol) binding.ConfirmedAt = null;
+        if (binding.Protocol != protocol)
+        {
+            binding.ConfirmedAt = null;
+            binding.RejectedAt = null;
+        }
         binding.Protocol = protocol;
         binding.Status = CapabilityStatus.Failed;
         binding.LastError = null;
     }
 
+    // To confirm, or rejected by the user and tried again on purpose (ADR-66 d).
+    public static bool Askable(CameraCapabilityBinding binding)
+        => binding.Status is CapabilityStatus.ToConfirm or CapabilityStatus.RejectedByUser;
+
     public static void Answer(CameraCapabilityBinding binding, bool worked, DateTimeOffset now)
     {
         binding.Status = worked ? CapabilityStatus.Verified : CapabilityStatus.RejectedByUser;
         binding.ConfirmedAt = worked ? now : null;
+        binding.RejectedAt = worked ? null : now;
         binding.VerifiedAt = now;
         binding.LastError = null;
     }

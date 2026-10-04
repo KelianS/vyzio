@@ -121,6 +121,20 @@ public class TryCameraCapabilityUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldTryAgain_WhenTheUserAnsweredNoBefore()
+    {
+        // Arrange
+        BindingIs(CameraCapability.Ptz, CapabilityStatus.RejectedByUser);
+
+        // Act
+        var outcome = await _sut.ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        // Assert
+        Assert.Equal(CapabilityTryOutcome.Done, outcome);
+        await _motion.Received(1).MoveForAsync(PtzDirection.Right, Arg.Any<int>(), CapabilityTry.PtzNudge, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldRefuse_WhenTheCapabilityIsNotToConfirm()
     {
         // Arrange
@@ -198,8 +212,26 @@ public class ConfirmCameraCapabilityUseCaseTests
         // Assert
         Assert.Equal(CapabilityStatus.RejectedByUser, binding.Status);
         Assert.Null(binding.ConfirmedAt);
+        Assert.Equal(_time.GetUtcNow(), binding.RejectedAt);
         Assert.False(result.Binding!.Verified);
         Assert.False(_camera.PtzSupported);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldClearTheUsersNo_WhenTheUserTriesAgainAndAnswersYes()
+    {
+        // Arrange
+        var binding = BindingIs(CapabilityStatus.RejectedByUser);
+        binding.RejectedAt = _time.GetUtcNow().AddDays(-1);
+
+        // Act
+        var result = await _sut.ExecuteAsync("cam1", CameraCapability.Ptz, worked: true);
+
+        // Assert
+        Assert.Equal(CapabilityAnswerOutcome.Recorded, result.Outcome);
+        Assert.Equal(CapabilityStatus.Verified, binding.Status);
+        Assert.Null(binding.RejectedAt);
+        Assert.Equal(_time.GetUtcNow(), binding.ConfirmedAt);
     }
 
     [Fact]

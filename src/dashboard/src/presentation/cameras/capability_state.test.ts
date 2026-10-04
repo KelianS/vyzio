@@ -65,6 +65,16 @@ describe('capabilityState', () => {
       expected: CapabilityState.Failed,
     },
     {
+      name: 'capabilityState_ShouldSayRejectedRatherThanSwitchedOff_WhenTheUserAnsweredNo',
+      binding: makeCapabilityBinding({
+        capability: 'ptz',
+        verified: false,
+        status: CapabilityStatus.RejectedByUser,
+      }),
+      switchedOn: false,
+      expected: CapabilityState.Rejected,
+    },
+    {
       name: 'capabilityState_ShouldSayWorking_WhenTheLastTestPassed',
       binding: makeCapabilityBinding({ capability: 'hardware_privacy', verified: true }),
       switchedOn: true,
@@ -147,11 +157,6 @@ describe('capabilityFailureLine over the capability level', () => {
       name: 'capabilityFailureLine_ShouldSayTheCameraLacksIt_WhenTheCameraAnswersWithoutTheCapability',
       status: CapabilityStatus.Missing,
       start: 'La caméra répond, mais ne montre pas cette capacité',
-    },
-    {
-      name: 'capabilityFailureLine_ShouldRecallTheUsersNoAndTheWayToRetry_WhenTheUserRejectedIt',
-      status: CapabilityStatus.RejectedByUser,
-      start: 'Vous avez répondu que l’essai n’a pas marché',
     },
   ])('$name', ({ status, start }) => {
     // Arrange & Act

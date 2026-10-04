@@ -31,6 +31,7 @@ public sealed class CameraCapabilityBindingRepository(VyzioDbContext db) : ICame
             existing.ConfigJson = binding.ConfigJson;
             existing.Status = binding.Status;
             existing.ConfirmedAt = binding.ConfirmedAt;
+            existing.RejectedAt = binding.RejectedAt;
             existing.ManuallyConfigured = binding.ManuallyConfigured;
             existing.VerifiedAt = binding.VerifiedAt;
             existing.LastError = binding.LastError;

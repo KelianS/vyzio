@@ -80,6 +80,12 @@ public sealed class SeedAndProbePresetsUseCase(
         var answering = protocols.Where(protocol => camera is not null && Answers(camera, protocol)).ToList();
         var candidates = answering.Count > 0 ? answering : [protocols[0]];
 
+        if (existing is { RejectedAt: { } rejectedAt } && protocols.Contains(existing.Protocol))
+        {
+            await KeepTheUsersNoAsync(existing, rejectedAt, candidates, run, ct);
+            return;
+        }
+
         // The first candidate that proves it, otherwise the first where it is to confirm (ADR-66 e).
         CameraCapabilityBindingDto? result = null;
         SupportedProtocol? toConfirm = null;
@@ -96,6 +102,29 @@ public sealed class SeedAndProbePresetsUseCase(
         // A blind detection keeps only what the camera showed; a capability to confirm is added by hand (ADR-66 e).
         if (deleteIfUnverified && result?.Verified != true)
             await bindings.DeleteAsync(cameraId, capability, ct);
+    }
+
+    // Only a proof, on any candidate, replaces the user's "no"; a mere "to confirm" never asks again (ADR-66 e).
+    private async Task KeepTheUsersNoAsync(
+        CameraCapabilityBinding rejected,
+        DateTimeOffset rejectedAt,
+        IReadOnlyList<SupportedProtocol> candidates,
+        ProtocolCheckRun run,
+        CancellationToken ct)
+    {
+        var rejectedOn = rejected.Protocol;
+        foreach (var protocol in candidates)
+        {
+            var (_, result) = await TryCapabilityAsync(rejected.CameraId, rejected.Capability, rejected, protocol, run, ct);
+            if (result?.Verified == true) return;
+        }
+
+        if (rejected.Protocol == rejectedOn && rejected.RejectedAt is not null) return;
+
+        CapabilityVerdict.Reset(rejected, rejectedOn);
+        rejected.RejectedAt = rejectedAt;
+        await bindings.SaveAsync(rejected, ct);
+        await probe.ExecuteAsync(rejected.CameraId, rejected.Capability, ct: ct, run: run);
     }
 
     private async Task<(CameraCapabilityBinding, CameraCapabilityBindingDto?)> TryCapabilityAsync(

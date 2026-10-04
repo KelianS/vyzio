@@ -9,6 +9,7 @@ namespace Vyzio.Tests.UseCases;
 public class CapabilityProofTests
 {
     private static readonly DateTimeOffset Confirmed = new(2026, 9, 1, 8, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Rejected = new(2026, 9, 2, 8, 0, 0, TimeSpan.Zero);
 
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
@@ -23,7 +24,7 @@ public class CapabilityProofTests
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(_camera);
     }
 
-    private CameraCapabilityBinding Ptz(SupportedProtocol protocol = SupportedProtocol.Dvrip, CapabilityStatus status = CapabilityStatus.Failed, DateTimeOffset? confirmedAt = null)
+    private CameraCapabilityBinding Ptz(SupportedProtocol protocol = SupportedProtocol.Dvrip, CapabilityStatus status = CapabilityStatus.Failed, DateTimeOffset? confirmedAt = null, DateTimeOffset? rejectedAt = null)
     {
         var binding = new CameraCapabilityBinding
         {
@@ -32,6 +33,7 @@ public class CapabilityProofTests
             Protocol = protocol,
             Status = status,
             ConfirmedAt = confirmedAt,
+            RejectedAt = rejectedAt,
         };
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(binding);
         return binding;
@@ -160,17 +162,48 @@ public class CapabilityProofTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldOfferTheTryAgain_WhenTheUserAnsweredNoBefore()
+    public async Task ExecuteAsync_ShouldKeepTheUsersNo_WhenTheCapabilityIsStillUnprovable()
     {
         // Arrange
-        var binding = Ptz(status: CapabilityStatus.RejectedByUser);
+        var binding = Ptz(status: CapabilityStatus.RejectedByUser, rejectedAt: Rejected);
         ProofIs(CapabilityProof.Unprovable());
 
         // Act
         await Probe().ExecuteAsync("cam1", CameraCapability.Ptz);
 
         // Assert
-        Assert.Equal(CapabilityStatus.ToConfirm, binding.Status);
+        Assert.Equal(CapabilityStatus.RejectedByUser, binding.Status);
+        Assert.Equal(Rejected, binding.RejectedAt);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheUsersNo_WhenTheCameraStopsAnsweringForAWhile()
+    {
+        // Arrange
+        var binding = Ptz(status: CapabilityStatus.RejectedByUser, rejectedAt: Rejected);
+
+        // Act
+        await Probe(SilentProtocol()).ExecuteAsync("cam1", CameraCapability.Ptz);
+        ProofIs(CapabilityProof.Unprovable());
+        await Probe().ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        // Assert
+        Assert.Equal(CapabilityStatus.RejectedByUser, binding.Status);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReplaceTheUsersNoByTheProof_WhenTheCameraProvesItLater()
+    {
+        // Arrange
+        var binding = Ptz(status: CapabilityStatus.RejectedByUser, rejectedAt: Rejected);
+        ProofIs(CapabilityProof.Proven());
+
+        // Act
+        await Probe().ExecuteAsync("cam1", CameraCapability.Ptz);
+
+        // Assert
+        Assert.Equal(CapabilityStatus.Verified, binding.Status);
+        Assert.Null(binding.RejectedAt);
     }
 
     [Fact]
@@ -188,6 +221,24 @@ public class CapabilityProofTests
 
         // Assert
         Assert.Null(binding.ConfirmedAt);
+        Assert.Equal(CapabilityStatus.ToConfirm, binding.Status);
+    }
+
+    [Fact]
+    public async Task ConfigureAsync_ShouldStartToConfirm_WhenTheUserMovesARejectedCapabilityToAnotherProtocol()
+    {
+        // Arrange
+        _camera.EnsureProtocol(SupportedProtocol.V380);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Dvrip, SupportedProtocol.V380]);
+        var binding = Ptz(status: CapabilityStatus.RejectedByUser, rejectedAt: Rejected);
+        ProofIs(CapabilityProof.Unprovable());
+        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe());
+
+        // Act
+        await sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "v380"));
+
+        // Assert
+        Assert.Null(binding.RejectedAt);
         Assert.Equal(CapabilityStatus.ToConfirm, binding.Status);
     }
 
@@ -232,6 +283,17 @@ public class CapabilityDetectionTests
 
     private void ProofOver(SupportedProtocol protocol, CapabilityProof proof)
         => _ptz.ProveAsync(Arg.Any<Camera>(), Arg.Is<CameraCapabilityBinding>(b => b.Protocol == protocol), Arg.Any<CancellationToken>()).Returns(proof);
+
+    private static readonly DateTimeOffset Rejected = new(2026, 9, 2, 8, 0, 0, TimeSpan.Zero);
+
+    private static CameraCapabilityBinding RejectedOver(SupportedProtocol protocol) => new()
+    {
+        CameraId = "cam1",
+        Capability = CameraCapability.Ptz,
+        Protocol = protocol,
+        Status = CapabilityStatus.RejectedByUser,
+        RejectedAt = Rejected,
+    };
 
     private Task DetectAsync()
         => CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, Substitute.For<ICameraProtocolEndpointCache>()).ExecuteAsync("cam1");
@@ -297,5 +359,58 @@ public class CapabilityDetectionTests
 
         // Assert
         await _bindings.Received(1).DeleteAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotAskAgain_WhenTheUserSaidNoAndNoCandidateProvesIt()
+    {
+        // Arrange
+        CameraIs(VendorFamily.Icsee);
+        _stored = RejectedOver(SupportedProtocol.Dvrip);
+        ProofOver(SupportedProtocol.Onvif, CapabilityProof.Unprovable());
+        ProofOver(SupportedProtocol.Dvrip, CapabilityProof.Unprovable());
+
+        // Act
+        await DetectAsync();
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Dvrip, _stored!.Protocol);
+        Assert.Equal(CapabilityStatus.RejectedByUser, _stored.Status);
+        Assert.Equal(Rejected, _stored.RejectedAt);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldPromoteTheCapability_WhenACandidateProvesItAfterTheUsersNo()
+    {
+        // Arrange
+        CameraIs(VendorFamily.Icsee);
+        _stored = RejectedOver(SupportedProtocol.Dvrip);
+        ProofOver(SupportedProtocol.Onvif, CapabilityProof.Proven());
+        ProofOver(SupportedProtocol.Dvrip, CapabilityProof.Unprovable());
+
+        // Act
+        await DetectAsync();
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Onvif, _stored!.Protocol);
+        Assert.Equal(CapabilityStatus.Verified, _stored.Status);
+        Assert.Null(_stored.RejectedAt);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheUsersNo_WhenTheCameraIsUnrecognised()
+    {
+        // Arrange
+        CameraIs(null);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.V380]);
+        _stored = RejectedOver(SupportedProtocol.V380);
+        ProofOver(SupportedProtocol.V380, CapabilityProof.Unprovable());
+
+        // Act
+        await DetectAsync();
+
+        // Assert
+        await _bindings.DidNotReceive().DeleteAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>());
+        Assert.Equal(CapabilityStatus.RejectedByUser, _stored!.Status);
     }
 }

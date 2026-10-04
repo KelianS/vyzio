@@ -30,7 +30,7 @@ public sealed class TryCameraCapabilityUseCase(
     public async Task<CapabilityTryOutcome> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
     {
         if (await cameras.GetByIdAsync(cameraId, ct) is not { } camera) return CapabilityTryOutcome.NotFound;
-        if (await bindings.GetAsync(cameraId, capability, ct) is not { Status: CapabilityStatus.ToConfirm } binding)
+        if (await bindings.GetAsync(cameraId, capability, ct) is not { } binding || !CapabilityVerdict.Askable(binding))
             return CapabilityTryOutcome.NothingToConfirm;
         // It would uncover or move a camera the user covered.
         if (camera.PrivacyModeActive) return CapabilityTryOutcome.PrivacyModeActive;
@@ -72,7 +72,7 @@ public enum CapabilityAnswerOutcome
 
 public sealed record CapabilityAnswerResult(CapabilityAnswerOutcome Outcome, CameraCapabilityBindingDto? Binding = null);
 
-// The user's answer after a try: yes makes it usable, confirmed by them; no makes it rejected (ADR-66 d).
+// The user's answer after a try: yes makes it usable, confirmed by them; no makes it rejected, and remembered (ADR-66 d).
 public sealed class ConfirmCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -81,7 +81,7 @@ public sealed class ConfirmCameraCapabilityUseCase(
     public async Task<CapabilityAnswerResult> ExecuteAsync(string cameraId, CameraCapability capability, bool worked, CancellationToken ct = default)
     {
         if (await cameras.GetByIdAsync(cameraId, ct) is not { } camera) return new(CapabilityAnswerOutcome.NotFound);
-        if (await bindings.GetAsync(cameraId, capability, ct) is not { Status: CapabilityStatus.ToConfirm } binding)
+        if (await bindings.GetAsync(cameraId, capability, ct) is not { } binding || !CapabilityVerdict.Askable(binding))
             return new(CapabilityAnswerOutcome.NothingToConfirm);
 
         CapabilityVerdict.Answer(binding, worked, time.GetUtcNow());

@@ -11,6 +11,7 @@ export const CapabilityState = {
   Working: 'working',
   Failed: 'failed',
   ToConfirm: 'to_confirm',
+  Rejected: 'rejected',
   Unconfigured: 'unconfigured',
   SwitchedOff: 'switched_off',
 } as const
@@ -28,17 +29,18 @@ export const CAPABILITY_STATE_PILLS: Record<CapabilityState, { label: string; to
   working: { label: 'Fonctionne', tone: 'ok' },
   failed: { label: 'En échec', tone: 'danger' },
   to_confirm: { label: 'À confirmer', tone: 'warn' },
+  rejected: { label: 'En échec', tone: 'danger' },
   unconfigured: { label: 'À configurer', tone: 'neutral' },
   switched_off: { label: 'Désactivée', tone: 'neutral' },
 }
 
-// Proven or confirmed works; to confirm waits for the user's try; any other status failed, its line says why (ADR-66).
+// Proven or confirmed works; to confirm waits for the user's try; the user's no is kept apart, the rest failed (ADR-66).
 const STATE_OF_STATUS: Record<CapabilityStatus, CapabilityState> = {
   verified: CapabilityState.Working,
   to_confirm: CapabilityState.ToConfirm,
   failed: CapabilityState.Failed,
   missing: CapabilityState.Failed,
-  rejected_by_user: CapabilityState.Failed,
+  rejected_by_user: CapabilityState.Rejected,
 }
 
 // What the camera showed or the user answered was never in use, so no switch hides it (ADR-66).
@@ -102,12 +104,11 @@ const FAILURE_LINES: Record<ProtocolStatus, string> = {
     'La dernière vérification a échoué : relancez-la, ou choisissez une autre façon de la joindre dans ses options.',
 }
 
-// A camera that answered without the capability, or the user's own no, says so before what the protocol said (ADR-66).
+// A camera that answered without the capability says so before what the protocol said (ADR-66).
 const STATUS_FAILURE_LINES: Record<CapabilityStatus, string | null> = {
   missing:
     'La caméra répond, mais ne montre pas cette capacité : choisissez une autre façon de la joindre dans ses options.',
-  rejected_by_user:
-    'Vous avez répondu que l’essai n’a pas marché. « Vérifier » permet de réessayer.',
+  rejected_by_user: null,
   failed: null,
   verified: null,
   to_confirm: null,

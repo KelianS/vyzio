@@ -1169,7 +1169,7 @@ describe('CameraConnectionView, a capability to confirm', () => {
     )
   })
 
-  it('onAnswer_ShouldKeepItOutOfUseAndSayHowToRetry_WhenTheUserAnswersNo', async () => {
+  it('onAnswer_ShouldRememberTheNoAndOfferToTryAgain_WhenTheUserAnswersNo', async () => {
     // Arrange
     const network = connectionNetwork({
       [BINDINGS]: ok([rtspStream, ptzToConfirm]),
@@ -1187,14 +1187,71 @@ describe('CameraConnectionView, a capability to confirm', () => {
 
     // Assert
     expect(
-      await card.findByText(/^Vous avez répondu que l’essai n’a pas marché/),
+      await card.findByText('Vous avez indiqué que la caméra n’a pas bougé.'),
     ).toBeInTheDocument()
     expect(card.getByText('En échec')).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Essayer à nouveau' })).toBeInTheDocument()
     expect(card.getByRole('button', { name: 'Retirer' })).toBeInTheDocument()
+    expect(card.queryByRole('button', { name: 'Vérifier' })).not.toBeInTheDocument()
     expect(card.queryByRole('button', { name: 'Désactiver' })).not.toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: CONFIRM_PTZ, body: { worked: false } }),
     )
+  })
+
+  it('onTry_ShouldAskAgain_WhenTheUserTriesAgainAfterTheirNo', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzRejected]),
+      [TRY_PTZ]: ok(),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const card = await cardOf('Orientation')
+
+    // Act
+    await userEvent.click(card.getByRole('button', { name: 'Essayer à nouveau' }))
+
+    // Assert
+    expect(await card.findByText('La caméra a bougé ?')).toBeInTheDocument()
+    expect(network.sent.map((request) => request.route)).toContain(TRY_PTZ)
+  })
+
+  it('onAnswer_ShouldConfirmIt_WhenTheUserTriesAgainAndAnswersYes', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzRejected]),
+      [TRY_PTZ]: ok(),
+      [CONFIRM_PTZ]: ok(ptzConfirmed),
+      [CAMERAS]: ok([cameraThatTurns]),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+    const card = await cardOf('Orientation')
+    await userEvent.click(card.getByRole('button', { name: 'Essayer à nouveau' }))
+    network.answer(BINDINGS, ok([rtspStream, ptzConfirmed]))
+
+    // Act
+    await userEvent.click(await card.findByRole('button', { name: 'Oui' }))
+
+    // Assert
+    expect(await card.findByText(/^Confirmé par vous le/)).toBeInTheDocument()
+    expect(
+      card.queryByText('Vous avez indiqué que la caméra n’a pas bougé.'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldRecallTheNoAndOfferNoTry_WhenTheCameraIsInPrivacyMode', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzRejected]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(makeCamera({ privacyModeActive: true })))
+
+    // Assert
+    const card = await cardOf('Orientation')
+    expect(card.getByText('Vous avez indiqué que la caméra n’a pas bougé.')).toBeInTheDocument()
+    expect(card.getByText('Rendez la vue à la caméra pour l’essayer.')).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Essayer à nouveau' })).toBeDisabled()
   })
 
   it('onTry_ShouldSayToGiveTheViewBackAndOfferNoTry_WhenTheCameraIsInPrivacyMode', async () => {

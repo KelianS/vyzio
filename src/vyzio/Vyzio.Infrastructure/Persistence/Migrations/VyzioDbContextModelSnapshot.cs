@@ -258,6 +258,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("protocol");
 
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("rejected_at");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()

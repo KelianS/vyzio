@@ -211,11 +211,13 @@ export function CameraConnectionView() {
             </p>
             <p>
               Regardez la caméra, ou son image sur un autre écran, avant de lancer « Essayer ». Si
-              elle n’a rien fait, répondez « Non » : la capacité reste inutilisée.
+              elle n’a rien fait, répondez « Non » : la capacité reste inutilisée, et Vyzio retient
+              votre réponse. Une nouvelle détection ne repose pas la question ; seule une preuve lue
+              sur la caméra la remplace.
             </p>
             <p>
-              Ensuite, « Vérifier » permet de réessayer, ses options de la joindre autrement, et «
-              Retirer » de l’enlever si la caméra ne l’a pas.
+              Ensuite, « Essayer à nouveau » refait l’essai et repose la question, ses options
+              permettent de la joindre autrement, et « Retirer » l’enlève si la caméra ne l’a pas.
             </p>
           </HelpPanel>
         </SettingsSection>

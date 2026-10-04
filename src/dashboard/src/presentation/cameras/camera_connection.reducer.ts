@@ -1,5 +1,5 @@
 import {
-  CapabilityStatus,
+  ASKABLE,
   type CameraCapabilityBinding,
   type Capability,
 } from '../../domain/entities/camera_capability_binding.entity'
@@ -32,7 +32,7 @@ export function cameraConnectionReducer(
 
     case 'BINDINGS_STARTED':
       return { ...state, bindingsLoading: true, bindingsError: null, cameraGone: false }
-    // A question stays only on a capability still to confirm: an answer or a check elsewhere closed it.
+    // A question stays only on a capability a try applies to: an answer or a check elsewhere closed it.
     case 'BINDINGS_LOADED':
       return {
         ...state,
@@ -127,7 +127,7 @@ function stillAsking(
 ): Partial<Record<Capability, true>> {
   return Object.fromEntries(
     bindings
-      .filter((b) => asking[b.capability] && b.status === CapabilityStatus.ToConfirm)
+      .filter((b) => asking[b.capability] && ASKABLE[b.status])
       .map((b) => [b.capability, true]),
   )
 }

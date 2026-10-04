@@ -29,6 +29,22 @@ describe('cameraConnectionReducer', () => {
     expect(next.asking).toEqual({ ptz: true })
   })
 
+  it('cameraConnectionReducer_ShouldKeepAskingAfterTheUsersNo_WhenTheUserTriesAgainOnPurpose', () => {
+    // Arrange
+    const state = { ...buildInitialCameraConnectionUido(), asking: { ptz: true as const } }
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'BINDINGS_LOADED',
+      bindings: [
+        makeCapabilityBinding({ capability: 'ptz', status: CapabilityStatus.RejectedByUser }),
+      ],
+    })
+
+    // Assert
+    expect(next.asking).toEqual({ ptz: true })
+  })
+
   it('cameraConnectionReducer_ShouldCloseOnlyThatQuestion_WhenTheUserAnswers', () => {
     // Arrange
     const state = {

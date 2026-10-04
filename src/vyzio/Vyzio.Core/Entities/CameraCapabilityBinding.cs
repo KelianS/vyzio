@@ -35,6 +35,9 @@ public class CameraCapabilityBinding
     // When the user confirmed the capability over this protocol; kept across checks, cleared by a protocol change or a "no".
     public DateTimeOffset? ConfirmedAt { get; set; }
 
+    // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-66 c).
+    public DateTimeOffset? RejectedAt { get; set; }
+
     // True when the protocol was picked explicitly by the user (manual configure/edit path,
     // ADR-28) rather than seeded from a vendor preset. SeedAndProbePresetsUseCase must never
     // overwrite a manually-chosen protocol when re-running detection.
