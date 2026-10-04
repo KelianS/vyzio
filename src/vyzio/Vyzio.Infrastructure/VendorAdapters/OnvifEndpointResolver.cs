@@ -25,7 +25,7 @@ internal sealed record OnvifEndpoint(Uri DeviceServiceUrl, IReadOnlyDictionary<O
         => ServiceUrls.GetValueOrDefault(service, DeviceServiceUrl);
 }
 
-// Asks the camera where it serves ONVIF instead of assuming it: stored, else swept without credentials, then GetServices (ADR-56).
+// Asks the camera where it serves ONVIF instead of assuming it (ADR-56).
 internal sealed class OnvifEndpointResolver(
     IHttpClientFactory httpClientFactory,
     TimeProvider time,
