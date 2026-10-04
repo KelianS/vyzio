@@ -5,7 +5,7 @@ order; starting the implementation before the upstream documents are aligned is 
 
 ## Mandated order
 
-1. **SPECS** ([`SPECS.md`](SPECS.md)) if the product need changes: user stories, journeys, MVP scope.
+1. **SPECS** ([`SPECS.md`](SPECS.md)) if the product need changes: user stories, journeys, product scope.
 2. **ADR** ([`adr/`](adr/)) for an architectural choice, and the **SAD** ([`SAD.md`](SAD.md)) when the
    system's shape changes (§ The SAD).
 3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
@@ -181,3 +181,11 @@ Nothing gets built while it is up, which is the mandated order above, made visib
 
 A template **reminds, it does not enforce**: GitHub imposes it neither on the web nor through
 `gh issue create`. What would truly enforce the format is an integration check, and there is none.
+
+### Releases, one milestone each
+
+The next release is a GitHub **milestone** named after its version (`v0.3.0`); an issue in no
+milestone is out of that release. Before work on a milestone starts, all its issues are framed in
+**one batch**: the open questions are gathered and put to the owner together, each with its options
+and a recommendation, so no product question comes back once the work has started. The
+milestone starts once none of its issues still carries `needs-framing`.

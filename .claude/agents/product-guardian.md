@@ -15,7 +15,7 @@ costs against the sources, without picking one.
 Read them at the start of every review, never from memory:
 
 - the product principles digest in the root `CLAUDE.md`, and the sources it cites;
-- `docs/SPECS.md` (in French): user stories, rules, journeys, success criteria, MVP scope;
+- `docs/SPECS.md` (in French): user stories, rules, journeys, success criteria, product scope (§12);
 - `README.md`: positioning and the promise made publicly;
 - `docs/DESIGN SYSTEM.md`, section Intent, for tone and vocabulary.
 
@@ -31,8 +31,8 @@ above, never commercial strategy.
 - **Opaque states**: a score, status or decision shown without a readable reason (principle 4).
 - **Broken promises**: images leaving the home without explicit consent, a feature that needs the
   internet to work, data the user cannot see or remove (principle 3, privacy first).
-- **Scope drift**: work outside the MVP scope of the SPECS, or a SPECS rule that the change silently
-  drops.
+- **Scope drift**: work outside the product scope (SPECS §12) or outside the milestone its issue
+  belongs to, or a SPECS rule that the change silently drops.
 - **Public promise drift**: the README claiming what the product does not do, or the product doing
   what the README says it will not.
 - **Consistency across the product**: the same notion named two ways, two screens behaving

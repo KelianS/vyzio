@@ -1,19 +1,10 @@
 # Dashboard
 
-This frontend is intentionally minimal during the repository reset phase.
-
-## Purpose
-
-- keep a valid React/Vite workspace in place;
-- avoid shipping a misleading demo UI before MVP flows are validated;
-- provide a clean base for the future non-technical Vyzio hub.
+The Vyzio hub: the React/Vite interface the user installs, watches and drives the cameras from.
+Rules for working here: [`CLAUDE.md`](CLAUDE.md). Setup and tasks: [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
 
 ## Commands
 
 - `pnpm dev`
 - `pnpm build`
 - `pnpm lint`
-
-## Current rule
-
-Do not expand this UI until the backlog reset and MVP user journeys have been reviewed.
