@@ -402,7 +402,7 @@ public class VerifyCameraUseCaseTests
 
     // ── Stream enumeration on verification (ADR-38) ──
 
-    private Camera GivenReachableCamera(string? mainPath = "/stream1")
+    private Camera GivenReachableCamera(string? path = "/stream1")
     {
         var camera = new Camera
         {
@@ -411,7 +411,7 @@ public class VerifyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-        }.WithStream(SupportedProtocol.Rtsp, path: mainPath);
+        }.WithStream(SupportedProtocol.Rtsp, path: path);
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
         _bindings.GetAsync(camera.Id, CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
         _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(

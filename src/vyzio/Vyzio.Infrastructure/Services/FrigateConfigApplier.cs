@@ -224,8 +224,7 @@ public sealed class FrigateConfigApplier(
         }
 
         // Build go2rtc section for DVRIP cameras — go2rtc bridges dvrip:// → rtsp://127.0.0.1:8554/{slug}.
-        // One entry per stream Frigate consumes: when detect and record are two streams, each needs its
-        // own bridge, otherwise both roles would land on the same decoded stream.
+        // One bridge per stream Frigate consumes, else separate detect and record would share one decoded stream.
         var dvripStreams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var camera in validatedCameras)
         {

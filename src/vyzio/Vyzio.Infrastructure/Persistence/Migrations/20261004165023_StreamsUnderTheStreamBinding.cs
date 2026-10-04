@@ -11,8 +11,9 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Streams keyed by camera are not carried over: the next verification finds them again (ADR-65).
+            // No stream is carried over: each camera's stream is chosen again, which lays its streams out (ADR-65 e).
             migrationBuilder.Sql("DELETE FROM camera_streams;");
+            migrationBuilder.Sql("DELETE FROM camera_capability_bindings WHERE capability = 'stream';");
 
             migrationBuilder.DropForeignKey(
                 name: "fk_camera_streams_cameras_camera_id",

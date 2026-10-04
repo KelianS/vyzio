@@ -443,8 +443,7 @@ internal static class CameraDraftFactory
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        // A camera is born with its stream capability: the protocol that carries it, how to reach
-        // that protocol, and the main stream's path when it goes over RTSP (ADR-61, ADR-65 e).
+        // A camera is born with its stream capability, its protocol row and the typed stream path, if any (ADR-61, ADR-65 e).
         var binding = new CameraCapabilityBinding
         {
             CameraId = camera.Id,

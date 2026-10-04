@@ -70,6 +70,21 @@ public class CameraStreamsEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task AddStream_ShouldRefuseWithItsCode_WhenAnRtspPathIsEmpty()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/streams",
+            new { protocol = "rtsp", path = " ", role = "none" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("stream_path_required", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task GetAvailableStreams_ShouldAnswerAnEmptyList_WhenTheCameraListsNothingOverRtsp()
     {
         // Arrange

@@ -168,10 +168,6 @@ public sealed class SeedAndProbePresetsUseCase(
         var answering = candidates.Where(protocol => Answers(camera, protocol)).ToList();
         if (answering.Count == 0) return;
 
-        // A stream bound is a connection change, like a stream protocol chosen by hand.
-        CameraConnectionChange.Apply(camera);
-        await cameras.UpdateAsync(camera, ct);
-
         var binding = new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Stream };
         var verified = false;
         SupportedProtocol? fallback = null;
@@ -197,6 +193,10 @@ public sealed class SeedAndProbePresetsUseCase(
     private async Task<bool?> TryStreamAsync(Camera camera, CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
     {
         if (!await StreamLayout.TryLayOutAsync(camera, binding, protocol, typedPath: null, streamEnumerator, time, ct)) return null;
+
+        // A stream bound is a connection change, like a stream protocol chosen by the user.
+        CameraConnectionChange.Apply(camera);
+        await cameras.UpdateAsync(camera, ct);
 
         CapabilityVerdict.Reset(binding, protocol);
         await bindings.SaveAsync(binding, ct);

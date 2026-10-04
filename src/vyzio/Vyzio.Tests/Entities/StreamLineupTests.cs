@@ -169,6 +169,25 @@ public class StreamLineupTests
     }
 
     [Fact]
+    public void ApplyFound_ShouldKeepTheMeasuredSize_WhenTheCameraDoesNotReportTheStreamsAddress()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        var binding = camera.StreamBinding!;
+        var typed = camera.Streams.First();
+        typed.Width = 1280;
+        typed.Height = 720;
+        binding.StreamsFoundAt = DateTimeOffset.UnixEpoch;
+
+        // Act
+        StreamLineup.ApplyFound(binding, [new EnumeratedStream("/other", 1920, 1080, 25)], DateTimeOffset.UnixEpoch);
+
+        // Assert
+        Assert.Equal(1280, typed.Width);
+        Assert.Equal(720, typed.Height);
+    }
+
+    [Fact]
     public void ApplyFound_ShouldKeepTheUsersRoles_WhenTheStreamsAreFoundAfterAChange()
     {
         // Arrange
