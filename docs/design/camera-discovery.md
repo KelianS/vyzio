@@ -1,8 +1,10 @@
 # TAD: camera network discovery
 
 > How the discovery subsystem works. The *why* behind the choices is in
-> [ADR-32](../adr/0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) (three-stage pipeline) and
-> [ADR-31](../adr/0031-manual-vendor-override-at-onboarding.md) (manual override).
+> [ADR-32](../adr/0032-three-stage-network-discovery-pipeline-identification-enrichment-interpretation.md) (three-stage pipeline),
+> [ADR-31](../adr/0031-manual-vendor-override-at-onboarding.md) (manual override) and
+> [ADR-61](../adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b (the stream
+> protocol chosen from what discovery saw).
 > Home of the code: `src/vyzio/Vyzio.Infrastructure/Services/CameraDiscovery/`.
 
 ## Role
@@ -68,6 +70,18 @@ detection when a camera is added ([ADR-22](../adr/0022-camera-capability-catalog
 [ADR-28](../adr/0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)). `Stream` is a
 first-class capability (`IStreamCapabilityProvider`), not a special case.
 
+## Stream readiness
+
+A candidate is **ready** when its video stream can be served as discovery saw it, over any stream
+protocol: `AssistedCameraDiscoveryService` walks the registered stream protocols in the registry's
+order (RTSP, then DVRIP) and keeps the first one that answered on the host and for which discovery
+holds everything its stream needs. Each stream provider declares whether its stream needs a path
+(`IStreamCapabilityProvider.NeedsPath`): over RTSP the protocol answering is not enough, a path read
+by DESCRIBE is required; over DVRIP the confirmed handshake is enough. The result is the candidate's
+`Stream` (protocol, port, path), null when no protocol can serve it ("to prepare" on screen).
+Readiness is decided at the capability level: protocol detection stays the port sweep's, and a new
+stream protocol only declares its provider.
+
 ## Output contract (towards the frontend)
 
 The backend carries **already localised** DTOs; the frontend is pure display (no protocol or capability
@@ -75,6 +89,8 @@ name hardcoded):
 
 - `DetectedPortSignal(Protocol, Label, Port)` feeds the `Port | Protocol` table.
 - `DetectedCapability(Capability, Label, ProtocolLabels)` feeds the `capability to protocols` list.
+- `DiscoveredStream(Protocol, Port, Path)`, the candidate's ready stream: it drives the "ready" mark
+  and fills the add form with the stream's protocol, port and path (ADR-61 b).
 
 ## Configuration
 
