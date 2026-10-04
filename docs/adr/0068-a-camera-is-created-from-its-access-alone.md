@@ -66,6 +66,13 @@ page and attempts no image. It enters the generated configuration, and so survei
 stream works; the restart trigger concerns it only from then on. The settings that need no stream
 (detection, retention, privacy) are saved meanwhile and applied when it enters surveillance.
 
+The state lasts only until the stream first works, and while it lasts it is the camera's status:
+offline or a configuration error mean nothing before a first success. It never comes back: once the
+stream has worked, a later failure, a change of stream protocol included, reads as the usual offline
+or error states, since what was added is trusted. Until then the camera is a target like any other
+for schedules and the cameras a person's notifications are filtered by, which take effect once it
+enters surveillance; it has no live view, and the history has nothing for it.
+
 **e) No brand is chosen when adding.** The brand selector of ADR-31 goes, and the add screen hands
 over no brand. Detection recognises the brand from the camera itself, with the signals discovery
 interprets (ADR-32), and the recognised brand's preset applies as before (ADR-22, ADR-28, ADR-66).
