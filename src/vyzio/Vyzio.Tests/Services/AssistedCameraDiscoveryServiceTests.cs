@@ -444,11 +444,11 @@ public class AssistedCameraDiscoveryServiceTests
     [Fact]
     public async Task DiscoverAsync_ShouldReturnALikelyCamera_WhenTheHostnameStartsWithTheMvPrefix()
     {
-        var sut = Discovery(HermeticSettings(probeHosts: ["MV26970853"]));
+        var sut = Discovery(HermeticSettings(probeHosts: ["MV87654321"]));
 
         var result = await sut.DiscoverAsync().ObservedAsync();
 
-        var candidate = Assert.Single(result, item => item.Host == "MV26970853");
+        var candidate = Assert.Single(result, item => item.Host == "MV87654321");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
         Assert.Equal("camera_likely", candidate.Qualification);
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
