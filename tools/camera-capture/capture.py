@@ -14,7 +14,7 @@ import v380
 from recording import MAC, REPO_ROOT, Account, Scrubber, Transcript, learn_from_transcript, scrub_transcript, write_folder
 
 PROTOCOLS = {"onvif": onvif.run, "dvrip": dvrip.run, "v380": v380.run, "rtsp": rtsp.run}
-# ONVIF runs first whatever is asked: it names the firmware and gives RTSP its stream address.
+# ONVIF runs first whatever is asked: it names the firmware (else DVRIP does) and gives RTSP its stream address.
 ORDER = ["onvif", "dvrip", "v380", "rtsp"]
 VARIABLES = ("VYZIO_CAPTURE_HOST", "VYZIO_CAPTURE_USERNAME", "VYZIO_CAPTURE_PASSWORD", "VYZIO_CAPTURE_V380_DEVICE_ID")
 
@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--env-file", help="KEY=VALUE file outside the repository holding the VYZIO_CAPTURE_* settings")
     parser.add_argument("--allow-writes", action="store_true", help="also run the preset scenarios that store then remove a preset")
     parser.add_argument("--onvif-port", type=int, help="skip the ONVIF port sweep")
-    parser.add_argument("--firmware", help="firmware name when ONVIF does not give one")
+    parser.add_argument("--firmware", help="firmware name when neither ONVIF nor DVRIP gives one")
     parser.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for an answer (a V380 takes seconds)")
     args = parser.parse_args()
 

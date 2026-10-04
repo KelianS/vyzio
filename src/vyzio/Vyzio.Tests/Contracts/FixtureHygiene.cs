@@ -180,7 +180,7 @@ internal sealed partial class FixtureHygiene
     [GeneratedRegex(@"""PassWord""\s*:\s*""([^""]*)""")]
     private static partial Regex DvripPassword();
 
-    [GeneratedRegex(@"""AdminToken""\s*:\s*""([^""]*)""")]
+    [GeneratedRegex(@"""AdminToken""\s*:\s*""([^""]+)""")]
     private static partial Regex DvripAdminToken();
 
     [GeneratedRegex(@"password=([^&_\s""<]*)", RegexOptions.IgnoreCase)]

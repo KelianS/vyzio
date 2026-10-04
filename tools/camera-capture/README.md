@@ -39,8 +39,8 @@ camera and removed it in the same transcript.
    python tools/camera-capture/capture.py --model icsee --protocols onvif,dvrip,rtsp --env-file ../camera.env
    ```
 
-   ONVIF always runs: it names the firmware and gives RTSP its stream address. When it cannot
-   name the firmware, pass `--firmware`.
+   ONVIF always runs: it names the firmware and gives RTSP its stream address. DVRIP names the
+   firmware when ONVIF does not; when neither can, pass `--firmware`.
 3. Add `--allow-writes` to also record the preset scenarios: a preset stored where the head already
    points, listed, then removed. Nothing moves the head, and privacy mode is never touched.
 4. Check what the run printed: a protocol that failed is named, and a preset left behind is said.
