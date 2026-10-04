@@ -42,10 +42,10 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
 
         _logger?.LogInformation(
-            "Starting assisted camera discovery. AutoDetectLocalCidrs={AutoDetectLocalCidrs}, ProbeHosts={ProbeHostsCount}, ProbeCidrs={ProbeCidrsCount}",
-            _settings.Discovery.AutoDetectLocalCidrs,
+            "Starting assisted camera discovery. ProbeHosts={ProbeHostsCount}, SweptCidrs={SweptCidrs}, FromConfiguration={FromConfiguration}",
             _settings.Discovery.ProbeHosts.Count,
-            _settings.Discovery.ProbeCidrs.Count);
+            string.Join(',', SweptCidrs()),
+            _settings.Discovery.ProbeCidrs.Count > 0);
 
         var configuredHosts = BuildConfiguredHostList();
         _logger?.LogInformation(
@@ -742,15 +742,16 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             }
         }
 
-        AddSweptHosts(_settings.Discovery.ProbeCidrs);
-
-        if (_settings.Discovery.AutoDetectLocalCidrs)
-        {
-            AddSweptHosts(DetectLocalCidrs());
-        }
+        AddSweptHosts(SweptCidrs());
 
         return new ConfiguredHosts(explicitHosts, sweptHosts.ToList());
     }
+
+    // The configured ranges replace the host's own subnets rather than add to them.
+    private IReadOnlyList<string> SweptCidrs() =>
+        _settings.Discovery.ProbeCidrs.Count > 0
+            ? _settings.Discovery.ProbeCidrs
+            : _settings.Discovery.LocalCidrsOverride ?? LocalSubnets.OfThisHost();
 
     // ADR-32 — Stage 1 (identification): decide which hosts are worth enriching at all, before
     // any protocol-specific probe runs. Explicit hosts always pass through. Swept (CIDR) hosts
@@ -804,57 +805,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    private static IReadOnlyList<string> DetectLocalCidrs()
-    {
-        var cidrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            if (networkInterface.OperationalStatus != OperationalStatus.Up)
-            {
-                continue;
-            }
-
-            if (networkInterface.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
-            {
-                continue;
-            }
-
-            var properties = networkInterface.GetIPProperties();
-            foreach (var unicast in properties.UnicastAddresses)
-            {
-                if (unicast.Address.AddressFamily != AddressFamily.InterNetwork)
-                {
-                    continue;
-                }
-
-                if (!IsPrivateIpv4(unicast.Address))
-                {
-                    continue;
-                }
-
-                var prefixLength = unicast.PrefixLength;
-                if (prefixLength <= 0 && unicast.IPv4Mask is not null)
-                {
-                    prefixLength = CountMaskBits(unicast.IPv4Mask);
-                }
-
-                if (prefixLength <= 0)
-                {
-                    prefixLength = 24;
-                }
-
-                var effectivePrefixLength = prefixLength < 24 ? 24 : prefixLength;
-                var address = ToUInt32(unicast.Address);
-                var mask = effectivePrefixLength == 0 ? 0u : uint.MaxValue << (32 - effectivePrefixLength);
-                var network = FromUInt32(address & mask);
-                cidrs.Add($"{network}/{effectivePrefixLength}");
-            }
-        }
-
-        return cidrs.ToList();
-    }
-
     private static IEnumerable<string> EnumerateHosts(string cidr)
     {
         var parts = cidr.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
@@ -868,7 +818,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             yield break;
         }
 
-        var network = ToUInt32(networkAddress);
+        var network = LocalSubnets.ToUInt32(networkAddress);
         var mask = prefixLength == 0 ? 0u : uint.MaxValue << (32 - prefixLength);
         var baseAddress = network & mask;
         var hostCount = prefixLength == 32 ? 1u : 1u << (32 - prefixLength);
@@ -877,7 +827,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
         for (var offset = start; offset < endExclusive; offset++)
         {
-            yield return FromUInt32(baseAddress + offset).ToString();
+            yield return LocalSubnets.ToIPAddress(baseAddress + offset).ToString();
         }
     }
 
@@ -1260,47 +1210,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
 
     private static string ToDisplayName(string host)
         => host.Replace('-', ' ').Replace('_', ' ');
-
-    private static bool IsPrivateIpv4(IPAddress address)
-    {
-        var bytes = address.GetAddressBytes();
-        return bytes[0] == 10
-            || (bytes[0] == 172 && bytes[1] is >= 16 and <= 31)
-            || (bytes[0] == 192 && bytes[1] == 168);
-    }
-
-    private static int CountMaskBits(IPAddress mask)
-    {
-        var bits = 0;
-
-        foreach (var octet in mask.GetAddressBytes())
-        {
-            var value = octet;
-            while (value > 0)
-            {
-                bits += value & 1;
-                value >>= 1;
-            }
-        }
-
-        return bits;
-    }
-
-    private static uint ToUInt32(IPAddress address)
-    {
-        var bytes = address.GetAddressBytes();
-        return ((uint)bytes[0] << 24)
-            | ((uint)bytes[1] << 16)
-            | ((uint)bytes[2] << 8)
-            | bytes[3];
-    }
-
-    private static IPAddress FromUInt32(uint value)
-        => new([
-            (byte)((value >> 24) & 0xFF),
-            (byte)((value >> 16) & 0xFF),
-            (byte)((value >> 8) & 0xFF),
-            (byte)(value & 0xFF)]);
 
     private static bool IsValidMacAddress(string mac)
         => Regex.IsMatch(mac, "^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$");

@@ -248,7 +248,7 @@ public sealed class FrigateConfigApplier(
         {
             Mqtt = new FrigateMqttConfig
             {
-                Host = settings.Frigate.Mqtt.Host,
+                Host = settings.Frigate.Mqtt.HostForFrigate,
                 Port = settings.Frigate.Mqtt.Port,
             },
             Database = new FrigateDatabaseConfig

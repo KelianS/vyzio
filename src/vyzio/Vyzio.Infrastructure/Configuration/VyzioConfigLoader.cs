@@ -10,9 +10,6 @@ public static class VyzioConfigLoader
         static int EnvInt(string name, int @default) =>
             int.TryParse(Env(name), out var i) ? i : @default;
 
-        static bool EnvBool(string name, bool @default = false) =>
-            Env(name) is { Length: > 0 } raw ? bool.TryParse(raw, out var b) && b : @default;
-
         static string[] EnvList(string name, string[]? @default = null) =>
             Env(name) is { Length: > 0 } raw
                 ? raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -30,14 +27,15 @@ public static class VyzioConfigLoader
             },
             Frigate = new VyzioRuntimeSettings.FrigateSettings
             {
-                ApiBaseUrl = Env("VYZIO_FRIGATE_API_BASE_URL", "http://frigate:5000").TrimEnd('/'),
+                ApiBaseUrl = Env("VYZIO_FRIGATE_API_BASE_URL", "http://127.0.0.1:5000").TrimEnd('/'),
                 ConfigPath = Env("VYZIO_FRIGATE_CONFIG_PATH", "/config/config.yml"),
                 ApplyCommand = Env("VYZIO_FRIGATE_APPLY_COMMAND", "docker restart vyzio-frigate"),
                 DatabasePath = Env("VYZIO_FRIGATE_DATABASE_PATH", "/media/frigate/frigate.db"),
                 RetainedLabels = EnvList("VYZIO_FRIGATE_RETAINED_LABELS"),
                 Mqtt = new VyzioRuntimeSettings.MqttSettings
                 {
-                    Host = Env("VYZIO_FRIGATE_MQTT_HOST", "mqtt"),
+                    Host = Env("VYZIO_FRIGATE_MQTT_HOST", "127.0.0.1"),
+                    HostForFrigate = Env("VYZIO_FRIGATE_MQTT_HOST_FOR_FRIGATE", "mqtt"),
                     Port = EnvInt("VYZIO_FRIGATE_MQTT_PORT", 1883),
                     Topic = Env("VYZIO_FRIGATE_MQTT_TOPIC", "frigate/events"),
                     ClientId = Env("VYZIO_FRIGATE_MQTT_CLIENT_ID", "vyzio-api")
@@ -45,7 +43,6 @@ public static class VyzioConfigLoader
             },
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
-                AutoDetectLocalCidrs = EnvBool("VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS"),
                 ProbeHosts = EnvList("VYZIO_DISCOVERY_PROBE_HOSTS"),
                 ProbeCidrs = EnvList("VYZIO_DISCOVERY_PROBE_CIDRS"),
                 ProbeTimeoutMs = probeTimeoutMs is < 50 or > 5000 ? 250 : probeTimeoutMs,

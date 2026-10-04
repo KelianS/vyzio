@@ -18,7 +18,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
             ConfigPath = _configPath,
             ApplyCommand = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "echo ok" : "echo ok",
             DatabasePath = "/db/frigate.db",
-            Mqtt = new() { Host = "mosquitto", Port = 1883 },
+            Mqtt = new() { Host = "localhost", HostForFrigate = "mosquitto", Port = 1883 },
         }
     };
 
@@ -132,6 +132,20 @@ public sealed class FrigateConfigApplierTests : IDisposable
         await applier.ApplyAsync(cameras);
 
         Assert.False(applier.HasPendingChanges);
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldPointFrigateAtTheBrokerOnItsNetwork_WhenTheApiReachesItThroughTheLoopback()
+    {
+        // Arrange
+        var cameras = new[] { MakeValidatedCamera("front-door") };
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Contains("host: mosquitto", yaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("host: localhost", yaml, StringComparison.Ordinal);
     }
 
     [Fact]

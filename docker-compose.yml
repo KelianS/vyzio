@@ -3,7 +3,7 @@
 #
 # All Vyzio settings have sensible defaults. Override with VYZIO_* environment variables, e.g.:
 #   VYZIO_TIME_ZONE: Europe/Paris
-#   VYZIO_DISCOVERY_PROBE_CIDRS: 192.168.1.0/24,192.168.2.0/24
+#   VYZIO_DISCOVERY_PROBE_CIDRS: 192.168.1.0/24,192.168.2.0/24   (replaces the host's own subnets)
 #
 # For local development with live builds, apply the dev override:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
@@ -19,12 +19,8 @@ services:
     depends_on:
       vyzio-api:
         condition: service_healthy
-    environment:
-      - VITE_API_PROXY_TARGET=http://vyzio-api:8443
-    ports:
-      - "8080:8080"
-    networks:
-      - vyzio-net
+    # On the host's network to reach the API on the loopback; listens on 8080, the one entry point.
+    network_mode: host
 
   vyzio-api:
     image: ghcr.io/kelians/vyzio-api:${VYZIO_VERSION:-latest}
@@ -36,10 +32,11 @@ services:
     # Reads the accelerator device nodes to pick a detector, and falls back to CPU on a host that
     # has none (ADR-34). The docker socket below is what restarts Frigate once the config is written.
     privileged: true
+    # On the host's network so discovery sees the home subnet, ARP table and multicast (ADR-32).
+    network_mode: host
     environment:
-      ASPNETCORE_HTTP_PORTS: 8443
+      ASPNETCORE_URLS: http://127.0.0.1:8443 # loopback only: never reachable from the home network
       VYZIO_TIME_ZONE: Europe/Paris
-      VYZIO_DISCOVERY_PROBE_CIDRS: 192.168.0.0/24,192.168.1.0/24
     volumes:
       - vyzio-config:/config           # shared with frigate: API writes config.yml, Frigate reads it
       - vyzio-data:/app/data           # contains DB
@@ -47,8 +44,6 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
       - /dev:/dev:ro
-    networks:
-      - vyzio-net
 
   mqtt:
     image: eclipse-mosquitto:2
@@ -60,6 +55,8 @@ services:
       - |
         printf 'listener 1883\nallow_anonymous true\nlog_dest stdout\n' > /tmp/mosquitto.conf
         mosquitto -c /tmp/mosquitto.conf
+    ports:
+      - "127.0.0.1:1883:1883" # for the API, on the host's network
     networks:
       - vyzio-net
     healthcheck:

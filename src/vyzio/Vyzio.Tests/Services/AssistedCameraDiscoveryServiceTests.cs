@@ -30,6 +30,7 @@ public class AssistedCameraDiscoveryServiceTests
     private static VyzioRuntimeSettings HermeticSettings(
         IReadOnlyList<string>? probeHosts = null,
         IReadOnlyList<string>? probeCidrs = null,
+        IReadOnlyList<string>? localCidrs = null,
         IReadOnlyList<int>? rtspPorts = null,
         IReadOnlyList<int>? httpPorts = null,
         IReadOnlyList<int>? scanPorts = null,
@@ -42,8 +43,9 @@ public class AssistedCameraDiscoveryServiceTests
             },
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
-                ProbeHosts = probeHosts ?? (probeCidrs is null ? [Loopback] : []),
+                ProbeHosts = probeHosts ?? (probeCidrs is null && localCidrs is null ? [Loopback] : []),
                 ProbeCidrs = probeCidrs ?? [],
+                LocalCidrsOverride = localCidrs ?? [],
                 RtspPortsOverride = rtspPorts ?? [],
                 HttpPortsOverride = httpPorts ?? [],
                 ScanPortsOverride = scanPorts ?? [],
@@ -114,6 +116,45 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("rtsp_describe", candidate.DiscoverySource);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldSweepTheHostSubnets_WhenNoRangeIsConfigured()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var port = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
+        var sut = Discovery(HermeticSettings(localCidrs: ["127.0.0.1/32"], rtspPorts: [port]));
+
+        // Act
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        Assert.Contains(result, item => item.Host == Loopback && item.Port == port);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldSweepOnlyTheConfiguredRanges_WhenARangeIsConfigured()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var port = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
+        var sut = Discovery(HermeticSettings(probeCidrs: ["127.0.0.1/32"], localCidrs: ["127.0.0.2/32"], rtspPorts: [port]));
+
+        // Act
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        Assert.Contains(result, item => item.Host == Loopback);
+        Assert.All(result, item => Assert.Equal(Loopback, item.Host));
     }
 
     // Loop-accept helper: answers every request with an RTSP 200 (enough for DESCRIBE/OPTIONS).

@@ -18,7 +18,7 @@ public class VyzioRuntimeSettings
     public sealed class FrigateSettings
     {
         public IReadOnlyList<string> RetainedLabels { get; init; } = Array.Empty<string>();
-        public string ApiBaseUrl { get; init; } = "http://frigate:5000";
+        public string ApiBaseUrl { get; init; } = "http://127.0.0.1:5000";
         public string ConfigPath { get; init; } = "/config/config.yml";
         public string ApplyCommand { get; init; } = "docker restart vyzio-frigate";
         public string DatabasePath { get; init; } = "/media/frigate/frigate.db";
@@ -40,7 +40,10 @@ public class VyzioRuntimeSettings
 
     public sealed class MqttSettings
     {
-        public string Host { get; init; } = "mqtt";
+        public string Host { get; init; } = "127.0.0.1";
+
+        // Written into Frigate's configuration: Frigate reaches the broker from the Docker network, the API through the host's loopback.
+        public string HostForFrigate { get; init; } = "mqtt";
         public int Port { get; init; } = 1883;
         public string Topic { get; init; } = "frigate/events";
         public string ClientId { get; init; } = "vyzio-api";
@@ -51,7 +54,6 @@ public class VyzioRuntimeSettings
     // not user configuration: the user shouldn't have to know a camera speaks V380 on 8800.
     public sealed class DiscoverySettings
     {
-        public bool AutoDetectLocalCidrs { get; init; }
         public IReadOnlyList<string> ProbeHosts { get; init; } = Array.Empty<string>();
         public IReadOnlyList<string> ProbeCidrs { get; init; } = Array.Empty<string>();
         public int ProbeTimeoutMs { get; init; } = 250;
@@ -64,6 +66,9 @@ public class VyzioRuntimeSettings
         public IReadOnlyList<int>? ScanPortsOverride { get; init; }
         public IReadOnlyList<int>? RtspPortsOverride { get; init; }
         public IReadOnlyList<int>? HttpPortsOverride { get; init; }
+
+        // Stands in for the host's own subnets, swept when no ProbeCidrs is set; null reads the interfaces.
+        public IReadOnlyList<string>? LocalCidrsOverride { get; init; }
 
         // Which fingerprint to attempt on a port, overriding the catalog's port → protocol mapping.
         // Lets a test exercise a fingerprint on an ephemeral port instead of binding the well-known
