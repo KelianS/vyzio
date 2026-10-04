@@ -160,7 +160,7 @@ setting on one, takes its place without a page or a layout of its own:
   camera is in privacy mode, the line saying so, and suspended with the other checks. The way out of a
   capability the camera does not show, or that the user answered "no" to, is another way to reach it in
   its `Options`, or switching it off (`Desactiver`) for Orientation, removing it (`Retirer`) for the
-  others.
+  others; after a "no", `Verifier` brings the card back to `A confirmer`, to try it again.
 
 The page shows a camera's connection data on its three levels
 ([ADR-61](adr/0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)), each

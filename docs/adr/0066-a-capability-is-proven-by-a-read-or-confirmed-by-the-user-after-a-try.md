@@ -67,7 +67,7 @@ including a camera that stopped answering for a while, and is cleared by a chang
 "no".
 
 **d) The user confirms by trying.** A capability to confirm offers a **try**, a real use the user
-starts, which is not a probe: the head turns a little right, then back; the hardware cut closes for a
+starts, which is not a probe: the head turns a little right and back, then a little down and back, so that a head that only pans or only tilts still moves; the hardware cut closes for a
 few seconds, then opens. Then it asks one plain question, and the answer is the user's: yes makes it
 verified, confirmed by the user, with the date; no makes it rejected by the user, unusable, with the
 way out. A check after a "no" goes back to "to confirm", so the user can try again. The try is refused
@@ -114,4 +114,3 @@ and a card would have to reconcile them; one state names each case once.
   check that finds a proof later turns it into a proven one
 - ⚠️ Tapo has a read for its lens cut and its motor in some firmware, not validated on hardware yet:
   both stay unprovable until one is
-- ⚠️ A tilt-only head does not move on the try; its user answers "no" and the card says how to get out
