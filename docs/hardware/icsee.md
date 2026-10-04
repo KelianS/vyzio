@@ -11,3 +11,4 @@ architecture.
 | 2026-09-27 | `Ability.PTZ` and `SystemFunction` answer `Ret` 607 (not supported) |
 | 2026-09-27 | The vendor app offers no preset feature |
 | 2026-09-27 | Some units serve media profiles over ONVIF with no PTZ configuration on them, while their head turns over DVRIP |
+| 2026-10-04 | A battery unit (firmware `V5.04.C02.000959TC.10000.140835.0000000`), woken through the vendor app, answers on DVRIP only: the ONVIF and RTSP ports stay closed while it is awake |
