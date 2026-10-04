@@ -1062,7 +1062,7 @@ public class SeedAndProbePresetsUseCaseTests
         answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
-        camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 26970853;
+        camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 87654321;
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.V380]);
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
