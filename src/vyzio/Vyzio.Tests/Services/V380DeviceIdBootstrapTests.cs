@@ -20,14 +20,14 @@ public class V380DeviceIdBootstrapTests
     {
         // Arrange
         var client = new V380Client(NullLogger<V380Client>.Instance);
-        client.PreloadDeviceId("192.168.1.20", 26970853);
+        client.PreloadDeviceId("192.168.1.20", 87654321);
         var camera = MakeCamera();
 
         // Act
         V380DeviceIdBootstrap.PersistIfDiscovered(camera, client);
 
         // Assert
-        Assert.Equal(26970853u, camera.Protocol(SupportedProtocol.V380)?.DeviceId);
+        Assert.Equal(87654321u, camera.Protocol(SupportedProtocol.V380)?.DeviceId);
     }
 
     [Fact]

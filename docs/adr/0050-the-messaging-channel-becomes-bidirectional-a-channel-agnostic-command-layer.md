@@ -1,6 +1,6 @@
 # ADR-50 — Le canal de messagerie devient bidirectionnel : une couche de commandes agnostique du canal
 
-> Statut : Accepté
+> Statut : Accepté, amendé par [ADR-63](0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md) (horaires des canaux)
 
 ## Contexte
 

@@ -373,6 +373,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - aucune transmission d'image ou de donnee sensible ne doit etre activee par defaut vers un service tiers ;
 - aucun compte cloud ne doit etre obligatoire pour le fonctionnement nominal local ;
 - l'acces a l'interface et aux donnees doit etre protege ;
+- sur le reseau domestique, l'interface est servie sans chiffrement : sa confidentialite est celle de ce reseau ; depuis l'exterieur, l'acces passe par le reseau overlay chiffre ([ADR-67](adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md)) ;
 - les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ;
 - l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible.
 

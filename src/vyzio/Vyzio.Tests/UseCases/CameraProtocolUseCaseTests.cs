@@ -259,10 +259,10 @@ public class UpdateCameraProtocolUseCaseTests
         var camera = GivenValidatedCamera();
 
         // Act
-        await _sut.ExecuteAsync("cam1", SupportedProtocol.V380, new UpdateCameraProtocolRequest(null, null, null, 26970853));
+        await _sut.ExecuteAsync("cam1", SupportedProtocol.V380, new UpdateCameraProtocolRequest(null, null, null, 87654321));
 
         // Assert
-        Assert.Equal(26970853u, camera.Protocol(SupportedProtocol.V380)!.DeviceId);
+        Assert.Equal(87654321u, camera.Protocol(SupportedProtocol.V380)!.DeviceId);
     }
 }
 

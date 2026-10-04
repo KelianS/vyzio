@@ -1,6 +1,6 @@
 # ADR-10 — Authentification : JWT + bcrypt
 
-> Statut : Accepté
+> Statut : Accepté, sa clause TLS (certificat auto-signé) remplacée par [ADR-67](0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md)
 
 ## Options comparées
 

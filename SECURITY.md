@@ -46,23 +46,23 @@ That is a deliberate trade for a product meant to install itself without asking 
 and it is bounded on the side that matters: the container is not published, and the command it runs is
 read from the environment when the process starts, never from a request. No route can choose it.
 
+**On the home network, the interface is served over plain HTTP, and that is deliberate.** There is no
+TLS, no certificate and no redirect, so the session cookie, the password and every preview image
+travel unencrypted, and anyone able to observe that network can read them. An installation is
+exactly as private as the network it sits on: its Wi-Fi encryption, and who is on it. Once remote
+access ships ([issue #62](https://github.com/KelianS/vyzio/issues/62)), the interface is reached from
+outside only through the overlay network below, whose tunnel encrypts end to end. Why, and the certificate options set aside:
+[ADR-67](docs/adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md).
+
 The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) § Threat model and is not
 repeated here.
 
 ### Known gaps, stated plainly
 
-**The entry point is served in the clear over HTTP.** There is no TLS, no certificate and no
-redirect. On the local network, the session cookie, the password and every preview image travel
-unencrypted, and anyone able to observe that network can read them.
-
-This is deliberate sequencing rather than an oversight: it is stated in the threat model of the
-architecture document, and it is tracked in
-[issue #67](https://github.com/KelianS/vyzio/issues/67). Until it closes, treat an installation as
-only as private as the network it sits on.
-
-**Camera accounts and messaging channel tokens are stored in clear** in the database file, and the
+**Camera accounts and messaging bot tokens are stored unencrypted** in the database file, and the
 camera accounts again in the Frigate configuration Vyzio generates. Whoever gets a copy of either
 file, a backup for instance, can read them: protect both as you would the passwords themselves.
+Tracked in [issue #247](https://github.com/KelianS/vyzio/issues/247).
 
 ## Out of scope
 

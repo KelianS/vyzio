@@ -1,31 +1,47 @@
 """
-V380 Pro — Port 8800 : validation PTZ propriétaire.
+V380 Pro, port 8800: proprietary PTZ validation.
 
-Conclusions des tests précédents :
-  - Le stream loop (lecture 12-byte headers + payload) est obligatoire pour que
-    la caméra accepte les commandes PTZ.
-  - La caméra CONTINUE de bouger après l'arrêt des paquets PTZ direction.
-  - Un paquet STOP arrête le mouvement.
-  - 0xea @ byte[8] = PAN DROITE (coords écran)
-  - 0xe9 @ byte[8] = PAN GAUCHE (coords écran)
-  - Tilt haut/bas et nombre minimal de paquets : à confirmer.
+Findings from earlier runs:
+  - The stream loop (reading 12-byte headers + payload) is required for the
+    camera to accept PTZ commands.
+  - The camera KEEPS moving after the direction PTZ packets stop.
+  - A STOP packet stops the movement.
+  - 0xea @ byte[8] = PAN RIGHT (screen coordinates)
+  - 0xe9 @ byte[8] = PAN LEFT (screen coordinates)
+  - Tilt up/down and the minimal packet count: to be confirmed.
 
-Usage :
+Usage (export the variables first so the password stays out of the command line):
+    export VYZIO_PROBE_HOST=<camera ip> VYZIO_PROBE_USER=<user>
+    export VYZIO_PROBE_DEVICE_ID=<v380 device id>
+    read -rs VYZIO_PROBE_PASS && export VYZIO_PROBE_PASS
     python probe_v380_ptz_8800.py
 """
 
+import os
 import socket
 import struct
 import time
 import string
 import random
+import sys
 from Crypto.Cipher import AES
 
-HOST = '192.168.1.135'
+
+def required_env(name):
+    value = os.environ.get(name)
+    if not value:
+        sys.exit(f'Missing environment variable {name} (see the usage at the top of this script).')
+    return value
+
+
+HOST = required_env('VYZIO_PROBE_HOST')
 PORT = 8800
-USER = 'admin'
-PASS = 'Password1'
-DEVICE_ID = 26970853
+USER = required_env('VYZIO_PROBE_USER')
+PASS = required_env('VYZIO_PROBE_PASS')
+try:
+    DEVICE_ID = int(required_env('VYZIO_PROBE_DEVICE_ID'))
+except ValueError:
+    sys.exit('VYZIO_PROBE_DEVICE_ID must be a number (the V380 device id).')
 STATIC_KEY = b'macrovideo+*#!^@'
 CHARSET = (string.ascii_letters + string.digits + '!@#$%^&*()_+-=').encode()
 
