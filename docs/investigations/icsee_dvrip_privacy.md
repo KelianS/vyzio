@@ -40,7 +40,7 @@ Codes de commande pertinents (source : python-dvr) :
 
 Codes de retour : 100=OK, 102=format invalide, 103=non implémenté, 606=écriture bloquée par firmware.
 
-**Sofia hash (mot de passe DVRIP) :** paires de nibbles MD5 sommées mod 62, mappées sur `[0-9A-Za-z]`.
+**Sofia hash (mot de passe DVRIP) :** paires d'octets bruts du digest MD5 sommées mod 62, mappées sur `[0-9A-Za-z]` (voir l'erratum ci-dessus).
 
 **Compte :** le compte fourni par l'app ICSee est dans le groupe `admin` avec toutes les autorités.
 
