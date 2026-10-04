@@ -12,13 +12,7 @@ public sealed class FixtureHygieneTests
     private const string V380FrameWithTheFixturePassword =
         "8f040000fe03000002010000004e61bc000000000000000000000000000000000000000000000000000000000000000000666978747572652d7573657200000000000000000000000000000000000000006162636465666768696a6b6c6d6e6f70bf0f637ea86d91591a57d826c0fda0d4";
 
-    public static TheoryData<string> EveryFixture()
-    {
-        var root = Path.Combine(AppContext.BaseDirectory, "Contracts", "Fixtures");
-        return [.. Directory.EnumerateFiles(root, "*.json", SearchOption.AllDirectories)
-            .Select(path => Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/'))
-            .Order(StringComparer.Ordinal)];
-    }
+    public static TheoryData<string> EveryFixture() => [.. FixtureLoader.EveryFile()];
 
     [Theory]
     [MemberData(nameof(EveryFixture))]

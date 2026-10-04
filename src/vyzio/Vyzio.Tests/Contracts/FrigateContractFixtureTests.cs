@@ -79,15 +79,6 @@ public sealed class FrigateRestContractFixtureTests
     }
 }
 
-internal static class FixtureLoader
-{
-    public static string LoadText(string relativePath)
-    {
-        var fullPath = Path.Combine(AppContext.BaseDirectory, "Contracts", "Fixtures", relativePath.Replace('/', Path.DirectorySeparatorChar));
-        return File.ReadAllText(fullPath);
-    }
-}
-
 internal sealed class StubHttpMessageHandler(string responseBody, HttpStatusCode statusCode = HttpStatusCode.OK) : HttpMessageHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

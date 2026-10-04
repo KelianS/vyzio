@@ -5,6 +5,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Tests.Contracts;
 using Vyzio.Tests.Services;
 
 namespace Vyzio.Tests.UseCases;
@@ -40,7 +41,7 @@ public class OnvifPtzCascadeTests
         _dvripPtz.ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(CapabilityProof.Proven());
     }
 
-    private SeedAndProbePresetsUseCase MakeCascadeOver(FakeOnvifPtzCamera onvifCamera)
+    private SeedAndProbePresetsUseCase MakeCascadeOver(FakeOnvifCamera onvifCamera)
     {
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient("onvif").Returns(_ => new HttpClient(onvifCamera, disposeHandler: false));
@@ -54,7 +55,7 @@ public class OnvifPtzCascadeTests
     public async Task ExecuteAsync_ShouldBindPtzToDvrip_WhenAnIcseeOnvifProfileCarriesNoPtzConfiguration()
     {
         // Arrange
-        var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));
+        var cascade = MakeCascadeOver(new FakeOnvifCamera(FakeOnvifCamera.ProfileWithoutPtzXml, FakeOnvifCamera.PtzOptionsXml));
 
         // Act
         await cascade.ExecuteAsync("cam1");
@@ -68,7 +69,9 @@ public class OnvifPtzCascadeTests
     public async Task ExecuteAsync_ShouldKeepPtzOnOnvifWithoutTryingDvrip_WhenTheOnvifProfileDescribesPtz()
     {
         // Arrange
-        var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));
+        var cascade = MakeCascadeOver(FakeOnvifCamera.Replaying(
+            CapturedVariant.TapoC200,
+            OnvifScenario.Discovery, OnvifScenario.GetServices, OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets));
 
         // Act
         await cascade.ExecuteAsync("cam1");
@@ -92,7 +95,7 @@ public class OnvifPtzCascadeTests
             ManuallyConfigured = true,
         };
         _storedPtz = manual;
-        var cascade = MakeCascadeOver(new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml));
+        var cascade = MakeCascadeOver(new FakeOnvifCamera(FakeOnvifCamera.ProfileWithoutPtzXml, FakeOnvifCamera.PtzOptionsXml));
 
         // Act
         await cascade.ExecuteAsync("cam1");
