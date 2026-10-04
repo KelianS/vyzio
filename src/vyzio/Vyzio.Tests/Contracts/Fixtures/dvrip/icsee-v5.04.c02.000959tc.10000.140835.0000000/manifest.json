@@ -1,0 +1,40 @@
+{
+  "captured": "2026-10-04",
+  "script": "python tools/camera-capture/capture.py --model icsee --protocols onvif,dvrip,rtsp --allow-writes",
+  "commit": "55e9a69ba44cae5b2c6ad94441cf9e811d17bdee",
+  "protocol": "dvrip",
+  "model": "icsee",
+  "firmware": "V5.04.C02.000959TC.10000.140835.0000000",
+  "scenarios": [
+    {
+      "file": "discovery-banner.json",
+      "description": "The credential-free discovery probe and the first answer bytes.",
+      "writes": false
+    },
+    {
+      "file": "login.json",
+      "description": "The login with the account: Ret 100 and a session id.",
+      "writes": false
+    },
+    {
+      "file": "login-refused.json",
+      "description": "The login with a wrong password.",
+      "writes": false
+    },
+    {
+      "file": "system-info.json",
+      "description": "SystemInfo: hardware, firmware and serial.",
+      "writes": false
+    },
+    {
+      "file": "ptz-preset-list.json",
+      "description": "Uart.PTZPreset.[0]: the presets the camera keeps.",
+      "writes": false
+    },
+    {
+      "file": "ptz-preset-store-and-clear.json",
+      "description": "A preset stored on a spare slot, listed, cleared, listed again: the native preset proof.",
+      "writes": true
+    }
+  ]
+}

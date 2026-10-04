@@ -1,0 +1,29 @@
+{
+  "protocol": "dvrip",
+  "scenario": "system-info",
+  "description": "SystemInfo: hardware, firmware and serial.",
+  "transport": "tcp",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "sent",
+      "header": "ff00000000000000000000000000e8035f000000",
+      "body": "{\"LoginType\":\"DVRIP-Web\",\"UserName\":\"fixture-user\",\"PassWord\":\"tOSCqdfz\",\"EncryptType\":\"MD5\"}\n\u0000"
+    },
+    {
+      "direction": "received",
+      "header": "ff01000042000000000000000000e903bf000000",
+      "body": "{ \"AdminToken\" : \"Zml4dHVyZS1hZG1pbi10b2tlbi0wMDAwMDAwMDAwMDA=\", \"AliveInterval\" : 30, \"ChannelNum\" : 1, \"DeviceType \" : \"IPC\", \"ExtraChannel\" : 0, \"Ret\" : 100, \"SessionID\" : \"0x00000042\" }\n\u0000"
+    },
+    {
+      "direction": "sent",
+      "header": "ff00000042000000020000000000fc0330000000",
+      "body": "{\"Name\":\"SystemInfo\",\"SessionID\":\"0x00000042\"}\n\u0000"
+    },
+    {
+      "direction": "received",
+      "header": "ff01000042000000020000000000fd03ca020000",
+      "body": "{ \"Name\" : \"SystemInfo\", \"Ret\" : 100, \"SessionID\" : \"0x00000042\", \"SystemInfo\" : { \"AlarmInChannel\" : 0, \"AlarmOutChannel\" : 0, \"AudioInChannel\" : 1, \"BuildTime\" : \"2026-01-20 21:02:25\", \"CombineSwitch\" : 0, \"DeviceModel\" : \"IPC_GK7201V300_LPG-G3-WQ\", \"DeviceRunTime\" : \"0x00008b7c\", \"DeviceType\" : 285409282, \"DigChannel\" : 0, \"EncryptVersion\" : \"Unknown\", \"ExtraChannel\" : 0, \"HardWare\" : \"IPC_GK7201V300_LPG-G3-WQ\", \"HardWareVersion\" : \"Unknown\", \"Pid\" : \"A9080741703FE00U\", \"SerialNo\" : \"000000bc614e0000\", \"SoftWareVersion\" : \"V5.04.C02.000959TC.10000.140835.0000000\", \"TalkInChannel\" : 1, \"TalkOutChannel\" : 1, \"UpdataTime\" : \"\", \"UpdataType\" : \"0x00000000\", \"VideoInChannel\" : 1, \"VideoOutChannel\" : 1 } }\n\u0000"
+    }
+  ]
+}
