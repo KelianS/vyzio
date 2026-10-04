@@ -147,9 +147,9 @@ public sealed class CheckCameraStreamUseCase(
     }
 }
 
-// Over RTSP the camera listed no stream and no path was typed: nothing to lay out (ADR-65 e).
+// Over RTSP the camera listed no stream, or could not be asked, and no path was typed (ADR-65 e).
 public sealed class StreamPathRequiredException()
-    : Exception("The camera lists no stream over RTSP: type the stream's path.");
+    : Exception("The camera listed no stream over RTSP, or could not be asked: type the stream's path.");
 
 // Lays the streams out over a newly chosen stream protocol; an RTSP stream always has a path (ADR-65 e).
 internal static class StreamLayout

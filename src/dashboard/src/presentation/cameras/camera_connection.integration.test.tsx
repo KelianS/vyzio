@@ -1511,7 +1511,7 @@ describe('CameraConnectionView', () => {
     // Assert
     expect(
       await screen.findByText(
-        'La caméra ne liste pas ses flux : saisissez le chemin du flux donné par le fabricant',
+        'La caméra ne dit pas quels flux elle sert, ou ne répond pas : saisissez le chemin du flux donné par le fabricant',
       ),
     ).toBeInTheDocument()
     expect(await stream.findByLabelText('Chemin du flux')).toBeInTheDocument()
