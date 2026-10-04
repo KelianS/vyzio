@@ -1,62 +1,15 @@
 # ICSee (XMEye / WONSDAR)
 
-Les cameras ICSee — vendues sous de nombreuses marques generiques (WONSDAR, Netvue, ieGeek, etc.) — utilisent un firmware **XMEye / ICSee** qui desactive le RTSP par defaut. Il faut l'activer manuellement depuis l'application.
+## Avant d'ajouter la caméra
 
-## Ce qu'il faut avant de commencer
+Ces caméras sont vendues sous de nombreuses marques (WONSDAR, ieGeek…) et se règlent avec l'application **ICSee** ou **XMEye**.
 
-- Avoir l'application **ICSee** (ou **XMEye** selon le modele) sur le telephone
-- Avoir deja ajoute la camera dans l'application
-- Avoir defini un identifiant et un mot de passe pour la camera
-
-## Activer le RTSP dans l'application ICSee
-
-1. Ouvrez l'application **ICSee** et selectionnez la camera.
-2. Appuyez sur l'icone **Parametres** (engrenage).
-3. Allez dans **Reglages avances** → **Protocole video** ou **RTSP**.
-4. Activez **RTSP** et notez le port (par defaut **554**).
-5. Appuyez sur **Enregistrer** et attendez que la camera redemarre.
-
-> **Onglet Reglages avances vide ?** Certains modeles sur batterie n'exposent pas ces options et ne supportent pas le RTSP local. Voir la section ci-dessous.
-
-## Si Vyzio demande une adresse de flux
-
-Les formats les plus courants sur les cameras ICSee/XMEye sont :
-
-- `rtsp://admin:password@ipaddress:554/user=admin&password=PASSWORD&channel=1&stream=0.sdp` (flux principal)
-- `rtsp://admin:password@ipaddress:554/user=admin&password=PASSWORD&channel=1&stream=1.sdp` (flux secondaire)
-- `rtsp://admin:password@ipaddress:554/cam/realmonitor?channel=1&subtype=0` (format alternatif)
-
-Remplacez :
-
-- `admin` par le nom d'utilisateur defini dans l'application
-- `password` / `PASSWORD` par le mot de passe de la camera
-- `ipaddress` par l'adresse locale de la camera
-
-## Cameras sur batterie
-
-Les cameras sur batterie ICSee entrent en **veille** quand elles ne detectent pas de mouvement. Pendant la veille, la camera ne repond pas sur le reseau et le flux RTSP est inaccessible.
-
-- Le flux RTSP est disponible uniquement quand la camera est **active** (LED allumee, mouvement en cours, ou branched sur secteur).
-- Dans l'application ICSee, activez le **mode camera de securite** ou configurez un **reveil programme** si votre modele le supporte.
-- Certains modeles proposent un mode **toujours connecte** au prix d'une plus grande consommation de batterie.
+1. Dans l'application, ajoutez la caméra et donnez-lui un mot de passe.
+2. Caméra sur batterie : réveillez-la depuis l'application juste avant de l'ajouter. Une fois ajoutée, elle reste éveillée, ce qui use davantage sa batterie.
+3. Revenez ici : Vyzio vous demandera l'identifiant et le mot de passe de la caméra.
 
 ## Si cela ne fonctionne pas
 
-- Verifiez que le RTSP est bien active dans les parametres avances.
-- Assurez-vous que la camera et Vyzio sont sur le meme reseau local.
-- Si la camera est sur batterie, veillez a ce qu'elle soit en mode actif au moment de la configuration.
-- Essayez les deux formats d'URL RTSP disponibles — certains modeles repondent uniquement a l'un d'eux.
-
-## Cameras sans RTSP
-
-Certains modeles sur batterie n'ont pas de RTSP local : l'onglet **Reglages avances** est vide dans l'application ICSee.
-
-**Essayez le RTSP d'abord.** S'il reste indisponible apres activation dans l'application, reveillez la camera puis touchez "Réessayer maintenant" : Vyzio la presente comme prete des qu'il la joint directement sur votre reseau local, sans RTSP et sans passer par le cloud ICSee. Vous n'avez rien a configurer ni a cocher dans le parcours d'ajout.
-
-**Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'ajout. Reveillez-la via l'application ICSee avant de cliquer "Ajouter la caméra". Une fois ajoutee, la camera reste active, ce qui sollicite davantage sa batterie, et Vyzio ne peut pas la reveiller lui-meme.
-
-## A savoir
-
-- Le firmware ICSee/XMEye est utilise par de nombreux fabricants OEM (WONSDAR, ieGeek, etc.) ; les menus varient selon le modele.
-- Certaines cameras ICSee supportent aussi ONVIF (a activer dans les memes parametres avances) : activez-le si votre modele le propose.
-- Les cameras sur secteur ont generalement plus d'options que les modeles sur batterie.
+- Caméra sur batterie : réveillez-la depuis l'application, puis revenez aussitôt ici.
+- Vérifiez l'identifiant et le mot de passe définis dans l'application.
+- Les menus changent selon la marque et le modèle de la caméra.
