@@ -39,7 +39,7 @@ internal static class CapabilityTestUseCases
             registry,
             endpointCache,
             check,
-            new VerifyCameraUseCase(cameras, bindings, verifier ?? OnlineVerifier(), NothingEnumerated(), check, TimeProvider.System));
+            new VerifyCameraUseCase(cameras, bindings, verifier ?? OnlineVerifier(), NothingEnumerated(), check, Substitute.For<IFrigateConfigApplier>(), TimeProvider.System));
     }
 
     private static ICameraVerifier OnlineVerifier()

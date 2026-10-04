@@ -134,18 +134,71 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task CreateCamera_ShouldRefuseWithItsCode_WhenAnRtspCameraWithoutAPathListsNoStream()
+    public async Task CreateCamera_ShouldCreateTheCameraToSetUpAndNeverDetected_WhenOnlyItsAccessIsGiven()
     {
         // Arrange
         using var client = _factory.CreateClient();
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
-            "Garage", "192.168.1.30", null, null, "rtsp_manual", new CreateCameraStreamRequest("rtsp", 554, null), "person_default"));
+        var response = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest("Garage", "192.168.1.30", "viewer", "fixture-secret"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("stream_path_required", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<CameraResponse>();
+        Assert.Equal("to_set_up", created!.Status);
+        Assert.Equal("to_set_up", created.ValidationState);
+        Assert.Null(created.DetectedAt);
+        Assert.Empty((await client.GetFromJsonAsync<object[]>($"/api/cameras/{created.Id}/protocols"))!);
+    }
+
+    [Fact]
+    public async Task ApplyConfiguration_ShouldLeaveTheCameraOut_WhenItsStreamNeverWorked()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateFromAccessAsync(client, "Garage", "192.168.1.30");
+
+        // Act
+        (await client.PostAsync("/api/cameras/apply-configuration", content: null)).EnsureSuccessStatusCode();
+
+        // Assert
+        var catalog = await client.GetFromJsonAsync<CameraResponse[]>("/api/cameras");
+        var camera = Assert.Single(catalog!, entry => entry.Id == created.Id);
+        Assert.Equal("to_set_up", camera.Status);
+        Assert.False(camera.IsEnabled);
+    }
+
+    [Fact]
+    public async Task SaveDetectionConfig_ShouldKeepTheSettings_WhenTheCameraIsToSetUp()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateFromAccessAsync(client, "Garage", "192.168.1.30");
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/cameras/{created.Id}/detection-config", new SaveCameraDetectionConfigRequest(["person", "dog"], EventClipDaysOverride: 3));
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var saved = await client.GetFromJsonAsync<DetectionConfigResponse>($"/api/cameras/{created.Id}/detection-config");
+        Assert.Equal(["person", "dog"], saved!.Labels);
+        Assert.Equal(3, saved.Retention.EventClip.Override);
+    }
+
+    [Fact]
+    public async Task TogglePrivacy_ShouldKeepTheChoice_WhenTheCameraIsToSetUp()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateFromAccessAsync(client, "Garage", "192.168.1.30");
+
+        // Act
+        var response = await client.PostAsJsonAsync($"/api/cameras/{created.Id}/privacy/toggle", new { active = true });
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var catalog = await client.GetFromJsonAsync<PrivacyResponse[]>("/api/cameras");
+        Assert.True(Assert.Single(catalog!, entry => entry.Id == created.Id).PrivacyModeActive);
     }
 
     [Fact]
@@ -360,97 +413,57 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task ApplyCamera_ShouldValidateTheCamera_WhenItWasCreatedThenVerifiedOnline()
+    public async Task ApplyCamera_ShouldValidateTheCamera_WhenItsStreamWorkedAfterItWasCreated()
     {
+        // Arrange
         using var client = _factory.CreateClient();
+        var created = await CreateFromAccessAsync(client, "Garage", "192.168.1.30");
+        await BindStreamOverDvripAsync(client, created.Id);
 
-        var createResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
-            "Garage",
-            "192.168.1.30",
-            null,
-            null,
-            "rtsp_manual",
-            new CreateCameraStreamRequest("rtsp", 554, "/Streaming/Channels/101"),
-            "person_default"));
-
-        createResponse.EnsureSuccessStatusCode();
-        var created = await createResponse.Content.ReadFromJsonAsync<CameraResponse>();
-        Assert.NotNull(created);
-
-        var verifyResponse = await client.PostAsync($"/api/cameras/{created!.Id}/verify", content: null);
-        verifyResponse.EnsureSuccessStatusCode();
-        var verified = await verifyResponse.Content.ReadFromJsonAsync<CameraStatusResponse>();
-        Assert.NotNull(verified);
-        Assert.Equal("online", verified!.Status);
-
+        // Act
         var applyResponse = await client.PostAsync($"/api/cameras/{created.Id}/apply", content: null);
+
+        // Assert
         applyResponse.EnsureSuccessStatusCode();
         var applied = await applyResponse.Content.ReadFromJsonAsync<ApplyCameraResponse>();
-        Assert.NotNull(applied);
         Assert.True(applied!.Applied);
         Assert.Equal("validated", applied.Camera.ValidationState);
     }
 
     [Fact]
-    public async Task VerifyDraft_ShouldReturnTheStatusWithoutPersistingTheCamera_WhenTheCameraIsNotYetCreated()
+    public async Task ApplyConfiguration_ShouldValidateAndEnableTheCamera_WhenItsStreamWorkedAfterItWasCreated()
     {
+        // Arrange
         using var client = _factory.CreateClient();
+        var created = await CreateFromAccessAsync(client, "Garage", "192.168.1.30");
+        var status = await BindStreamOverDvripAsync(client, created.Id);
 
-        var response = await client.PostAsJsonAsync("/api/cameras/verify-draft", new CreateCameraRequest(
-            "Porch",
-            "192.168.1.40",
-            "admin",
-            "secret",
-            "rtsp_manual",
-            new CreateCameraStreamRequest("rtsp", 554, "/Streaming/Channels/101"),
-            "person_default"));
-
-        response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<CameraStatusResponse>();
-
-        Assert.NotNull(payload);
-        Assert.Equal("online", payload!.Status);
-
-        var catalogResponse = await client.GetAsync("/api/cameras");
-        var catalog = await catalogResponse.Content.ReadFromJsonAsync<CameraResponse[]>();
-        Assert.Single(catalog!);
-    }
-
-    [Fact]
-    public async Task ApplyConfiguration_ShouldValidateAndEnableTheCamera_WhenItWasCreatedThenVerified()
-    {
-        using var client = _factory.CreateClient();
-
-        var createResponse = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
-            "Garage",
-            "192.168.1.30",
-            null,
-            null,
-            "rtsp_manual",
-            new CreateCameraStreamRequest("rtsp", 554, "/Streaming/Channels/101"),
-            "person_default"));
-
-        createResponse.EnsureSuccessStatusCode();
-        var created = await createResponse.Content.ReadFromJsonAsync<CameraResponse>();
-        Assert.NotNull(created);
-
-        var verifyResponse = await client.PostAsync($"/api/cameras/{created!.Id}/verify", content: null);
-        verifyResponse.EnsureSuccessStatusCode();
-
+        // Act
         var applyResponse = await client.PostAsync("/api/cameras/apply-configuration", content: null);
+
+        // Assert
+        Assert.Equal("online", status.Status);
+        Assert.Equal("draft", status.ValidationState);
         applyResponse.EnsureSuccessStatusCode();
         var payload = await applyResponse.Content.ReadFromJsonAsync<ApplyCameraConfigurationResponse>();
-
-        Assert.NotNull(payload);
         Assert.True(payload!.Applied);
-
-        var catalogResponse = await client.GetAsync("/api/cameras");
-        catalogResponse.EnsureSuccessStatusCode();
-        var catalog = await catalogResponse.Content.ReadFromJsonAsync<CameraResponse[]>();
-
-        Assert.NotNull(catalog);
+        var catalog = await client.GetFromJsonAsync<CameraResponse[]>("/api/cameras");
         Assert.Contains(catalog!, camera => camera.Id == created.Id && camera.ValidationState == "validated" && camera.IsEnabled);
-        Assert.True(payload.CameraCount >= 1);
+    }
+
+    private static async Task<CameraResponse> CreateFromAccessAsync(HttpClient client, string name, string host)
+    {
+        var response = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(name, host, null, null));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<CameraResponse>())!;
+    }
+
+    // The user's choice on the stream card, the other way a stream gets bound besides detection (ADR-68 b).
+    private static async Task<CameraStatusResponse> BindStreamOverDvripAsync(HttpClient client, string cameraId)
+    {
+        (await client.PostAsJsonAsync($"/api/cameras/{cameraId}/protocols", new { protocol = "dvrip", port = (int?)null, username = (string?)null, password = (string?)null })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync($"/api/cameras/{cameraId}/capabilities/stream", new { protocol = "dvrip" })).EnsureSuccessStatusCode();
+        return (await client.GetFromJsonAsync<CameraStatusResponse>($"/api/cameras/{cameraId}/status"))!;
     }
 
     [Fact]
@@ -478,7 +491,15 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Empty(refreshedCatalog!);
     }
 
-    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, string? Username, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, string? FrigateCameraName, string? VendorFamily);
+    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, string? Username, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, DateTimeOffset? DetectedAt, string? FrigateCameraName, string? VendorFamily);
+
+    public sealed record PrivacyResponse(string Id, bool PrivacyModeActive);
+
+    public sealed record DetectionConfigResponse(string[] Labels, RetentionResponse Retention);
+
+    public sealed record RetentionResponse(RetentionWindowResponse EventClip);
+
+    public sealed record RetentionWindowResponse(int? Override);
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 

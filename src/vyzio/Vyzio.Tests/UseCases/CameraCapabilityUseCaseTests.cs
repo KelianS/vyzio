@@ -662,6 +662,22 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldRecordThatTheCameraWasDetected_WhenNothingAnswers()
+    {
+        // Arrange
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", ValidationState = CameraValidationState.ToSetUp };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
+
+        // Act
+        await _sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.NotNull(camera.DetectedAt);
+        Assert.Equal(CameraValidationState.ToSetUp, camera.ValidationState);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldSeedAndProbeEveryPresetBinding_WhenTheVendorIsKnown()
     {
         var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };

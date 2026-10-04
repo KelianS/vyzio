@@ -119,6 +119,32 @@ public class GetCameraStatusUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldReadToSetUpInPlaceOfAConfigurationError_WhenTheStreamNeverWorked()
+    {
+        // Arrange
+        var camera = new Camera
+        {
+            Id = "camera-3",
+            Slug = "shed",
+            FrigateCameraName = "shed",
+            DisplayName = "Shed",
+            Host = "192.168.1.13",
+            ValidationState = CameraValidationState.ToSetUp,
+            Status = "config_error",
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Equal("to_set_up", result!.Status);
+        Assert.Equal("to_set_up", result.ValidationState);
+        Assert.False(result.Connected);
+        Assert.True(result.NeedsAttention);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldReturnNull_WhenTheCameraDoesNotExist()
     {
         _repo.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
@@ -184,6 +210,36 @@ public class DiscoverCamerasUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldLeaveOutACandidate_WhenItsAddressBelongsToACameraWithoutAStream()
+    {
+        // Arrange
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
+        [
+            new Camera
+            {
+                Id = "camera-1",
+                Slug = "front-door",
+                FrigateCameraName = "front_door",
+                DisplayName = "Front Door",
+                Host = "192.168.1.10",
+                ValidationState = CameraValidationState.ToSetUp,
+            }
+        ]);
+        _discovery.DiscoverAsync(null, Arg.Any<CancellationToken>()).Returns(
+        [
+            new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 34567, "dvrip", null, "dvrip", null, null, "camera_confirmed", "unknown", null, []),
+            new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", null, null, "camera_confirmed", "unknown", null, [])
+        ]);
+
+        // Act
+        var result = await _sut.ExecuteAsync();
+
+        // Assert
+        var candidate = Assert.Single(result);
+        Assert.Equal("Driveway", candidate.DisplayName);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldRefreshTheTargetedCandidateEvenIfConfigured_WhenAHostIsTargeted()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(
@@ -238,54 +294,31 @@ public class GetVendorAssistanceUseCaseTests
 public class CreateCameraUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
-    private readonly ICameraCapabilityOnboardingQueue _queue = Substitute.For<ICameraCapabilityOnboardingQueue>();
-    private readonly IFrigateConfigApplier _configApplier = Substitute.For<IFrigateConfigApplier>();
-    private readonly ICameraStreamEnumerator _enumerator = CapabilityTestUseCases.NothingEnumerated();
     private readonly CreateCameraUseCase _sut;
 
-    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier, CapabilityTestUseCases.StreamRegistry(), _enumerator, TimeProvider.System);
+    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo);
 
     [Fact]
-    public async Task ExecuteAsync_ShouldCreateADisabledDraftWithASlug_WhenTheSlugIsFree()
+    public async Task ExecuteAsync_ShouldCreateADisabledCameraToSetUpWithASlug_WhenTheSlugIsFree()
     {
+        // Arrange
         _repo.GetBySlugAsync("front-door", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
-        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", null, null, null, new CreateCameraStreamRequest("rtsp", 554, "/rtsp"), "tplink_tapo"));
+        // Act
+        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Front Door", "192.168.1.10", null, null));
 
+        // Assert
         Assert.Equal("front-door", result.Slug);
-        Assert.Equal("needs_attention", result.Status);
+        Assert.Equal("to_set_up", result.Status);
+        Assert.Null(result.DetectedAt);
         await _repo.Received(1).AddAsync(Arg.Is<Camera>(camera =>
             camera.DisplayName == "Front Door"
-            && camera.VendorFamily == VendorFamily.TplinkTapo
-            && camera.ValidationState == CameraValidationState.Draft
+            && camera.ValidationState == CameraValidationState.ToSetUp
             && camera.IsEnabled == false), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldQueueACapabilityProbe_WhenTheCameraIsCreated()
-    {
-        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
-
-        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("dvrip", null, null), "icsee"));
-
-        _queue.Received(1).Enqueue(Arg.Any<string>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldMarkTheConfigurationAsWaitingForARestart_WhenTheCameraIsCreated()
-    {
-        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
-        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-
-        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("rtsp", null, "stream1")));
-
-        // Otherwise the trigger stays hidden, and its absence says everything is in service (ADR-44).
-        await _configApplier.Received(1).WriteConfigAsync(
-            Arg.Any<IReadOnlyList<Camera>>(), changed: true, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldGiveTheCameraItsStreamCapability_WhenACameraStreamingOverDvripIsCreated()
+    public async Task ExecuteAsync_ShouldKeepTheAccessAndNothingElse_WhenTheCameraIsCreated()
     {
         // Arrange
         _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
@@ -293,71 +326,43 @@ public class CreateCameraUseCaseTests
         await _repo.AddAsync(Arg.Do<Camera>(camera => added = camera), Arg.Any<CancellationToken>());
 
         // Act
-        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("dvrip", 34567, null)));
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", " 192.168.1.20 ", " viewer ", " fixture-secret "));
 
         // Assert
-        Assert.Equal(SupportedProtocol.Dvrip, added!.StreamBinding?.Protocol);
-        Assert.Null(added.Protocol(SupportedProtocol.Dvrip)?.Port);
+        Assert.Equal("192.168.1.20", added!.Host);
+        Assert.Equal("viewer", added.Username);
+        Assert.Equal("fixture-secret", added.Password);
+        Assert.Empty(added.Protocols);
+        Assert.Empty(added.Capabilities);
+        Assert.Null(added.VendorFamily);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldKeepTheStreamPortOnItsProtocol_WhenItIsNotTheUsualOne()
+    public async Task ExecuteAsync_ShouldSuffixTheSlug_WhenTheSlugIsTaken()
     {
         // Arrange
-        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
-        Camera? added = null;
-        await _repo.AddAsync(Arg.Do<Camera>(camera => added = camera), Arg.Any<CancellationToken>());
+        _repo.GetBySlugAsync("garage", Arg.Any<CancellationToken>()).Returns(new Camera { Slug = "garage", DisplayName = "Garage", Host = "192.168.1.2", FrigateCameraName = "garage" });
+        _repo.GetBySlugAsync("garage-2", Arg.Any<CancellationToken>()).Returns((Camera?)null);
 
         // Act
-        await _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("rtsp", 8554, "stream1")));
+        var result = await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null));
 
         // Assert
-        Assert.Equal(8554, added!.Protocol(SupportedProtocol.Rtsp)?.Port);
-        Assert.Equal("/stream1", added.Streams.FirstOrDefault()?.Path);
+        Assert.Equal("garage-2", result.Slug);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldLayOutTheStreamsTheCameraLists_WhenAnRtspCameraIsCreatedWithoutAPath()
+    public async Task ExecuteAsync_ShouldRefuseWithoutAddingTheCamera_WhenTheAddressIsMissing()
     {
         // Arrange
-        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
-        _enumerator.EnumerateAsync(Arg.Any<Camera>(), SupportedProtocol.Rtsp, Arg.Any<CancellationToken>())
-            .Returns([new EnumeratedScene("scene", [new EnumeratedStream("/main", 1920, 1080, 25), new EnumeratedStream("/sub", 640, 360, 25)])]);
-        Camera? added = null;
-        await _repo.AddAsync(Arg.Do<Camera>(camera => added = camera), Arg.Any<CancellationToken>());
+        var request = new CreateCameraRequest("Porch", " ", null, null);
 
         // Act
-        await _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("rtsp", null, null)));
+        var thrown = await Record.ExceptionAsync(() => _sut.ExecuteAsync(request));
 
         // Assert
-        Assert.Equal(["/main", "/sub"], added!.Streams.Select(stream => stream.Path));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldRefuseWithoutAddingTheCamera_WhenAnRtspCameraWithoutAPathListsNoStream()
-    {
-        // Arrange
-        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
-
-        // Act
-        var act = () => _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("rtsp", null, null)));
-
-        // Assert
-        await Assert.ThrowsAsync<StreamPathRequiredException>(act);
+        Assert.IsAssignableFrom<ArgumentException>(thrown);
         await _repo.DidNotReceive().AddAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldRefuse_WhenTheStreamProtocolCannotCarryAStream()
-    {
-        // Arrange
-        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
-
-        // Act
-        var act = () => _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("onvif", null, null)));
-
-        // Assert
-        await Assert.ThrowsAsync<ArgumentException>(act);
     }
 }
 
@@ -368,13 +373,14 @@ public class VerifyCameraUseCaseTests
     private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
     private readonly ICameraStreamEnumerator _streamEnumerator = Substitute.For<ICameraStreamEnumerator>();
     private readonly ICameraProtocolProbe _protocols = CapabilityTestUseCases.AnsweringProbe();
+    private readonly IFrigateConfigApplier _applier = Substitute.For<IFrigateConfigApplier>();
     private readonly VerifyCameraUseCase _sut;
 
     public VerifyCameraUseCaseTests()
     {
         _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>())
             .Returns([]);
-        _sut = new VerifyCameraUseCase(_repo, _bindings, _verifier, _streamEnumerator, new CameraProtocolCheck(_protocols, TimeProvider.System), TimeProvider.System);
+        _sut = new VerifyCameraUseCase(_repo, _bindings, _verifier, _streamEnumerator, new CameraProtocolCheck(_protocols, TimeProvider.System), _applier, TimeProvider.System);
     }
 
     [Fact]
@@ -619,41 +625,59 @@ public class VerifyCameraUseCaseTests
         Assert.Equal("/stream1", camera.Streams.FirstOrDefault()?.Path);
         await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
     }
-}
 
-public class VerifyDraftCameraUseCaseTests
-{
-    private readonly ICameraVerifier _verifier = Substitute.For<ICameraVerifier>();
-    private readonly VerifyDraftCameraUseCase _sut;
-
-    public VerifyDraftCameraUseCaseTests() =>
-        _sut = new VerifyDraftCameraUseCase(
-            _verifier,
-            new CameraProtocolCheck(CapabilityTestUseCases.AnsweringProbe(), TimeProvider.System),
-            CapabilityTestUseCases.StreamRegistry());
+    // ── A camera to set up (ADR-68 d) ──
 
     [Fact]
-    public async Task ExecuteAsync_ShouldProjectTheStatusOfATransientDraft_WhenTheCameraIsNotSavedYet()
+    public async Task ExecuteAsync_ShouldLeaveToSetUpAndSummonTheRestart_WhenTheStreamWorksForTheFirstTime()
     {
-        _verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
-            new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture)));
+        // Arrange
+        var camera = GivenReachableCamera();
+        camera.ValidationState = CameraValidationState.ToSetUp;
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
 
-        var result = await _sut.ExecuteAsync(new CreateCameraRequest(
-            "Front Door",
-            "192.168.1.10",
-            "admin",
-            "secret",
-            "rtsp_manual",
-            new CreateCameraStreamRequest("rtsp", 554, "Streaming/Channels/101"),
-            "person_default"));
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
 
-        Assert.Equal("online", result.Status);
-        Assert.True(result.Connected);
-        await _verifier.Received(1).VerifyAsync(Arg.Is<Camera>(camera =>
-            camera.DisplayName == "Front Door"
-            && camera.Host == "192.168.1.10"
-            && camera.Streams.First().Path == "/Streaming/Channels/101"
-            && camera.ValidationState == CameraValidationState.Draft), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>());
+        // Assert
+        Assert.Equal(CameraValidationState.Draft, camera.ValidationState);
+        Assert.Equal("online", result!.Status);
+        await _applier.Received(1).WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), changed: true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStayToSetUpWithoutSummoningTheRestart_WhenTheStreamFails()
+    {
+        // Arrange
+        var camera = GivenReachableCamera();
+        camera.ValidationState = CameraValidationState.ToSetUp;
+        _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Equal(CameraValidationState.ToSetUp, camera.ValidationState);
+        Assert.Equal("to_set_up", result!.Status);
+        await _applier.DidNotReceive().WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReadOffline_WhenTheStreamFailsAfterItWorkedOnce()
+    {
+        // Arrange
+        var camera = GivenReachableCamera();
+        camera.ValidationState = CameraValidationState.Validated;
+        _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Equal("offline", result!.Status);
+        Assert.Equal(CameraValidationState.Validated, camera.ValidationState);
     }
 }
 
@@ -830,6 +854,30 @@ public class UpdateCameraUseCaseTests
             && updated.ValidationState == CameraValidationState.Draft
             && updated.IsEnabled == false
             && updated.Status == "needs_attention"), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStayToSetUpWithoutSummoningTheRestart_WhenTheAddressOfACameraToSetUpChanges()
+    {
+        // Arrange
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            FrigateCameraName = "front_door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            ValidationState = CameraValidationState.ToSetUp,
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id, new UpdateCameraRequest("Front Door", "192.168.1.12", null, null, null));
+
+        // Assert
+        Assert.Equal("to_set_up", result!.Status);
+        Assert.Equal(CameraValidationState.ToSetUp, camera.ValidationState);
+        await _applier.Received(1).WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), changed: false, Arg.Any<CancellationToken>());
     }
 }
 

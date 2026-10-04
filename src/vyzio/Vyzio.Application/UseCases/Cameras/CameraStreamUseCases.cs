@@ -95,7 +95,7 @@ public sealed class AddCameraStreamUseCase(
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
-        if (role != StreamRole.None) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        if (role != StreamRole.None) await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
         return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
     }
 }
@@ -214,7 +214,7 @@ internal static class CameraStreamChange
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
-        await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
         return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
     }
 }

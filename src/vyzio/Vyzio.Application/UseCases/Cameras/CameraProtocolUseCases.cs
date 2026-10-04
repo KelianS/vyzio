@@ -132,7 +132,7 @@ public sealed class UpdateCameraProtocolUseCase(
         if (streamChanged) CameraConnectionChange.Apply(camera);
 
         await cameras.UpdateAsync(camera, ct);
-        if (streamChanged) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        if (streamChanged) await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
 
         return CameraProtocolDto.From(entry);
     }
@@ -207,7 +207,8 @@ internal static class CameraConnectionChange
     public static void Apply(Camera camera)
     {
         camera.Status = "needs_attention";
-        camera.ValidationState = CameraValidationState.Draft;
+        // A camera whose stream never worked stays to set up: the state only ends on a first success (ADR-68 d).
+        if (camera.ValidationState != CameraValidationState.ToSetUp) camera.ValidationState = CameraValidationState.Draft;
         camera.IsEnabled = false;
         camera.LastReachabilityCheckAt = null;
         camera.LastSuccessfulFrameAt = null;
@@ -218,11 +219,12 @@ internal static class CameraConnectionChange
 // Writes the configuration of every camera surveillance can take up, without applying it (ADR-44).
 internal static class SurveillanceConfig
 {
-    public static async Task WriteAsync(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier, CancellationToken ct)
+    // changed: the camera the save touched; one still to set up summons no restart (ADR-68 d).
+    public static async Task WriteAsync(Camera changed, ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier, CancellationToken ct)
     {
         var applicable = (await cameras.GetAllAsync(ct))
             .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
             .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: changed.ValidationState != CameraValidationState.ToSetUp, ct);
     }
 }
