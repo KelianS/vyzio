@@ -459,7 +459,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
 
 function VendorNotice({ markdown }: { markdown: string }) {
   return (
-    <div className="space-y-2 text-sm [&_a]:underline [&_a]:underline-offset-2 [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:font-medium [&_ul]:list-disc">
+    <div className="space-y-2 text-sm wrap-anywhere [&_a]:underline [&_a]:underline-offset-2 [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:font-medium [&_ul]:list-disc">
       <ReactMarkdown
         components={{
           a({ href, children, ...props }: ComponentPropsWithoutRef<'a'>) {
