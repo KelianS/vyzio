@@ -292,6 +292,7 @@ public class ConfigureCameraCapabilityUseCaseTests
     private readonly ICapabilityProviderRegistry _registry = Substitute.For<ICapabilityProviderRegistry>();
     private readonly ICameraProtocolEndpointCache _endpointCache = Substitute.For<ICameraProtocolEndpointCache>();
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
+    private readonly ICameraStreamEnumerator _enumerator = CapabilityTestUseCases.NothingEnumerated();
     private readonly ConfigureCameraCapabilityUseCase _sut;
 
     public ConfigureCameraCapabilityUseCaseTests()
@@ -300,7 +301,7 @@ public class ConfigureCameraCapabilityUseCaseTests
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif, SupportedProtocol.Dvrip, SupportedProtocol.V380]);
         _ptzProvider.ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(CapabilityProof.Proven());
         var probe = CapabilityTestUseCases.Probe(_cameras, _bindings, _registry, _endpointCache);
-        _sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), probe);
+        _sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), probe, _enumerator, TimeProvider.System);
     }
 
     private static Camera MakeCamera(params SupportedProtocol[] protocols)
@@ -372,6 +373,88 @@ public class ConfigureCameraCapabilityUseCaseTests
         // Assert
         Assert.Equal(SupportedProtocol.Dvrip, camera.StreamBinding!.Protocol);
         Assert.Equal(CameraValidationState.Draft, camera.ValidationState);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLayOutTheMainQualityWithoutTheOldPath_WhenTheStreamMovesToDvrip()
+    {
+        // Arrange
+        var camera = MakeCamera(SupportedProtocol.Dvrip).WithStream(SupportedProtocol.Rtsp, path: "/stream1");
+        var binding = camera.StreamBinding!;
+        StreamLineup.Add(binding, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
+        binding.StreamsFoundAt = DateTimeOffset.UnixEpoch;
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(binding);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("stream", "dvrip"));
+
+        // Assert
+        var main = Assert.Single(camera.Streams);
+        Assert.Equal(SupportedProtocol.Dvrip, main.Protocol);
+        Assert.Null(main.Path);
+        Assert.Equal(StreamRole.RecordAndDetect, main.Role);
+        Assert.Null(binding.StreamsFoundAt);
+    }
+
+    private CameraCapabilityBinding GivenADvripStreamMovingToRtsp(Camera camera)
+    {
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
+        return camera.StreamBinding!;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLayOutTheStreamsTheCameraLists_WhenTheStreamMovesToRtsp()
+    {
+        // Arrange
+        var camera = MakeCamera(SupportedProtocol.Rtsp).WithStream(SupportedProtocol.Dvrip);
+        GivenADvripStreamMovingToRtsp(camera);
+        _enumerator.EnumerateAsync(Arg.Any<Camera>(), SupportedProtocol.Rtsp, Arg.Any<CancellationToken>())
+            .Returns([new EnumeratedScene("scene", [new EnumeratedStream("/main", 1920, 1080, 25), new EnumeratedStream("/sub", 640, 360, 25)])]);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("stream", "rtsp"));
+
+        // Assert
+        Assert.Equal(["/main", "/sub"], camera.Streams.Select(stream => stream.Path));
+        Assert.Equal("/main", camera.RecordStream!.Path);
+        Assert.Equal("/sub", camera.DetectStream!.Path);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLayOutTheTypedPath_WhenTheCameraListsNoStreamOverRtsp()
+    {
+        // Arrange
+        var camera = MakeCamera(SupportedProtocol.Rtsp).WithStream(SupportedProtocol.Dvrip);
+        GivenADvripStreamMovingToRtsp(camera);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("stream", "rtsp", "live"));
+
+        // Assert
+        var stream = Assert.Single(camera.Streams);
+        Assert.Equal("/live", stream.Path);
+        Assert.Equal(StreamRole.RecordAndDetect, stream.Role);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuseWithoutSavingAnything_WhenTheCameraListsNoStreamOverRtspAndNoPathIsTyped()
+    {
+        // Arrange
+        var camera = MakeCamera(SupportedProtocol.Rtsp).WithStream(SupportedProtocol.Dvrip);
+        var binding = GivenADvripStreamMovingToRtsp(camera);
+
+        // Act
+        var act = () => _sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("stream", "rtsp"));
+
+        // Assert
+        await Assert.ThrowsAsync<StreamPathRequiredException>(act);
+        Assert.Equal(SupportedProtocol.Dvrip, binding.Protocol);
+        Assert.Equal(SupportedProtocol.Dvrip, Assert.Single(camera.Streams).Protocol);
+        await _bindings.DidNotReceive().SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -838,6 +921,29 @@ public class SeedAndProbePresetsUseCaseTests
 
         // Assert
         Assert.Equal(SupportedProtocol.Rtsp, stream!.Protocol);
+        Assert.Equal("/stream1", Assert.Single(stream.Streams).Path);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldBindTheStreamToDvrip_WhenTheCameraListsNoStreamOverRtsp()
+    {
+        // Arrange
+        _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, enumerator: CapabilityTestUseCases.NothingEnumerated());
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        CameraCapabilityBinding? stream = null;
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(_ => stream);
+        _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Stream), Arg.Any<CancellationToken>()))
+            .Do(call => stream = call.Arg<CameraCapabilityBinding>());
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Dvrip, stream!.Protocol);
+        Assert.All(stream.Streams, line => Assert.Equal(SupportedProtocol.Dvrip, line.Protocol));
     }
 
     [Fact]
@@ -845,7 +951,7 @@ public class SeedAndProbePresetsUseCaseTests
     {
         // Arrange
         var verifier = Substitute.For<ICameraVerifier>();
-        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>())
             .Returns(new CameraVerificationResult(true, false, "needs_attention", "No image.", DateTimeOffset.UnixEpoch, null));
         _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, verifier: verifier);
@@ -923,6 +1029,29 @@ public class SeedAndProbePresetsUseCaseTests
 
         // Assert
         Assert.Null(camera.Protocol(SupportedProtocol.V380));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepASilentProtocol_WhenAStreamGoesThroughIt()
+    {
+        // Arrange
+        var answers = Substitute.For<ICameraProtocolProbe>();
+        answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
+        var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null }
+            .WithStream(SupportedProtocol.Rtsp);
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+        StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Dvrip, CameraStream.DvripSecondaryQuery, StreamRole.Detect);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.V380]);
+        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await sut.ExecuteAsync("cam1");
+
+        // Assert
+        Assert.NotNull(camera.Protocol(SupportedProtocol.Dvrip));
     }
 
     [Fact]
@@ -1016,7 +1145,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldListTheStreamFirstWithItsMainPath_WhenTheCameraHasOne()
+    public async Task ExecuteAsync_ShouldListTheStreamFirst_WhenTheCameraHasOne()
     {
         // Arrange
         var camera = MakeCamera().WithStream(SupportedProtocol.Rtsp, path: "/stream1");
@@ -1031,7 +1160,6 @@ public class GetCameraCapabilitiesUseCaseTests
 
         // Assert
         Assert.Equal("stream", result![0].Capability);
-        Assert.Equal("/stream1", result[0].StreamPath);
         Assert.Equal(2, result.Count);
     }
 

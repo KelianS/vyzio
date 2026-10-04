@@ -55,11 +55,11 @@ Certains modeles sur batterie ne supportent pas le RTSP local et communiquent un
 - Le port 554 est ferme sur la camera
 - Le port **34567** repond (protocole DVRIP/XMEye)
 
-**Chemin recommande : essayer le RTSP d'abord.** Si le RTSP est indisponible apres activation dans l'application, Vyzio vous proposera automatiquement le **mode DVRIP** comme fallback lors de la decouverte de la camera (signal "Port DVRIP/XMEye detecte").
+**Chemin recommande : essayer le RTSP d'abord.** Si le RTSP reste indisponible apres activation dans l'application, reveillez la camera puis touchez "Réessayer maintenant" : des que son port DVRIP/XMEye repond, Vyzio la presente comme prete et l'ajoute directement en **mode DVRIP**.
 
-En mode DVRIP, Vyzio passe par **go2rtc** (integre dans Frigate) comme passerelle transparente. Vous n'avez rien a configurer manuellement — cochez simplement l'option dans le parcours d'ajout.
+En mode DVRIP, Vyzio joint la camera par son protocole proprietaire. Vous n'avez rien a configurer ni a cocher dans le parcours d'ajout.
 
-**Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'application de la configuration. Reveillez-la via l'application ICSee avant de cliquer "Verifier la connexion DVRIP". Une fois le flux etabli, go2rtc maintient la connexion et la camera reste active.
+**Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'application de la configuration. Reveillez-la via l'application ICSee avant de cliquer "Ajouter la caméra". Une fois le flux etabli, Vyzio maintient la connexion et la camera reste active, ce qui sollicite davantage sa batterie.
 
 > **Pourquoi Vyzio ne peut pas reveiller la camera automatiquement ?** En veille, le chipset WiFi reste associe au reseau (la camera apparait dans la liste des clients de votre box) mais le processeur principal est eteint. Les protocoles standard (TCP, UDP DVRIP, WoL, ONVIF) n'atteignent pas le processeur — seul un mecanisme proprietaire ICSee integre dans le firmware du chipset peut le reveiller, via leur infrastructure cloud. Ce mecanisme n'est pas accessible localement.
 

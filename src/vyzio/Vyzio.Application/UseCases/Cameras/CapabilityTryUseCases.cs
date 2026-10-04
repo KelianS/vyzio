@@ -90,6 +90,6 @@ public sealed class ConfirmCameraCapabilityUseCase(
         CapabilityVerdict.ShowPtzPanel(camera, binding);
         await cameras.UpdateAsync(camera, ct);
 
-        return new(CapabilityAnswerOutcome.Recorded, CameraCapabilityBindingDto.From(binding, camera));
+        return new(CapabilityAnswerOutcome.Recorded, CameraCapabilityBindingDto.From(binding));
     }
 }

@@ -18,6 +18,7 @@ const candidate: DiscoveredCamera = {
   supportLevel: 'supported',
   vendorFamily: 'tplink_tapo',
   qualificationReasons: [],
+  stream: { protocol: 'rtsp', port: 554, path: '/stream1' },
 }
 
 const verified = {
@@ -50,48 +51,46 @@ describe('addCameraReducer', () => {
     expect(next.form).toMatchObject({
       host: '192.168.1.40',
       streamPath: '/stream1',
+      streamProtocol: 'rtsp',
       username: 'user',
       password: 'secret',
     })
     expect(next.selection).toEqual({ kind: 'candidate', index: 0 })
   })
 
-  it('addCameraReducer_ShouldSwitchToTheDvripPort_WhenTheFallbackIsTurnedOn', () => {
+  it('addCameraReducer_ShouldStartFromTheDvripStream_WhenTheCandidateIsReadyOverDvrip', () => {
     // Arrange
-    const action = {
-      type: 'DVRIP_MODE_TOGGLED',
-      enabled: true,
-      fallbackPort: 554,
-      fallbackStreamPath: '/stream1',
-    } as const
+    const overDvrip: DiscoveredCamera = {
+      ...candidate,
+      streamPath: null,
+      rtspActive: false,
+      stream: { protocol: 'dvrip', port: 34567, path: null },
+    }
 
     // Act
-    const next = addCameraReducer(verified, action)
+    const next = addCameraReducer(verified, {
+      type: 'CANDIDATE_SELECTED',
+      index: 0,
+      candidate: overDvrip,
+    })
 
     // Assert
     expect(next.form).toMatchObject({ port: 34567, streamPath: null, streamProtocol: 'dvrip' })
-    expect(next.verification).toBeNull()
   })
 
-  it('addCameraReducer_ShouldRestoreTheStream_WhenTheFallbackIsTurnedOff', () => {
+  it('addCameraReducer_ShouldStartFromRtsp_WhenNoProtocolServesTheCandidateStreamYet', () => {
     // Arrange
-    const dvrip = addCameraReducer(verified, {
-      type: 'DVRIP_MODE_TOGGLED',
-      enabled: true,
-      fallbackPort: 554,
-      fallbackStreamPath: '/stream1',
-    })
+    const toPrepare: DiscoveredCamera = { ...candidate, streamPath: null, stream: null }
 
     // Act
-    const next = addCameraReducer(dvrip, {
-      type: 'DVRIP_MODE_TOGGLED',
-      enabled: false,
-      fallbackPort: 554,
-      fallbackStreamPath: '/stream1',
+    const next = addCameraReducer(verified, {
+      type: 'CANDIDATE_SELECTED',
+      index: 0,
+      candidate: toPrepare,
     })
 
     // Assert
-    expect(next.form).toMatchObject({ port: 554, streamPath: '/stream1', streamProtocol: 'rtsp' })
+    expect(next.form).toMatchObject({ port: 554, streamPath: null, streamProtocol: 'rtsp' })
   })
 
   it('addCameraReducer_ShouldSayWhyAndKeepNoVerification_WhenTheStreamDoesNotAnswer', () => {

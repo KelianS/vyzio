@@ -53,4 +53,29 @@ test.describe('Capability to confirm', () => {
     await expect(orientation.getByText(/^Confirmé par vous le/)).toBeVisible()
     expect(state.ptzBinding.status).toBe('verified')
   })
+
+  test('LiveView_ShouldOfferTheJoystick_WhenTheUserConfirmsTheOrientationThroughTheLine', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
+    state.ptzBinding = { protocol: 'v380', configJson: null, status: 'to_confirm' }
+    await installFakeBackend(page, state)
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Porte d’entrée' }).click()
+    await expect(page.getByText(/L’orientation n’est pas disponible pour le moment/)).toBeVisible()
+    await expect(page.getByTitle('Haut')).toHaveCount(0)
+
+    await page.getByRole('link', { name: 'Connexion' }).click()
+    const orientation = page
+      .getByRole('list', { name: 'Capacités' })
+      .getByRole('listitem')
+      .filter({ hasText: 'Orientation' })
+    await orientation.getByRole('button', { name: 'Essayer' }).click()
+    await orientation.getByRole('button', { name: 'Oui' }).click()
+    await expect(orientation.getByText('Fonctionne')).toBeVisible()
+
+    await page.getByRole('link', { name: 'Accueil' }).click()
+    await page.getByRole('button', { name: 'Porte d’entrée' }).click()
+    await expect(page.getByTitle('Haut')).toBeVisible()
+  })
 })

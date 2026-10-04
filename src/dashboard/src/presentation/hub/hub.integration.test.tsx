@@ -43,6 +43,25 @@ describe('HubView', () => {
     expect(screen.getByText('Détection « person »')).toBeInTheDocument()
   })
 
+  it('onOpenLive_ShouldPointAtConnexionInsteadOfTheJoystick_WhenTheOrientationIsToConfirm', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera({ ptzSupported: true, verifiedCapabilities: [] })]),
+    })
+    renderScreen(<HubView />)
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Front Door' }))
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Connexion' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1/connexion',
+    )
+    expect(screen.queryByTitle('Haut')).not.toBeInTheDocument()
+  })
+
   it('onMount_ShouldSayVyzioDoesNotAnswer_WhenTheOverviewFails', async () => {
     // Arrange
     fakeNetwork({

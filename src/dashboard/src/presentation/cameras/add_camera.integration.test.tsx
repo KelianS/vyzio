@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -34,6 +34,37 @@ const discovered = {
   supportLevel: 'supported',
   vendorFamily: 'tplink_tapo',
   qualificationReasons: [],
+  stream: { protocol: 'rtsp', port: 554, path: '/stream1' },
+}
+
+const overDvripOnly = {
+  ...discovered,
+  displayName: 'ICSee salon',
+  host: '192.168.1.61',
+  port: 34567,
+  streamPath: null,
+  rtspActive: false,
+  vendorFamily: null,
+  qualificationReasons: ['camera_port_open', 'dvrip_port_detected'],
+  stream: { protocol: 'dvrip', port: 34567, path: null },
+}
+
+const answeringNoStream = {
+  ...discovered,
+  displayName: 'Boîtier ONVIF',
+  host: '192.168.1.62',
+  streamPath: null,
+  rtspActive: false,
+  vendorFamily: null,
+  qualificationReasons: ['camera_port_open', 'onvif_port_detected'],
+  stream: null,
+}
+
+async function searchTheNetwork() {
+  await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
+  await userEvent.click(
+    within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Rechercher' }),
+  )
 }
 
 async function fillTheAddressByHand() {
@@ -85,10 +116,10 @@ describe('AddCameraView', () => {
     expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeDisabled()
   })
 
-  it('onSelectCandidate_ShouldShowTheVendorNotice_WhenTheUserPicksAFoundCamera', async () => {
+  it('onSelectCandidate_ShouldShowTheVendorNotice_WhenTheFoundCameraIsStillToPrepare', async () => {
     // Arrange
     fakeNetwork({
-      'POST /api/cameras/discovery': ok([discovered]),
+      'POST /api/cameras/discovery': ok([{ ...discovered, streamPath: null, stream: null }]),
       'POST /api/cameras/vendor-assistance': ok({
         vendorFamily: 'tplink_tapo',
         markdown: 'Activez le compte caméra dans l’application Tapo.',
@@ -107,6 +138,100 @@ describe('AddCameraView', () => {
     expect(
       await screen.findByText('Activez le compte caméra dans l’application Tapo.'),
     ).toBeInTheDocument()
+  })
+
+  it.each([[/Tapo C200/], [/ICSee salon/]])(
+    'onDiscover_ShouldMarkTheCameraReady_WhenAProtocolServesItsStream: %s',
+    async (name) => {
+      // Arrange
+      fakeNetwork({ 'POST /api/cameras/discovery': ok([discovered, overDvripOnly]) })
+      renderScreen(<AddCameraView />)
+
+      // Act
+      await searchTheNetwork()
+
+      // Assert
+      expect(await screen.findByRole('button', { name })).toHaveTextContent('Prête')
+    },
+  )
+
+  it('onSelectCandidate_ShouldSkipTheActivationNotice_WhenTheFoundCameraIsReadyOverDvrip', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'POST /api/cameras/discovery': ok([{ ...overDvripOnly, vendorFamily: 'icsee' }]),
+      'POST /api/cameras/vendor-assistance': ok(null),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /ICSee salon/ }))
+
+    // Assert
+    await waitFor(() =>
+      expect(network.sent).toContainEqual(
+        expect.objectContaining({
+          route: 'POST /api/cameras/vendor-assistance',
+          body: expect.objectContaining({ connected: true }) as unknown,
+        }),
+      ),
+    )
+  })
+
+  it('onDiscover_ShouldMarkTheCameraToPrepare_WhenNoProtocolServesItsStream', async () => {
+    // Arrange
+    fakeNetwork({ 'POST /api/cameras/discovery': ok([answeringNoStream]) })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await searchTheNetwork()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Boîtier ONVIF/ })).toHaveTextContent(
+      'À préparer',
+    )
+  })
+
+  it('onCreate_ShouldAddTheCameraOverDvripWithoutAPath_WhenItsStreamIsReadyOverDvripOnly', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'POST /api/cameras/discovery': ok([overDvripOnly]),
+      'POST /api/cameras': ok(makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })),
+      'POST /api/cameras/camera-9/verify': ok(reachable),
+      'GET /api/cameras': ok([makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })]),
+      'GET /api/system/stats': ok(null),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+    await userEvent.click(await screen.findByRole('button', { name: /ICSee salon/ }))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
+
+    // Assert
+    expect(await screen.findByText('« ICSee salon » ajoutée.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras',
+        body: expect.objectContaining({
+          stream: { protocol: 'dvrip', port: 34567, path: null },
+        }) as unknown,
+      }),
+    )
+  })
+
+  it('onSelectCandidate_ShouldAskToOpenTheCameraFirst_WhenNoProtocolServesItsStream', async () => {
+    // Arrange
+    fakeNetwork({ 'POST /api/cameras/discovery': ok([answeringNoStream]) })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Boîtier ONVIF/ }))
+
+    // Assert
+    expect(screen.getByText('Cette caméra n’est pas encore joignable')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ajouter la caméra' })).not.toBeInTheDocument()
   })
 
   it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {

@@ -63,7 +63,8 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
                     resolvedHostNames.GetValueOrDefault(candidate.Host),
                     GetDetectedPorts(signalsByHost, candidate.Host),
                     GetDetectedRtspPaths(signalsByHost, candidate.Host),
-                    GetDetectedCapabilities(signalsByHost, candidate.Host))
+                    GetDetectedCapabilities(signalsByHost, candidate.Host)),
+                Stream = GetReadyStream(signalsByHost, candidate.Host),
             })
             .ToList();
     }
@@ -160,13 +161,9 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         var detectedProtocols = new HashSet<SupportedProtocol>();
         foreach (var signal in signals)
         {
-            if (signal.ConfirmedProtocol is { } confirmed)
+            if (ProvenProtocol(signal) is { } proven)
             {
-                detectedProtocols.Add(confirmed);
-            }
-            if (DiscoveryProtocolCatalog.Lookup(signal.DiscoverySource)?.CapabilityProtocol is { } p)
-            {
-                detectedProtocols.Add(p);
+                detectedProtocols.Add(proven);
             }
         }
 
@@ -192,6 +189,35 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
 
         return result;
     }
+
+    // Ready over the first registered stream protocol proven on the host with what its stream needs (ADR-61 b).
+    private DiscoveredStream? GetReadyStream(
+        IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
+        string host)
+    {
+        if (_capabilityRegistry is null || !signalsByHost.TryGetValue(host, out var signals))
+        {
+            return null;
+        }
+
+        foreach (var protocol in _capabilityRegistry.GetRegisteredProtocols(CameraCapability.Stream))
+        {
+            var needsPath = _capabilityRegistry.ResolveStream(protocol).NeedsPath;
+            var proof = signals.FirstOrDefault(signal =>
+                ProvenProtocol(signal) == protocol
+                && (!needsPath || !string.IsNullOrWhiteSpace(signal.StreamPath)));
+            if (proof is not null)
+            {
+                return new DiscoveredStream(protocol, proof.Port, needsPath ? proof.StreamPath : null);
+            }
+        }
+
+        return null;
+    }
+
+    // The protocol a signal proves: fingerprint-confirmed on an open port, or identified by its handshake source.
+    private static SupportedProtocol? ProvenProtocol(RawCameraDiscoverySignal signal)
+        => signal.ConfirmedProtocol ?? DiscoveryProtocolCatalog.Lookup(signal.DiscoverySource)?.CapabilityProtocol;
 
     private static string FormatCapabilityLabel(CameraCapability capability) => capability switch
     {

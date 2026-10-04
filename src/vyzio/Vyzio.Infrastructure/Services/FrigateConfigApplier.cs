@@ -224,13 +224,12 @@ public sealed class FrigateConfigApplier(
         }
 
         // Build go2rtc section for DVRIP cameras — go2rtc bridges dvrip:// → rtsp://127.0.0.1:8554/{slug}.
-        // One entry per stream Frigate consumes: separating detect from record means the sub-stream
-        // needs its own bridge, otherwise both roles would land on the same decoded stream.
+        // One bridge per stream Frigate consumes, else separate detect and record would share one decoded stream.
         var dvripStreams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var camera in validatedCameras.Where(c => c.StreamBinding!.Protocol == SupportedProtocol.Dvrip))
+        foreach (var camera in validatedCameras)
         {
             var frigateKey = camera.FrigateCameraName;
-            foreach (var stream in DistinctRoleStreams(camera))
+            foreach (var stream in DistinctRoleStreams(camera).Where(stream => ProtocolOf(camera, stream) == SupportedProtocol.Dvrip))
             {
                 dvripStreams[Go2rtcStreamName(frigateKey, stream)] = [BuildDvripUrl(camera, stream)];
             }
@@ -319,22 +318,19 @@ public sealed class FrigateConfigApplier(
             }
             : null;
 
-    // Splits the roles across streams (ADR-38). When detection and recording land on the same stream
-    // — no sub-stream, or the user kept the main one — a single input carries both roles, which is
-    // also what Frigate does implicitly today. Two streams means two inputs, and recording always
-    // stays on the main one: the detect stream may be the cheap one, never the archived one.
+    // One input per role, as Frigate requires: one when a stream carries both, two otherwise (ADR-38, ADR-65 g).
     private static List<FrigateInputConfig> BuildInputs(Camera camera, string frigateKey)
     {
-        var main = camera.MainStream;
+        var recording = camera.RecordStream;
         var detect = camera.DetectStream;
 
-        if (main is null || detect is null || ReferenceEquals(main, detect) || main.Id == detect.Id)
+        if (recording is null || detect is null || ReferenceEquals(recording, detect) || recording.Id == detect.Id)
         {
             return
             [
                 new FrigateInputConfig
                 {
-                    Path = BuildStreamUrl(camera, main, frigateKey),
+                    Path = BuildStreamUrl(camera, recording, frigateKey),
                     Roles = ["detect", "record"],
                 }
             ];
@@ -343,30 +339,33 @@ public sealed class FrigateConfigApplier(
         return
         [
             new FrigateInputConfig { Path = BuildStreamUrl(camera, detect, frigateKey), Roles = ["detect"] },
-            new FrigateInputConfig { Path = BuildStreamUrl(camera, main, frigateKey), Roles = ["record"] },
+            new FrigateInputConfig { Path = BuildStreamUrl(camera, recording, frigateKey), Roles = ["record"] },
         ];
     }
 
     // The streams Frigate will actually consume — one when both roles share a stream, two otherwise.
     private static IEnumerable<CameraStream?> DistinctRoleStreams(Camera camera)
     {
-        var main = camera.MainStream;
+        var recording = camera.RecordStream;
         var detect = camera.DetectStream;
 
-        yield return main;
-        if (main is not null && detect is not null && main.Id != detect.Id)
+        yield return recording;
+        if (recording is not null && detect is not null && recording.Id != detect.Id)
             yield return detect;
     }
 
     // DVRIP streams reach Frigate through go2rtc, so their name has to stay stable and unique per
     // role-carrying stream; RTSP streams are addressed directly on the camera.
     private static string BuildStreamUrl(Camera camera, CameraStream? stream, string frigateKey)
-        => camera.StreamBinding!.Protocol == SupportedProtocol.Dvrip
+        => ProtocolOf(camera, stream) == SupportedProtocol.Dvrip
             ? $"rtsp://127.0.0.1:8554/{Go2rtcStreamName(frigateKey, stream)}"
             : BuildRtspUrl(camera, stream?.Path);
 
-    // Rank 0 keeps the plain camera name so existing go2rtc entries and recordings are untouched;
-    // lighter ranks get a suffixed bridge of their own.
+    // Each input is built from its own stream's protocol (ADR-65 g).
+    private static SupportedProtocol ProtocolOf(Camera camera, CameraStream? stream)
+        => stream?.Protocol ?? camera.StreamBinding!.Protocol;
+
+    // A bridge is named by its stream's rank, stable and unique per camera; the first rank takes the plain camera name.
     private static string Go2rtcStreamName(string frigateKey, CameraStream? stream)
         => stream is null or { Ordinal: 0 } ? frigateKey : $"{frigateKey}_{stream.Ordinal}";
 

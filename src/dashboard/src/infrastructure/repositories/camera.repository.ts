@@ -81,6 +81,7 @@ interface DiscoveredCameraDto {
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentationDto | null
   technicalDetails?: DiscoveryTechnicalDetailsDto | null
+  stream: DiscoveredCamera['stream']
 }
 
 interface DetectedPortSignalDto {
@@ -268,10 +269,11 @@ export class HttpCameraRepository implements CameraRepository {
     cameraId: string,
     capability: Capability,
     protocol: SupportedProtocol,
+    streamPath: string | null,
   ): Promise<CameraCapabilityBinding> {
     return putJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`,
-      { protocol },
+      { protocol, ...(streamPath !== null && { streamPath }) },
     )
   }
 
@@ -308,13 +310,6 @@ export class HttpCameraRepository implements CameraRepository {
     return putJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/ptz/pan-inverted`,
       { inverted },
-    )
-  }
-
-  async setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding> {
-    return putJson<CameraCapabilityBinding>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/stream/path`,
-      { path },
     )
   }
 
@@ -442,6 +437,7 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     supportLevel: camera.supportLevel,
     vendorFamily: camera.vendorFamily,
     qualificationReasons: camera.qualificationReasons,
+    stream: camera.stream,
     vendorDocumentation: camera.vendorDocumentation
       ? {
           vendorFamily: camera.vendorDocumentation.vendorFamily,

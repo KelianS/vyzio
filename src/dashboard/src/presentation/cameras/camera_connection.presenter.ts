@@ -8,14 +8,20 @@ import {
   CapabilityStatus,
   type CameraCapabilityBinding,
   type Capability,
+  type StreamProtocol,
   type SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocolAddition } from '../../domain/entities/camera_protocol.entity'
+import type {
+  CameraStreamAddition,
+  CameraStreamLineup,
+  StreamRole,
+} from '../../domain/entities/camera_stream.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { refreshSurveillance } from '../surveillance/surveillance_refresh'
 import type { CameraConnectionAction } from './camera_connection.actions'
-import { CapabilityTask } from './camera_connection.uido'
+import { CapabilityTask, StreamTask } from './camera_connection.uido'
 import { reloadCameraList, reportCameraGone } from './camera_list_reload'
 import { cameraUpdate } from './camera_update'
 import { CAPABILITY_LABELS, STREAM_LABEL, STREAM_REPAIR } from './cameras.formatters'
@@ -25,6 +31,8 @@ import {
   protocolKey,
   type ConnectionValues,
 } from './camera_connection_values'
+import { IS_STREAM } from './capability_state'
+import { addedStream } from './stream_lines'
 
 export interface CameraConnectionPresenterContext {
   container: CamerasContainer
@@ -42,6 +50,48 @@ export function buildCameraConnectionPresenter({
   // Moving to another camera keeps the tab mounted: only the latest read may answer.
   const nextBindingsRead = latestOnly()
   const nextProtocolsRead = latestOnly()
+  const nextStreamsRead = latestOnly()
+  // Per protocol: opening a dropdown twice must not let the older answer land last.
+  const nextAvailableRead: Partial<Record<StreamProtocol, () => () => boolean>> = {}
+
+  /** The stream lines of the stream card; after an action a failed reread keeps them and goes to a toast. */
+  function readStreams(cameraId: string, listShown = false) {
+    const isLatest = nextStreamsRead()
+    if (!listShown) dispatch({ type: 'STREAMS_STARTED' })
+    container.getCameraStreams
+      .execute(cameraId)
+      .then((streams) => {
+        if (isLatest()) dispatch({ type: 'STREAMS_LOADED', streams })
+      })
+      .catch((e: unknown) => {
+        if (!isLatest()) return
+        const error = toAppError(e)
+        if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
+        else if (listShown) toastError(toast, error)
+        else dispatch({ type: 'STREAMS_FAILED', error })
+      })
+  }
+
+  /** Runs one stream line action; its answer is the whole lineup, since roles move across streams. */
+  async function runStreamTask(
+    streamId: string,
+    task: StreamTask,
+    work: () => Promise<CameraStreamLineup>,
+  ): Promise<CameraStreamLineup | undefined> {
+    dispatch({ type: 'STREAM_TASK_STARTED', streamId, task })
+    // A reread already on its way must not overwrite what the action answered.
+    const isLatest = nextStreamsRead()
+    try {
+      const streams = await work()
+      if (isLatest()) dispatch({ type: 'STREAMS_LOADED', streams })
+      return streams
+    } catch (e) {
+      toastError(toast, toAppError(e))
+      return undefined
+    } finally {
+      dispatch({ type: 'STREAM_TASK_FINISHED', streamId })
+    }
+  }
 
   /** The protocol boxes of Avancé; after an action a failed reread keeps them and goes to a toast. */
   function readProtocols(cameraId: string, listShown = false) {
@@ -61,10 +111,11 @@ export function buildCameraConnectionPresenter({
       })
   }
 
-  /** Everything a test or a save can have changed: capabilities and protocols. */
+  /** Everything a test or a save can have changed: capabilities, protocols and streams. */
   function readConnection(cameraId: string) {
     readBindings(cameraId, true)
     readProtocols(cameraId, true)
+    readStreams(cameraId, true)
   }
 
   /** After an action the list is already shown: a failed reread keeps it and goes to a toast (DESIGN SYSTEM § Errors). */
@@ -102,6 +153,9 @@ export function buildCameraConnectionPresenter({
       toastError(toast, error)
       // A page left open offered a protocol the camera no longer has: show its protocols as they are.
       if (error.code === ApiErrorCode.ProtocolNotOnCamera) readProtocols(cameraId, true)
+      // The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-65 e).
+      if (error.code === ApiErrorCode.StreamPathRequired)
+        dispatch({ type: 'STREAM_PATH_ASKED', asked: true })
       // The capability was checked or answered elsewhere: show where it stands now.
       if (error.code === ApiErrorCode.NothingToConfirm) readBindings(cameraId, true)
       return undefined
@@ -149,9 +203,91 @@ export function buildCameraConnectionPresenter({
     onLoad(cameraId: string) {
       readBindings(cameraId)
       readProtocols(cameraId)
+      readStreams(cameraId)
     },
 
-    /** Saves each level that changed, the camera, the stream's path, each protocol; resolves true once saved. */
+    /** Gives a stream a role; the stream that had it loses it (ADR-65 b). */
+    async onSetStreamRole(cameraId: string, streamId: string, role: StreamRole) {
+      const done = await runStreamTask(streamId, StreamTask.Role, () =>
+        container.setCameraStreamRole.execute(cameraId, streamId, role),
+      )
+      if (!done) return
+      toast('Rôle du flux changé.', 'success')
+      refreshSurveillance(hubContainer)
+    },
+
+    async onRemoveStream(cameraId: string, streamId: string) {
+      const done = await runStreamTask(streamId, StreamTask.Remove, () =>
+        container.removeCameraStream.execute(cameraId, streamId),
+      )
+      if (!done) return
+      toast('Flux retiré.', 'success')
+      refreshSurveillance(hubContainer)
+    },
+
+    /** Checks one stream; the recording stream's check is the camera's, so the capabilities are read again. */
+    async onCheckStream(cameraId: string, streamId: string) {
+      const lineup = await runStreamTask(streamId, StreamTask.Check, () =>
+        container.checkCameraStream.execute(cameraId, streamId),
+      )
+      const checked = lineup?.streams.find((stream) => stream.id === streamId)
+      if (!checked) return
+      if (checked.verified) toast('Flux vérifié.', 'success')
+      else
+        toast(
+          'Ce flux ne répond pas.',
+          'error',
+          checked.lastError ? scrubSecrets(checked.lastError) : undefined,
+        )
+      reloadCameraList(container)
+      readBindings(cameraId, true)
+    },
+
+    /** Asks the camera what it serves over a protocol, each time the add form opens or changes protocol (ADR-65 e). */
+    async onListAvailableStreams(cameraId: string, protocol: StreamProtocol) {
+      const isLatest = (nextAvailableRead[protocol] ??= latestOnly())()
+      dispatch({ type: 'AVAILABLE_STREAMS_STARTED', protocol })
+      try {
+        const streams = await container.getAvailableCameraStreams.execute(cameraId, protocol)
+        if (isLatest()) dispatch({ type: 'AVAILABLE_STREAMS_LOADED', protocol, streams })
+      } catch (e) {
+        if (isLatest())
+          dispatch({ type: 'AVAILABLE_STREAMS_FAILED', protocol, error: toAppError(e) })
+      }
+    },
+
+    onOpenStreamForm() {
+      dispatch({ type: 'STREAM_FORM_OPENED' })
+    },
+    onCloseStreamForm() {
+      dispatch({ type: 'STREAM_FORM_CLOSED' })
+    },
+
+    /** Adds a stream picked from what the camera serves or typed over RTSP, checked at once. */
+    async onAddStream(cameraId: string, addition: CameraStreamAddition) {
+      dispatch({ type: 'STREAM_ADD_STARTED' })
+      const isLatest = nextStreamsRead()
+      try {
+        const streams = await container.addCameraStream.execute(cameraId, addition)
+        if (isLatest()) dispatch({ type: 'STREAMS_LOADED', streams })
+        const added = addedStream(streams)
+        if (added && !added.verified)
+          toast(
+            'Flux ajouté, mais il ne répond pas.',
+            'error',
+            added.lastError ? scrubSecrets(added.lastError) : undefined,
+          )
+        else toast('Flux ajouté.', 'success')
+        dispatch({ type: 'STREAM_FORM_CLOSED' })
+        refreshSurveillance(hubContainer)
+      } catch (e) {
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'STREAM_ADD_FINISHED' })
+      }
+    },
+
+    /** Saves each level that changed, the camera, each protocol; resolves true once saved. */
     async onSave(camera: Camera, values: ConnectionValues, saved: ConnectionValues) {
       dispatch({ type: 'SAVE_STARTED' })
       try {
@@ -171,9 +307,6 @@ export function buildCameraConnectionPresenter({
               password: values.password.trim() ? values.password : null,
             }),
           )
-        }
-        if (values.streamPath !== saved.streamPath) {
-          await container.setStreamPath.execute(camera.id, values.streamPath.trim() || null)
         }
         for (const protocol of ALL_PROTOCOLS) {
           const key = protocolKey(protocol)
@@ -256,11 +389,17 @@ export function buildCameraConnectionPresenter({
     },
 
     /** Tests the capability through the protocol; resolves true when the camera answered. */
-    async onConfigure(cameraId: string, capability: Capability, protocol: SupportedProtocol) {
+    async onConfigure(
+      cameraId: string,
+      capability: Capability,
+      protocol: SupportedProtocol,
+      streamPath: string | null = null,
+    ) {
       const binding = await runTask(cameraId, capability, CapabilityTask.Configure, () =>
-        container.configureCameraCapability.execute(cameraId, capability, protocol),
+        container.configureCameraCapability.execute(cameraId, capability, protocol, streamPath),
       )
       if (!binding) return false
+      if (IS_STREAM[capability]) dispatch({ type: 'STREAM_PATH_ASKED', asked: false })
       announceTest(binding)
       return binding.verified
     },

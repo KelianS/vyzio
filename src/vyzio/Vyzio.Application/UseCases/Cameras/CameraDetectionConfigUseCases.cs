@@ -47,7 +47,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
             validatedLabels = ["person"];
 
         // A save that changes nothing must not summon the restart prompt.
-        var detectionBefore = (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId);
+        var detectionBefore = (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned);
         var retentionBefore = (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
 
         camera.DetectionLabelsJson = JsonSerializer.Serialize(validatedLabels);
@@ -59,10 +59,9 @@ public sealed class SaveCameraDetectionConfigUseCase(
         camera.EventClipDaysOverride = RetentionPolicy.ClampEventClipDays(request.EventClipDaysOverride);
 
         var sensitivityChanged = ApplySensitivity(camera, request);
-        ApplyDetectStream(camera, request);
 
         var changed =
-            detectionBefore != (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned, camera.DetectStreamId)
+            detectionBefore != (camera.DetectionLabelsJson, camera.MotionSensitivity, camera.MotionSensitivityPinned)
             || retentionBefore != (camera.ContinuousDaysOverride, camera.MotionDaysOverride, camera.EventClipDaysOverride);
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -107,15 +106,5 @@ public sealed class SaveCameraDetectionConfigUseCase(
 
         camera.MotionSensitivity = level;
         return true;
-    }
-
-    // An id that matches no stream of this camera is discarded rather than stored: the fallback to
-    // the main stream must come from an absent choice, never from a dangling one that would silently
-    // survive a re-enumeration (ADR-38).
-    private static void ApplyDetectStream(Camera camera, SaveCameraDetectionConfigRequest request)
-    {
-        camera.DetectStreamId = camera.Streams.Any(stream => stream.Id == request.DetectStreamId)
-            ? request.DetectStreamId
-            : null;
     }
 }

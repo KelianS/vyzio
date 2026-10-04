@@ -118,6 +118,37 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task ConfigureStream_ShouldRefuseWithItsCode_WhenTheCameraListsNoStreamOverRtspAndNoPathIsTyped()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/cameras/camera-1/protocols", new { protocol = "dvrip", port = (int?)null, username = (string?)null, password = (string?)null });
+        (await client.PutAsJsonAsync("/api/cameras/camera-1/capabilities/stream", new { protocol = "dvrip" })).EnsureSuccessStatusCode();
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/cameras/camera-1/capabilities/stream", new { protocol = "rtsp" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("stream_path_required", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CreateCamera_ShouldRefuseWithItsCode_WhenAnRtspCameraWithoutAPathListsNoStream()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
+            "Garage", "192.168.1.30", null, null, "rtsp_manual", new CreateCameraStreamRequest("rtsp", 554, null), "person_default"));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("stream_path_required", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SearchProtocols_ShouldAnswerNotFound_WhenTheCameraDoesNotExist()
     {
         // Arrange
@@ -253,6 +284,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.False(candidate.IsSupported);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
+        Assert.Null(candidate.Stream);
     }
 
     [Fact]
@@ -271,6 +303,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Equal("Front Door", candidate.DisplayName);
         Assert.True(candidate.RtspActive);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
+        Assert.Equal(new DiscoveredStreamResponse("rtsp", 554, "/Streaming/Channels/101"), candidate.Stream);
     }
 
     [Fact]
@@ -449,7 +482,9 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string? MacAddress, bool IsSupported, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons);
+    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string? MacAddress, bool IsSupported, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons, DiscoveredStreamResponse? Stream);
+
+    public sealed record DiscoveredStreamResponse(string Protocol, int Port, string? Path);
 
     public sealed record VendorAssistanceResponse(string VendorFamily, string Markdown);
 
@@ -570,7 +605,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                 target is not null && string.Equals(target.Host, "192.168.1.10", StringComparison.OrdinalIgnoreCase)
                     ?
                     [
-                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["rtsp_responding", "mac_address_observed"])
+                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["rtsp_responding", "mac_address_observed"], Stream: new DiscoveredStream(SupportedProtocol.Rtsp, 554, "/Streaming/Channels/101"))
                     ]
                     :
                     [
@@ -587,7 +622,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraVerifier : ICameraVerifier
     {
-        public Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
+        public Task<CameraVerificationResult> VerifyAsync(Camera camera, CameraStream? stream, CancellationToken ct = default)
             => Task.FromResult(new CameraVerificationResult(
                 true,
                 true,
@@ -603,7 +638,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
     // single stream onboarding gave it.
     private sealed class StubCameraStreamEnumerator : ICameraStreamEnumerator
     {
-        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default)
+        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<EnumeratedScene>>([]);
     }
 

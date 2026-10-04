@@ -17,6 +17,10 @@ import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
 import { LiveView } from '../live_view/live_view.component'
+import {
+  orientationControlOf,
+  type OrientationControl,
+} from '../../common/orientation/orientation_control'
 import { SystemMonitorPanel } from './system_monitor_panel'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
@@ -29,7 +33,7 @@ const RECENT_EVENTS_MAX = 5
 
 type ModalMedia =
   | { type: 'image' | 'video'; url: string }
-  | { type: 'live'; cameraId: string; label: string; ptzSupported: boolean }
+  | { type: 'live'; cameraId: string; label: string; orientation: OrientationControl }
 
 export function HubView() {
   const { apiBaseUrl, hub: container, cameras: camerasContainer } = useAppContainer()
@@ -77,7 +81,7 @@ export function HubView() {
             type: 'live',
             cameraId: camera.id,
             label: camera.displayName,
-            ptzSupported: camera.ptzSupported,
+            orientation: orientationControlOf(camera),
           })
         }
       />
@@ -88,7 +92,7 @@ export function HubView() {
             <LiveView
               cameraId={modalMedia.cameraId}
               label={modalMedia.label}
-              ptzSupported={modalMedia.ptzSupported}
+              orientation={modalMedia.orientation}
             />
           ) : modalMedia.type === 'image' ? (
             <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />

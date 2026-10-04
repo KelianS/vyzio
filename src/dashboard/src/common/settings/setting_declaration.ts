@@ -19,6 +19,8 @@ export interface SettingOption<T extends string = string> {
 export interface ChoiceOption<T extends string = string> extends SettingOption<T> {
   /** Why it cannot be chosen yet and where to fix that: the option stays listed, greyed. */
   readonly unavailable?: string
+  /** A technical detail behind the label, in the option's tooltip (ADR-53). */
+  readonly hint?: string
 }
 
 /**

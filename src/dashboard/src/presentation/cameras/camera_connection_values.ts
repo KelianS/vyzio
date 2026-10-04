@@ -1,8 +1,5 @@
 import type { Camera } from '../../domain/entities/camera.entity'
-import type {
-  CameraCapabilityBinding,
-  SupportedProtocol,
-} from '../../domain/entities/camera_capability_binding.entity'
+import type { SupportedProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import type {
   CameraProtocol,
   CameraProtocolInput,
@@ -23,13 +20,12 @@ export interface ProtocolValues {
 
 export type ProtocolKey = `protocol:${SupportedProtocol}`
 
-/** The Connexion page's draft: the camera's identity and access, the stream's path, one box per protocol. */
+/** The Connexion page's draft: the camera's identity and access, one box per protocol. */
 export type ConnectionValues = {
   displayName: string
   host: string
   username: string
   password: string
-  streamPath: string
 } & Record<ProtocolKey, ProtocolValues>
 
 export const ALL_PROTOCOLS: readonly SupportedProtocol[] = [
@@ -68,11 +64,7 @@ function boxOf(entry: CameraProtocol | undefined): ProtocolValues {
 }
 
 /** The saved values the draft starts from; a protocol the camera does not speak keeps an empty box. */
-export function connectionValuesOf(
-  camera: Camera,
-  stream: CameraCapabilityBinding | undefined,
-  protocols: CameraProtocol[],
-): ConnectionValues {
+export function connectionValuesOf(camera: Camera, protocols: CameraProtocol[]): ConnectionValues {
   const boxes = Object.fromEntries(
     ALL_PROTOCOLS.map((protocol) => [
       protocolKey(protocol),
@@ -85,7 +77,6 @@ export function connectionValuesOf(
     host: camera.host,
     username: camera.username ?? '',
     password: '',
-    streamPath: stream?.streamPath ?? '',
     ...boxes,
   }
 }

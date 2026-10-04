@@ -10,6 +10,7 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
     private readonly IReadOnlyDictionary<SupportedProtocol, IPtzCapabilityProvider> _ptzProviders;
     private readonly IReadOnlyDictionary<SupportedProtocol, IPrivacyCapabilityProvider> _privacyProviders;
     private readonly IReadOnlyDictionary<SupportedProtocol, IImageSettingsCapabilityProvider> _imageSettingsProviders;
+    private readonly IReadOnlyDictionary<SupportedProtocol, IStreamCapabilityProvider> _streamProviders;
     private readonly IReadOnlyList<SupportedProtocol> _ptzProtocolOrder;
     private readonly IReadOnlyList<SupportedProtocol> _privacyProtocolOrder;
     private readonly IReadOnlyList<SupportedProtocol> _imageSettingsProtocolOrder;
@@ -29,6 +30,7 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         _ptzProviders = ptz.ToDictionary(p => p.Protocol);
         _privacyProviders = privacy.ToDictionary(p => p.Protocol);
         _imageSettingsProviders = imageSettings.ToDictionary(p => p.Protocol);
+        _streamProviders = stream.ToDictionary(p => p.Protocol);
 
         // Preserves DI registration order (ServiceCollectionExtensions), not dictionary enumeration
         // order — blind detection (ADR-28) tries the richest/standard protocol first (ONVIF).
@@ -52,6 +54,11 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         => _imageSettingsProviders.TryGetValue(protocol, out var provider)
             ? provider
             : throw new InvalidOperationException($"No IImageSettingsCapabilityProvider registered for protocol '{protocol}'.");
+
+    public IStreamCapabilityProvider ResolveStream(SupportedProtocol protocol)
+        => _streamProviders.TryGetValue(protocol, out var provider)
+            ? provider
+            : throw new InvalidOperationException($"No IStreamCapabilityProvider registered for protocol '{protocol}'.");
 
     public IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability) => capability switch
     {

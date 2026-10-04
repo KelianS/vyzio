@@ -90,17 +90,21 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
         modelBuilder.Entity<CameraStream>(stream =>
         {
-            stream.HasOne(s => s.Camera)
-                  .WithMany(c => c.Streams)
-                  .HasForeignKey(s => s.CameraId)
+            // The streams belong to the stream binding (ADR-65).
+            stream.HasOne(s => s.Binding)
+                  .WithMany(b => b.Streams)
+                  .HasForeignKey(s => s.BindingId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // One row per rank — ranks are dense and start at 0 (ADR-38).
-            stream.HasIndex(s => new { s.CameraId, s.Ordinal })
+            stream.HasIndex(s => new { s.BindingId, s.Ordinal })
                   .IsUnique()
-                  .HasDatabaseName("ux_camera_streams_camera_ordinal");
+                  .HasDatabaseName("ux_camera_streams_binding_ordinal");
 
+            stream.Property(s => s.Protocol).HasConversion<SnakeCaseEnumConverter<SupportedProtocol>>();
+            stream.Property(s => s.Role).HasConversion<SnakeCaseEnumConverter<StreamRole>>();
             stream.Ignore(s => s.HasKnownResolution);
+            stream.Ignore(s => s.Records);
+            stream.Ignore(s => s.Detects);
         });
 
         modelBuilder.Entity<CameraCapabilityBinding>(binding =>

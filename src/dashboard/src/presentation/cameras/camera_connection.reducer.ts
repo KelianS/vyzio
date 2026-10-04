@@ -118,6 +118,54 @@ export function cameraConnectionReducer(
       delete removing[action.protocol]
       return { ...state, removing }
     }
+
+    case 'STREAMS_STARTED':
+      return { ...state, streamsLoading: true, streamsError: null }
+    case 'STREAMS_LOADED':
+      return { ...state, streamsLoading: false, streams: action.streams }
+    // An unread lineup is not an empty one: no line may claim the camera serves nothing.
+    case 'STREAMS_FAILED':
+      return { ...state, streamsLoading: false, streams: null, streamsError: action.error }
+    case 'STREAM_TASK_STARTED':
+      return { ...state, streamTasks: { ...state.streamTasks, [action.streamId]: action.task } }
+    case 'STREAM_TASK_FINISHED': {
+      const streamTasks = { ...state.streamTasks }
+      delete streamTasks[action.streamId]
+      return { ...state, streamTasks }
+    }
+    case 'STREAM_FORM_OPENED':
+      return { ...state, streamFormOpen: true }
+    case 'STREAM_FORM_CLOSED':
+      return { ...state, streamFormOpen: false }
+    case 'STREAM_ADD_STARTED':
+      return { ...state, addingStream: true }
+    case 'STREAM_ADD_FINISHED':
+      return { ...state, addingStream: false }
+    case 'STREAM_PATH_ASKED':
+      return { ...state, streamPathAsked: action.asked }
+    // Asked again each time: the camera's answer may have changed since (ADR-65 e).
+    case 'AVAILABLE_STREAMS_STARTED': {
+      const availableStreams = { ...state.availableStreams }
+      const availableStreamsErrors = { ...state.availableStreamsErrors }
+      delete availableStreams[action.protocol]
+      delete availableStreamsErrors[action.protocol]
+      return { ...state, availableStreams, availableStreamsErrors }
+    }
+    case 'AVAILABLE_STREAMS_LOADED':
+      return {
+        ...state,
+        availableStreams: { ...state.availableStreams, [action.protocol]: action.streams },
+      }
+    // Nothing to offer but a typed path, and the failure said where the list would have been.
+    case 'AVAILABLE_STREAMS_FAILED':
+      return {
+        ...state,
+        availableStreams: { ...state.availableStreams, [action.protocol]: [] },
+        availableStreamsErrors: {
+          ...state.availableStreamsErrors,
+          [action.protocol]: action.error,
+        },
+      }
   }
 }
 

@@ -5,6 +5,7 @@ import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
 import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { LiveView } from './live_view.component'
+import { OrientationControl } from '../../common/orientation/orientation_control'
 
 const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
 const START = 'POST /api/cameras/camera-1/ptz/move/start'
@@ -59,10 +60,48 @@ async function sentWithin(network: ReturnType<typeof fakeNetwork>, route: string
 }
 
 function renderLiveView() {
-  return renderScreen(<LiveView cameraId="camera-1" label="Front Door" ptzSupported />)
+  return renderScreen(
+    <LiveView cameraId="camera-1" label="Front Door" orientation={OrientationControl.Usable} />,
+  )
 }
 
 describe('LiveView', () => {
+  it('LiveView_ShouldSayOrientationIsUnavailableAndPointAtConnexion_WhenTheCameraWouldRefuseTheMoves', () => {
+    // Arrange
+    const network = fakeNetwork({})
+
+    // Act
+    renderScreen(
+      <LiveView cameraId="camera-1" label="Front Door" orientation={OrientationControl.Unusable} />,
+    )
+
+    // Assert
+    expect(
+      screen.getByText(/L’orientation n’est pas disponible pour le moment/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1/connexion',
+    )
+    expect(screen.queryByTitle('Haut')).not.toBeInTheDocument()
+    expect(network.sent).toEqual([])
+  })
+
+  it('LiveView_ShouldShowOnlyThePicture_WhenOrientationIsSwitchedOff', () => {
+    // Arrange
+    const network = fakeNetwork({})
+
+    // Act
+    renderScreen(
+      <LiveView cameraId="camera-1" label="Front Door" orientation={OrientationControl.Off} />,
+    )
+
+    // Assert
+    expect(screen.queryByText(/L’orientation n’est pas disponible/)).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Haut')).not.toBeInTheDocument()
+    expect(network.sent).toEqual([])
+  })
+
   it('onSave_ShouldSaveTheEmptyPositionAndCaptureIt_WhenTheUserTapsIt', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [SAVE]: ok(), [CAPTURE]: ok() })

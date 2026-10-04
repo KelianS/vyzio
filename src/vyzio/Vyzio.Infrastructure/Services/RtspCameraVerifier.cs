@@ -7,9 +7,9 @@ namespace Vyzio.Infrastructure.Services;
 
 public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
 {
-    public async Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
+    public async Task<CameraVerificationResult> VerifyAsync(Camera camera, CameraStream? stream, CancellationToken ct = default)
     {
-        switch (camera.StreamBinding?.Protocol)
+        switch (stream?.Protocol)
         {
             case null:
                 return NoStreamProtocol();
@@ -26,7 +26,7 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, expiry.Token);
 
             await client.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Rtsp), timeout.Token);
-            var probeResult = await ProbeRtspAsync(client, camera, timeout.Token);
+            var probeResult = await ProbeRtspAsync(client, camera, stream, timeout.Token);
 
             return probeResult switch
             {
@@ -104,10 +104,10 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
             time.GetUtcNow(),
             null);
 
-    private static async Task<RtspProbeResult> ProbeRtspAsync(TcpClient client, Camera camera, CancellationToken ct)
+    private static async Task<RtspProbeResult> ProbeRtspAsync(TcpClient client, Camera camera, CameraStream videoStream, CancellationToken ct)
     {
         var stream = client.GetStream();
-        var requestUri = BuildRtspUri(camera);
+        var requestUri = BuildRtspUri(camera, videoStream);
         var request = $"OPTIONS {requestUri} RTSP/1.0\r\nCSeq: 1\r\nUser-Agent: Vyzio\r\n\r\n";
         var bytes = Encoding.ASCII.GetBytes(request);
 
@@ -135,11 +135,11 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
         return RtspProbeResult.Unknown;
     }
 
-    private static string BuildRtspUri(Camera camera)
+    private static string BuildRtspUri(Camera camera, CameraStream stream)
     {
         var builder = new UriBuilder("rtsp", camera.Host, camera.PortOf(SupportedProtocol.Rtsp));
 
-        if (camera.MainStream?.Path is { Length: > 0 } path)
+        if (stream.Path is { Length: > 0 } path)
         {
             builder.Path = path.TrimStart('/');
         }

@@ -74,7 +74,14 @@ test.describe('LiveView PTZ positions', () => {
     ptz: Partial<ReturnType<typeof createFakeBackendState>['ptz']> = {},
   ) {
     const state = createFakeBackendState({
-      cameras: [makeFakeCamera({ id: 'camera-1', displayName: 'Salon', ptzSupported: true })],
+      cameras: [
+        makeFakeCamera({
+          id: 'camera-1',
+          displayName: 'Salon',
+          ptzSupported: true,
+          verifiedCapabilities: ['ptz'],
+        }),
+      ],
     })
     state.ptz = { ...state.ptz, ...ptz }
     await installFakeBackend(page, state)
