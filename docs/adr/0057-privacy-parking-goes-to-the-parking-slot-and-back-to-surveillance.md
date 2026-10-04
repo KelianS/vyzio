@@ -1,6 +1,6 @@
 # ADR-57: Privacy parking goes to the Parking slot, and back to Surveillance
 
-> Status: Accepted
+> Status: Accepted, point c) (a position counts as saved when Vyzio holds its row) amended by [ADR-69](0069-the-camera-is-the-only-source-of-truth-for-native-presets.md) (the camera holds the native positions)
 >
 > Amends [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) on
 > the parking sequence (a continuous move to the mechanical stop on, `GotoPreset 1` off),

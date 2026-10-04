@@ -66,7 +66,7 @@ La logique `PtzParking` est inlinée dans `ToggleCameraPrivacyModeUseCase` via l
 `V380PtzProvider` reçoit `OnvifClient` par injection. `ProbeAsync` tente dans l'ordre : ConfigJson persisté → `OnvifClient.GetDeviceInformationAsync` (serial bytes[2..5] BE = device_id) → UDP broadcast. L'ONVIF fonctionne en TCP depuis Docker bridge, contrairement au UDP.
 
 ```
-Série ONVIF "9609019b8ae5" → bytes[2..5] = 0x019B8AE5 = 26970853 (device_id V380)
+Série ONVIF "960905397fb1" → bytes[2..5] = 0x05397FB1 = 87654321 (device_id V380)
 ```
 
 **6. `CameraCapability.PrivacyMode` → `CameraCapability.HardwarePrivacy`.**
