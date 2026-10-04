@@ -20,6 +20,10 @@ PRIVATE_IP = re.compile(
 )
 MAC = re.compile(r"(?<![0-9A-Fa-f:-])[0-9A-Fa-f]{2}([:-])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}(?![0-9A-Fa-f:-])")
 UUID = re.compile(r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}")
+HOSTNAMES = [
+    re.compile(r'"Host[Nn]ame"\s*:\s*"([^"]+)"'),
+    re.compile(r"<(?:\w+:)?HostnameInformation>.*?<(?:\w+:)?Name>([^<]+)<", re.DOTALL),
+]
 
 
 @dataclass(frozen=True)
@@ -96,6 +100,9 @@ class Scrubber:
             self._uuid(match.group(0))
         for match in PRIVATE_IP.finditer(text):
             self._ip(match.group(0))
+        for pattern in HOSTNAMES:
+            for match in pattern.finditer(text):
+                self.literals[match.group(1)] = NEUTRAL_VALUES["hostname"]
 
     def learn_mac(self, mac):
         bare = re.sub(r"[:-]", "", mac).lower()

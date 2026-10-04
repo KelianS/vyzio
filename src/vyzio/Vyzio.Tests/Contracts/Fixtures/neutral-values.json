@@ -6,6 +6,7 @@
   "otherHostPrefix": "192.0.2.",
   "macPrefix": "00:00:5E:00:53",
   "serial": "FIXTURESERIAL0001",
+  "hostname": "fixture-camera",
   "dvripSessionId": "0x00000042",
   "v380DeviceId": 12345678,
   "v380Ticket": 287454020,
