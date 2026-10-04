@@ -1,6 +1,6 @@
 # ADR-51 — Accès distant à l'interface : réseau overlay NetBird, guidé par Vyzio mais opéré par l'utilisateur
 
-> Statut : Accepté
+> Statut : Accepté, amendé par [ADR-67](0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md) (la confidentialité à distance est portée par l'overlay)
 
 ## Contexte
 

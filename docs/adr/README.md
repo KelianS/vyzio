@@ -60,7 +60,7 @@ references these ADRs rather than copying them.
 | [ADR-48](0048-one-day-minimum-retention-retention-is-tuned-not-turned-off.md) | One-day minimum retention: retention is tuned, not turned off | Accepted |
 | [ADR-49](0049-vyzio-does-not-persist-detections-history-is-frigates-list-enriched-on-read.md) | Vyzio does not persist detections: history is Frigate's list, enriched on read | Accepted |
 | [ADR-50](0050-the-messaging-channel-becomes-bidirectional-a-channel-agnostic-command-layer.md) | The messaging channel becomes bidirectional: a channel-agnostic command layer | Accepted, amended by ADR-63 (channel hours) |
-| [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md) | Remote access to the interface: a NetBird overlay network, guided by Vyzio but operated by the user | Accepted |
+| [ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md) | Remote access to the interface: a NetBird overlay network, guided by Vyzio but operated by the user | Accepted, amended by ADR-67 (the overlay carries the remote confidentiality) |
 | [ADR-52](0052-the-inbound-direction-uses-the-channels-native-bot-credentials-declared-per-direction.md) | The inbound direction uses the channel's native bot: credentials declared per direction | Accepted |
 | [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) | User documentation lives in the interface: three levels of help | Accepted |
 | [ADR-54](0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md) | Interface access guarded by an owner account, server session in a cookie | Accepted |
@@ -76,3 +76,4 @@ references these ADRs rather than copying them.
 | [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) | DVRIP native presets are detected by storing, then clearing, a spare slot | Accepted, amended by ADR-66 (the login deciding PTZ verified) |
 | [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) | Each video stream is a checked object with a role, under the stream binding | Accepted |
 | [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) | A capability is proven by a read, or confirmed by the user after trying it | Accepted |
+| [ADR-67](0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md) | The home network stays on HTTP, the overlay encrypts from outside | Accepted |
