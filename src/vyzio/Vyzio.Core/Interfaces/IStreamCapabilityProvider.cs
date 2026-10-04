@@ -10,4 +10,7 @@ namespace Vyzio.Core.Interfaces;
 public interface IStreamCapabilityProvider
 {
     SupportedProtocol Protocol { get; }
+
+    // Whether the stream is reachable only with a path read from the camera (RTSP), or by the protocol alone (DVRIP).
+    bool NeedsPath { get; }
 }

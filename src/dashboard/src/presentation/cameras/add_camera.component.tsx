@@ -17,6 +17,7 @@ import type { SettingDeclaration } from '../../common/settings/setting_declarati
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import { ASKS_STREAM_PATH } from './protocol_labels'
 import { resolveVendorLinkTarget } from './vendor_links'
 import {
   VENDOR_FAMILY_OPTIONS,
@@ -27,9 +28,6 @@ import {
 import { buildAddCameraPresenter } from './add_camera.presenter'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido'
-
-/** Discovery signal that unlocks the DVRIP fallback (ADR-32). */
-const DVRIP_SIGNAL = 'dvrip_port_detected'
 
 /** Adding a camera is one task, one page (ADR-40): find, fill in, verify, add — technical facts under "Advanced". */
 export function AddCameraView() {
@@ -63,7 +61,8 @@ export function AddCameraView() {
   }, [presenter, uido.discoveryResults, uido.selection])
 
   const vendorFamily = uido.form.vendorFamily ?? null
-  const connected = uido.verification?.connected ?? false
+  // A candidate whose stream is ready needs no activation notice, whatever its protocol.
+  const connected = (uido.verification?.connected ?? false) || Boolean(candidate?.stream)
   useEffect(() => {
     void presenter.onVendorAssistanceNeeded(vendorFamily, uido.form.streamPath, connected)
   }, [presenter, vendorFamily, uido.form.streamPath, connected])
@@ -83,27 +82,24 @@ export function AddCameraView() {
       ? { title: 'Adresse saisie à la main', detail: uido.form.host || 'Adresse à renseigner' }
       : null
 
-  // No reachable stream and no fallback: the camera must be opened from its app first.
-  const needsActivation = Boolean(candidate && !candidate.streamPath && !uido.dvripMode)
-  const dvripAvailable = Boolean(
-    candidate?.qualificationReasons.includes(DVRIP_SIGNAL) && !candidate.streamPath,
-  )
-  const showForm =
-    uido.selection.kind === 'manual' || Boolean(candidate?.streamPath) || uido.dvripMode
+  // No protocol serves the stream yet: the camera must be opened from its app first.
+  const needsActivation = Boolean(candidate && !candidate.stream)
+  const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
+  const hasPath = ASKS_STREAM_PATH[uido.form.streamProtocol]
   const canVerify =
     showForm &&
     !needsActivation &&
     Boolean(
       uido.form.displayName.trim() &&
       uido.form.host.trim() &&
-      (uido.dvripMode || uido.form.streamPath?.trim()),
+      (!hasPath || uido.form.streamPath?.trim()),
     )
-  // DVRIP mode has no draft verification: the stream only exists once opened by that protocol.
-  const canAdd = Boolean(uido.verification?.connected) || uido.dvripMode
+  // Over a pathless stream, adding does not wait for a draft check: the camera is checked once added.
+  const canAdd = Boolean(uido.verification?.connected) || !hasPath
 
   async function add() {
     const createdId = await presenter.onCreate(
-      uido.dvripMode,
+      !hasPath,
       Boolean(uido.verification?.connected),
       uido.form,
     )
@@ -135,7 +131,7 @@ export function AddCameraView() {
     },
   ]
 
-  if (!uido.dvripMode) {
+  if (hasPath) {
     declarations.push({
       id: 'add-stream-path',
       label: 'Chemin du flux',
@@ -294,25 +290,6 @@ export function AddCameraView() {
           </SettingsSection>
         )}
 
-        {dvripAvailable && (
-          <SettingsSection title="Autre façon de la joindre">
-            <SettingsList
-              settings={[
-                {
-                  id: 'add-dvrip',
-                  label: 'Mode de connexion alternatif',
-                  nature: { kind: 'toggle' },
-                  help: 'Pour les caméras ICSee, Annke, Sannce, Zosi et marques proches, dont le flux standard n’est pas toujours accessible. Sur batterie, réveillez la caméra depuis son application avant d’essayer.',
-                  consequence:
-                    'À n’activer que si la connexion standard ne fonctionne pas : Vyzio joint alors la caméra par son protocole propriétaire.',
-                  value: uido.dvripMode,
-                  onChange: (value) => presenter.onDvripModeToggle(value as boolean, candidate),
-                },
-              ]}
-            />
-          </SettingsSection>
-        )}
-
         {showForm && (
           <SettingsSection title="Connexion" lede="Comment Vyzio joindra cette caméra.">
             <SettingsList settings={declarations} />
@@ -397,8 +374,8 @@ function CandidateRow({
           <Badge tone={recognised ? 'ok' : 'neutral'}>
             {vendor ?? (recognised ? 'Marque connue' : 'Marque inconnue')}
           </Badge>
-          <Badge tone={candidate.streamPath ? 'ok' : 'warn'}>
-            {candidate.streamPath ? 'Prête' : 'À préparer'}
+          <Badge tone={candidate.stream ? 'ok' : 'warn'}>
+            {candidate.stream ? 'Prête' : 'À préparer'}
           </Badge>
         </span>
       </SelectableRow>

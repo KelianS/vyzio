@@ -35,7 +35,7 @@ import {
   streamBindingOf,
   streamProtocolFailureLine,
 } from '../capability_state'
-import { NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
+import { ASKS_STREAM_PATH, NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
 import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
 import { ManualCapability } from './manual_capability_form'
@@ -78,15 +78,6 @@ interface CapabilitySectionProps {
   /** The stream's main path, a declared setting that follows the page's draft (ADR-41). */
   streamPath: SettingDeclaration
   intents: CapabilityIntents
-}
-
-// Only an RTSP stream is addressed by a path; DVRIP derives it from the protocol (ADR-61).
-const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
-  rtsp: true,
-  dvrip: false,
-  onvif: false,
-  v380: false,
-  tapo_klap: false,
 }
 
 export function CapabilitySection({

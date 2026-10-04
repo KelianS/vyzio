@@ -10,9 +10,13 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 public sealed class RtspStreamProvider : IStreamCapabilityProvider
 {
     public SupportedProtocol Protocol => SupportedProtocol.Rtsp;
+
+    public bool NeedsPath => true;
 }
 
 public sealed class DvripStreamProvider : IStreamCapabilityProvider
 {
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
+
+    public bool NeedsPath => false;
 }

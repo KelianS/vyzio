@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
+using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
 using Vyzio.Tests.Services.Hosting;
@@ -17,6 +18,10 @@ public class AssistedCameraDiscoveryServiceTests
     private readonly FakeTimeProvider _time = BackgroundLoop.ClockAt("2026-09-23T10:00:00+00:00");
 
     private AssistedCameraDiscoveryService Discovery(VyzioRuntimeSettings settings) => new(settings, _time);
+
+    // With the production stream providers, so the candidate's ready stream is decided (ADR-61 b).
+    private AssistedCameraDiscoveryService DiscoveryWithStreams(VyzioRuntimeSettings settings)
+        => new(settings, _time, new CapabilityProviderRegistry([], [], [], [new RtspStreamProvider(), new DvripStreamProvider()]));
 
     // Every probe here must land on a loopback listener this test owns, on a port the OS just
     // handed out — never a well-known one, which collides with whatever the machine happens to be
@@ -576,24 +581,7 @@ public class AssistedCameraDiscoveryServiceTests
         var dvripPort = PortOf(listener);
 
         using var stopServer = new CancellationTokenSource();
-        var serverTask = Task.Run(async () =>
-        {
-            try
-            {
-                while (!stopServer.IsCancellationRequested)
-                {
-                    using var client = await listener.AcceptTcpClientAsync(stopServer.Token);
-                    using var stream = client.GetStream();
-                    var buffer = new byte[128];
-                    _ = await stream.ReadAsync(buffer, stopServer.Token);
-                    // DVRIP fingerprint only checks the first byte is the 0xFF magic.
-                    await stream.WriteAsync(new byte[] { 0xFF, 0x01, 0x00, 0x00 }, stopServer.Token);
-                    await stream.FlushAsync(stopServer.Token);
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch (System.Net.Sockets.SocketException) { }
-        });
+        var serverTask = RespondDvripAsync(listener, stopServer.Token);
 
         var sut = Discovery(HermeticSettings(
             scanPorts: [dvripPort],
@@ -651,4 +639,111 @@ public class AssistedCameraDiscoveryServiceTests
         // No protocol confirmed → not a camera.
         Assert.Equal("device_unknown", candidate.Qualification);
     }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldBeReadyOverDvrip_WhenOnlyDvripAnswers()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var dvripPort = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondDvripAsync(listener, stopServer.Token);
+        var sut = DiscoveryWithStreams(HermeticSettings(
+            scanPorts: [dvripPort],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [dvripPort] = SupportedProtocol.Dvrip }));
+
+        // Act
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        var candidate = Assert.Single(result, item => item.Host == Loopback);
+        Assert.Equal(new DiscoveredStream(SupportedProtocol.Dvrip, dvripPort, null), candidate.Stream);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldBeReadyOverRtspWithItsPath_WhenDescribeFindsAStreamPath()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var rtspPort = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
+        var sut = DiscoveryWithStreams(HermeticSettings(rtspPorts: [rtspPort]));
+
+        // Act
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        var candidate = Assert.Single(result, item => item.Host == Loopback && item.Port == rtspPort);
+        Assert.Equal(new DiscoveredStream(SupportedProtocol.Rtsp, rtspPort, "/stream1"), candidate.Stream);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldNotBeReady_WhenRtspAnswersButNoStreamPathIsKnown()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var rtspPort = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
+        var sut = DiscoveryWithStreams(HermeticSettings(
+            scanPorts: [rtspPort],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [rtspPort] = SupportedProtocol.Rtsp }));
+
+        // Act
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        var candidate = Assert.Single(result, item => item.Host == Loopback);
+        Assert.Equal(SupportedProtocol.Rtsp.ToString(), Assert.Single(candidate.TechnicalDetails!.DetectedPorts).Protocol);
+        Assert.Null(candidate.Stream);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldNotBeReady_WhenOnlyAProtocolThatCannotCarryTheStreamAnswers()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var onvifPort = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondOnvifAsync(listener, stopServer.Token);
+        var sut = DiscoveryWithStreams(HermeticSettings(
+            scanPorts: [onvifPort],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
+
+        // Act
+        var result = await sut.DiscoverAsync().ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        var candidate = Assert.Single(result, item => item.Host == Loopback);
+        Assert.Equal("camera_confirmed", candidate.Qualification);
+        Assert.Null(candidate.Stream);
+    }
+
+    // Loop-accept helper: answers every request with the DVRIP 0xFF magic the fingerprint checks.
+    private static Task RespondDvripAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var buffer = new byte[128];
+                _ = await stream.ReadAsync(buffer, ct);
+                await stream.WriteAsync(new byte[] { 0xFF, 0x01, 0x00, 0x00 }, ct);
+                await stream.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (System.Net.Sockets.SocketException) { }
+    }, ct);
 }

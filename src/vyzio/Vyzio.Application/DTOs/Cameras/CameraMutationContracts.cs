@@ -1,4 +1,5 @@
 using System.Linq;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
@@ -51,7 +52,8 @@ public sealed record DiscoveredCameraDto(
     string? VendorFamily,
     IReadOnlyList<string> QualificationReasons,
     VendorDocumentationDto? VendorDocumentation,
-    DiscoveryTechnicalDetailsDto? TechnicalDetails)
+    DiscoveryTechnicalDetailsDto? TechnicalDetails,
+    DiscoveredStreamDto? Stream)
 {
     public static DiscoveredCameraDto From(CameraDiscoveryCandidate candidate) => new(
         candidate.DisplayName,
@@ -69,7 +71,15 @@ public sealed record DiscoveredCameraDto(
         candidate.VendorFamily,
         candidate.QualificationReasons,
         VendorDocumentationDto.From(candidate.VendorDocumentation),
-        DiscoveryTechnicalDetailsDto.From(candidate.TechnicalDetails));
+        DiscoveryTechnicalDetailsDto.From(candidate.TechnicalDetails),
+        DiscoveredStreamDto.From(candidate.Stream));
+}
+
+// The stream the candidate is ready with (null: to prepare), as the add form takes it.
+public sealed record DiscoveredStreamDto(string Protocol, int Port, string? Path)
+{
+    public static DiscoveredStreamDto? From(DiscoveredStream? stream)
+        => stream is null ? null : new(SnakeCaseEnum.ToSnakeCase(stream.Protocol), stream.Port, stream.Path);
 }
 
 public sealed record DetectedPortSignalDto(string Protocol, string Label, int Port)

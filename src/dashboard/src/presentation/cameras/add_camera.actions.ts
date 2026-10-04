@@ -7,12 +7,6 @@ export type AddCameraAction =
   | { type: 'MANUAL_ENTRY_SELECTED' }
   | { type: 'SELECTION_CLEARED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }
-  | {
-      type: 'DVRIP_MODE_TOGGLED'
-      enabled: boolean
-      fallbackPort: number
-      fallbackStreamPath: string | null
-    }
   | { type: 'DISCOVERY_STARTED' }
   | { type: 'DISCOVERY_SUCCEEDED'; candidates: DiscoveredCamera[]; message: string }
   | { type: 'DISCOVERY_FAILED'; message: string; diagnostic?: string }

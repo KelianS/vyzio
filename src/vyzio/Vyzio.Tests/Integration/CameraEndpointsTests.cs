@@ -253,6 +253,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.False(candidate.IsSupported);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
+        Assert.Null(candidate.Stream);
     }
 
     [Fact]
@@ -271,6 +272,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Equal("Front Door", candidate.DisplayName);
         Assert.True(candidate.RtspActive);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
+        Assert.Equal(new DiscoveredStreamResponse("rtsp", 554, "/Streaming/Channels/101"), candidate.Stream);
     }
 
     [Fact]
@@ -449,7 +451,9 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string? MacAddress, bool IsSupported, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons);
+    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string? MacAddress, bool IsSupported, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons, DiscoveredStreamResponse? Stream);
+
+    public sealed record DiscoveredStreamResponse(string Protocol, int Port, string? Path);
 
     public sealed record VendorAssistanceResponse(string VendorFamily, string Markdown);
 
@@ -570,7 +574,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                 target is not null && string.Equals(target.Host, "192.168.1.10", StringComparison.OrdinalIgnoreCase)
                     ?
                     [
-                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["rtsp_responding", "mac_address_observed"])
+                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["rtsp_responding", "mac_address_observed"], Stream: new DiscoveredStream(SupportedProtocol.Rtsp, 554, "/Streaming/Channels/101"))
                     ]
                     :
                     [

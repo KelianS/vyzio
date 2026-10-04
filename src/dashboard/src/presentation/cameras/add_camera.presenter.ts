@@ -64,15 +64,6 @@ export function buildAddCameraPresenter({
       dispatch({ type: 'CANDIDATE_SELECTED', index, candidate })
     },
 
-    onDvripModeToggle(enabled: boolean, candidate: DiscoveredCamera | null) {
-      dispatch({
-        type: 'DVRIP_MODE_TOGGLED',
-        enabled,
-        fallbackPort: candidate?.port ?? 554,
-        fallbackStreamPath: candidate?.streamPath ?? null,
-      })
-    },
-
     async onDiscover(): Promise<void> {
       dispatch({ type: 'DISCOVERY_STARTED' })
       try {
@@ -109,7 +100,7 @@ export function buildAddCameraPresenter({
           type: 'REFRESH_CANDIDATE_SUCCEEDED',
           index,
           candidate: refreshed,
-          message: refreshed.streamPath
+          message: refreshed.stream
             ? 'La caméra est maintenant joignable.'
             : 'Informations mises à jour, mais la caméra n’est toujours pas joignable.',
         })
@@ -137,11 +128,11 @@ export function buildAddCameraPresenter({
 
     /** Returns the created camera's id so the screen can open it, or `null` on failure. */
     async onCreate(
-      dvripMode: boolean,
+      checkedOnceAdded: boolean,
       verified: boolean,
       form: AddCameraForm,
     ): Promise<string | null> {
-      if (!dvripMode && !verified) {
+      if (!checkedOnceAdded && !verified) {
         dispatch({
           type: 'CREATE_FAILED',
           message: 'Vérifiez la connexion avant d’ajouter la caméra.',

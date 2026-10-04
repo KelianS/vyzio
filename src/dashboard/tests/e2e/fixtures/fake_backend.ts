@@ -620,6 +620,7 @@ export async function installFakeBackend(
           supportLevel: 'full',
           vendorFamily: null,
           qualificationReasons: [],
+          stream: { protocol: 'rtsp', port: 554, path: '/Streaming/Channels/101' },
           vendorDocumentation: null,
           technicalDetails: {
             resolvedHostName: null,
