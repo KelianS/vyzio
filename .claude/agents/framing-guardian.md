@@ -38,7 +38,7 @@ Given a branch diff (`git diff origin/main...HEAD`) or an issue:
    measurements in its hardware sheet.
 6. **Scope.** Does a new or changed ADR fall outside the cases WORKFLOW § Writing discipline allows
    one, or describe what that section sends elsewhere? Does the DESIGN SYSTEM gain one feature's
-   behaviour rather than a reusable pattern? Each is blocking; a decision that does not meet the ADR
+   behaviour rather than a part of the design system? Each is blocking; a decision that does not meet the ADR
    bar is not a missing ADR (check 1).
 7. **Discipline.** Does the SAD state the target in the present tense, with no history? Is an
    abandoned option only in the "Options rejected" section of its ADR? Is an accepted ADR left
@@ -63,5 +63,5 @@ Notes
 ```
 
 Blocking means the code gets ahead of a document the mandated order requires, contradicts an
-accepted decision, changes the system's shape without the SAD, or a document copies the code or
-restates an ADR. Cite a location for every finding. An empty section is written `none`.
+accepted decision, changes the system's shape without the SAD, a document copies the code or
+restates an ADR, or an ADR or the DESIGN SYSTEM leaves its scope (check 6). Cite a location for every finding. An empty section is written `none`.

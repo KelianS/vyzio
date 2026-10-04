@@ -6,8 +6,8 @@ order; starting the implementation before the upstream documents are aligned is 
 ## Mandated order
 
 1. **SPECS** ([`SPECS.md`](SPECS.md)) if the product need changes: user stories, journeys, product scope.
-2. **ADR** ([`adr/`](adr/)) for an architectural choice, and the **SAD** ([`SAD.md`](SAD.md)) when the
-   system's shape changes (§ The SAD).
+2. **ADR** ([`adr/`](adr/)) for a structural choice (§ Writing discipline), and the **SAD**
+   ([`SAD.md`](SAD.md)) when the system's shape changes (§ The SAD).
 3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
    dependencies, definition of done. An issue leans on the documents above, it does not re-decide them.
 4. **Implementation**, minimal code, consistent with the validated documents.
@@ -32,8 +32,8 @@ order; starting the implementation before the upstream documents are aligned is 
 |---|---|---|---|
 | **SPECS** | Need, journeys, product scope | [`SPECS.md`](SPECS.md) | medium |
 | **SAD** | The system overview, and what the code does not easily show (§ The SAD) | [`SAD.md`](SAD.md) | high |
-| **ADR** | One architectural decision per file (Context, Options, Decision, Consequences) | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
-| **Design system** | The dashboard's reusable UI patterns only (§ Writing discipline) | [`DESIGN SYSTEM.md`](DESIGN%20SYSTEM.md) | high |
+| **ADR** | One structural decision per file (Context, Options, Decision, Consequences), § Writing discipline | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
+| **Design system** | The dashboard's design system, never one feature (§ Writing discipline) | [`DESIGN SYSTEM.md`](DESIGN%20SYSTEM.md) | high |
 | **Hardware sheet** | The raw measurements of one camera model, each dated; measurements only, no decision and no *how* | [`hardware/`](hardware/), one `.md` per model | grows with each measurement |
 | **Investigation** | Exploration, trials, reverse engineering, captures | [`investigations/`](investigations/) | disposable |
 | **User help** | How to use a delivered feature | the screen that carries it, in code (ADR-53) | follows the feature |
@@ -86,8 +86,9 @@ Each document has a **nature**; respecting it is what stops it from swelling and
   costs a migration, a contract change, a new container or a new dependency. An ADR never describes a
   state, a wording or a screen: that is SPECS; what a camera model does is its hardware sheet; the
   *how* is the code and its tests.
-- **The DESIGN SYSTEM describes reusable patterns only**, never one feature's behaviour: that is
-  SPECS, or the code and its tests.
+- **The DESIGN SYSTEM describes the design system only**: intent, tokens, components, reusable
+  patterns, the shared UX vocabulary and the bans. Never one feature's behaviour: that is SPECS, or
+  the code and its tests.
 - **Do not paraphrase the code, in any document.** The SQL schema, signatures, byte frames, route lists
   and every tuned value have their home in the code. No document copies a code constant (a timeout, a
   port, a slot number, a topic): it names the behaviour, and the code holds the value. **An ADR

@@ -5,10 +5,11 @@ order**, the **document architecture**, the rules of **the SAD** and the **writi
 in [`WORKFLOW.md`](WORKFLOW.md), the single home of documentation governance.
 
 Where to write what: a **structural decision** goes in an ADR under [`adr/`](adr/), within the bar
-that WORKFLOW § Writing discipline sets; a feature's **behaviour** goes in [`SPECS.md`](SPECS.md),
-never in an ADR or the DESIGN SYSTEM; the **system overview** goes in [`SAD.md`](SAD.md), which
-names ADRs rather than restating them; the **how** of a component stays in the code and its tests; a
-camera model's **measurements** go to its sheet under [`hardware/`](hardware/).
+that WORKFLOW § Writing discipline sets; a feature's **behaviour** goes in [`SPECS.md`](SPECS.md)
+or the code and its tests, never in an ADR or the DESIGN SYSTEM; the **system overview** goes in
+[`SAD.md`](SAD.md), which names ADRs rather than restating them; the **how** of a component stays in
+the code and its tests; a camera model's **measurements** go to its sheet under
+[`hardware/`](hardware/).
 
 A reminder of the rules broken most often: **a SAD states the target, not the history**, the SAD
 names no class, file or code layout, and **no document copies a code constant or restates an ADR**.
