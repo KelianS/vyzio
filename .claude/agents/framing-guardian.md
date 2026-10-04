@@ -36,12 +36,16 @@ Given a branch diff (`git diff origin/main...HEAD`) or an issue:
    copied? Does any document, an ADR included, copy a code constant or restate an ADR? Each is
    blocking (WORKFLOW § Writing discipline). Low-level detail belongs in the code; a camera model's
    measurements in its hardware sheet.
-6. **Discipline.** Does the SAD state the target in the present tense, with no history? Is an
+6. **Scope.** Does a new or changed ADR fall outside the cases WORKFLOW § Writing discipline allows
+   one, or describe what that section sends elsewhere? Does the DESIGN SYSTEM gain one feature's
+   behaviour rather than a reusable pattern? Each is blocking; a decision that does not meet the ADR
+   bar is not a missing ADR (check 1).
+7. **Discipline.** Does the SAD state the target in the present tense, with no history? Is an
    abandoned option only in the "Options rejected" section of its ADR? Is an accepted ADR left
    unchanged but for its status line and the mechanical link fix WORKFLOW allows, a superseded one
    marked rather than deleted, and the ADR index updated?
-7. **Help.** Does a user-facing feature carry its help in the screen (ADR-53), not in a markdown file?
-8. **Language.** English everywhere except `docs/SPECS.md`.
+8. **Help.** Does a user-facing feature carry its help in the screen (ADR-53), not in a markdown file?
+9. **Language.** English everywhere except `docs/SPECS.md`.
 
 ## What you return
 
