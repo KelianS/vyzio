@@ -85,7 +85,7 @@ public class GetCameraStatusUseCaseTests
             Host = "192.168.1.11",
             ValidationState = CameraValidationState.Draft,
             Status = "needs_attention"
-        }.WithStream(SupportedProtocol.Rtsp);
+        }.WithStream(SupportedProtocol.Rtsp, path: "/stream1");
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
 
@@ -93,7 +93,7 @@ public class GetCameraStatusUseCaseTests
 
         Assert.NotNull(result);
         Assert.True(result!.NeedsAttention);
-        Assert.Equal("Configuration incomplete. Ajoutez le chemin RTSP, puis lancez la verification.", result.Guidance);
+        Assert.Equal("Configuration incomplete. Verifiez le flux avant d'appliquer la configuration.", result.Guidance);
     }
 
     [Fact]
@@ -240,9 +240,10 @@ public class CreateCameraUseCaseTests
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityOnboardingQueue _queue = Substitute.For<ICameraCapabilityOnboardingQueue>();
     private readonly IFrigateConfigApplier _configApplier = Substitute.For<IFrigateConfigApplier>();
+    private readonly ICameraStreamEnumerator _enumerator = CapabilityTestUseCases.NothingEnumerated();
     private readonly CreateCameraUseCase _sut;
 
-    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier, CapabilityTestUseCases.StreamRegistry());
+    public CreateCameraUseCaseTests() => _sut = new CreateCameraUseCase(_repo, _queue, _configApplier, CapabilityTestUseCases.StreamRegistry(), _enumerator, TimeProvider.System);
 
     [Fact]
     public async Task ExecuteAsync_ShouldCreateADisabledDraftWithASlug_WhenTheSlugIsFree()
@@ -276,7 +277,7 @@ public class CreateCameraUseCaseTests
         _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
 
-        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("rtsp", null, null)));
+        await _sut.ExecuteAsync(new CreateCameraRequest("Garage", "192.168.1.20", null, null, null, new CreateCameraStreamRequest("rtsp", null, "stream1")));
 
         // Otherwise the trigger stays hidden, and its absence says everything is in service (ADR-44).
         await _configApplier.Received(1).WriteConfigAsync(
@@ -312,7 +313,38 @@ public class CreateCameraUseCaseTests
 
         // Assert
         Assert.Equal(8554, added!.Protocol(SupportedProtocol.Rtsp)?.Port);
-        Assert.Equal("/stream1", added.MainStream?.Path);
+        Assert.Equal("/stream1", added.Streams.FirstOrDefault()?.Path);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLayOutTheStreamsTheCameraLists_WhenAnRtspCameraIsCreatedWithoutAPath()
+    {
+        // Arrange
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+        _enumerator.EnumerateAsync(Arg.Any<Camera>(), SupportedProtocol.Rtsp, Arg.Any<CancellationToken>())
+            .Returns([new EnumeratedScene("scene", [new EnumeratedStream("/main", 1920, 1080, 25), new EnumeratedStream("/sub", 640, 360, 25)])]);
+        Camera? added = null;
+        await _repo.AddAsync(Arg.Do<Camera>(camera => added = camera), Arg.Any<CancellationToken>());
+
+        // Act
+        await _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("rtsp", null, null)));
+
+        // Assert
+        Assert.Equal(["/main", "/sub"], added!.Streams.Select(stream => stream.Path));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuseWithoutAddingTheCamera_WhenAnRtspCameraWithoutAPathListsNoStream()
+    {
+        // Arrange
+        _repo.GetBySlugAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Camera?)null);
+
+        // Act
+        var act = () => _sut.ExecuteAsync(new CreateCameraRequest("Porch", "192.168.1.21", null, null, null, new CreateCameraStreamRequest("rtsp", null, null)));
+
+        // Assert
+        await Assert.ThrowsAsync<StreamPathRequiredException>(act);
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -340,9 +372,9 @@ public class VerifyCameraUseCaseTests
 
     public VerifyCameraUseCaseTests()
     {
-        _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>())
             .Returns([]);
-        _sut = new VerifyCameraUseCase(_repo, _bindings, _verifier, _streamEnumerator, new CameraProtocolCheck(_protocols, TimeProvider.System));
+        _sut = new VerifyCameraUseCase(_repo, _bindings, _verifier, _streamEnumerator, new CameraProtocolCheck(_protocols, TimeProvider.System), TimeProvider.System);
     }
 
     [Fact]
@@ -358,7 +390,7 @@ public class VerifyCameraUseCaseTests
         };
 
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
-        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+        _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture)));
 
         var result = await _sut.ExecuteAsync(camera.Id);
@@ -370,7 +402,7 @@ public class VerifyCameraUseCaseTests
 
     // ── Stream enumeration on verification (ADR-38) ──
 
-    private Camera GivenReachableCamera(string? mainPath = "/stream1")
+    private Camera GivenReachableCamera(string? path = "/stream1")
     {
         var camera = new Camera
         {
@@ -379,16 +411,16 @@ public class VerifyCameraUseCaseTests
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "192.168.1.10",
-        }.WithStream(SupportedProtocol.Rtsp, path: mainPath);
+        }.WithStream(SupportedProtocol.Rtsp, path: path);
         _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
         _bindings.GetAsync(camera.Id, CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
-        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+        _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
         return camera;
     }
 
     private void GivenEnumeratedStreams(params EnumeratedStream[] streams)
-        => _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>())
+        => _streamEnumerator.EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>())
             .Returns([new EnumeratedScene("source0", streams)]);
 
     [Fact]
@@ -408,17 +440,20 @@ public class VerifyCameraUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRefreshTheMainStreamSize_WhenBothAddressesAgree()
+    public async Task ExecuteAsync_ShouldRefreshAStreamSize_WhenTheCameraReportsItsAddress()
     {
+        // Arrange
         var camera = GivenReachableCamera("/stream1");
         GivenEnumeratedStreams(new EnumeratedStream("stream1", 640, 480, 12));
 
+        // Act
         await _sut.ExecuteAsync(camera.Id);
 
-        var main = camera.MainStream!;
-        Assert.Equal("/stream1", main.Path);
-        Assert.Equal(640, main.Width);
-        Assert.Equal(480, main.Height);
+        // Assert
+        var stream = Assert.Single(camera.Streams);
+        Assert.Equal("/stream1", stream.Path);
+        Assert.Equal(640, stream.Width);
+        Assert.Equal(480, stream.Height);
     }
 
     // A vendor alias: the camera answers on /stream1 but advertises a different address at 1080p.
@@ -426,38 +461,102 @@ public class VerifyCameraUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldRefuseTheAdvertisedSize_WhenItBelongsToADifferentAddress()
     {
+        // Arrange
         var camera = GivenReachableCamera("/stream1");
         GivenEnumeratedStreams(
             new EnumeratedStream("/live/ch00_1", 1920, 1080, 20),
             new EnumeratedStream("/live/ch00_0", 640, 480, 25));
 
+        // Act
         await _sut.ExecuteAsync(camera.Id);
 
-        var main = camera.MainStream!;
-        Assert.Equal("/stream1", main.Path);
-        Assert.Null(main.Width);
-        Assert.Null(main.Height);
-
-        // The sub-stream is a coherent address/size pair, so it keeps both.
-        var sub = camera.Streams.Single(stream => stream.Ordinal == 1);
-        Assert.Equal("/live/ch00_0", sub.Path);
-        Assert.Equal(640, sub.Width);
+        // Assert
+        var typed = camera.Streams.Single(stream => stream.Path == "/stream1");
+        Assert.Null(typed.Width);
+        Assert.Null(typed.Height);
+        Assert.Equal(1920, camera.Streams.Single(stream => stream.Path == "/live/ch00_1").Width);
+        Assert.Equal(640, camera.Streams.Single(stream => stream.Path == "/live/ch00_0").Width);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldDropTheSubStreamAndTheChoicePointingAtIt_WhenTheSubStreamDisappeared()
+    public async Task ExecuteAsync_ShouldRecordOnTheMainAndDetectOnTheLightest_WhenTheStreamsAreFoundFirst()
     {
+        // Arrange
         var camera = GivenReachableCamera();
-        var sub = new CameraStream { CameraId = camera.Id, Ordinal = 1, Path = "/stream2" };
-        camera.Streams.Add(sub);
-        camera.DetectStreamId = sub.Id;
+        GivenEnumeratedStreams(
+            new EnumeratedStream("/stream1", 2304, 1296, 12),
+            new EnumeratedStream("/stream2", 640, 360, 12));
 
-        GivenEnumeratedStreams(new EnumeratedStream("/stream1", 1920, 1080, 12));
-
+        // Act
         await _sut.ExecuteAsync(camera.Id);
 
-        Assert.DoesNotContain(camera.Streams, stream => stream.Ordinal == 1);
-        Assert.Null(camera.DetectStreamId);
+        // Assert
+        Assert.Equal(StreamRole.Record, camera.Streams.First().Role);
+        Assert.Equal("/stream2", camera.DetectStream!.Path);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepAStreamTheCameraNoLongerReports_WhenTheStreamsWereAlreadyFound()
+    {
+        // Arrange
+        var camera = GivenReachableCamera();
+        GivenEnumeratedStreams(new EnumeratedStream("/stream1", 1920, 1080, 12), new EnumeratedStream("/stream2", 640, 360, 12));
+        await _sut.ExecuteAsync(camera.Id);
+        GivenEnumeratedStreams(new EnumeratedStream("/stream1", 1920, 1080, 12));
+
+        // Act
+        await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Contains(camera.Streams, stream => stream.Path == "/stream2");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldNotBringBackARemovedStream_WhenTheStreamsWereAlreadyFound()
+    {
+        // Arrange
+        var camera = GivenReachableCamera();
+        GivenEnumeratedStreams(new EnumeratedStream("/stream1", 1920, 1080, 12), new EnumeratedStream("/stream2", 640, 360, 12));
+        await _sut.ExecuteAsync(camera.Id);
+        StreamLineup.Remove(camera.StreamBinding!, camera.Streams.Single(stream => stream.Path == "/stream2"));
+
+        // Act
+        await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.Single(camera.Streams);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCheckEveryStream_WhenTheCameraIsVerified()
+    {
+        // Arrange
+        var camera = GivenReachableCamera();
+        var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
+        _verifier.VerifyAsync(camera, sub, Arg.Any<CancellationToken>()).Returns(
+            new CameraVerificationResult(true, false, "degraded", "No answer on this path.", DateTimeOffset.UtcNow, null));
+
+        // Act
+        await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.True(camera.Streams.First().Verified);
+        Assert.False(sub.Verified);
+        Assert.Equal("No answer on this path.", sub.LastError);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCheckAStreamWithNoRole_WhenTheCameraIsVerified()
+    {
+        // Arrange
+        var camera = GivenReachableCamera();
+        var sub = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.None);
+
+        // Act
+        await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.NotNull(sub.CheckedAt);
     }
 
     [Fact]
@@ -489,7 +588,7 @@ public class VerifyCameraUseCaseTests
         // Assert
         Assert.Equal("needs_attention", result!.Status);
         Assert.Equal("RTSP: 192.168.1.10:554 refused the account (401 Unauthorized).", camera.StreamBinding!.LastError);
-        await _verifier.DidNotReceive().VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+        await _verifier.DidNotReceive().VerifyAsync(Arg.Any<Camera>(), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -497,7 +596,7 @@ public class VerifyCameraUseCaseTests
     {
         // Arrange
         var camera = GivenReachableCamera();
-        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+        _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
 
         // Act
@@ -512,13 +611,13 @@ public class VerifyCameraUseCaseTests
     public async Task ExecuteAsync_ShouldKeepTheStreamsItAlreadyHad_WhenTheCameraIsUnreachable()
     {
         var camera = GivenReachableCamera();
-        _verifier.VerifyAsync(camera, Arg.Any<CancellationToken>()).Returns(
+        _verifier.VerifyAsync(camera, Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(false, false, "offline", "Unreachable.", DateTimeOffset.UtcNow, null));
 
         await _sut.ExecuteAsync(camera.Id);
 
-        Assert.Equal("/stream1", camera.MainStream?.Path);
-        await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+        Assert.Equal("/stream1", camera.Streams.FirstOrDefault()?.Path);
+        await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
     }
 }
 
@@ -536,7 +635,7 @@ public class VerifyDraftCameraUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldProjectTheStatusOfATransientDraft_WhenTheCameraIsNotSavedYet()
     {
-        _verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>()).Returns(
+        _verifier.VerifyAsync(Arg.Any<Camera>(), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>()).Returns(
             new CameraVerificationResult(true, true, "online", "Verified.", DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture), DateTimeOffset.Parse("2026-05-12T10:00:00+00:00", CultureInfo.InvariantCulture)));
 
         var result = await _sut.ExecuteAsync(new CreateCameraRequest(
@@ -553,8 +652,8 @@ public class VerifyDraftCameraUseCaseTests
         await _verifier.Received(1).VerifyAsync(Arg.Is<Camera>(camera =>
             camera.DisplayName == "Front Door"
             && camera.Host == "192.168.1.10"
-            && camera.MainStream!.Path == "/Streaming/Channels/101"
-            && camera.ValidationState == CameraValidationState.Draft), Arg.Any<CancellationToken>());
+            && camera.Streams.First().Path == "/Streaming/Channels/101"
+            && camera.ValidationState == CameraValidationState.Draft), Arg.Any<CameraStream?>(), Arg.Any<CancellationToken>());
     }
 }
 

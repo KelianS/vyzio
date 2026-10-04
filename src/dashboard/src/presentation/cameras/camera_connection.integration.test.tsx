@@ -5,10 +5,21 @@ import { makeCamera } from '../../testing/camera_fixture'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { CapabilityStatus } from '../../domain/entities/camera_capability_binding.entity'
 import { makeCameraProtocol as protocolRow } from '../../testing/camera_protocol_fixture'
-import { failure, fakeNetwork, ok } from '../../testing/fake_network'
+import {
+  makeAvailableStream,
+  makeCameraStream,
+  makeStreamLineup,
+} from '../../testing/camera_stream_fixture'
+import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
 import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
+import {
+  DETECTION_FALLS_BACK,
+  RECORDING_STREAM_KEPT,
+  ROLE_CONSEQUENCES,
+  streamFailure,
+} from './stream_lines'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const UPDATE = 'PUT /api/cameras/camera-1'
@@ -19,8 +30,9 @@ const PROBE_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/probe'
 const CAMERAS = 'GET /api/cameras'
 const STATS = 'GET /api/system/stats'
 const PROTOCOLS = 'GET /api/cameras/camera-1/protocols'
-const STREAM_PATH = 'PUT /api/cameras/camera-1/capabilities/stream/path'
 const SEARCH = 'POST /api/cameras/camera-1/protocols/search'
+const STREAMS = 'GET /api/cameras/camera-1/streams'
+const AVAILABLE = 'GET /api/cameras/camera-1/streams/available'
 const TRY_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/try'
 const CONFIRM_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/confirm'
 const TRY_CUT = 'POST /api/cameras/camera-1/capabilities/hardware_privacy/try'
@@ -31,9 +43,40 @@ const dvrip = protocolRow({ protocol: 'dvrip', effectivePort: 34567 })
 const klap = protocolRow({ protocol: 'tapo_klap', effectivePort: 80 })
 const v380 = protocolRow({ protocol: 'v380', effectivePort: 8800 })
 
-/** The screen's network, its protocols answering with the camera's RTSP row unless a test says otherwise. */
+const mainStream = makeCameraStream()
+const recording = makeCameraStream({ role: 'record' })
+const detecting = makeCameraStream({
+  id: 'sub',
+  ordinal: 1,
+  path: '/stream2',
+  width: 640,
+  height: 360,
+  fps: 10,
+  role: 'detect',
+})
+const twoStreams = makeStreamLineup([recording, detecting], { detectStreamId: 'sub' })
+
+async function streamLine(quality: string) {
+  return within(await screen.findByRole('listitem', { name: quality }))
+}
+
+const mainOffer = makeAvailableStream({
+  rank: 0,
+  path: '/stream1',
+  width: 1920,
+  height: 1080,
+  streamId: 'main',
+})
+const lighterOffer = makeAvailableStream()
+
+/** The screen's network, its protocols answering with the camera's RTSP row and its one main stream unless a test says otherwise. */
 function connectionNetwork(routes: Parameters<typeof fakeNetwork>[0]) {
-  return fakeNetwork({ [PROTOCOLS]: ok([rtsp]), ...routes })
+  return fakeNetwork({
+    [PROTOCOLS]: ok([rtsp]),
+    [STREAMS]: ok(makeStreamLineup([mainStream])),
+    [AVAILABLE]: ok([]),
+    ...routes,
+  })
 }
 
 const camera = makeCamera()
@@ -41,7 +84,6 @@ const cameraThatTurns = makeCamera({ ptzSupported: true })
 const rtspStream = makeCapabilityBinding({
   capability: 'stream',
   protocol: 'rtsp',
-  streamPath: '/stream1',
 })
 const dvripStream = makeCapabilityBinding({ capability: 'stream', protocol: 'dvrip' })
 const ptzCapability = makeCapabilityBinding({ capability: 'ptz', protocol: 'onvif' })
@@ -246,7 +288,7 @@ describe('CameraConnectionView', () => {
     expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
   })
 
-  it('onLoad_ShouldShowTheStreamPathInTheStreamOptions_WhenTheStreamGoesOverRtsp', async () => {
+  it('onLoad_ShouldShowEachStreamAsALineNamedByItsQuality_WhenTheStreamGoesOverRtsp', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
     renderScreen(<CameraConnectionView />, connectionTab())
@@ -255,15 +297,19 @@ describe('CameraConnectionView', () => {
     const stream = await optionsOf('Flux vidéo')
 
     // Assert
-    expect(stream.getByLabelText('Chemin du flux')).toHaveValue('/stream1')
+    expect(
+      await stream.findByRole('listitem', { name: '1920 × 1080 · 15 img/s' }),
+    ).toBeInTheDocument()
     expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('RTSP')
+    expect(stream.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
   })
 
-  it('onLoad_ShouldShowTheStreamOverDvripWithoutAStreamPath_WhenTheCameraStreamsOverDvrip', async () => {
+  it('onLoad_ShouldShowDvripChosen_WhenTheCameraStreamsOverDvrip', async () => {
     // Arrange
     connectionNetwork({
       [BINDINGS]: ok([dvripStream]),
       [PROTOCOLS]: ok([protocolRow({ protocol: 'dvrip', effectivePort: 34567 })]),
+      [STREAMS]: ok(makeStreamLineup([makeCameraStream({ protocol: 'dvrip', path: null })])),
     })
     renderScreen(<CameraConnectionView />, connectionTab())
 
@@ -272,13 +318,12 @@ describe('CameraConnectionView', () => {
 
     // Assert
     expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('DVRIP')
-    expect(stream.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
   })
 
   it('onLoad_ShouldAskToChooseHowTheStreamIsRead_WhenTheStreamHasNoProtocolYet', async () => {
     // Arrange
     connectionNetwork({
-      [BINDINGS]: ok([{ ...rtspStream, isConfigured: false, streamPath: null }]),
+      [BINDINGS]: ok([{ ...rtspStream, isConfigured: false }]),
       [PROTOCOLS]: ok([]),
     })
 
@@ -439,29 +484,6 @@ describe('CameraConnectionView', () => {
       body: { port: 8554, username: 'viewer', password: 'test-secret', deviceId: null },
     })
     expect(network.sent).not.toContainEqual(expect.objectContaining({ route: UPDATE }))
-  })
-
-  it('onSave_ShouldSaveTheStreamPathOnItsCapability_WhenTheUserChangesIt', async () => {
-    // Arrange
-    const network = connectionNetwork({
-      [BINDINGS]: ok([rtspStream]),
-      [STREAM_PATH]: ok({ ...rtspStream, streamPath: '/stream2' }),
-      [CAMERAS]: ok([]),
-      [STATS]: ok(null),
-    })
-    renderScreen(<CameraConnectionView />, connectionTab())
-    const stream = await optionsOf('Flux vidéo')
-    await userEvent.clear(stream.getByLabelText('Chemin du flux'))
-    await userEvent.type(stream.getByLabelText('Chemin du flux'), '/stream2')
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
-
-    // Assert
-    expect(await screen.findByText('Connexion enregistrée.')).toBeInTheDocument()
-    expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: STREAM_PATH, body: { path: '/stream2' } }),
-    )
   })
 
   it('onLoad_ShouldSayTheStreamFailsAndSuspendTheOtherChecks_WhenTheCameraIsOffline', async () => {
@@ -1099,6 +1121,598 @@ describe('CameraConnectionView', () => {
     expect(await screen.findByText('Recherche terminée.')).toBeInTheDocument()
     expect(await protocolBox('DVRIP')).toBeTruthy()
     expect(network.sent.map((request) => request.route)).not.toContain(DETECT)
+  })
+
+  it('onLoad_ShouldListEachStreamWithItsQualityRoleAndState_WhenTheCameraServesTwo', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(twoStreams),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    const sub = await streamLine('640 × 360 · 10 img/s')
+    expect(sub.getByRole('combobox', { name: 'Rôle' })).toHaveTextContent('Détection')
+    expect(sub.getByText('Fonctionne')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheLineFailedWithItsDiagnostic_WhenAStreamFailedItsCheck', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(
+        makeStreamLineup([recording, { ...detecting, verified: false, lastError: 'timeout' }], {
+          detectStreamId: 'sub',
+        }),
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    const sub = await streamLine('640 × 360 · 10 img/s')
+    expect(sub.getByText(streamFailure(false))).toBeInTheDocument()
+    expect(sub.getByText(/timeout/)).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldLeaveTheWayOutToTheCard_WhenTheRecordingStreamFailedItsCheck', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(
+        makeStreamLineup([{ ...recording, verified: false }, detecting], {
+          detectStreamId: 'sub',
+        }),
+      ),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+    expect(main.getByText(streamFailure(true))).toBeInTheDocument()
+    expect(main.queryByText(streamFailure(false))).not.toBeInTheDocument()
+  })
+
+  it('onAskStreamReach_ShouldNameTheProtocolAndPath_WhenTheUserOpensTheTooltip', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }))
+
+    // Assert
+    expect(await screen.findByText('Par RTSP, chemin /stream2.')).toBeInTheDocument()
+  })
+
+  it('onAskRole_ShouldSayWhatTheRoleChanges_WhenTheUserOpensTheTooltip', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Que change ce rôle ?' }))
+
+    // Assert
+    expect(await screen.findByText(ROLE_CONSEQUENCES.detect)).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldLockRemove_WhenTheStreamRecords', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+    expect(main.getByRole('button', { name: 'Retirer' })).toBeDisabled()
+  })
+
+  it('onAskWhyKept_ShouldSendRecordingElsewhereFirst_WhenTheStreamRecords', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+
+    // Act
+    await userEvent.click(
+      main.getByRole('button', { name: 'Pourquoi ce flux ne peut-il pas être retiré ?' }),
+    )
+
+    // Assert
+    expect(await screen.findByText(RECORDING_STREAM_KEPT)).toBeInTheDocument()
+  })
+
+  it('onSetStreamRole_ShouldSendTheRole_WhenTheUserGivesDetectionToTheRecordingStream', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(twoStreams),
+      'PUT /api/cameras/camera-1/streams/main/role': ok(twoStreams),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const main = await streamLine('1920 × 1080 · 15 img/s')
+
+    // Act
+    main.getByRole('combobox', { name: 'Rôle' }).focus()
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+
+    // Assert
+    expect(await screen.findByText('Rôle du flux changé.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'PUT /api/cameras/camera-1/streams/main/role',
+        body: { role: 'record_and_detect' },
+      }),
+    )
+  })
+
+  it('onRemoveStream_ShouldSayDetectionRunsOnTheRecordingStream_WhenTheDetectStreamIsRemoved', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(twoStreams),
+      'DELETE /api/cameras/camera-1/streams/sub': ok(
+        makeStreamLineup([recording], { detectsOnRecordingStream: true }),
+      ),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Retirer' }),
+    )
+
+    // Assert
+    expect(await screen.findByText('Flux retiré.')).toBeInTheDocument()
+    const card = await cardOf('Flux vidéo')
+    expect(card.getByText('La détection passe par le flux d’enregistrement.')).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayDetectionStopped_WhenTheDetectStreamFailedItsCheck', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(
+        makeStreamLineup([recording, { ...detecting, verified: false, lastError: 'timeout' }], {
+          detectStreamId: 'sub',
+        }),
+      ),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    const card = await cardOf('Flux vidéo')
+    expect(
+      await card.findByText(
+        'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onAddStream_ShouldAddATypedPathAndCheckIt_WhenTheCameraListsNoStream', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'POST /api/cameras/camera-1/streams': ok(twoStreams),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    await userEvent.type(await form.findByLabelText('Chemin du flux'), '/stream2')
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux ajouté.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/camera-1/streams',
+        body: { protocol: 'rtsp', path: '/stream2', role: 'none' },
+      }),
+    )
+  })
+
+  it('onAddStream_ShouldOfferOnlyTheStreamsNotListedThenAnotherPath_WhenTheFormOpens', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: ok([mainOffer, lighterOffer]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+
+    // Act
+    await waitFor(() =>
+      expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('640 × 360'),
+    )
+    form.getByRole('combobox', { name: 'Flux' }).focus()
+    await userEvent.keyboard('{ArrowDown}')
+
+    // Assert
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      '640 × 360 · 15 img/s',
+      'Autre chemin…',
+    ])
+    expect(screen.getByRole('option', { name: '640 × 360 · 15 img/s' })).toHaveAttribute(
+      'title',
+      '/stream2',
+    )
+  })
+
+  it('onAddStream_ShouldAddTheStreamTheCameraOffers_WhenTheUserKeepsTheFirstOne', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [AVAILABLE]: ok([mainOffer, lighterOffer]),
+      'POST /api/cameras/camera-1/streams': ok(twoStreams),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    await waitFor(() =>
+      expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('640 × 360'),
+    )
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux ajouté.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/camera-1/streams',
+        body: { protocol: 'rtsp', path: '/stream2', role: 'none' },
+      }),
+    )
+  })
+
+  it('onAddStream_ShouldSendTheSecondaryQuality_WhenTheCameraOffersItOverDvrip', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([dvripStream]),
+      [PROTOCOLS]: ok([dvrip]),
+      [STREAMS]: ok(makeStreamLineup([makeCameraStream({ protocol: 'dvrip', path: null })])),
+      [AVAILABLE]: ok([
+        makeAvailableStream({ rank: 0, path: null, width: null, height: null, streamId: 'main' }),
+        makeAvailableStream({ path: '?channel=0&subtype=1', width: null, height: null }),
+      ]),
+      'POST /api/cameras/camera-1/streams': ok(twoStreams),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+
+    await waitFor(() =>
+      expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Flux secondaire'),
+    )
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux ajouté.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/camera-1/streams',
+        body: { protocol: 'dvrip', path: '?channel=0&subtype=1', role: 'none' },
+      }),
+    )
+  })
+
+  it('onAddStream_ShouldSayTheListCouldNotBeAskedAndKeepATypedPath_WhenTheRequestFails', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    expect(
+      await form.findByText('Vyzio n’a pas pu demander ses flux à la caméra.'),
+    ).toBeInTheDocument()
+    expect(form.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+    expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Autre chemin…')
+  })
+
+  it('onAddStream_ShouldHoldTheAdd_WhenAnotherPathIsLeftEmpty', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: ok([]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    await waitFor(() =>
+      expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Autre chemin…'),
+    )
+    expect(form.getByRole('button', { name: 'Ajouter et vérifier' })).toBeDisabled()
+  })
+
+  it('onAddStream_ShouldSendTheTypedPath_WhenAnotherPathIsTyped', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [AVAILABLE]: ok([]),
+      'POST /api/cameras/camera-1/streams': ok(makeStreamLineup([mainStream])),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    await userEvent.type(await form.findByLabelText('Chemin du flux'), 'live')
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    await waitFor(() =>
+      expect(network.sent).toContainEqual(
+        expect.objectContaining({
+          route: 'POST /api/cameras/camera-1/streams',
+          body: { protocol: 'rtsp', path: 'live', role: 'none' },
+        }),
+      ),
+    )
+  })
+
+  it('onConfigure_ShouldAskForTheFirstStreamPath_WhenTheCameraListsNoStreamOverRtsp', async () => {
+    // Arrange
+    connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, dvrip]),
+      [BINDINGS]: ok([dvripStream]),
+      [STREAMS]: ok(makeStreamLineup([makeCameraStream({ protocol: 'dvrip', path: null })])),
+      'PUT /api/cameras/camera-1/capabilities/stream': failure(400, 'stream_path_required'),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    stream.getByRole('combobox', { name: 'Protocole' }).focus()
+    await userEvent.keyboard('{ArrowDown}{ArrowUp}{Enter}')
+
+    // Act
+    await userEvent.click(stream.getByRole('button', { name: 'Configurer' }))
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'La caméra ne dit pas quels flux elle sert, ou ne répond pas : saisissez le chemin du flux donné par le fabricant',
+      ),
+    ).toBeInTheDocument()
+    expect(await stream.findByLabelText('Chemin du flux')).toBeInTheDocument()
+    expect(stream.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Autre chemin…')
+    expect(stream.getByRole('button', { name: 'Configurer' })).toBeDisabled()
+  })
+
+  it('onConfigure_ShouldSendTheTypedPath_WhenThePathAskedForIsTyped', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [PROTOCOLS]: ok([rtsp, dvrip]),
+      [BINDINGS]: ok([dvripStream]),
+      [STREAMS]: ok(makeStreamLineup([makeCameraStream({ protocol: 'dvrip', path: null })])),
+      'PUT /api/cameras/camera-1/capabilities/stream': failure(400, 'stream_path_required'),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    stream.getByRole('combobox', { name: 'Protocole' }).focus()
+    await userEvent.keyboard('{ArrowDown}{ArrowUp}{Enter}')
+    await userEvent.click(stream.getByRole('button', { name: 'Configurer' }))
+    await userEvent.type(await stream.findByLabelText('Chemin du flux'), 'live')
+    network.answer('PUT /api/cameras/camera-1/capabilities/stream', ok(rtspStream))
+
+    // Act
+    await userEvent.click(stream.getByRole('button', { name: 'Configurer' }))
+
+    // Assert
+    await waitFor(() =>
+      expect(network.sent).toContainEqual(
+        expect.objectContaining({
+          route: 'PUT /api/cameras/camera-1/capabilities/stream',
+          body: { protocol: 'rtsp', streamPath: 'live' },
+        }),
+      ),
+    )
+  })
+
+  it('onAddStream_ShouldPickNothingAndHoldTheAdd_WhenTheCameraIsStillAsked', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: late(ok([lighterOffer]), 5000) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Recherche des flux…')
+    expect(form.getByRole('button', { name: 'Ajouter et vérifier' })).toBeDisabled()
+  })
+
+  it('onRetryAvailableStreams_ShouldOfferTheCamerasStreams_WhenTheSecondRequestAnswers', async () => {
+    // Arrange
+    const network = connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    network.answer(AVAILABLE, ok([mainOffer, lighterOffer]))
+
+    // Act
+    await userEvent.click(await form.findByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    await waitFor(() =>
+      expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('640 × 360'),
+    )
+    expect(form.queryByText('Vyzio n’a pas pu demander ses flux à la caméra.')).toBeNull()
+  })
+
+  it('onAddStream_ShouldSayNothingIsLeftToAdd_WhenEveryDvripQualityIsListed', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([dvripStream]),
+      [PROTOCOLS]: ok([dvrip]),
+      [STREAMS]: ok(makeStreamLineup([makeCameraStream({ protocol: 'dvrip', path: null })])),
+      [AVAILABLE]: ok([makeAvailableStream({ rank: 0, path: null, streamId: 'main' })]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    expect(await form.findByText('Aucun autre flux à ajouter.')).toBeInTheDocument()
+    expect(form.getByRole('button', { name: 'Ajouter et vérifier' })).toBeDisabled()
+  })
+
+  it('onAskToRemoveStream_ShouldSayDetectionMovesToTheRecordingStream_WhenTheStreamDetects', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
+
+    // Assert
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(DETECTION_FALLS_BACK)
+  })
+
+  it('onAskToRemoveStream_ShouldSayOnlyThatItLeavesTheList_WhenTheStreamDoesNotDetect', async () => {
+    // Arrange
+    const idle = makeStreamLineup([recording, { ...detecting, role: 'none' }], {
+      detectsOnRecordingStream: true,
+    })
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(idle) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
+
+    // Assert
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Il quitte la liste.')
+    expect(screen.getByRole('alertdialog')).not.toHaveTextContent(DETECTION_FALLS_BACK)
+    expect(screen.getByRole('alertdialog')).not.toHaveTextContent('Ajouter un flux')
+  })
+
+  it('onAddStream_ShouldSayTheNewStreamDoesNotAnswer_WhenItsCheckFails', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'POST /api/cameras/camera-1/streams': ok(
+        makeStreamLineup([recording, { ...detecting, role: 'none', verified: false }]),
+      ),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    await userEvent.type(await form.findByLabelText('Chemin du flux'), '/stream2')
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux ajouté, mais il ne répond pas.')).toBeInTheDocument()
+    expect(screen.queryByText('Flux ajouté.')).not.toBeInTheDocument()
+  })
+
+  it('onRemoveStream_ShouldKeepTheLine_WhenTheRemovalFails', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(twoStreams),
+      'DELETE /api/cameras/camera-1/streams/sub': failure(500),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Retirer' }),
+    )
+
+    // Assert
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    expect(screen.queryByText('Flux retiré.')).not.toBeInTheDocument()
+    expect(await streamLine('640 × 360 · 10 img/s')).toBeTruthy()
+  })
+
+  it('onLoad_ShouldSayTheStreamsCouldNotBeRead_WhenTheirReadFails', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: failure(500) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await optionsOf('Flux vidéo')
+
+    // Assert
+    expect(
+      await screen.findByText('Les flux de cette caméra n’ont pas pu être lus.'),
+    ).toBeInTheDocument()
+  })
+
+  it('onCheckStream_ShouldSayTheStreamAnswers_WhenItsCheckPasses', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      [STREAMS]: ok(twoStreams),
+      'POST /api/cameras/camera-1/streams/sub/check': ok(twoStreams),
+      [CAMERAS]: ok([]),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Vérifier' }))
+
+    // Assert
+    expect(await screen.findByText('Flux vérifié.')).toBeInTheDocument()
   })
 })
 

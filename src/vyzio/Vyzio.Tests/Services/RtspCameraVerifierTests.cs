@@ -18,7 +18,7 @@ public class RtspCameraVerifierTests
         var camera = new Camera { Slug = "porch", FrigateCameraName = "porch", DisplayName = "Porch", Host = "127.0.0.1" };
 
         // Act
-        var result = await sut.VerifyAsync(camera);
+        var result = await sut.VerifyAsync(camera, stream: null);
 
         // Assert
         Assert.False(result.Connected);
@@ -47,13 +47,14 @@ public class RtspCameraVerifierTests
 
         // Never advanced, so the verdict comes from what the listener answered, not from how fast it did.
         var sut = new RtspCameraVerifier(new FakeTimeProvider());
-        var result = await sut.VerifyAsync(new Camera
+        var camera = new Camera
         {
             Slug = "front-door",
             FrigateCameraName = "front_door",
             DisplayName = "Front Door",
             Host = "127.0.0.1",
-        }.WithStream(SupportedProtocol.Rtsp, port, "/stream1")).ObservedAsync();
+        }.WithStream(SupportedProtocol.Rtsp, port, "/stream1");
+        var result = await sut.VerifyAsync(camera, camera.Streams.First()).ObservedAsync();
 
         await serverTask;
 
@@ -61,5 +62,40 @@ public class RtspCameraVerifierTests
         Assert.False(result.PreviewAvailable);
         Assert.Equal("needs_attention", result.Status);
         Assert.Contains("authentification", result.Guidance, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_ShouldAskForTheGivenStreamsPath_WhenASecondaryStreamIsChecked()
+    {
+        // Arrange
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var asked = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[2048];
+            var read = await stream.ReadAsync(buffer);
+            await stream.WriteAsync(Encoding.ASCII.GetBytes("RTSP/1.0 200 OK\r\nCSeq: 1\r\n\r\n"));
+            await stream.FlushAsync();
+            return Encoding.ASCII.GetString(buffer, 0, read);
+        });
+        var camera = new Camera
+        {
+            Slug = "garden",
+            FrigateCameraName = "garden",
+            DisplayName = "Garden",
+            Host = "127.0.0.1",
+        }.WithStream(SupportedProtocol.Rtsp, port, "/stream1");
+        var secondary = StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.Detect);
+        var sut = new RtspCameraVerifier(new FakeTimeProvider());
+
+        // Act
+        var result = await sut.VerifyAsync(camera, secondary).ObservedAsync();
+
+        // Assert
+        Assert.True(result.PreviewAvailable);
+        Assert.Contains("/stream2", await asked, StringComparison.Ordinal);
     }
 }

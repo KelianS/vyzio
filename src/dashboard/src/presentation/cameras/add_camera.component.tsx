@@ -17,7 +17,7 @@ import type { SettingDeclaration } from '../../common/settings/setting_declarati
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
-import { ASKS_STREAM_PATH } from './protocol_labels'
+import { asksStreamPath } from './stream_lines'
 import { resolveVendorLinkTarget } from './vendor_links'
 import {
   VENDOR_FAMILY_OPTIONS,
@@ -85,7 +85,7 @@ export function AddCameraView() {
   // No protocol serves the stream yet: the camera must be opened from its app first.
   const needsActivation = Boolean(candidate && !candidate.stream)
   const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
-  const hasPath = ASKS_STREAM_PATH[uido.form.streamProtocol]
+  const hasPath = asksStreamPath(uido.form.streamProtocol)
   const canVerify =
     showForm &&
     !needsActivation &&

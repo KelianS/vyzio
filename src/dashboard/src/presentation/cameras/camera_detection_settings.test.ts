@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildDetectionSettings } from './camera_detection_settings'
-import type { CameraStream, DetectionConfig } from '../../domain/entities/detection_config.entity'
+import type { DetectionConfig } from '../../domain/entities/detection_config.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { SettingDeclaration, SettingOption } from '../../common/settings/setting_declaration'
 
@@ -19,11 +19,6 @@ const ALL_LABELS: DetectionLabel[] = [
   { value: 'dog', displayName: 'Chien', emoji: '🐕' },
 ]
 
-const STREAMS: CameraStream[] = [
-  { id: 'main', ordinal: 0, width: 1920, height: 1080, fps: 15 },
-  { id: 'sub', ordinal: 1, width: 640, height: 360, fps: 10 },
-]
-
 function config(overrides: Partial<DetectionConfig> = {}): DetectionConfig {
   return {
     cameraId: 'camera-1',
@@ -38,8 +33,6 @@ function config(overrides: Partial<DetectionConfig> = {}): DetectionConfig {
     },
     motionSensitivity: 'medium',
     motionSensitivityPinned: false,
-    streams: STREAMS,
-    detectStreamId: 'sub',
     ...overrides,
   }
 }
@@ -49,7 +42,6 @@ function values(overrides: Partial<Parameters<typeof buildDetectionSettings>[0][
     labels: ['person'],
     motionSensitivity: 'medium' as const,
     motionSensitivityPinned: false,
-    detectStreamId: 'sub' as string | null,
     ...overrides,
   }
 }
@@ -153,29 +145,5 @@ describe('buildDetectionSettings', () => {
 
     // Assert
     expect(pinned.consequence).toContain('moindre mouvement')
-  })
-
-  it('buildDetectionSettings_ShouldOfferNoStreamChoice_WhenTheCameraServesOnlyOne', () => {
-    // Arrange & Act
-    const { settings } = build(config({ streams: [STREAMS[0]] }))
-
-    // Assert
-    // A single stream leaves nothing to arbitrate (ADR-38).
-    expect(settings.find((setting) => setting.id === 'detection-stream')).toBeUndefined()
-  })
-
-  it('buildDetectionSettings_ShouldDescribeEachStreamByItsPixels_WhenSeveralAreServed', () => {
-    // Arrange & Act
-    const { settings } = build(config())
-    const stream = settings.find((setting) => setting.id === 'detection-stream')!
-    const options = optionsOf(stream)
-
-    // Assert
-    // Never an invented tier name: the real pixels, and the rank only as a
-    // complement.
-    expect(options[0].label).toContain('1920 × 1080')
-    expect(options[0].label).toContain('la plus détaillée')
-    expect(options[1].label).toContain('640 × 360')
-    expect(options[1].label).toContain('la plus légère')
   })
 })

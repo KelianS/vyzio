@@ -266,42 +266,6 @@ public class UpdateCameraProtocolUseCaseTests
     }
 }
 
-public class SetStreamPathUseCaseTests
-{
-    private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
-    private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
-    private readonly IFrigateConfigApplier _frigate = Substitute.For<IFrigateConfigApplier>();
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldSendTheCameraBackToBeChecked_WhenTheMainPathChanges()
-    {
-        // Arrange
-        var camera = new Camera
-        {
-            Id = "cam1",
-            Slug = "cam1",
-            FrigateCameraName = "cam1",
-            DisplayName = "cam1",
-            Host = "h",
-            Status = "online",
-            ValidationState = CameraValidationState.Validated,
-            IsEnabled = true,
-        }.WithStream(SupportedProtocol.Rtsp, path: "/stream1");
-        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
-        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _bindings.GetAsync("cam1", CameraCapability.Stream, Arg.Any<CancellationToken>()).Returns(camera.StreamBinding);
-        var sut = new SetStreamPathUseCase(_cameras, _bindings, _frigate);
-
-        // Act
-        var result = await sut.ExecuteAsync("cam1", "stream2");
-
-        // Assert
-        Assert.Equal("/stream2", result!.StreamPath);
-        Assert.Equal(CameraValidationState.Draft, camera.ValidationState);
-        await _frigate.Received(1).WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), changed: true, Arg.Any<CancellationToken>());
-    }
-}
-
 public class AddCameraProtocolUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
@@ -423,6 +387,22 @@ public class RemoveCameraProtocolUseCaseTests
         Assert.Equal(RemoveProtocolOutcome.InUse, outcome);
         Assert.NotNull(camera.Protocol(SupportedProtocol.Rtsp));
         await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefuse_WhenAStreamGoesThroughTheProtocol()
+    {
+        // Arrange
+        var camera = GivenCamera();
+        camera.EnsureProtocol(SupportedProtocol.Dvrip);
+        StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Dvrip, CameraStream.DvripSecondaryQuery, StreamRole.Detect);
+
+        // Act
+        var outcome = await _sut.ExecuteAsync("cam1", SupportedProtocol.Dvrip);
+
+        // Assert
+        Assert.Equal(RemoveProtocolOutcome.InUse, outcome);
+        Assert.NotNull(camera.Protocol(SupportedProtocol.Dvrip));
     }
 
     [Fact]

@@ -13,15 +13,12 @@ internal sealed class CameraStreamEnumerator(
     DvripClient dvripClient,
     ILogger<CameraStreamEnumerator> logger) : ICameraStreamEnumerator
 {
-    // XMEye extra-stream selector, verified on real hardware (see the CPU profiling investigation).
-    private const string DvripSubStreamQuery = "?channel=0&subtype=1";
-
-    public async Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default)
+    public async Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default)
     {
         try
         {
             // The stream's transport decides how streams are enumerated; ONVIF is asked ungated, a fast failure meaning nothing.
-            return camera.StreamBinding?.Protocol == SupportedProtocol.Dvrip
+            return protocol == SupportedProtocol.Dvrip
                 ? await EnumerateOverDvripAsync(camera, ct)
                 : await EnumerateOverOnvifAsync(camera, ct);
         }
@@ -94,7 +91,7 @@ internal sealed class CameraStreamEnumerator(
 
         if (channel["ExtraFormat"]?["VideoEnable"]?.GetValue<bool>() == true)
         {
-            streams.Add(new EnumeratedStream(DvripSubStreamQuery, null, null, ReadFps(channel["ExtraFormat"])));
+            streams.Add(new EnumeratedStream(CameraStream.DvripSecondaryQuery, null, null, ReadFps(channel["ExtraFormat"])));
         }
 
         return [new EnumeratedScene(camera.Id, streams)];

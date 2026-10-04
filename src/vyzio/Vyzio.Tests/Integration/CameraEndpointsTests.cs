@@ -118,6 +118,37 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task ConfigureStream_ShouldRefuseWithItsCode_WhenTheCameraListsNoStreamOverRtspAndNoPathIsTyped()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        await client.PostAsJsonAsync("/api/cameras/camera-1/protocols", new { protocol = "dvrip", port = (int?)null, username = (string?)null, password = (string?)null });
+        (await client.PutAsJsonAsync("/api/cameras/camera-1/capabilities/stream", new { protocol = "dvrip" })).EnsureSuccessStatusCode();
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/cameras/camera-1/capabilities/stream", new { protocol = "rtsp" });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("stream_path_required", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CreateCamera_ShouldRefuseWithItsCode_WhenAnRtspCameraWithoutAPathListsNoStream()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras", new CreateCameraRequest(
+            "Garage", "192.168.1.30", null, null, "rtsp_manual", new CreateCameraStreamRequest("rtsp", 554, null), "person_default"));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("stream_path_required", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SearchProtocols_ShouldAnswerNotFound_WhenTheCameraDoesNotExist()
     {
         // Arrange
@@ -591,7 +622,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraVerifier : ICameraVerifier
     {
-        public Task<CameraVerificationResult> VerifyAsync(Camera camera, CancellationToken ct = default)
+        public Task<CameraVerificationResult> VerifyAsync(Camera camera, CameraStream? stream, CancellationToken ct = default)
             => Task.FromResult(new CameraVerificationResult(
                 true,
                 true,
@@ -607,7 +638,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
     // single stream onboarding gave it.
     private sealed class StubCameraStreamEnumerator : ICameraStreamEnumerator
     {
-        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, CancellationToken ct = default)
+        public Task<IReadOnlyList<EnumeratedScene>> EnumerateAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<EnumeratedScene>>([]);
     }
 

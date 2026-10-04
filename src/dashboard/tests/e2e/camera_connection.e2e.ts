@@ -60,7 +60,7 @@ test.describe('CameraConnectionView', () => {
   })
 })
 
-// Each connection detail sits on its level: the stream's path in its card options, a port and a specific account in its protocol box (ADR-61).
+// Each connection detail sits on its level: each stream in its card options, a port and a specific account in its protocol box (ADR-61).
 test.describe('CameraConnectionView three levels', () => {
   test('CameraConnectionView_ShouldSaveThePortAndSpecificAccountOfAProtocol_WhenTheUserEditsItsBox', async ({
     page,
@@ -125,7 +125,7 @@ test.describe('CameraConnectionView three levels', () => {
     await expect(page.getByText('Configurer manuellement')).toBeVisible()
   })
 
-  test('CameraConnectionView_ShouldSaveTheStreamPathThroughTheDraft_WhenTheUserChangesItInTheStreamOptions', async ({
+  test('CameraConnectionView_ShouldShowAStreamPathInItsQualityTooltip_WhenTheStreamOptionsOpen', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -133,32 +133,85 @@ test.describe('CameraConnectionView three levels', () => {
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
 
     await stream.getByText('Options').click()
-    await stream.getByRole('textbox', { name: 'Chemin du flux' }).fill('/Streaming/Channels/102')
+    const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
+    await main.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }).click()
 
-    const bar = page.getByRole('region', { name: 'Modifications en attente' })
-    await expect(bar).toContainText('Chemin du flux')
+    await expect(page.getByText('Par RTSP, chemin /Streaming/Channels/101.')).toBeVisible()
+    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
+  })
+})
 
-    await bar.getByRole('button', { name: 'Enregistrer' }).click()
-    await expect(bar).toBeHidden()
-    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveValue(
-      '/Streaming/Channels/102',
-    )
+// Each stream is a line of the stream card, with its role and its own state (ADR-65).
+test.describe('CameraConnectionView stream lines', () => {
+  test('CameraConnectionView_ShouldBringARemovedStreamBackFromTheCamerasList_WhenTheUserAddsItAgain', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByText('Options').click()
+    const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
+
+    await sub.getByRole('button', { name: 'Retirer' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Retirer' }).click()
+    await expect(sub).toHaveCount(0)
+    await expect(stream.getByText('La détection passe par le flux d’enregistrement.')).toBeVisible()
+
+    await stream.getByRole('button', { name: 'Ajouter un flux' }).click()
+    const form = page.getByRole('group', { name: 'Ajouter un flux' })
+    await expect(form.getByRole('combobox', { name: 'Flux' })).toContainText('640 × 360 · 10 img/s')
+    await form.getByRole('button', { name: 'Ajouter et vérifier' }).click()
+
+    await expect(sub).toBeVisible()
   })
 
-  test('CameraConnectionView_ShouldHideTheStreamPath_WhenTheStreamGoesOverDvrip', async ({
+  test('CameraConnectionView_ShouldKeepRecordingOnOneStream_WhenTheUserGivesItToAnother', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByText('Options').click()
+    const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
+    const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
+    await expect(main.getByRole('button', { name: 'Retirer' })).toBeDisabled()
+
+    await sub.getByRole('combobox', { name: 'Rôle' }).click()
+    await page.getByRole('option', { name: 'Enregistrement et détection' }).click()
+
+    await expect(main.getByRole('combobox', { name: 'Rôle' })).toContainText('Aucun')
+    await expect(main.getByRole('button', { name: 'Retirer' })).toBeEnabled()
+    await expect(sub.getByRole('button', { name: 'Retirer' })).toBeDisabled()
+  })
+
+  test('CameraConnectionView_ShouldLayOutTheTypedStream_WhenTheCameraListsNoStreamOverRtsp', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
-    state.streamBinding = { protocol: 'dvrip', streamPath: null, lastError: null }
-    state.protocols = [makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 })]
+    state.protocols = [
+      makeFakeProtocol(),
+      makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 }),
+    ]
+    state.streamBinding.protocol = 'dvrip'
+    state.streams = [
+      { ...state.streams[0], protocol: 'dvrip', path: null, width: null, height: null, fps: null },
+    ]
+    state.servedStreams = []
     await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/connexion')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
-
     await stream.getByText('Options').click()
 
-    await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')
-    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
+    await stream.getByRole('combobox', { name: 'Protocole' }).click()
+    await page.getByRole('option', { name: 'RTSP' }).click()
+    await stream.getByRole('button', { name: 'Configurer' }).click()
+    await expect(stream.getByRole('button', { name: 'Configurer' })).toBeDisabled()
+    await stream.getByRole('textbox', { name: 'Chemin du flux' }).fill('/live')
+    await stream.getByRole('button', { name: 'Configurer' }).click()
+
+    const line = stream.getByRole('listitem', { name: 'Flux principal' })
+    await line.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }).click()
+    await expect(page.getByText('Par RTSP, chemin /live.')).toBeVisible()
   })
 })
 
@@ -187,7 +240,7 @@ test.describe('CameraConnectionView camera without protocols', () => {
     const state = createFakeBackendState({
       cameras: [makeFakeCamera({ status: 'offline' })],
     })
-    state.streamBinding = { protocol: 'rtsp', streamPath: null, lastError: null, configured: false }
+    state.streamBinding = { protocol: 'rtsp', lastError: null, configured: false }
     state.protocols = []
     state.discoverableProtocols = [makeFakeProtocol({ protocol: 'dvrip', effectivePort: 34567 })]
     return state

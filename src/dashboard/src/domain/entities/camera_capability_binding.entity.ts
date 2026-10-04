@@ -44,8 +44,6 @@ export interface CameraCapabilityBinding {
   isConfigured: boolean
   /** Whether left and right are swapped; null for a capability that does not move (SPECS 11). */
   panInverted: boolean | null
-  /** The stream's main path, its own setting; null for any other capability (ADR-61). */
-  streamPath: string | null
   /** Whether the camera keeps its positions itself, else Vyzio counts them; null for any other capability (ADR-64). */
   nativePositions: boolean | null
 }

@@ -65,6 +65,18 @@ public sealed class CameraProtocolProbeTests
         }
     });
 
+    // Lets the reach dial through, answers the login's DESCRIBE, and hands back the request it read.
+    private static Task<string> ReadDescribeAsync(TcpListener listener) => Task.Run(async () =>
+    {
+        using (await listener.AcceptTcpClientAsync()) { }
+        using var client = await listener.AcceptTcpClientAsync();
+        var stream = client.GetStream();
+        var buffer = new byte[4096];
+        var read = await stream.ReadAsync(buffer);
+        await stream.WriteAsync(Encoding.ASCII.GetBytes("RTSP/1.0 200 OK\r\nCSeq: 1\r\n\r\n"));
+        return Encoding.ASCII.GetString(buffer, 0, read);
+    });
+
     // Reach: the protocol's port is dialled first; a login never runs on a silent protocol.
 
     [Fact]
@@ -114,6 +126,23 @@ public sealed class CameraProtocolProbeTests
     }
 
     // Login, RTSP: DESCRIBE, then again with the account when the camera challenges.
+
+    [Fact]
+    public async Task ProbeAsync_ShouldDescribeTheRecordingStream_WhenAnotherStreamRecords()
+    {
+        // Arrange
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var camera = CameraOn(SupportedProtocol.Rtsp, PortOf(listener)).WithStream(SupportedProtocol.Rtsp, PortOf(listener), "/stream1");
+        StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Rtsp, "/stream2", StreamRole.RecordAndDetect);
+        var described = ReadDescribeAsync(listener);
+
+        // Act
+        await MakeProbe().ProbeAsync(camera, SupportedProtocol.Rtsp).ObservedAsync();
+
+        // Assert
+        Assert.StartsWith($"DESCRIBE rtsp://127.0.0.1:{PortOf(listener)}/stream2 ", await described, StringComparison.Ordinal);
+    }
 
     [Fact]
     public async Task ProbeAsync_ShouldAnswer_WhenTheRtspServiceAsksForNoAccount()

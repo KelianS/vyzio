@@ -15,11 +15,10 @@ public sealed record CameraCapabilityBindingDto(
     bool IsConfigured,
     string Status,
     bool? PanInverted = null,
-    string? StreamPath = null,
     bool? NativePositions = null,
     DateTimeOffset? ConfirmedAt = null)
 {
-    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, Camera? camera = null, bool isPreset = false) => new(
+    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, bool isPreset = false) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
         SnakeCaseEnum.ToSnakeCase(binding.Protocol),
         binding.ConfigJson,
@@ -34,8 +33,6 @@ public sealed record CameraCapabilityBindingDto(
         PanInverted: binding.Capability == CameraCapability.Ptz
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
             : null,
-        // The stream's main path is its own setting (ADR-61).
-        StreamPath: binding.Capability == CameraCapability.Stream ? camera?.MainStream?.Path : null,
         // Whether the camera keeps the positions itself or Vyzio counts them (ADR-64).
         NativePositions: binding.Capability == CameraCapability.Ptz ? PtzPositionTier.IsNative(binding) : null,
         ConfirmedAt: binding.ConfirmedAt);
@@ -74,9 +71,8 @@ public sealed class ProbeCameraCapabilityUseCase(
         if (capability == CameraCapability.Stream)
         {
             if (await verifyStream.ExecuteAsync(cameraId, run, ct) is null) return null;
-            var camera = await cameras.GetByIdAsync(cameraId, ct);
             var stream = await bindings.GetAsync(cameraId, capability, ct);
-            return stream is null ? null : CameraCapabilityBindingDto.From(stream, camera);
+            return stream is null ? null : CameraCapabilityBindingDto.From(stream);
         }
 
         return await ProbeThroughProtocolAsync(cameraId, capability, rediscoverEndpoints, run, ct);
@@ -131,7 +127,7 @@ public sealed class ProbeCameraCapabilityUseCase(
         // The protocol row and what a provider found (ONVIF address, V380 device id) are saved with the camera.
         await cameras.UpdateAsync(camera, ct);
 
-        return CameraCapabilityBindingDto.From(binding, camera);
+        return CameraCapabilityBindingDto.From(binding);
     }
 }
 
@@ -145,7 +141,8 @@ internal static class CameraEndpointForgetting
     }
 }
 
-public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol);
+// StreamPath: the first stream's path over RTSP, typed when the camera lists no stream (ADR-65 e).
+public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? StreamPath = null);
 
 // A capability goes through a protocol the camera has; another one is added first (ADR-61 d).
 public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
@@ -164,7 +161,9 @@ public sealed class ConfigureCameraCapabilityUseCase(
     ICameraCapabilityBindingRepository bindings,
     ICapabilityProviderRegistry registry,
     IFrigateConfigApplier frigateConfigApplier,
-    ProbeCameraCapabilityUseCase probe)
+    ProbeCameraCapabilityUseCase probe,
+    ICameraStreamEnumerator streamEnumerator,
+    TimeProvider time)
 {
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, ConfigureCameraCapabilityRequest request, CancellationToken ct = default)
     {
@@ -187,6 +186,11 @@ public sealed class ConfigureCameraCapabilityUseCase(
             CameraId = cameraId,
             Capability = capability,
         };
+
+        // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-65 e).
+        if (capability == CameraCapability.Stream && protocolChanged
+            && !await StreamLayout.TryLayOutAsync(camera, binding, protocol, request.StreamPath, streamEnumerator, time, ct))
+            throw new StreamPathRequiredException();
 
         // The user's confirmation held for the former protocol only (ADR-66).
         CapabilityVerdict.Reset(binding, protocol);
@@ -247,7 +251,7 @@ public sealed class GetCameraCapabilitiesUseCase(
         var result = new List<CameraCapabilityBindingDto>
         {
             stream is not null
-                ? CameraCapabilityBindingDto.From(stream, camera)
+                ? CameraCapabilityBindingDto.From(stream)
                 : CameraCapabilityBindingDto.FromPreset(CameraCapability.Stream, registry.GetRegisteredProtocols(CameraCapability.Stream)[0]),
         };
 
@@ -259,7 +263,7 @@ public sealed class GetCameraCapabilitiesUseCase(
             {
                 var binding = dbBindings.FirstOrDefault(b => b.Capability == capability);
                 result.Add(binding is not null
-                    ? CameraCapabilityBindingDto.From(binding, camera, isPreset: true)
+                    ? CameraCapabilityBindingDto.From(binding, isPreset: true)
                     : CameraCapabilityBindingDto.FromPreset(capability, protocols[0]));
             }
         }
@@ -270,7 +274,7 @@ public sealed class GetCameraCapabilitiesUseCase(
         foreach (var binding in dbBindings)
         {
             if (!listed.Contains(binding.Capability))
-                result.Add(CameraCapabilityBindingDto.From(binding, camera));
+                result.Add(CameraCapabilityBindingDto.From(binding));
         }
 
         return result;

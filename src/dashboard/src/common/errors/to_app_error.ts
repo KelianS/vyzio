@@ -34,6 +34,10 @@ const KNOWN_REFUSALS = new Map<string, string>([
     'La caméra est en mode vie privée : rendez-lui la vue avant de l’essayer',
   ],
   [
+    ApiErrorCode.StreamPathRequired,
+    'La caméra ne dit pas quels flux elle sert, ou ne répond pas : saisissez le chemin du flux donné par le fabricant',
+  ],
+  [
     ApiErrorCode.ParkingPositionsMissing,
     'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
   ],

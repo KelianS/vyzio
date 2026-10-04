@@ -13,15 +13,6 @@ export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
   rtsp: 'RTSP',
 }
 
-/** Only an RTSP stream is addressed by a path (ADR-61 b). */
-export const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
-  rtsp: true,
-  dvrip: false,
-  onvif: false,
-  v380: false,
-  tapo_klap: false,
-}
-
 /** Why a protocol may take another account, wherever one is entered: it never leaves the local network. */
 export const SPECIFIC_ACCOUNT_HELP =
   'Pour une caméra qui demande un autre compte par ce seul moyen, comme le compte cloud Tapo pour la coupure matérielle. Il n’est présenté qu’à la caméra, sur votre réseau.'

@@ -12,7 +12,8 @@ export class ConfigureCameraCapability {
     cameraId: string,
     capability: Capability,
     protocol: SupportedProtocol,
+    streamPath: string | null = null,
   ): Promise<CameraCapabilityBinding> {
-    return this.repository.configureCapability(cameraId, capability, protocol)
+    return this.repository.configureCapability(cameraId, capability, protocol, streamPath)
   }
 }

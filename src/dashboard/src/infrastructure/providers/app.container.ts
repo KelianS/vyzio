@@ -1,6 +1,7 @@
 import { getDashboardRuntime } from '../config/runtime'
 import { HttpAccessRepository } from '../repositories/access.repository'
 import { HttpCameraRepository } from '../repositories/camera.repository'
+import { HttpCameraStreamRepository } from '../repositories/camera_stream.repository'
 import {
   HttpCameraLabelsRepository,
   HttpNotificationLabelsRepository,
@@ -58,6 +59,7 @@ function makeAppContainer(): AppContainer {
       profileRepository,
       cameraLabelsRepository,
       recordingSettingsRepository,
+      new HttpCameraStreamRepository(runtime.apiBaseUrl),
     ),
     profiles: makeProfilesContainer(profileRepository),
     notifications: makeNotificationsContainer(
