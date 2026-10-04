@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile
 COPY src/dashboard/ .
 RUN pnpm build
 
-FROM nginxinc/nginx-unprivileged:alpine@sha256:6a23acdfca2b9cfbcec61419e3f1426bcbedb91362f2f19306a8567423bb4612 AS runtime
+FROM nginxinc/nginx-unprivileged:alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af AS runtime
 
 # The revision is the one thing an operator cannot recover from the image otherwise: a version tag
 # is a name someone chose, a commit is what actually built. Defaults keep a local build working.
