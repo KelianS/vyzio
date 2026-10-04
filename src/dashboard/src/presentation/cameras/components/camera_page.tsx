@@ -10,11 +10,11 @@ import { CameraNotFound } from './camera_not_found'
 
 // The pages of one camera, each the twin of an installation page one notch lower (ADR-39, ADR-40).
 const CAMERA_PAGES = [
-  { slug: 'detection', label: 'Détection' },
-  { slug: 'conservation', label: 'Conservation' },
-  { slug: 'vie-privee', label: 'Vie privée' },
-  { slug: 'image', label: 'Image et pilotage' },
   { slug: 'connexion', label: 'Connexion' },
+  { slug: 'vie-privee', label: 'Vie privée' },
+  { slug: 'detection', label: 'Détection' },
+  { slug: 'image', label: 'Image et pilotage' },
+  { slug: 'conservation', label: 'Conservation' },
 ]
 
 export function CameraPage({

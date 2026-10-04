@@ -103,7 +103,7 @@ export function AddCameraView() {
       Boolean(uido.verification?.connected),
       uido.form,
     )
-    if (createdId) void navigate(`/settings/cameras/${createdId}/detection`)
+    if (createdId) void navigate(`/settings/cameras/${createdId}`)
   }
 
   const declarations: SettingDeclaration[] = [

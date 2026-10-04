@@ -45,7 +45,7 @@ test.describe('AddCameraView', () => {
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
     // Adding leads where the camera is set: that is the rest of the task.
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/detection$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
     // And restarting becomes possible, the configuration having changed (ADR-44).
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })
@@ -72,7 +72,7 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/detection$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
   })
 
   test('AddCameraView_ShouldOfferManualEntry_WhenNoSearchHasRun', async ({ page }) => {

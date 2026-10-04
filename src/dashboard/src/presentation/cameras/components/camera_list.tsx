@@ -30,7 +30,7 @@ export function CameraList({
           {cameras.map((camera) => (
             <li key={camera.id}>
               <Link
-                to={`/settings/cameras/${camera.id}/detection`}
+                to={`/settings/cameras/${camera.id}`}
                 className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <span className="min-w-0">
