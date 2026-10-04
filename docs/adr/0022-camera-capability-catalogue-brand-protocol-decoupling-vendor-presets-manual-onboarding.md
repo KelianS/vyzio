@@ -2,7 +2,8 @@
 
 > Statut : Accepté, modifié par [ADR-56](0056-the-onvif-endpoint-is-asked-of-the-camera-not-assumed-by-convention.md)
 > et par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) (le flux devient une capacité ; port, adresse et compte quittent `ConfigJson`),
-> et par [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) (`Verified` vient d'une preuve ou de la confirmation de l'utilisateur).
+> et par [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) (`Verified` vient d'une preuve ou de la confirmation de l'utilisateur),
+> et par [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (le preset s'applique à la détection depuis la page de la caméra, la marque reconnue par la détection, jamais choisie à l'ajout).
 
 ## Contexte
 

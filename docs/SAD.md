@@ -158,15 +158,17 @@ comes still leaves as text.
 
 ### 5.2 Adding a camera, on three levels
 
-The camera, its protocols and its capabilities are checked level by level (ADR-61); the video
-stream is a capability holding the streams and their roles (ADR-65).
+A camera is created from its access alone, then its page's detection checks its protocols and its
+capabilities level by level (ADR-68, ADR-61); the video stream is a capability holding the streams
+and their roles (ADR-65).
 
 ```mermaid
 sequenceDiagram
     actor U as User
     participant A as API
     participant C as Camera
-    U->>A: address and account, from discovery or typed
+    U->>A: address and account, from discovery or typed: the camera is created
+    U->>A: its page opens and runs detection
     A->>C: per protocol, once: reach, then log in
     C-->>A: answers, refused or unreachable
     A->>C: per capability, on the protocols that answered: a read that proves it

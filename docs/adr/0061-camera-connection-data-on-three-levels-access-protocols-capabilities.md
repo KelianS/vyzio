@@ -1,6 +1,6 @@
 # ADR-61: A camera's connection data on three levels: access, protocols, capabilities
 
-> Status: Accepted, amended by [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) (streams under the stream binding) and point c) (the provider probe as the capability's proof) by [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md)
+> Status: Accepted, amended by [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) (streams under the stream binding) and point c) (the provider probe as the capability's proof) by [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md), and point b) (the stream binding no longer created when the camera is added; a camera whose stream never worked is to be set up, outside the generated configuration) by [ADR-68](0068-a-camera-is-created-from-its-access-alone.md)
 >
 > Amends [ADR-19](0019-dvrip-xmeye-protocol-go2rtc-as-a-fallback-gateway-transparent-to-frigate.md) and
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)

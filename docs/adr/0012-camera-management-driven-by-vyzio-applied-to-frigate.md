@@ -1,6 +1,6 @@
 # ADR-12 — Gestion des caméras pilotée par Vyzio, appliquée à Frigate
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (la caméra est créée avant toute vérification, son flux se vérifie depuis sa page)
 
 ## Contexte
 

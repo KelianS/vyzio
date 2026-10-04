@@ -1,6 +1,6 @@
 # ADR-21 — PTZ Parking et adaptateur ONVIF générique : stratégie multi-couche pour le mode vie privée
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (plus d'étape d'ajout pour le mode vie privée et la position de surveillance : la page de la caméra les propose)
 
 ## Contexte
 
