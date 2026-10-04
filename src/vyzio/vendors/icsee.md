@@ -16,7 +16,7 @@ Les cameras ICSee — vendues sous de nombreuses marques generiques (WONSDAR, Ne
 4. Activez **RTSP** et notez le port (par defaut **554**).
 5. Appuyez sur **Enregistrer** et attendez que la camera redemarre.
 
-> **Onglet Reglages avances vide ?** Certains modeles sur batterie n'exposent pas ces options — ils fonctionnent exclusivement via le cloud ICSee et ne supportent pas le RTSP local. Voir la section ci-dessous.
+> **Onglet Reglages avances vide ?** Certains modeles sur batterie n'exposent pas ces options et ne supportent pas le RTSP local. Voir la section ci-dessous.
 
 ## Si Vyzio demande une adresse de flux
 
@@ -51,7 +51,7 @@ Les cameras sur batterie ICSee entrent en **veille** quand elles ne detectent pa
 
 Certains modeles sur batterie n'ont pas de RTSP local : l'onglet **Reglages avances** est vide dans l'application ICSee.
 
-**Essayez le RTSP d'abord.** S'il reste indisponible apres activation dans l'application, reveillez la camera puis touchez "Réessayer maintenant" : Vyzio la presente comme prete des qu'il la joint par un autre moyen. Vous n'avez rien a configurer ni a cocher dans le parcours d'ajout.
+**Essayez le RTSP d'abord.** S'il reste indisponible apres activation dans l'application, reveillez la camera puis touchez "Réessayer maintenant" : Vyzio la presente comme prete des qu'il la joint directement sur votre reseau local, sans RTSP et sans passer par le cloud ICSee. Vous n'avez rien a configurer ni a cocher dans le parcours d'ajout.
 
 **Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'ajout. Reveillez-la via l'application ICSee avant de cliquer "Ajouter la caméra". Une fois ajoutee, la camera reste active, ce qui sollicite davantage sa batterie, et Vyzio ne peut pas la reveiller lui-meme.
 
