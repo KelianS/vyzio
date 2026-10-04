@@ -140,7 +140,7 @@ describe('AddCameraView', () => {
     ).toBeInTheDocument()
   })
 
-  it.each([['Tapo C200'], ['ICSee salon']])(
+  it.each([[/Tapo C200/], [/ICSee salon/]])(
     'onDiscover_ShouldMarkTheCameraReady_WhenAProtocolServesItsStream: %s',
     async (name) => {
       // Arrange
@@ -151,9 +151,7 @@ describe('AddCameraView', () => {
       await searchTheNetwork()
 
       // Assert
-      expect(await screen.findByRole('button', { name: new RegExp(name) })).toHaveTextContent(
-        'Prête',
-      )
+      expect(await screen.findByRole('button', { name })).toHaveTextContent('Prête')
     },
   )
 
