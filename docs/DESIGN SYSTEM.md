@@ -224,10 +224,10 @@ detail once:
   camera is asked, the dropdown shows the wait greyed and nothing can be added. A request that fails
   is said under the dropdown, never as an empty list, with `Réessayer` and its diagnostic line
   (§ Errors), `Autre chemin…` staying available.
-- **The stream's protocol choice over RTSP** reuses that dropdown under `Protocole`: the wait while
-  the camera is asked, then, when the camera lists nothing or cannot be asked, `Autre chemin…` alone
-  with `Chemin du flux`; `Configurer` stays disabled until a path is typed. When the camera lists its
-  streams, nothing more shows.
+- **The stream's protocol choice over RTSP** shows nothing more while the camera lists its streams.
+  When it lists none, `Configurer` is refused with that reason in plain words, and the choice then
+  reuses that dropdown under `Protocole`, `Autre chemin…` alone with `Chemin du flux`; `Configurer`
+  stays disabled until a path is typed.
 - A folded help panel, `Quel rôle donner à chaque flux ?`, under the list holds the task help of
   ADR-65: the default roles, said as such, which stream to analyse for which scene, how a role moves,
   what changing the protocol or adding a stream does, how a wrong path is fixed, why the dropdown can
