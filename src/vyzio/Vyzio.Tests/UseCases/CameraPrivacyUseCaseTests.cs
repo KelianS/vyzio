@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
@@ -48,7 +48,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
             CameraId = cameraId,
             Capability = capability,
             Protocol = protocol,
-            Verified = verified,
+            Status = verified ? CapabilityStatus.Verified : CapabilityStatus.Failed,
             ConfigJson = configJson,
         };
 
@@ -478,7 +478,7 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
                 CameraId = ci.ArgAt<string>(0),
                 Capability = CameraCapability.HardwarePrivacy,
                 Protocol = SupportedProtocol.Dvrip,
-                Verified = true,
+                Status = CapabilityStatus.Verified,
             });
         _privacyProvider.SetPrivacyModeAsync(Arg.Is<Camera>(c => c.Id == "cam1"), Arg.Any<CameraCapabilityBinding>(), true, Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new CameraUnreachableException("DVRIP: no answer")));
@@ -520,7 +520,7 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
                 CameraId = ci.ArgAt<string>(0),
                 Capability = CameraCapability.HardwarePrivacy,
                 Protocol = SupportedProtocol.TapoKlap,
-                Verified = true,
+                Status = CapabilityStatus.Verified,
             });
 
         var result = await _sut.ExecuteAsync(["cam1", "cam2"], active: true);
@@ -625,7 +625,7 @@ public class SetCameraPrivacyStrategyUseCaseTests
                 CameraId = "cam1",
                 Capability = CameraCapability.Ptz,
                 Protocol = SupportedProtocol.Dvrip,
-                Verified = true,
+                Status = CapabilityStatus.Verified,
                 ConfigJson = """{"supports_native_presets":true}""",
             });
 

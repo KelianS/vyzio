@@ -31,34 +31,30 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
     private readonly ConcurrentDictionary<string, string?> _ptzConfigCache = new();
     private readonly ConcurrentDictionary<string, PtzCapabilities> _capabilitiesCache = new();
 
-    // A described PTZ configuration is the proof; a camera that refuses the PTZ requests shows none (ADR-66).
+    // A described PTZ configuration is the proof; silence or a refusal fails the check, never reads as missing (ADR-66 a).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        try
-        {
-            var token = await GetProfileTokenAsync(camera, ct);
+        var (token, configToken) = await onvif.GetFirstProfileAsync(camera, ct, throwOnFailure: true);
+        _profileCache[camera.Id] = token;
+        _ptzConfigCache[camera.Id] = configToken;
 
-            // Answering ONVIF is not doing PTZ over it: without a PTZ description, the cascade moves on (ADR-28).
-            if (await ReadPtzCapabilitiesAsync(camera, ct) is null)
-            {
-                logger.LogDebug("ONVIF PTZ probe for {Camera}: the camera describes no PTZ configuration.", camera.DisplayName);
-                return CapabilityProof.Missing($"ONVIF: {camera.Host} describes no PTZ configuration on its media profile.");
-            }
+        // Answering ONVIF is not doing PTZ over it: without a PTZ description, the cascade moves on (ADR-28).
+        if (configToken is null)
+            return CapabilityProof.Missing($"ONVIF: {camera.Host} carries no PTZ configuration on its first media profile.");
 
-            // Detect native preset support (ADR-25 Branch A/B routing).
-            var presetsCount = await onvif.GetPresetsCountAsync(camera, token, ct);
-            var supportsNativePresets = presetsCount > 0;
-            NativePresetsFlag.Record(binding, supportsNativePresets);
-            logger.LogDebug("ONVIF PTZ probe for {Camera}: {Count} presets found, SupportsNativePresets={Supported}.",
-                camera.DisplayName, presetsCount, supportsNativePresets);
+        var caps = ParsePtzCapabilities(await onvif.GetPtzConfigurationOptionsAsync(camera, configToken, ct, throwOnFailure: true));
+        if (caps is null)
+            return CapabilityProof.Missing($"ONVIF: {camera.Host} answered GetConfigurationOptions without PTZ configuration options.");
+        _capabilitiesCache[camera.Id] = caps;
 
-            return CapabilityProof.Proven();
-        }
-        catch (CameraCommandRefusedException ex)
-        {
-            logger.LogDebug(ex, "ONVIF PTZ probe for {Camera}: the camera refused the PTZ requests.", camera.DisplayName);
-            return CapabilityProof.Missing(ex.Message);
-        }
+        // Detect native preset support (ADR-25 Branch A/B routing).
+        var presetsCount = await onvif.GetPresetsCountAsync(camera, token, ct);
+        var supportsNativePresets = presetsCount > 0;
+        NativePresetsFlag.Record(binding, supportsNativePresets);
+        logger.LogDebug("ONVIF PTZ probe for {Camera}: {Count} presets found, SupportsNativePresets={Supported}.",
+            camera.DisplayName, presetsCount, supportsNativePresets);
+
+        return CapabilityProof.Proven();
     }
 
     public async Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)

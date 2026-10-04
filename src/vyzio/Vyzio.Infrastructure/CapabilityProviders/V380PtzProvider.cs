@@ -12,7 +12,6 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // The device id comes from V380DeviceIdBootstrap (docs/design/camera-connection.md).
 internal sealed class V380PtzProvider(
     V380Client client,
-    OnvifClient onvif,
     PtzMoveRunner runner,
     ILogger<V380PtzProvider> logger) : IPtzCapabilityProvider
 {
@@ -40,18 +39,9 @@ internal sealed class V380PtzProvider(
     // 23 packets, plus the calibration margin: the 25 that cover the whole pan/tilt range at about 650 ms each.
     public TimeSpan FullRange => 23 * PacketLength;
 
-    // Finds the device id the moves need; V380 has no read that shows a head, so the user confirms (ADR-66).
-    public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
-    {
-        await V380DeviceIdBootstrap.PreloadAsync(camera, client, onvif, ct);
-
-        if (!await client.ProbeAsync(camera, ct))
-            throw new CameraUnreachableException($"V380: {camera.Host} did not answer with its device number.");
-
-        // Persist the discovered deviceId so future PTZ commands work without discovery.
-        V380DeviceIdBootstrap.PersistIfDiscovered(camera, client);
-        return CapabilityProof.Unprovable();
-    }
+    // The device number and the login are the protocol's check; V380 has no read that shows a head, so the user confirms (ADR-66).
+    public Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => Task.FromResult(CapabilityProof.Unprovable());
 
     // Nothing opened ahead: the camera sets how far a packet moves, so the stream opened per packet does not change it (ADR-60).
     public Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)

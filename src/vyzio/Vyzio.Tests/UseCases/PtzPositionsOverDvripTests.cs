@@ -26,7 +26,7 @@ public class PtzPositionsOverDvripTests
         CameraId = "cam1",
         Capability = CameraCapability.Ptz,
         Protocol = SupportedProtocol.Dvrip,
-        Verified = true,
+        Status = CapabilityStatus.Verified,
     };
 
     public PtzPositionsOverDvripTests()

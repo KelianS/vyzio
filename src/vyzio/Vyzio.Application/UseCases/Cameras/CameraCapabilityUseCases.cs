@@ -126,7 +126,6 @@ public sealed class ProbeCameraCapabilityUseCase(
         binding.VerifiedAt = DateTimeOffset.UtcNow;
         await bindings.SaveAsync(binding, ct);
 
-        // A2: PTZ probe success → activate the PTZ panel without manual intervention.
         CapabilityVerdict.ShowPtzPanel(camera, binding);
 
         // The protocol row and what a provider found (ONVIF address, V380 device id) are saved with the camera.
@@ -189,13 +188,10 @@ public sealed class ConfigureCameraCapabilityUseCase(
             Capability = capability,
         };
 
-        binding.Protocol = protocol;
+        // The user's confirmation held for the former protocol only (ADR-66).
+        CapabilityVerdict.Reset(binding, protocol);
         // The swap is the user's; what the former protocol found about the camera (native presets) is not.
         binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, null, BindingConfig.PanInverted);
-        binding.Status = CapabilityStatus.Failed;
-        binding.LastError = null;
-        // The user's confirmation held for the former protocol only (ADR-66).
-        if (protocolChanged) binding.ConfirmedAt = null;
         binding.ManuallyConfigured = true;
 
         await bindings.SaveAsync(binding, ct);

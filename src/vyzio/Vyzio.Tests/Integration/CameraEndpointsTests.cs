@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -73,6 +73,34 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Contains("protocol_in_use", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TryCapability_ShouldRefuseWithItsCode_WhenTheCapabilityHasNothingToConfirm()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/api/cameras/camera-1/capabilities/ptz/try", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("nothing_to_confirm", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ConfirmCapability_ShouldRefuseWithItsCode_WhenTheCapabilityHasNothingToConfirm()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras/camera-1/capabilities/stream/confirm", new { worked = true });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("nothing_to_confirm", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
     [Fact]

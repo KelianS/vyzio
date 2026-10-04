@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
@@ -28,7 +28,7 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldReturnFalse_WhenTheCameraIsUnreachable()
+    public async Task ProveAsync_ShouldFailTheCheck_WhenTheSessionDoesNotOpen()
     {
         var camera = new Camera
         {
@@ -48,28 +48,26 @@ public class DvripPtzProviderTests
         camera.Host = "127.0.0.1";
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
-        var result = await MakeProvider().ProbeAsync(camera, binding, cts.Token);
-
-        Assert.False(result);
+        await Assert.ThrowsAnyAsync<CameraCommandException>(() => MakeProvider().ProveAsync(camera, binding, cts.Token));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldRecordNativePresets_WhenTheCameraListsThePresetItStored()
+    public async Task ProveAsync_ShouldProvePtzAndRecordNativePresets_WhenTheCameraListsThePresetItStored()
     {
         // Arrange
         var presets = new FakeDvripPresets();
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        var verified = await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        var proof = await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
-        Assert.True(verified);
+        Assert.Equal(ProofOutcome.Proven, proof.Outcome);
         Assert.True(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldLeaveThePositionsToVyzioAndKeepPtzVerified_WhenTheCameraRefusesSetPreset()
+    public async Task ProveAsync_ShouldLeavePtzToConfirm_WhenTheCameraAnswersDvripButRefusesSetPreset()
     {
         // Arrange
         var presets = new FakeDvripPresets(refusesSetPreset: true);
@@ -77,48 +75,48 @@ public class DvripPtzProviderTests
         fake.Binding.ConfigJson = NativePresetsConfig;
 
         // Act
-        var verified = await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        var proof = await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
-        Assert.True(verified);
+        Assert.Equal(ProofOutcome.Unprovable, proof.Outcome);
         Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldLeaveThePositionsToVyzio_WhenTheStoredPresetIsMissingFromTheList()
+    public async Task ProveAsync_ShouldLeaveThePositionsToVyzio_WhenTheStoredPresetIsMissingFromTheList()
     {
         // Arrange
         var presets = new FakeDvripPresets(listsWhatItStores: false);
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldLeaveThePositionsToVyzio_WhenTheCameraRefusesToListItsPresets()
+    public async Task ProveAsync_ShouldLeaveThePositionsToVyzio_WhenTheCameraRefusesToListItsPresets()
     {
         // Arrange
         await using var fake = FakeDvripCamera.Start(LoginOk, _ => """{"Ret":607}""");
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldStoreNothing_WhenTheAnswerCarriesNoPresetList()
+    public async Task ProveAsync_ShouldStoreNothing_WhenTheAnswerCarriesNoPresetList()
     {
         // Arrange
         await using var fake = FakeDvripCamera.Start(LoginOk, _ => OkAnswer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.False(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
@@ -126,14 +124,14 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldRecordNativePresets_WhenTheCameraReportsANullListBeforeStoringOne()
+    public async Task ProveAsync_ShouldRecordNativePresets_WhenTheCameraReportsANullListBeforeStoringOne()
     {
         // Arrange
         var presets = new FakeDvripPresets(listsNullWhenEmpty: true);
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.True(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
@@ -141,14 +139,14 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldStoreThenClearTheHighestSlot_WhenNoPresetIsStoredYet()
+    public async Task ProveAsync_ShouldStoreThenClearTheHighestSlot_WhenNoPresetIsStoredYet()
     {
         // Arrange
         var presets = new FakeDvripPresets();
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         var received = await fake.ReceivedAsync(4);
@@ -158,42 +156,42 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldClearTheProbeSlot_WhenTheCameraRefusesSetPreset()
+    public async Task ProveAsync_ShouldClearTheProbeSlot_WhenTheCameraRefusesSetPreset()
     {
         // Arrange
         var presets = new FakeDvripPresets(refusesSetPreset: true);
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.Equal(["Uart.PTZPreset.[0]", "SetPreset", "ClearPreset"], await fake.CommandsAsync(3));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldClearTheProbeSlot_WhenTheStoredPresetIsMissingFromTheList()
+    public async Task ProveAsync_ShouldClearTheProbeSlot_WhenTheStoredPresetIsMissingFromTheList()
     {
         // Arrange
         var presets = new FakeDvripPresets(listsWhatItStores: false);
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.Equal(["Uart.PTZPreset.[0]", "SetPreset", "Uart.PTZPreset.[0]", "ClearPreset"], await fake.CommandsAsync(4));
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldKeepAPresetAlreadyStored_WhenItOccupiesTheHighestSlot()
+    public async Task ProveAsync_ShouldKeepAPresetAlreadyStored_WhenItOccupiesTheHighestSlot()
     {
         // Arrange
         var presets = new FakeDvripPresets(stored: [3, 255]);
         await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
 
         // Act
-        await MakeProvider().ProbeAsync(fake.Camera, fake.Binding);
+        await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
 
         // Assert
         Assert.Equal([3, 255], presets.Stored.Order());

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -34,7 +34,7 @@ public class GetCameraImageSettingsUseCaseTests
         CameraId = "cam1",
         Capability = CameraCapability.ImageSettings,
         Protocol = SupportedProtocol.Onvif,
-        Verified = verified,
+        Status = verified ? CapabilityStatus.Verified : CapabilityStatus.Failed,
     };
 
     [Fact]
@@ -108,7 +108,7 @@ public class SetCameraImageSettingsUseCaseTests
         CameraId = "cam1",
         Capability = CameraCapability.ImageSettings,
         Protocol = SupportedProtocol.Onvif,
-        Verified = verified,
+        Status = verified ? CapabilityStatus.Verified : CapabilityStatus.Failed,
     };
 
     [Fact]

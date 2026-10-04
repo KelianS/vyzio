@@ -90,6 +90,16 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         await MoveAxisAsync(camera, provider, motion, targetY > y ? PtzDirection.Down : PtzDirection.Up, Math.Abs(targetY - y), ct);
     }
 
+    // The try of a PTZ to confirm: right and back, then down and back; the counted position is forgotten first (ADR-66 d).
+    public async Task NudgeAsync(
+        Camera camera, CameraCapabilityBinding binding, IPtzCapabilityProvider provider, TimeSpan each, CancellationToken ct)
+    {
+        _positions.TryRemove(camera.Id, out _);
+        await using var motion = await provider.OpenMotionAsync(camera, binding, ct);
+        foreach (var direction in (PtzDirection[])[PtzDirection.Right, PtzDirection.Left, PtzDirection.Down, PtzDirection.Up])
+            await motion.MoveForAsync(direction, ReplaySpeed, each, ct);
+    }
+
     private async Task MoveAxisAsync(
         Camera camera, IPtzCapabilityProvider provider, IPtzMotion motion, PtzDirection direction, int milliseconds, CancellationToken ct)
     {

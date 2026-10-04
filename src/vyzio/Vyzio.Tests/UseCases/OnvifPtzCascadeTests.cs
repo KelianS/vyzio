@@ -37,7 +37,7 @@ public class OnvifPtzCascadeTests
         _registry.ResolveImageSettings(Arg.Any<SupportedProtocol>()).Returns(Substitute.For<IImageSettingsCapabilityProvider>());
         _registry.GetRegisteredProtocols(Arg.Any<CameraCapability>()).Returns([]);
         _registry.ResolvePtz(SupportedProtocol.Dvrip).Returns(_dvripPtz);
-        _dvripPtz.ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(true);
+        _dvripPtz.ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(CapabilityProof.Proven());
     }
 
     private SeedAndProbePresetsUseCase MakeCascadeOver(FakeOnvifPtzCamera onvifCamera)
@@ -76,7 +76,7 @@ public class OnvifPtzCascadeTests
         // Assert
         Assert.Equal(SupportedProtocol.Onvif, _storedPtz?.Protocol);
         Assert.True(_storedPtz?.Verified);
-        await _dvripPtz.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+        await _dvripPtz.DidNotReceive().ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class OnvifPtzCascadeTests
             CameraId = "cam1",
             Capability = CameraCapability.Ptz,
             Protocol = SupportedProtocol.Onvif,
-            Verified = true,
+            Status = CapabilityStatus.Verified,
             ManuallyConfigured = true,
         };
         _storedPtz = manual;
@@ -100,6 +100,6 @@ public class OnvifPtzCascadeTests
         // Assert
         Assert.Equal(SupportedProtocol.Onvif, manual.Protocol);
         Assert.False(manual.Verified);
-        await _dvripPtz.DidNotReceive().ProbeAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
+        await _dvripPtz.DidNotReceive().ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 }

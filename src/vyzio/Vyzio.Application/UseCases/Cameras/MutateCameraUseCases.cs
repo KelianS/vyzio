@@ -127,9 +127,8 @@ public sealed class VerifyCameraUseCase(
         var stream = await bindings.GetAsync(camera.Id, CameraCapability.Stream, ct);
         if (stream is not null)
         {
-            stream.Verified = result.PreviewAvailable;
+            CapabilityVerdict.Stream(stream, result.PreviewAvailable, detail);
             stream.VerifiedAt = result.CheckedAt;
-            stream.LastError = result.PreviewAvailable ? null : detail;
             await bindings.SaveAsync(stream, ct);
         }
 

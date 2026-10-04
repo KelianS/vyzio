@@ -1,3 +1,4 @@
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -68,8 +69,8 @@ public sealed class SeedAndProbePresetsUseCase(
             return;
         }
 
-        // Already verified with a protocol still in the candidate list — nothing to retry.
-        if (existing is { Verified: true } && protocols.Contains(existing.Protocol))
+        // Proven or confirmed by the user on a protocol still a candidate: only checked again, the confirmation kept (ADR-66 c).
+        if (existing is not null && (existing.Verified || existing.ConfirmedAt is not null) && protocols.Contains(existing.Protocol))
         {
             await probe.ExecuteAsync(cameraId, capability, ct: ct, run: run);
             return;
@@ -79,24 +80,42 @@ public sealed class SeedAndProbePresetsUseCase(
         var answering = protocols.Where(protocol => camera is not null && Answers(camera, protocol)).ToList();
         var candidates = answering.Count > 0 ? answering : [protocols[0]];
 
-        // Try each candidate protocol in priority order (ADR-28), keep the first that verifies.
+        // The first candidate that proves it, otherwise the first where it is to confirm (ADR-66 e).
         CameraCapabilityBindingDto? result = null;
+        SupportedProtocol? toConfirm = null;
         foreach (var protocol in candidates)
         {
-            var binding = existing ?? new CameraCapabilityBinding { CameraId = cameraId, Capability = capability };
-            binding.Protocol = protocol;
-            binding.Verified = false;
-            binding.LastError = null;
-            await bindings.SaveAsync(binding, ct);
-            existing = binding;
-
-            result = await probe.ExecuteAsync(cameraId, capability, ct: ct, run: run);
+            (existing, result) = await TryCapabilityAsync(cameraId, capability, existing, protocol, run, ct);
             if (result?.Verified == true) break;
+            if (toConfirm is null && IsToConfirm(result)) toConfirm = protocol;
         }
 
+        if (result?.Verified != true && toConfirm is { } first && existing?.Protocol != first)
+            (existing, result) = await TryCapabilityAsync(cameraId, capability, existing, first, run, ct);
+
+        // A blind detection keeps only what the camera showed; a capability to confirm is added by hand (ADR-66 e).
         if (deleteIfUnverified && result?.Verified != true)
             await bindings.DeleteAsync(cameraId, capability, ct);
     }
+
+    private async Task<(CameraCapabilityBinding, CameraCapabilityBindingDto?)> TryCapabilityAsync(
+        string cameraId,
+        CameraCapability capability,
+        CameraCapabilityBinding? existing,
+        SupportedProtocol protocol,
+        ProtocolCheckRun run,
+        CancellationToken ct)
+    {
+        var binding = existing ?? new CameraCapabilityBinding { CameraId = cameraId, Capability = capability, Protocol = protocol };
+        CapabilityVerdict.Reset(binding, protocol);
+        await bindings.SaveAsync(binding, ct);
+        return (binding, await probe.ExecuteAsync(cameraId, capability, ct: ct, run: run));
+    }
+
+    private static bool IsToConfirm(CameraCapabilityBindingDto? result)
+        => result is not null
+            && SnakeCaseEnum.TryFromSnakeCase<CapabilityStatus>(result.Status, out var status)
+            && status == CapabilityStatus.ToConfirm;
 
     // The first stream protocol that answers and whose stream check passes, in the registry's order (ADR-61 b).
     private async Task BindStreamAsync(string cameraId, IReadOnlyList<SupportedProtocol> candidates, ProtocolCheckRun run, CancellationToken ct)
@@ -128,9 +147,7 @@ public sealed class SeedAndProbePresetsUseCase(
 
     private async Task<bool> TryStreamAsync(CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
     {
-        binding.Protocol = protocol;
-        binding.Verified = false;
-        binding.LastError = null;
+        CapabilityVerdict.Reset(binding, protocol);
         await bindings.SaveAsync(binding, ct);
 
         var result = await probe.ExecuteAsync(binding.CameraId, CameraCapability.Stream, run: run, ct: ct);

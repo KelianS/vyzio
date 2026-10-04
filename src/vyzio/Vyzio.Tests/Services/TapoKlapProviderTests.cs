@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -29,7 +29,7 @@ public class TapoKlapProviderTests
         CameraId = "cam1",
         Capability = capability,
         Protocol = SupportedProtocol.TapoKlap,
-        Verified = true,
+        Status = CapabilityStatus.Verified,
     };
 
     private static TapoKlapProvider MakeProvider(HttpMessageHandler handler, TimeProvider? time = null)
@@ -75,26 +75,44 @@ public class TapoKlapProviderTests
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldReturnFalse_WhenTheFirstHandshakeIsRefused()
+    public async Task ProveAsync_ShouldLeaveTheCutToConfirmWithoutAskingTheCamera_WhenNoReadIsValidated()
     {
-        var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)));
+        // Arrange
+        var handler = new CountingHandler();
+        IPrivacyCapabilityProvider provider = MakeProvider(handler);
 
-        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding(CameraCapability.HardwarePrivacy));
+        // Act
+        var proof = await provider.ProveAsync(MakeCamera(), MakeBinding(CameraCapability.HardwarePrivacy));
 
-        Assert.False(result);
+        // Assert
+        Assert.Equal(ProofOutcome.Unprovable, proof.Outcome);
+        Assert.Equal(0, handler.Asked);
     }
 
     [Fact]
-    public async Task ProbeAsync_ShouldReturnFalse_WhenTheFirstHandshakeBodyIsTooShort()
+    public async Task ProveAsync_ShouldLeavePtzToConfirmWithoutAskingTheCamera_WhenNoReadIsValidated()
     {
-        var provider = MakeProvider(new StubHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        // Arrange
+        var handler = new CountingHandler();
+        IPtzCapabilityProvider provider = MakeProvider(handler);
+
+        // Act
+        var proof = await provider.ProveAsync(MakeCamera(), MakeBinding(CameraCapability.Ptz));
+
+        // Assert
+        Assert.Equal(ProofOutcome.Unprovable, proof.Outcome);
+        Assert.Equal(0, handler.Asked);
+    }
+
+    private sealed class CountingHandler : HttpMessageHandler
+    {
+        public int Asked { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Content = new ByteArrayContent(new byte[10])
-        }));
-
-        var result = await provider.ProbeAsync(MakeCamera(), MakeBinding(CameraCapability.HardwarePrivacy));
-
-        Assert.False(result);
+            Asked++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        }
     }
 
     [Fact]

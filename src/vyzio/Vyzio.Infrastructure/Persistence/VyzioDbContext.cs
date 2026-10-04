@@ -116,7 +116,8 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             binding.Property(b => b.Capability).HasConversion<SnakeCaseEnumConverter<CameraCapability>>();
             binding.Property(b => b.Protocol).HasConversion<SnakeCaseEnumConverter<SupportedProtocol>>();
-            binding.Property(b => b.Status).HasConversion<SnakeCaseEnumConverter<CapabilityStatus>>();
+            // A row from before ADR-66 reads as failed until its next check.
+            binding.Property(b => b.Status).HasConversion<SnakeCaseEnumConverter<CapabilityStatus>>().HasDefaultValue(CapabilityStatus.Failed);
         });
 
         modelBuilder.Entity<PtzPreset>(preset =>
