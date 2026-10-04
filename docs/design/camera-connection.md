@@ -131,7 +131,7 @@ removing ONVIF also forgets its cached address.
 |---|---|
 | Onboarding | The camera is created with its stream binding (RTSP or DVRIP, as discovery or the user chose), its protocol row (port from the form) and its main stream (path from the form, over RTSP), which records and detects |
 | Verification | The stream's protocol is checked first; then every stream is checked (below); the camera status follows the recording stream |
-| Protocol or main path changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. A protocol change also replaces the streams by one main stream over the new protocol, recording and detecting, and clears `StreamsFoundAt` |
+| Protocol changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. The streams are replaced by one main stream over the new protocol, recording and detecting, and `StreamsFoundAt` is cleared |
 | Frigate generation | `FrigateConfigApplier` builds one input for the recording stream and, when it differs, one for the analysed stream, each from its own stream's protocol: an RTSP URL, or a `dvrip://` source handed to go2rtc (ADR-19) |
 
 A camera without a stream binding is verified as not connected, stays out of the generated
@@ -161,17 +161,16 @@ checks one stream alone; the recording stream's check is the camera's, so it run
 verification.
 
 **Offered on demand.** `ListAvailableCameraStreamsUseCase` (`GET .../streams/available?protocol=`)
-answers the add form and the main path's choice. It checks the asked protocol first (ADR-61 c), then,
+answers the add form. It checks the asked protocol first (ADR-61 c), then,
 when it answers, asks `ICameraStreamEnumerator` over that protocol: ONVIF profiles for RTSP,
 `Simplify.Encode` for DVRIP, the enumerator ordering them most detailed first.
 `StreamLineup.Offer` numbers them in that order and names for each the line it matches
-(`StreamId`, by path and protocol), so the add form leaves out what is listed and the main path
-keeps its own. Over DVRIP, when the camera lists nothing, the main and
+(`StreamId`, by path and protocol), so the add form leaves out what is listed. Over DVRIP, when the camera lists nothing, the main and
 secondary qualities of ADR-38 are offered; over RTSP nothing is, and the form keeps its typed path.
 Nothing is written but the protocol's last check.
 
 **Per stream use cases** (`CameraStreamUseCases.cs`): list, add (a protocol among the camera's rows
 that can carry a stream; a path over RTSP; over DVRIP only the main stream, no path, or the secondary
 one, `CameraStream.DvripSecondaryQuery`, anything else refused as `unknown_stream_path`; a role;
-checked at once), change the role, remove, check. Each answers with the whole list, since a role change moves roles across streams, and a change
+checked at once), change the role, remove, check; none changes a stream's path (ADR-65 e). Each answers with the whole list, since a role change moves roles across streams, and a change
 that touches what Frigate reads rewrites the generated configuration.

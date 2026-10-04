@@ -80,9 +80,13 @@ qualities. The list is asked at the capability level, once the protocol answers 
 only the streams not already listed, so a removed stream comes back through it, and is read by quality,
 not by path. Over RTSP its last item lets the user type a path the camera did not list, the only entry
 when the camera lists nothing; over DVRIP, where a stream is never a typed query, the two qualities of
-ADR-38's convention are offered when the camera does not list them. The main stream's path over RTSP is
-chosen from the same list. This on-demand list never changes the streams by itself: only the user's
-choice adds one.
+ADR-38's convention are offered when the camera does not list them. This on-demand list never changes
+the streams by itself: only the user's choice adds one.
+
+**A stream's path is its identity.** The path is chosen when the stream is added, or entered at
+onboarding for the main stream, and never changes afterwards: no stream line edits it. A wrong path
+is fixed by adding the right stream with the record role, which takes it from the old one (b), then
+removing the old one.
 
 A change of the binding's protocol replaces the streams, added ones included, by a single main stream
 over the new protocol that records and detects, and clears `StreamsFoundAt`: the streams are found
@@ -121,8 +125,11 @@ could not say that a stream failed.
 does; with removal, it made three ways not to use a stream.
 
 **A button that finds the streams again.** It would have redone e) behind one more action; the list
-asked on demand when adding a stream, or choosing the main path, brings back what the user wants
-without touching the rest.
+asked on demand when adding a stream brings back what the user wants without touching the rest.
+
+**An editable path on a stream line.** It let the main stream's path be changed in place, but a line
+titled by its quality could then be pointed at another quality and read as one it no longer was. A
+stream is what its path serves: another path is another stream, added beside it.
 
 **Keying the streams by camera (ADR-61).** It was the same thing while the streams were settings of
 the one binding. Now that each stream has its own protocol and state, they belong to the capability

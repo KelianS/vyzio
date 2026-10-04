@@ -208,16 +208,16 @@ detail once:
   `Autre chemin…`, which reveals a path field; it is the only item when the camera lists nothing,
   and the folded help says why. While the camera is asked, the dropdown shows the wait greyed and
   nothing is added. A request that fails is not an empty list: it is said under the dropdown, with
-  `Réessayer` and its diagnostic line (§ Errors), `Autre chemin…` staying available. The main
-  stream's path over RTSP, a declared setting on its own line and the one place it is shown, is
-  the same dropdown, named `Flux` as in the form, asked when it opens; the typed field is
-  `Chemin du flux` in both. No button finds the streams again.
+  `Réessayer` and its diagnostic line (§ Errors), `Autre chemin…` staying available. The typed
+  field is `Chemin du flux`. This form is the only place a path is chosen: a stream line is fixed,
+  its path never edited (ADR-65 e), so no draft holds a path. No button finds the streams again.
 - A folded help panel under the list says the task: the default roles, said as such, which stream
   to analyse for which scene, how a role moves from one stream to another, what changing the
-  protocol or adding a stream does, why the list of a camera can hold only `Autre chemin…`, and how
-  a stream whose size the camera does not give is named.
+  protocol or adding a stream does, how a wrong path is fixed (add the right stream with
+  `Enregistrement`, then remove the old one), why the list of a camera can hold only
+  `Autre chemin…`, and how a stream whose size the camera does not give is named.
 
-Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
+Addresses, ports and accounts are declared settings and follow the page's draft; a check, a
 protocol choice, adding a capability or a protocol and removing a protocol are actions, and so is
 every change on a stream line (its role, its removal, adding one).
 
