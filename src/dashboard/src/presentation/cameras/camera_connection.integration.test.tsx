@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
+import { CapabilityStatus } from '../../domain/entities/camera_capability_binding.entity'
 import { makeCameraProtocol as protocolRow } from '../../testing/camera_protocol_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
@@ -20,6 +21,8 @@ const STATS = 'GET /api/system/stats'
 const PROTOCOLS = 'GET /api/cameras/camera-1/protocols'
 const STREAM_PATH = 'PUT /api/cameras/camera-1/capabilities/stream/path'
 const SEARCH = 'POST /api/cameras/camera-1/protocols/search'
+const TRY_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/try'
+const CONFIRM_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/confirm'
 
 const rtsp = protocolRow()
 const onvif = protocolRow({ protocol: 'onvif', effectivePort: 2020 })
@@ -46,6 +49,23 @@ const streamToConfigure = makeCapabilityBinding({
   protocol: 'rtsp',
   verified: false,
   isConfigured: false,
+})
+const ptzToConfirm = makeCapabilityBinding({
+  capability: 'ptz',
+  protocol: 'v380',
+  verified: false,
+  status: CapabilityStatus.ToConfirm,
+})
+const ptzConfirmed = makeCapabilityBinding({
+  capability: 'ptz',
+  protocol: 'v380',
+  confirmedAt: '2026-10-04T09:30:00Z',
+})
+const ptzRejected = makeCapabilityBinding({
+  capability: 'ptz',
+  protocol: 'v380',
+  verified: false,
+  status: CapabilityStatus.RejectedByUser,
 })
 const cameraWithoutStream = makeCamera({ status: 'offline', connected: false })
 const privacyToConfigure = makeCapabilityBinding({
@@ -295,7 +315,10 @@ describe('CameraConnectionView', () => {
   it('onLoad_ShouldSayTheCameraDoesNotAnswerThatWay_WhenTheCapabilityProtocolIsUnreachable', async () => {
     // Arrange
     connectionNetwork({
-      [BINDINGS]: ok([rtspStream, { ...ptzCapability, verified: false }]),
+      [BINDINGS]: ok([
+        rtspStream,
+        { ...ptzCapability, verified: false, status: CapabilityStatus.Failed },
+      ]),
       [PROTOCOLS]: ok([
         rtsp,
         protocolRow({ protocol: 'onvif', effectivePort: null, status: 'unreachable' }),
@@ -482,7 +505,12 @@ describe('CameraConnectionView', () => {
     // Arrange
     connectionNetwork({
       [BINDINGS]: ok([ptzCapability]),
-      [PROBE_PTZ]: ok({ ...ptzCapability, verified: false, lastError: 'fault: not authorized' }),
+      [PROBE_PTZ]: ok({
+        ...ptzCapability,
+        verified: false,
+        status: CapabilityStatus.Failed,
+        lastError: 'fault: not authorized',
+      }),
     })
     renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
     const orientation = await cardOf('Orientation')
@@ -584,6 +612,7 @@ describe('CameraConnectionView', () => {
       'PUT /api/cameras/camera-1/capabilities/hardware_privacy': ok({
         ...privacyToConfigure,
         verified: true,
+        status: CapabilityStatus.Verified,
         isConfigured: true,
       }),
     })
@@ -807,7 +836,7 @@ describe('CameraConnectionView', () => {
     connectionNetwork({
       [BINDINGS]: ok([
         rtspStream,
-        { ...ptzCapability, verified: false },
+        { ...ptzCapability, verified: false, status: CapabilityStatus.Failed },
         makeCapabilityBinding({ capability: 'hardware_privacy', protocol: 'tapo_klap' }),
         makeCapabilityBinding({ capability: 'image_settings', protocol: 'onvif' }),
       ]),
@@ -1069,5 +1098,159 @@ describe('CameraConnectionView', () => {
     expect(await screen.findByText('Recherche terminée.')).toBeInTheDocument()
     expect(await protocolBox('DVRIP')).toBeTruthy()
     expect(network.sent.map((request) => request.route)).not.toContain(DETECT)
+  })
+})
+
+describe('CameraConnectionView, a capability to confirm', () => {
+  /** Orientation to confirm, tried once: its card then asks its question. */
+  async function tryOrientation() {
+    const card = await cardOf('Orientation')
+    await userEvent.click(card.getByRole('button', { name: 'Essayer' }))
+    return card
+  }
+
+  it('onLoad_ShouldSayWhatTheTryDoesBeforeItActs_WhenOrientationIsToConfirm', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzToConfirm]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    const card = await cardOf('Orientation')
+    expect(card.getByText('À confirmer')).toBeInTheDocument()
+    expect(
+      card.getByText('Essayer fait tourner la caméra un peu, puis la ramène.'),
+    ).toBeInTheDocument()
+    expect(card.queryByRole('button', { name: 'Activer' })).not.toBeInTheDocument()
+  })
+
+  it('onTry_ShouldAskWhetherTheCameraMoved_WhenTheTryIsDone', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzToConfirm]),
+      [TRY_PTZ]: ok(),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    const card = await tryOrientation()
+
+    // Assert
+    expect(await card.findByText('La caméra a bougé ?')).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Oui' })).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Non' })).toBeInTheDocument()
+    expect(network.sent.map((request) => request.route)).toContain(TRY_PTZ)
+  })
+
+  it('onAnswer_ShouldSayItIsConfirmedByTheUser_WhenTheUserAnswersYes', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzToConfirm]),
+      [TRY_PTZ]: ok(),
+      [CONFIRM_PTZ]: ok(ptzConfirmed),
+      [CAMERAS]: ok([cameraThatTurns]),
+      [STATS]: ok(null),
+    })
+    // The joystick it turns on comes back with the camera, which the shell passes again.
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+    const card = await tryOrientation()
+    network.answer(BINDINGS, ok([rtspStream, ptzConfirmed]))
+
+    // Act
+    await userEvent.click(await card.findByRole('button', { name: 'Oui' }))
+
+    // Assert
+    expect(await screen.findByText('Orientation : confirmée.')).toBeInTheDocument()
+    expect(await card.findByText(/^Confirmé par vous le/)).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: CONFIRM_PTZ, body: { worked: true } }),
+    )
+  })
+
+  it('onAnswer_ShouldKeepItOutOfUseAndSayHowToRetry_WhenTheUserAnswersNo', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzToConfirm]),
+      [TRY_PTZ]: ok(),
+      [CONFIRM_PTZ]: ok(ptzRejected),
+      [CAMERAS]: ok([camera]),
+      [STATS]: ok(null),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const card = await tryOrientation()
+    network.answer(BINDINGS, ok([rtspStream, ptzRejected]))
+
+    // Act
+    await userEvent.click(await card.findByRole('button', { name: 'Non' }))
+
+    // Assert
+    expect(
+      await card.findByText(/^Vous avez répondu que l’essai n’a pas marché/),
+    ).toBeInTheDocument()
+    expect(card.getByText('En échec')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: CONFIRM_PTZ, body: { worked: false } }),
+    )
+  })
+
+  it('onTry_ShouldSayToGiveTheViewBackAndOfferNoTry_WhenTheCameraIsInPrivacyMode', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream, ptzToConfirm]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(makeCamera({ privacyModeActive: true })))
+
+    // Assert
+    const card = await cardOf('Orientation')
+    expect(card.getByText('Rendez la vue à la caméra pour l’essayer.')).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Essayer' })).toBeDisabled()
+  })
+
+  it('onTry_ShouldSayWhyAndKeepOfferingTheTry_WhenTheCameraRefusesIt', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream, ptzToConfirm]),
+      [TRY_PTZ]: failure(409, 'privacy_mode_active'),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    const card = await tryOrientation()
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'La caméra est en mode vie privée : rendez-lui la vue avant de l’essayer',
+      ),
+    ).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Essayer' })).toBeInTheDocument()
+    expect(card.queryByText('La caméra a bougé ?')).not.toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayTheCameraLacksTheCapability_WhenItAnswersWithoutIt', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([
+        rtspStream,
+        makeCapabilityBinding({
+          capability: 'ptz',
+          protocol: 'onvif',
+          verified: false,
+          status: CapabilityStatus.Missing,
+          lastError: 'ONVIF: the first media profile carries no PTZ configuration.',
+        }),
+      ]),
+      [PROTOCOLS]: ok([rtsp, onvif]),
+    })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
+
+    // Assert
+    const card = await cardOf('Orientation')
+    expect(
+      await card.findByText(/^La caméra répond, mais ne montre pas cette capacité/),
+    ).toBeInTheDocument()
   })
 })

@@ -13,6 +13,8 @@ export const CapabilityTask = {
   TogglePtz: 'toggle_ptz',
   SetPanInverted: 'set_pan_inverted',
   Remove: 'remove',
+  Try: 'try',
+  Answer: 'answer',
 } as const
 export type CapabilityTask = (typeof CapabilityTask)[keyof typeof CapabilityTask]
 
@@ -28,6 +30,8 @@ export interface CameraConnectionUido {
   cameraGone: boolean
   detecting: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
+  /** The capabilities tried and waiting for the user's answer (ADR-66). */
+  asking: Partial<Record<Capability, true>>
   manualFormOpen: boolean
   manualConfiguring: boolean
 
@@ -57,6 +61,7 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     cameraGone: false,
     detecting: false,
     pending: {},
+    asking: {},
     manualFormOpen: false,
     manualConfiguring: false,
 

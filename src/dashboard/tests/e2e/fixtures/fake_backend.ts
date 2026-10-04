@@ -330,7 +330,8 @@ export interface FakeBackendState {
   /** The protocols a search or a detection finds answering, added to the boxes then. */
   discoverableProtocols: FakeProtocol[]
   /** The camera's PTZ binding as the capability list shows it, when it has one. */
-  ptzBinding: { protocol: string; configJson: string | null } | null
+  /** status: where Orientation stands, verified unless a test says otherwise (ADR-66). */
+  ptzBinding: FakePtzBinding | null
   /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
   ptz: {
     presets: {
@@ -412,6 +413,8 @@ function streamBindingOf(binding: FakeBackendState['streamBinding']) {
     verified: configured && binding.lastError === null,
     verifiedAt: '2026-01-01T00:00:00Z',
     lastError: binding.lastError,
+    status: configured && binding.lastError === null ? 'verified' : 'failed',
+    confirmedAt: null,
     isPreset: false,
     isConfigured: configured,
     panInverted: null,
@@ -427,12 +430,22 @@ function findProtocols(state: FakeBackendState) {
   }
 }
 
-function ptzBindingOf(binding: { protocol: string; configJson: string | null }) {
+interface FakePtzBinding {
+  protocol: string
+  configJson: string | null
+  status?: string
+  confirmedAt?: string | null
+}
+
+function ptzBindingOf(binding: FakePtzBinding) {
+  const status = binding.status ?? 'verified'
   return {
     capability: 'ptz',
     protocol: binding.protocol,
     configJson: binding.configJson,
-    verified: true,
+    verified: status === 'verified',
+    status,
+    confirmedAt: binding.confirmedAt ?? null,
     verifiedAt: '2026-01-01T00:00:00Z',
     lastError: null,
     isPreset: false,
@@ -852,6 +865,23 @@ export async function installFakeBackend(
       }
       if (rest === '/capabilities/ptz/probe' && method === 'POST') {
         return state.ptzBinding ? json(route, ptzBindingOf(state.ptzBinding)) : json(route, {}, 404)
+      }
+      if (rest === '/capabilities/ptz/try' && method === 'POST') {
+        // Like the real one: only a capability to confirm is tried, and it records nothing.
+        if (state.ptzBinding?.status !== 'to_confirm') {
+          return json(route, { error: 'nothing_to_confirm' }, 409)
+        }
+        return route.fulfill({ status: 204 })
+      }
+      if (rest === '/capabilities/ptz/confirm' && method === 'POST') {
+        if (!state.ptzBinding || state.ptzBinding.status !== 'to_confirm') {
+          return json(route, { error: 'nothing_to_confirm' }, 409)
+        }
+        const worked = Boolean(postData?.worked)
+        state.ptzBinding.status = worked ? 'verified' : 'rejected_by_user'
+        state.ptzBinding.confirmedAt = worked ? new Date().toISOString() : null
+        if (worked && camera) camera.ptzSupported = true
+        return json(route, ptzBindingOf(state.ptzBinding))
       }
       if (rest === '/capabilities/ptz/pan-inverted' && method === 'PUT') {
         if (!state.ptzBinding) return json(route, {}, 404)

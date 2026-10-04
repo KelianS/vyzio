@@ -4,10 +4,11 @@ import { scrubSecrets } from '../../common/errors/scrub_secrets'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { Camera } from '../../domain/entities/camera.entity'
-import type {
-  CameraCapabilityBinding,
-  Capability,
-  SupportedProtocol,
+import {
+  CapabilityStatus,
+  type CameraCapabilityBinding,
+  type Capability,
+  type SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocolAddition } from '../../domain/entities/camera_protocol.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
@@ -101,6 +102,8 @@ export function buildCameraConnectionPresenter({
       toastError(toast, error)
       // A page left open offered a protocol the camera no longer has: show its protocols as they are.
       if (error.code === ApiErrorCode.ProtocolNotOnCamera) readProtocols(cameraId, true)
+      // The capability was checked or answered elsewhere: show where it stands now.
+      if (error.code === ApiErrorCode.NothingToConfirm) readBindings(cameraId, true)
       return undefined
     } finally {
       dispatch({ type: 'TASK_FINISHED', capability })
@@ -108,15 +111,35 @@ export function buildCameraConnectionPresenter({
   }
 
   function announceTest(binding: CameraCapabilityBinding) {
-    if (binding.verified) {
-      toast(`${CAPABILITY_LABELS[binding.capability]} : connexion réussie.`, 'success')
-    } else {
-      // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
-      toast(
-        'Connexion échouée : vérifiez l’accès réseau et les identifiants.',
-        'error',
-        binding.lastError ? scrubSecrets(binding.lastError) : undefined,
-      )
+    const label = CAPABILITY_LABELS[binding.capability]
+    // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
+    const diagnostic = binding.lastError ? scrubSecrets(binding.lastError) : undefined
+    switch (binding.status) {
+      case CapabilityStatus.Verified:
+        toast(`${label} : connexion réussie.`, 'success')
+        return
+      case CapabilityStatus.ToConfirm:
+        toast(`${label} : à confirmer, essayez-la depuis sa carte.`, 'info')
+        return
+      case CapabilityStatus.Missing:
+        toast(
+          `${label} : la caméra répond, mais ne montre pas cette capacité.`,
+          'error',
+          diagnostic,
+        )
+        return
+      case CapabilityStatus.Failed:
+      case CapabilityStatus.RejectedByUser:
+        toast(
+          'Connexion échouée : vérifiez l’accès réseau et les identifiants.',
+          'error',
+          diagnostic,
+        )
+        return
+      default: {
+        const unknownStatus: never = binding.status
+        return unknownStatus
+      }
     }
   }
 
@@ -270,6 +293,31 @@ export function buildCameraConnectionPresenter({
       )
     },
 
+    /** The user's try of a capability to confirm; once done, the card asks whether it worked (ADR-66). */
+    async onTry(cameraId: string, capability: Capability) {
+      const tried = await runTask(cameraId, capability, CapabilityTask.Try, async () => {
+        await container.tryCameraCapability.execute(cameraId, capability)
+        return true
+      })
+      if (tried) dispatch({ type: 'QUESTION_ASKED', capability })
+    },
+
+    /** The user's answer is theirs: yes makes the capability usable, no keeps it out of use. */
+    async onAnswer(cameraId: string, capability: Capability, worked: boolean) {
+      const answered = await runTask(cameraId, capability, CapabilityTask.Answer, () =>
+        container.confirmCameraCapability.execute(cameraId, capability, worked),
+      )
+      if (!answered) return
+      dispatch({ type: 'QUESTION_CLOSED', capability })
+      toast(
+        worked
+          ? `${CAPABILITY_LABELS[capability]} : confirmée.`
+          : `${CAPABILITY_LABELS[capability]} : notée comme ne fonctionnant pas.`,
+        worked ? 'success' : 'info',
+      )
+      // A confirmed orientation turns the joystick on, which lives on the camera.
+      reloadCameraList(container)
+    },
     async onRemove(cameraId: string, capability: Capability) {
       const removed = await runTask(cameraId, capability, CapabilityTask.Remove, async () => {
         await container.removeCameraCapability.execute(cameraId, capability)

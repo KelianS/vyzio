@@ -2,12 +2,46 @@ import { describe, expect, it } from 'vitest'
 import { AppErrorKind, type AppError } from '../../common/errors/app_error'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { makeCameraProtocol } from '../../testing/camera_protocol_fixture'
+import { CapabilityStatus } from '../../domain/entities/camera_capability_binding.entity'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido, CapabilityTask } from './camera_connection.uido'
 
 const readError: AppError = { kind: AppErrorKind.Server, status: 500 }
 
 describe('cameraConnectionReducer', () => {
+  it('cameraConnectionReducer_ShouldKeepAskingOnlyWhatIsStillToConfirm_WhenTheCapabilitiesAreReadAgain', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      asking: { ptz: true as const, hardware_privacy: true as const },
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'BINDINGS_LOADED',
+      bindings: [
+        makeCapabilityBinding({ capability: 'ptz', status: CapabilityStatus.ToConfirm }),
+        makeCapabilityBinding({ capability: 'hardware_privacy' }),
+      ],
+    })
+
+    // Assert
+    expect(next.asking).toEqual({ ptz: true })
+  })
+
+  it('cameraConnectionReducer_ShouldCloseOnlyThatQuestion_WhenTheUserAnswers', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      asking: { ptz: true as const, hardware_privacy: true as const },
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, { type: 'QUESTION_CLOSED', capability: 'ptz' })
+
+    // Assert
+    expect(next.asking).toEqual({ hardware_privacy: true })
+  })
   it('cameraConnectionReducer_ShouldFreeOnlyThatCapability_WhenItsTaskFinishes', () => {
     // Arrange
     const state = {
