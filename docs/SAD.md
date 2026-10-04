@@ -237,7 +237,7 @@ a live tuning that needs no restart goes over MQTT (ADR-35).
 | Schedule rules, channel settings and pairings, retention settings | Vyzio | Database | Until changed |
 | Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry yet (#69) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-54) | Sessions until revoked |
-| PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-26, ADR-60) | Database, the thumbnails as files beside it | Until removed |
+| PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-26, ADR-60, ADR-69) | Database, the thumbnails as files beside it | Until removed |
 | Native PTZ presets | The camera, read on demand (ADR-69) | The camera | Until removed on the camera |
 | Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48) |
 | Face embeddings | Frigate (ADR-03) | Frigate | Follows the library Vyzio syncs |

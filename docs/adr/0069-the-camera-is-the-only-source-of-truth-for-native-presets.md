@@ -4,7 +4,7 @@
 >
 > Amends [ADR-25](0025-ptz-position-management-native-presets-branch-a-vs-vyzio-managed-positions-branch-b.md)
 > over ONVIF on how native presets are detected (a non-empty preset list) and, on the native tier, on
-> what Vyzio keeps of a position (the `ptz_presets` row and its native token),
+> what Vyzio keeps of a position (its record of each slot and the native token),
 > [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) on its rejected
 > option 1 (the non-empty list standing over ONVIF), and
 > [ADR-57](0057-privacy-parking-goes-to-the-parking-slot-and-back-to-surveillance.md) on its point c)
@@ -25,8 +25,9 @@ and moves to the native tier at the next probe after one is saved, which strands
 in between on the other tier (ADR-64 consequences).
 
 ADR-64 already gives DVRIP the target: the camera keeps exact presets, numbered, listed on request.
-Both protocols name a preset by a number Vyzio chooses when it stores it, the same number the vendor
-app shows.
+Both protocols let Vyzio choose the number a preset is stored under: the ONVIF client already sends the
+slot number as the preset token, and DVRIP stores a preset on the id it is given. A vendor app that
+offers presets numbers them too.
 
 ## Options compared
 
@@ -46,19 +47,21 @@ the user saves a slot, and asks it to go there when the user taps one. It keeps 
 is held.
 
 **b) Slot N is the camera's preset N**: the preset token is the slot number, over ONVIF and over
-DVRIP, so a slot keeps the numbering of the vendor app. Never the position in the list, never the
-name.
+DVRIP, so a slot keeps the numbering of a vendor app that offers presets. Never the position in the
+list, never the name. A camera that refuses to store a preset under its slot's number fails the save
+with its reason (SPECS 1.5); a preset whose token is not a slot number is ignored, like those of e).
 
-**c) Vyzio keeps only what the camera cannot**: each slot's thumbnail, and the free labels of the two
-slots the user names. A thumbnail shows only on a slot the camera holds; the label of the fixed slots
-stays Vyzio's, and the camera's own preset names are not read.
+**c) Vyzio keeps only what the camera cannot**: each slot's thumbnail, and the free labels of the
+slots the user names (SPECS 9.3). The labels of the fixed slots stay Vyzio's, and the camera's own
+preset names are not read. When Vyzio reads a slot empty, it drops that slot's thumbnail and free
+label, so neither comes back over another view the vendor app saves there later.
 
 **d) A slot the camera holds without a thumbnail is a held slot**, never an empty one: a tap moves
 the camera there and captures the thumbnail on arrival, like any move to a saved position. Saving
 over a held slot asks first, whatever the thumbnail.
 
-**e) Presets beyond the four slots are ignored**: neither shown, nor moved to, nor cleared. The spare
-slot of the DVRIP probe (ADR-64) is one of them.
+**e) Presets beyond the slots of SPECS 9.3 are ignored**: neither shown nor moved to, and Vyzio clears
+none of them, apart from the spare slot the DVRIP probe stores and clears itself (ADR-64).
 
 **f) Over ONVIF, the native tier holds as soon as the camera can store presets, even with none
 saved.** The camera answers the preset list read, empty or not, and its PTZ node, when it reports how
@@ -68,7 +71,8 @@ preset saved.
 
 **g) A held slot is what the camera answers now.** The panel and the privacy parking prerequisite
 (ADR-57) both read the camera. When it does not answer, they say the positions could not be read,
-never that they are missing, and the panel offers no save on a slot whose state is unknown.
+never that they are missing, with the failed-read pattern of SPECS 1.5, and the panel offers no slot
+whose state is unknown.
 
 ## Options rejected
 
@@ -85,7 +89,7 @@ never that they are missing, and the panel offers no save on a slot whose state 
 ## Consequences
 
 - A position saved in the vendor app shows on its slot, held, and the privacy parking prerequisite
-  counts it; one deleted there reads as an empty slot, and its thumbnail is no longer shown.
+  counts it; one deleted there reads as an empty slot, and its thumbnail and label are dropped.
 - A position moved in the vendor app keeps its old thumbnail until the next tap refreshes it.
 - Every read of the slots costs a round trip to the camera, and the panel and the privacy screen
   depend on the camera answering; an offline camera already suspends its PTZ controls (SPECS 2.2).
