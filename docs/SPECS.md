@@ -302,6 +302,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 ### 7.2 Attendus fonctionnels
 
 - l'accueil doit rendre visible l'etat global du systeme et les notifications recentes ;
+- tant qu'aucune camera n'est ajoutee, l'accueil, ouvert apres la creation du mot de passe (8.3), annonce la mise en service en trois etapes, ajouter une camera, choisir ce qui merite une notification, recevoir les notifications, et mene directement a l'ajout d'une camera et au reglage des notifications ; aucune etape ne demande de fichier a ecrire ;
 - les parcours camera, profils, historique et reglages doivent etre accessibles sans configuration manuelle de fichiers ;
 - l'interface doit employer un vocabulaire comprehensible pour un utilisateur non-specialiste ;
 - le libelle d'une entree de navigation doit dire la nature de l'ecran : **consulter** ou **regler** ; les deux ne se melangent pas dans une meme entree ;

@@ -1,7 +1,6 @@
 # ADR-32 — Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation
 
 > Statut : Accepté
-> Fonctionnement détaillé : [`../design/camera-discovery.md`](../design/camera-discovery.md).
 
 ## Contexte
 

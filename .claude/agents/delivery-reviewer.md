@@ -30,7 +30,11 @@ Beyond those, check what a careful reviewer would:
 - a behaviour change without a test that would fail if the change were reverted;
 - a test with no assertion, logic in a test, or a name describing a mechanism instead of a scenario;
 - a newly swallowed error, a silent fallback, a log interpolated instead of structured;
-- anything duplicated that already had a home, in code or in docs;
+- anything duplicated that already had a home, in code or in docs: a code constant copied into a
+  document, or an ADR restated outside its file (`docs/WORKFLOW.md` § Writing discipline);
+- a change to the system's shape (a container, an external system, a network flow, the ownership or
+  retention of data, a quality attribute) with no SAD update in the same branch
+  (`docs/WORKFLOW.md` § The SAD): blocking;
 - dead code, an unused export, a flag nothing reads any more;
 - secrets, credentials or camera footage entering the repository.
 
@@ -52,6 +56,6 @@ Needs another guardian
 - framing-guardian | product-guardian -- why
 ```
 
-Blocking means a rule written in one of the sources above is broken, or a behaviour change is
-untested. Anything else is "worth fixing". Report only what you verified in the files; no finding
+Blocking means a rule written in one of the sources above is broken, a behaviour change is
+untested, or the system's shape changes without the SAD. Anything else is "worth fixing". Report only what you verified in the files; no finding
 without a location. An empty section is written `none`.

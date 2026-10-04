@@ -59,7 +59,7 @@ updates:
       mock-camera:
         patterns: ["*ffmpeg", "*mediamtx"]
     ignore:
-      # Frigate is still 0.x, so its minor carries the breaking changes (SAD §11, functional drift).
+      # Frigate is still 0.x, so its minor carries the breaking changes (SAD § Risks and open questions).
       - dependency-name: "*frigate"
         update-types: [version-update:semver-major, version-update:semver-minor]
 

@@ -27,9 +27,10 @@ review agents of [`.claude/agents/`](.claude/agents/). Never merge: that stays w
 | You are working on… | Source |
 | --- | --- |
 | A product need, behaviour or journey | [`docs/SPECS.md`](docs/SPECS.md) |
-| Overall architecture, boundaries, cross-cutting choices | [`docs/SAD.md`](docs/SAD.md) |
+| The system overview: containers, network flows, data ownership, threats | [`docs/SAD.md`](docs/SAD.md) |
 | One precise architectural decision (the *why* of a choice) | [`docs/adr/`](docs/adr/) (index [`README`](docs/adr/README.md)) |
-| How a component works in detail (the *how*) | [`docs/design/`](docs/design/) (catalogue [`README`](docs/design/README.md)) |
+| How a component works in detail (the *how*) | the code and its tests, which name their ADR |
+| What a camera model was measured to do | [`docs/hardware/`](docs/hardware/), one dated sheet per model |
 | Execution order, slicing, priorities | the [GitHub issues](https://github.com/KelianS/vyzio/issues) (`gh issue list`) |
 | Dashboard UI: buttons, status pills, modals, tokens | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
 | How to use a delivered feature | the screen that carries it, in code, [ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) |
@@ -52,7 +53,7 @@ in those folders.
 - **Code comment**: English, one line, never a paragraph. The *why* that cannot be deduced, with an
   ADR reference where useful (`(ADR-44)`), never the story of the decision, which ages in silence and
   duplicates the ADR (supreme rule above). If the explanation does not fit on one line, it belongs in
-  an ADR or a TAD; point at it rather than copying it.
+  an ADR; point at it rather than copying it.
 - **Test name**: `{Method}_Should{DoSomething}_When{ConditionIsTrue}`, PascalCase, in xUnit as in
   Vitest. The name carries the subject, the expected effect and the condition, so a CI failure reads
   without opening the test body. Tests written before this rule do not follow it yet: do not take them

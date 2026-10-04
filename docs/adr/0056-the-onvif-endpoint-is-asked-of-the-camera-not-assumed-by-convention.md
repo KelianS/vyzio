@@ -44,8 +44,7 @@ addressed at the device service, which is exactly the single-endpoint behaviour 
 without naming Tapo anywhere.
 
 **b) An `OnvifEndpointResolver` owns that resolution**, and `OnvifClient` asks it for a URL instead of
-formatting one. Discovery asks the camera the same question the same way. How the resolver searches,
-in which order, on which ports and paths, is in the TAD ([`design/onvif.md`](../design/onvif.md)).
+formatting one. Discovery asks the camera the same question the same way.
 
 **c) Resolving the endpoint never guesses a credential.** A port that may not even be a camera is asked
 a question the ONVIF core specification defines as unauthenticated, and the services are asked the

@@ -1,7 +1,6 @@
 # ADR-31 — Override manuel du constructeur à l'onboarding
 
 > Statut : Accepté
-> Fonctionnement détaillé : [`../design/camera-discovery.md`](../design/camera-discovery.md).
 
 ## Contexte
 

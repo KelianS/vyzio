@@ -46,19 +46,23 @@ That is a deliberate trade for a product meant to install itself without asking 
 and it is bounded on the side that matters: the container is not published, and the command it runs is
 read from the environment when the process starts, never from a request. No route can choose it.
 
-The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) section 9.1 and is not
+The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) § Threat model and is not
 repeated here.
 
-### A known gap, stated plainly
+### Known gaps, stated plainly
 
 **The entry point is served in the clear over HTTP.** There is no TLS, no certificate and no
 redirect. On the local network, the session cookie, the password and every preview image travel
 unencrypted, and anyone able to observe that network can read them.
 
-This is deliberate sequencing rather than an oversight: it is recorded as the single target-versus-
-reality gap of the architecture document, and it is tracked in
+This is deliberate sequencing rather than an oversight: it is recorded as a target-versus-reality
+gap of the architecture document, and it is tracked in
 [issue #67](https://github.com/KelianS/vyzio/issues/67). Until it closes, treat an installation as
 only as private as the network it sits on.
+
+**Camera accounts and messaging bot tokens are stored unencrypted** in the database file. Whoever
+gets a copy of that file, a backup for instance, can read them. Tracked in
+[issue #247](https://github.com/KelianS/vyzio/issues/247).
 
 ## Out of scope
 

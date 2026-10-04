@@ -6,8 +6,8 @@ order; starting the implementation before the upstream documents are aligned is 
 ## Mandated order
 
 1. **SPECS** ([`SPECS.md`](SPECS.md)) if the product need changes: user stories, journeys, MVP scope.
-2. **SAD** ([`SAD.md`](SAD.md)) if the technical solution or the boundaries change: components,
-   responsibilities, ADRs.
+2. **ADR** ([`adr/`](adr/)) for an architectural choice, and the **SAD** ([`SAD.md`](SAD.md)) when the
+   system's shape changes (§ The SAD).
 3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
    dependencies, definition of done. An issue leans on the documents above, it does not re-decide them.
 4. **Implementation**, minimal code, consistent with the validated documents.
@@ -31,23 +31,45 @@ order; starting the implementation before the upstream documents are aligned is 
 | Type | Role | Home | Stability |
 |---|---|---|---|
 | **SPECS** | Need, journeys, product scope | [`SPECS.md`](SPECS.md) | medium |
-| **SAD** | Boundaries, major choices, the overall picture; **references** the code, never paraphrases it | [`SAD.md`](SAD.md) | high |
+| **SAD** | The system overview, and what the code does not easily show (§ The SAD) | [`SAD.md`](SAD.md) | high |
 | **ADR** | One architectural decision per file (Context, Options, Decision, Consequences) | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
-| **TAD** | *How* a subsystem works (detail too specific for the SAD) | [`design/`](design/), one `.md` per component, catalogue [`design/README.md`](design/README.md) | medium |
+| **Hardware sheet** | The raw measurements of one camera model, each dated; measurements only, no decision and no *how* | [`hardware/`](hardware/), one `.md` per model | grows with each measurement |
 | **Investigation** | Exploration, trials, reverse engineering, captures | [`investigations/`](investigations/) | disposable |
 | **User help** | How to use a delivered feature | the screen that carries it, in code (ADR-53) | follows the feature |
 
-The chain: the SAD sets the **boundaries**, an ADR **settles** a decision (and states the options it
-rejected), a TAD documents the **how** of a component, and the code **does**. Each has its own home,
-nothing is copied.
+The chain: the SAD gives the **overview**, an ADR **settles** a decision (and states the options it
+rejected), and the code and its tests carry the **how**: a one-line comment naming the ADR, a test
+named after the scenario, or after the device model whose behaviour it pins. There is no document
+level between the ADR and the code. Each has its own home, nothing is copied.
 
 **Scaling rules:**
 - The body of the SAD does not move when a decision is added: a new ADR is a file in `adr/` plus one
-  index line. SAD §5 **points at** the index, it does not copy it.
+  index line. The SAD **points at** the index, it does not copy it.
 - A superseded ADR is never deleted: its status becomes `superseded by ADR-NNNN`, and the decision
   that replaces it summarises the abandoned option under its own "Options rejected" heading.
-- Low-level detail (byte frames, port catalogues, the SQL schema, payloads, route lists) lives in a
-  **TAD** or in the **code**, never duplicated into an ADR or the SAD, which reference it.
+- **An accepted ADR is frozen**: only its status line changes. One exception: a link whose target no
+  longer exists is fixed mechanically, repointed to the new home of what it pointed at, or removed
+  with the sentence that only pointed at it. Nothing else in the ADR changes.
+- Low-level detail (byte frames, port catalogues, the SQL schema, payloads, route lists, timeouts) lives
+  in the **code**, never in a document.
+
+## The SAD
+
+**What it holds:** the quality attributes (the requirement, its architectural impact, the ADR that
+answers it), the context and the containers (C4 levels 1 and 2), the network flows (source, direction,
+destination, protocol, port, authentication), the significant scenarios (only the flows that reveal a
+constraint), data ownership and retention, the deployment, the threat model, and the risks and open
+questions, each linked to its issue. It describes the system as a whole and states what the code does
+not easily show.
+
+**What it never holds:** a class or type name, a file path, the organisation of the code (layers,
+folders, projects), a constant copied from the code, a paraphrase of the code, or a restated ADR: it
+names the ADR instead. The ports of its network flow matrix are the one exception: they are the
+system's contract with the network, and the matrix is where they are reviewed.
+
+**When it must change:** a pull request that adds, removes or changes a container, an external system,
+a network flow (port, protocol, direction, authentication), the ownership or retention of data, or a
+quality attribute updates the SAD in the same pull request.
 
 ## Writing discipline (the nature of each document)
 
@@ -59,11 +81,16 @@ Each document has a **nature**; respecting it is what stops it from swelling and
   not*. Forbidden: stacking chronological "Correction (a)(b)(c)..." entries in an ADR; merge them into
   the target decision. An ADR title states the target ("X rejected, Y chosen"), not the history ("X
   attempted then abandoned").
-- **Do not paraphrase the code.** The SQL schema, signatures, byte frames and route lists have their
-  home in the code (EF entities, endpoints, catalogues). Documents **reference** them, they do not copy
-  them. This is the supreme zero-duplication rule applied to the doc/code pair.
+- **Do not paraphrase the code, in any document.** The SQL schema, signatures, byte frames, route lists
+  and every tuned value have their home in the code. No document copies a code constant (a timeout, a
+  port, a slot number, a topic): it names the behaviour, and the code holds the value. **An ADR
+  decides with no code constant either**: a value is named by its role, never by its number. ADRs
+  accepted before this rule stay frozen as they are.
+- **Do not restate an ADR.** Any other document names the ADR (`ADR-NN`) and says at most in a few
+  words what it settles; the decision itself is told once, in the ADR.
 - **Exploration history** (trials, network captures, reverse engineering) goes to
-  [`investigations/`](investigations/), never into the SAD.
+  [`investigations/`](investigations/), never into the SAD. **What a camera model was measured to do**
+  goes to its hardware sheet, dated; the code handles it, and a test named after that model pins it.
 
 ## Precedence (one piece of information, one home)
 
