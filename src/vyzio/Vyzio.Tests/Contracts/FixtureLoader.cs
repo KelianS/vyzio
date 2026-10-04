@@ -40,9 +40,8 @@ internal static class FixtureLoader
         return new FixtureVariant(
             protocol,
             name,
-            manifest.Model,
             manifest.Firmware,
-            [.. manifest.Scenarios.Select(scenario => new FixtureScenario(Path.GetFileNameWithoutExtension(scenario.File), scenario.Description, scenario.Writes))]);
+            [.. manifest.Scenarios.Select(scenario => Path.GetFileNameWithoutExtension(scenario.File))]);
     }
 
     // The variant names as xUnit theory data, one test case per captured variant.
@@ -65,9 +64,9 @@ internal static class FixtureLoader
         _ => throw new ArgumentOutOfRangeException(nameof(protocol), protocol, null),
     };
 
-    private sealed record Manifest(string Model, string Firmware, IReadOnlyList<ManifestScenario> Scenarios);
+    private sealed record Manifest(string Firmware, IReadOnlyList<ManifestScenario> Scenarios);
 
-    private sealed record ManifestScenario(string File, string Description, bool Writes);
+    private sealed record ManifestScenario(string File);
 }
 
 // The captured variants tests name; one camera keeps the same folder name under each protocol.
@@ -89,53 +88,33 @@ internal enum FixtureProtocol
 internal sealed record FixtureVariant(
     FixtureProtocol Protocol,
     string Name,
-    string Model,
     string Firmware,
-    IReadOnlyList<FixtureScenario> Scenarios)
+    IReadOnlyList<string> Scenarios)
 {
     // Only a scenario its manifest lists: a misspelt name fails here, not as a silent empty replay.
     public Transcript Transcript(string scenario)
-        => Scenarios.Any(listed => listed.Name == scenario)
+        => Scenarios.Contains(scenario)
             ? FixtureLoader.LoadTranscript(Protocol, Name, scenario)
             : throw new ArgumentException($"{Protocol}/{Name} has no captured scenario '{scenario}'.", nameof(scenario));
 
     public override string ToString() => Name;
 }
 
-internal sealed record FixtureScenario(string Name, string Description, bool Writes);
+// The messages of one scenario, in the order they crossed the wire; a later protocol adds the fields it reads.
+internal sealed record Transcript(IReadOnlyList<TranscriptMessage> Messages);
 
-// The messages of one scenario, in the order they crossed the wire.
-internal sealed record Transcript(string Scenario, string Transport, bool Writes, IReadOnlyList<TranscriptMessage> Messages);
-
-// HTTP fills Method, Path, Status, Reason, Headers and Body; RTSP Text; V380 Hex; DVRIP Header (hex) and Body; a failure Event.
+// An HTTP message as recorded; a response without a status is a failure event the capture tool wrote instead.
 internal sealed record TranscriptMessage(
     TranscriptDirection Direction,
-    string? Method,
-    string? Path,
     int? Status,
     string? Reason,
     IReadOnlyList<IReadOnlyList<string>>? Headers,
-    string? Body,
-    string? Text,
-    string? Hex,
-    string? Header,
-    TranscriptEvent? Event,
-    string? Error);
+    string? Body);
 
 internal enum TranscriptDirection
 {
     Request,
     Response,
-    Sent,
-    Received,
-}
-
-internal enum TranscriptEvent
-{
-    Silence,
-    Closed,
-    Unreachable,
-    Malformed,
 }
 
 // The stable stand-ins the capture tool writes in place of every private value (neutral-values.json).

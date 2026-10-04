@@ -49,7 +49,7 @@ public sealed class OnvifContractTests
     public static TheoryData<string> VariantsWithoutImaging => [.. Expected.Where(row => row.Value.ImageSettings is null).Select(row => row.Key)];
 
     [Fact]
-    public void Expected_ShouldCoverEveryCapturedVariant_WhenAFirmwareFolderIsAdded()
+    public void Variants_ShouldEachHaveAnExpectationRow_WhenTheirFixturesAreLoaded()
     {
         // Arrange
         var captured = FixtureLoader.Variants(FixtureProtocol.Onvif).Select(variant => variant.Name);

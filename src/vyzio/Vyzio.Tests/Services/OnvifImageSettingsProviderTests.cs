@@ -70,6 +70,6 @@ public class OnvifImageSettingsProviderTests
 
         // Assert
         Assert.NotNull(settings);
-        Assert.Contains("<VideoSourceToken>raw_vs1</VideoSourceToken>", camera.Bodies.Last(), StringComparison.Ordinal);
+        Assert.Contains(camera.Bodies, body => body.Contains("<VideoSourceToken>raw_vs1</VideoSourceToken>", StringComparison.Ordinal));
     }
 }

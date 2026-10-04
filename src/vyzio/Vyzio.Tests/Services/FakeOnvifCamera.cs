@@ -57,7 +57,11 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
 
     private static readonly XNamespace Soap = "http://www.w3.org/2003/05/soap-envelope";
 
+    // Captures never move the head, so a replay accepts these without a word and refuses any other action it holds no answer to.
+    private static readonly HashSet<string> MoveCommands = ["ContinuousMove", "RelativeMove", "Stop"];
+
     private readonly Dictionary<string, Answer[]> _answers;
+    private readonly Func<string, Answer> _unanswered;
     private readonly Dictionary<string, int> _asked = [];
 
     private readonly Channel<(string Body, DateTimeOffset At)> _arrivals =
@@ -73,22 +77,33 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
                 ["GetProfiles"] = [Answer.Soap(profiles)],
                 ["GetConfigurationOptions"] = [configurationOptions is null ? Answer.NotFound : Answer.Soap(configurationOptions)],
                 ["GetPresets"] = [Answer.Soap(presets)],
-            })
+            },
+            unanswered: _ => Answer.Soap(EmptyAnswerXml))
     {
     }
 
-    private FakeOnvifCamera(Dictionary<string, Answer[]> answers) => _answers = answers;
+    private FakeOnvifCamera(Dictionary<string, Answer[]> answers, Func<string, Answer> unanswered)
+    {
+        _answers = answers;
+        _unanswered = unanswered;
+    }
 
-    // Replays these scenarios of one captured ONVIF variant, on any path: the client asks at announced addresses the capture did not.
-    // An action captured several times answers in order, then repeats its last.
+    // Captured answers in order, the last repeated, on any path: the client asks at announced addresses the capture did not.
     public static FakeOnvifCamera Replaying(string variant, params string[] scenarios)
     {
         var captured = FixtureLoader.Variant(FixtureProtocol.Onvif, variant);
-        return new FakeOnvifCamera(scenarios
-            .SelectMany(scenario => captured.Transcript(scenario).Messages.Chunk(2))
-            .GroupBy(exchange => ActionOf(exchange[0].Body ?? string.Empty))
-            .ToDictionary(group => group.Key, group => group.Select(exchange => Answer.Captured(exchange[1])).ToArray()));
+        return new FakeOnvifCamera(
+            scenarios
+                .SelectMany(scenario => Exchanges(variant, scenario, captured.Transcript(scenario).Messages))
+                .GroupBy(exchange => ActionOf(exchange.Request.Body ?? string.Empty))
+                .ToDictionary(group => group.Key, group => group.Select(exchange => Answer.Captured(exchange.Response)).ToArray()),
+            unanswered: action => MoveCommands.Contains(action) ? Answer.Soap(EmptyAnswerXml) : Answer.NotCaptured(variant, action));
     }
+
+    private static IEnumerable<(TranscriptMessage Request, TranscriptMessage Response)> Exchanges(string variant, string scenario, IReadOnlyList<TranscriptMessage> messages)
+        => messages.Chunk(2).Select(pair => pair is [{ Direction: TranscriptDirection.Request } request, { Direction: TranscriptDirection.Response, Status: not null } response]
+            ? (request, response)
+            : throw new InvalidDataException($"{variant}/{scenario}: not a request answered with a status, the replay cannot serve it."));
 
     public List<string> Bodies { get; } = [];
 
@@ -118,8 +133,8 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
         if (HoldsMoveAnswers && body.Contains("<ContinuousMove", StringComparison.Ordinal))
             await _movesAnswered.Task.WaitAsync(ct);
 
-        // A command no capture holds (captures never move the head) is accepted without a word.
-        return (NextAnswer(ActionOf(body)) ?? Answer.Soap(EmptyAnswerXml)).ToResponse();
+        var action = ActionOf(body);
+        return (NextAnswer(action) ?? _unanswered(action)).ToResponse();
     }
 
     private Answer? NextAnswer(string action)
@@ -151,6 +166,11 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
         public static readonly Answer NotFound = new(HttpStatusCode.NotFound, null, [], string.Empty);
 
         public static Answer Soap(string body) => new(HttpStatusCode.OK, null, [["Content-Type", "application/soap+xml; charset=utf-8"]], body);
+
+        // Read back by the client as the fault text, so a failing test names the action nobody captured.
+        public static Answer NotCaptured(string variant, string action) => new(
+            HttpStatusCode.NotImplemented, null, [["Content-Type", "application/soap+xml; charset=utf-8"]],
+            $"""<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Reason><s:Text>{variant} has no captured answer to {action}</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>""");
 
         public static Answer Captured(TranscriptMessage response)
             => new((HttpStatusCode)response.Status!.Value, response.Reason, response.Headers ?? [], response.Body ?? string.Empty);
