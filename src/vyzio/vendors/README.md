@@ -62,30 +62,24 @@ leur absence, sont commentées dans `VendorCapabilityPresets.cs`.
 
 Le nom du fichier doit correspondre à la valeur DB de `VendorFamily` (ex. `tplink_tapo.md`).
 
-La fiche est servie telle quelle à l'utilisateur pendant l'ajout de la caméra : elle ne dit que ce qui l'aide à préparer et ajouter sa caméra, jamais comment Vyzio fonctionne à l'intérieur. Elle contient **au minimum** ces sections :
+La fiche est servie telle quelle à l'utilisateur pendant l'ajout de la caméra. Elle ne dit que ce qui ne se fait pas depuis Vyzio, dans l'application du constructeur, et contient **exactement** ces deux sections, sur le modèle de `v380_pro.md` :
 
 ```md
 # Nom du constructeur
 
-Contexte : quelques phrases sur pourquoi ce modèle demande une configuration particulière.
+## Avant d'ajouter la caméra
 
-## Ce qu'il faut avant de commencer
+Une phrase de contexte, si elle aide.
 
-- Prérequis matériels et logiciels
-
-## Etapes d'activation RTSP
-
-1. Etape 1
-2. Etape 2
-
-## Si Vyzio demande une adresse de flux
-
-Format(s) RTSP connus pour ce constructeur.
+1. Ce qu'il faut faire dans l'application du constructeur, étape par étape
+2. Revenez ici : Vyzio vous demandera l'identifiant et le mot de passe.
 
 ## Si cela ne fonctionne pas
 
-Conseils de dépannage spécifiques au constructeur.
+- Quelques conseils courts, propres au constructeur
 ```
+
+Ni port, ni chemin de flux, ni protocole : Vyzio les trouve seul. Ni comment Vyzio fonctionne à l'intérieur, ni ce qu'il fera plus tard.
 
 Les liens Markdown `[label](url)` sont cliquables dans l'UI. Les assets statiques vont dans `vendors/assets/` et sont servis via `/api/cameras/vendor-assets/<nom>`.
 
