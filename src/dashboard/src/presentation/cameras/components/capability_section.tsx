@@ -399,7 +399,10 @@ function BindingCard({
         return (
           <div className="text-sm text-muted-foreground">
             <p>{USERS_NO[binding.capability]}</p>
-            {camera.privacyModeActive && <p>{TRY_REFUSED_IN_PRIVACY}</p>}
+            {/* Trying again acts on the camera too: its cost stays above the button (DESIGN SYSTEM § Help). */}
+            <p>
+              {camera.privacyModeActive ? TRY_REFUSED_IN_PRIVACY : TRY_COSTS[binding.capability]}
+            </p>
           </div>
         )
       case CapabilityState.Failed:

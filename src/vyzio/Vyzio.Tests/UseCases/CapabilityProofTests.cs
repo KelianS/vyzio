@@ -184,11 +184,10 @@ public class CapabilityProofTests
 
         // Act
         await Probe(SilentProtocol()).ExecuteAsync("cam1", CameraCapability.Ptz);
-        ProofIs(CapabilityProof.Unprovable());
-        await Probe().ExecuteAsync("cam1", CameraCapability.Ptz);
 
         // Assert
-        Assert.Equal(CapabilityStatus.RejectedByUser, binding.Status);
+        Assert.Equal(CapabilityStatus.Failed, binding.Status);
+        Assert.Equal(Rejected, binding.RejectedAt);
     }
 
     [Fact]
@@ -393,6 +392,24 @@ public class CapabilityDetectionTests
 
         // Assert
         Assert.Equal(SupportedProtocol.Onvif, _stored!.Protocol);
+        Assert.Equal(CapabilityStatus.Verified, _stored.Status);
+        Assert.Null(_stored.RejectedAt);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldPromoteTheCapability_WhenItsOwnProtocolProvesItAfterTheUsersNo()
+    {
+        // Arrange
+        CameraIs(VendorFamily.Icsee);
+        _stored = RejectedOver(SupportedProtocol.Dvrip);
+        ProofOver(SupportedProtocol.Onvif, CapabilityProof.Unprovable());
+        ProofOver(SupportedProtocol.Dvrip, CapabilityProof.Proven());
+
+        // Act
+        await DetectAsync();
+
+        // Assert
+        Assert.Equal(SupportedProtocol.Dvrip, _stored!.Protocol);
         Assert.Equal(CapabilityStatus.Verified, _stored.Status);
         Assert.Null(_stored.RejectedAt);
     }

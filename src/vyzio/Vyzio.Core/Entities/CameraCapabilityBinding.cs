@@ -32,7 +32,7 @@ public class CameraCapabilityBinding
     [NotMapped]
     public bool Verified => Status == CapabilityStatus.Verified;
 
-    // When the user confirmed the capability over this protocol; kept across checks, cleared by a protocol change or a "no".
+    // When the user confirmed the capability over this protocol; kept across checks, cleared by a proof, a protocol change or a "no".
     public DateTimeOffset? ConfirmedAt { get; set; }
 
     // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-66 c).

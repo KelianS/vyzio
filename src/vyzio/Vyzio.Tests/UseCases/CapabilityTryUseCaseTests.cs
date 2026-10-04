@@ -135,7 +135,7 @@ public class TryCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRefuse_WhenTheCapabilityIsNotToConfirm()
+    public async Task ExecuteAsync_ShouldRefuse_WhenNoTryAppliesToTheCapability()
     {
         // Arrange
         BindingIs(CameraCapability.Ptz, CapabilityStatus.Verified);
@@ -218,6 +218,21 @@ public class ConfirmCameraCapabilityUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldDateTheNewNo_WhenTheUserTriesAgainAndAnswersNoAgain()
+    {
+        // Arrange
+        var binding = BindingIs(CapabilityStatus.RejectedByUser);
+        binding.RejectedAt = _time.GetUtcNow().AddDays(-1);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", CameraCapability.Ptz, worked: false);
+
+        // Assert
+        Assert.Equal(CapabilityStatus.RejectedByUser, binding.Status);
+        Assert.Equal(_time.GetUtcNow(), binding.RejectedAt);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldClearTheUsersNo_WhenTheUserTriesAgainAndAnswersYes()
     {
         // Arrange
@@ -235,7 +250,7 @@ public class ConfirmCameraCapabilityUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRefuseTheAnswer_WhenTheCapabilityIsNotToConfirm()
+    public async Task ExecuteAsync_ShouldRefuseTheAnswer_WhenNoTryAppliesToTheCapability()
     {
         // Arrange
         var binding = BindingIs(CapabilityStatus.Missing);

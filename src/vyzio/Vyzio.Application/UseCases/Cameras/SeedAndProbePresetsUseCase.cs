@@ -113,17 +113,28 @@ public sealed class SeedAndProbePresetsUseCase(
         CancellationToken ct)
     {
         var rejectedOn = rejected.Protocol;
-        foreach (var protocol in candidates)
+        var proven = false;
+        try
         {
-            var (_, result) = await TryCapabilityAsync(rejected.CameraId, rejected.Capability, rejected, protocol, run, ct);
-            if (result?.Verified == true) return;
+            foreach (var protocol in candidates.Where(protocol => protocol != rejectedOn))
+            {
+                var (_, result) = await TryCapabilityAsync(rejected.CameraId, rejected.Capability, rejected, protocol, run, ct);
+                proven = result?.Verified == true;
+                if (proven) return;
+            }
+        }
+        finally
+        {
+            // Back on its protocol with the "no", even when the detection stops halfway.
+            if (!proven && rejected.Protocol != rejectedOn)
+            {
+                CapabilityVerdict.Reset(rejected, rejectedOn);
+                rejected.RejectedAt = rejectedAt;
+                await bindings.SaveAsync(rejected, CancellationToken.None);
+            }
         }
 
-        if (rejected.Protocol == rejectedOn && rejected.RejectedAt is not null) return;
-
-        CapabilityVerdict.Reset(rejected, rejectedOn);
-        rejected.RejectedAt = rejectedAt;
-        await bindings.SaveAsync(rejected, ct);
+        // Its own protocol is checked last: a proof there promotes it, anything else keeps the "no".
         await probe.ExecuteAsync(rejected.CameraId, rejected.Capability, ct: ct, run: run);
     }
 

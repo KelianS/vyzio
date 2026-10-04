@@ -1190,6 +1190,9 @@ describe('CameraConnectionView, a capability to confirm', () => {
       await card.findByText('Vous avez indiqué que la caméra n’a pas bougé.'),
     ).toBeInTheDocument()
     expect(card.getByText('En échec')).toBeInTheDocument()
+    expect(
+      card.getByText('Essayer fait tourner la caméra un peu, puis la ramène.'),
+    ).toBeInTheDocument()
     expect(card.getByRole('button', { name: 'Essayer à nouveau' })).toBeInTheDocument()
     expect(card.getByRole('button', { name: 'Retirer' })).toBeInTheDocument()
     expect(card.queryByRole('button', { name: 'Vérifier' })).not.toBeInTheDocument()

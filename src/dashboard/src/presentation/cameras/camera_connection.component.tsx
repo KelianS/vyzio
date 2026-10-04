@@ -212,8 +212,7 @@ export function CameraConnectionView() {
             <p>
               Regardez la caméra, ou son image sur un autre écran, avant de lancer « Essayer ». Si
               elle n’a rien fait, répondez « Non » : la capacité reste inutilisée, et Vyzio retient
-              votre réponse. Une nouvelle détection ne repose pas la question ; seule une preuve lue
-              sur la caméra la remplace.
+              votre réponse : il ne vous repose pas la question de lui-même.
             </p>
             <p>
               Ensuite, « Essayer à nouveau » refait l’essai et repose la question, ses options
