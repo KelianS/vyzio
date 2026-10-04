@@ -129,9 +129,9 @@ removing ONVIF also forgets its cached address.
 
 | Moment | What happens |
 |---|---|
-| Onboarding | The camera is created with its stream binding (RTSP or DVRIP, as discovery or the user chose), its protocol row (port from the form) and its main stream (path from the form, over RTSP), which records and detects |
+| Onboarding | The camera is created with its stream binding (RTSP or DVRIP, as discovery or the user chose), its protocol row (port from the form) and its streams laid out over that protocol, the path from the form over RTSP (§ The streams) |
 | Verification | The stream's protocol is checked first; then every stream is checked (below); the camera status follows the recording stream |
-| Protocol changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. The streams are replaced by one main stream over the new protocol, recording and detecting, and `StreamsFoundAt` is cleared |
+| Protocol changed | A connection change: the camera is back to `needs_attention`, the generated configuration is rewritten without it until it is checked again. The streams are laid out again over the new protocol (§ The streams) |
 | Frigate generation | `FrigateConfigApplier` builds one input for the recording stream and, when it differs, one for the analysed stream, each from its own stream's protocol: an RTSP URL, or a `dvrip://` source handed to go2rtc (ADR-19) |
 
 A camera without a stream binding is verified as not connected, stays out of the generated
@@ -141,17 +141,24 @@ protocol is chosen.
 ## The streams
 
 **Roles.** `CameraStream.Role` is `none`, `record`, `detect` or `record_and_detect`. `StreamLineup`
-(Core) is the one place that changes roles, and holds the guard: exactly one stream records. Giving a
-role takes it from the stream that had it; the recording stream cannot be removed or lose its record
-role (`stream_records`). `Camera.RecordStream` is the stream that records; `Camera.DetectStream` is the
-stream that detects, otherwise the recording stream (`Camera.DetectsOnRecordingStream`).
+(Core) is the one place that changes roles and holds the guard of ADR-65 b, refusing as
+`stream_records`. `Camera.RecordStream` is the stream that records; `Camera.DetectStream` the one that
+detects, else the recording stream (ADR-65 c, `Camera.DetectsOnRecordingStream`).
 
-**Found once.** `VerifyCameraUseCase` asks `ICameraStreamEnumerator` once the camera answers. While the
-binding has not found its streams yet (`CameraCapabilityBinding.StreamsFoundAt` empty), the enumerated
-streams are added, and the date is set. The defaults (the most detailed records, the lightest detects,
-a single one does both) apply only to a lineup still as onboarding left it; roles the user gave before
-are kept. Afterwards only the measured size of a stream whose path matches is
-refreshed (the main stream's size only when its path matches, ADR-38); nothing is added or removed.
+**Laid out over a protocol** (ADR-65 e). `StreamLayout` (Application) replaces the streams whenever
+the binding's protocol is chosen: `ConfigureCameraCapabilityUseCase`, detection's `BindStreamAsync`,
+and `CreateCameraUseCase` over RTSP without a path. Over DVRIP it calls `StreamLineup.ResetTo` with no
+path. Over RTSP it asks `ICameraStreamEnumerator` and hands the first scene to
+`StreamLineup.ResetToFound`, which sets `StreamsFoundAt`; else it takes the typed path
+(`ConfigureCameraCapabilityRequest.StreamPath`, the onboarding path); else it lays nothing out: the
+protocol choice and onboarding answer `stream_path_required`, detection skips RTSP.
+
+**Found once** (ADR-65 d, e). `VerifyCameraUseCase` asks `ICameraStreamEnumerator` once the camera
+answers and hands the first scene to `StreamLineup.ApplyFound`. While
+`CameraCapabilityBinding.StreamsFoundAt` is empty, the streams whose path is not listed yet are
+added and the date is set; the defaults apply only to a lineup still as its layout left it, one stream
+recording and detecting. Afterwards only the measured size of a stream whose path matches is
+refreshed (ADR-38).
 
 **Checks.** `StreamVerification` checks each stream's own protocol, once per gesture however
 many streams go through it, then asks `ICameraVerifier` about that stream: over RTSP
@@ -161,17 +168,16 @@ checks one stream alone; the recording stream's check is the camera's, so it run
 verification.
 
 **Offered on demand.** `ListAvailableCameraStreamsUseCase` (`GET .../streams/available?protocol=`)
-answers the add form. It checks the asked protocol first (ADR-61 c), then, when it answers, asks
-`ICameraStreamEnumerator` over that protocol: ONVIF profiles for RTSP, `Simplify.Encode` for DVRIP,
-the enumerator ordering them most detailed first. `StreamLineup.Offer` numbers them in that order
-and names for each the line it matches (`StreamId`, by path and protocol), so the add form leaves out
-what is listed. Over DVRIP, when the camera lists nothing, the main and secondary qualities of ADR-38
-are offered; over RTSP nothing is, and the form keeps its typed path. Nothing is written but the
-protocol's last check.
+answers the add form and the stream's protocol choice, with or without a stream binding. It checks the
+asked protocol first (ADR-61 c), then, when it answers, asks `ICameraStreamEnumerator` over that
+protocol: ONVIF profiles for RTSP, `Simplify.Encode` for DVRIP, most detailed first.
+`StreamLineup.Offer` numbers them in that order and names for each the line it matches (`StreamId`, by
+path and protocol). Over DVRIP, when the camera lists nothing, the two qualities of ADR-38 are
+offered. Nothing is written but the protocol's last check.
 
 **Per stream use cases** (`CameraStreamUseCases.cs`): list, add (a protocol among the camera's rows
-that can carry a stream; a path over RTSP; over DVRIP only the main stream, no path, or the secondary
-one, `CameraStream.DvripSecondaryQuery`, anything else refused as `unknown_stream_path`; a role;
-checked at once), change the role, remove, check; none changes a stream's path (ADR-65 e). Each
-answers with the whole list, since a role change moves roles across streams, and a change that
-touches what Frigate reads rewrites the generated configuration.
+that can carry a stream; over RTSP a path, an empty one refused as `stream_path_required`; over DVRIP
+no path or `CameraStream.DvripSecondaryQuery`, anything else refused as `unknown_stream_path`; a role;
+checked at once), change the role, remove, check. Each answers with the whole list, since a role
+change moves roles across streams, and a change that touches what Frigate reads rewrites the
+generated configuration.

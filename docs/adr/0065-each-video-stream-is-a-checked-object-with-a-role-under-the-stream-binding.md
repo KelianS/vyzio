@@ -89,9 +89,14 @@ onboarding for the main stream, and never changes afterwards: no stream line edi
 is fixed by adding the right stream with the record role, which takes it from the old one (b), then
 removing the old one.
 
-A change of the binding's protocol replaces the streams, added ones included, by a single main stream
-over the new protocol that records and detects, and clears `StreamsFoundAt`: the streams are found
-again on the next verification, and the protocol choice says so before it runs.
+**An RTSP stream always has a path.** Choosing the binding's protocol, by the user or by detection,
+replaces the streams, added ones included, by the streams laid out over that protocol, with the
+defaults of d). Over DVRIP the main quality is laid out by convention, the others are found at the
+next verification. Over RTSP the camera is asked for its streams, as the add form does, and the
+streams it reports are laid out; when it lists none, the user picks or types the first stream's path
+in the protocol choice, and without one the choice is not applied. Detection binds the stream over
+RTSP only when the camera lists its streams, and onboarding over RTSP without a typed path does the
+same. The protocol choice says what it replaces before it runs.
 
 **f) Each stream is checked, at the capability level.** A stream check first requires its
 protocol to answer with its account (ADR-61 c), then probes that stream. The stream capability's check
@@ -128,6 +133,10 @@ does; with removal, it made three ways not to use a stream.
 **A button that finds the streams again.** It would have redone e) behind one more action; the list
 asked on demand when adding a stream brings back what the user wants without touching the rest.
 
+**Carrying the main stream's path to the new protocol.** It kept one line across a protocol change,
+but an RTSP path means nothing over DVRIP, and a line left without a path over RTSP could only be
+fixed by adding another stream.
+
 **An editable path on a stream line.** It let the main stream's path be changed in place, but a line
 titled by its quality could then be pointed at another quality and read as one it no longer was. A
 stream is what its path serves: another path is another stream, added beside it.
@@ -145,5 +154,7 @@ they describe, and a camera without a stream binding has no stream to show.
 - ⚠️ Recording can move to a lighter stream: the recordings then lose detail, which the role's
   explanation says
 - ⚠️ A stream the camera no longer serves stays listed, failing, until the user removes it
+- ⚠️ An RTSP camera that lists no stream needs its path typed when its stream protocol is chosen,
+  and detection does not bind its stream over RTSP
 - ⚠️ The clean schema drops the existing streams and detect choices: they are found again at the next
   verification, with the defaults of d)

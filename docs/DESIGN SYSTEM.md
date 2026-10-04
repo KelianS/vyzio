@@ -200,22 +200,22 @@ detail once:
   recording stream's, which is the camera's check; the card's checks the camera, every stream with
   it. The stream that records is offered only the roles that record, and keeps `Retirer` disabled,
   the reason in a tooltip next to it.
-- **Choosing a stream from the camera's list.** `Ajouter un flux` closes the list: a protocol among
-  the camera's stream protocols, then a dropdown of the streams the camera serves, asked when the
-  form opens or its protocol changes, read by quality (as a line, the path in the item's tooltip)
-  and without the streams already listed, so a removed stream comes back here; then a role; checked
-  at once, the result saying whether the stream answers. Over RTSP the dropdown's last item is
-  `Autre chemin…`, which reveals a path field; it is the only item when the camera lists nothing,
-  and the folded help says why. While the camera is asked, the dropdown shows the wait greyed and
-  nothing is added. A request that fails is not an empty list: it is said under the dropdown, with
-  `Réessayer` and its diagnostic line (§ Errors), `Autre chemin…` staying available. The typed
-  field is `Chemin du flux`. This form is the only place a path is chosen: a stream line is fixed,
-  its path never edited (ADR-65 e), so no draft holds a path. No button finds the streams again.
-- A folded help panel under the list says the task: the default roles, said as such, which stream
-  to analyse for which scene, how a role moves from one stream to another, what changing the
-  protocol or adding a stream does, how a wrong path is fixed (add the right stream with
-  `Enregistrement`, then remove the old one), why the list of a camera can hold only
-  `Autre chemin…`, and how a stream whose size the camera does not give is named.
+- **Choosing a stream from the camera's list** (what it adds and when: ADR-65 e). `Ajouter un flux`
+  closes the list: `Protocole`, then a `Flux` dropdown read by quality, as a line, the path in the
+  item's tooltip, then `Rôle`, then `Ajouter et vérifier`, whose result says whether the stream
+  answers. Over RTSP the dropdown's last item is `Autre chemin…`, which reveals the field
+  `Chemin du flux`, and `Ajouter et vérifier` stays disabled while that field is empty. While the
+  camera is asked, the dropdown shows the wait greyed and nothing can be added. A request that fails
+  is said under the dropdown, never as an empty list, with `Réessayer` and its diagnostic line
+  (§ Errors), `Autre chemin…` staying available.
+- **The stream's protocol choice over RTSP** reuses that dropdown under `Protocole`: the wait while
+  the camera is asked, then, when the camera lists nothing or cannot be asked, `Autre chemin…` alone
+  with `Chemin du flux`; `Configurer` stays disabled until a path is typed. When the camera lists its
+  streams, nothing more shows.
+- A folded help panel, `Quel rôle donner à chaque flux ?`, under the list holds the task help of
+  ADR-65: the default roles, said as such, which stream to analyse for which scene, how a role moves,
+  what changing the protocol or adding a stream does, how a wrong path is fixed, why the dropdown can
+  hold only `Autre chemin…`, and how a stream without a size is named.
 
 Addresses, ports and accounts are declared settings and follow the page's draft; a check, a
 protocol choice, adding a capability or a protocol and removing a protocol are actions, and so is
