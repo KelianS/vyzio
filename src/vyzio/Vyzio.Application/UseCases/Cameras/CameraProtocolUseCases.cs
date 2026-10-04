@@ -104,10 +104,10 @@ public sealed class UpdateCameraProtocolUseCase(
         var entry = camera.EnsureProtocol(protocol);
         // The usual port is stored as none, so a later change of the usual one reaches this camera.
         var port = request.Port is > 0 && request.Port != ProtocolPorts.Usual(protocol) ? request.Port : null;
-        var username = CameraDraftFactory.NormalizeOptional(request.Username);
+        var username = CameraFactory.NormalizeOptional(request.Username);
         var password = username is null
             ? null
-            : request.Password is null ? entry.Password : CameraDraftFactory.NormalizeOptional(request.Password);
+            : request.Password is null ? entry.Password : CameraFactory.NormalizeOptional(request.Password);
 
         var reachChanged = entry.Port != port
             || !string.Equals(entry.Username, username, StringComparison.Ordinal)
@@ -166,8 +166,8 @@ public sealed class AddCameraProtocolUseCase(ICameraRepository cameras, CameraPr
         var entry = camera.EnsureProtocol(protocol);
         // The usual port is stored as none, as on any other row.
         entry.Port = request.Port is > 0 && request.Port != ProtocolPorts.Usual(protocol) ? request.Port : null;
-        entry.Username = CameraDraftFactory.NormalizeOptional(request.Username);
-        entry.Password = entry.Username is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
+        entry.Username = CameraFactory.NormalizeOptional(request.Username);
+        entry.Password = entry.Username is null ? null : CameraFactory.NormalizeOptional(request.Password);
         entry.UpdatedAt = time.GetUtcNow();
 
         await protocolCheck.CheckAsync(camera, protocol, run: null, ct);

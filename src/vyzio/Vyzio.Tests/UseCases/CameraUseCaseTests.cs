@@ -774,6 +774,30 @@ public class DeleteCameraUseCaseTests
             updated.ValidationState == CameraValidationState.PendingRemoval
             && updated.IsEnabled == false), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRemoveTheCameraAtOnceWithoutSummoningTheRestart_WhenTheCameraIsToSetUp()
+    {
+        // Arrange
+        var camera = new Camera
+        {
+            Id = "camera-1",
+            Slug = "front-door",
+            FrigateCameraName = "front_door",
+            DisplayName = "Front Door",
+            Host = "192.168.1.10",
+            ValidationState = CameraValidationState.ToSetUp,
+        };
+        _repo.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        var result = await _sut.ExecuteAsync(camera.Id);
+
+        // Assert
+        Assert.True(result!.Deleted);
+        await _repo.Received(1).DeleteAsync(camera, Arg.Any<CancellationToken>());
+        await _applier.DidNotReceive().WriteConfigAsync(Arg.Any<IReadOnlyList<Camera>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
 }
 
 public class UpdateCameraUseCaseTests

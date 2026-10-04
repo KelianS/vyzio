@@ -50,7 +50,7 @@ public sealed record CameraStatusDto(
 
         if (camera.ValidationState == CameraValidationState.ToSetUp)
         {
-            return "Camera a configurer : son flux video n'a pas encore fonctionne. Lancez la detection ou choisissez son flux.";
+            return "Caméra à configurer : son flux vidéo n'a pas encore fonctionné. Lancez « Détecter automatiquement » ou choisissez son flux.";
         }
 
         if (camera.ValidationState == CameraValidationState.Draft)

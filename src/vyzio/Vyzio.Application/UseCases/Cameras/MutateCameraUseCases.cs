@@ -51,10 +51,10 @@ public sealed class CreateCameraUseCase(ICameraRepository cameras)
         ArgumentException.ThrowIfNullOrWhiteSpace(request.DisplayName);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Host);
 
-        var baseSlug = CameraDraftFactory.Slugify(request.DisplayName);
+        var baseSlug = CameraFactory.Slugify(request.DisplayName);
         var slug = await EnsureUniqueSlugAsync(baseSlug, ct);
 
-        var camera = CameraDraftFactory.Build(request, slug);
+        var camera = CameraFactory.Build(request, slug);
         await cameras.AddAsync(camera, ct);
 
         return CameraDto.From(camera);
@@ -148,12 +148,12 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         }
 
         var normalizedHost = request.Host.Trim();
-        var normalizedUsername = CameraDraftFactory.NormalizeOptional(request.Username);
+        var normalizedUsername = CameraFactory.NormalizeOptional(request.Username);
         var normalizedVendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var parsedVendorFamily)
             ? parsedVendorFamily
             : (VendorFamily?)null;
         var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
-        var normalizedPassword = request.Password is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
+        var normalizedPassword = request.Password is null ? null : CameraFactory.NormalizeOptional(request.Password);
 
         var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(camera.Username, normalizedUsername, StringComparison.Ordinal)
@@ -165,7 +165,7 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         if (!string.Equals(camera.DisplayName, normalizedDisplayName, StringComparison.Ordinal))
         {
             camera.DisplayName = normalizedDisplayName;
-            camera.FrigateCameraName = CameraDraftFactory.Slugify(normalizedDisplayName).Replace('-', '_');
+            camera.FrigateCameraName = CameraFactory.Slugify(normalizedDisplayName).Replace('-', '_');
         }
 
         camera.Host = normalizedHost;
@@ -257,6 +257,13 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfi
         if (camera is null)
         {
             return null;
+        }
+
+        // Never in surveillance, so nothing waits for a restart: it goes at once (ADR-68 d).
+        if (camera.ValidationState == CameraValidationState.ToSetUp)
+        {
+            await cameras.DeleteAsync(camera, ct);
+            return new DeleteCameraResultDto(true, $"Camera \"{camera.DisplayName}\" removed.", string.Empty);
         }
 
         camera.IsEnabled = false;
@@ -392,7 +399,7 @@ internal static class StreamVerification
     }
 }
 
-internal static class CameraDraftFactory
+internal static class CameraFactory
 {
     // The access alone: no protocol, stream or brand until detection or the user binds them (ADR-68 a, b).
     public static Camera Build(CreateCameraRequest request, string slug) => new()

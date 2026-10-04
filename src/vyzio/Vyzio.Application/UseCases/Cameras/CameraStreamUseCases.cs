@@ -83,8 +83,8 @@ public sealed class AddCameraStreamUseCase(
         if (camera.Protocol(protocol) is null) return new StreamResult(StreamOutcome.ProtocolNotOnCamera);
 
         var path = protocol == SupportedProtocol.Rtsp
-            ? CameraDraftFactory.NormalizeStreamPath(request.Path)
-            : CameraDraftFactory.NormalizeOptional(request.Path);
+            ? CameraFactory.NormalizeStreamPath(request.Path)
+            : CameraFactory.NormalizeOptional(request.Path);
         // An RTSP stream is addressed by its path, never by the connection root (ADR-65 e).
         if (protocol == SupportedProtocol.Rtsp && path is null)
             return new StreamResult(StreamOutcome.PathRequired);
@@ -170,7 +170,7 @@ internal static class StreamLayout
             return true;
         }
 
-        if (CameraDraftFactory.NormalizeStreamPath(typedPath) is { } path)
+        if (CameraFactory.NormalizeStreamPath(typedPath) is { } path)
         {
             StreamLineup.ResetTo(binding, protocol, path);
             return true;
