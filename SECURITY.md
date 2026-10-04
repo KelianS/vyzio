@@ -60,9 +60,9 @@ architecture document, and it is tracked in
 [issue #67](https://github.com/KelianS/vyzio/issues/67). Until it closes, treat an installation as
 only as private as the network it sits on.
 
-**Camera accounts and messaging bot tokens are stored unencrypted** in the database file. Whoever
-gets a copy of that file, a backup for instance, can read them. Tracked in
-[issue #247](https://github.com/KelianS/vyzio/issues/247).
+**Camera accounts and messaging channel tokens are stored in clear** in the database file, and the
+camera accounts again in the Frigate configuration Vyzio generates. Whoever gets a copy of either
+file, a backup for instance, can read them: protect both as you would the passwords themselves.
 
 ## Out of scope
 

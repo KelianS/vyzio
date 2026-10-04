@@ -24,46 +24,16 @@ Les composants Vyzio (règles métier, storage, notification) doivent réagir au
 
 ## Décision
 
-**MQTT (broker Mosquitto dédié) pour tous les événements métier.**
+**MQTT (broker Mosquitto dédié) entre Frigate et Vyzio, une file en mémoire (Channels) entre les services de Vyzio.**
 
-Le `FrigateAdapter` souscrit aux topics Frigate et publie des événements Vyzio sur des topics dédiés. Chaque composant Vyzio (ProfileRulesService, StorageService, NotificationService) souscrit indépendamment aux topics qui le concernent.
+Vyzio souscrit aux événements de Frigate et lui publie ses commandes de réglage à chaud. Vyzio ne publie aucun topic qui lui soit propre : ses services se passent les événements par une file en mémoire, dans le même processus.
 
 ```
-Topics MQTT Frigate (consommés par FrigateAdapter) :
-frigate/events                    → detections Frigate retenues dans la solution cible
-frigate/{camera}/motion           → non consomme par le flux metier cible
+Topics MQTT Frigate consommés par Vyzio :
+frigate/events                    → détections Frigate
 
-Topics MQTT Vyzio (publiés par Vyzio, consommés par ses propres services + tiers) :
-vyzio/events/detection_enriched   → { frigate_event_id, camera, label, sub_label, confidence, occurred_at }
-vyzio/events/notification_ready   → { event_id, profile_id, priority, channels }
-vyzio/events/camera_status        → { camera, status: online|offline|error }
-```
-
-```csharp
-// FrigateAdapter : consomme Frigate, publie sur Vyzio topics
-public class FrigateAdapter : IHostedService
-{
-    public async Task HandleFrigateEventAsync(FrigateEvent e)
-    {
-    // Normalisation (camera, label, sub_label, score, liens Frigate)
-    await _mqttClient.PublishAsync("vyzio/events/detection_enriched", payload);
-    }
-}
-
-// ProfileRulesService : applique le mapping produit et prépare les actions
-public class ProfileRulesService : IHostedService
-{
-  // Souscrit : vyzio/events/detection_enriched
-  // Mappe sub_label Frigate vers un profil Vyzio, évalue les règles
-  // Publie : vyzio/events/notification_ready
-}
-
-// NotificationService : souscrit aux événements enrichis
-public class NotificationService : IHostedService
-{
-  // Souscrit : vyzio/events/notification_ready
-  // Envoie Telegram / FCM / webhook
-}
+Topics MQTT Frigate publiés par Vyzio :
+frigate/{camera}/motion_contour_area/set  → sensibilité de détection (ADR-35)
 ```
 
 **Redis Streams** est documenté comme évolution v2 si le besoin de persistance ou de replay d'événements se confirme.
@@ -72,8 +42,8 @@ public class NotificationService : IHostedService
 
 - ✅ Dépendance explicite et légère — un broker Mosquitto dédié, visible dans le runtime
 - ✅ Continuité avec Frigate — une seule technologie de messagerie dans le système
-- ✅ Intégrations tierces (Home Assistant, n8n) nativement exposées sur les topics Vyzio
-- ✅ Composants Vyzio découplés — chacun souscrit uniquement aux topics qu'il consomme
+- ✅ Composants Vyzio découplés : l'ingestion des événements Frigate dépose dans une file en mémoire que le service de notification consomme
+- ⚠️ Aucun événement Vyzio n'est exposé aux intégrations tierces, et le broker n'est pas joignable hors du réseau Docker interne
 - ✅ Testabilité : un broker MQTT léger (Mosquitto en container test) remplace le mock
 - ⚠️ MQTT QoS 1 : at-least-once, pas exactly-once — les services doivent être idempotents sur réception
 - ⚠️ Pas de persistance native des événements en vol si le broker redémarre — mitigé par QoS 1 et sessions persistantes

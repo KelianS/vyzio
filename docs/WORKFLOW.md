@@ -47,10 +47,11 @@ level between the ADR and the code. Each has its own home, nothing is copied.
   index line. The SAD **points at** the index, it does not copy it.
 - A superseded ADR is never deleted: its status becomes `superseded by ADR-NNNN`, and the decision
   that replaces it summarises the abandoned option under its own "Options rejected" heading.
-- **An accepted ADR is frozen**: only its status line changes. Two exceptions: a link whose target no
+- **An accepted ADR is frozen**: only its status line changes. Three exceptions: a link whose target no
   longer exists is fixed mechanically, repointed to the new home of what it pointed at, or removed
-  with the sentence that only pointed at it; and a secret or personal data published by mistake is
-  replaced by a neutral value. Nothing else in the ADR changes.
+  with the sentence that only pointed at it; a secret or personal data published by mistake is
+  replaced by a neutral value; and a statement that contradicts the delivered product is corrected in
+  place, in the present tense. Nothing else in the ADR changes.
 
 ## The SAD
 

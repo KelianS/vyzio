@@ -138,7 +138,7 @@ CameraAggregate
   - ValidationState
 ```
 
-Les secrets caméra ne doivent pas être stockés en clair dans la projection métier. Ils restent chiffrés via la stratégie déjà retenue dans le SAD (`DataProtection`) ou référencés via un magasin interne si ce besoin grossit.
+Les secrets caméra sont stockés en clair dans la base de Vyzio, et recopiés dans la configuration générée de Frigate, qui en a besoin pour ouvrir les flux.
 
 ## Intégration Frigate retenue
 
