@@ -49,9 +49,10 @@ read from the environment when the process starts, never from a request. No rout
 **On the home network, the interface is served over plain HTTP, and that is deliberate.** There is no
 TLS, no certificate and no redirect, so the session cookie, the password and every preview image
 travel unencrypted, and anyone able to observe that network can read them. An installation is
-exactly as private as the network it sits on: its Wi-Fi encryption, and who is on it. Once remote
-access ships ([issue #62](https://github.com/KelianS/vyzio/issues/62)), the interface is reached from
-outside only through the overlay network below, whose tunnel encrypts end to end. Why, and the certificate options set aside:
+exactly as private as the network it sits on: its Wi-Fi encryption, and who is on it. Remote access
+is not delivered yet ([issue #62](https://github.com/KelianS/vyzio/issues/62)): when it is, the
+interface is reached from outside only through the overlay network below, whose tunnel encrypts end
+to end. Why, and the certificate options set aside:
 [ADR-67](docs/adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md).
 
 The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) § Threat model and is not
@@ -67,8 +68,9 @@ Tracked in [issue #247](https://github.com/KelianS/vyzio/issues/247).
 ## Out of scope
 
 - **Exposing the interface directly to the internet.** Port-forwarding the dashboard is not a
-  supported deployment, and reports based on it will be closed. Remote access is delivered through
-  a user-operated overlay network instead, where the hub is a peer and not a gateway
+  supported deployment, and reports based on it will be closed. Remote access is not delivered yet
+  ([issue #62](https://github.com/KelianS/vyzio/issues/62)): when it is, it goes through a
+  user-operated overlay network, where the hub is a peer and not a gateway
   ([ADR-51](docs/adr/0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)).
 - **An attacker who already has the machine.** Vyzio does not defend against someone with a shell
   on, or physical access to, the host: they hold the database and the disk.
