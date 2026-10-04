@@ -76,3 +76,4 @@ references these ADRs rather than copying them.
 | [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) | DVRIP native presets are detected by storing, then clearing, a spare slot | Accepted, amended by ADR-66 (the login deciding PTZ verified) |
 | [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) | Each video stream is a checked object with a role, under the stream binding | Accepted |
 | [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) | A capability is proven by a read, or confirmed by the user after trying it | Accepted |
+| [ADR-70](0070-frigate-reaches-nothing-on-the-internet-version-check-off-models-shipped.md) | Frigate reaches nothing on the internet: version check off, models shipped, WebRTC neutralised | Accepted |
