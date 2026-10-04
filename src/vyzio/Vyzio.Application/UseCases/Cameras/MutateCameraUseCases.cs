@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -439,18 +439,19 @@ internal static class CameraDraftFactory
 
         // A camera is born with its stream capability: the protocol that carries it, how to reach
         // that protocol, and the main path when the stream goes over RTSP (ADR-38, ADR-61).
-        camera.Capabilities.Add(new CameraCapabilityBinding
+        var binding = new CameraCapabilityBinding
         {
             CameraId = camera.Id,
             Capability = CameraCapability.Stream,
             Protocol = streamProtocol,
             ManuallyConfigured = true,
-        });
+        };
+        camera.Capabilities.Add(binding);
         var protocol = camera.EnsureProtocol(streamProtocol);
         protocol.Port = request.Stream.Port is > 0 && request.Stream.Port != ProtocolPorts.Usual(streamProtocol)
             ? request.Stream.Port
             : null;
-        camera.SetMainStreamPath(NormalizeStreamPath(request.Stream.Path));
+        StreamLineup.ResetTo(binding, streamProtocol, NormalizeStreamPath(request.Stream.Path));
         return camera;
     }
 

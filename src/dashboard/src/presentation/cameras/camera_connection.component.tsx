@@ -22,7 +22,6 @@ import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraConnectionPresenter } from './camera_connection.presenter'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido } from './camera_connection.uido'
-import { streamBindingOf } from './capability_state'
 import { CAPABILITY_LABELS } from './cameras.formatters'
 import {
   ALL_PROTOCOLS,
@@ -44,7 +43,6 @@ const DRAFT_LABELS: Record<keyof ConnectionValues, string> = {
   host: 'Adresse',
   username: 'Identifiant',
   password: 'Mot de passe',
-  streamPath: 'Chemin du flux',
   ...PROTOCOL_DRAFT_LABELS,
 }
 
@@ -71,11 +69,7 @@ export function CameraConnectionView() {
     presenter.onLoad(cameraId)
   }, [presenter, cameraId])
 
-  const stream = streamBindingOf(uido.bindings)
-  const saved = useMemo(
-    () => connectionValuesOf(camera, stream, uido.protocols),
-    [camera, stream, uido.protocols],
-  )
+  const saved = useMemo(() => connectionValuesOf(camera, uido.protocols), [camera, uido.protocols])
   const draft = useSettingsDraft<ConnectionValues>({ saved, labels: DRAFT_LABELS })
 
   useUnsavedChanges(draft.dirty)
@@ -126,15 +120,6 @@ export function CameraConnectionView() {
     },
   ]
 
-  const streamPath: SettingDeclaration = {
-    id: 'connection-stream-path',
-    label: 'Chemin du flux',
-    nature: { kind: 'text', placeholder: '/stream1' },
-    help: 'Choisissez un des flux que la caméra annonce, ou « Autre chemin… » pour en saisir un.',
-    value: draft.values.streamPath,
-    onChange: (value) => draft.set('streamPath', value as string),
-  }
-
   // Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2).
   const testsSuspended = !camera.connected
 
@@ -165,7 +150,6 @@ export function CameraConnectionView() {
             pending={uido.pending}
             manualFormOpen={uido.manualFormOpen}
             manualConfiguring={uido.manualConfiguring}
-            streamPath={streamPath}
             streams={{
               lineup: uido.streams,
               loading: uido.streamsLoading,

@@ -30,7 +30,7 @@ export function streamLineState(stream: CameraStream): StreamLineState {
 }
 
 // Only an RTSP stream is addressed by a path; DVRIP derives it from the protocol (ADR-61).
-export const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
+const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
   rtsp: true,
   dvrip: false,
   onvif: false,
@@ -68,10 +68,10 @@ export function streamFailure(records: boolean): string {
 // Said in the confirmation that takes the detection stream away: the analysis falls back (ADR-65 c).
 export const DETECTION_FALLS_BACK = 'La détection passera par le flux d’enregistrement.'
 
-/** How Vyzio reaches a stream, its quality's tooltip; a path shown as its own setting is not repeated. */
-export function streamReach(stream: CameraStream, pathShown: boolean): string {
+/** How Vyzio reaches a stream, its quality's tooltip; the path never changes once added (ADR-65 e). */
+export function streamReach(stream: CameraStream): string {
   const protocol = PROTOCOL_LABELS[stream.protocol]
-  return ASKS_STREAM_PATH[stream.protocol] && stream.path && !pathShown
+  return ASKS_STREAM_PATH[stream.protocol] && stream.path
     ? `Par ${protocol}, chemin ${stream.path}.`
     : `Par ${protocol}.`
 }
@@ -154,7 +154,7 @@ const ASKING: StreamChoice = {
   waiting: true,
 }
 
-// Keyed by path: the saved path's item stays the same item once the camera's list names it, so an open dropdown keeps it.
+// Keyed by path: a picked item stays the same item when the camera's list answers again.
 function pathKey(path: string | null): string {
   return `path:${path ?? ''}`
 }
@@ -169,16 +169,9 @@ function offerChoice(offer: AvailableStream, protocol: SupportedProtocol): Strea
   }
 }
 
-/** Offers not already a line of another stream: what an add, or this stream's path, may still pick. */
-function freeOffers(
-  available: AvailableStream[],
-  lineup: CameraStreamLineup,
-  keep: string | null,
-): AvailableStream[] {
-  return available.filter(
-    (offer) =>
-      offer.streamId === keep || !lineup.streams.some((stream) => stream.id === offer.streamId),
-  )
+/** Offers not already a line: what an add may still pick. */
+function freeOffers(available: AvailableStream[], lineup: CameraStreamLineup): AvailableStream[] {
+  return available.filter((offer) => !lineup.streams.some((stream) => stream.id === offer.streamId))
 }
 
 /** The rest of a dropdown: the wait while the camera is asked, then « Autre chemin… » last over RTSP. */
@@ -198,41 +191,8 @@ export function addChoices(
   lineup: CameraStreamLineup,
   protocol: SupportedProtocol,
 ): StreamChoice[] {
-  const offers = freeOffers(available ?? [], lineup, null).map((offer) =>
-    offerChoice(offer, protocol),
-  )
+  const offers = freeOffers(available ?? [], lineup).map((offer) => offerChoice(offer, protocol))
   return [...offers, ...tail(available, protocol)]
-}
-
-/** The main stream's path: its saved path stands as its own item until the camera's list says which it is. */
-export function mainPathChoices(
-  available: AvailableStream[] | undefined,
-  lineup: CameraStreamLineup,
-  main: CameraStream,
-): StreamChoice[] {
-  const offers = freeOffers(available ?? [], lineup, main.id).map((offer) =>
-    offerChoice(offer, main.protocol),
-  )
-  const saved: StreamChoice[] =
-    main.path !== null && !offers.some((choice) => choice.path === main.path)
-      ? [
-          {
-            key: pathKey(main.path),
-            label: streamQuality(main),
-            hint: main.path,
-            path: main.path,
-            other: false,
-          },
-        ]
-      : []
-  return [...saved, ...offers, ...tail(available, main.protocol)]
-}
-
-/** The item a path reads as: the offer with that path, else « Autre chemin… » with the path typed. */
-export function choiceOfPath(choices: StreamChoice[], path: string): StreamChoice {
-  return (
-    choices.find((choice) => !choice.other && !choice.waiting && choice.path === path) ?? OTHER_PATH
-  )
 }
 
 /** A dropdown's options; the wait is listed greyed, never picked. */

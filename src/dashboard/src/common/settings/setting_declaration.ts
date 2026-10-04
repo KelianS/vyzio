@@ -33,12 +33,7 @@ export type SettingNature =
   /** Boolean -> a switch. The state reads without reading the label. */
   | { readonly kind: 'toggle' }
   /** Exclusive choice -> a dropdown, whatever the number of options. */
-  | {
-      readonly kind: 'choice'
-      readonly options: readonly ChoiceOption[]
-      /** Options asked on demand: called each time the dropdown opens. */
-      readonly onOpen?: () => void
-    }
+  | { readonly kind: 'choice'; readonly options: readonly ChoiceOption[] }
   /** Multiple choice -> a dropdown of checkboxes, summarised on one line at rest. */
   | {
       readonly kind: 'multiChoice'

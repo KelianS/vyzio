@@ -14,7 +14,6 @@ export function makeCapabilityBinding(
     isPreset: true,
     isConfigured: true,
     panInverted: null,
-    streamPath: null,
     nativePositions: null,
     ...overrides,
   }

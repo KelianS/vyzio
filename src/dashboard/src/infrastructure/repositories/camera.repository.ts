@@ -295,13 +295,6 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
-  async setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding> {
-    return putJson<CameraCapabilityBinding>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/stream/path`,
-      { path },
-    )
-  }
-
   async detectCapabilities(cameraId: string): Promise<void> {
     await postJson<null>(`${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/detect`)
   }

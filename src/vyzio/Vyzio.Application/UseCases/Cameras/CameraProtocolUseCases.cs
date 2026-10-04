@@ -201,31 +201,6 @@ public sealed class RemoveCameraProtocolUseCase(ICameraRepository cameras, ICame
     }
 }
 
-// The stream capability's main path, a setting of the stream over RTSP (ADR-38, ADR-61).
-public sealed class SetStreamPathUseCase(
-    ICameraRepository cameras,
-    ICameraCapabilityBindingRepository bindings,
-    IFrigateConfigApplier frigateConfigApplier)
-{
-    public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, string? path, CancellationToken ct = default)
-    {
-        var camera = await cameras.GetByIdAsync(cameraId, ct);
-        if (camera is null) return null;
-
-        var normalized = CameraDraftFactory.NormalizeStreamPath(path);
-        if (camera.MainStream?.Path != normalized)
-        {
-            camera.SetMainStreamPath(normalized);
-            CameraConnectionChange.Apply(camera);
-            await cameras.UpdateAsync(camera, ct);
-            await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
-        }
-
-        var binding = await bindings.GetAsync(cameraId, CameraCapability.Stream, ct);
-        return binding is null ? null : CameraCapabilityBindingDto.From(binding, camera);
-    }
-}
-
 // A new way to reach the stream: the camera is checked again before surveillance takes it up (ADR-44, ADR-61).
 internal static class CameraConnectionChange
 {

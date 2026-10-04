@@ -91,7 +91,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateCameraProtocolUseCase>();
         services.AddScoped<AddCameraProtocolUseCase>();
         services.AddScoped<RemoveCameraProtocolUseCase>();
-        services.AddScoped<SetStreamPathUseCase>();
         services.AddScoped<GetCameraStreamsUseCase>();
         services.AddScoped<AddCameraStreamUseCase>();
         services.AddScoped<SetCameraStreamRoleUseCase>();

@@ -7,8 +7,6 @@ import { HelpPanel } from '../../../common/components/help_panel'
 import { HelpTrigger } from '../../../common/components/help_trigger'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
-import { SettingRow } from '../../../common/settings/setting_row'
-import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import { Button } from '../../../common/ui/button'
 import { Input } from '../../../common/ui/input'
 import type { StreamProtocol } from '../../../domain/entities/camera_capability_binding.entity'
@@ -23,7 +21,6 @@ import { DESTRUCTIVE_OUTLINE } from '../cameras.formatters'
 import { StreamTask } from '../camera_connection.uido'
 import type { ProtocolOption } from '../protocol_labels'
 import {
-  ASKS_STREAM_PATH,
   DETECTION_FALLS_BACK,
   OTHER_PATH,
   RECORDING_STREAM_KEPT,
@@ -32,9 +29,7 @@ import {
   STREAM_LINE_PILLS,
   StreamLineState,
   addChoices,
-  choiceOfPath,
   choiceOptions,
-  mainPathChoices,
   roleOptions,
   streamFailure,
   streamLineState,
@@ -49,7 +44,7 @@ export interface StreamLineIntents {
   onSetRole: (streamId: string, role: StreamRole) => void
   onRemove: (streamId: string) => Promise<void>
   onCheck: (streamId: string) => void
-  /** Asks the camera what it serves over a protocol, each time a stream dropdown or the add form opens. */
+  /** Asks the camera what it serves over a protocol, each time the add form opens or changes protocol. */
   onListAvailable: (protocol: StreamProtocol) => void
   onOpenForm: () => void
   onCloseForm: () => void
@@ -62,7 +57,6 @@ export function StreamLines({
   loading,
   readError,
   protocols,
-  mainPath,
   available,
   availableErrors,
   tasks,
@@ -75,8 +69,6 @@ export function StreamLines({
   readError: AppError | null
   /** The camera's protocols that can carry a stream, for « Ajouter un flux ». */
   protocols: ProtocolOption[]
-  /** The main stream's path, a declared setting that follows the page's draft (ADR-41). */
-  mainPath: SettingDeclaration
   /** What the camera serves, by protocol; absent while it is asked. */
   available: Partial<Record<StreamProtocol, AvailableStream[]>>
   availableErrors: Partial<Record<StreamProtocol, AppError>>
@@ -98,15 +90,11 @@ export function StreamLines({
       )}
       {lineup && (
         <ul aria-label="Flux" className="flex flex-col gap-3">
-          {lineup.streams.map((stream, index) => (
+          {lineup.streams.map((stream) => (
             <StreamLine
               key={stream.id}
               stream={stream}
               lineup={lineup}
-              // The lowest rank holds the path the user entered (ADR-65): shown once, as its setting.
-              mainPath={index === 0 && ASKS_STREAM_PATH[stream.protocol] ? mainPath : null}
-              available={available[stream.protocol]}
-              availableError={availableErrors[stream.protocol]}
               task={tasks[stream.id]}
               intents={intents}
             />
@@ -146,6 +134,10 @@ export function StreamLines({
           y compris un flux retiré.
         </p>
         <p>
+          Un chemin erroné se corrige en ajoutant le bon flux avec le rôle « Enregistrement », puis
+          en retirant l’ancien.
+        </p>
+        <p>
           Si la liste ne propose que « Autre chemin… », la caméra ne dit pas quels flux elle sert,
           ou ne répond pas : saisissez le chemin donné par le fabricant.
         </p>
@@ -161,17 +153,11 @@ export function StreamLines({
 function StreamLine({
   stream,
   lineup,
-  mainPath,
-  available,
-  availableError,
   task,
   intents,
 }: {
   stream: CameraStream
   lineup: CameraStreamLineup
-  mainPath: SettingDeclaration | null
-  available: AvailableStream[] | undefined
-  availableError: AppError | undefined
   task: StreamTask | undefined
   intents: StreamLineIntents
 }) {
@@ -186,23 +172,10 @@ function StreamLine({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <p className="font-medium">{quality}</p>
-          <HelpTrigger
-            question="Comment Vyzio reçoit-il ce flux ?"
-            help={streamReach(stream, mainPath !== null)}
-          />
+          <HelpTrigger question="Comment Vyzio reçoit-il ce flux ?" help={streamReach(stream)} />
         </div>
         <Badge tone={STREAM_LINE_PILLS[state].tone}>{STREAM_LINE_PILLS[state].label}</Badge>
       </div>
-      {mainPath && (
-        <MainPathChoice
-          setting={mainPath}
-          stream={stream}
-          lineup={lineup}
-          available={available}
-          error={availableError}
-          onOpen={() => intents.onListAvailable(stream.protocol)}
-        />
-      )}
       {state === StreamLineState.Failed && (
         <div className="text-sm text-destructive">
           <p>{streamFailure(records)}</p>
@@ -266,51 +239,6 @@ function StreamLine({
         />
       )}
     </li>
-  )
-}
-
-/** The main stream's path over RTSP: a declared setting picked from the camera's streams, or typed (ADR-65 e). */
-function MainPathChoice({
-  setting,
-  stream,
-  lineup,
-  available,
-  error,
-  onOpen,
-}: {
-  setting: SettingDeclaration
-  stream: CameraStream
-  lineup: CameraStreamLineup
-  available: AvailableStream[] | undefined
-  error: AppError | undefined
-  onOpen: () => void
-}) {
-  const [typing, setTyping] = useState(false)
-  const choices = mainPathChoices(available, lineup, stream)
-  const selected = typing ? OTHER_PATH : choiceOfPath(choices, String(setting.value))
-
-  // One name for this dropdown and the form's, the typed field keeping the setting's own (DESIGN SYSTEM § stream lines).
-  const choice: SettingDeclaration = {
-    ...setting,
-    label: 'Flux',
-    nature: { kind: 'choice', options: choiceOptions(choices), onOpen },
-    value: selected.key,
-    onChange: (key) => {
-      const picked = choices.find((entry) => entry.key === key)
-      if (!picked) return
-      setTyping(picked.other)
-      if (!picked.other) setting.onChange(picked.path ?? '')
-    },
-  }
-
-  return (
-    <>
-      <SettingRow setting={choice} />
-      {error && <ListFailure error={error} onRetry={onOpen} />}
-      {selected.other && (
-        <SettingRow setting={{ ...setting, id: `${setting.id}-other`, help: undefined }} />
-      )}
-    </>
   )
 }
 

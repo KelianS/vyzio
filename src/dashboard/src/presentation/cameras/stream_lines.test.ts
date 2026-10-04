@@ -9,9 +9,7 @@ import {
   StreamLineState,
   addChoices,
   addedStream,
-  choiceOfPath,
   choiceOptions,
-  mainPathChoices,
   roleOptions,
   streamCoverageLine,
   streamFailure,
@@ -98,30 +96,27 @@ describe('stream_lines', () => {
     },
   )
 
-  it('streamReach_ShouldNameThePathToo_WhenItIsNotShownAsItsOwnSetting', () => {
+  it('streamReach_ShouldNameThePathToo_WhenTheStreamGoesOverRtsp', () => {
     // Arrange
     const stream = makeCameraStream({ protocol: 'rtsp', path: '/stream2' })
 
     // Act
-    const reach = streamReach(stream, false)
+    const reach = streamReach(stream)
 
     // Assert
     expect(reach).toBe('Par RTSP, chemin /stream2.')
   })
 
-  it.each([
-    [makeCameraStream({ protocol: 'rtsp', path: '/stream1' }), true, 'Par RTSP.'],
-    [makeCameraStream({ protocol: 'dvrip', path: null }), false, 'Par DVRIP.'],
-  ])(
-    'streamReach_ShouldNameOnlyTheProtocol_WhenThePathIsShownOrThereIsNone',
-    (stream, pathShown, expected) => {
-      // Arrange & Act
-      const reach = streamReach(stream, pathShown)
+  it('streamReach_ShouldNameOnlyTheProtocol_WhenTheStreamHasNoPath', () => {
+    // Arrange
+    const stream = makeCameraStream({ protocol: 'dvrip', path: null })
 
-      // Assert
-      expect(reach).toBe(expected)
-    },
-  )
+    // Act
+    const reach = streamReach(stream)
+
+    // Assert
+    expect(reach).toBe('Par DVRIP.')
+  })
 
   it('streamFailure_ShouldNameNoWayOut_WhenTheStreamRecords', () => {
     // Arrange & Act
@@ -200,44 +195,6 @@ describe('stream_lines', () => {
       ['Recherche des flux…', 'La caméra est interrogée.'],
       ['Autre chemin…', undefined],
     ])
-  })
-
-  it('mainPathChoices_ShouldKeepTheSavedPathAsItsOwnItem_WhenTheCameraDoesNotListIt', () => {
-    // Arrange
-    const lineup = makeStreamLineup([recording])
-
-    // Act
-    const choices = mainPathChoices([], lineup, recording)
-
-    // Assert
-    expect(choices.map((choice) => choice.path)).toEqual(['/stream1', null])
-    expect(choiceOfPath(choices, '/stream1').label).toBe('1920 × 1080 · 15 img/s')
-  })
-
-  it('mainPathChoices_ShouldLeaveOutAnotherLinesStream_WhenTheCameraListsIt', () => {
-    // Arrange
-    const lineup = makeStreamLineup([recording, { ...detecting, path: '/stream2' }])
-    const available = [
-      makeAvailableStream({ rank: 0, path: '/stream1', streamId: 'main' }),
-      makeAvailableStream({ streamId: 'sub' }),
-    ]
-
-    // Act
-    const choices = mainPathChoices(available, lineup, recording)
-
-    // Assert
-    expect(choices.map((choice) => choice.path)).toEqual(['/stream1', null])
-  })
-
-  it('choiceOfPath_ShouldBeAnotherPath_WhenNoStreamOfTheCameraHasIt', () => {
-    // Arrange
-    const choices = mainPathChoices([], makeStreamLineup([recording]), recording)
-
-    // Act
-    const choice = choiceOfPath(choices, '/typed')
-
-    // Assert
-    expect(choice).toBe(OTHER_PATH)
   })
 
   it('addedStream_ShouldBeTheHighestRank_WhenTheLineupIsListedInAnyOrder', () => {

@@ -64,7 +64,6 @@ export interface CameraRepository {
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
   removeCapability(cameraId: string, capability: Capability): Promise<void>
   setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding>
-  setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding>
   detectCapabilities(cameraId: string): Promise<void>
   // Protocols (ADR-61): how each one is reached, and whether it answers.
   getProtocols(cameraId: string): Promise<CameraProtocol[]>

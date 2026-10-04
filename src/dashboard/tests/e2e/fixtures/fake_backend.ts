@@ -348,10 +348,9 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
-  /** The camera's stream capability: the protocol that carries it and its main path (ADR-61). */
+  /** The camera's stream capability: the protocol that carries it (ADR-61). */
   streamBinding: {
     protocol: string
-    streamPath: string | null
     lastError: string | null
     /** False for a camera whose stream is still to choose; true when left out. */
     configured?: boolean
@@ -425,7 +424,7 @@ export function createFakeBackendState(
       eventClip: { days: 14, default: 14 },
       maxDays: 365,
     },
-    streamBinding: { protocol: 'rtsp', streamPath: '/Streaming/Channels/101', lastError: null },
+    streamBinding: { protocol: 'rtsp', lastError: null },
     streams: [
       makeFakeStream(),
       makeFakeStream({
@@ -466,7 +465,6 @@ function streamBindingOf(binding: FakeBackendState['streamBinding']) {
     isPreset: false,
     isConfigured: configured,
     panInverted: null,
-    streamPath: binding.streamPath,
     nativePositions: null,
   }
 }
@@ -544,7 +542,6 @@ function ptzBindingOf(binding: { protocol: string; configJson: string | null }) 
     isConfigured: true,
     panInverted:
       (JSON.parse(binding.configJson ?? '{}') as { pan_inverted?: boolean }).pan_inverted ?? false,
-    streamPath: null,
     nativePositions:
       (JSON.parse(binding.configJson ?? '{}') as { supports_native_presets?: boolean })
         .supports_native_presets ?? false,
@@ -680,7 +677,6 @@ export async function installFakeBackend(
       if (stream)
         state.streamBinding = {
           protocol: stream.protocol,
-          streamPath: stream.path,
           lastError: null,
         }
       state.cameras.push(camera)
@@ -872,11 +868,6 @@ export async function installFakeBackend(
       if (rest === '/capabilities' && method === 'GET') {
         const stream = streamBindingOf(state.streamBinding)
         return json(route, state.ptzBinding ? [stream, ptzBindingOf(state.ptzBinding)] : [stream])
-      }
-      if (rest === '/capabilities/stream/path' && method === 'PUT') {
-        state.streamBinding.streamPath = (postData?.path as string | null) ?? null
-        state.pendingChanges = true
-        return json(route, streamBindingOf(state.streamBinding))
       }
       if (rest === '/capabilities/stream' && method === 'PUT') {
         // Like the real one: a capability goes through one of the camera's protocols (ADR-61 d).

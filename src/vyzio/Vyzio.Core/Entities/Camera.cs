@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
@@ -131,22 +131,6 @@ public class Camera
     [NotMapped]
     public CameraCapabilityBinding? StreamBinding
         => Capabilities.FirstOrDefault(binding => binding.Capability == CameraCapability.Stream);
-
-    // Sets the main stream's path, creating the main stream when the binding has none yet.
-    public void SetMainStreamPath(string? path)
-    {
-        var binding = StreamBinding ?? throw new InvalidOperationException("The camera has no stream binding.");
-        if (MainStream is not { } main)
-        {
-            StreamLineup.ResetTo(binding, binding.Protocol, path);
-            return;
-        }
-
-        if (main.Path == path) return;
-
-        main.Path = path;
-        main.UpdatedAt = DateTimeOffset.UtcNow;
-    }
 
     // A protocol a capability or a stream goes through is never removed (ADR-61 d, ADR-65 a).
     public bool GoesThrough(SupportedProtocol protocol)

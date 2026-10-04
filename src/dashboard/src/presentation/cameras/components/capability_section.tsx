@@ -78,8 +78,6 @@ interface CapabilitySectionProps {
   pending: Partial<Record<Capability, CapabilityTask>>
   manualFormOpen: boolean
   manualConfiguring: boolean
-  /** The stream's main path, a declared setting that follows the page's draft (ADR-41). */
-  streamPath: SettingDeclaration
   /** The stream lines of the stream card (ADR-65). */
   streams: StreamLinesState
   intents: CapabilityIntents
@@ -111,7 +109,6 @@ export function CapabilitySection({
   pending,
   manualFormOpen,
   manualConfiguring,
-  streamPath,
   streams,
   intents,
 }: CapabilitySectionProps) {
@@ -128,7 +125,6 @@ export function CapabilitySection({
           protocolsRead={protocolsRead}
           verifying={verifyingStream}
           configuring={pending.stream === CapabilityTask.Configure}
-          streamPath={streamPath}
           streams={streams}
           onVerify={intents.onVerifyStream}
           onConfigure={(protocol) => intents.onConfigure('stream', protocol)}
@@ -200,7 +196,6 @@ function StreamCard({
   protocolsRead,
   verifying,
   configuring,
-  streamPath,
   streams,
   onVerify,
   onConfigure,
@@ -213,7 +208,6 @@ function StreamCard({
   protocolsRead: boolean
   verifying: boolean
   configuring: boolean
-  streamPath: SettingDeclaration
   streams: StreamLinesState
   onVerify: () => void
   onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
@@ -255,7 +249,6 @@ function StreamCard({
                 loading={streams.loading}
                 readError={streams.readError}
                 protocols={choices}
-                mainPath={streamPath}
                 available={streams.available}
                 availableErrors={streams.availableErrors}
                 tasks={streams.tasks}

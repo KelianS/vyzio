@@ -29,7 +29,6 @@ const PROBE_PTZ = 'POST /api/cameras/camera-1/capabilities/ptz/probe'
 const CAMERAS = 'GET /api/cameras'
 const STATS = 'GET /api/system/stats'
 const PROTOCOLS = 'GET /api/cameras/camera-1/protocols'
-const STREAM_PATH = 'PUT /api/cameras/camera-1/capabilities/stream/path'
 const SEARCH = 'POST /api/cameras/camera-1/protocols/search'
 const STREAMS = 'GET /api/cameras/camera-1/streams'
 const AVAILABLE = 'GET /api/cameras/camera-1/streams/available'
@@ -57,13 +56,6 @@ async function streamLine(quality: string) {
   return within(await screen.findByRole('listitem', { name: quality }))
 }
 
-/** Opens a dropdown, which may ask the camera for its streams, and picks one of its items. */
-async function pick(combobox: HTMLElement, option: string) {
-  combobox.focus()
-  await userEvent.keyboard('{ArrowDown}')
-  await userEvent.click(await screen.findByRole('option', { name: option }))
-}
-
 const mainOffer = makeAvailableStream({
   rank: 0,
   path: '/stream1',
@@ -88,7 +80,6 @@ const cameraThatTurns = makeCamera({ ptzSupported: true })
 const rtspStream = makeCapabilityBinding({
   capability: 'stream',
   protocol: 'rtsp',
-  streamPath: '/stream1',
 })
 const dvripStream = makeCapabilityBinding({ capability: 'stream', protocol: 'dvrip' })
 const ptzCapability = makeCapabilityBinding({ capability: 'ptz', protocol: 'onvif' })
@@ -276,7 +267,7 @@ describe('CameraConnectionView', () => {
     expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
   })
 
-  it('onLoad_ShouldShowTheStreamPathInTheStreamOptions_WhenTheStreamGoesOverRtsp', async () => {
+  it('onLoad_ShouldShowEachStreamFixedWithNoPathToEdit_WhenTheStreamGoesOverRtsp', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
     renderScreen(<CameraConnectionView />, connectionTab())
@@ -285,10 +276,10 @@ describe('CameraConnectionView', () => {
     const stream = await optionsOf('Flux vidéo')
 
     // Assert
-    expect(stream.getByRole('combobox', { name: 'Flux' })).toHaveTextContent(
-      '1920 × 1080 · 15 img/s',
-    )
+    expect(await streamLine('1920 × 1080 · 15 img/s')).toBeTruthy()
     expect(stream.getByRole('combobox', { name: 'Protocole' })).toHaveTextContent('RTSP')
+    expect(stream.queryByRole('combobox', { name: 'Flux' })).not.toBeInTheDocument()
+    expect(stream.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
   })
 
   it('onLoad_ShouldShowTheStreamOverDvripWithoutAStreamPath_WhenTheCameraStreamsOverDvrip', async () => {
@@ -311,7 +302,7 @@ describe('CameraConnectionView', () => {
   it('onLoad_ShouldAskToChooseHowTheStreamIsRead_WhenTheStreamHasNoProtocolYet', async () => {
     // Arrange
     connectionNetwork({
-      [BINDINGS]: ok([{ ...rtspStream, isConfigured: false, streamPath: null }]),
+      [BINDINGS]: ok([{ ...rtspStream, isConfigured: false }]),
       [PROTOCOLS]: ok([]),
     })
 
@@ -469,56 +460,6 @@ describe('CameraConnectionView', () => {
       body: { port: 8554, username: 'viewer', password: 'test-secret', deviceId: null },
     })
     expect(network.sent).not.toContainEqual(expect.objectContaining({ route: UPDATE }))
-  })
-
-  it('onSave_ShouldSaveTheStreamPathOnItsCapability_WhenTheUserPicksAStreamTheCameraOffers', async () => {
-    // Arrange
-    const network = connectionNetwork({
-      [BINDINGS]: ok([rtspStream]),
-      [AVAILABLE]: ok([mainOffer, lighterOffer]),
-      [STREAM_PATH]: ok({ ...rtspStream, streamPath: '/stream2' }),
-      [CAMERAS]: ok([]),
-      [STATS]: ok(null),
-    })
-    renderScreen(<CameraConnectionView />, connectionTab())
-    const stream = await optionsOf('Flux vidéo')
-    await pick(stream.getByRole('combobox', { name: 'Flux' }), '640 × 360 · 15 img/s')
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
-
-    // Assert
-    expect(await screen.findByText('Connexion enregistrée.')).toBeInTheDocument()
-    expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: AVAILABLE, query: '?protocol=rtsp' }),
-    )
-    expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: STREAM_PATH, body: { path: '/stream2' } }),
-    )
-  })
-
-  it('onSave_ShouldSaveATypedPath_WhenTheUserChoosesAnotherPath', async () => {
-    // Arrange
-    const network = connectionNetwork({
-      [BINDINGS]: ok([rtspStream]),
-      [STREAM_PATH]: ok({ ...rtspStream, streamPath: '/live' }),
-      [CAMERAS]: ok([]),
-      [STATS]: ok(null),
-    })
-    renderScreen(<CameraConnectionView />, connectionTab())
-    const stream = await optionsOf('Flux vidéo')
-    await pick(stream.getByRole('combobox', { name: 'Flux' }), 'Autre chemin…')
-    await userEvent.clear(stream.getByLabelText('Chemin du flux'))
-    await userEvent.type(stream.getByLabelText('Chemin du flux'), '/live')
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
-
-    // Assert
-    expect(await screen.findByText('Connexion enregistrée.')).toBeInTheDocument()
-    expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: STREAM_PATH, body: { path: '/live' } }),
-    )
   })
 
   it('onLoad_ShouldSayTheStreamFailsAndSuspendTheOtherChecks_WhenTheCameraIsOffline', async () => {
@@ -1476,23 +1417,6 @@ describe('CameraConnectionView', () => {
     ).toBeInTheDocument()
     expect(form.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
     expect(form.getByRole('combobox', { name: 'Flux' })).toHaveTextContent('Autre chemin…')
-  })
-
-  it('onOpenMainPath_ShouldSayTheListCouldNotBeAsked_WhenTheRequestFails', async () => {
-    // Arrange
-    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [AVAILABLE]: failure(500) })
-    renderScreen(<CameraConnectionView />, connectionTab())
-    const stream = await optionsOf('Flux vidéo')
-    const main = await streamLine('1920 × 1080 · 15 img/s')
-
-    // Act
-    main.getByRole('combobox', { name: 'Flux' }).focus()
-    await userEvent.keyboard('{ArrowDown}')
-
-    // Assert
-    expect(
-      await stream.findByText('Vyzio n’a pas pu demander ses flux à la caméra.'),
-    ).toBeInTheDocument()
   })
 
   it('onAddStream_ShouldPickNothingAndHoldTheAdd_WhenTheCameraIsStillAsked', async () => {

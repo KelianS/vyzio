@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -12,7 +12,6 @@ namespace Vyzio.Api.Endpoints;
 
 // Request types for capability and protocol endpoints (ADR-61)
 file sealed record ConfigureCameraCapabilityRequest(string Protocol);
-file sealed record StreamPathApiRequest(string? Path);
 
 // Request types for privacy endpoints
 file sealed record TogglePrivacyRequest(bool Active);
@@ -275,12 +274,6 @@ public static class CamerasEndpoints
             {
                 return Results.BadRequest(new { error = "invalid_capability_request", message = ex.Message });
             }
-        });
-
-        group.MapPut("/{id}/capabilities/stream/path", async (string id, StreamPathApiRequest request, SetStreamPathUseCase useCase, CancellationToken ct) =>
-        {
-            var binding = await useCase.ExecuteAsync(id, request.Path, ct);
-            return binding is null ? Results.NotFound() : Results.Ok(binding);
         });
 
         group.MapPut("/{id}/capabilities/ptz/pan-inverted", async (string id, PtzPanInvertedApiRequest request, SetPtzPanInvertedUseCase useCase, CancellationToken ct) =>

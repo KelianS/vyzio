@@ -6,7 +6,6 @@ import { CheckCameraProtocol } from '../../domain/usecases/check_camera_protocol
 import { SearchCameraProtocols } from '../../domain/usecases/search_camera_protocols.use_case'
 import { RemoveCameraProtocol } from '../../domain/usecases/remove_camera_protocol.use_case'
 import { GetCameraProtocols } from '../../domain/usecases/get_camera_protocols.use_case'
-import { SetStreamPath } from '../../domain/usecases/set_stream_path.use_case'
 import { GetCameraStreams } from '../../domain/usecases/get_camera_streams.use_case'
 import { AddCameraStream } from '../../domain/usecases/add_camera_stream.use_case'
 import { SetCameraStreamRole } from '../../domain/usecases/set_camera_stream_role.use_case'
@@ -68,7 +67,6 @@ export interface CamerasContainer {
   probeCameraCapability: ProbeCameraCapability
   removeCameraCapability: RemoveCameraCapability
   setPtzPanInverted: SetPtzPanInverted
-  setStreamPath: SetStreamPath
   getCameraStreams: GetCameraStreams
   addCameraStream: AddCameraStream
   setCameraStreamRole: SetCameraStreamRole
@@ -124,7 +122,6 @@ export function makeCamerasContainer(
     probeCameraCapability: new ProbeCameraCapability(cameraRepository),
     removeCameraCapability: new RemoveCameraCapability(cameraRepository),
     setPtzPanInverted: new SetPtzPanInverted(cameraRepository),
-    setStreamPath: new SetStreamPath(cameraRepository),
     getCameraStreams: new GetCameraStreams(cameraStreamRepository),
     addCameraStream: new AddCameraStream(cameraStreamRepository),
     setCameraStreamRole: new SetCameraStreamRole(cameraStreamRepository),

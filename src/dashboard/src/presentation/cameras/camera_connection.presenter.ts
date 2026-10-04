@@ -258,7 +258,7 @@ export function buildCameraConnectionPresenter({
       }
     },
 
-    /** Saves each level that changed, the camera, the stream's path, each protocol; resolves true once saved. */
+    /** Saves each level that changed, the camera, each protocol; resolves true once saved. */
     async onSave(camera: Camera, values: ConnectionValues, saved: ConnectionValues) {
       dispatch({ type: 'SAVE_STARTED' })
       try {
@@ -278,9 +278,6 @@ export function buildCameraConnectionPresenter({
               password: values.password.trim() ? values.password : null,
             }),
           )
-        }
-        if (values.streamPath !== saved.streamPath) {
-          await container.setStreamPath.execute(camera.id, values.streamPath.trim() || null)
         }
         for (const protocol of ALL_PROTOCOLS) {
           const key = protocolKey(protocol)

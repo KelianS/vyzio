@@ -1,4 +1,4 @@
-﻿using NSubstitute;
+using NSubstitute;
 using Vyzio.Core.Common;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -1061,7 +1061,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldListTheStreamFirstWithItsMainPath_WhenTheCameraHasOne()
+    public async Task ExecuteAsync_ShouldListTheStreamFirst_WhenTheCameraHasOne()
     {
         // Arrange
         var camera = MakeCamera().WithStream(SupportedProtocol.Rtsp, path: "/stream1");
@@ -1076,7 +1076,6 @@ public class GetCameraCapabilitiesUseCaseTests
 
         // Assert
         Assert.Equal("stream", result![0].Capability);
-        Assert.Equal("/stream1", result[0].StreamPath);
         Assert.Equal(2, result.Count);
     }
 
