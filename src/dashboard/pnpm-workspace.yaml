@@ -3,10 +3,10 @@ allowBuilds:
   esbuild: true
 
 overrides:
-  # Remonte le correctif de GHSA-rgw5-rvv9-x895, qu'ESLint traine encore via minimatch.
+  # Pulls in the GHSA-rgw5-rvv9-x895 fix that ESLint still lacks through minimatch.
   brace-expansion: '>=5.0.9'
 
 auditConfig:
   ignoreGhsas:
-    # braces has no fixed release yet; lint-time only via eslint-plugin-boundaries, not shipped. Review 2026-11-04.
+    # braces has no fixed release yet; lint-time only via eslint-plugin-boundaries, not shipped. Review 2026-11-04 (#244).
     - GHSA-vfj7-8cjw-p6xm
