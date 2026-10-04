@@ -2,10 +2,14 @@ import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
   Capability,
+  StreamProtocol,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
-import type { CameraStreamLineup } from '../../domain/entities/camera_stream.entity'
+import type {
+  AvailableStream,
+  CameraStreamLineup,
+} from '../../domain/entities/camera_stream.entity'
 import type { CapabilityTask, StreamTask } from './camera_connection.uido'
 
 export type CameraConnectionAction =
@@ -52,3 +56,5 @@ export type CameraConnectionAction =
   | { type: 'STREAM_FORM_CLOSED' }
   | { type: 'STREAM_ADD_STARTED' }
   | { type: 'STREAM_ADD_FINISHED' }
+  | { type: 'AVAILABLE_STREAMS_STARTED'; protocol: StreamProtocol }
+  | { type: 'AVAILABLE_STREAMS_LOADED'; protocol: StreamProtocol; streams: AvailableStream[] }

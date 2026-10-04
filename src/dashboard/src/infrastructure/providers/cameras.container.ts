@@ -10,7 +10,7 @@ import { SetStreamPath } from '../../domain/usecases/set_stream_path.use_case'
 import { GetCameraStreams } from '../../domain/usecases/get_camera_streams.use_case'
 import { AddCameraStream } from '../../domain/usecases/add_camera_stream.use_case'
 import { SetCameraStreamRole } from '../../domain/usecases/set_camera_stream_role.use_case'
-import { SetCameraStreamEnabled } from '../../domain/usecases/set_camera_stream_enabled.use_case'
+import { GetAvailableCameraStreams } from '../../domain/usecases/get_available_camera_streams.use_case'
 import { RemoveCameraStream } from '../../domain/usecases/remove_camera_stream.use_case'
 import { CheckCameraStream } from '../../domain/usecases/check_camera_stream.use_case'
 import { UpdateCameraProtocol } from '../../domain/usecases/update_camera_protocol.use_case'
@@ -72,7 +72,7 @@ export interface CamerasContainer {
   getCameraStreams: GetCameraStreams
   addCameraStream: AddCameraStream
   setCameraStreamRole: SetCameraStreamRole
-  setCameraStreamEnabled: SetCameraStreamEnabled
+  getAvailableCameraStreams: GetAvailableCameraStreams
   removeCameraStream: RemoveCameraStream
   checkCameraStream: CheckCameraStream
   detectCameraCapabilities: DetectCameraCapabilities
@@ -128,7 +128,7 @@ export function makeCamerasContainer(
     getCameraStreams: new GetCameraStreams(cameraStreamRepository),
     addCameraStream: new AddCameraStream(cameraStreamRepository),
     setCameraStreamRole: new SetCameraStreamRole(cameraStreamRepository),
-    setCameraStreamEnabled: new SetCameraStreamEnabled(cameraStreamRepository),
+    getAvailableCameraStreams: new GetAvailableCameraStreams(cameraStreamRepository),
     removeCameraStream: new RemoveCameraStream(cameraStreamRepository),
     checkCameraStream: new CheckCameraStream(cameraStreamRepository),
     detectCameraCapabilities: new DetectCameraCapabilities(cameraRepository),

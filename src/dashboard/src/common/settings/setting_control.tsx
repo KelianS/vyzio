@@ -73,6 +73,9 @@ function DropdownControl({
       value={String(setting.value)}
       disabled={setting.disabled}
       onValueChange={(value) => setting.onChange(value)}
+      onOpenChange={(open) => {
+        if (open) nature.onOpen?.()
+      }}
     >
       <SelectTrigger id={setting.id} className={cn('w-full', followingClass(setting))}>
         <SelectValue />
@@ -82,6 +85,7 @@ function DropdownControl({
           <SelectItem
             key={option.value}
             value={option.value}
+            title={option.hint}
             disabled={!!option.unavailable}
             // Greyed by its colour, not the primitive's fade, so the reason stays readable.
             className={cn(

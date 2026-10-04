@@ -1,4 +1,6 @@
+import type { StreamProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import type {
+  AvailableStream,
   CameraStreamAddition,
   CameraStreamLineup,
   StreamRole,
@@ -17,6 +19,13 @@ export class HttpCameraStreamRepository implements CameraStreamRepository {
     return fetchJson<CameraStreamLineup>(this.url(cameraId))
   }
 
+  async getAvailableStreams(
+    cameraId: string,
+    protocol: StreamProtocol,
+  ): Promise<AvailableStream[]> {
+    return fetchJson<AvailableStream[]>(this.url(cameraId, `/available?protocol=${protocol}`))
+  }
+
   async addStream(cameraId: string, addition: CameraStreamAddition): Promise<CameraStreamLineup> {
     return postJson<CameraStreamLineup>(this.url(cameraId), addition)
   }
@@ -27,14 +36,6 @@ export class HttpCameraStreamRepository implements CameraStreamRepository {
     role: StreamRole,
   ): Promise<CameraStreamLineup> {
     return putJson<CameraStreamLineup>(this.url(cameraId, `/${streamId}/role`), { role })
-  }
-
-  async setStreamEnabled(
-    cameraId: string,
-    streamId: string,
-    enabled: boolean,
-  ): Promise<CameraStreamLineup> {
-    return putJson<CameraStreamLineup>(this.url(cameraId, `/${streamId}/enabled`), { enabled })
   }
 
   async removeStream(cameraId: string, streamId: string): Promise<CameraStreamLineup> {

@@ -2,10 +2,14 @@ import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
   Capability,
+  StreamProtocol,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
-import type { CameraStreamLineup } from '../../domain/entities/camera_stream.entity'
+import type {
+  AvailableStream,
+  CameraStreamLineup,
+} from '../../domain/entities/camera_stream.entity'
 
 /** What a capability card is busy with. */
 export const CapabilityTask = {
@@ -20,7 +24,6 @@ export type CapabilityTask = (typeof CapabilityTask)[keyof typeof CapabilityTask
 /** What a stream line is busy with. */
 export const StreamTask = {
   Role: 'role',
-  Toggle: 'toggle',
   Remove: 'remove',
   Check: 'check',
 } as const
@@ -61,6 +64,8 @@ export interface CameraConnectionUido {
   streamTasks: Partial<Record<string, StreamTask>>
   streamFormOpen: boolean
   addingStream: boolean
+  /** What the camera serves, by protocol, asked on demand; absent while it is being asked (ADR-65 e). */
+  availableStreams: Partial<Record<StreamProtocol, AvailableStream[]>>
 }
 
 export function buildInitialCameraConnectionUido(): CameraConnectionUido {
@@ -94,5 +99,6 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     streamTasks: {},
     streamFormOpen: false,
     addingStream: false,
+    availableStreams: {},
   }
 }

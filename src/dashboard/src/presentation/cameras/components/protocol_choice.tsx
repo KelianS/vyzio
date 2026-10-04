@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ChoiceOption } from '../../../common/settings/setting_declaration'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import type { ProtocolOption } from '../protocol_labels'
 import { Button } from '../../../common/ui/button'
@@ -65,7 +66,7 @@ export function Picker({
   labelledBy,
 }: {
   value: string
-  options: readonly { value: string; label: string }[]
+  options: readonly ChoiceOption[]
   onChange: (value: string) => void
   /** The id of a visible name kept outside a wrapping label, e.g. one followed by a help trigger. */
   labelledBy?: string
@@ -77,7 +78,12 @@ export function Picker({
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            title={option.hint}
+            disabled={option.unavailable !== undefined}
+          >
             {option.label}
           </SelectItem>
         ))}

@@ -1,4 +1,8 @@
-import type { CameraStream, CameraStreamLineup } from '../domain/entities/camera_stream.entity'
+import type {
+  AvailableStream,
+  CameraStream,
+  CameraStreamLineup,
+} from '../domain/entities/camera_stream.entity'
 
 /** A stream line as the screens read it, for tests: the main RTSP stream, recording and detecting, checked. */
 export function makeCameraStream(overrides: Partial<CameraStream> = {}): CameraStream {
@@ -11,10 +15,22 @@ export function makeCameraStream(overrides: Partial<CameraStream> = {}): CameraS
     height: 1080,
     fps: 15,
     role: 'record_and_detect',
-    enabled: true,
     verified: true,
     checkedAt: '2026-01-01T00:00:00Z',
     lastError: null,
+    ...overrides,
+  }
+}
+
+/** A stream the camera offers, for tests: a lighter one not listed yet. */
+export function makeAvailableStream(overrides: Partial<AvailableStream> = {}): AvailableStream {
+  return {
+    rank: 1,
+    path: '/stream2',
+    width: 640,
+    height: 360,
+    fps: 15,
+    streamId: null,
     ...overrides,
   }
 }

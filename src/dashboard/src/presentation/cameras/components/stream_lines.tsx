@@ -14,6 +14,7 @@ import { Input } from '../../../common/ui/input'
 import type { StreamProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import {
   StreamRole,
+  type AvailableStream,
   type CameraStream,
   type CameraStreamAddition,
   type CameraStreamLineup,
@@ -24,12 +25,16 @@ import type { ProtocolOption } from '../protocol_labels'
 import {
   ASKS_STREAM_PATH,
   DETECTION_FALLS_BACK,
-  DVRIP_QUALITIES,
+  OTHER_PATH,
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
   ROLE_LABELS,
   STREAM_LINE_PILLS,
   StreamLineState,
+  addChoices,
+  choiceOfPath,
+  choiceOptions,
+  mainPathChoices,
   roleOptions,
   streamFailure,
   streamLineState,
@@ -42,9 +47,10 @@ import { Picker } from './protocol_choice'
 export interface StreamLineIntents {
   onRetryRead: () => void
   onSetRole: (streamId: string, role: StreamRole) => void
-  onSetEnabled: (streamId: string, enabled: boolean) => Promise<void>
   onRemove: (streamId: string) => Promise<void>
   onCheck: (streamId: string) => void
+  /** Asks the camera what it serves over a protocol, each time a stream dropdown or the add form opens. */
+  onListAvailable: (protocol: StreamProtocol) => void
   onOpenForm: () => void
   onCloseForm: () => void
   onAdd: (addition: CameraStreamAddition) => void
@@ -57,6 +63,7 @@ export function StreamLines({
   readError,
   protocols,
   mainPath,
+  available,
   tasks,
   formOpen,
   adding,
@@ -69,6 +76,8 @@ export function StreamLines({
   protocols: ProtocolOption[]
   /** The main stream's path, a declared setting that follows the page's draft (ADR-41). */
   mainPath: SettingDeclaration
+  /** What the camera serves, by protocol; absent while it is asked. */
+  available: Partial<Record<StreamProtocol, AvailableStream[]>>
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
@@ -94,6 +103,7 @@ export function StreamLines({
               lineup={lineup}
               // The lowest rank holds the path the user entered (ADR-65): shown once, as its setting.
               mainPath={index === 0 && ASKS_STREAM_PATH[stream.protocol] ? mainPath : null}
+              available={available[stream.protocol]}
               task={tasks[stream.id]}
               intents={intents}
             />
@@ -103,11 +113,11 @@ export function StreamLines({
       {lineup && protocols.length > 0 && (
         <AddStream
           protocols={protocols}
+          lineup={lineup}
+          available={available}
           open={formOpen}
           adding={adding}
-          onOpen={intents.onOpenForm}
-          onClose={intents.onCloseForm}
-          onAdd={intents.onAdd}
+          intents={intents}
         />
       )}
       <HelpPanel title="Quel rôle donner à chaque flux ?">
@@ -122,10 +132,18 @@ export function StreamLines({
           Vyzio devient lent, vérifiez qu’aucune caméra n’analyse son flux le plus détaillé sans
           raison.
         </p>
-        <p>Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait.</p>
         <p>
-          Après un changement de protocole, Vyzio retrouve les flux que la caméra signale à la
-          vérification suivante. « Ajouter un flux » sert pour un flux qu’elle ne signale pas.
+          Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait. Un flux
+          gardé sans servir a le rôle « Aucun ».
+        </p>
+        <p>
+          Après un changement de protocole, Vyzio retrouve les flux de la caméra à la vérification
+          suivante. « Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste,
+          y compris un flux retiré.
+        </p>
+        <p>
+          Si la liste ne propose que « Autre chemin… », la caméra ne dit pas quels flux elle sert,
+          ou ne répond pas : saisissez le chemin donné par le fabricant.
         </p>
         <p>
           Une caméra qui ne donne pas les dimensions de ses flux les voit nommés « Flux principal »
@@ -140,16 +158,17 @@ function StreamLine({
   stream,
   lineup,
   mainPath,
+  available,
   task,
   intents,
 }: {
   stream: CameraStream
   lineup: CameraStreamLineup
   mainPath: SettingDeclaration | null
+  available: AvailableStream[] | undefined
   task: StreamTask | undefined
   intents: StreamLineIntents
 }) {
-  const [confirmDisable, setConfirmDisable] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const state = streamLineState(stream)
   const records = stream.id === lineup.recordStreamId
@@ -168,63 +187,45 @@ function StreamLine({
         </div>
         <Badge tone={STREAM_LINE_PILLS[state].tone}>{STREAM_LINE_PILLS[state].label}</Badge>
       </div>
-      {mainPath && <SettingRow setting={mainPath} />}
+      {mainPath && (
+        <MainPathChoice
+          setting={mainPath}
+          stream={stream}
+          lineup={lineup}
+          available={available}
+          onOpen={() => intents.onListAvailable(stream.protocol)}
+        />
+      )}
       {state === StreamLineState.Failed && (
         <div className="text-sm text-destructive">
           <p>{streamFailure(records)}</p>
           {stream.lastError && <DiagnosticLine text={scrubSecrets(stream.lastError)} />}
         </div>
       )}
-      {stream.enabled && (
-        <div className="mt-2 flex flex-col gap-1 text-sm">
-          <div className="flex items-center gap-1">
-            <span id={`${stream.id}-role`} className="text-muted-foreground">
-              Rôle
-            </span>
-            <HelpTrigger question="Que change ce rôle ?" help={ROLE_CONSEQUENCES[stream.role]} />
-          </div>
-          <Picker
-            labelledBy={`${stream.id}-role`}
-            value={stream.role}
-            options={roleOptions(stream, lineup)}
-            onChange={(value) => intents.onSetRole(stream.id, value as StreamRole)}
-          />
+      <div className="mt-2 flex flex-col gap-1 text-sm">
+        <div className="flex items-center gap-1">
+          <span id={`${stream.id}-role`} className="text-muted-foreground">
+            Rôle
+          </span>
+          <HelpTrigger question="Que change ce rôle ?" help={ROLE_CONSEQUENCES[stream.role]} />
         </div>
-      )}
+        <Picker
+          labelledBy={`${stream.id}-role`}
+          value={stream.role}
+          options={roleOptions(stream, lineup)}
+          onChange={(value) => intents.onSetRole(stream.id, value as StreamRole)}
+        />
+      </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {stream.enabled && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={task !== undefined}
-            onClick={() => intents.onCheck(stream.id)}
-          >
-            {task === StreamTask.Check ? 'Vérification…' : 'Vérifier'}
-          </Button>
-        )}
-        {stream.enabled ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className={DESTRUCTIVE_OUTLINE}
-            disabled={records || task !== undefined}
-            onClick={() => setConfirmDisable(true)}
-          >
-            Désactiver
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={task !== undefined}
-            onClick={() => void intents.onSetEnabled(stream.id, true)}
-          >
-            {task === StreamTask.Toggle ? 'Activation…' : 'Activer'}
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={task !== undefined}
+          onClick={() => intents.onCheck(stream.id)}
+        >
+          {task === StreamTask.Check ? 'Vérification…' : 'Vérifier'}
+        </Button>
         <Button
           type="button"
           variant="outline"
@@ -237,30 +238,16 @@ function StreamLine({
         </Button>
         {records && (
           <HelpTrigger
-            question="Pourquoi ce flux ne peut-il être ni désactivé ni retiré ?"
+            question="Pourquoi ce flux ne peut-il pas être retiré ?"
             help={RECORDING_STREAM_KEPT}
           />
         )}
       </div>
 
-      {confirmDisable && (
-        <ConfirmModal
-          title="Désactiver ce flux ?"
-          body={`Vyzio cesse de s’en servir et de le vérifier. Il reste dans la liste.${fallback}`}
-          confirmLabel="Désactiver"
-          tone="warn"
-          loading={task === StreamTask.Toggle}
-          onConfirm={async () => {
-            await intents.onSetEnabled(stream.id, false)
-            setConfirmDisable(false)
-          }}
-          onCancel={() => setConfirmDisable(false)}
-        />
-      )}
       {confirmRemove && (
         <ConfirmModal
           title="Retirer ce flux ?"
-          body={`Il quitte la liste et ne revient pas de lui-même.${fallback}`}
+          body={`Il quitte la liste ; « Ajouter un flux » peut le reprendre.${fallback}`}
           confirmLabel="Retirer"
           tone="danger"
           loading={task === StreamTask.Remove}
@@ -275,25 +262,91 @@ function StreamLine({
   )
 }
 
+/** The main stream's path over RTSP: a declared setting picked from the camera's streams, or typed (ADR-65 e). */
+function MainPathChoice({
+  setting,
+  stream,
+  lineup,
+  available,
+  onOpen,
+}: {
+  setting: SettingDeclaration
+  stream: CameraStream
+  lineup: CameraStreamLineup
+  available: AvailableStream[] | undefined
+  onOpen: () => void
+}) {
+  const [typing, setTyping] = useState(false)
+  const choices = mainPathChoices(available, lineup, stream)
+  const selected = typing ? OTHER_PATH : choiceOfPath(choices, String(setting.value))
+
+  const choice: SettingDeclaration = {
+    ...setting,
+    nature: { kind: 'choice', options: choiceOptions(choices), onOpen },
+    value: selected.key,
+    onChange: (key) => {
+      const picked = choices.find((entry) => entry.key === key)
+      if (!picked) return
+      setTyping(picked.other)
+      if (!picked.other) setting.onChange(picked.path ?? '')
+    },
+  }
+
+  return (
+    <>
+      <SettingRow setting={choice} />
+      {selected.other && (
+        <SettingRow
+          setting={{
+            ...setting,
+            id: `${setting.id}-other`,
+            label: 'Autre chemin',
+            help: undefined,
+          }}
+        />
+      )}
+    </>
+  )
+}
+
 function AddStream({
   protocols,
+  lineup,
+  available,
   open,
   adding,
-  onOpen,
-  onClose,
-  onAdd,
+  intents,
 }: {
   protocols: ProtocolOption[]
+  lineup: CameraStreamLineup
+  available: Partial<Record<StreamProtocol, AvailableStream[]>>
   open: boolean
   adding: boolean
-  onOpen: () => void
-  onClose: () => void
-  onAdd: (addition: CameraStreamAddition) => void
+  intents: StreamLineIntents
 }) {
+  const first = protocols[0].value as StreamProtocol
   return open ? (
-    <AddStreamForm protocols={protocols} adding={adding} onAdd={onAdd} onCancel={onClose} />
+    <AddStreamForm
+      protocols={protocols}
+      first={first}
+      lineup={lineup}
+      available={available}
+      adding={adding}
+      onList={intents.onListAvailable}
+      onAdd={intents.onAdd}
+      onCancel={intents.onCloseForm}
+    />
   ) : (
-    <Button type="button" variant="outline" size="sm" className="self-start" onClick={onOpen}>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="self-start"
+      onClick={() => {
+        intents.onOpenForm()
+        intents.onListAvailable(first)
+      }}
+    >
       <Plus aria-hidden="true" />
       Ajouter un flux
     </Button>
@@ -302,28 +355,38 @@ function AddStream({
 
 function AddStreamForm({
   protocols,
+  first,
+  lineup,
+  available,
   adding,
+  onList,
   onAdd,
   onCancel,
 }: {
   protocols: ProtocolOption[]
+  first: StreamProtocol
+  lineup: CameraStreamLineup
+  available: Partial<Record<StreamProtocol, AvailableStream[]>>
   adding: boolean
+  onList: (protocol: StreamProtocol) => void
   onAdd: (addition: CameraStreamAddition) => void
   onCancel: () => void
 }) {
-  const [protocol, setProtocol] = useState<StreamProtocol>(protocols[0].value as StreamProtocol)
-  const [path, setPath] = useState('')
-  const [quality, setQuality] = useState(DVRIP_QUALITIES[1].value)
+  const [protocol, setProtocol] = useState<StreamProtocol>(first)
+  const [picked, setPicked] = useState<string | null>(null)
+  const [typed, setTyped] = useState('')
   const [role, setRole] = useState<StreamRole>(StreamRole.None)
-  const byPath = ASKS_STREAM_PATH[protocol]
+  const choices = addChoices(available[protocol], lineup, protocol)
+  const selectable = choices.filter((choice) => !choice.waiting)
+  // Until the user picks, the first stream the camera offers, else « Autre chemin… ».
+  const selected = selectable.find((choice) => choice.key === picked) ?? selectable.at(0)
 
   function add() {
-    const secondary = DVRIP_QUALITIES.find((entry) => entry.value === quality)?.secondary ?? false
+    if (!selected) return
     onAdd({
       protocol,
-      path: byPath ? path.trim() || null : null,
+      path: selected.other ? typed.trim() || null : selected.path,
       role,
-      secondary: !byPath && secondary,
     })
   }
 
@@ -340,22 +403,36 @@ function AddStreamForm({
           <Picker
             value={protocol}
             options={protocols}
-            onChange={(value) => setProtocol(value as StreamProtocol)}
+            onChange={(value) => {
+              setProtocol(value as StreamProtocol)
+              setPicked(null)
+              onList(value as StreamProtocol)
+            }}
           />
         </label>
-        {byPath ? (
+        {choices.length > 0 ? (
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground">Flux</span>
+            <Picker
+              value={(selected ?? choices[0]).key}
+              options={choiceOptions(choices)}
+              onChange={setPicked}
+            />
+          </label>
+        ) : (
+          <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
+        )}
+        {selected?.other && (
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground">Chemin du flux</span>
             <Input
               placeholder="/stream2"
-              value={path}
-              onChange={(event) => setPath(event.target.value)}
+              value={typed}
+              onChange={(event) => {
+                setTyped(event.target.value)
+                setPicked(OTHER_PATH.key)
+              }}
             />
-          </label>
-        ) : (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Qualité</span>
-            <Picker value={quality} options={DVRIP_QUALITIES} onChange={setQuality} />
           </label>
         )}
         <label className="flex flex-col gap-1 text-sm">
@@ -370,7 +447,13 @@ function AddStreamForm({
           />
         </label>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={adding} onClick={add}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={adding || !selected}
+            onClick={add}
+          >
             {adding ? 'Vérification…' : 'Ajouter et vérifier'}
           </Button>
           <Button type="button" variant="ghost" size="sm" disabled={adding} onClick={onCancel}>

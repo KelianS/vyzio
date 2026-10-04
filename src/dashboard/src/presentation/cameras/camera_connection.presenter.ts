@@ -7,6 +7,7 @@ import type { Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraCapabilityBinding,
   Capability,
+  StreamProtocol,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocolAddition } from '../../domain/entities/camera_protocol.entity'
@@ -184,15 +185,6 @@ export function buildCameraConnectionPresenter({
       refreshSurveillance(hubContainer)
     },
 
-    async onSetStreamEnabled(cameraId: string, streamId: string, enabled: boolean) {
-      const done = await runStreamTask(streamId, StreamTask.Toggle, () =>
-        container.setCameraStreamEnabled.execute(cameraId, streamId, enabled),
-      )
-      if (!done) return
-      toast(enabled ? 'Flux activé.' : 'Flux désactivé.', 'success')
-      refreshSurveillance(hubContainer)
-    },
-
     async onRemoveStream(cameraId: string, streamId: string) {
       const done = await runStreamTask(streamId, StreamTask.Remove, () =>
         container.removeCameraStream.execute(cameraId, streamId),
@@ -218,6 +210,15 @@ export function buildCameraConnectionPresenter({
         )
       reloadCameraList(container)
       readBindings(cameraId, true)
+    },
+
+    /** Asks the camera what it serves over a protocol; a failure leaves only « Autre chemin… », its help says why. */
+    async onListAvailableStreams(cameraId: string, protocol: StreamProtocol) {
+      dispatch({ type: 'AVAILABLE_STREAMS_STARTED', protocol })
+      const streams = await container.getAvailableCameraStreams
+        .execute(cameraId, protocol)
+        .catch(() => [])
+      dispatch({ type: 'AVAILABLE_STREAMS_LOADED', protocol, streams })
     },
 
     onOpenStreamForm() {

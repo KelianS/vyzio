@@ -19,6 +19,8 @@ export interface SettingOption<T extends string = string> {
 export interface ChoiceOption<T extends string = string> extends SettingOption<T> {
   /** Why it cannot be chosen yet and where to fix that: the option stays listed, greyed. */
   readonly unavailable?: string
+  /** A technical detail behind the label, in the option's tooltip (ADR-53). */
+  readonly hint?: string
 }
 
 /**
@@ -31,7 +33,12 @@ export type SettingNature =
   /** Boolean -> a switch. The state reads without reading the label. */
   | { readonly kind: 'toggle' }
   /** Exclusive choice -> a dropdown, whatever the number of options. */
-  | { readonly kind: 'choice'; readonly options: readonly ChoiceOption[] }
+  | {
+      readonly kind: 'choice'
+      readonly options: readonly ChoiceOption[]
+      /** Options asked on demand: called each time the dropdown opens. */
+      readonly onOpen?: () => void
+    }
   /** Multiple choice -> a dropdown of checkboxes, summarised on one line at rest. */
   | {
       readonly kind: 'multiChoice'

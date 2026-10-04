@@ -5,11 +5,15 @@ import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import type {
   CameraCapabilityBinding,
   Capability,
+  StreamProtocol,
   SupportedProtocol,
 } from '../../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import type { CameraStreamLineup } from '../../../domain/entities/camera_stream.entity'
+import type {
+  AvailableStream,
+  CameraStreamLineup,
+} from '../../../domain/entities/camera_stream.entity'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Button } from '../../../common/ui/button'
 import { SettingRow } from '../../../common/settings/setting_row'
@@ -86,6 +90,7 @@ interface StreamLinesState {
   lineup: CameraStreamLineup | null
   loading: boolean
   readError: AppError | null
+  available: Partial<Record<StreamProtocol, AvailableStream[]>>
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
@@ -250,6 +255,7 @@ function StreamCard({
                 readError={streams.readError}
                 protocols={choices}
                 mainPath={streamPath}
+                available={streams.available}
                 tasks={streams.tasks}
                 formOpen={streams.formOpen}
                 adding={streams.adding}

@@ -49,7 +49,6 @@ export interface FakeStream {
   height: number | null
   fps: number | null
   role: 'none' | 'record' | 'detect' | 'record_and_detect'
-  enabled: boolean
   verified: boolean
   checkedAt: string | null
   lastError: string | null
@@ -65,7 +64,6 @@ function makeFakeStream(overrides: Partial<FakeStream> = {}): FakeStream {
     height: 1080,
     fps: 15,
     role: 'record',
-    enabled: true,
     verified: true,
     checkedAt: '2026-01-01T00:00:00Z',
     lastError: null,
@@ -360,6 +358,8 @@ export interface FakeBackendState {
   }
   /** The camera's streams, one line each in the stream card's Options (ADR-65). */
   streams: FakeStream[]
+  /** What the camera says it serves over RTSP when asked, most detailed first (ADR-65 e). */
+  servedStreams: Pick<FakeStream, 'path' | 'width' | 'height' | 'fps'>[]
   /** The protocols the camera speaks, one box each in Avancé (ADR-61). */
   protocols: FakeProtocol[]
   /** The protocols a search or a detection finds answering, added to the boxes then. */
@@ -438,6 +438,11 @@ export function createFakeBackendState(
         role: 'detect',
       }),
     ],
+    servedStreams: [
+      { path: '/Streaming/Channels/101', width: 1920, height: 1080, fps: 15 },
+      { path: '/Streaming/Channels/102', width: 640, height: 360, fps: 10 },
+      { path: '/Streaming/Channels/103', width: 320, height: 180, fps: 5 },
+    ],
     protocols: [makeFakeProtocol()],
     discoverableProtocols: [],
     ptzBinding: null,
@@ -481,14 +486,32 @@ const DETECTS: Record<FakeStream['role'], boolean> = {
 
 /** The lineup as the real server answers it, the roles resolved (ADR-65). */
 function lineupOf(streams: FakeStream[]) {
-  const recording = streams.find((stream) => stream.enabled && RECORDS[stream.role])
-  const detecting = streams.find((stream) => stream.enabled && DETECTS[stream.role])
+  const recording = streams.find((stream) => RECORDS[stream.role])
+  const detecting = streams.find((stream) => DETECTS[stream.role])
   return {
     streams,
     recordStreamId: recording?.id ?? null,
     detectStreamId: (detecting ?? recording)?.id ?? null,
     detectsOnRecordingStream: recording !== undefined && detecting === undefined,
   }
+}
+
+// Over DVRIP the two qualities of ADR-38, never a typed path.
+const DVRIP_SERVED: FakeBackendState['servedStreams'] = [
+  { path: null, width: null, height: null, fps: null },
+  { path: '?channel=0&subtype=1', width: null, height: null, fps: null },
+]
+
+/** What the camera serves over a protocol, each naming the line it already is, as the real server answers. */
+function availableOf(state: FakeBackendState, protocol: string) {
+  const served = protocol === 'dvrip' ? DVRIP_SERVED : state.servedStreams
+  return served.map((entry, rank) => ({
+    ...entry,
+    rank,
+    streamId:
+      state.streams.find((stream) => stream.protocol === protocol && stream.path === entry.path)
+        ?.id ?? null,
+  }))
 }
 
 /** Giving a role takes it from the other streams, as the real server does. */
@@ -945,21 +968,25 @@ export async function installFakeBackend(
       if (rest === '/streams' && method === 'GET') {
         return json(route, lineupOf(state.streams))
       }
+      if (rest === '/streams/available' && method === 'GET') {
+        const protocol = new URL(route.request().url()).searchParams.get('protocol') ?? 'rtsp'
+        return json(route, availableOf(state, protocol))
+      }
       if (rest === '/streams' && method === 'POST') {
         const body = postData as {
           protocol: string
           path: string | null
           role: FakeStream['role']
-          secondary: boolean
         }
+        const served = state.servedStreams.find((entry) => entry.path === body.path)
         const added = makeFakeStream({
           id: `stream-${state.streams.length + 1}`,
           ordinal: Math.max(...state.streams.map((stream) => stream.ordinal)) + 1,
           protocol: body.protocol,
-          path: body.secondary ? 'secondary' : body.path,
-          width: null,
-          height: null,
-          fps: null,
+          path: body.path,
+          width: served?.width ?? null,
+          height: served?.height ?? null,
+          fps: served?.fps ?? null,
           role: 'none',
         })
         state.streams.push(added)
@@ -967,11 +994,11 @@ export async function installFakeBackend(
         state.pendingChanges = true
         return json(route, lineupOf(state.streams))
       }
-      const streamMatch = rest?.match(/^\/streams\/([^/]+)(\/role|\/enabled|\/check)?$/)
+      const streamMatch = rest?.match(/^\/streams\/([^/]+)(\/role|\/check)?$/)
       if (streamMatch) {
         const target = state.streams.find((stream) => stream.id === streamMatch[1])
         if (!target) return json(route, {}, 404)
-        const records = target.enabled && RECORDS[target.role]
+        const records = RECORDS[target.role]
         const action = streamMatch[2]
         if (action === '/check') {
           target.checkedAt = '2026-01-02T00:00:00Z'
@@ -981,11 +1008,6 @@ export async function installFakeBackend(
           const role = postData?.role as FakeStream['role']
           if (records && !RECORDS[role]) return json(route, { error: 'stream_records' }, 409)
           giveRole(state.streams, target, role)
-        } else if (action === '/enabled') {
-          const enabled = postData?.enabled as boolean
-          if (records && !enabled) return json(route, { error: 'stream_records' }, 409)
-          target.enabled = enabled
-          if (!enabled) target.role = 'none'
         } else if (method === 'DELETE') {
           if (records) return json(route, { error: 'stream_records' }, 409)
           state.streams = state.streams.filter((stream) => stream !== target)

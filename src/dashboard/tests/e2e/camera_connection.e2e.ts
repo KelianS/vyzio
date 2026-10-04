@@ -133,15 +133,16 @@ test.describe('CameraConnectionView three levels', () => {
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
 
     await stream.getByText('Options').click()
-    await stream.getByRole('textbox', { name: 'Chemin du flux' }).fill('/Streaming/Channels/102')
+    await stream.getByRole('combobox', { name: 'Chemin du flux' }).click()
+    await page.getByRole('option', { name: '320 × 180 · 5 img/s' }).click()
 
     const bar = page.getByRole('region', { name: 'Modifications en attente' })
     await expect(bar).toContainText('Chemin du flux')
 
     await bar.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(bar).toBeHidden()
-    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveValue(
-      '/Streaming/Channels/102',
+    await expect(stream.getByRole('combobox', { name: 'Chemin du flux' })).toContainText(
+      '320 × 180 · 5 img/s',
     )
   })
 
@@ -159,13 +160,13 @@ test.describe('CameraConnectionView three levels', () => {
     await stream.getByText('Options').click()
 
     await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')
-    await expect(stream.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
+    await expect(stream.getByRole('combobox', { name: 'Chemin du flux' })).toHaveCount(0)
   })
 })
 
 // Each stream is a line of the stream card, with its role and its own state (ADR-65).
 test.describe('CameraConnectionView stream lines', () => {
-  test('CameraConnectionView_ShouldDetectOnTheRecordingStreamAndSaySo_WhenTheUserDisablesTheDetectStream', async ({
+  test('CameraConnectionView_ShouldBringARemovedStreamBackFromTheCamerasList_WhenTheUserAddsItAgain', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -173,13 +174,18 @@ test.describe('CameraConnectionView stream lines', () => {
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await stream.getByText('Options').click()
     const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
-    await expect(sub.getByRole('combobox', { name: 'Rôle' })).toContainText('Détection')
 
-    await sub.getByRole('button', { name: 'Désactiver' }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Désactiver' }).click()
-
-    await expect(sub.getByText('Désactivé')).toBeVisible()
+    await sub.getByRole('button', { name: 'Retirer' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Retirer' }).click()
+    await expect(sub).toHaveCount(0)
     await expect(stream.getByText('La détection passe par le flux d’enregistrement.')).toBeVisible()
+
+    await stream.getByRole('button', { name: 'Ajouter un flux' }).click()
+    const form = page.getByRole('group', { name: 'Ajouter un flux' })
+    await expect(form.getByRole('combobox', { name: 'Flux' })).toContainText('640 × 360 · 10 img/s')
+    await form.getByRole('button', { name: 'Ajouter et vérifier' }).click()
+
+    await expect(sub).toBeVisible()
   })
 
   test('CameraConnectionView_ShouldKeepRecordingOnOneStream_WhenTheUserGivesItToAnother', async ({

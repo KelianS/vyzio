@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { AppErrorKind, type AppError } from '../../common/errors/app_error'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { makeCameraProtocol } from '../../testing/camera_protocol_fixture'
-import { makeCameraStream, makeStreamLineup } from '../../testing/camera_stream_fixture'
+import {
+  makeAvailableStream,
+  makeCameraStream,
+  makeStreamLineup,
+} from '../../testing/camera_stream_fixture'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import {
   buildInitialCameraConnectionUido,
@@ -25,6 +29,23 @@ describe('cameraConnectionReducer', () => {
 
     // Assert
     expect(next.pending).toEqual({ image_settings: CapabilityTask.Remove })
+  })
+
+  it('cameraConnectionReducer_ShouldForgetTheLastAnswer_WhenTheCameraIsAskedForItsStreamsAgain', () => {
+    // Arrange
+    const state = {
+      ...buildInitialCameraConnectionUido(),
+      availableStreams: { rtsp: [makeAvailableStream()], dvrip: [] },
+    }
+
+    // Act
+    const next = cameraConnectionReducer(state, {
+      type: 'AVAILABLE_STREAMS_STARTED',
+      protocol: 'rtsp',
+    })
+
+    // Assert
+    expect(next.availableStreams).toEqual({ dvrip: [] })
   })
 
   it('cameraConnectionReducer_ShouldCloseTheQuestion_WhenTheDeleteFinishes', () => {

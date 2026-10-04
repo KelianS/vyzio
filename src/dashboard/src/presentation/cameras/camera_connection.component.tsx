@@ -130,7 +130,7 @@ export function CameraConnectionView() {
     id: 'connection-stream-path',
     label: 'Chemin du flux',
     nature: { kind: 'text', placeholder: '/stream1' },
-    help: 'Vyzio le demande à la caméra quand elle sait répondre. Ne le renseignez que si la caméra n’a pas été reconnue.',
+    help: 'Choisissez un des flux que la caméra annonce, ou « Autre chemin… » pour en saisir un.',
     value: draft.values.streamPath,
     onChange: (value) => draft.set('streamPath', value as string),
   }
@@ -170,6 +170,7 @@ export function CameraConnectionView() {
               lineup: uido.streams,
               loading: uido.streamsLoading,
               readError: uido.streamsError,
+              available: uido.availableStreams,
               tasks: uido.streamTasks,
               formOpen: uido.streamFormOpen,
               adding: uido.addingStream,
@@ -177,10 +178,10 @@ export function CameraConnectionView() {
                 onRetryRead: () => presenter.onLoad(cameraId),
                 onSetRole: (streamId, role) =>
                   void presenter.onSetStreamRole(cameraId, streamId, role),
-                onSetEnabled: (streamId, enabled) =>
-                  presenter.onSetStreamEnabled(cameraId, streamId, enabled),
                 onRemove: (streamId) => presenter.onRemoveStream(cameraId, streamId),
                 onCheck: (streamId) => void presenter.onCheckStream(cameraId, streamId),
+                onListAvailable: (protocol) =>
+                  void presenter.onListAvailableStreams(cameraId, protocol),
                 onOpenForm: presenter.onOpenStreamForm,
                 onCloseForm: presenter.onCloseStreamForm,
                 onAdd: (addition) => void presenter.onAddStream(cameraId, addition),

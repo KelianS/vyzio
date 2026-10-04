@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { makeCameraStream, makeStreamLineup } from '../../testing/camera_stream_fixture'
 import {
+  makeAvailableStream,
+  makeCameraStream,
+  makeStreamLineup,
+} from '../../testing/camera_stream_fixture'
+import {
+  OTHER_PATH,
   StreamLineState,
+  addChoices,
   addedStream,
+  choiceOfPath,
+  choiceOptions,
+  mainPathChoices,
   roleOptions,
   streamCoverageLine,
   streamFailure,
@@ -16,7 +25,6 @@ const detecting = makeCameraStream({ id: 'sub', ordinal: 1, role: 'detect' })
 
 describe('stream_lines', () => {
   it.each([
-    [makeCameraStream({ enabled: false, verified: false }), StreamLineState.Disabled],
     [makeCameraStream({ checkedAt: null }), StreamLineState.Unchecked],
     [makeCameraStream({ verified: false }), StreamLineState.Failed],
     [makeCameraStream(), StreamLineState.Working],
@@ -129,6 +137,107 @@ describe('stream_lines', () => {
 
     // Assert
     expect(sentence).toBe('Ce flux ne répond pas : relancez sa vérification, ou retirez-le.')
+  })
+
+  it('addChoices_ShouldOfferOnlyTheStreamsNotListed_WhenTheCameraServesSomeAlready', () => {
+    // Arrange
+    const lineup = makeStreamLineup([recording])
+    const available = [
+      makeAvailableStream({
+        rank: 0,
+        path: '/stream1',
+        width: 1920,
+        height: 1080,
+        streamId: 'main',
+      }),
+      makeAvailableStream(),
+    ]
+
+    // Act
+    const choices = addChoices(available, lineup, 'rtsp')
+
+    // Assert
+    expect(choices.map((choice) => choice.label)).toEqual(['640 × 360 · 15 img/s', 'Autre chemin…'])
+    expect(choices[0].hint).toBe('/stream2')
+  })
+
+  it('addChoices_ShouldOfferOnlyAnotherPath_WhenTheCameraListsNothingOverRtsp', () => {
+    // Arrange
+    const lineup = makeStreamLineup([recording])
+
+    // Act
+    const choices = addChoices([], lineup, 'rtsp')
+
+    // Assert
+    expect(choices).toEqual([OTHER_PATH])
+  })
+
+  it('addChoices_ShouldOfferNoTypedPath_WhenTheStreamGoesOverDvrip', () => {
+    // Arrange
+    const lineup = makeStreamLineup([recording])
+    const available = [
+      makeAvailableStream({ rank: 1, path: '?sub', width: null, height: null, fps: null }),
+    ]
+
+    // Act
+    const choices = addChoices(available, lineup, 'dvrip')
+
+    // Assert
+    expect(choices.map((choice) => [choice.label, choice.hint])).toEqual([
+      ['Flux secondaire 1', undefined],
+    ])
+  })
+
+  it('addChoices_ShouldListTheWaitGreyed_WhenTheCameraIsStillAsked', () => {
+    // Arrange
+    const lineup = makeStreamLineup([recording])
+
+    // Act
+    const options = choiceOptions(addChoices(undefined, lineup, 'rtsp'))
+
+    // Assert
+    expect(options.map((option) => [option.label, option.unavailable])).toEqual([
+      ['Recherche des flux…', 'La caméra est interrogée.'],
+      ['Autre chemin…', undefined],
+    ])
+  })
+
+  it('mainPathChoices_ShouldKeepTheSavedPathAsItsOwnItem_WhenTheCameraDoesNotListIt', () => {
+    // Arrange
+    const lineup = makeStreamLineup([recording])
+
+    // Act
+    const choices = mainPathChoices([], lineup, recording)
+
+    // Assert
+    expect(choices.map((choice) => choice.path)).toEqual(['/stream1', null])
+    expect(choiceOfPath(choices, '/stream1').label).toBe('1920 × 1080 · 15 img/s')
+  })
+
+  it('mainPathChoices_ShouldLeaveOutAnotherLinesStream_WhenTheCameraListsIt', () => {
+    // Arrange
+    const lineup = makeStreamLineup([recording, { ...detecting, path: '/stream2' }])
+    const available = [
+      makeAvailableStream({ rank: 0, path: '/stream1', streamId: 'main' }),
+      makeAvailableStream({ streamId: 'sub' }),
+    ]
+
+    // Act
+    const choices = mainPathChoices(available, lineup, recording)
+
+    // Assert
+    expect(choices.map((choice) => choice.path)).toEqual(['/stream1', null])
+  })
+
+  it('choiceOfPath_ShouldBeAnotherPath_WhenNoStreamOfTheCameraHasIt', () => {
+    // Arrange
+    const choices = mainPathChoices([], makeStreamLineup([recording]), recording)
+
+    // Act
+    const choice = choiceOfPath(choices, '/typed')
+
+    // Assert
+    expect(choice).toBe(OTHER_PATH)
   })
 
   it('addedStream_ShouldBeTheHighestRank_WhenTheLineupIsListedInAnyOrder', () => {

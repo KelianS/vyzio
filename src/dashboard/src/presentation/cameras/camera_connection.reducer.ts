@@ -122,5 +122,16 @@ export function cameraConnectionReducer(
       return { ...state, addingStream: true }
     case 'STREAM_ADD_FINISHED':
       return { ...state, addingStream: false }
+    // Asked again each time: the camera's answer may have changed since (ADR-65 e).
+    case 'AVAILABLE_STREAMS_STARTED': {
+      const availableStreams = { ...state.availableStreams }
+      delete availableStreams[action.protocol]
+      return { ...state, availableStreams }
+    }
+    case 'AVAILABLE_STREAMS_LOADED':
+      return {
+        ...state,
+        availableStreams: { ...state.availableStreams, [action.protocol]: action.streams },
+      }
   }
 }

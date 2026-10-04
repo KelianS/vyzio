@@ -1,6 +1,6 @@
 import type { StreamProtocol } from './camera_capability_binding.entity'
 
-/** What a stream serves; one enabled stream records, at most one detects (ADR-65). */
+/** What a stream serves; exactly one stream records, at most one detects (ADR-65). */
 export const StreamRole = {
   None: 'none',
   Record: 'record',
@@ -22,7 +22,6 @@ export interface CameraStream {
   height: number | null
   fps: number | null
   role: StreamRole
-  enabled: boolean
   verified: boolean
   /** Null until the stream was checked. */
   checkedAt: string | null
@@ -39,11 +38,21 @@ export interface CameraStreamLineup {
   detectsOnRecordingStream: boolean
 }
 
-/** A stream declared by hand: its protocol, its path over RTSP or its quality over DVRIP, its role. */
+/** A stream the user adds: its protocol, the path of a stream the camera offered or one typed over RTSP, its role. */
 export interface CameraStreamAddition {
   protocol: StreamProtocol
   path: string | null
   role: StreamRole
-  /** Over DVRIP, the secondary stream rather than the main one; the server knows how to ask for it (ADR-38). */
-  secondary: boolean
+}
+
+/** A stream the camera serves, asked on demand (ADR-65 e); read by quality, its path only in a tooltip. */
+export interface AvailableStream {
+  /** 0 is the most detailed the camera listed. */
+  rank: number
+  path: string | null
+  width: number | null
+  height: number | null
+  fps: number | null
+  /** The line it already is, null when it is not listed. */
+  streamId: string | null
 }
