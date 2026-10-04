@@ -445,8 +445,7 @@ Until the stream first works it is the camera's only status, in place of `Hors l
 The word is shared with the capability level, each level keeping one meaning for it: the header says
 the camera is not set up yet, its stream card says why.
 Another is `Pas encore surveillée`, neutral: the camera whose stream works but which surveillance has
-not taken in yet, until the restart trigger does, in place of `Connectée`. Its hub tile, like an
-`À configurer` one, leads to its page and attempts no image nor live view.
+not taken in yet, until the restart trigger does, in place of `Connectée`, which its hub tile shows too.
 
 ### Editing cycle
 
