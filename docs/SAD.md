@@ -113,7 +113,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Camera | ONVIF (SOAP over HTTP) | Asked of the camera, swept over the usual ONVIF ports when unknown (ADR-56) | WS-Security digest; the search for the endpoint presents no account |
 | API | to | Camera | RTSP, stream checks | 554 by default, set per camera | Basic or Digest when challenged |
 | API | to | Camera | DVRIP | 34567 by default, set per camera | DVRIP login |
-| API | to | Camera | V380 | TCP 8800 by default; UDP broadcast 10008 to find the device number | V380 handshake with the device number |
+| API | to | Camera | V380 | TCP 8800 by default; UDP 10008 to find the device number, to the camera then its subnet broadcast | V380 handshake with the device number |
 | API | to | Camera | Tapo KLAP over HTTP | 80 by default, set per camera | KLAP handshake with the Tapo cloud account, presented to the camera only (ADR-61) |
 | API | to | Home network, discovery | ICMP, TCP connect, reverse DNS; WS-Discovery multicast (UDP 3702) and the ARP table, which do not get past the Docker bridge (#251) | A fixed set of camera ports, over the configured address ranges | None: only handshakes that need no account (ADR-32) |
 | API | to | Docker engine of the host | Docker API, Unix socket | none | Root-equivalent (§ 8) |
@@ -238,7 +238,7 @@ a live tuning that needs no restart goes over MQTT (ADR-35).
 | Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry yet (#69) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-54) | Sessions until revoked |
 | PTZ positions and their thumbnails | Vyzio (ADR-26, ADR-60) | Database, the thumbnails as files beside it | Until removed |
-| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, at least one day, overridable per camera (ADR-39, ADR-48) |
+| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48) |
 | Face embeddings | Frigate (ADR-03) | Frigate | Follows the library Vyzio syncs |
 | The Frigate configuration | Written by Vyzio, read by Frigate (ADR-12) | Shared volume | Rewritten at each change |
 
@@ -289,6 +289,6 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Remote access waits for an encrypted entry point | #62, #67 |
 | Discovery misses multicast announcements and MAC hints from the Docker bridge | #251 |
 | Frigate's own outbound calls are not decided | #250 |
-| The live view is one frame per second; a real stream would add a flow from the hub to the browser | #47 |
+| The live view is a refreshed still image (ADR-16); a real stream would add a flow from the hub to the browser | #47 |
 | The user cannot yet export or erase their data | #69 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |
