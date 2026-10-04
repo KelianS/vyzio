@@ -102,7 +102,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 
 | Source | Direction | Destination | Protocol | Port | Authentication |
 |---|---|---|---|---|---|
-| Browser, home network | to | Dashboard | HTTP, in the clear (#67) | 8080, the one published port | Owner session cookie (ADR-54) |
+| Browser, home network | to | Dashboard | HTTP, in the clear by design (ADR-67) | 8080, the one published port | Owner session cookie (ADR-54) |
 | Dashboard | to | API, Docker network | HTTP | 8443 | The owner session cookie, passed through |
 | API | to | Frigate, Docker network | HTTP REST | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
 | Frigate | to | MQTT broker, Docker network | MQTT | 1883 | None, anonymous |
@@ -119,7 +119,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Docker engine of the host | Docker API, Unix socket | none | Root-equivalent (§ 8) |
 | API | to | Telegram | HTTPS; commands fetched by long polling | 443, outbound only | Bot token (ADR-52) |
 | API | to | Discord | HTTPS and a WebSocket gateway | 443, outbound only | Bot token (ADR-52) |
-| Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted | none opened on the router | Overlay membership, then the owner session (ADR-51, not delivered, #62) |
+| Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted, HTTP inside (ADR-67) | none opened on the router | Overlay membership, then the owner session (ADR-51, not delivered, #62) |
 | Host | to | Image registry | HTTPS | 443, at install and update only | None, public images |
 
 No flow enters the house from the internet: the channels are fetched from inside, and remote access
@@ -267,7 +267,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Threat | Mitigation |
 |---|---|
 | Someone on the home network opens the interface | Owner account, server session in an `httpOnly` cookie, revocable, login rate limited (ADR-54) |
-| Someone on the home network reads the traffic | **Not mitigated yet**: the entry point is plain HTTP (#67) |
+| Someone on the home network reads the traffic | Accepted: the home network is served over HTTP, its confidentiality is that network's; from outside, only the overlay's encrypted tunnel (ADR-67) |
 | A copy of the database file | Password hashed; camera accounts and channel tokens readable (#247) |
 | Frigate reached directly | Bound to the host's loopback, every access through the API (ADR-16, ADR-17) |
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
@@ -286,7 +286,6 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Camera protocol tests rely on hand-written stubs rather than captured exchanges | #92 |
 | The disk fills with recordings without warning | #64 |
 | A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
-| Remote access waits for an encrypted entry point | #62, #67 |
 | Discovery misses multicast announcements and MAC hints from the Docker bridge | #251 |
 | The live view is a refreshed still image (ADR-16); a real stream would add a flow from the hub to the browser | #47 |
 | The user cannot yet export or erase their data | #69 |

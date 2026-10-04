@@ -1,6 +1,6 @@
 # ADR-54 — L'accès à l'interface est gardé par un compte propriétaire, session serveur en cookie
 
-> Statut : Accepté
+> Statut : Accepté, amendé par [ADR-67](0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md) (le transport en clair est la cible, plus un écart ; le cookie reste sans `Secure`)
 
 ## Contexte
 
@@ -20,7 +20,7 @@ place — elles ne l'étaient pas. Cet ADR tranche *comment* la barrière est po
 
 Deux éléments d'architecture cadrent la décision avant même les options. **L'interface et l'API sont
 sur la même origine** : le conteneur qui sert le SPA relaie `/api/` vers l'API, et rien d'autre n'est
-publié ([SAD](../SAD.md) §8.1). **Le transport est en clair**, et il le restera à l'issue de ce
+publié ([SAD](../SAD.md) §8). **Le transport est en clair**, et il le restera à l'issue de ce
 chantier.
 
 ## Options comparées
@@ -169,9 +169,9 @@ la même réponse, faute de quoi le geste enfermerait dehors celui qui le fait.
   livre l'identité. Un certificat auto-signé aurait mis un avertissement rouge devant un public non
   technicien — soit l'inverse de l'effet recherché. Le chiffrement reste traité comme le prérequis
   de l'accès distant ([ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)) ;
-  après cet ADR, il devient le **seul** écart entre la cible et la réalité ([SAD](../SAD.md) §8.1).
+  après cet ADR, il devient le **seul** écart entre la cible et la réalité ([SAD](../SAD.md) §8).
 - **Le premier écran du produit change.** Une installation neuve ouvre sur la création du mot de
-  passe, avant l'ajout de la première caméra ([SAD](../SAD.md) §8.2).
+  passe, avant l'ajout de la première caméra ([SPECS](../SPECS.md) 8.3).
 - **Un écran qu'on ne peut pas franchir porte son aide sur place** : la connexion et la création du
   compte sont exactement le cas prévu par
   [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) — l'aide y vit dans

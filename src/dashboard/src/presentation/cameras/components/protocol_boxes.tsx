@@ -131,7 +131,7 @@ function ProtocolBox({
     settings.push({
       id: `${id}-device-id`,
       label: 'Numéro de la caméra',
-      nature: { kind: 'text', placeholder: 'ex : 26970853' },
+      nature: { kind: 'text', placeholder: 'ex : 87654321' },
       help: 'Affiché dans l’application V380. Vyzio le trouve seul le plus souvent : ne le renseignez que s’il le demande.',
       value: values.deviceId,
       onChange: (value) => onChange({ deviceId: value as string }),
