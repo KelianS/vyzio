@@ -24,6 +24,9 @@ import {
 } from '../../common/orientation/orientation_control'
 import { ReadFailure } from '../../common/components/error_message'
 import { PtzCalibrationSection } from './components/ptz_calibration_section'
+import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
+import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
+import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraImagePresenter } from './camera_image.presenter'
 import { cameraImageReducer } from './camera_image.reducer'
@@ -63,6 +66,7 @@ export function CameraImageView() {
   const hasImageSettings = camera.verifiedCapabilities.includes('image_settings')
   const orientation = orientationControlOf(camera)
   const moves = MOVES[orientation]
+  const entry = surveillanceEntryOf(camera)
 
   useEffect(() => {
     presenter.onLoad(cameraId, { imageSettings: hasImageSettings, ptz: moves })
@@ -75,6 +79,15 @@ export function CameraImageView() {
       case OrientationControl.Unusable:
         return <OrientationUnavailable cameraId={cameraId} />
       case OrientationControl.Usable:
+        // Positions are saved from the live view, which only a camera in surveillance has (SPECS 9.3).
+        if (entry !== SurveillanceEntry.Watched)
+          return (
+            <SurveillanceFirstNotice
+              cameraId={cameraId}
+              entry={entry}
+              restartTrigger={<RestartSurveillanceTrigger />}
+            />
+          )
         return (
           <>
             <PtzCalibrationSection

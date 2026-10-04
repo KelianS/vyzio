@@ -6,19 +6,6 @@ import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { AddCameraView } from './add_camera.component'
 
-const reachable = {
-  cameraId: 'camera-9',
-  displayName: 'Porte',
-  status: 'online',
-  validationState: 'validated',
-  connected: true,
-  previewAvailable: true,
-  needsAttention: false,
-  guidance: null,
-  lastReachabilityCheckAt: null,
-  lastSuccessfulFrameAt: null,
-}
-
 const discovered = {
   displayName: 'Tapo C200',
   host: '192.168.1.60',
@@ -67,27 +54,23 @@ async function searchTheNetwork() {
   )
 }
 
-async function fillTheAddressByHand() {
+async function fillTheAccessByHand() {
   await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
   await userEvent.type(screen.getByLabelText('Nom'), 'Porte')
   await userEvent.type(screen.getByLabelText('Adresse'), '192.168.1.50')
-  await userEvent.type(screen.getByLabelText('Chemin du flux'), '/stream1')
+  await userEvent.type(screen.getByLabelText('Identifiant'), 'viewer')
+  await userEvent.type(screen.getByLabelText('Mot de passe'), 'not-a-real-secret')
 }
 
 describe('AddCameraView', () => {
-  it('onCreate_ShouldAddTheCameraAndOpenIt_WhenTheVerifiedAddressIsAdded', async () => {
+  it('onCreate_ShouldCreateTheCameraFromItsAccessAloneAndOpenIt_WhenTheTypedAddressIsAdded', async () => {
     // Arrange
     const network = fakeNetwork({
-      'POST /api/cameras/verify-draft': ok(reachable),
       'POST /api/cameras': ok(makeCamera({ id: 'camera-9', displayName: 'Porte' })),
-      'POST /api/cameras/camera-9/verify': ok(reachable),
       'GET /api/cameras': ok([makeCamera({ id: 'camera-9', displayName: 'Porte' })]),
-      'GET /api/system/stats': ok(null),
     })
     const { router } = renderScreen(<AddCameraView />)
-    await fillTheAddressByHand()
-    await userEvent.click(screen.getByRole('button', { name: 'Vérifier la connexion' }))
-    await screen.findByText('Caméra joignable. Vous pouvez l’ajouter.')
+    await fillTheAccessByHand()
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
@@ -95,25 +78,50 @@ describe('AddCameraView', () => {
     // Assert
     expect(await screen.findByText('« Porte » ajoutée.')).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/settings/cameras/camera-9')
-    expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/system/stats' }))
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras',
+        body: {
+          displayName: 'Porte',
+          host: '192.168.1.50',
+          username: 'viewer',
+          password: 'not-a-real-secret',
+        },
+      }),
+    )
   })
 
-  it('onVerifyDraft_ShouldSayTheCameraDoesNotAnswer_WhenTheCameraIsUnreachable', async () => {
+  it('onSelectManualEntry_ShouldAskForTheAccessAlone_WhenTheUserTypesTheAddress', async () => {
     // Arrange
-    fakeNetwork({
-      'POST /api/cameras/verify-draft': failure(502, 'camera_unreachable', 'RTSP: timeout'),
-    })
+    fakeNetwork({})
     renderScreen(<AddCameraView />)
-    await fillTheAddressByHand()
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Vérifier la connexion' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+
+    // Assert
+    expect(screen.getByLabelText('Nom')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Port')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Marque')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vérifier la connexion' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeDisabled()
+  })
+
+  it('onCreate_ShouldSayWhyAndForSupportAndStay_WhenTheCameraCannotBeCreated', async () => {
+    // Arrange
+    fakeNetwork({ 'POST /api/cameras': failure(400, 'invalid_camera') })
+    const { router } = renderScreen(<AddCameraView />)
+    await fillTheAccessByHand()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
 
     // Assert
     const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('La caméra ne répond pas')
-    expect(alert).toHaveTextContent('POST /api/cameras/verify-draft · 502')
-    expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeDisabled()
+    expect(alert).toHaveTextContent('POST /api/cameras · 400')
+    expect(router.state.location.pathname).not.toBe('/settings/cameras/camera-9')
+    expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeEnabled()
   })
 
   it('onSelectCandidate_ShouldShowTheVendorNotice_WhenTheFoundCameraIsStillToPrepare', async () => {
@@ -192,14 +200,12 @@ describe('AddCameraView', () => {
     )
   })
 
-  it('onCreate_ShouldAddTheCameraOverDvripWithoutAPath_WhenItsStreamIsReadyOverDvripOnly', async () => {
+  it('onCreate_ShouldHandOverTheNameAndAddressOnly_WhenADiscoveredCameraIsAdded', async () => {
     // Arrange
     const network = fakeNetwork({
       'POST /api/cameras/discovery': ok([overDvripOnly]),
       'POST /api/cameras': ok(makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })),
-      'POST /api/cameras/camera-9/verify': ok(reachable),
       'GET /api/cameras': ok([makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })]),
-      'GET /api/system/stats': ok(null),
     })
     renderScreen(<AddCameraView />)
     await searchTheNetwork()
@@ -213,9 +219,7 @@ describe('AddCameraView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'POST /api/cameras',
-        body: expect.objectContaining({
-          stream: { protocol: 'dvrip', port: 34567, path: null },
-        }) as unknown,
+        body: { displayName: 'ICSee salon', host: '192.168.1.61', username: null, password: null },
       }),
     )
   })

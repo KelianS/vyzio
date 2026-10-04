@@ -14,6 +14,9 @@ import { HelpPanel } from '../../common/components/help_panel'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
+import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
+import { surveillanceEntryOf } from '../../common/camera/camera_status'
+import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { buildPrivacySettings, STRATEGY_LABEL } from './camera_privacy_settings'
 import { POSITIONS_UNREAD } from './cameras.formatters'
 import { buildCameraPrivacyPresenter } from './camera_privacy.presenter'
@@ -66,6 +69,14 @@ export function CameraPrivacyView() {
             error={uido.presetsError}
             onRetry={() => presenter.onRetryPresets(camera.id, camera.ptzSupported)}
             subject={POSITIONS_UNREAD}
+          />
+        )}
+        {/* Orientation à l'écart needs positions, saved from the live view (SPECS 9.3). */}
+        {camera.ptzSupported && (
+          <SurveillanceFirstNotice
+            cameraId={camera.id}
+            entry={surveillanceEntryOf(camera)}
+            restartTrigger={<RestartSurveillanceTrigger />}
           />
         )}
 

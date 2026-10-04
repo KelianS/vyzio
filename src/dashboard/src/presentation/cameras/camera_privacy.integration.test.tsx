@@ -202,4 +202,24 @@ describe('CameraPrivacyView', () => {
       }),
     )
   })
+
+  it('render_ShouldLeadToConnexion_WhenAParkingCameraStreamNeverWorked', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: { ...ptzCamera, status: 'to_set_up', validationState: 'to_set_up' },
+    })
+
+    // Assert
+    expect(
+      await screen.findByText(/s’ouvre une fois la caméra en surveillance, et son flux vidéo/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1/connexion',
+    )
+  })
 })

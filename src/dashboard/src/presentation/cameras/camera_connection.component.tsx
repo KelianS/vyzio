@@ -70,6 +70,11 @@ export function CameraConnectionView() {
     presenter.onLoad(cameraId)
   }, [presenter, cameraId])
 
+  const neverDetected = camera.detectedAt === null
+  useEffect(() => {
+    presenter.onArrive(cameraId, neverDetected)
+  }, [presenter, cameraId, neverDetected])
+
   const saved = useMemo(() => connectionValuesOf(camera, uido.protocols), [camera, uido.protocols])
   const draft = useSettingsDraft<ConnectionValues>({ saved, labels: DRAFT_LABELS })
 

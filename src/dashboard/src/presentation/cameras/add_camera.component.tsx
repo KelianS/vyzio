@@ -17,27 +17,20 @@ import type { SettingDeclaration } from '../../common/settings/setting_declarati
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
-import { asksStreamPath } from './stream_lines'
 import { resolveVendorLinkTarget } from './vendor_links'
-import {
-  VENDOR_FAMILY_OPTIONS,
-  formatVendorFamily,
-  fromVendorChoice,
-  toVendorChoice,
-} from './vendor_families'
+import { formatVendorFamily } from './vendor_families'
 import { buildAddCameraPresenter } from './add_camera.presenter'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido'
 
-/** Adding a camera is one task, one page (ADR-40): find, fill in, verify, add — technical facts under "Advanced". */
+/** Adding a camera is one task, one page (ADR-40): find it, give its access, add it; its page sets the rest (ADR-68). */
 export function AddCameraView() {
-  const { cameras: container, hub: hubContainer } = useAppContainer()
+  const { cameras: container } = useAppContainer()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [uido, dispatch] = useReducer(addCameraReducer, undefined, buildInitialAddCameraUido)
   const presenter = usePresenter(buildAddCameraPresenter, {
     container,
-    hubContainer,
     dispatch,
     toast,
   })
@@ -60,15 +53,17 @@ export function AddCameraView() {
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
-  const vendorFamily = uido.form.vendorFamily ?? null
+  // The brand discovery recognised only picks the notice; it is never handed to the camera (ADR-68 e).
+  const vendorFamily = candidate?.vendorFamily ?? null
+  const streamPath = candidate?.streamPath ?? null
   // A candidate whose stream is ready needs no activation notice, whatever its protocol.
-  const connected = (uido.verification?.connected ?? false) || Boolean(candidate?.stream)
+  const connected = Boolean(candidate?.stream)
   useEffect(() => {
-    void presenter.onVendorAssistanceNeeded(vendorFamily, uido.form.streamPath, connected)
-  }, [presenter, vendorFamily, uido.form.streamPath, connected])
+    void presenter.onVendorAssistanceNeeded(vendorFamily, streamPath, connected)
+  }, [presenter, vendorFamily, streamPath, connected])
   const vendorAssistance = uido.vendorAssistance
 
-  const busy = uido.discovering || uido.refreshing || uido.verifying || uido.creating
+  const busy = uido.discovering || uido.refreshing || uido.creating
 
   // One-line summary of step 1's pick, shown once the list collapses.
   const chosen = candidate
@@ -85,24 +80,10 @@ export function AddCameraView() {
   // No protocol serves the stream yet: the camera must be opened from its app first.
   const needsActivation = Boolean(candidate && !candidate.stream)
   const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
-  const hasPath = asksStreamPath(uido.form.streamProtocol)
-  const canVerify =
-    showForm &&
-    !needsActivation &&
-    Boolean(
-      uido.form.displayName.trim() &&
-      uido.form.host.trim() &&
-      (!hasPath || uido.form.streamPath?.trim()),
-    )
-  // Over a pathless stream, adding does not wait for a draft check: the camera is checked once added.
-  const canAdd = Boolean(uido.verification?.connected) || !hasPath
+  const canAdd = Boolean(uido.form.displayName.trim() && uido.form.host.trim())
 
   async function add() {
-    const createdId = await presenter.onCreate(
-      !hasPath,
-      Boolean(uido.verification?.connected),
-      uido.form,
-    )
+    const createdId = await presenter.onCreate(uido.form)
     if (createdId) void navigate(`/settings/cameras/${createdId}`)
   }
 
@@ -123,27 +104,6 @@ export function AddCameraView() {
       onChange: (value) => presenter.onFormChanged({ host: value as string }),
     },
     {
-      id: 'add-port',
-      label: 'Port',
-      nature: { kind: 'number', unit: '', min: 1, max: 65535 },
-      value: uido.form.port,
-      onChange: (value) => presenter.onFormChanged({ port: value as number }),
-    },
-  ]
-
-  if (hasPath) {
-    declarations.push({
-      id: 'add-stream-path',
-      label: 'Chemin du flux',
-      nature: { kind: 'text', placeholder: '/stream1' },
-      help: 'Vyzio le demande à la caméra quand elle sait répondre. Ne le renseignez que si elle n’a pas été reconnue.',
-      value: uido.form.streamPath ?? '',
-      onChange: (value) => presenter.onFormChanged({ streamPath: (value as string) || null }),
-    })
-  }
-
-  declarations.push(
-    {
       id: 'add-username',
       label: 'Identifiant',
       nature: { kind: 'text' },
@@ -157,16 +117,7 @@ export function AddCameraView() {
       value: uido.form.password ?? '',
       onChange: (value) => presenter.onFormChanged({ password: (value as string) || null }),
     },
-    {
-      id: 'add-vendor',
-      label: 'Marque',
-      nature: { kind: 'choice', options: VENDOR_FAMILY_OPTIONS },
-      help: 'Renseignée, elle donne accès aux réglages propres à cette marque. Vyzio la reconnaît seul la plupart du temps.',
-      value: toVendorChoice(uido.form.vendorFamily),
-      onChange: (value) =>
-        presenter.onFormChanged({ vendorFamily: fromVendorChoice(value as string) }),
-    },
-  )
+  ]
 
   return (
     <div className="flex flex-col gap-4">
@@ -259,13 +210,11 @@ export function AddCameraView() {
               C’est fréquent et ce n’est pas une panne : Vyzio interroge le réseau avec le protocole
               ONVIF, que beaucoup de caméras n’annoncent pas, ou seulement une fois réveillées
               depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
-              adresse sur le réseau, son port, et le chemin du flux, que l’application de la caméra
-              ou sa notice indiquent.
+              adresse sur le réseau, que l’application de la caméra ou votre box indiquent.
             </p>
             <p>
-              Si la vérification échoue, ce sont presque toujours l’adresse, le port, le chemin ou
-              les identifiants : reprenez-les sur la caméra elle-même. Une caméra sur batterie doit
-              être réveillée avant de répondre.
+              Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
+              Une caméra sur batterie doit être réveillée avant de répondre.
             </p>
           </HelpPanel>
         </SettingsSection>
@@ -291,7 +240,10 @@ export function AddCameraView() {
         )}
 
         {showForm && (
-          <SettingsSection title="Connexion" lede="Comment Vyzio joindra cette caméra.">
+          <SettingsSection
+            title="Connexion"
+            lede="Son nom, son adresse et son compte : Vyzio trouve le reste une fois la caméra ajoutée."
+          >
             <SettingsList settings={declarations} />
 
             <div className="mt-4">
@@ -299,16 +251,6 @@ export function AddCameraView() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || !canVerify}
-                onClick={() => void presenter.onVerifyDraft(uido.form)}
-              >
-                {uido.verifying ? 'Vérification…' : 'Vérifier la connexion'}
-              </Button>
-              {/* L'ajout reste offert mais ferme tant que rien n'a repondu :
-                  griser sans expliquer laisserait chercher ce qui manque. */}
               <Button type="button" disabled={busy || !canAdd} onClick={() => void add()}>
                 {uido.creating ? 'Ajout…' : 'Ajouter la caméra'}
               </Button>
@@ -318,7 +260,7 @@ export function AddCameraView() {
 
         {(vendorAssistance.loading || vendorAssistance.error || vendorAssistance.markdown) && (
           <SettingsSection
-            title={`Notice ${formatVendorFamily(uido.form.vendorFamily ?? null) ?? 'du constructeur'}`}
+            title={`Notice ${formatVendorFamily(vendorFamily) ?? 'du constructeur'}`}
           >
             {vendorAssistance.loading ? (
               <p className="text-muted-foreground">Chargement…</p>

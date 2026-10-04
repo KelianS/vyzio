@@ -53,6 +53,8 @@ export function buildCameraConnectionPresenter({
   const nextStreamsRead = latestOnly()
   // Per protocol: opening a dropdown twice must not let the older answer land last.
   const nextAvailableRead: Partial<Record<StreamProtocol, () => () => boolean>> = {}
+  // Once per camera: a remount or a re-read list must not run it again behind the user's back.
+  const detectedOnArrival = new Set<string>()
 
   /** The stream lines of the stream card; after an action a failed reread keeps them and goes to a toast. */
   function readStreams(cameraId: string, listShown = false) {
@@ -196,6 +198,23 @@ export function buildCameraConnectionPresenter({
         const unknownStatus: never = binding.status
         return unknownStatus
       }
+    }
+  }
+
+  /** « Détecter automatiquement »: it may bind the stream, end « À configurer » and wait for a restart (ADR-68 d). */
+  async function detect(cameraId: string) {
+    dispatch({ type: 'DETECT_STARTED' })
+    try {
+      await container.detectCameraCapabilities.execute(cameraId)
+      dispatch({ type: 'DETECT_SUCCEEDED' })
+      toast('Détection terminée.', 'success')
+      readConnection(cameraId)
+      reloadCameraList(container)
+      refreshSurveillance(hubContainer)
+    } catch (e) {
+      toastError(toast, toAppError(e))
+    } finally {
+      dispatch({ type: 'DETECT_FINISHED' })
     }
   }
 
@@ -375,18 +394,13 @@ export function buildCameraConnectionPresenter({
       }
     },
 
-    async onDetect(cameraId: string) {
-      dispatch({ type: 'DETECT_STARTED' })
-      try {
-        await container.detectCameraCapabilities.execute(cameraId)
-        dispatch({ type: 'DETECT_SUCCEEDED' })
-        toast('Détection terminée.', 'success')
-        readConnection(cameraId)
-      } catch (e) {
-        toastError(toast, toAppError(e))
-      } finally {
-        dispatch({ type: 'DETECT_FINISHED' })
-      }
+    onDetect: detect,
+
+    /** A camera never detected runs detection as its page opens, shown as if the user had asked (ADR-68 b). */
+    onArrive(cameraId: string, neverDetected: boolean) {
+      if (!neverDetected || detectedOnArrival.has(cameraId)) return
+      detectedOnArrival.add(cameraId)
+      void detect(cameraId)
     },
 
     /** Tests the capability through the protocol; resolves true when the camera answered. */

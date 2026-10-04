@@ -28,7 +28,6 @@ describe('UpdateCamera', () => {
         frigateCameraName: 'front_door',
         vendorFamily: null,
       }),
-      verifyDraft: vi.fn(),
       verify: vi.fn(),
       apply: vi.fn(),
       applyConfiguration: vi.fn(),

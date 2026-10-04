@@ -6,7 +6,7 @@ import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel, formatStatusTone } from '../cameras.formatters'
+import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
 
 /** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
 export function CameraList({

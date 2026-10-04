@@ -631,6 +631,38 @@ describe('CameraConnectionView', () => {
     expect(await screen.findByText('Détection terminée.')).toBeInTheDocument()
   })
 
+  it('onArrive_ShouldRunDetectionAndShowItRunning_WhenTheCameraWasNeverDetected', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([]),
+      [DETECT]: late(ok(), 5000),
+      [CAMERAS]: ok([makeCamera()]),
+      [STATS]: ok(null),
+    })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'to_set_up', detectedAt: null })),
+    )
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Détection…' })).toBeDisabled()
+    expect(network.sent.filter((request) => request.route === DETECT)).toHaveLength(1)
+  })
+
+  it('onArrive_ShouldNotRunDetection_WhenTheCameraWasAlreadyDetected', async () => {
+    // Arrange
+    const network = connectionNetwork({ [BINDINGS]: ok([]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Détecter automatiquement' })).toBeEnabled()
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: DETECT }))
+  })
+
   it('onConfigure_ShouldSayTheConnectionWorks_WhenTheCameraAnswers', async () => {
     // Arrange
     const network = connectionNetwork({

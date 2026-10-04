@@ -1,4 +1,4 @@
-import type { CameraDraftInput, CameraUpdateInput } from '../entities/camera_draft_input.entity'
+import type { CameraUpdateInput, NewCameraInput } from '../entities/camera_draft_input.entity'
 import type {
   CameraProtocol,
   CameraProtocolAddition,
@@ -32,9 +32,8 @@ export interface CameraRepository {
   getAll(): Promise<Camera[]>
   discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
-  create(input: CameraDraftInput): Promise<Camera>
+  create(input: NewCameraInput): Promise<Camera>
   update(cameraId: string, input: CameraUpdateInput): Promise<Camera>
-  verifyDraft(input: CameraDraftInput): Promise<CameraStatus>
   verify(cameraId: string): Promise<CameraStatus>
   applyConfiguration(): Promise<CameraConfigurationApplyResult>
   delete(cameraId: string): Promise<{ deleted: boolean; message: string; configPath: string }>

@@ -7,6 +7,7 @@ import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Overlay } from '../../common/components/overlay'
+import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
 import { CameraLiveThumbnail } from '../../common/components/camera_live_thumbnail'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -251,7 +252,13 @@ function HubOperational({
   // The wait shows on the thumbnail concerned, not only in the modal: cutting reaches the camera
   // itself, and nothing moves on screen before it has answered.
   const privacyBusyIds = new Set(privacyLoading ? (privacyPending?.cameraIds ?? []) : [])
-  const watched = cameras.filter((camera) => camera.isEnabled && !camera.privacyModeActive).length
+  // A camera surveillance has not taken in yet watches nothing (ADR-68 d).
+  const watched = cameras.filter(
+    (camera) =>
+      camera.isEnabled &&
+      !camera.privacyModeActive &&
+      surveillanceEntryOf(camera) === SurveillanceEntry.Watched,
+  ).length
 
   return (
     <main className="flex flex-col gap-4 py-4">

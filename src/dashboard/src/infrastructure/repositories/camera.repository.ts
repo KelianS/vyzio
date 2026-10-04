@@ -1,8 +1,8 @@
 import type {
-  CameraDraftInput,
   CameraUpdateInput,
+  NewCameraInput,
 } from '../../domain/entities/camera_draft_input.entity'
-import { PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
+import { CameraState, PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraProtocol,
   CameraProtocolAddition,
@@ -49,6 +49,7 @@ interface CameraDto {
   ptzSupported: boolean
   privacyStrategy: string
   verifiedCapabilities: string[]
+  detectedAt: string | null
 }
 
 interface CameraStatusDto {
@@ -149,7 +150,7 @@ export class HttpCameraRepository implements CameraRepository {
     )
   }
 
-  async create(input: CameraDraftInput): Promise<Camera> {
+  async create(input: NewCameraInput): Promise<Camera> {
     const payload = await postJson<CameraDto>(`${this.apiBaseUrl}/api/cameras`, input)
     return mapCamera(payload)
   }
@@ -157,14 +158,6 @@ export class HttpCameraRepository implements CameraRepository {
   async update(cameraId: string, input: CameraUpdateInput): Promise<Camera> {
     const payload = await putJson<CameraDto>(`${this.apiBaseUrl}/api/cameras/${cameraId}`, input)
     return mapCamera(payload)
-  }
-
-  async verifyDraft(input: CameraDraftInput): Promise<CameraStatus> {
-    const payload = await postJson<CameraStatusDto>(
-      `${this.apiBaseUrl}/api/cameras/verify-draft`,
-      input,
-    )
-    return mapCameraStatus(payload)
   }
 
   async verify(cameraId: string): Promise<CameraStatus> {
@@ -402,7 +395,8 @@ function mapCamera(camera: CameraDto): Camera {
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: camera.privacyStrategy as Camera['privacyStrategy'],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
-    connected: camera.status === 'online',
+    detectedAt: camera.detectedAt,
+    connected: camera.status === CameraState.Online,
   }
 }
 

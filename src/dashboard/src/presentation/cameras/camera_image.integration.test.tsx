@@ -7,6 +7,7 @@ import { makeCamera } from '../../testing/camera_fixture'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
+import { pollTheSurveillance } from '../../testing/shared_reads'
 import { CameraImageView } from './camera_image.component'
 
 const SETTINGS = 'GET /api/cameras/camera-1/image-settings'
@@ -18,6 +19,13 @@ const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
 
 const imageCamera = makeCamera({ verifiedCapabilities: ['image_settings'] })
 const ptzCamera = makeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
+const PENDING_STATS = ok({
+  status: 'active',
+  storage: null,
+  cameras: [],
+  detection: { hardware: 'cpu', targetFps: 5 },
+  pendingChanges: true,
+})
 
 const settings: CameraImageSettings = {
   brightness: 50,
@@ -424,5 +432,23 @@ describe('CameraImageView', () => {
     // Assert
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: /^Pilotage/ })).toBeInTheDocument()
+  })
+
+  it('render_ShouldSaySurveillanceMustStartFirstWithTheTrigger_WhenTheCameraIsNotInSurveillanceYet', async () => {
+    // Arrange
+    fakeNetwork({ [PRESETS]: presetsRead(null), 'GET /api/system/stats': PENDING_STATS })
+    renderScreen(<CameraImageView />, imageTab({ ...ptzCamera, validationState: 'draft' }))
+
+    // Act
+    await pollTheSurveillance()
+
+    // Assert
+    expect(
+      await screen.findByText(
+        /s’ouvre une fois la caméra en surveillance : appliquez les changements/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Appliquer les changements' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
   })
 })

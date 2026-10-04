@@ -1,6 +1,4 @@
-import type { SettingOption } from '../../common/settings/setting_declaration'
-
-/** Vendor families Vyzio recognizes — single source, was duplicated across the add screen. */
+/** Vendor families Vyzio recognizes, by the name the add screen shows to tell a camera apart (ADR-68 e). */
 const VENDOR_FAMILY_LABELS = {
   v380_pro: 'V380 PRO',
   tplink_tapo: 'TP-Link Tapo',
@@ -9,23 +7,7 @@ const VENDOR_FAMILY_LABELS = {
 
 type VendorFamily = keyof typeof VENDOR_FAMILY_LABELS
 
-/** "No vendor" is a choice value, not an absence: a dropdown can't offer emptiness. */
-const VENDOR_UNKNOWN = 'unknown'
-
-export const VENDOR_FAMILY_OPTIONS: readonly SettingOption[] = [
-  { value: VENDOR_UNKNOWN, label: 'Non reconnue' },
-  ...Object.entries(VENDOR_FAMILY_LABELS).map(([value, label]) => ({ value, label })),
-]
-
 export function formatVendorFamily(vendorFamily: string | null): string | null {
   if (!vendorFamily) return null
   return VENDOR_FAMILY_LABELS[vendorFamily as VendorFamily] ?? vendorFamily
-}
-
-export function toVendorChoice(vendorFamily: string | null | undefined): string {
-  return vendorFamily ?? VENDOR_UNKNOWN
-}
-
-export function fromVendorChoice(choice: string): string | null {
-  return choice === VENDOR_UNKNOWN ? null : choice
 }

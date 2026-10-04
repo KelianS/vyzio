@@ -5,7 +5,7 @@ import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel } from '../cameras.formatters'
+import { formatCameraStatusLabel } from '../../../common/camera/camera_status'
 import { CameraNotFound } from './camera_not_found'
 
 // The pages of one camera, each the twin of an installation page one notch lower (ADR-39, ADR-40).
