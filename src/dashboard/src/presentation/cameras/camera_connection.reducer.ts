@@ -38,6 +38,7 @@ export function cameraConnectionReducer(
         bindingsError: null,
         cameraGone: false,
         detected: false,
+        detection: null,
       }
     // A question stays only on a capability a try applies to: an answer or a check elsewhere closed it.
     case 'BINDINGS_LOADED':
@@ -53,12 +54,12 @@ export function cameraConnectionReducer(
     case 'CAMERA_GONE':
       return { ...state, bindingsLoading: false, bindings: [], cameraGone: true }
     case 'DETECT_STARTED':
-      return { ...state, detecting: true }
+      return { ...state, detecting: true, detection: null }
     case 'DETECT_FINISHED':
       return { ...state, detecting: false }
     // Only a detection that ran may say what it could not choose.
     case 'DETECT_SUCCEEDED':
-      return { ...state, detected: true }
+      return { ...state, detected: true, detection: action.result }
 
     case 'TASK_STARTED':
       return { ...state, pending: { ...state.pending, [action.capability]: action.task } }

@@ -1,3 +1,4 @@
+import type { DetectionResult } from './detection_outcome'
 import type { AppError } from '../../common/errors/app_error'
 import type {
   CameraCapabilityBinding,
@@ -44,6 +45,8 @@ export interface CameraConnectionUido {
   detecting: boolean
   /** Detection ran on this camera since the page opened: a stream it left unchosen says why (ADR-65 e). */
   detected: boolean
+  /** What the last detection found, said under its button; null before one finished (SPECS 2.2). */
+  detection: DetectionResult | null
   pending: Partial<Record<Capability, CapabilityTask>>
   /** The capabilities tried and waiting for the user's answer (ADR-66). */
   asking: Partial<Record<Capability, true>>
@@ -91,6 +94,7 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     cameraGone: false,
     detecting: false,
     detected: false,
+    detection: null,
     pending: {},
     asking: {},
     manualFormOpen: false,

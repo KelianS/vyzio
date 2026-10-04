@@ -64,9 +64,7 @@ export function CameraPage({
         </Link>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="font-serif text-3xl">{camera.displayName}</h1>
-          <span className="text-sm text-muted-foreground">
-            {formatCameraStatusLabel(camera.status)}
-          </span>
+          <span className="text-sm text-muted-foreground">{formatCameraStatusLabel(camera)}</span>
         </div>
       </div>
 

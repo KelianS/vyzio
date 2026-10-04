@@ -1,9 +1,20 @@
 import type { BadgeTone } from '../components/badge'
 import { CameraState, CameraValidation, type Camera } from '../../domain/entities/camera.entity'
 
+type CameraStatusFacts = Pick<Camera, 'status' | 'validationState'>
+
+// Its stream works but surveillance has not taken it in: « Connectée » would say it is watched (ADR-68 d).
+function waitsForRestart(camera: CameraStatusFacts): boolean {
+  return (
+    camera.status === CameraState.Online &&
+    surveillanceEntryOf(camera) === SurveillanceEntry.AwaitsRestart
+  )
+}
+
 /** The camera's own status, in the words of the camera list, its page header and its hub tile. */
-export function formatCameraStatusLabel(status: string): string {
-  switch (status) {
+export function formatCameraStatusLabel(camera: CameraStatusFacts): string {
+  if (waitsForRestart(camera)) return 'Pas encore surveillée'
+  switch (camera.status) {
     case CameraState.Online:
       return 'Connectée'
     case CameraState.Offline:
@@ -19,8 +30,9 @@ export function formatCameraStatusLabel(status: string): string {
   }
 }
 
-/** A camera to set up is not a fault: neutral, whatever the backend's attention flag says (DESIGN SYSTEM § Capabilities). */
+/** Neither a camera to set up nor one waiting for the restart is a fault: neutral, whatever the attention flag says. */
 export function formatStatusTone(camera: Camera): BadgeTone {
+  if (waitsForRestart(camera)) return 'neutral'
   switch (camera.status) {
     case CameraState.ToSetUp:
       return 'neutral'

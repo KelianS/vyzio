@@ -7,8 +7,12 @@ import { PrivacyStateIcon } from '../privacy/privacy_state_icon'
 import { cn } from '../ui/utils'
 import { liveFrameUrl, liveWaitMessage } from './live_frame'
 import { LiveWaitVeil } from './live_wait_veil'
-import { formatCameraStatusLabel } from '../camera/camera_status'
-import { CameraState, type Camera } from '../../domain/entities/camera.entity'
+import {
+  SurveillanceEntry,
+  formatCameraStatusLabel,
+  surveillanceEntryOf,
+} from '../camera/camera_status'
+import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
 
 interface CameraLiveThumbnailProps {
@@ -33,9 +37,10 @@ export function CameraLiveThumbnail({
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
-  // Its stream never worked: no image to try, the tile leads to its page instead (ADR-68 d).
-  const toSetUp = camera.status === CameraState.ToSetUp
-  const expandable = Boolean(onExpand) && !camera.privacyModeActive && !toSetUp
+  // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-68 d).
+  const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
+  const polling = !camera.privacyModeActive && camera.connected && !unwatched
+  const expandable = Boolean(onExpand) && !camera.privacyModeActive && !unwatched
 
   // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
   const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
@@ -46,7 +51,7 @@ export function CameraLiveThumbnail({
   }
 
   useEffect(() => {
-    if (!camera.privacyModeActive && camera.connected) {
+    if (polling) {
       intervalRef.current = setInterval(() => {
         setImgSrc(liveFrameUrl(apiBaseUrl, camera.id))
       }, 1000)
@@ -55,7 +60,7 @@ export function CameraLiveThumbnail({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
+  }, [camera.id, polling, apiBaseUrl])
 
   const waitMessage = liveWaitMessage(frigateStatus, imageError)
   const privacy = privacyBadge(camera)
@@ -90,13 +95,13 @@ export function CameraLiveThumbnail({
             <PrivacyStateIcon kind={privacy.kind} className="size-5" />
             <span className="text-sm font-medium">{privacy.text}</span>
           </div>
-        ) : toSetUp ? (
+        ) : unwatched ? (
           <Link
             to={`/settings/cameras/${camera.id}`}
-            aria-label={`${formatCameraStatusLabel(camera.status)} : ${camera.displayName}`}
+            aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
             className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
           >
-            {formatCameraStatusLabel(camera.status)}
+            {formatCameraStatusLabel(camera)}
             <ChevronRight className="size-4" aria-hidden="true" />
           </Link>
         ) : deviceOffline ? (
@@ -126,7 +131,9 @@ export function CameraLiveThumbnail({
         <span
           className={cn(
             'size-2 shrink-0 rounded-full',
-            camera.privacyModeActive || deviceOffline ? 'bg-muted-foreground/40' : 'bg-success',
+            camera.privacyModeActive || deviceOffline || unwatched
+              ? 'bg-muted-foreground/40'
+              : 'bg-success',
           )}
           aria-hidden="true"
         />

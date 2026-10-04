@@ -54,14 +54,17 @@ test.describe('AddCameraView', () => {
 
     // Adding opens the camera's page, which detects it on arrival (ADR-68 b).
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
-    await expect(page.getByText('Détection terminée.')).toBeVisible()
+    // The page says what detection found, in plain words, and keeps it on screen.
+    await expect(
+      page.getByText('Détection terminée : le flux vidéo de la caméra fonctionne.'),
+    ).toBeVisible()
     const stream = page
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
       .filter({ hasText: 'Flux vidéo' })
     await expect(stream.getByText('Fonctionne')).toBeVisible()
-    await expect(page.getByText('Connectée')).toBeVisible()
-    // Its stream works: surveillance can take it in (ADR-68 d).
+    // Its stream works, surveillance has not taken it in yet: the restart does (ADR-68 d).
+    await expect(page.getByText('Pas encore surveillée')).toBeVisible()
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })
 
@@ -83,7 +86,8 @@ test.describe('AddCameraView', () => {
     await page.getByRole('textbox', { name: 'Adresse' }).fill('192.168.1.90')
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
-    await expect(page.getByText('Détection terminée.')).toBeVisible()
+    // Nothing answers the account: the page says so, never that detection simply finished.
+    await expect(page.getByText(/^Rien ne répond à cette adresse/)).toBeVisible()
     // The page header first, then the stream card, each saying it with its own meaning.
     await expect(page.getByText('À configurer').first()).toBeVisible()
     // No restart: the camera stays out of surveillance until its stream works.

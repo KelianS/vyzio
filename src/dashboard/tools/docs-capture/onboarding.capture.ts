@@ -31,8 +31,6 @@ test('adding a camera', async ({ page }) => {
 
   // The page opens on Connexion and detects the camera on arrival (ADR-68 b).
   await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
-  await expect(page.getByText('Détection terminée.')).toBeVisible()
-  // The toast would cover the stream card it is about.
-  await expect(page.getByText('Détection terminée.')).toBeHidden({ timeout: 10_000 })
+  await expect(page.getByText(/^Détection terminée :/)).toBeVisible()
   await shoot(page.getByRole('button', { name: /Appliquer les changements/ }))
 })

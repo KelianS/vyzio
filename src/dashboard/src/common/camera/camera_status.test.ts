@@ -10,7 +10,7 @@ import {
 describe('formatCameraStatusLabel', () => {
   it('formatCameraStatusLabel_ShouldWriteItInFrenchWithItsAccents_WhenTheCameraIsOnline', () => {
     // Arrange & Act
-    const label = formatCameraStatusLabel('online')
+    const label = formatCameraStatusLabel(makeCamera({ status: 'online' }))
 
     // Assert
     expect(label).toBe('Connectée')
@@ -18,7 +18,7 @@ describe('formatCameraStatusLabel', () => {
 
   it('formatCameraStatusLabel_ShouldAskToCheck_WhenTheStatusIsUnknown', () => {
     // Arrange & Act
-    const label = formatCameraStatusLabel('something_new')
+    const label = formatCameraStatusLabel(makeCamera({ status: 'something_new' }))
 
     // Assert
     expect(label).toBe('À vérifier')
@@ -26,10 +26,22 @@ describe('formatCameraStatusLabel', () => {
 
   it('formatCameraStatusLabel_ShouldSayItIsToSetUp_WhenItsStreamNeverWorked', () => {
     // Arrange & Act
-    const label = formatCameraStatusLabel('to_set_up')
+    const label = formatCameraStatusLabel(
+      makeCamera({ status: 'to_set_up', validationState: 'to_set_up' }),
+    )
 
     // Assert
     expect(label).toBe('À configurer')
+  })
+
+  it('formatCameraStatusLabel_ShouldSayItIsNotWatchedYet_WhenItsStreamWorksButSurveillanceHasNotTakenItIn', () => {
+    // Arrange & Act
+    const label = formatCameraStatusLabel(
+      makeCamera({ status: 'online', validationState: 'draft' }),
+    )
+
+    // Assert
+    expect(label).toBe('Pas encore surveillée')
   })
 
   it.each([
@@ -40,7 +52,7 @@ describe('formatCameraStatusLabel', () => {
     'formatCameraStatusLabel_ShouldNameTheTrouble_WhenTheCameraIsNotOnline ($status)',
     ({ status, label }) => {
       // Arrange & Act
-      const said = formatCameraStatusLabel(status)
+      const said = formatCameraStatusLabel(makeCamera({ status }))
 
       // Assert
       expect(said).toBe(label)
@@ -65,6 +77,18 @@ describe('formatStatusTone', () => {
       expect(said).toBe(tone)
     },
   )
+})
+
+describe('formatStatusTone (waiting for the restart)', () => {
+  it('formatStatusTone_ShouldStayNeutral_WhenTheCameraWaitsForTheRestart', () => {
+    // Arrange & Act
+    const said = formatStatusTone(
+      makeCamera({ status: 'online', validationState: 'draft', needsAttention: true }),
+    )
+
+    // Assert
+    expect(said).toBe('neutral')
+  })
 })
 
 describe('surveillanceEntryOf', () => {

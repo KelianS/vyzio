@@ -55,7 +55,7 @@ describe('CameraLiveThumbnail', () => {
 
   it('CameraLiveThumbnail_ShouldLeadToItsPageWithoutAnyImage_WhenTheCameraIsToSetUp', () => {
     // Arrange & Act
-    renderTile(makeCamera({ status: 'to_set_up', connected: false }))
+    renderTile(makeCamera({ status: 'to_set_up', validationState: 'to_set_up', connected: false }))
 
     // Assert
     expect(screen.getByRole('link', { name: 'À configurer : Front Door' })).toHaveAttribute(
@@ -64,5 +64,16 @@ describe('CameraLiveThumbnail', () => {
     )
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.queryByText('Hors ligne')).not.toBeInTheDocument()
+  })
+
+  it('CameraLiveThumbnail_ShouldLeadToItsPageWithoutAnyImage_WhenTheCameraWaitsForTheRestart', () => {
+    // Arrange & Act
+    renderTile(makeCamera({ status: 'online', validationState: 'draft' }))
+
+    // Assert
+    expect(
+      screen.getByRole('link', { name: 'Pas encore surveillée : Front Door' }),
+    ).toHaveAttribute('href', '/settings/cameras/camera-1')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 })
