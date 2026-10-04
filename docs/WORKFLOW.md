@@ -83,9 +83,10 @@ Each document has a **nature**; respecting it is what stops it from swelling and
   the target decision. An ADR title states the target ("X rejected, Y chosen"), not the history ("X
   attempted then abandoned").
 - **An ADR records a structural decision only**: one is written only when reversing the decision
-  costs a migration, a contract change, a new container or a new dependency. An ADR never describes a
-  state, a wording or a screen: that is SPECS; what a camera model does is its hardware sheet; the
-  *how* is the code and its tests.
+  costs a migration, a contract change, a new container or a new dependency, or when it opens or
+  closes a flow leaving the home network (privacy first, e.g. ADR-70). An ADR never describes a state,
+  a wording or a screen: that is SPECS; what a camera model does is its hardware sheet; the *how* is
+  the code and its tests.
 - **The DESIGN SYSTEM describes the design system only**: intent, tokens, components, reusable
   patterns, the shared UX vocabulary and the bans. Never one feature's behaviour: that is SPECS, or
   the code and its tests.
