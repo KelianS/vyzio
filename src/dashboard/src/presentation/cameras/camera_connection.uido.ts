@@ -42,6 +42,8 @@ export interface CameraConnectionUido {
   bindingsError: AppError | null
   cameraGone: boolean
   detecting: boolean
+  /** Detection ran on this camera since the page opened: a stream it left unchosen says why (ADR-65 e). */
+  detected: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
   /** The capabilities tried and waiting for the user's answer (ADR-66). */
   asking: Partial<Record<Capability, true>>
@@ -88,6 +90,7 @@ export function buildInitialCameraConnectionUido(): CameraConnectionUido {
     bindingsError: null,
     cameraGone: false,
     detecting: false,
+    detected: false,
     pending: {},
     asking: {},
     manualFormOpen: false,

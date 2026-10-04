@@ -23,11 +23,11 @@ import {
   CAPABILITY_LABELS,
   DESTRUCTIVE_OUTLINE,
   STREAM_LABEL,
+  STREAM_UNCHECKED,
   TESTS_SUSPENDED,
-  formatCameraStatusLabel,
   formatCheckedAt,
-  formatStatusTone,
-  formatStreamStateLine,
+  formatStreamFailureLine,
+  formatStreamWorkingLine,
 } from '../cameras.formatters'
 import { CapabilityTask, type StreamTask } from '../camera_connection.uido'
 import {
@@ -37,7 +37,9 @@ import {
   SWITCHED_ON_AND_OFF,
   capabilityFailureLine,
   capabilityState,
+  shownState,
   streamBindingOf,
+  streamCheckState,
   streamProtocolFailureLine,
 } from '../capability_state'
 import { NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
@@ -45,7 +47,14 @@ import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
 import { ManualCapability } from './manual_capability_form'
 import { StreamLines, StreamPicker, type StreamLineIntents } from './stream_lines'
-import { OTHER_PATH, asksStreamPath, streamCoverageLine } from '../stream_lines'
+import {
+  OTHER_PATH,
+  STREAM_NOT_LISTED,
+  asksStreamPath,
+  streamCardState,
+  streamCoverageLine,
+  streamNotListed,
+} from '../stream_lines'
 
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
@@ -78,8 +87,10 @@ interface CapabilitySectionProps {
   loading: boolean
   readError: AppError | null
   detecting: boolean
+  /** Detection ran since the page opened: a stream it left unchosen says why. */
+  detected: boolean
   verifyingStream: boolean
-  /** Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2). */
+  /** Every other test goes through the stream's camera: while its check does not pass, they wait (SPECS 2.2). */
   testsSuspended: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
   /** The capabilities tried, whose card asks whether it worked. */
@@ -114,6 +125,7 @@ export function CapabilitySection({
   loading,
   readError,
   detecting,
+  detected,
   verifyingStream,
   testsSuspended,
   pending,
@@ -134,6 +146,7 @@ export function CapabilitySection({
           binding={stream}
           protocols={protocols}
           protocolsRead={protocolsRead}
+          detected={detected}
           verifying={verifyingStream}
           configuring={pending.stream === CapabilityTask.Configure}
           streams={streams}
@@ -202,12 +215,13 @@ export function CapabilitySection({
   )
 }
 
-/** The stream is a capability like the others; its state is the camera status, the words of the camera header. */
+/** The stream is a capability like the others, in the same words; the camera's own status stays in its header. */
 function StreamCard({
   camera,
   binding,
   protocols,
   protocolsRead,
+  detected,
   verifying,
   configuring,
   streams,
@@ -220,6 +234,7 @@ function StreamCard({
   /** The camera's protocols, once read: the stream's failure names the way out, its choice lists them (ADR-61). */
   protocols: CameraProtocol[]
   protocolsRead: boolean
+  detected: boolean
   verifying: boolean
   configuring: boolean
   streams: StreamLinesState
@@ -227,21 +242,73 @@ function StreamCard({
   onConfigure: (protocol: SupportedProtocol, streamPath: string | null) => Promise<boolean>
 }) {
   const [typed, setTyped] = useState('')
-  const typing = (picked: SupportedProtocol) => streams.pathAsked && asksStreamPath(picked)
-  const coverage = binding?.isConfigured ? streamCoverageLine(streams.lineup) : null
+  const notListed = binding ? streamNotListed(binding, protocols, detected) : false
+  const typing = (picked: SupportedProtocol) =>
+    (streams.pathAsked || notListed) && asksStreamPath(picked)
   const unconfigured = binding ? !binding.isConfigured : false
   const protocol = protocols.find((entry) => entry.protocol === binding?.protocol)
   const choices = binding
     ? protocolOptions('stream', protocols, binding.isConfigured ? binding.protocol : null)
     : []
-  const pill = unconfigured
-    ? CAPABILITY_STATE_PILLS[CapabilityState.Unconfigured]
-    : { label: formatCameraStatusLabel(camera.status), tone: formatStatusTone(camera) }
+  const check = binding ? streamCheckState(binding, camera) : undefined
+  const state = check ? streamCardState(check, streams.lineup) : undefined
+
+  /** What to do while no protocol is chosen: the path detection could not find, else where to choose. */
+  function unconfiguredLine(): string {
+    if (notListed) return STREAM_NOT_LISTED
+    if (choices.length > 0 || !protocolsRead)
+      return 'Choisissez comment Vyzio lit les images, dans les options ci-dessous.'
+    return NO_PROTOCOL_YET
+  }
+
+  /** The line under the pill names which part fails: the stream's own check, or detection (SPECS 1.5). */
+  function stateLine(shown: CapabilityState) {
+    const coverage = streamCoverageLine(streams.lineup)
+    switch (shown) {
+      case CapabilityState.Unconfigured:
+        return <p className="text-sm text-muted-foreground">{unconfiguredLine()}</p>
+      case CapabilityState.Unchecked:
+        return <p className="text-sm text-muted-foreground">{STREAM_UNCHECKED}</p>
+      case CapabilityState.Working:
+      case CapabilityState.Failed: {
+        const working = formatStreamWorkingLine(camera, binding?.verifiedAt ?? null)
+        // Each sentence in its own tone: what still works is never said in red (principle 4).
+        const failing = shown === CapabilityState.Failed
+        return (
+          <div className="text-sm text-muted-foreground">
+            {check === CapabilityState.Failed ? (
+              <div className="text-destructive">
+                <p>
+                  {streamProtocolFailureLine(protocol?.status ?? null) ??
+                    formatStreamFailureLine(camera)}
+                </p>
+                {/* The verifier's own reason is support detail, kept since the last check (SPECS 1.5). */}
+                {binding?.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
+              </div>
+            ) : (
+              working && <p>{working}</p>
+            )}
+            {/* Whether recording and detection are covered as chosen, outside the fold (ADR-65 c). */}
+            {coverage && <p className={cn(failing && 'text-destructive')}>{coverage}</p>}
+          </div>
+        )
+      }
+      // Never the stream's: only a try asks the user, and the stream is never switched off.
+      case CapabilityState.ToConfirm:
+      case CapabilityState.Rejected:
+      case CapabilityState.SwitchedOff:
+        return null
+      default: {
+        const unknownState: never = shown
+        return unknownState
+      }
+    }
+  }
 
   return (
     <CapabilityCard
       title={STREAM_LABEL}
-      pill={pill}
+      pill={state && CAPABILITY_STATE_PILLS[state]}
       options={
         binding &&
         choices.length > 0 && (
@@ -305,28 +372,7 @@ function StreamCard({
         </Button>
       }
     >
-      {unconfigured ? (
-        <p className="text-sm text-muted-foreground">
-          {choices.length > 0 || !protocolsRead
-            ? 'Choisissez comment Vyzio lit les images, dans les options ci-dessous.'
-            : NO_PROTOCOL_YET}
-        </p>
-      ) : (
-        <div
-          className={cn('text-sm', camera.connected ? 'text-muted-foreground' : 'text-destructive')}
-        >
-          <p>
-            {(!camera.connected && streamProtocolFailureLine(protocol?.status ?? null)) ||
-              formatStreamStateLine(camera)}
-          </p>
-          {/* The verifier's own reason is support detail, kept since the last check (SPECS 1.5). */}
-          {!camera.connected && binding?.lastError && (
-            <DiagnosticLine text={scrubSecrets(binding.lastError)} />
-          )}
-          {/* Whether recording and detection are covered as chosen, outside the fold (ADR-65 c). */}
-          {coverage && <p>{coverage}</p>}
-        </div>
-      )}
+      {state && stateLine(state)}
     </CapabilityCard>
   )
 }
@@ -414,7 +460,7 @@ function BindingCard({
   const answering = task === CapabilityTask.Answer
 
   const label = CAPABILITY_LABELS[binding.capability]
-  const state = capabilityState(binding, camera.ptzSupported)
+  const state = shownState(capabilityState(binding, camera.ptzSupported), asking)
   const switchedOnAndOff = SWITCHED_ON_AND_OFF[binding.capability]
 
   const verifiedAtLabel = binding.verifiedAt ? formatCheckedAt(binding.verifiedAt) : null
@@ -451,8 +497,6 @@ function BindingCard({
           </p>
         )
       case CapabilityState.Rejected:
-        if (asking)
-          return <p className="text-sm font-medium">{TRY_QUESTIONS[binding.capability]}</p>
         return (
           <div className="text-sm text-muted-foreground">
             <p>{USERS_NO[binding.capability]}</p>
@@ -475,6 +519,8 @@ function BindingCard({
         return suggested || !protocolsRead ? null : (
           <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
         )
+      // Only the stream is ever unchecked.
+      case CapabilityState.Unchecked:
       case CapabilityState.SwitchedOff:
         return null
       default: {
@@ -592,14 +638,13 @@ function BindingCard({
         )
       case CapabilityState.Rejected:
         // The user's no stands until they try again on purpose (ADR-66 d).
-        return asking ? (
-          answerButtons()
-        ) : (
+        return (
           <>
             {tryButton('Essayer à nouveau')}
             {wayOutButton()}
           </>
         )
+      case CapabilityState.Unchecked:
       case CapabilityState.Working:
       case CapabilityState.Failed:
         return (

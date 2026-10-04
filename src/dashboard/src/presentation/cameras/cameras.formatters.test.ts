@@ -3,7 +3,8 @@ import { makeCamera } from '../../testing/camera_fixture'
 import {
   formatCameraStatusLabel,
   formatStatusTone,
-  formatStreamStateLine,
+  formatStreamFailureLine,
+  formatStreamWorkingLine,
 } from './cameras.formatters'
 
 describe('formatCameraStatusLabel', () => {
@@ -57,51 +58,68 @@ describe('formatStatusTone', () => {
   )
 })
 
-describe('formatStreamStateLine', () => {
+describe('formatStreamFailureLine', () => {
   it.each([
     {
-      name: 'formatStreamStateLine_ShouldSayTheCameraAnswers_WhenItIsOnlineWithNoCheckDate',
-      camera: makeCamera({ status: 'online', connected: true, lastSuccessfulFrameAt: null }),
-      line: 'La caméra répond.',
-    },
-    {
-      name: 'formatStreamStateLine_ShouldSendToTheAddressAndAccount_WhenTheCameraIsOffline',
+      name: 'formatStreamFailureLine_ShouldSendToTheAddressAndAccount_WhenTheCameraIsOffline',
       camera: makeCamera({ status: 'offline', connected: false }),
       line: 'Vyzio ne reçoit pas les images : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     },
     {
-      name: 'formatStreamStateLine_ShouldSayTheImageDoesNotArrive_WhenTheCameraIsDegraded',
+      name: 'formatStreamFailureLine_ShouldSayTheImageDoesNotArrive_WhenTheCameraIsDegraded',
       camera: makeCamera({ status: 'degraded', connected: false }),
       line: 'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     },
     {
-      name: 'formatStreamStateLine_ShouldSayVyzioCouldNotPrepareTheCamera_WhenItsSetUpFailed',
-      camera: makeCamera({ status: 'config_error', connected: false }),
-      line: 'Vyzio n’a pas pu préparer la surveillance de cette caméra.',
+      name: 'formatStreamFailureLine_ShouldSayTheImageDoesNotArrive_WhenOnlyThePortAnswers',
+      camera: makeCamera({ status: 'online', connected: true }),
+      line: 'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     },
     {
-      name: 'formatStreamStateLine_ShouldAskForACheck_WhenTheConnectionChangedSinceTheLastOne',
+      name: 'formatStreamFailureLine_ShouldSayTheCheckFailed_WhenTheStatusSaysNothingMore',
       camera: makeCamera({ status: 'needs_attention', connected: false }),
-      line: 'Pas encore vérifié : lancez « Vérifier » pour confirmer que Vyzio reçoit les images.',
+      line: 'La dernière vérification a échoué : vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.',
     },
   ])('$name', ({ camera, line }) => {
     // Arrange & Act
-    const said = formatStreamStateLine(camera)
+    const said = formatStreamFailureLine(camera)
 
     // Assert
     expect(said).toBe(line)
   })
 })
 
-describe('formatStreamStateLine dates', () => {
-  it('formatStreamStateLine_ShouldDateTheLastConfirmedImage_WhenTheCameraIsOnlineWithAFrameDate', () => {
+describe('formatStreamWorkingLine', () => {
+  it('formatStreamWorkingLine_ShouldDateTheLastConfirmedImage_WhenTheCameraHasAFrameDate', () => {
     // Arrange
-    const camera = makeCamera({ connected: true, lastSuccessfulFrameAt: '2026-09-12T08:30:00Z' })
+    const camera = makeCamera({ lastSuccessfulFrameAt: '2026-09-12T08:30:00Z' })
 
     // Act
-    const said = formatStreamStateLine(camera)
+    const said = formatStreamWorkingLine(camera, null)
 
     // Assert
     expect(said).toMatch(/^Dernière image confirmée le 12 sept\., \d{2}:30$/)
+  })
+
+  it('formatStreamWorkingLine_ShouldDateTheLastCheck_WhenNoImageWasConfirmed', () => {
+    // Arrange
+    const camera = makeCamera({ lastSuccessfulFrameAt: null })
+
+    // Act
+    const said = formatStreamWorkingLine(camera, '2026-09-12T08:30:00Z')
+
+    // Assert
+    expect(said).toMatch(/^Vérifié le 12 sept\., \d{2}:30$/)
+  })
+
+  it('formatStreamWorkingLine_ShouldSayNothing_WhenNeitherIsKnown', () => {
+    // Arrange
+    const camera = makeCamera({ lastSuccessfulFrameAt: null })
+
+    // Act
+    const said = formatStreamWorkingLine(camera, null)
+
+    // Assert
+    expect(said).toBeNull()
   })
 })

@@ -23,6 +23,7 @@ import { buildCameraConnectionPresenter } from './camera_connection.presenter'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido } from './camera_connection.uido'
 import { CAPABILITY_LABELS } from './cameras.formatters'
+import { otherTestsSuspended, streamBindingOf } from './capability_state'
 import {
   ALL_PROTOCOLS,
   connectionValuesOf,
@@ -120,8 +121,8 @@ export function CameraConnectionView() {
     },
   ]
 
-  // Every other test goes through the stream's camera: while it fails, they are suspended (SPECS 2.2).
-  const testsSuspended = !camera.connected
+  // Every other test goes through the stream's camera: while its check does not pass, they wait (SPECS 2.2).
+  const testsSuspended = otherTestsSuspended(streamBindingOf(uido.bindings), camera)
 
   if (uido.cameraGone)
     return (
@@ -145,6 +146,7 @@ export function CameraConnectionView() {
             loading={uido.bindingsLoading}
             readError={uido.bindingsError}
             detecting={uido.detecting}
+            detected={uido.detected}
             verifyingStream={uido.verifying}
             testsSuspended={testsSuspended}
             pending={uido.pending}
@@ -285,8 +287,8 @@ export function CameraConnectionView() {
 
           <HelpPanel title="Un protocole ne répond pas, que vérifier ?">
             <p>
-              Chaque protocole passe par son propre port, affiché dans sa case. « Répond » dit que
-              la caméra écoute sur ce port et accepte le compte ; « Refuse l’accès » dit qu’elle
+              Chaque protocole passe par son propre port, affiché dans sa case. « Accessible » dit
+              que la caméra écoute sur ce port et accepte le compte ; « Accès refusé » dit qu’elle
               écoute mais refuse le compte, ou le numéro de la caméra en V380.
             </p>
             <p>
