@@ -47,40 +47,16 @@ Les cameras sur batterie ICSee entrent en **veille** quand elles ne detectent pa
 - Si la camera est sur batterie, veillez a ce qu'elle soit en mode actif au moment de la configuration.
 - Essayez les deux formats d'URL RTSP disponibles — certains modeles repondent uniquement a l'un d'eux.
 
-## Cameras cloud-only — integration via DVRIP (fallback)
+## Cameras sans RTSP
 
-Certains modeles sur batterie ne supportent pas le RTSP local et communiquent uniquement via le relais P2P ICSee (internet). Signes caracteristiques :
+Certains modeles sur batterie n'ont pas de RTSP local : l'onglet **Reglages avances** est vide dans l'application ICSee.
 
-- L'onglet **Reglages avances** est vide dans l'application ICSee
-- Le port 554 est ferme sur la camera
-- Le port **34567** repond (protocole DVRIP/XMEye)
+**Essayez le RTSP d'abord.** S'il reste indisponible apres activation dans l'application, reveillez la camera puis touchez "Réessayer maintenant" : Vyzio la presente comme prete des qu'il la joint par un autre moyen. Vous n'avez rien a configurer ni a cocher dans le parcours d'ajout.
 
-**Chemin recommande : essayer le RTSP d'abord.** Si le RTSP reste indisponible apres activation dans l'application, reveillez la camera puis touchez "Réessayer maintenant" : des que son port DVRIP/XMEye repond, Vyzio la presente comme prete et l'ajoute directement en **mode DVRIP**.
-
-En mode DVRIP, Vyzio joint la camera par son protocole proprietaire. Vous n'avez rien a configurer ni a cocher dans le parcours d'ajout.
-
-**Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'application de la configuration. Reveillez-la via l'application ICSee avant de cliquer "Ajouter la caméra". Une fois le flux etabli, Vyzio maintient la connexion et la camera reste active, ce qui sollicite davantage sa batterie.
-
-> **Pourquoi Vyzio ne peut pas reveiller la camera automatiquement ?** En veille, le chipset WiFi reste associe au reseau (la camera apparait dans la liste des clients de votre box) mais le processeur principal est eteint. Les protocoles standard (TCP, UDP DVRIP, WoL, ONVIF) n'atteignent pas le processeur — seul un mecanisme proprietaire ICSee integre dans le firmware du chipset peut le reveiller, via leur infrastructure cloud. Ce mecanisme n'est pas accessible localement.
-
-## Mode vie privée
-
-**Niveau de garantie : enregistrement désactivé.** Lorsque vous activez le mode vie privée, Vyzio coupe l'accès au flux vidéo via son moteur de détection. Le RTSP (via la passerelle go2rtc) est arrêté ; Vyzio n'enregistre plus et n'envoie plus de notification.
-
-Le protocole DVRIP natif (port 34567) reste techniquement ouvert sur votre réseau local, mais nécessite les identifiants de la caméra.
-
-**Évolution prévue (v1.0.1-P2) :** Les caméras ICSee PTZ supportent un mode de **parking physique** — la caméra pivote automatiquement vers une butée mécanique (face au mur ou au plafond) à l'activation du mode vie privée, et revient à sa position de surveillance à la désactivation. Cette fonctionnalité sera disponible dans une prochaine version avec une interface de configuration dédiée.
-
-## Réglages image
-
-**Niveau de garantie : réglage direct sur la caméra (DVRIP, `AVEnc.VideoColor.[0]`).** Luminosité, contraste et saturation sont pilotables depuis Vyzio (confirmé par test terrain, ADR-29). Aucune valeur n'est stockée par Vyzio — la caméra reste la seule source de vérité.
-
-**Non disponibles pour l'instant :** netteté et vision nocturne (IR) — la commande DVRIP correspondante n'a pas été investiguée sur ce firmware. Les contrôles correspondants n'apparaissent pas dans l'interface pour une caméra ICSee.
-
-> Ces caméras n'exposent en général aucun service ONVIF (port 8899 fermé) — seul le chemin DVRIP fonctionne pour les réglages image, contrairement au V380 Pro qui utilise ONVIF.
+**Contrainte batterie :** la camera doit etre **eveillee** au moment de la verification et de l'ajout. Reveillez-la via l'application ICSee avant de cliquer "Ajouter la caméra". Une fois ajoutee, la camera reste active, ce qui sollicite davantage sa batterie, et Vyzio ne peut pas la reveiller lui-meme.
 
 ## A savoir
 
 - Le firmware ICSee/XMEye est utilise par de nombreux fabricants OEM (WONSDAR, ieGeek, etc.) ; les menus varient selon le modele.
-- Certaines cameras ICSee supportent aussi ONVIF (a activer dans les memes parametres avances). Vyzio essaie automatiquement ONVIF en premier pour le PTZ lors de la detection des capacites, avec repli sur DVRIP si ONVIF echoue — aucune action manuelle requise dans le cas nominal.
+- Certaines cameras ICSee supportent aussi ONVIF (a activer dans les memes parametres avances) : activez-le si votre modele le propose.
 - Les cameras sur secteur ont generalement plus d'options que les modeles sur batterie.

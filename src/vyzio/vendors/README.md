@@ -62,7 +62,7 @@ leur absence, sont commentées dans `VendorCapabilityPresets.cs`.
 
 Le nom du fichier doit correspondre à la valeur DB de `VendorFamily` (ex. `tplink_tapo.md`).
 
-La fiche doit contenir **au minimum** ces sections :
+La fiche est servie telle quelle à l'utilisateur pendant l'ajout de la caméra : elle ne dit que ce qui l'aide à préparer et ajouter sa caméra, jamais comment Vyzio fonctionne à l'intérieur. Elle contient **au minimum** ces sections :
 
 ```md
 # Nom du constructeur
@@ -81,12 +81,6 @@ Contexte : quelques phrases sur pourquoi ce modèle demande une configuration pa
 ## Si Vyzio demande une adresse de flux
 
 Format(s) RTSP connus pour ce constructeur.
-
-## Mode vie privée
-
-**Niveau de garantie : [Coupure matérielle | PTZ parking | Enregistrement désactivé]**
-
-Expliquer en une ou deux phrases ce que Vyzio fait pour cette marque.
 
 ## Si cela ne fonctionne pas
 
