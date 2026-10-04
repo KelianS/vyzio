@@ -62,8 +62,8 @@ stream card asks for the path (ADR-65 e).
 
 **d) "To set up" is a camera state.** A camera whose stream never worked reads as to be set up,
 wherever its status shows: the camera list, its page header, and the hub, where its tile leads to its
-page and attempts no image. It enters the generated configuration, and so surveillance, once its
-stream works; the restart trigger concerns it only from then on. The settings that need no stream
+page and attempts no image. It enters the generated configuration once its stream works, and
+surveillance through the restart trigger, which concerns it only from then on. The settings that need no stream
 (detection, retention, privacy) are saved meanwhile and applied when it enters surveillance.
 
 The state lasts only until the stream first works, and while it lasts it is the camera's status:

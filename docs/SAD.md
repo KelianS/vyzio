@@ -168,7 +168,7 @@ sequenceDiagram
     participant A as API
     participant C as Camera
     U->>A: address and account, from discovery or typed: the camera is created
-    U->>A: on its page, detection
+    U->>A: its page opens and runs detection
     A->>C: per protocol, once: reach, then log in
     C-->>A: answers, refused or unreachable
     A->>C: per capability, on the protocols that answered: a read that proves it
