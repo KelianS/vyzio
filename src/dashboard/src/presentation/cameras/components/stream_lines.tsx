@@ -23,6 +23,7 @@ import { StreamTask } from '../camera_connection.uido'
 import type { ProtocolOption } from '../protocol_labels'
 import {
   ASKS_STREAM_PATH,
+  DETECTION_FALLS_BACK,
   DVRIP_QUALITIES,
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
@@ -151,6 +152,8 @@ function StreamLine({
   const [confirmRemove, setConfirmRemove] = useState(false)
   const state = streamLineState(stream)
   const records = stream.id === lineup.recordStreamId
+  // Only the stream that detects apart from the recording one moves the analysis when it goes.
+  const fallback = stream.id === lineup.detectStreamId && !records ? ` ${DETECTION_FALLS_BACK}` : ''
   const quality = streamQuality(stream)
 
   return (
@@ -234,7 +237,7 @@ function StreamLine({
         </Button>
         {records && (
           <HelpTrigger
-            question="Pourquoi ce flux ne peut-il pas être désactivé ?"
+            question="Pourquoi ce flux ne peut-il être ni désactivé ni retiré ?"
             help={RECORDING_STREAM_KEPT}
           />
         )}
@@ -243,7 +246,7 @@ function StreamLine({
       {confirmDisable && (
         <ConfirmModal
           title="Désactiver ce flux ?"
-          body="Vyzio cesse de s’en servir et de le vérifier. Il reste dans la liste."
+          body={`Vyzio cesse de s’en servir et de le vérifier. Il reste dans la liste.${fallback}`}
           confirmLabel="Désactiver"
           tone="warn"
           loading={task === StreamTask.Toggle}
@@ -257,7 +260,7 @@ function StreamLine({
       {confirmRemove && (
         <ConfirmModal
           title="Retirer ce flux ?"
-          body="Il quitte la liste et ne revient pas de lui-même."
+          body={`Il quitte la liste et ne revient pas de lui-même.${fallback}`}
           confirmLabel="Retirer"
           tone="danger"
           loading={task === StreamTask.Remove}

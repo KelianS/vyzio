@@ -105,13 +105,6 @@ function DetectionForm({
       <SettingsPage lede="Ce que cette caméra cherche.">
         <SettingsList settings={declarations} />
 
-        <HelpPanel title="Où choisir l’image analysée ?">
-          <p>
-            Dans l’onglet <em>Connexion</em>, dans les options du flux vidéo : chaque flux de la
-            caméra y dit s’il sert à l’enregistrement, à la détection ou aux deux.
-          </p>
-        </HelpPanel>
-
         <HelpPanel title="Pourquoi la sensibilité met-elle du temps à s’ajuster ?">
           <p>
             En automatique, Vyzio observe une caméra pendant au moins une douzaine d’heures avant de

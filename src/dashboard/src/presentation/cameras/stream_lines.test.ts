@@ -71,7 +71,7 @@ describe('stream_lines', () => {
     [makeStreamLineup([recording, detecting], { detectStreamId: 'sub' }), null],
     [
       makeStreamLineup([recording, { ...detecting, verified: false }], { detectStreamId: 'sub' }),
-      'La détection est interrompue : son flux ne répond pas.',
+      'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.',
     ],
     [
       makeStreamLineup([recording], { detectsOnRecordingStream: true }),
@@ -88,12 +88,22 @@ describe('stream_lines', () => {
     },
   )
 
+  it('streamReach_ShouldNameThePathToo_WhenItIsNotShownAsItsOwnSetting', () => {
+    // Arrange
+    const stream = makeCameraStream({ protocol: 'rtsp', path: '/stream2' })
+
+    // Act
+    const reach = streamReach(stream, false)
+
+    // Assert
+    expect(reach).toBe('Par RTSP, chemin /stream2.')
+  })
+
   it.each([
-    [makeCameraStream({ protocol: 'rtsp', path: '/stream2' }), false, 'Par RTSP, chemin /stream2.'],
     [makeCameraStream({ protocol: 'rtsp', path: '/stream1' }), true, 'Par RTSP.'],
     [makeCameraStream({ protocol: 'dvrip', path: null }), false, 'Par DVRIP.'],
   ])(
-    'streamReach_ShouldNameThePathToo_WhenItIsNotShownAsItsOwnSetting',
+    'streamReach_ShouldNameOnlyTheProtocol_WhenThePathIsShownOrThereIsNone',
     (stream, pathShown, expected) => {
       // Arrange & Act
       const reach = streamReach(stream, pathShown)

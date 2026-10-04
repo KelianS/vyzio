@@ -59,9 +59,12 @@ export const ROLE_CONSEQUENCES: Record<StreamRole, string> = {
 }
 
 export const RECORDING_STREAM_KEPT =
-  'Ce flux enregistre : confiez l’enregistrement à un autre flux avant de le désactiver ou de le supprimer.'
+  'Ce flux enregistre : confiez l’enregistrement à un autre flux avant de le désactiver ou de le retirer.'
 
-export const STREAM_FAILED = 'Ce flux ne répond pas.'
+export const STREAM_FAILED = 'Ce flux ne répond pas : relancez sa vérification.'
+
+// Said in the confirmation that takes the detection stream away: the analysis falls back (ADR-65 c).
+export const DETECTION_FALLS_BACK = 'La détection passera par le flux d’enregistrement.'
 
 /** How Vyzio reaches a stream, its quality's tooltip; a path shown as its own setting is not repeated. */
 export function streamReach(stream: CameraStream, pathShown: boolean): string {
@@ -104,7 +107,8 @@ export function streamCoverageLine(lineup: CameraStreamLineup | null): string | 
     detect !== undefined &&
     detect.id !== lineup.recordStreamId &&
     streamLineState(detect) === StreamLineState.Failed
-  if (detectFails) return 'La détection est interrompue : son flux ne répond pas.'
+  if (detectFails)
+    return 'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.'
   if (lineup.detectsOnRecordingStream) return 'La détection passe par le flux d’enregistrement.'
   return null
 }

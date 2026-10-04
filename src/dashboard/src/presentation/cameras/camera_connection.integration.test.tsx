@@ -9,7 +9,12 @@ import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { CameraConnectionView } from './camera_connection.component'
 import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
-import { RECORDING_STREAM_KEPT, ROLE_CONSEQUENCES, STREAM_FAILED } from './stream_lines'
+import {
+  DETECTION_FALLS_BACK,
+  RECORDING_STREAM_KEPT,
+  ROLE_CONSEQUENCES,
+  STREAM_FAILED,
+} from './stream_lines'
 
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const UPDATE = 'PUT /api/cameras/camera-1'
@@ -1185,7 +1190,9 @@ describe('CameraConnectionView', () => {
 
     // Act
     await userEvent.click(
-      main.getByRole('button', { name: 'Pourquoi ce flux ne peut-il pas être désactivé ?' }),
+      main.getByRole('button', {
+        name: 'Pourquoi ce flux ne peut-il être ni désactivé ni retiré ?',
+      }),
     )
 
     // Assert
@@ -1263,7 +1270,9 @@ describe('CameraConnectionView', () => {
     // Assert
     const card = await cardOf('Flux vidéo')
     expect(
-      await card.findByText('La détection est interrompue : son flux ne répond pas.'),
+      await card.findByText(
+        'La détection est interrompue : son flux ne répond pas. Donnez-la à un autre flux dans les options.',
+      ),
     ).toBeInTheDocument()
   })
 
@@ -1318,6 +1327,20 @@ describe('CameraConnectionView', () => {
         body: { protocol: 'dvrip', path: null, role: 'none', secondary: true },
       }),
     )
+  })
+
+  it('onAskToRemoveStream_ShouldSayDetectionMovesToTheRecordingStream_WhenTheStreamDetects', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [STREAMS]: ok(twoStreams) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await optionsOf('Flux vidéo')
+    const sub = await streamLine('640 × 360 · 10 img/s')
+
+    // Act
+    await userEvent.click(sub.getByRole('button', { name: 'Retirer' }))
+
+    // Assert
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(DETECTION_FALLS_BACK)
   })
 
   it('onRemoveStream_ShouldKeepTheLine_WhenTheRemovalFails', async () => {

@@ -230,6 +230,11 @@ function StreamCard({
         binding &&
         choices.length > 0 && (
           <>
+            {binding.isConfigured && (
+              <p className="text-sm text-muted-foreground">
+                Changer de protocole remplace la liste des flux, y compris ceux ajoutés à la main.
+              </p>
+            )}
             <ProtocolChoice
               options={choices}
               current={binding.protocol}
@@ -239,22 +244,17 @@ function StreamCard({
               onConfigure={onConfigure}
             />
             {binding.isConfigured && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Changer de protocole remplace la liste des flux, y compris ceux ajoutés à la main.
-                </p>
-                <StreamLines
-                  lineup={streams.lineup}
-                  loading={streams.loading}
-                  readError={streams.readError}
-                  protocols={choices}
-                  mainPath={streamPath}
-                  tasks={streams.tasks}
-                  formOpen={streams.formOpen}
-                  adding={streams.adding}
-                  intents={streams.intents}
-                />
-              </>
+              <StreamLines
+                lineup={streams.lineup}
+                loading={streams.loading}
+                readError={streams.readError}
+                protocols={choices}
+                mainPath={streamPath}
+                tasks={streams.tasks}
+                formOpen={streams.formOpen}
+                adding={streams.adding}
+                intents={streams.intents}
+              />
             )}
           </>
         )
