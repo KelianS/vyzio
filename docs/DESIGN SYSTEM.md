@@ -225,7 +225,7 @@ detail once:
   is said under the dropdown, never as an empty list, with `Réessayer` and its diagnostic line
   (§ Errors), `Autre chemin…` staying available.
 - **The stream's protocol choice over RTSP** shows nothing more while the camera lists its streams.
-  When it lists none, `Configurer` is refused with that reason in plain words, and the choice then
+  When it lists none, or cannot be asked, `Configurer` is refused saying both, and the choice then
   reuses that dropdown under `Protocole`, `Autre chemin…` alone with `Chemin du flux`; `Configurer`
   stays disabled until a path is typed.
 - A folded help panel, `Quel rôle donner à chaque flux ?`, under the list holds the task help of

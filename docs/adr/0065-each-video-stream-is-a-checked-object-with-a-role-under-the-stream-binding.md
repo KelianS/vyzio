@@ -93,10 +93,11 @@ removing the old one.
 replaces the streams, added ones included, by the streams laid out over that protocol, with the
 defaults of d). Over DVRIP the main quality is laid out by convention, the others are found at the
 next verification. Over RTSP the camera is asked for its streams, as the add form does, and the
-streams it reports are laid out; when it lists none, the user picks or types the first stream's path
-in the protocol choice, and without one the choice is not applied. Detection binds the stream over
-RTSP only when the camera lists its streams, and onboarding over RTSP without a typed path does the
-same. The protocol choice says what it replaces before it runs.
+streams it reports are laid out; when it lists none, or cannot be asked, the user picks or types the
+first stream's path in the protocol choice, and without one the choice is not applied. Onboarding
+over RTSP without a typed path lays out the streams the camera lists, and without any is refused the
+same way. Detection binds the stream over RTSP only when the camera lists its streams. The protocol
+choice says what it replaces before it runs.
 
 **f) Each stream is checked, at the capability level.** A stream check first requires its
 protocol to answer with its account (ADR-61 c), then probes that stream. The stream capability's check

@@ -185,8 +185,9 @@ detects, else the recording stream (ADR-65 c, `Camera.DetectsOnRecordingStream`)
 **Laid out over a protocol** (ADR-65 e). `StreamLayout` (Application) replaces the streams whenever
 the binding's protocol is chosen: `ConfigureCameraCapabilityUseCase`, detection's `BindStreamAsync`,
 and `CreateCameraUseCase` over RTSP without a path. Over DVRIP it calls `StreamLineup.ResetTo` with no
-path. Over RTSP a typed path (`ConfigureCameraCapabilityRequest.StreamPath`, the onboarding path) is
-laid out as the one stream; without one it asks `ICameraStreamEnumerator` and hands the first scene to
+path. Over RTSP a typed path (`ConfigureCameraCapabilityRequest.StreamPath`) is laid out as the one
+stream, as onboarding lays out its typed path through `CameraDraftFactory`; without one it asks
+`ICameraStreamEnumerator` and hands the first scene to
 `StreamLineup.ResetToFound`, which sets `StreamsFoundAt`; with nothing listed it lays nothing out: the
 protocol choice and onboarding answer `stream_path_required`, detection skips RTSP.
 
