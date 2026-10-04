@@ -1315,6 +1315,11 @@ describe('CameraConnectionView, a capability to confirm', () => {
       status: CapabilityStatus.Missing,
       sentence: 'Orientation : la caméra répond, mais ne montre pas cette capacité.',
     },
+    {
+      name: 'onVerifyCapability_ShouldRecallTheUsersNo_WhenTheCheckReturnsTheUsersRejection',
+      status: CapabilityStatus.RejectedByUser,
+      sentence: 'Orientation : vous avez répondu que l’essai n’a pas marché.',
+    },
   ])('$name', async ({ status, sentence }) => {
     // Arrange
     connectionNetwork({

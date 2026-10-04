@@ -129,7 +129,7 @@ export function buildCameraConnectionPresenter({
         )
         return
       case CapabilityStatus.RejectedByUser:
-        toast(` : vous avez répondu que l’essai n’a pas marché.`, 'info')
+        toast(`${label} : vous avez répondu que l’essai n’a pas marché.`, 'info')
         return
       case CapabilityStatus.Failed:
         toast(
