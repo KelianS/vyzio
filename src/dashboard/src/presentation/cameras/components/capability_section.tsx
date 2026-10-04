@@ -467,17 +467,16 @@ function BindingCard({
             >
               {trying ? 'Essai…' : 'Essayer'}
             </Button>
-            {!switchedOnAndOff && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={DESTRUCTIVE_OUTLINE}
-                onClick={() => setConfirmRemove(true)}
-              >
-                Retirer
-              </Button>
-            )}
+            {/* Never in use, so nothing to switch off: a camera without it is removed (DESIGN SYSTEM § Capability cards). */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={DESTRUCTIVE_OUTLINE}
+              onClick={() => setConfirmRemove(true)}
+            >
+              Retirer
+            </Button>
           </>
         )
       case CapabilityState.Working:
@@ -493,19 +492,17 @@ function BindingCard({
             >
               {verifying ? 'Vérification…' : 'Vérifier'}
             </Button>
-            {/* Only a switched-on orientation is switched off; one never in use has nothing to switch. */}
-            {switchedOnAndOff ? (
-              camera.ptzSupported && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={DESTRUCTIVE_OUTLINE}
-                  onClick={() => setConfirmDisable(true)}
-                >
-                  Désactiver
-                </Button>
-              )
+            {/* Only an orientation in use is switched off; one never in use is removed like the others. */}
+            {switchedOnAndOff && camera.ptzSupported ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={DESTRUCTIVE_OUTLINE}
+                onClick={() => setConfirmDisable(true)}
+              >
+                Désactiver
+              </Button>
             ) : (
               <Button
                 type="button"

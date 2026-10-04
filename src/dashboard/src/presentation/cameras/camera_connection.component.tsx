@@ -211,8 +211,11 @@ export function CameraConnectionView() {
             </p>
             <p>
               Regardez la caméra, ou son image sur un autre écran, avant de lancer « Essayer ». Si
-              elle n’a rien fait, répondez « Non » : la capacité reste inutilisée, et « Vérifier »
-              permet de réessayer plus tard.
+              elle n’a rien fait, répondez « Non » : la capacité reste inutilisée.
+            </p>
+            <p>
+              Ensuite, « Vérifier » permet de réessayer, ses options de la joindre autrement, et «
+              Retirer » de l’enlever si la caméra ne l’a pas.
             </p>
           </HelpPanel>
         </SettingsSection>

@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test'
+import { CapabilityStatus } from '../../../src/domain/entities/camera_capability_binding.entity'
 
 export interface FakeCamera {
   id: string
@@ -413,7 +414,10 @@ function streamBindingOf(binding: FakeBackendState['streamBinding']) {
     verified: configured && binding.lastError === null,
     verifiedAt: '2026-01-01T00:00:00Z',
     lastError: binding.lastError,
-    status: configured && binding.lastError === null ? 'verified' : 'failed',
+    status:
+      configured && binding.lastError === null
+        ? CapabilityStatus.Verified
+        : CapabilityStatus.Failed,
     confirmedAt: null,
     isPreset: false,
     isConfigured: configured,
@@ -433,17 +437,17 @@ function findProtocols(state: FakeBackendState) {
 interface FakePtzBinding {
   protocol: string
   configJson: string | null
-  status?: string
+  status?: CapabilityStatus
   confirmedAt?: string | null
 }
 
 function ptzBindingOf(binding: FakePtzBinding) {
-  const status = binding.status ?? 'verified'
+  const status = binding.status ?? CapabilityStatus.Verified
   return {
     capability: 'ptz',
     protocol: binding.protocol,
     configJson: binding.configJson,
-    verified: status === 'verified',
+    verified: status === CapabilityStatus.Verified,
     status,
     confirmedAt: binding.confirmedAt ?? null,
     verifiedAt: '2026-01-01T00:00:00Z',
@@ -868,17 +872,19 @@ export async function installFakeBackend(
       }
       if (rest === '/capabilities/ptz/try' && method === 'POST') {
         // Like the real one: only a capability to confirm is tried, and it records nothing.
-        if (state.ptzBinding?.status !== 'to_confirm') {
+        if (state.ptzBinding?.status !== CapabilityStatus.ToConfirm) {
           return json(route, { error: 'nothing_to_confirm' }, 409)
         }
         return route.fulfill({ status: 204 })
       }
       if (rest === '/capabilities/ptz/confirm' && method === 'POST') {
-        if (!state.ptzBinding || state.ptzBinding.status !== 'to_confirm') {
+        if (!state.ptzBinding || state.ptzBinding.status !== CapabilityStatus.ToConfirm) {
           return json(route, { error: 'nothing_to_confirm' }, 409)
         }
         const worked = Boolean(postData?.worked)
-        state.ptzBinding.status = worked ? 'verified' : 'rejected_by_user'
+        state.ptzBinding.status = worked
+          ? CapabilityStatus.Verified
+          : CapabilityStatus.RejectedByUser
         state.ptzBinding.confirmedAt = worked ? new Date().toISOString() : null
         if (worked && camera) camera.ptzSupported = true
         return json(route, ptzBindingOf(state.ptzBinding))

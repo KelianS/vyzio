@@ -38,7 +38,7 @@ public class TryCameraCapabilityUseCaseTests
         });
 
     [Fact]
-    public async Task ExecuteAsync_ShouldTurnTheHeadAndBringItBack_WhenPtzIsToConfirm()
+    public async Task ExecuteAsync_ShouldTurnTheHeadBothWaysAndBringItBack_WhenPtzIsToConfirm()
     {
         // Arrange
         BindingIs(CameraCapability.Ptz, CapabilityStatus.ToConfirm);
@@ -50,6 +50,8 @@ public class TryCameraCapabilityUseCaseTests
         Assert.Equal(CapabilityTryOutcome.Done, outcome);
         await _motion.Received(1).MoveForAsync(PtzDirection.Right, Arg.Any<int>(), CapabilityTry.PtzNudge, Arg.Any<CancellationToken>());
         await _motion.Received(1).MoveForAsync(PtzDirection.Left, Arg.Any<int>(), CapabilityTry.PtzNudge, Arg.Any<CancellationToken>());
+        await _motion.Received(1).MoveForAsync(PtzDirection.Down, Arg.Any<int>(), CapabilityTry.PtzNudge, Arg.Any<CancellationToken>());
+        await _motion.Received(1).MoveForAsync(PtzDirection.Up, Arg.Any<int>(), CapabilityTry.PtzNudge, Arg.Any<CancellationToken>());
     }
 
     [Fact]

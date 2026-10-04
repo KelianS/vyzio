@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.StaticFiles;
+﻿using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -332,7 +332,7 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
-                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+                return Results.BadRequest(new { error = "unknown_capability", message = $"Unknown capability: {capability}" });
 
             return await useCase.ExecuteAsync(id, cap, ct) switch
             {
@@ -352,7 +352,7 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
-                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+                return Results.BadRequest(new { error = "unknown_capability", message = $"Unknown capability: {capability}" });
 
             var result = await useCase.ExecuteAsync(id, cap, request.Worked, ct);
             return result.Outcome switch

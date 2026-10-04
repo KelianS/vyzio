@@ -128,8 +128,10 @@ export function buildCameraConnectionPresenter({
           diagnostic,
         )
         return
-      case CapabilityStatus.Failed:
       case CapabilityStatus.RejectedByUser:
+        toast(` : vous avez répondu que l’essai n’a pas marché.`, 'info')
+        return
+      case CapabilityStatus.Failed:
         toast(
           'Connexion échouée : vérifiez l’accès réseau et les identifiants.',
           'error',
