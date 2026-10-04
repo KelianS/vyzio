@@ -11,7 +11,7 @@ import dvrip
 import onvif
 import rtsp
 import v380
-from recording import REPO_ROOT, Account, Scrubber, Transcript, learn_from_transcript, scrub_transcript, write_folder
+from recording import MAC, REPO_ROOT, Account, Scrubber, Transcript, learn_from_transcript, scrub_transcript, write_folder
 
 PROTOCOLS = {"onvif": onvif.run, "dvrip": dvrip.run, "v380": v380.run, "rtsp": rtsp.run}
 # ONVIF runs first whatever is asked: it names the firmware and gives RTSP its stream address.
@@ -71,8 +71,11 @@ def camera_mac(host):
         return None
     for line in table.splitlines():
         fields = line.split()
-        if len(fields) >= 2 and fields[0] == host:
-            return fields[1]
+        # Windows lists "ip mac type", Linux "? (ip) at mac ...", an unresolved entry "<incomplete>".
+        found = (fields[1] if len(fields) >= 2 and fields[0] == host
+                 else fields[3] if len(fields) >= 4 and fields[1] == f"({host})" and fields[2] == "at" else None)
+        if found and MAC.fullmatch(found):
+            return found
     return None
 
 
@@ -115,6 +118,8 @@ def main():
     mac = camera_mac(host)
     if mac:
         scrubber.learn_mac(mac)
+    else:
+        context.note("camera MAC not in the ARP cache: check the fixtures for it by hand")
     for serial in context.serials:
         scrubber.learn_serial(serial)
     for session in context.dvrip_sessions:

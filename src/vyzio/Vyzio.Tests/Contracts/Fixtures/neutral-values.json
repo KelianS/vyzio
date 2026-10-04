@@ -4,6 +4,7 @@
   "probeAccount": { "username": "admin", "password": "" },
   "cameraHost": "192.0.2.10",
   "otherHostPrefix": "192.0.2.",
+  "ipv6Prefix": "2001:db8::",
   "macPrefix": "00:00:5E:00:53",
   "serial": "FIXTURESERIAL0001",
   "hostname": "fixture-camera",

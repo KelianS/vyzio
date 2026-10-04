@@ -11,7 +11,7 @@ Python 3.12 with `pycryptodome` (`pip install pycryptodome`, already needed by `
 
 Messages in the order they crossed the wire, each tagged `request`/`response` (HTTP) or
 `sent`/`received` (TCP, UDP). SOAP, RTSP and JSON are text; V380 frames are `hex`; a DVRIP frame
-is its 20-byte `header` in hex plus its JSON `body`. A camera that stays silent, hangs up or
+is its `header` in hex plus its JSON `body`. A camera that stays silent, hangs up or
 answers garbage is recorded too, as an `event`. Scenarios flagged `writes` stored something on the
 camera and removed it in the same transcript.
 
@@ -24,23 +24,23 @@ camera and removed it in the same transcript.
   [`neutral-values.json`](../../src/vyzio/Vyzio.Tests/Contracts/Fixtures/neutral-values.json):
   the WS-Security digest, the DVRIP Sofia hash, the V380 encrypted password and the RTSP Digest
   response are computed again from it, with the nonce of the real exchange, so a replay matches.
-- Serials, hostnames, MAC addresses, private IP addresses, UUIDs, DVRIP session ids, the V380
-  device number and ticket are replaced by the stable values of the same file, in text and in
+- Serials, hostnames, MAC addresses, private IPv4 and IPv6 addresses, UUIDs, DVRIP session ids,
+  the V380 device number and ticket are replaced by the stable values of the same file, in text and in
   binary frames alike.
 - No video is ever recorded: RTSP stops at `DESCRIBE`, V380 at the authentication frame.
 
 ## Capturing a new model or firmware
 
-1. Pick the model slug of its sheet in [`docs/hardware/`](../../docs/hardware/) (`tapo-c200`,
-   `icsee`, `v380-pro`), or add the sheet first.
+1. Pick the model slug of its sheet in [`docs/hardware/`](../../docs/hardware/), or add the
+   sheet first.
 2. Run read-only, with the protocols the camera speaks:
 
    ```
    python tools/camera-capture/capture.py --model icsee --protocols onvif,dvrip,rtsp --env-file ../camera.env
    ```
 
-   ONVIF always runs: it names the firmware and gives RTSP its stream address. Without ONVIF,
-   pass `--firmware`.
+   ONVIF always runs: it names the firmware and gives RTSP its stream address. When it cannot
+   name the firmware, pass `--firmware`.
 3. Add `--allow-writes` to also record the preset scenarios: a preset stored where the head already
    points, listed, then removed. Nothing moves the head, and privacy mode is never touched.
 4. Check what the run printed: a protocol that failed is named, and a preset left behind is said.

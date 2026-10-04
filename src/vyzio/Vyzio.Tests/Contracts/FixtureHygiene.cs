@@ -10,8 +10,6 @@ namespace Vyzio.Tests.Contracts;
 // What a committed fixture must never carry; the only accepted account is the one of neutral-values.json (#92).
 internal sealed partial class FixtureHygiene
 {
-    private const int V380AuthCommand = 1167;
-    private static readonly byte[] V380StaticKey = "macrovideo+*#!^@"u8.ToArray();
     private static readonly HashSet<string> BinaryFields = ["hex", "header"];
 
     private readonly string _username;
@@ -86,7 +84,9 @@ internal sealed partial class FixtureHygiene
     private IEnumerable<string> TextLeaks(string text)
     {
         if (PrivateIp().IsMatch(text)) yield return "private IP address";
-        if (Mac().Matches(text).Any(mac => !Bare(mac.Value).StartsWith(_macPrefix, StringComparison.Ordinal))) yield return "MAC address";
+        if (PrivateIpv6().IsMatch(text)) yield return "private IPv6 address";
+        if (Mac().Matches(text).Select(mac => mac.Value).Concat(BareMacField().Matches(text).Select(mac => mac.Groups[1].Value))
+            .Any(mac => !Bare(mac).StartsWith(_macPrefix, StringComparison.Ordinal))) yield return "MAC address";
         if (PrivateKey().IsMatch(text)) yield return "private key";
         if (WsUsername().Matches(text).Any(match => match.Groups[1].Value != _username)) yield return "WS-Security username";
         if (DvripUsername().Matches(text).Any(match => match.Groups[1].Value != _username && match.Groups[1].Value != _probeUsername)) yield return "DVRIP username";
@@ -109,14 +109,16 @@ internal sealed partial class FixtureHygiene
     // The V380 auth frame carries the password AES-encrypted under a key sent beside it (V380Client).
     private IEnumerable<string> V380PasswordLeaks(byte[] frame)
     {
-        if (frame.Length < 113 || BinaryPrimitives.ReadInt32LittleEndian(frame) != V380AuthCommand) yield break;
-        var encrypted = frame.AsSpan(97, 16);
+        const int keyLength = 16;
+        const int passwordOffset = V380Client.AuthSessionKeyOffset + keyLength;
+        if (frame.Length < passwordOffset + keyLength || BinaryPrimitives.ReadInt32LittleEndian(frame) != V380Client.AuthCommand) yield break;
+        var encrypted = frame.AsSpan(passwordOffset, keyLength);
         if (!encrypted.ContainsAnyExcept((byte)0)) yield break;
 
         using var sessionAes = Aes.Create();
-        sessionAes.Key = frame[81..97];
+        sessionAes.Key = frame[V380Client.AuthSessionKeyOffset..passwordOffset];
         using var staticAes = Aes.Create();
-        staticAes.Key = V380StaticKey;
+        staticAes.Key = V380Client.StaticKey.ToArray();
         var plain = staticAes.DecryptEcb(sessionAes.DecryptEcb(encrypted, PaddingMode.None), PaddingMode.None);
         if (!_passwords.Contains(Encoding.UTF8.GetString(plain).TrimEnd('\0'))) yield return "V380 password";
     }
@@ -151,6 +153,13 @@ internal sealed partial class FixtureHygiene
 
     [GeneratedRegex(@"(?<![\d.])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3})(?!\d)")]
     private static partial Regex PrivateIp();
+
+    [GeneratedRegex(@"(?<![0-9A-Fa-f:])(?:[Ff][Ee][89AaBb][0-9A-Fa-f]|[Ff][CcDd][0-9A-Fa-f]{2}):[0-9A-Fa-f:]*[0-9A-Fa-f]")]
+    private static partial Regex PrivateIpv6();
+
+    // A MAC written without separators is only recognisable by the field that holds it.
+    [GeneratedRegex(@"\b(?:mac|macaddr|macaddress|hwaddr)""?\s*[:=^]\s*""?([0-9a-f]{12})(?![0-9a-f])", RegexOptions.IgnoreCase)]
+    private static partial Regex BareMacField();
 
     [GeneratedRegex(@"(?<![0-9A-Fa-f:-])[0-9A-Fa-f]{2}([:-])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}(?![0-9A-Fa-f:-])")]
     private static partial Regex Mac();

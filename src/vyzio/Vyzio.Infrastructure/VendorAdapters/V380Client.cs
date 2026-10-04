@@ -27,7 +27,12 @@ internal sealed class V380Client(ILogger<V380Client> logger)
     private const string Charset =
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=";
 
-    private static readonly byte[] s_staticKey = "macrovideo+*#!^@"u8.ToArray();
+    internal static ReadOnlySpan<byte> StaticKey => "macrovideo+*#!^@"u8;
+
+    internal const int AuthCommand = 1167;
+
+    // The auth frame carries the session key there, the encrypted password right after it.
+    internal const int AuthSessionKeyOffset = 81;
 
     // Device IDs are stable per physical camera — cache by IP for the lifetime of the process.
     private readonly ConcurrentDictionary<string, uint> _deviceIds = new();
@@ -162,14 +167,14 @@ internal sealed class V380Client(ILogger<V380Client> logger)
 
         var account = camera.CredentialsFor(SupportedProtocol.V380);
         var encPw = GenerateEncryptedPassword(account.Password ?? string.Empty);
-        var authBuf = BuildPacket(1167);
+        var authBuf = BuildPacket(AuthCommand);
         BinaryPrimitives.WriteUInt32LittleEndian(authBuf.AsSpan(4), 1022);
         authBuf[8] = 2;
         BinaryPrimitives.WriteUInt32LittleEndian(authBuf.AsSpan(9), 1);
         BinaryPrimitives.WriteUInt32LittleEndian(authBuf.AsSpan(13), deviceId);
         var usernameBytes = Encoding.UTF8.GetBytes(account.Username ?? "admin");
         usernameBytes.AsSpan(0, Math.Min(usernameBytes.Length, 32)).CopyTo(authBuf.AsSpan(49));
-        encPw.AsSpan().CopyTo(authBuf.AsSpan(81));
+        encPw.AsSpan().CopyTo(authBuf.AsSpan(AuthSessionKeyOffset));
 
         var ns = tcp.GetStream();
         await ns.WriteAsync(authBuf, ct);
@@ -273,7 +278,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         pwBytes.AsSpan(0, Math.Min(pwBytes.Length, 16)).CopyTo(padded);
 
         using var aes1 = Aes.Create();
-        aes1.Key = s_staticKey;
+        aes1.Key = StaticKey.ToArray();
         var enc1 = aes1.EncryptEcb(padded, PaddingMode.None);
 
         using var aes2 = Aes.Create();

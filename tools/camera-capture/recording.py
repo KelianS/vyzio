@@ -18,6 +18,9 @@ PRIVATE_IP = re.compile(
     r"(?<![\d.])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}"
     r"|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3})(?![\d])"
 )
+PRIVATE_IPV6 = re.compile(r"(?<![0-9A-Fa-f:])(?:[Ff][Ee][89AaBb][0-9A-Fa-f]|[Ff][CcDd][0-9A-Fa-f]{2}):[0-9A-Fa-f:]*[0-9A-Fa-f](?:%\w+)?")
+# A MAC written without separators is only recognisable by the field that holds it.
+BARE_MAC_FIELD = re.compile(r"(?i)\b(?:mac|macaddr|macaddress|hwaddr)\"?\s*[:=^]\s*\"?([0-9a-f]{12})(?![0-9a-f])")
 MAC = re.compile(r"(?<![0-9A-Fa-f:-])[0-9A-Fa-f]{2}([:-])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}(?![0-9A-Fa-f:-])")
 UUID = re.compile(r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}")
 HOSTNAMES = [
@@ -85,6 +88,7 @@ class Scrubber:
     def __init__(self, real_host, real_account):
         self.real_account = real_account
         self.ip_map = {real_host: NEUTRAL_VALUES["cameraHost"]}
+        self.ipv6_map = {}
         self.mac_map = {}
         self.uuid_map = {}
         self.literals = {}
@@ -100,6 +104,10 @@ class Scrubber:
             self._uuid(match.group(0))
         for match in PRIVATE_IP.finditer(text):
             self._ip(match.group(0))
+        for match in PRIVATE_IPV6.finditer(text):
+            self._ipv6(match.group(0))
+        for match in BARE_MAC_FIELD.finditer(text):
+            self.learn_mac(match.group(1))
         for pattern in HOSTNAMES:
             for match in pattern.finditer(text):
                 self.literals[match.group(1)] = NEUTRAL_VALUES["hostname"]
@@ -144,6 +152,11 @@ class Scrubber:
             self.ip_map[ip] = f"{NEUTRAL_VALUES['otherHostPrefix']}{100 + len(self.ip_map)}"
         return self.ip_map[ip]
 
+    def _ipv6(self, ip):
+        if ip not in self.ipv6_map:
+            self.ipv6_map[ip] = f"{NEUTRAL_VALUES['ipv6Prefix']}{len(self.ipv6_map) + 1:x}"
+        return self.ipv6_map[ip]
+
     def _uuid(self, value):
         key = value.lower()
         if key not in self.uuid_map:
@@ -166,7 +179,7 @@ class Scrubber:
         for bare, neutral in self.mac_map.items():
             pairs[bare] = neutral
             pairs[bare.upper()] = neutral.upper()
-        for real, neutral in self.ip_map.items():
+        for real, neutral in list(self.ip_map.items()) + list(self.ipv6_map.items()):
             pairs[real] = neutral
         password = self.real_account.password
         if password:
@@ -179,6 +192,7 @@ class Scrubber:
         for real, neutral in self._text_pairs():
             text = text.replace(real, neutral)
         text = PRIVATE_IP.sub(lambda match: self._ip(match.group(0)), text)
+        text = PRIVATE_IPV6.sub(lambda match: self._ipv6(match.group(0)), text)
         # A sent message already carries the fixture account; its other names are Vyzio's own constants.
         return self._username(text) if usernames else text
 
