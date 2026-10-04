@@ -47,6 +47,12 @@ public class CameraCapabilityBinding
 
     public string? LastError { get; set; }
 
+    // The stream capability's streams (ADR-65); empty for every other capability.
+    public ICollection<CameraStream> Streams { get; set; } = [];
+
+    // When the stream capability found its streams; empty until then, so later checks never re-add one (ADR-65).
+    public DateTimeOffset? StreamsFoundAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

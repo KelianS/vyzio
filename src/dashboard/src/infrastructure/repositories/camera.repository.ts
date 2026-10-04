@@ -268,10 +268,11 @@ export class HttpCameraRepository implements CameraRepository {
     cameraId: string,
     capability: Capability,
     protocol: SupportedProtocol,
+    streamPath: string | null,
   ): Promise<CameraCapabilityBinding> {
     return putJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/${capability}`,
-      { protocol },
+      { protocol, ...(streamPath !== null && { streamPath }) },
     )
   }
 
@@ -308,13 +309,6 @@ export class HttpCameraRepository implements CameraRepository {
     return putJson<CameraCapabilityBinding>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/ptz/pan-inverted`,
       { inverted },
-    )
-  }
-
-  async setStreamPath(cameraId: string, path: string | null): Promise<CameraCapabilityBinding> {
-    return putJson<CameraCapabilityBinding>(
-      `${this.apiBaseUrl}/api/cameras/${cameraId}/capabilities/stream/path`,
-      { path },
     )
   }
 

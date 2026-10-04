@@ -40,7 +40,9 @@ public sealed class CreateCameraUseCase(
     ICameraRepository cameras,
     ICameraCapabilityOnboardingQueue onboardingQueue,
     IFrigateConfigApplier frigateConfigApplier,
-    ICapabilityProviderRegistry registry)
+    ICapabilityProviderRegistry registry,
+    ICameraStreamEnumerator streamEnumerator,
+    TimeProvider time)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
     {
@@ -51,6 +53,11 @@ public sealed class CreateCameraUseCase(
         var slug = await EnsureUniqueSlugAsync(baseSlug, ct);
 
         var camera = CameraDraftFactory.Build(request, slug, registry.GetRegisteredProtocols(CameraCapability.Stream));
+
+        // Over RTSP without a typed path, the streams the camera lists are laid out, else the path is asked for (ADR-65 e).
+        if (camera.StreamBinding is { Protocol: SupportedProtocol.Rtsp } binding && camera.RecordStream?.Path is null
+            && !await StreamLayout.TryLayOutAsync(camera, binding, SupportedProtocol.Rtsp, typedPath: null, streamEnumerator, time, ct))
+            throw new StreamPathRequiredException();
 
         await cameras.AddAsync(camera, ct);
 
@@ -106,7 +113,8 @@ public sealed class VerifyCameraUseCase(
     ICameraCapabilityBindingRepository bindings,
     ICameraVerifier verifier,
     ICameraStreamEnumerator streamEnumerator,
-    CameraProtocolCheck protocolCheck)
+    CameraProtocolCheck protocolCheck,
+    TimeProvider time)
 {
     // run: the protocol answers already heard in this gesture, so detection asks the stream's protocol once (ADR-61).
     public async Task<CameraStatusDto?> ExecuteAsync(string id, ProtocolCheckRun? run = null, CancellationToken ct = default)
@@ -117,6 +125,7 @@ public sealed class VerifyCameraUseCase(
             return null;
         }
 
+        run ??= new ProtocolCheckRun();
         var (result, detail) = await StreamVerification.RunAsync(camera, protocolCheck, verifier, run, ct);
         camera.Status = result.Status;
         camera.LastReachabilityCheckAt = result.CheckedAt;
@@ -132,86 +141,22 @@ public sealed class VerifyCameraUseCase(
             await bindings.SaveAsync(stream, ct);
         }
 
-        // Verification is the one moment the camera is known reachable, so it is where Vyzio asks
-        // what it actually serves (ADR-38) — no extra user action, no extra round of connections.
-        if (result.Connected)
+        // The one moment the camera is known reachable: Vyzio asks what it serves, with no extra gesture (ADR-38, ADR-65 e).
+        if (result.Connected && camera.StreamBinding is { } binding)
         {
-            await SyncStreamsAsync(camera, ct);
+            var scenes = await streamEnumerator.EnumerateAsync(camera, binding.Protocol, ct);
+            // Only this camera's scene: other lenses become cameras of their own through onboarding (ADR-38).
+            if (scenes.Count > 0) StreamLineup.ApplyFound(binding, scenes[0].Streams, time.GetUtcNow());
+        }
+
+        // Every stream is checked; the recording one was, as the camera's own check (ADR-65 f).
+        foreach (var other in camera.Streams.Where(entry => entry != camera.RecordStream).ToList())
+        {
+            await StreamVerification.CheckStreamAsync(camera, other, protocolCheck, verifier, run, ct);
         }
 
         await cameras.UpdateAsync(camera, ct);
         return CameraStatusDto.From(camera, result.Guidance);
-    }
-
-    private async Task SyncStreamsAsync(Camera camera, CancellationToken ct)
-    {
-        var scenes = await streamEnumerator.EnumerateAsync(camera, ct);
-
-        // Only the scene this camera films is applied. Other scenes mean a multi-lens device, whose
-        // extra lenses become cameras of their own through onboarding, never streams here (ADR-38).
-        var scene = scenes.Count > 0 ? scenes[0] : null;
-        if (scene is null || scene.Streams.Count == 0)
-        {
-            return;
-        }
-
-        for (var ordinal = 0; ordinal < scene.Streams.Count; ordinal++)
-        {
-            var enumerated = scene.Streams[ordinal];
-            var existing = camera.Streams.FirstOrDefault(stream => stream.Ordinal == ordinal);
-            if (existing is null)
-            {
-                camera.Streams.Add(new CameraStream
-                {
-                    CameraId = camera.Id,
-                    Ordinal = ordinal,
-                    Path = enumerated.Path,
-                    Width = enumerated.Width,
-                    Height = enumerated.Height,
-                    Fps = enumerated.Fps,
-                });
-                continue;
-            }
-
-            // The main path is what the user entered and verified — enumeration refreshes what the
-            // camera reports about it, never overwrites the address that is known to work.
-            //
-            // Its size, however, is only adopted when the two addresses agree. Vendors alias their
-            // streams (a camera answering on /stream1 advertises /live/ch00_1 and /live/ch00_0 at
-            // different sizes), so attaching the advertised resolution to a path we cannot match
-            // would claim a size the stream does not have — and make Frigate upscale, which is the
-            // very waste this work removes (ADR-38).
-            var sizeApplies = ordinal != 0 || PathsMatch(existing.Path, enumerated.Path);
-
-            if (ordinal != 0)
-            {
-                existing.Path = enumerated.Path;
-            }
-
-            existing.Width = sizeApplies ? enumerated.Width : null;
-            existing.Height = sizeApplies ? enumerated.Height : null;
-            existing.Fps = sizeApplies ? enumerated.Fps : null;
-            existing.UpdatedAt = DateTimeOffset.UtcNow;
-        }
-
-        // A quality tier the camera no longer reports must not stay selectable — it would resolve to
-        // a stream that does not exist.
-        PruneStaleStreams(camera, scene);
-    }
-
-    private static bool PathsMatch(string? left, string? right)
-        => string.Equals(left?.TrimStart('/'), right?.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
-
-    // A rank the camera no longer reports must not stay selectable — it would resolve to a stream
-    // that does not exist. Rank 0 is never dropped: it holds the address the user verified.
-    private static void PruneStaleStreams(Camera camera, EnumeratedScene scene)
-    {
-        foreach (var stale in camera.Streams.Where(stream => stream.Ordinal >= scene.Streams.Count).ToList())
-        {
-            if (stale.Ordinal == 0) continue;
-            if (camera.DetectStreamId == stale.Id) camera.DetectStreamId = null;
-            camera.Streams.Remove(stale);
-        }
     }
 }
 
@@ -426,22 +371,40 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
 // The stream is a capability like the others: its protocol must answer with its account before the stream is verified (ADR-61).
 internal static class StreamVerification
 {
-    // Detail is what support reads: the protocol's own reason when the protocol failed, the verifier's otherwise.
+    // The recording stream's check is the camera's; Detail is what support reads (ADR-65 f).
     public static async Task<(CameraVerificationResult Result, string Detail)> RunAsync(
         Camera camera, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, ProtocolCheckRun? run, CancellationToken ct)
     {
-        if (camera.StreamBinding is not { } stream)
+        if (camera.StreamBinding is null || camera.RecordStream is not { } recording)
         {
-            var unbound = await verifier.VerifyAsync(camera, ct);
+            var unbound = await verifier.VerifyAsync(camera, null, ct);
             return (unbound, unbound.Guidance);
         }
 
+        return await CheckStreamAsync(camera, recording, protocolCheck, verifier, run, ct);
+    }
+
+    // Writes the stream's last check on the entity; the caller owning the transaction saves the camera.
+    public static async Task<(CameraVerificationResult Result, string Detail)> CheckStreamAsync(
+        Camera camera, CameraStream stream, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, ProtocolCheckRun? run, CancellationToken ct)
+    {
+        var (result, detail) = await VerifyAsync(camera, stream, protocolCheck, verifier, run, ct);
+        stream.Verified = result.PreviewAvailable;
+        stream.CheckedAt = result.CheckedAt;
+        stream.LastError = result.PreviewAvailable ? null : detail;
+        stream.UpdatedAt = result.CheckedAt;
+        return (result, detail);
+    }
+
+    private static async Task<(CameraVerificationResult Result, string Detail)> VerifyAsync(
+        Camera camera, CameraStream stream, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, ProtocolCheckRun? run, CancellationToken ct)
+    {
         var protocol = await protocolCheck.CheckAsync(camera, stream.Protocol, run, ct);
         var checkedAt = protocol.CheckedAt ?? DateTimeOffset.UtcNow;
         switch (protocol.Status)
         {
             case ProtocolStatus.Answers:
-                var verified = await verifier.VerifyAsync(camera, ct);
+                var verified = await verifier.VerifyAsync(camera, stream, ct);
                 return (verified, verified.Guidance);
             case ProtocolStatus.Refused:
                 return (new CameraVerificationResult(true, false, "needs_attention",
@@ -480,20 +443,20 @@ internal static class CameraDraftFactory
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        // A camera is born with its stream capability: the protocol that carries it, how to reach
-        // that protocol, and the main path when the stream goes over RTSP (ADR-38, ADR-61).
-        camera.Capabilities.Add(new CameraCapabilityBinding
+        // A camera is born with its stream capability, its protocol row and the typed stream path, if any (ADR-61, ADR-65 e).
+        var binding = new CameraCapabilityBinding
         {
             CameraId = camera.Id,
             Capability = CameraCapability.Stream,
             Protocol = streamProtocol,
             ManuallyConfigured = true,
-        });
+        };
+        camera.Capabilities.Add(binding);
         var protocol = camera.EnsureProtocol(streamProtocol);
         protocol.Port = request.Stream.Port is > 0 && request.Stream.Port != ProtocolPorts.Usual(streamProtocol)
             ? request.Stream.Port
             : null;
-        camera.SetMainStreamPath(NormalizeStreamPath(request.Stream.Path));
+        StreamLineup.ResetTo(binding, streamProtocol, NormalizeStreamPath(request.Stream.Path));
         return camera;
     }
 

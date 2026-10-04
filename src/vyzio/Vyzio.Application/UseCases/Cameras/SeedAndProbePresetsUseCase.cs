@@ -21,7 +21,9 @@ public sealed class SeedAndProbePresetsUseCase(
     ICameraProtocolEndpointCache endpointCache,
     DetectionPlan detectionPlan,
     CameraProtocolSearch protocolSearch,
-    IFrigateConfigApplier frigateConfigApplier)
+    IFrigateConfigApplier frigateConfigApplier,
+    ICameraStreamEnumerator streamEnumerator,
+    TimeProvider time)
 {
     public async Task ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
@@ -166,27 +168,36 @@ public sealed class SeedAndProbePresetsUseCase(
         var answering = candidates.Where(protocol => Answers(camera, protocol)).ToList();
         if (answering.Count == 0) return;
 
-        // A stream bound is a connection change, like a stream protocol chosen by hand.
-        CameraConnectionChange.Apply(camera);
-        await cameras.UpdateAsync(camera, ct);
-
         var binding = new CameraCapabilityBinding { CameraId = cameraId, Capability = CameraCapability.Stream };
         var verified = false;
+        SupportedProtocol? fallback = null;
+        SupportedProtocol? lastTried = null;
         foreach (var protocol in answering)
         {
-            verified = await TryStreamAsync(binding, protocol, run, ct);
+            var tried = await TryStreamAsync(camera, binding, protocol, run, ct);
+            if (tried is null) continue;
+            verified = tried.Value;
             if (verified) break;
+            fallback ??= protocol;
+            lastTried = protocol;
         }
 
-        // With no stream check passing, the stream stays on the first protocol that answered, with its reason.
-        if (!verified && answering.Count > 1)
-            await TryStreamAsync(binding, answering[0], run, ct);
+        // With no stream check passing, the stream stays on the first protocol it was laid out on, with its reason.
+        if (!verified && fallback is { } first && first != lastTried)
+            await TryStreamAsync(camera, binding, first, run, ct);
 
         await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
     }
 
-    private async Task<bool> TryStreamAsync(CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
+    // Null when no stream could be laid out over the protocol: RTSP is only bound with the streams the camera lists (ADR-65 e).
+    private async Task<bool?> TryStreamAsync(Camera camera, CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
     {
+        if (!await StreamLayout.TryLayOutAsync(camera, binding, protocol, typedPath: null, streamEnumerator, time, ct)) return null;
+
+        // A stream bound is a connection change, like a stream protocol chosen by the user.
+        CameraConnectionChange.Apply(camera);
+        await cameras.UpdateAsync(camera, ct);
+
         CapabilityVerdict.Reset(binding, protocol);
         await bindings.SaveAsync(binding, ct);
 
@@ -200,9 +211,8 @@ public sealed class SeedAndProbePresetsUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return;
 
-        var used = (await bindings.GetByCameraAsync(cameraId, ct)).Select(b => b.Protocol).ToHashSet();
         var silent = camera.Protocols
-            .Where(entry => entry.Status == ProtocolStatus.Unreachable && !used.Contains(entry.Protocol) && !entry.HoldsUserData)
+            .Where(entry => entry.Status == ProtocolStatus.Unreachable && !camera.GoesThrough(entry.Protocol) && !entry.HoldsUserData)
             .ToList();
         if (silent.Count == 0) return;
 

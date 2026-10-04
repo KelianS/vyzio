@@ -6,7 +6,12 @@ import { CheckCameraProtocol } from '../../domain/usecases/check_camera_protocol
 import { SearchCameraProtocols } from '../../domain/usecases/search_camera_protocols.use_case'
 import { RemoveCameraProtocol } from '../../domain/usecases/remove_camera_protocol.use_case'
 import { GetCameraProtocols } from '../../domain/usecases/get_camera_protocols.use_case'
-import { SetStreamPath } from '../../domain/usecases/set_stream_path.use_case'
+import { GetCameraStreams } from '../../domain/usecases/get_camera_streams.use_case'
+import { AddCameraStream } from '../../domain/usecases/add_camera_stream.use_case'
+import { SetCameraStreamRole } from '../../domain/usecases/set_camera_stream_role.use_case'
+import { GetAvailableCameraStreams } from '../../domain/usecases/get_available_camera_streams.use_case'
+import { RemoveCameraStream } from '../../domain/usecases/remove_camera_stream.use_case'
+import { CheckCameraStream } from '../../domain/usecases/check_camera_stream.use_case'
 import { UpdateCameraProtocol } from '../../domain/usecases/update_camera_protocol.use_case'
 import { ConfigureCameraCapability } from '../../domain/usecases/configure_camera_capability.use_case'
 import { CreateCamera } from '../../domain/usecases/create_camera.use_case'
@@ -44,6 +49,7 @@ import type { CameraRepository } from '../../domain/ports/camera.port'
 import type { ProfileRepository } from '../../domain/ports/profile.port'
 import type { DetectionLabelsRepository } from '../../domain/usecases/get_detection_labels.use_case'
 import type { RecordingSettingsRepository } from '../../domain/ports/recording_settings.port'
+import type { CameraStreamRepository } from '../../domain/ports/camera_stream.port'
 
 export interface CamerasContainer {
   getCameras: GetCameras
@@ -65,7 +71,12 @@ export interface CamerasContainer {
   confirmCameraCapability: ConfirmCameraCapability
   removeCameraCapability: RemoveCameraCapability
   setPtzPanInverted: SetPtzPanInverted
-  setStreamPath: SetStreamPath
+  getCameraStreams: GetCameraStreams
+  addCameraStream: AddCameraStream
+  setCameraStreamRole: SetCameraStreamRole
+  getAvailableCameraStreams: GetAvailableCameraStreams
+  removeCameraStream: RemoveCameraStream
+  checkCameraStream: CheckCameraStream
   detectCameraCapabilities: DetectCameraCapabilities
   getCameraProtocols: GetCameraProtocols
   updateCameraProtocol: UpdateCameraProtocol
@@ -95,6 +106,7 @@ export function makeCamerasContainer(
   profileRepository: ProfileRepository,
   cameraLabelsRepository: DetectionLabelsRepository,
   recordingSettingsRepository: RecordingSettingsRepository,
+  cameraStreamRepository: CameraStreamRepository,
 ): CamerasContainer {
   return {
     getCameras: new GetCameras(cameraRepository),
@@ -116,7 +128,12 @@ export function makeCamerasContainer(
     confirmCameraCapability: new ConfirmCameraCapability(cameraRepository),
     removeCameraCapability: new RemoveCameraCapability(cameraRepository),
     setPtzPanInverted: new SetPtzPanInverted(cameraRepository),
-    setStreamPath: new SetStreamPath(cameraRepository),
+    getCameraStreams: new GetCameraStreams(cameraStreamRepository),
+    addCameraStream: new AddCameraStream(cameraStreamRepository),
+    setCameraStreamRole: new SetCameraStreamRole(cameraStreamRepository),
+    getAvailableCameraStreams: new GetAvailableCameraStreams(cameraStreamRepository),
+    removeCameraStream: new RemoveCameraStream(cameraStreamRepository),
+    checkCameraStream: new CheckCameraStream(cameraStreamRepository),
     detectCameraCapabilities: new DetectCameraCapabilities(cameraRepository),
     getCameraProtocols: new GetCameraProtocols(cameraRepository),
     updateCameraProtocol: new UpdateCameraProtocol(cameraRepository),

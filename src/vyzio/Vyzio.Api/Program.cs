@@ -139,6 +139,7 @@ app.MapAccess();
 app.MapHub();
 app.MapDetectionLabels();
 app.MapCameras();
+app.MapCameraStreams();
 app.MapDetectionEvents();
 app.MapProfiles();
 app.MapNotifications();

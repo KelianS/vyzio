@@ -213,7 +213,7 @@ public class CapabilityProofTests
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Dvrip, SupportedProtocol.V380]);
         var binding = Ptz(status: CapabilityStatus.Verified, confirmedAt: Confirmed);
         ProofIs(CapabilityProof.Unprovable());
-        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe());
+        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe(), CapabilityTestUseCases.NothingEnumerated(), TimeProvider.System);
 
         // Act
         await sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "v380"));
@@ -231,7 +231,7 @@ public class CapabilityProofTests
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Dvrip, SupportedProtocol.V380]);
         var binding = Ptz(status: CapabilityStatus.RejectedByUser, rejectedAt: Rejected);
         ProofIs(CapabilityProof.Unprovable());
-        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe());
+        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe(), CapabilityTestUseCases.NothingEnumerated(), TimeProvider.System);
 
         // Act
         await sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "v380"));
@@ -248,7 +248,7 @@ public class CapabilityProofTests
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Dvrip]);
         var binding = Ptz(status: CapabilityStatus.Verified, confirmedAt: Confirmed);
         ProofIs(CapabilityProof.Unprovable());
-        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe());
+        var sut = new ConfigureCameraCapabilityUseCase(_cameras, _bindings, _registry, Substitute.For<IFrigateConfigApplier>(), Probe(), CapabilityTestUseCases.NothingEnumerated(), TimeProvider.System);
 
         // Act
         await sut.ExecuteAsync("cam1", new ConfigureCameraCapabilityRequest("ptz", "dvrip"));

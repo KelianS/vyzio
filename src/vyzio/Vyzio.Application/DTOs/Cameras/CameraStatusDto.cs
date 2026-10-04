@@ -48,11 +48,6 @@ public sealed record CameraStatusDto(
                 return "Configuration incomplete. Choisissez comment Vyzio lit le flux video, puis lancez la verification.";
             }
 
-            if (camera.StreamBinding.Protocol == SupportedProtocol.Rtsp && string.IsNullOrWhiteSpace(camera.MainStream?.Path))
-            {
-                return "Configuration incomplete. Ajoutez le chemin RTSP, puis lancez la verification.";
-            }
-
             return "Configuration incomplete. Verifiez le flux avant d'appliquer la configuration.";
         }
 

@@ -69,6 +69,30 @@ public class CameraReachabilityPollerServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldKnockOnTheRecordingStreamsProtocol_WhenRecordingGoesOverAnotherProtocol()
+    {
+        // Arrange
+        using var refusing = BackgroundLoop.RefusingPort();
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var camera = ValidatedCamera(refusing.PortOf(), "offline");
+        camera.EnsureProtocol(SupportedProtocol.Dvrip).Port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Dvrip, null, StreamRole.RecordAndDetect);
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        var updated = SignalOnUpdate();
+        var sut = CreateSut();
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await _time.AdvanceUntilAsync(updated.Task, Step);
+        await sut.StopAsync(CancellationToken.None);
+        listener.Stop();
+
+        // Assert
+        Assert.Equal("online", camera.Status);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldSayTheCameraNeedsAttention_WhenItsStreamHasNoProtocol()
     {
         // Arrange

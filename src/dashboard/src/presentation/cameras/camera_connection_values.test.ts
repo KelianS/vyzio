@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { makeCamera } from '../../testing/camera_fixture'
-import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import { makeCameraProtocol } from '../../testing/camera_protocol_fixture'
 import {
   connectionValuesOf,
@@ -33,7 +32,7 @@ describe('connectionValuesOf', () => {
     ]
 
     // Act
-    const values = connectionValuesOf(makeCamera(), undefined, protocols)
+    const values = connectionValuesOf(makeCamera(), protocols)
 
     // Assert
     expect(values['protocol:v380']).toEqual({
@@ -46,21 +45,6 @@ describe('connectionValuesOf', () => {
       deviceId: '26970853',
     })
     expect(values['protocol:rtsp'].port).toBeNull()
-  })
-
-  it('connectionValuesOf_ShouldTakeTheStreamPathFromTheStreamCapability_WhenItHasOne', () => {
-    // Arrange
-    const stream = makeCapabilityBinding({
-      capability: 'stream',
-      protocol: 'rtsp',
-      streamPath: '/stream1',
-    })
-
-    // Act
-    const values = connectionValuesOf(makeCamera(), stream, [])
-
-    // Assert
-    expect(values.streamPath).toBe('/stream1')
   })
 })
 

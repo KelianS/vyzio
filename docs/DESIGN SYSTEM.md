@@ -205,10 +205,46 @@ detail once:
   local network. `Retirer` is refused, with the plain reason next to it, while a capability goes
   through the protocol or while its box has unsaved edits.
 - **The stream's way out** names both places: the address and account in `Avance`, the protocol and
-  path in the stream card's `Options`.
+  the streams in the stream card's `Options`.
+- **The stream lines** ([ADR-65](adr/0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md)):
+  the stream stays one card with one pill, the camera status. Its state line adds one sentence when
+  detection is not covered as chosen: detection runs on the recording stream since no stream holds
+  that role, or the detection stream failed its check, then the way out is giving detection to
+  another stream in the options. In its `Options`, the protocol choice carries its cost, the list of
+  streams replaced, in one short line above it; then a `Flux` list shows one line per stream with
+  the essentials only, the help on its three levels (§ Help): its quality (the measured resolution
+  and frame rate, else its rank, ADR-38) with its protocol and path in a tooltip, its own pill (the
+  capability pills, `Pas encore vérifié` before its first check) with a short sentence and the
+  diagnostic line of a failure, the way out being to check it again or to remove it (the recording
+  stream's failure is the camera's, whose way out the card's state line already gives, so its line
+  names none); then its role as a choice (`Enregistrement`, `Détection`,
+  `Enregistrement et détection`, `Aucun` for a stream kept but unused) whose tooltip names what the
+  role changes, then its actions: `Vérifier` and `Retirer`, the word of the page's other cards and
+  protocol boxes. `Retirer` asks for a confirmation, which says, for the stream that detects, that
+  detection moves to the recording stream. The line's `Vérifier` checks that stream alone, except the
+  recording stream's, which is the camera's check; the card's checks the camera, every stream with
+  it. The stream that records is offered only the roles that record, and keeps `Retirer` disabled,
+  the reason in a tooltip next to it.
+- **Choosing a stream from the camera's list** (what it adds and when: ADR-65 e). `Ajouter un flux`
+  closes the list: `Protocole`, then a `Flux` dropdown read by quality, as a line, the path in the
+  item's tooltip, then `Rôle`, then `Ajouter et vérifier`, whose result says whether the stream
+  answers. Over RTSP the dropdown's last item is `Autre chemin…`, which reveals the field
+  `Chemin du flux`, and `Ajouter et vérifier` stays disabled while that field is empty. While the
+  camera is asked, the dropdown shows the wait greyed and nothing can be added. A request that fails
+  is said under the dropdown, never as an empty list, with `Réessayer` and its diagnostic line
+  (§ Errors), `Autre chemin…` staying available.
+- **The stream's protocol choice over RTSP** shows nothing more while the camera lists its streams.
+  When it lists none, or cannot be asked, `Configurer` is refused saying both, and the choice then
+  reuses that dropdown under `Protocole`, `Autre chemin…` alone with `Chemin du flux`; `Configurer`
+  stays disabled until a path is typed.
+- A folded help panel, `Quel rôle donner à chaque flux ?`, under the list holds the task help of
+  ADR-65: the default roles, said as such, which stream to analyse for which scene, how a role moves,
+  what changing the protocol or adding a stream does, how a wrong path is fixed, why the dropdown can
+  hold only `Autre chemin…`, and how a stream without a size is named.
 
-Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
-protocol choice, adding a capability or a protocol and removing a protocol are actions.
+Addresses, ports and accounts are declared settings and follow the page's draft; a check, a
+protocol choice, adding a capability or a protocol and removing a protocol are actions, and so is
+every change on a stream line (its role, its removal, adding one).
 
 ### Calendar and range editor
 

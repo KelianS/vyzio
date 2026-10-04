@@ -5,10 +5,15 @@ import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import type {
   CameraCapabilityBinding,
   Capability,
+  StreamProtocol,
   SupportedProtocol,
 } from '../../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
 import type { Camera } from '../../../domain/entities/camera.entity'
+import type {
+  AvailableStream,
+  CameraStreamLineup,
+} from '../../../domain/entities/camera_stream.entity'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Button } from '../../../common/ui/button'
 import { SettingRow } from '../../../common/settings/setting_row'
@@ -24,7 +29,7 @@ import {
   formatStatusTone,
   formatStreamStateLine,
 } from '../cameras.formatters'
-import { CapabilityTask } from '../camera_connection.uido'
+import { CapabilityTask, type StreamTask } from '../camera_connection.uido'
 import {
   CAPABILITY_STATE_PILLS,
   CapabilityState,
@@ -39,6 +44,8 @@ import { NO_PROTOCOL_YET, protocolOptions } from '../protocol_labels'
 import { CapabilityCard } from './capability_card'
 import { ProtocolChoice } from './protocol_choice'
 import { ManualCapability } from './manual_capability_form'
+import { StreamLines, StreamPicker, type StreamLineIntents } from './stream_lines'
+import { OTHER_PATH, asksStreamPath, streamCoverageLine } from '../stream_lines'
 
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
@@ -46,8 +53,12 @@ interface CapabilityIntents {
   onDetect: () => void
   onVerifyStream: () => void
   onVerify: (capability: Capability) => void
-  /** Resolves true when the camera answered through the protocol. */
-  onConfigure: (capability: Capability, protocol: SupportedProtocol) => Promise<boolean>
+  /** Resolves true when the camera answered through the protocol; streamPath only for the stream over RTSP. */
+  onConfigure: (
+    capability: Capability,
+    protocol: SupportedProtocol,
+    streamPath?: string | null,
+  ) => Promise<boolean>
   onTogglePtz: () => Promise<void>
   onSetPanInverted: (inverted: boolean) => void
   onRemove: (capability: Capability) => Promise<void>
@@ -75,18 +86,24 @@ interface CapabilitySectionProps {
   asking: Partial<Record<Capability, true>>
   manualFormOpen: boolean
   manualConfiguring: boolean
-  /** The stream's main path, a declared setting that follows the page's draft (ADR-41). */
-  streamPath: SettingDeclaration
+  /** The stream lines of the stream card (ADR-65). */
+  streams: StreamLinesState
   intents: CapabilityIntents
 }
 
-// Only an RTSP stream is addressed by a path; DVRIP derives it from the protocol (ADR-61).
-const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
-  rtsp: true,
-  dvrip: false,
-  onvif: false,
-  v380: false,
-  tapo_klap: false,
+/** What the stream card needs to draw its stream lines. */
+interface StreamLinesState {
+  lineup: CameraStreamLineup | null
+  loading: boolean
+  readError: AppError | null
+  available: Partial<Record<StreamProtocol, AvailableStream[]>>
+  availableErrors: Partial<Record<StreamProtocol, AppError>>
+  tasks: Partial<Record<string, StreamTask>>
+  formOpen: boolean
+  adding: boolean
+  /** The camera listed no stream over RTSP: its protocol choice asks for the first one's path (ADR-65 e). */
+  pathAsked: boolean
+  intents: StreamLineIntents
 }
 
 export function CapabilitySection({
@@ -103,7 +120,7 @@ export function CapabilitySection({
   asking,
   manualFormOpen,
   manualConfiguring,
-  streamPath,
+  streams,
   intents,
 }: CapabilitySectionProps) {
   const read = !loading && !readError
@@ -119,9 +136,11 @@ export function CapabilitySection({
           protocolsRead={protocolsRead}
           verifying={verifyingStream}
           configuring={pending.stream === CapabilityTask.Configure}
-          streamPath={streamPath}
+          streams={streams}
           onVerify={intents.onVerifyStream}
-          onConfigure={(protocol) => intents.onConfigure('stream', protocol)}
+          onConfigure={(protocol, streamPath) =>
+            intents.onConfigure('stream', protocol, streamPath)
+          }
         />
         {read &&
           bindings
@@ -191,7 +210,7 @@ function StreamCard({
   protocolsRead,
   verifying,
   configuring,
-  streamPath,
+  streams,
   onVerify,
   onConfigure,
 }: {
@@ -203,10 +222,13 @@ function StreamCard({
   protocolsRead: boolean
   verifying: boolean
   configuring: boolean
-  streamPath: SettingDeclaration
+  streams: StreamLinesState
   onVerify: () => void
-  onConfigure: (protocol: SupportedProtocol) => Promise<boolean>
+  onConfigure: (protocol: SupportedProtocol, streamPath: string | null) => Promise<boolean>
 }) {
+  const [typed, setTyped] = useState('')
+  const typing = (picked: SupportedProtocol) => streams.pathAsked && asksStreamPath(picked)
+  const coverage = binding?.isConfigured ? streamCoverageLine(streams.lineup) : null
   const unconfigured = binding ? !binding.isConfigured : false
   const protocol = protocols.find((entry) => entry.protocol === binding?.protocol)
   const choices = binding
@@ -224,16 +246,49 @@ function StreamCard({
         binding &&
         choices.length > 0 && (
           <>
+            {binding.isConfigured && (
+              <p className="text-sm text-muted-foreground">
+                Changer de protocole remplace la liste des flux, y compris ceux que vous avez
+                ajoutés.
+              </p>
+            )}
             <ProtocolChoice
               options={choices}
               current={binding.protocol}
               configured={binding.isConfigured}
               configuring={configuring}
               disabled={false}
-              onConfigure={onConfigure}
+              detail={(picked) =>
+                typing(picked)
+                  ? {
+                      node: (
+                        <StreamPicker
+                          choices={[OTHER_PATH]}
+                          selected={OTHER_PATH}
+                          typed={typed}
+                          onPick={() => undefined}
+                          onType={setTyped}
+                        />
+                      ),
+                      ready: typed.trim() !== '',
+                    }
+                  : null
+              }
+              onConfigure={(picked) => onConfigure(picked, typing(picked) ? typed.trim() : null)}
             />
-            {binding.isConfigured && ASKS_STREAM_PATH[binding.protocol] && (
-              <SettingRow setting={streamPath} />
+            {binding.isConfigured && (
+              <StreamLines
+                lineup={streams.lineup}
+                loading={streams.loading}
+                readError={streams.readError}
+                protocols={choices}
+                available={streams.available}
+                availableErrors={streams.availableErrors}
+                tasks={streams.tasks}
+                formOpen={streams.formOpen}
+                adding={streams.adding}
+                intents={streams.intents}
+              />
             )}
           </>
         )
@@ -268,6 +323,8 @@ function StreamCard({
           {!camera.connected && binding?.lastError && (
             <DiagnosticLine text={scrubSecrets(binding.lastError)} />
           )}
+          {/* Whether recording and detection are covered as chosen, outside the fold (ADR-65 c). */}
+          {coverage && <p>{coverage}</p>}
         </div>
       )}
     </CapabilityCard>
