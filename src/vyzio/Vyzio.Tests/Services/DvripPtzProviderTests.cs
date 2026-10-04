@@ -242,13 +242,11 @@ public class DvripPtzProviderTests
         Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
     }
 
-    // SofiaHash — pairs of raw MD5 bytes (not hex nibbles), matching python-dvr's reference
-    // implementation. Verified against a real ICSee camera (2026-07-15, Ret=100 on login);
-    // the previous hex-nibble-pairing variant was rejected (Ret=203, "Password is incorrect").
+    // Pairs of raw MD5 bytes, as python-dvr does; the hex-nibble variant is refused by the camera (ADR-29).
     [Fact]
-    public void SofiaHash_ShouldMatchTheValueVerifiedOnARealCamera_WhenGivenAKnownPassword()
+    public void SofiaHash_ShouldMatchThePythonDvrReference_WhenGivenAKnownPassword()
     {
-        Assert.Equal("S8jyn9CB", DvripPtzProvider.SofiaHash("a4m3h5"));
+        Assert.Equal("mF95aD4o", DvripPtzProvider.SofiaHash("password"));
     }
 
     [Fact]
