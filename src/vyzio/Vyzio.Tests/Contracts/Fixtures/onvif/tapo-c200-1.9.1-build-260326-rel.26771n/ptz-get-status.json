@@ -1,0 +1,41 @@
+{
+  "protocol": "onvif",
+  "scenario": "ptz-get-status",
+  "description": "Where the head points.",
+  "transport": "http",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "request",
+      "method": "POST",
+      "path": "/onvif/service",
+      "headers": [
+        [
+          "Content-Type",
+          "application/soap+xml; charset=utf-8"
+        ]
+      ],
+      "body": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"\n            xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n            xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-utility-1.0.xsd\">\n  <s:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>fixture-user</wsse:Username>\n        <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">+245oRgV37oM1OP9l5enLodYl3s=</wsse:Password>\n        <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">b8ksxe010d3opUWD8bv7EQ==</wsse:Nonce>\n        <wsu:Created>2026-10-04T20:08:25Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </s:Header>\n  <s:Body>\n    <GetStatus xmlns=\"http://www.onvif.org/ver20/ptz/wsdl\">\n  <ProfileToken>profile_1</ProfileToken>\n</GetStatus>\n  </s:Body>\n</s:Envelope>"
+    },
+    {
+      "direction": "response",
+      "status": 200,
+      "reason": "OK",
+      "headers": [
+        [
+          "Connection",
+          "close"
+        ],
+        [
+          "Content-Type",
+          "application/soap+xml; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "1965"
+        ]
+      ],
+      "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:wsdd=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:chan=\"http://schemas.microsoft.com/ws/2005/02/duplex\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\" xmlns:xmime=\"http://tempuri.org/xmime.xsd\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:wsrfbf=\"http://docs.oasis-open.org/wsrf/bf-2\" xmlns:wstop=\"http://docs.oasis-open.org/wsn/t-1\" xmlns:wsrfr=\"http://docs.oasis-open.org/wsrf/r-2\" xmlns:wsnt=\"http://docs.oasis-open.org/wsn/b-2\" xmlns:tt=\"http://www.onvif.org/ver10/schema\" xmlns:ter=\"http://www.onvif.org/ver10/error\" xmlns:tns1=\"http://www.onvif.org/ver10/topics\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\" xmlns:tmd=\"http://www.onvif.org/ver10/deviceIO/wsdl\" xmlns:trt=\"http://www.onvif.org/ver10/media/wsdl\" xmlns:tev=\"http://www.onvif.org/ver10/events/wsdl\" xmlns:tdn=\"http://www.onvif.org/ver10/network/wsdl\" xmlns:timg=\"http://www.onvif.org/ver20/imaging/wsdl\" xmlns:trp=\"http://www.onvif.org/ver10/replay/wsdl\" xmlns:tan=\"http://www.onvif.org/ver20/analytics/wsdl\" xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"><SOAP-ENV:Header></SOAP-ENV:Header><SOAP-ENV:Body><tptz:GetStatusResponse><tptz:PTZStatus><tt:Position><tt:PanTilt x=\"0.177353\" y=\"-0.713568\"></tt:PanTilt></tt:Position><tt:MoveStatus><tt:PanTilt>UNKNOWN</tt:PanTilt></tt:MoveStatus><tt:Error>0</tt:Error><tt:UtcTime>2026-10-04T20:08:30Z</tt:UtcTime></tptz:PTZStatus></tptz:GetStatusResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>\r\n"
+    }
+  ]
+}

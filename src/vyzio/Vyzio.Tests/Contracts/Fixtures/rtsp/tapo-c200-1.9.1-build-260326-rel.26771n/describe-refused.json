@@ -1,0 +1,25 @@
+{
+  "protocol": "rtsp",
+  "scenario": "describe-refused",
+  "description": "DESCRIBE answered with a wrong password.",
+  "transport": "tcp",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "sent",
+      "text": "DESCRIBE rtsp://192.0.2.10:554/stream1 RTSP/1.0\r\nCSeq: 1\r\nAccept: application/sdp\r\nUser-Agent: Vyzio\r\n\r\n"
+    },
+    {
+      "direction": "received",
+      "text": "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nDate: Sun, Oct 04 2026 20:08:30 GMT\r\nWWW-Authenticate: Basic realm=\"TP-Link IP-Camera\"\r\nWWW-Authenticate: Digest realm=\"TP-Link IP-Camera\", nonce=\"5d8a4e7c14381fea767e2a5db427526c\"\r\n\r\n"
+    },
+    {
+      "direction": "sent",
+      "text": "DESCRIBE rtsp://192.0.2.10:554/stream1 RTSP/1.0\r\nCSeq: 2\r\nAccept: application/sdp\r\nUser-Agent: Vyzio\r\nAuthorization: Digest username=\"fixture-user\", realm=\"TP-Link IP-Camera\", nonce=\"5d8a4e7c14381fea767e2a5db427526c\", uri=\"rtsp://192.0.2.10:554/stream1\", response=\"d52e1cf3a88f752ea972a7a60de5e0cc\"\r\n\r\n"
+    },
+    {
+      "direction": "received",
+      "text": "RTSP/1.0 401 Unauthorized\r\nCSeq: 2\r\nDate: Sun, Oct 04 2026 20:08:30 GMT\r\nWWW-Authenticate: Basic realm=\"TP-Link IP-Camera\"\r\nWWW-Authenticate: Digest realm=\"TP-Link IP-Camera\", nonce=\"b7905e854bb1c2117cce8ae4f0030daa\"\r\n\r\n"
+    }
+  ]
+}

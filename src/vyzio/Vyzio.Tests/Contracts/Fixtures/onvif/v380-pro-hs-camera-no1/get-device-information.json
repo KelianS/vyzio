@@ -1,0 +1,45 @@
+{
+  "protocol": "onvif",
+  "scenario": "get-device-information",
+  "description": "The login check and the identity: model, firmware, serial.",
+  "transport": "http",
+  "writes": false,
+  "messages": [
+    {
+      "direction": "request",
+      "method": "POST",
+      "path": "/onvif/device_service",
+      "headers": [
+        [
+          "Content-Type",
+          "application/soap+xml; charset=utf-8"
+        ]
+      ],
+      "body": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"\n            xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n            xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-utility-1.0.xsd\">\n  <s:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>fixture-user</wsse:Username>\n        <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">GTlRYMhj3/QymF6gkcmQSCzgysA=</wsse:Password>\n        <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">dxQaPdM2WI5o8hdjqQ53mg==</wsse:Nonce>\n        <wsu:Created>2026-10-04T20:08:21Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </s:Header>\n  <s:Body>\n    <GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/>\n  </s:Body>\n</s:Envelope>"
+    },
+    {
+      "direction": "response",
+      "status": 200,
+      "reason": "OK",
+      "headers": [
+        [
+          "Server",
+          "gSOAP/2.8"
+        ],
+        [
+          "Content-Type",
+          "application/soap+xml; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "1840"
+        ],
+        [
+          "Connection",
+          "close"
+        ]
+      ],
+      "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:wsdd=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:chan=\"http://schemas.microsoft.com/ws/2005/02/duplex\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\" xmlns:c14n=\"http://www.w3.org/2001/10/xml-exc-c14n#\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" xmlns:xenc=\"http://www.w3.org/2001/04/xmlenc#\" xmlns:wsc=\"http://schemas.xmlsoap.org/ws/2005/02/sc\" xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:xmime=\"http://tempuri.org/xmime.xsd\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:tt=\"http://www.onvif.org/ver10/schema\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\" xmlns:tev=\"http://www.onvif.org/ver10/events/wsdl\" xmlns:wsnt=\"http://docs.oasis-open.org/wsn/b-2\" xmlns:timg=\"http://www.onvif.org/ver20/imaging/wsdl\" xmlns:tmd=\"http://www.onvif.org/ver10/deviceIO/wsdl\" xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\" xmlns:trc=\"http://www.onvif.org/ver10/recording/wsdl\" xmlns:trt=\"http://www.onvif.org/ver10/media/wsdl\"><SOAP-ENV:Header></SOAP-ENV:Header><SOAP-ENV:Body><tds:GetDeviceInformationResponse><tds:Manufacturer>IPCAM</tds:Manufacturer><tds:Model>IPCAM</tds:Model><tds:FirmwareVersion>HS-Camera_No1</tds:FirmwareVersion><tds:SerialNumber>000000bc614e</tds:SerialNumber><tds:HardwareId>00000000-0000-4000-8000-000000000001</tds:HardwareId></tds:GetDeviceInformationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>\r\n"
+    }
+  ]
+}

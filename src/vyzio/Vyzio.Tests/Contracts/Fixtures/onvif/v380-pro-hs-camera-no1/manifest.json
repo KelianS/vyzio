@@ -1,0 +1,65 @@
+{
+  "captured": "2026-10-04",
+  "script": "python tools/camera-capture/capture.py --model v380-pro --protocols onvif,v380,rtsp",
+  "commit": "5935c07351301c4f93b78bd732d2736e4fc278cb",
+  "protocol": "onvif",
+  "model": "v380-pro",
+  "firmware": "HS-Camera_No1",
+  "scenarios": [
+    {
+      "file": "discovery-get-system-date-and-time.json",
+      "description": "The credential-free fingerprint, asked on each candidate path until one answers ONVIF.",
+      "writes": false
+    },
+    {
+      "file": "get-services.json",
+      "description": "Where each service lives: anonymous first, the account only on a 401.",
+      "writes": false
+    },
+    {
+      "file": "get-capabilities.json",
+      "description": "Every capability the device announces.",
+      "writes": false
+    },
+    {
+      "file": "get-device-information.json",
+      "description": "The login check and the identity: model, firmware, serial.",
+      "writes": false
+    },
+    {
+      "file": "get-device-information-refused.json",
+      "description": "The same login with a wrong password.",
+      "writes": false
+    },
+    {
+      "file": "get-profiles.json",
+      "description": "The media profiles, their sources, encoders and PTZ configuration.",
+      "writes": false
+    },
+    {
+      "file": "get-stream-uri.json",
+      "description": "The RTSP address of the first profile.",
+      "writes": false
+    },
+    {
+      "file": "ptz-get-configuration-options.json",
+      "description": "The PTZ ranges of the first profile's configuration.",
+      "writes": false
+    },
+    {
+      "file": "ptz-get-status.json",
+      "description": "Where the head points.",
+      "writes": false
+    },
+    {
+      "file": "ptz-get-presets.json",
+      "description": "The stored presets, asked even when the profile has no PTZ configuration.",
+      "writes": false
+    },
+    {
+      "file": "imaging-get-imaging-settings.json",
+      "description": "The image settings of the first video source.",
+      "writes": false
+    }
+  ]
+}

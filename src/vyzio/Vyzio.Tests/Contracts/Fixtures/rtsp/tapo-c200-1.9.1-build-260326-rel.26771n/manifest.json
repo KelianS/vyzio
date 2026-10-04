@@ -1,0 +1,25 @@
+{
+  "captured": "2026-10-04",
+  "script": "python tools/camera-capture/capture.py --model tapo-c200 --protocols onvif,rtsp --allow-writes",
+  "commit": "5935c07351301c4f93b78bd732d2736e4fc278cb",
+  "protocol": "rtsp",
+  "model": "tapo-c200",
+  "firmware": "1.9.1 Build 260326 Rel.26771n",
+  "scenarios": [
+    {
+      "file": "discovery-options.json",
+      "description": "The path-agnostic OPTIONS fingerprint of discovery.",
+      "writes": false
+    },
+    {
+      "file": "describe-login.json",
+      "description": "DESCRIBE unauthenticated, then answered with the account: the SDP.",
+      "writes": false
+    },
+    {
+      "file": "describe-refused.json",
+      "description": "DESCRIBE answered with a wrong password.",
+      "writes": false
+    }
+  ]
+}

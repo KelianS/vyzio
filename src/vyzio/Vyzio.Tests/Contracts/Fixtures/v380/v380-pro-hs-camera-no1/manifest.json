@@ -1,0 +1,25 @@
+{
+  "captured": "2026-10-04",
+  "script": "python tools/camera-capture/capture.py --model v380-pro --protocols onvif,v380,rtsp",
+  "commit": "5935c07351301c4f93b78bd732d2736e4fc278cb",
+  "protocol": "v380",
+  "model": "v380-pro",
+  "firmware": "HS-Camera_No1",
+  "scenarios": [
+    {
+      "file": "discovery-fingerprint.json",
+      "description": "The credential-free auth frame of discovery, device number 0.",
+      "writes": false
+    },
+    {
+      "file": "auth.json",
+      "description": "The auth frame (cmd 1167) with the account: a non-zero ticket at offset 13.",
+      "writes": false
+    },
+    {
+      "file": "auth-refused.json",
+      "description": "The auth frame with a wrong password: ticket 0.",
+      "writes": false
+    }
+  ]
+}
