@@ -66,13 +66,12 @@ over a held slot asks first, whatever the thumbnail.
 none of them, apart from the spare slot its own probes store and clear (point f and ADR-64).
 
 **f) Over ONVIF, the native tier holds as soon as the camera can store presets, even with none
-saved.** The ONVIF probe proves it the way ADR-64 a) does over DVRIP: it stores a preset under the
-number of a spare slot, outside the slots of SPECS 9.3 and not already taken, without moving the
-camera, checks the camera then lists that token, and removes it whatever happened before. This proves
-both that the camera keeps presets and that it keeps them under a number Vyzio picks, so a camera that
-passes never meets the refusal of b) on a slot. Any other outcome leaves the camera on the positions
-Vyzio manages, where its positions can always be saved. Like the DVRIP one, this write is undone
-within the probe and weighs only on the tier, never on whether PTZ is verified.
+saved.** The ONVIF probe proves it with the spare-slot test of ADR-64 a), the preset stored under a
+token Vyzio picks. This proves both that the camera keeps presets and that it keeps them under a
+number Vyzio picks, so a camera that passes never meets the refusal of b) on a slot. Any other
+outcome leaves the camera on the positions Vyzio manages, where its positions can always be saved.
+This write weighs only on the tier, never on whether PTZ is verified, which ADR-66 settles over ONVIF
+without it.
 
 **g) A held slot is what the camera answers now.** The panel and the privacy parking prerequisite
 (ADR-57) both read the camera. When it does not answer, they say the positions could not be read,
