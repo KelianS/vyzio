@@ -92,7 +92,7 @@ jobs:
             echo "::error::The vulnerability audit could not complete"; exit 1
           fi
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: src/dashboard/package.json
 
