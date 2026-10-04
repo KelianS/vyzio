@@ -68,7 +68,7 @@ saved.** The ONVIF probe decides it by a read, never a write: the PTZ node of th
 reports the number of presets it can keep, and room for at least one puts the camera on the native
 tier. A node that reports none, or a camera that does not describe its node, leaves it on the
 positions Vyzio manages. A camera that reports room but refuses a slot's number fails that save as b)
-says. The read weighs only on the tier, never on whether PTZ is verified (ADR-66 a)). DVRIP keeps the
+says. The read weighs only on the tier, never on whether PTZ is verified, as ADR-64 b) already says of the ONVIF read. DVRIP keeps the
 probe of ADR-64, which already holds with no preset saved.
 
 **g) A held slot is what the camera answers now.** The panel and the privacy parking prerequisite
