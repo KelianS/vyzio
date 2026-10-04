@@ -44,7 +44,7 @@ binding, not to the camera: a camera without a stream binding has no streams. Ea
 rank and measured size (ADR-38), and now:
 
 - its **protocol**, one of the camera's stream protocols (RTSP or DVRIP). A stream the camera reports
-  takes the binding's protocol; a stream declared by hand picks one of the camera's rows that can carry
+  takes the binding's protocol; a stream the user adds picks one of the camera's rows that can carry
   a stream. The binding's protocol stays the capability's (ADR-61 b): the one its check starts with,
   the one the streams are found over and a new stream is offered first. The reachability poller
   (ADR-23) knocks on the recording stream's protocol, since the camera status follows that stream;

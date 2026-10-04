@@ -163,8 +163,8 @@ verification.
 **Offered on demand.** `ListAvailableCameraStreamsUseCase` (`GET .../streams/available?protocol=`)
 answers the add form and the main path's choice. It checks the asked protocol first (ADR-61 c), then,
 when it answers, asks `ICameraStreamEnumerator` over that protocol: ONVIF profiles for RTSP,
-`Simplify.Encode` for DVRIP. `StreamLineup.Offer` ranks what came back, most detailed first, and names
-for each the line it matches (`StreamId`, by path and protocol), so the add form leaves out what is
+`Simplify.Encode` for DVRIP, the enumerator ordering them most detailed first. `StreamLineup.Offer`
+numbers them in that order and names for each the line it matches (`StreamId`, by path and protocol), so the add form leaves out what is
 listed and the main path keeps its own. Over DVRIP, when the camera lists nothing, the main and
 secondary qualities of ADR-38 are offered; over RTSP nothing is, and the form keeps its typed path.
 Nothing is written but the protocol's last check.

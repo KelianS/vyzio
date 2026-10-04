@@ -206,9 +206,12 @@ detail once:
   and without the streams already listed, so a removed stream comes back here; then a role; checked
   at once, the result saying whether the stream answers. Over RTSP the dropdown's last item is
   `Autre chemin…`, which reveals a path field; it is the only item when the camera lists nothing,
-  and the folded help says why. The main stream's path over RTSP, a declared setting on its own
-  line and the one place it is shown, is the same dropdown, asked when it opens. No button finds
-  the streams again.
+  and the folded help says why. While the camera is asked, the dropdown shows the wait greyed and
+  nothing is added. A request that fails is not an empty list: it is said under the dropdown, with
+  `Réessayer` and its diagnostic line (§ Errors), `Autre chemin…` staying available. The main
+  stream's path over RTSP, a declared setting on its own line and the one place it is shown, is
+  the same dropdown, named `Flux` as in the form, asked when it opens; the typed field is
+  `Chemin du flux` in both. No button finds the streams again.
 - A folded help panel under the list says the task: the default roles, said as such, which stream
   to analyse for which scene, how a role moves from one stream to another, what changing the
   protocol or adding a stream does, why the list of a camera can hold only `Autre chemin…`, and how
