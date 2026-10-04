@@ -78,7 +78,7 @@ bord ailleurs.
 Vyzio **n'annonce pas le sous-réseau local** sur le réseau overlay. Seul le point d'entrée du produit
 est joignable ; les caméras, le broker et le moteur de détection restent inatteignables depuis
 l'extérieur. L'accès distant expose donc **exactement ce que le produit expose déjà en local**
-(SAD §8.1), et pas un pied dans le réseau domestique.
+(SAD §8), et pas un pied dans le réseau domestique.
 
 ### Vyzio pilote le pair, il ne le sous-traite pas à l'installateur
 
@@ -97,7 +97,7 @@ documenté, jamais par défaut.
 ## Conséquences
 
 - **L'absence de chiffrement du transport devient bloquante.** Le produit est servi en clair
-  aujourd'hui (SAD §8.1) : sur le réseau domestique c'est un défaut, sur un réseau overlay c'est un
+  aujourd'hui (SAD §8) : sur le réseau domestique c'est un défaut, sur un réseau overlay c'est un
   contresens — on aurait chiffré le trajet entre le téléphone et la maison pour livrer l'interface
   en HTTP à l'arrivée, et l'identifiant de session avec. **Le transport chiffré est donc un
   prérequis à l'annonce de cet ADR**, pas un chantier parallèle. Le nom d'hôte overlay étant stable,
