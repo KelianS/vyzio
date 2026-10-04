@@ -115,19 +115,21 @@ describe('stream_lines', () => {
     },
   )
 
-  it.each([
-    [true, 'Ce flux ne répond pas.'],
-    [false, 'Ce flux ne répond pas : relancez sa vérification, ou retirez-le.'],
-  ])(
-    'streamFailure_ShouldNameAWayOutTheLineAllows_WhenGivenWhetherTheStreamRecords (records: %s)',
-    (records, expected) => {
-      // Arrange & Act
-      const sentence = streamFailure(records)
+  it('streamFailure_ShouldNameNoWayOut_WhenTheStreamRecords', () => {
+    // Arrange & Act
+    const sentence = streamFailure(true)
 
-      // Assert
-      expect(sentence).toBe(expected)
-    },
-  )
+    // Assert
+    expect(sentence).toBe('Ce flux ne répond pas.')
+  })
+
+  it('streamFailure_ShouldOfferCheckingAgainOrRemoving_WhenTheStreamDoesNotRecord', () => {
+    // Arrange & Act
+    const sentence = streamFailure(false)
+
+    // Assert
+    expect(sentence).toBe('Ce flux ne répond pas : relancez sa vérification, ou retirez-le.')
+  })
 
   it('addedStream_ShouldBeTheHighestRank_WhenTheLineupIsListedInAnyOrder', () => {
     // Arrange
