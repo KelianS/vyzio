@@ -31,14 +31,6 @@ import {
 } from '../cameras.formatters'
 import { CapabilityTask, type StreamTask } from '../camera_connection.uido'
 import { DETECTION_SENTENCES, DetectionOutcome, type DetectionResult } from '../detection_outcome'
-
-/** A stream found reads as success; anything else is what the user has to act on. */
-const DETECTION_TONE: Record<DetectionOutcome, string> = {
-  [DetectionOutcome.StreamWorks]: 'text-success',
-  [DetectionOutcome.StreamNotWorking]: 'text-foreground',
-  [DetectionOutcome.AccountRefused]: 'text-destructive',
-  [DetectionOutcome.NothingAnswers]: 'text-destructive',
-}
 import {
   CAPABILITY_STATE_PILLS,
   CapabilityState,
@@ -64,6 +56,14 @@ import {
   streamCoverageLine,
   streamNotListed,
 } from '../stream_lines'
+
+/** A stream found reads as success; anything else is what the user has to act on. */
+const DETECTION_TONE: Record<DetectionOutcome, string> = {
+  [DetectionOutcome.StreamWorks]: 'text-success',
+  [DetectionOutcome.StreamNotWorking]: 'text-foreground',
+  [DetectionOutcome.AccountRefused]: 'text-destructive',
+  [DetectionOutcome.NothingAnswers]: 'text-destructive',
+}
 
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {

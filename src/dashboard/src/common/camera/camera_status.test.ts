@@ -61,6 +61,16 @@ describe('formatCameraStatusLabel', () => {
 })
 
 describe('formatStatusTone', () => {
+  it('formatStatusTone_ShouldStayNeutral_WhenTheCameraWaitsForTheRestart', () => {
+    // Arrange & Act
+    const said = formatStatusTone(
+      makeCamera({ status: 'online', validationState: 'draft', needsAttention: true }),
+    )
+
+    // Assert
+    expect(said).toBe('neutral')
+  })
+
   it.each([
     { status: 'online', needsAttention: false, tone: 'ok' },
     { status: 'online', needsAttention: true, tone: 'warn' },
@@ -77,18 +87,6 @@ describe('formatStatusTone', () => {
       expect(said).toBe(tone)
     },
   )
-})
-
-describe('formatStatusTone (waiting for the restart)', () => {
-  it('formatStatusTone_ShouldStayNeutral_WhenTheCameraWaitsForTheRestart', () => {
-    // Arrange & Act
-    const said = formatStatusTone(
-      makeCamera({ status: 'online', validationState: 'draft', needsAttention: true }),
-    )
-
-    // Assert
-    expect(said).toBe('neutral')
-  })
 })
 
 describe('surveillanceEntryOf', () => {

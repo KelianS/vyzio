@@ -75,5 +75,6 @@ describe('CameraLiveThumbnail', () => {
       screen.getByRole('link', { name: 'Pas encore surveillée : Front Door' }),
     ).toHaveAttribute('href', '/settings/cameras/camera-1')
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(document.querySelector('.bg-success')).toBeNull()
   })
 })

@@ -52,8 +52,8 @@ describe('buildCameraConnectionPresenter', () => {
     })
 
     // Act
-    presenter.onArrive('camera-1', true)
-    presenter.onArrive('camera-1', true)
+    presenter.onArrive('camera-1', '192.168.1.10', true)
+    presenter.onArrive('camera-1', '192.168.1.10', true)
     await vi.waitFor(() => expect(detect).toHaveBeenCalled())
 
     // Assert
@@ -72,7 +72,7 @@ describe('buildCameraConnectionPresenter', () => {
     })
 
     // Act
-    presenter.onArrive('camera-1', false)
+    presenter.onArrive('camera-1', '192.168.1.10', false)
 
     // Assert
     expect(detect).not.toHaveBeenCalled()

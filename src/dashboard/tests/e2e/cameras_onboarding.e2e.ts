@@ -71,7 +71,7 @@ test.describe('AddCameraView', () => {
   test('AddCameraView_ShouldStayToSetUpAndLeadToItsPageFromTheHub_WhenItsStreamIsNotFound', async ({
     page,
   }) => {
-    // Nothing answers the camera's account: detection finds no stream.
+    // Nothing answers at the camera's address: detection finds no stream.
     await installFakeBackend(
       page,
       createFakeBackendState({
@@ -86,7 +86,7 @@ test.describe('AddCameraView', () => {
     await page.getByRole('textbox', { name: 'Adresse' }).fill('192.168.1.90')
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
-    // Nothing answers the account: the page says so, never that detection simply finished.
+    // Nothing answers at that address: the page says so, never that detection simply finished.
     await expect(page.getByText(/^Rien ne répond à cette adresse/)).toBeVisible()
     // The page header first, then the stream card, each saying it with its own meaning.
     await expect(page.getByText('À configurer').first()).toBeVisible()

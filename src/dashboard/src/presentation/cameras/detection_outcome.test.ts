@@ -34,21 +34,43 @@ describe('detectionResultOf', () => {
     },
     { bindings: [], protocols: [], outcome: DetectionOutcome.NothingAnswers },
   ])(
-    'detectionResultOf_ShouldSayWhatDetectionFound_WhenTheCameraAnsweredThus ($outcome)',
+    'detectionResultOf_ShouldSayWhatDetectionFound_WhenTheStreamAndProtocolsAreLeftSo ($outcome)',
     ({ bindings, protocols, outcome }) => {
       // Arrange & Act
-      const result = detectionResultOf(bindings, protocols)
+      const result = detectionResultOf('192.168.1.10', bindings, protocols)
 
       // Assert
       expect(result.outcome).toBe(outcome)
     },
   )
 
-  it('detectionResultOf_ShouldGiveWhatEachProtocolAnswered_WhenNothingAnswers', () => {
+  it.each([
+    { protocols: [unreachable], diagnostic: 'RTSP : timeout' },
+    { protocols: [], diagnostic: '192.168.1.10 : aucun protocole n’a répondu' },
+  ])(
+    'detectionResultOf_ShouldSayWhatWasAskedForSupport_WhenNothingAnswers ($diagnostic)',
+    ({ protocols, diagnostic }) => {
+      // Arrange & Act
+      const result = detectionResultOf('192.168.1.10', [streamToChoose], protocols)
+
+      // Assert
+      expect(result.diagnostic).toBe(diagnostic)
+    },
+  )
+
+  it('detectionResultOf_ShouldKeepWhatTheProtocolsSaid_WhenTheAccountIsRefused', () => {
     // Arrange & Act
-    const result = detectionResultOf([streamToChoose], [unreachable])
+    const result = detectionResultOf('192.168.1.10', [streamToChoose], [refused])
 
     // Assert
-    expect(result.diagnostic).toBe('RTSP : timeout')
+    expect(result.diagnostic).toBe('RTSP : RTSP 401')
+  })
+
+  it('detectionResultOf_ShouldGiveNoDiagnostic_WhenTheStreamWorks', () => {
+    // Arrange & Act
+    const result = detectionResultOf('192.168.1.10', [workingStream], [unreachable])
+
+    // Assert
+    expect(result.diagnostic).toBeNull()
   })
 })

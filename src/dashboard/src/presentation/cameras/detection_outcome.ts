@@ -31,6 +31,7 @@ export const DETECTION_SENTENCES: Record<DetectionOutcome, string> = {
 }
 
 export function detectionResultOf(
+  host: string,
   bindings: readonly CameraCapabilityBinding[],
   protocols: readonly CameraProtocol[],
 ): DetectionResult {
@@ -48,9 +49,7 @@ export function detectionResultOf(
   const errors = protocols
     .filter((p) => p.lastError)
     .map((p) => `${PROTOCOL_LABELS[p.protocol]} : ${scrubSecrets(p.lastError ?? '')}`)
-  return {
-    outcome,
-    diagnostic:
-      outcome === DetectionOutcome.StreamWorks || errors.length === 0 ? null : errors.join(' · '),
-  }
+  // A silent try leaves no protocol behind: the photo for support still says what was asked (SPECS 1.5).
+  const asked = errors.length > 0 ? errors.join(' · ') : `${host} : aucun protocole n’a répondu`
+  return { outcome, diagnostic: outcome === DetectionOutcome.StreamWorks ? null : asked }
 }

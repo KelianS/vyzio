@@ -203,7 +203,7 @@ export function buildCameraConnectionPresenter({
   }
 
   /** « Détecter automatiquement »: it may bind the stream, end « À configurer » and wait for a restart (ADR-68 d). */
-  async function detect(cameraId: string) {
+  async function detect(cameraId: string, host: string) {
     dispatch({ type: 'DETECT_STARTED' })
     try {
       await container.detectCameraCapabilities.execute(cameraId)
@@ -225,7 +225,7 @@ export function buildCameraConnectionPresenter({
       ])
       if (bindingsLatest()) dispatch({ type: 'BINDINGS_LOADED', bindings })
       if (protocolsLatest()) dispatch({ type: 'PROTOCOLS_LOADED', protocols })
-      dispatch({ type: 'DETECT_SUCCEEDED', result: detectionResultOf(bindings, protocols) })
+      dispatch({ type: 'DETECT_SUCCEEDED', result: detectionResultOf(host, bindings, protocols) })
     } catch (e) {
       const error = toAppError(e)
       if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
@@ -416,10 +416,10 @@ export function buildCameraConnectionPresenter({
     onDetect: detect,
 
     /** A camera never detected runs detection as its page opens, shown as if the user had asked (ADR-68 b). */
-    onArrive(cameraId: string, neverDetected: boolean) {
+    onArrive(cameraId: string, host: string, neverDetected: boolean) {
       if (!neverDetected || detectedOnArrival.has(cameraId)) return
       detectedOnArrival.add(cameraId)
-      void detect(cameraId)
+      void detect(cameraId, host)
     },
 
     /** Tests the capability through the protocol; resolves true when the camera answered. */
