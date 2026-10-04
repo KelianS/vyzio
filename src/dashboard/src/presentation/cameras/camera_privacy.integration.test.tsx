@@ -222,4 +222,19 @@ describe('CameraPrivacyView', () => {
       '/settings/cameras/camera-1/connexion',
     )
   })
+
+  it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: makeCamera({ ptzSupported: true, validationState: 'draft' }),
+    })
+
+    // Assert
+    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    expect(screen.queryByText(/s’ouvre une fois la caméra en surveillance/)).not.toBeInTheDocument()
+  })
 })
