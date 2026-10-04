@@ -73,4 +73,12 @@ describe('detectionResultOf', () => {
     // Assert
     expect(result.diagnostic).toBeNull()
   })
+
+  it('detectionResultOf_ShouldNotClaimNothingAnswered_WhenTheCameraAnswersWithoutAWorkingStream', () => {
+    // Arrange & Act
+    const result = detectionResultOf('192.168.1.10', [streamToChoose], [answering])
+
+    // Assert
+    expect(result.diagnostic).toBeNull()
+  })
 })

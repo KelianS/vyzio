@@ -50,6 +50,7 @@ export function detectionResultOf(
     .filter((p) => p.lastError)
     .map((p) => `${PROTOCOL_LABELS[p.protocol]} : ${scrubSecrets(p.lastError ?? '')}`)
   // A silent try leaves no protocol behind: the photo for support still says what was asked (SPECS 1.5).
-  const asked = errors.length > 0 ? errors.join(' · ') : `${host} : aucun protocole n’a répondu`
+  const silent = outcome === DetectionOutcome.NothingAnswers && errors.length === 0
+  const asked = silent ? `${host} : aucun protocole n’a répondu` : errors.join(' · ') || null
   return { outcome, diagnostic: outcome === DetectionOutcome.StreamWorks ? null : asked }
 }
