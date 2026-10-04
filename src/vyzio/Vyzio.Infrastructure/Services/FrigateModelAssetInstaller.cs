@@ -70,13 +70,6 @@ public sealed class FrigateModelAssetInstaller : IFrigateModelAssetInstaller
             return;
 
         var sourcePath = Path.Combine(_bundledModelsDirectory, relativePath);
-        if (!File.Exists(sourcePath))
-        {
-            // Only outside the image, which checks every bundled file at build time.
-            _logger.LogWarning("Bundled model {Path} is missing: Frigate will not find it in its model cache.", sourcePath);
-            return;
-        }
-
         // Frigate only checks that the file exists, so it must never see a partial copy.
         var partialPath = $"{destinationPath}.part";
         await using (var source = File.OpenRead(sourcePath))

@@ -79,19 +79,21 @@ public sealed class FrigateModelAssetInstallerTests : IDisposable
         Assert.False(File.Exists($"{target}.part"));
     }
 
-    [Fact]
-    public async Task EnsureInstalledAsync_ShouldSkipTheModel_WhenItIsNotBundled()
+    [Theory]
+    [InlineData("facedet/facenet.tflite", FrigateDetectorKind.Cpu)]
+    [InlineData("yolox_s.onnx", FrigateDetectorKind.Openvino)]
+    public async Task EnsureInstalledAsync_ShouldFailAndLeaveNoFileForFrigate_WhenABundledModelIsMissing(string missingModel, FrigateDetectorKind detectorKind)
     {
         // Arrange
-        File.Delete(Path.Combine(BundledDirectory, "facedet", "facenet.tflite"));
+        File.Delete(Path.Combine(BundledDirectory, missingModel));
         var installer = BuildInstaller();
 
         // Act
-        await installer.EnsureInstalledAsync(FrigateDetectorKind.Cpu, ConfigDirectory);
+        var install = () => installer.EnsureInstalledAsync(detectorKind, ConfigDirectory);
 
         // Assert
-        Assert.False(File.Exists(CachePath("facedet/facenet.tflite")));
-        Assert.True(File.Exists(CachePath("facedet/facedet.onnx")));
+        await Assert.ThrowsAsync<FileNotFoundException>(install);
+        Assert.False(File.Exists(CachePath(missingModel)));
     }
 
     [Fact]
