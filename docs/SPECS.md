@@ -1,4 +1,4 @@
-# Vyzio — Specifications Fonctionnelles
+﻿# Vyzio — Specifications Fonctionnelles
 
 > Mai 2026 — document vivant
 

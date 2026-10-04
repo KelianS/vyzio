@@ -67,8 +67,9 @@ including a camera that stopped answering for a while, and is cleared by a chang
 "no".
 
 **d) The user confirms by trying.** A capability to confirm offers a **try**, a real use the user
-starts, which is not a probe: the head turns a little right and back, then a little down and back, so that a head that only pans or only tilts still moves; the hardware cut closes for a
-few seconds, then opens. Then it asks one plain question, and the answer is the user's: yes makes it
+starts, which is not a probe: the head turns a little right and back, then a little down and back,
+so that a head that only pans or only tilts still moves; the hardware cut closes for a few seconds,
+then opens. Then it asks one plain question, and the answer is the user's: yes makes it
 verified, confirmed by the user, with the date; no makes it rejected by the user, unusable, with the
 way out. A check after a "no" goes back to "to confirm", so the user can try again. The try is refused
 while the camera is in privacy mode (it would uncover or move a camera the user covered) and suspended,
