@@ -2,7 +2,8 @@
 
 > Statut : Accepté, modifié par [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md)
 > (la cascade n'essaie que les protocoles qui répondent)
-> et par [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) (la cascade préfère une preuve, puis une capacité à confirmer).
+> et par [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) (la cascade préfère une preuve, puis une capacité à confirmer),
+> et par [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (la détection tourne depuis la page de la caméra, plus à la création).
 
 ## Contexte
 

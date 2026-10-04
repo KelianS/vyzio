@@ -440,6 +440,8 @@ every item of that level, and each word says one backend state, never two.
 shows in the camera list and the page header, never on a card. One of its words is `À configurer`,
 neutral: the camera whose stream never worked
 ([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md) d), which its hub tile shows too.
+The word is shared with the capability level, each level keeping one meaning for it: the header says
+the camera is not set up yet, its stream card says why.
 
 ### Editing cycle
 

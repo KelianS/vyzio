@@ -2,7 +2,12 @@
 
 > Status: Accepted
 >
-> Amends [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b)
+> Amends [ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md) (the camera is created
+> before any check, its stream checked from its page),
+> [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
+> and [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)
+> on when they act (detection and the brand's preset run from the camera page, not at creation),
+> [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b)
 > (the stream binding is no longer created when the camera is added, nor its protocol chosen from what
 > discovery saw: detection or the user's choice on the stream card binds it; a camera whose stream
 > never worked is to be set up, and stays out of the generated configuration until it works),
