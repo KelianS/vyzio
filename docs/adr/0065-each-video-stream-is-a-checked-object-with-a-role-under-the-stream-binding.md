@@ -10,7 +10,8 @@
 > [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b) and c) and its
 > rejected option "Moving the streams under the stream binding" (the streams now belong to the
 > binding, each with its own protocol, state and check; the reachability poller follows the recording
-> stream's protocol).
+> stream's protocol; a stream's path is no longer a setting that changes: it is chosen when the stream
+> is added and stays its identity, so only a protocol change is a connection change of the stream, e).
 
 ## Context
 

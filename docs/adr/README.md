@@ -70,7 +70,7 @@ references these ADRs rather than copying them.
 | [ADR-58](0058-a-persons-cameras-filter-notifications-not-recognition.md) | A person's alert mode and cameras filter notifications, not recognition | Accepted, amended by ADR-63 (channel hours) |
 | [ADR-59](0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) | PTZ positions are resolved above the protocol, providers only move | Accepted (counting steps, the provider primitives and how long a move lasts were replaced by ADR-60, no native presets over DVRIP by ADR-64) |
 | [ADR-60](0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md) | PTZ positions are counted in motion time, on a session held for each move | Accepted |
-| [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) | A camera's connection data on three levels: access, protocols, capabilities | Accepted, amended by ADR-65 (streams under the stream binding) |
+| [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) | A camera's connection data on three levels: access, protocols, capabilities | Accepted, amended by ADR-65 (streams under the stream binding, a stream's path fixed once added) |
 | [ADR-62](0062-privacy-strategy-no-none-value-software-stop-by-default.md) | Privacy strategy: no "none" value, software stop by default | Accepted |
 | [ADR-63](0063-a-scheduled-rule-is-a-type-a-target-set-and-a-weekly-range.md) | A scheduled rule is a type, a target set and a weekly range, planned in one calendar | Accepted |
 | [ADR-64](0064-dvrip-native-presets-detected-by-storing-then-clearing-a-spare-slot.md) | DVRIP native presets are detected by storing, then clearing, a spare slot | Accepted |

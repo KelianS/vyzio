@@ -161,16 +161,17 @@ checks one stream alone; the recording stream's check is the camera's, so it run
 verification.
 
 **Offered on demand.** `ListAvailableCameraStreamsUseCase` (`GET .../streams/available?protocol=`)
-answers the add form. It checks the asked protocol first (ADR-61 c), then,
-when it answers, asks `ICameraStreamEnumerator` over that protocol: ONVIF profiles for RTSP,
-`Simplify.Encode` for DVRIP, the enumerator ordering them most detailed first.
-`StreamLineup.Offer` numbers them in that order and names for each the line it matches
-(`StreamId`, by path and protocol), so the add form leaves out what is listed. Over DVRIP, when the camera lists nothing, the main and
-secondary qualities of ADR-38 are offered; over RTSP nothing is, and the form keeps its typed path.
-Nothing is written but the protocol's last check.
+answers the add form. It checks the asked protocol first (ADR-61 c), then, when it answers, asks
+`ICameraStreamEnumerator` over that protocol: ONVIF profiles for RTSP, `Simplify.Encode` for DVRIP,
+the enumerator ordering them most detailed first. `StreamLineup.Offer` numbers them in that order
+and names for each the line it matches (`StreamId`, by path and protocol), so the add form leaves out
+what is listed. Over DVRIP, when the camera lists nothing, the main and secondary qualities of ADR-38
+are offered; over RTSP nothing is, and the form keeps its typed path. Nothing is written but the
+protocol's last check.
 
 **Per stream use cases** (`CameraStreamUseCases.cs`): list, add (a protocol among the camera's rows
 that can carry a stream; a path over RTSP; over DVRIP only the main stream, no path, or the secondary
 one, `CameraStream.DvripSecondaryQuery`, anything else refused as `unknown_stream_path`; a role;
-checked at once), change the role, remove, check; none changes a stream's path (ADR-65 e). Each answers with the whole list, since a role change moves roles across streams, and a change
-that touches what Frigate reads rewrites the generated configuration.
+checked at once), change the role, remove, check; none changes a stream's path (ADR-65 e). Each
+answers with the whole list, since a role change moves roles across streams, and a change that
+touches what Frigate reads rewrites the generated configuration.
