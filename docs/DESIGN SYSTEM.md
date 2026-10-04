@@ -189,29 +189,34 @@ detail once:
   streams replaced, in one short line above it; then a `Flux` list shows one line per stream with
   the essentials only, the help on its three levels (§ Help): its quality (the measured resolution
   and frame rate, else its rank, ADR-38) with its protocol and path in a tooltip, its own pill (the
-  capability pills, `Désactivé` for a line switched off, `Pas encore vérifié` before its first
-  check) with a short sentence and the diagnostic line of a failure, the way out being to check it
-  again or to remove it (the recording stream's failure is the camera's, whose way out the card's
-  state line already gives, so its line names none); then its role as a choice (`Enregistrement`,
-  `Détection`, `Enregistrement et détection`, `Aucun`) whose tooltip names what the role changes,
-  then its actions: `Vérifier`, `Désactiver` or `Activer`, `Retirer`, the word of the page's other
-  cards and protocol boxes. `Désactiver` and `Retirer` ask
-  for a confirmation, which says, for the stream that detects, that detection moves to the
-  recording stream. The line's `Vérifier` checks that stream alone, except the recording stream's,
-  which is the camera's check; the card's checks the camera, every enabled stream with it. The main
-  stream's path is a declared setting on its own line over RTSP, the one place it is shown. The
-  stream that records is offered only the roles that record, and keeps `Désactiver` and `Retirer`
-  disabled, the reason in a tooltip next to them; a line switched off shows no role and no check.
-  `Ajouter un flux` closes the list: a protocol among the camera's stream protocols, a path over RTSP
-  or a quality over DVRIP, a role, checked at once, the result saying whether the stream answers. A
-  folded help panel under the list says the task:
-  the default roles, said as such, which stream to analyse for which scene, how a role moves from one
-  stream to another, what changing the protocol or adding a stream does, and how a stream whose size
-  the camera does not give is named.
+  capability pills, `Pas encore vérifié` before its first check) with a short sentence and the
+  diagnostic line of a failure, the way out being to check it again or to remove it (the recording
+  stream's failure is the camera's, whose way out the card's state line already gives, so its line
+  names none); then its role as a choice (`Enregistrement`, `Détection`,
+  `Enregistrement et détection`, `Aucun` for a stream kept but unused) whose tooltip names what the
+  role changes, then its actions: `Vérifier` and `Retirer`, the word of the page's other cards and
+  protocol boxes. `Retirer` asks for a confirmation, which says, for the stream that detects, that
+  detection moves to the recording stream. The line's `Vérifier` checks that stream alone, except the
+  recording stream's, which is the camera's check; the card's checks the camera, every stream with
+  it. The stream that records is offered only the roles that record, and keeps `Retirer` disabled,
+  the reason in a tooltip next to it.
+- **Choosing a stream from the camera's list.** `Ajouter un flux` closes the list: a protocol among
+  the camera's stream protocols, then a dropdown of the streams the camera serves, asked when the
+  form opens or its protocol changes, read by quality (as a line, the path in the item's tooltip)
+  and without the streams already listed, so a removed stream comes back here; then a role; checked
+  at once, the result saying whether the stream answers. Over RTSP the dropdown's last item is
+  `Autre chemin…`, which reveals a path field; it is the only item when the camera lists nothing,
+  and the folded help says why. The main stream's path over RTSP, a declared setting on its own
+  line and the one place it is shown, is the same dropdown, asked when it opens. No button finds
+  the streams again.
+- A folded help panel under the list says the task: the default roles, said as such, which stream
+  to analyse for which scene, how a role moves from one stream to another, what changing the
+  protocol or adding a stream does, why the list of a camera can hold only `Autre chemin…`, and how
+  a stream whose size the camera does not give is named.
 
 Addresses, ports, paths and accounts are declared settings and follow the page's draft; a check, a
 protocol choice, adding a capability or a protocol and removing a protocol are actions, and so is
-every change on a stream line (its role, its switch, its removal, adding one).
+every change on a stream line (its role, its removal, adding one).
 
 ### Calendar and range editor
 

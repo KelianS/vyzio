@@ -19,7 +19,7 @@ streams of ADR-38 as settings. Each stream lives its own life, yet none of it sh
 
 - a lighter stream can fail while the most detailed one works, and nothing says so: only the stream
   that records is verified;
-- a stream cannot be switched off or removed, the way orientation can;
+- a stream cannot be removed, the way orientation can, nor one added back;
 - the analysed stream is chosen in the detection settings ("Image analysée"), apart from the streams
   it picks among, and the most detailed stream always records whatever the camera serves.
 
@@ -32,8 +32,8 @@ configuration Frigate refuses.
 | Option | Description | For | Against |
 |---|---|---|---|
 | **A. One capability card per stream** | Each stream becomes its own binding and card | Each stream checked and removable like any capability | Stream qualities are recorder jargon (principle 1); the camera's capability is "see and record", not "serve three encodings" |
-| **B. Streams under the one stream binding, each checked, with a role** | The binding keeps one card and one overall state; each stream is a row under it with a protocol, a role, an on and off switch and a last check | One card for the user, one object per stream in the data; the roles read on the streams they concern | A stream row per camera stream to keep, a migration |
-| **C. Keep ADR-38 and add a state column** | Streams stay settings keyed by camera, the detect choice stays on the camera | Smallest change | The roles stay split between the camera (detect) and a rank convention (record); no switch, no removal |
+| **B. Streams under the one stream binding, each checked, with a role** | The binding keeps one card and one overall state; each stream is a row under it with a protocol, a role and a last check | One card for the user, one object per stream in the data; the roles read on the streams they concern | A stream row per camera stream to keep, a migration |
+| **C. Keep ADR-38 and add a state column** | Streams stay settings keyed by camera, the detect choice stays on the camera | Smallest change | The roles stay split between the camera (detect) and a rank convention (record); no removal |
 
 **Option B chosen.**
 
@@ -48,22 +48,21 @@ rank and measured size (ADR-38), and now:
   a stream. The binding's protocol stays the capability's (ADR-61 b): the one its check starts with,
   the one the streams are found over and a new stream is offered first. The reachability poller
   (ADR-23) knocks on the recording stream's protocol, since the camera status follows that stream;
-- its **role**: record, detect, both, or none;
-- whether it is **enabled**;
+- its **role**: record, detect, both, or none (a stream kept but unused);
 - its **last check**: verified or not, when, and the reason of a failure.
 
 `Camera.DetectStreamId` leaves the camera: the analysed stream is the one whose role says so. The
 binding records when it found its streams (`StreamsFoundAt`, e), a fact of the stream capability,
 not a setting, so it is a column rather than a key of its `ConfigJson`.
 
-**b) One guard: one enabled stream records.** Exactly one enabled stream holds the record role, since
+**b) One guard: exactly one stream records.** Exactly one stream holds the record role, since
 Frigate takes one. Giving a role to a stream takes it from the stream that had it, so the record role
-moves in one gesture and never lapses. The stream that records cannot be disabled, removed, or lose
-its record role, so it is only offered the roles that record: the user first gives recording to another
-stream. A disabled stream holds no role and takes none until it is enabled again.
+moves in one gesture and never lapses. The stream that records cannot be removed or lose its record
+role, so it is only offered the roles that record: the user first gives recording to another stream.
+A stream kept but unused holds the role none.
 
 **c) Detection falls back to the recording stream.** At most one stream holds the detect role. When
-none does, because the detect stream was disabled, removed, or its role taken off, detection runs on
+none does, because the detect stream was removed or its role taken off, detection runs on
 the recording stream, and the stream card says so. A failing detect stream does not move detection by
 itself: Vyzio shows the failure on the card and leaves the choice to the user.
 
@@ -72,20 +71,29 @@ itself: Vyzio shows the failure on the card and leaves the choice to the user.
 
 **e) The streams are found once, then they are the user's.** The first verification that enumerates
 the camera's streams adds them. After that, a verification refreshes the measured size of the streams
-it can match, and never adds or removes one: a stream the user removed does not come back, and a stream
-the camera stopped serving fails its check until the user removes it. The user declares a stream the
-camera did not report ("Ajouter un flux"), checked at once: over RTSP by its path, over DVRIP by its
-quality (the main stream or the secondary one, ADR-38's convention). A change of the binding's protocol
-replaces the streams, hand-declared ones included, by a single main stream over the new protocol that
-records and detects, and clears `StreamsFoundAt`: the streams are found again on the next
-verification, and the protocol choice says so before it runs.
+it can match, and never adds or removes one: a stream the user removed does not come back by itself, and a stream
+the camera stopped serving fails its check until the user removes it.
 
-**f) Each enabled stream is checked, at the capability level.** A stream check first requires its
+The user adds a stream ("Ajouter un flux"), checked at once, from a list the camera is asked for **on
+demand**, when the form opens: over RTSP its ONVIF profiles, over DVRIP its main and secondary
+qualities. The list is asked at the capability level, once the protocol answers (ADR-61 c); it offers
+only the streams not already listed, so a removed stream comes back through it, and is read by quality,
+not by path. Over RTSP its last item lets the user type a path the camera did not list, the only entry
+when the camera lists nothing; over DVRIP, where a stream is never a typed query, the two qualities of
+ADR-38's convention are offered when the camera does not list them. The main stream's path over RTSP is
+chosen from the same list. This on-demand list never changes the streams by itself: only the user's
+choice adds one.
+
+A change of the binding's protocol replaces the streams, added ones included, by a single main stream
+over the new protocol that records and detects, and clears `StreamsFoundAt`: the streams are found
+again on the next verification, and the protocol choice says so before it runs.
+
+**f) Each stream is checked, at the capability level.** A stream check first requires its
 protocol to answer with its account (ADR-61 c), then probes that stream. The stream capability's check
-checks every enabled stream; the camera status follows the recording stream, as it did the main one.
+checks every stream; the camera status follows the recording stream, as it did the main one.
 A single stream can be checked alone.
 
-**g) Frigate reads the enabled streams and their roles.** The `record` input is the recording stream,
+**g) Frigate reads the streams' roles.** The `record` input is the recording stream,
 the `detect` input the detect stream or, without one, the recording stream; each input is built from its
 own stream's protocol, port and account. `detect.width/height` follow ADR-38 on the analysed stream.
 
@@ -107,7 +115,14 @@ and it brought back every stream the user removed, and pruned one the camera mis
 the user's once found.
 
 **The analysis choice in the detection settings.** It sat apart from the streams it picks among, and
-could not say that a stream failed or was switched off.
+could not say that a stream failed.
+
+**An on and off switch per stream.** It kept a stream listed but unused, which the role none already
+does; with removal, it made three ways not to use a stream.
+
+**A button that finds the streams again.** It would have redone e) behind one more action; the list
+asked on demand when adding a stream, or choosing the main path, brings back what the user wants
+without touching the rest.
 
 **Keying the streams by camera (ADR-61).** It was the same thing while the streams were settings of
 the one binding. Now that each stream has its own protocol and state, they belong to the capability
@@ -115,7 +130,8 @@ they describe, and a camera without a stream binding has no stream to show.
 
 ## Consequences
 
-- ✅ Every stream shows its role and its own state, and can be switched off, removed or added
+- ✅ Every stream shows its role and its own state, and can be removed, or added from what the camera
+  serves
 - ✅ The analysed stream is chosen where the streams are listed, with their resolution
 - ✅ Frigate always gets exactly one recording input and one detection input
 - ⚠️ Recording can move to a lighter stream: the recordings then lose detail, which the role's
