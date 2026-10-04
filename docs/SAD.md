@@ -14,8 +14,8 @@ usable by a non-technical household and keeps it invisible.
 
 | Attribute | Requirement | Architectural impact | Answered by |
 |---|---|---|---|
-| Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) 8.2) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate's own version check and model download remain (§ 4, #250) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50 |
-| Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) 5.3) | No cloud service in any critical path; the messaging channels and remote access need internet, and face recognition once, for its models (#250) | ADR-01, ADR-06, ADR-09 |
+| Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) 8.2) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate opens no flow to the internet, and any of its features that would reach it needs its own decision (§ 4) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50, ADR-70 |
+| Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) 5.3) | No cloud service in any critical path; the messaging channels and remote access need internet; no model is downloaded at run time, those Frigate does not carry ship with Vyzio | ADR-01, ADR-06, ADR-09, ADR-34, ADR-70 |
 | Target hardware | A modest machine at home: a mini PC, a Raspberry Pi 5, a NAS | One Compose stack, one database file, the detector picked from the hardware found, with a CPU fallback | ADR-06, ADR-34, ADR-37 |
 | Latency | A person signalled while still in view | Vyzio adds no step on the image path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards | ADR-03, ADR-04 |
 | Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) 1.3) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-12, ADR-22, ADR-28, ADR-44, ADR-61 |
@@ -120,12 +120,12 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Telegram | HTTPS; commands fetched by long polling | 443, outbound only | Bot token (ADR-52) |
 | API | to | Discord | HTTPS and a WebSocket gateway | 443, outbound only | Bot token (ADR-52) |
 | Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted, HTTP inside (ADR-67) | none opened on the router | Overlay membership, then the owner session (ADR-51, not delivered, #62) |
-| Frigate | to | GitHub | HTTPS: release version check, Frigate's default | 443 | None (#250) |
-| Frigate | to | GitHub | HTTPS: face recognition models, once, when first enabled | 443 | None (#250) |
 | Host | to | Image registry | HTTPS | 443, at install and update only | None, public images |
 
 No flow enters the house from the internet: the channels are fetched from inside, and remote access
 is an overlay peer, not a published port. No outbound flow carries an image, except a notification's.
+Frigate and go2rtc open none to the internet: no version check, no model download, no STUN
+(ADR-70, not delivered, #250).
 
 ---
 
@@ -287,7 +287,6 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | The disk fills with recordings without warning | #64 |
 | A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
 | Discovery misses multicast announcements and MAC hints from the Docker bridge | #251 |
-| Frigate's own outbound calls are not decided | #250 |
 | The live view is a refreshed still image (ADR-16); a real stream would add a flow from the hub to the browser | #47 |
 | The user cannot yet export or erase their data | #69 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |
