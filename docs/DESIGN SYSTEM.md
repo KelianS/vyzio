@@ -190,7 +190,8 @@ detail once:
   the essentials only, the help on its three levels (§ Help): its quality (the measured resolution
   and frame rate, else its rank, ADR-38) with its protocol and path in a tooltip, its own pill (the
   capability pills, `Désactivé` for a line switched off, `Pas encore vérifié` before its first
-  check) with a short sentence that says to check it again and the diagnostic line of a failure, its
+  check) with a short sentence and the diagnostic line of a failure, the way out being to check it
+  again or to remove it, or, for the recording stream, to give recording to another stream, its
   role as a choice (`Enregistrement`, `Détection`, `Enregistrement et détection`, `Aucun`) whose
   tooltip names what the role changes, then its actions: `Vérifier`, `Désactiver` or `Activer`,
   `Retirer`, the word of the page's other cards and protocol boxes. `Désactiver` and `Retirer` ask
@@ -201,7 +202,8 @@ detail once:
   stream that records is offered only the roles that record, and keeps `Désactiver` and `Retirer`
   disabled, the reason in a tooltip next to them; a line switched off shows no role and no check.
   `Ajouter un flux` closes the list: a protocol among the camera's stream protocols, a path over RTSP
-  or a quality over DVRIP, a role, checked at once. A folded help panel under the list says the task:
+  or a quality over DVRIP, a role, checked at once, the result saying whether the stream answers. A
+  folded help panel under the list says the task:
   the default roles, said as such, which stream to analyse for which scene, how a role moves from one
   stream to another, what changing the protocol or adding a stream does, and how a stream whose size
   the camera does not give is named.
