@@ -4,10 +4,13 @@
 >
 > Amends [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b)
 > (the stream binding is no longer created when the camera is added, nor its protocol chosen from what
-> discovery saw: detection or the user's choice on the stream card binds it),
+> discovery saw: detection or the user's choice on the stream card binds it; a camera whose stream
+> never worked is to be set up, and stays out of the generated configuration until it works),
 > [ADR-65](0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md) e) (no
 > stream path is entered when the camera is added, and a camera without one is never refused) and
-> [ADR-31](0031-manual-vendor-override-at-onboarding.md) (the brand selector leaves the add screen).
+> [ADR-21](0021-ptz-parking-and-a-generic-onvif-adapter-a-layered-privacy-mode-strategy.md) (no add
+> step for the privacy mode and the surveillance position: the camera page offers them).
+> Supersedes [ADR-31](0031-manual-vendor-override-at-onboarding.md) (the brand selector goes).
 
 ## Context
 
@@ -58,9 +61,11 @@ page and attempts no image. It enters the generated configuration, and so survei
 stream works; the restart trigger concerns it only from then on. The settings that need no stream
 (detection, retention, privacy) are saved meanwhile and applied when it enters surveillance.
 
-**e) No brand is chosen when adding.** The brand selector of ADR-31 goes: detection works from what
-the camera answers (ADR-61 d, ADR-66). A brand discovery recognises may still be shown, only to help
-the user tell the camera apart.
+**e) No brand is chosen when adding.** The brand selector of ADR-31 goes, and the add screen hands
+over no brand. Detection recognises the brand from the camera itself, with the signals discovery
+interprets (ADR-32), and the recognised brand's preset applies as before (ADR-22, ADR-28, ADR-66).
+On the add screen, a brand discovery recognises may still be shown, only to help the user tell the
+camera apart.
 
 **f) The camera page is where a new camera is set up**, with the same components as for any camera.
 Privacy mode and PTZ positions are set on its tabs, not in an add step. How the page reads for a new
@@ -95,8 +100,9 @@ are; pushing the user through each one slows the start without making the camera
 - ✅ Adding takes the access and a confirmation; the rest is optional and has its defaults
 - ⚠️ A camera can exist without working: the "to set up" state must read clearly wherever the
   camera shows
-- ⚠️ Without a brand, the first detection tries every usual protocol, which takes longer than a
-  preset path
+- ⚠️ Detection now recognises the brand itself: a brand it fails to recognise, which the user could
+  once pick by hand, leaves the camera on the blind path, where a capability that can only be
+  confirmed is added by the user
 - ⚠️ Discovery and detection still both look at the camera: discovery could later shrink to finding
   addresses, so that its logic is not kept beside the protocol and capability checks
 - ⚠️ PTZ positions are saved from the live view, which opens once the camera is in surveillance: a

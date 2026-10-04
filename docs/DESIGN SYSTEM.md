@@ -433,13 +433,13 @@ every item of that level, and each word says one backend state, never two.
 | `Injoignable` | danger | Nothing answers on this port |
 | `Pas encore vérifié` | neutral | The camera was never asked through this protocol |
 
-`Pas encore vérifié` is the one word both levels share: it says the same fact, nobody asked yet.
+`Pas encore vérifié` is the one word the capability and protocol levels share: it says the same fact, nobody asked yet.
 `Non confirmée` only reaches Orientation and Coupure matérielle, `Désactivée` only Orientation,
 `Pas encore vérifié` only the stream, so each agrees with its card. The camera's own status (`Connectée`, `Hors ligne`,
 `Erreur de configuration`...) is a third thing, the camera as a whole, surveillance included: it
-shows in the camera list and the page header, never on a card. A camera whose stream never worked
-is `À configurer` there, neutral; on the hub its tile says the same word and leads to its page,
-without attempting an image.
+shows in the camera list and the page header, never on a card. One of its words is `À configurer`,
+neutral: the camera whose stream never worked
+([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md) d), which its hub tile shows too.
 
 ### Editing cycle
 
