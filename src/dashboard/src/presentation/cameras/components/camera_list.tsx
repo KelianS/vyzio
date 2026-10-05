@@ -6,7 +6,7 @@ import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel, formatStatusTone } from '../cameras.formatters'
+import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
 
 /** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
 export function CameraList({
@@ -39,9 +39,7 @@ export function CameraList({
                   <span className="block text-sm text-muted-foreground">{camera.host}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
-                  <Badge tone={formatStatusTone(camera)}>
-                    {formatCameraStatusLabel(camera.status)}
-                  </Badge>
+                  <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
                   <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
                 </span>
               </Link>

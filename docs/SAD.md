@@ -113,9 +113,9 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Camera | ONVIF (SOAP over HTTP) | Asked of the camera, swept over the usual ONVIF ports when unknown (ADR-56) | WS-Security digest; the search for the endpoint presents no account |
 | API | to | Camera | RTSP, stream checks | 554 by default, set per camera | Basic or Digest when challenged |
 | API | to | Camera | DVRIP | 34567 by default, set per camera | DVRIP login |
-| API | to | Camera | V380 | TCP 8800 by default; UDP 10008 to find the device number, to the camera then its subnet broadcast | V380 handshake with the device number |
+| API | to | Camera | V380 | TCP 8800 by default; UDP 10008 to find the device number, to the camera's own address only, never broadcast (ADR-71) | V380 handshake with the device number |
 | API | to | Camera | Tapo KLAP over HTTP | 80 by default, set per camera | KLAP handshake with the Tapo cloud account, presented to the camera only (ADR-61) |
-| API | to | Home network, discovery | ICMP, TCP connect, reverse DNS; WS-Discovery multicast (UDP 3702) and the ARP table, which do not get past the Docker bridge (#251) | A fixed set of camera ports, over the configured address ranges | None: only handshakes that need no account (ADR-32) |
+| API | to | Home network, discovery | ICMP, TCP connect, reverse DNS, all unicast from the Docker network: no multicast, no neighbour table (ADR-71) | A fixed set of camera ports, over the configured ranges plus the /24 of the private IPv4 address the dashboard was opened by | None: only handshakes that need no account (ADR-32) |
 | API | to | Docker engine of the host | Docker API, Unix socket | none | Root-equivalent (§ 8) |
 | API | to | Telegram | HTTPS; commands fetched by long polling | 443, outbound only | Bot token (ADR-52) |
 | API | to | Discord | HTTPS and a WebSocket gateway | 443, outbound only | Bot token (ADR-52) |
@@ -276,6 +276,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
 | A command from a stranger on a messaging channel | Only paired, revocable conversations are heard; anything else is ignored without an answer (ADR-50) |
 | A camera account locked out by guesses | Discovery and the ONVIF endpoint search present no account (ADR-32, ADR-56) |
+| Discovery steered at another network through the address a request names | The added range comes only from the address the dashboard was opened by, and only when it is a private IPv4 address, limited to its /24; any other address adds nothing (ADR-71) |
 | Remote access exposing the home network | Overlay peer, end to end encrypted, the home network not advertised (ADR-51) |
 
 ---
@@ -286,10 +287,10 @@ broker, Frigate), kept on the Docker network (ADR-55).
 |---|---|
 | Frigate is still 0.x: a minor can break the MQTT or REST contract. It is pinned and moved through an issue | #121 |
 | The contract with Frigate is tested against stubs, not a running Frigate | #94 |
-| Camera protocol tests rely on hand-written stubs rather than captured exchanges | #92 |
+| Tapo KLAP is still tested against hand-written stubs; ONVIF, RTSP, DVRIP and V380 replay exchanges captured from real cameras | #88 |
 | The disk fills with recordings without warning | #64 |
 | A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
-| Discovery misses multicast announcements and MAC hints from the Docker bridge | #251 |
+| Discovery sweeps only the configured ranges and the dashboard address's /24: a camera on another subnet is found only by typing its address | #251 |
 | The live view is a refreshed still image (ADR-16); a real stream would add a flow from the hub to the browser | #47 |
 | The user cannot yet export or erase their data | #69 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |

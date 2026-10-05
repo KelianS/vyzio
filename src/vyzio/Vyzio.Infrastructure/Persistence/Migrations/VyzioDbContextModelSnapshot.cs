@@ -65,6 +65,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DetectedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("detected_at");
+
                     b.Property<string>("DetectionLabelsJson")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT")

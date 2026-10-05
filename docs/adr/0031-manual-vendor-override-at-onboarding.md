@@ -1,6 +1,6 @@
 # ADR-31 — Override manuel du constructeur à l'onboarding
 
-> Statut : Remplacé par [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (le sélecteur de marque disparaît, la détection reconnaît la marque)
+> Statut : Remplacé par [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (le sélecteur de marque disparaît) ; la marque n'est plus qu'une aide ([ADR-71](0071-the-vendor-is-a-help-hint.md))
 
 ## Contexte
 

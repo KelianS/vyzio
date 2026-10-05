@@ -1,12 +1,13 @@
 # ADR-68: A camera is created from its access alone
 
-> Status: Accepted
+> Status: Accepted, amended by [ADR-71](0071-the-vendor-is-a-help-hint.md) on e) (the vendor is a
+> help hint: picked on the add screen for its help sheet only, never stored)
 >
 > Amends [ADR-12](0012-camera-management-driven-by-vyzio-applied-to-frigate.md) (the camera is created
 > before any check, its stream checked from its page),
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
 > and [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md)
-> on when they act (detection and the brand's preset run from the camera page, not at creation),
+> on when they act (detection runs from the camera page, not at creation),
 > [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) b)
 > (the stream binding is no longer created when the camera is added, nor its protocol chosen from what
 > discovery saw: detection or the user's choice on the stream card binds it; a camera whose stream
@@ -60,24 +61,24 @@ they start. Detection binds the stream as ADR-61 b) already does for a camera wi
 leaves the stream unchosen because the camera answers over RTSP without listing its streams, the
 stream card asks for the path (ADR-65 e).
 
-**d) "To set up" is a camera state.** A camera whose stream never worked reads as to be set up,
-wherever its status shows: the camera list, its page header, and the hub, where its tile leads to its
+**d) "To set up" is a camera state.** A camera reads as to be set up until it enters surveillance:
+while its stream never worked, and while its stream works but the restart has not taken it in yet.
+It reads so wherever its status shows: the camera list, its page header, and the hub, where its tile leads to its
 page and attempts no image. It enters the generated configuration once its stream works, and
 surveillance through the restart trigger, which concerns it only from then on. The settings that need no stream
 (detection, retention, privacy) are saved meanwhile and applied when it enters surveillance.
 
-The state lasts only until the stream first works, and while it lasts it is the camera's status:
-offline or a configuration error mean nothing before a first success. It never comes back: once the
-stream has worked, a later failure, a change of stream protocol included, reads as the usual offline
-or error states, since what was added is trusted. Until then the camera is a target like any other
+Before the stream first works, the state is the camera's only status: offline or a configuration
+error mean nothing before a first success. It never comes back once the camera is in surveillance,
+and once the stream has worked, a later failure, a change of stream protocol included, reads as the usual offline
+or error states, since what was added is trusted. Until it enters surveillance the camera is a target like any other
 for schedules and the cameras a person's notifications are filtered by, which take effect once it
 enters surveillance; it has no live view, and the history has nothing for it.
 
 **e) No brand is chosen when adding.** The brand selector of ADR-31 goes, and the add screen hands
-over no brand. Detection recognises the brand from the camera itself, with the signals discovery
-interprets (ADR-32), and the recognised brand's preset applies as before (ADR-22, ADR-28, ADR-66).
-On the add screen, a brand discovery recognises may still be shown, only to help the user tell the
-camera apart.
+over no brand. Detection records no brand either, so no brand's preset applies to a new camera:
+every capability is detected the same way, by its proof (ADR-66). On the add screen, a brand
+discovery recognises may still be shown, only to help the user tell the camera apart.
 
 **f) The camera page is where a new camera is set up**, with the same components as for any camera.
 Privacy mode and PTZ positions are set on its tabs, not in an add step. How the page reads for a new
@@ -112,9 +113,8 @@ are; pushing the user through each one slows the start without making the camera
 - ✅ Adding takes the access and a confirmation; the rest is optional and has its defaults
 - ⚠️ A camera can exist without working: the "to set up" state must read clearly wherever the
   camera shows
-- ⚠️ Detection now recognises the brand itself: a brand it fails to recognise, which the user could
-  once pick by hand, leaves the camera on the blind path, where a capability that can only be
-  confirmed is added by the user
+- ⚠️ No brand steers detection any more: every new camera is on the blind path, where a capability
+  that can only be confirmed is added by the user
 - ⚠️ Discovery and detection still both look at the camera: discovery could later shrink to finding
   addresses, so that its logic is not kept beside the protocol and capability checks
 - ⚠️ PTZ positions are saved from the live view, which opens once the camera is in surveillance: a

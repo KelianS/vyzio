@@ -83,8 +83,8 @@ public sealed class AddCameraStreamUseCase(
         if (camera.Protocol(protocol) is null) return new StreamResult(StreamOutcome.ProtocolNotOnCamera);
 
         var path = protocol == SupportedProtocol.Rtsp
-            ? CameraDraftFactory.NormalizeStreamPath(request.Path)
-            : CameraDraftFactory.NormalizeOptional(request.Path);
+            ? CameraFactory.NormalizeStreamPath(request.Path)
+            : CameraFactory.NormalizeOptional(request.Path);
         // An RTSP stream is addressed by its path, never by the connection root (ADR-65 e).
         if (protocol == SupportedProtocol.Rtsp && path is null)
             return new StreamResult(StreamOutcome.PathRequired);
@@ -95,7 +95,7 @@ public sealed class AddCameraStreamUseCase(
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
-        if (role != StreamRole.None) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        if (role != StreamRole.None) await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
         return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
     }
 }
@@ -170,7 +170,7 @@ internal static class StreamLayout
             return true;
         }
 
-        if (CameraDraftFactory.NormalizeStreamPath(typedPath) is { } path)
+        if (CameraFactory.NormalizeStreamPath(typedPath) is { } path)
         {
             StreamLineup.ResetTo(binding, protocol, path);
             return true;
@@ -214,7 +214,7 @@ internal static class CameraStreamChange
 
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, ct);
-        await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
         return new StreamResult(StreamOutcome.Done, CameraStreamsDto.From(camera));
     }
 }

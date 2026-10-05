@@ -21,92 +21,103 @@ const candidate: DiscoveredCamera = {
   stream: { protocol: 'rtsp', port: 554, path: '/stream1' },
 }
 
-const verified = {
+const manual = {
   ...buildInitialAddCameraUido(),
   selection: { kind: 'manual' as const },
-  verification: { connected: true, guidance: null },
+  form: { displayName: '', host: '', username: 'user', password: 'secret' },
 }
 
 describe('addCameraReducer', () => {
-  it('addCameraReducer_ShouldDropTheVerification_WhenTheFormIsEdited', () => {
+  it('addCameraReducer_ShouldTakeOnlyTheNameAndAddressAndKeepTheCredentials_WhenACandidateIsChosen', () => {
     // Arrange
-    const action = { type: 'FORM_UPDATED', patch: { host: '192.168.1.41' } } as const
+    const action = { type: 'CANDIDATE_SELECTED', index: 0, candidate } as const
 
     // Act
-    const next = addCameraReducer(verified, action)
+    const next = addCameraReducer(manual, action)
 
     // Assert
-    expect(next.form.host).toBe('192.168.1.41')
-    expect(next.verification).toBeNull()
-  })
-
-  it('addCameraReducer_ShouldFillTheFormButKeepTheCredentials_WhenACandidateIsChosen', () => {
-    // Arrange
-    const typed = { ...verified, form: { ...verified.form, username: 'user', password: 'secret' } }
-
-    // Act
-    const next = addCameraReducer(typed, { type: 'CANDIDATE_SELECTED', index: 0, candidate })
-
-    // Assert
-    expect(next.form).toMatchObject({
+    expect(next.form).toEqual({
+      displayName: 'Garage',
       host: '192.168.1.40',
-      streamPath: '/stream1',
-      streamProtocol: 'rtsp',
       username: 'user',
       password: 'secret',
     })
     expect(next.selection).toEqual({ kind: 'candidate', index: 0 })
   })
 
-  it('addCameraReducer_ShouldStartFromTheDvripStream_WhenTheCandidateIsReadyOverDvrip', () => {
+  it('addCameraReducer_ShouldStartFromAnEmptyAccess_WhenTheUserTypesTheAddress', () => {
     // Arrange
-    const overDvrip: DiscoveredCamera = {
-      ...candidate,
-      streamPath: null,
-      rtspActive: false,
-      stream: { protocol: 'dvrip', port: 34567, path: null },
+    const chosen = { ...manual, selection: { kind: 'candidate' as const, index: 0 } }
+
+    // Act
+    const next = addCameraReducer(chosen, { type: 'MANUAL_ENTRY_SELECTED' })
+
+    // Assert
+    expect(next.form).toEqual({ displayName: '', host: '', username: null, password: null })
+    expect(next.selection).toEqual({ kind: 'manual' })
+  })
+
+  it('addCameraReducer_ShouldPreselectTheHelpVendor_WhenDiscoveryRecognisedTheChosenCamera', () => {
+    // Arrange
+    const action = { type: 'CANDIDATE_SELECTED', index: 0, candidate } as const
+
+    // Act
+    const next = addCameraReducer(manual, action)
+
+    // Assert
+    expect(next.helpVendor).toBe('tplink_tapo')
+  })
+
+  it('addCameraReducer_ShouldClearTheHelpVendor_WhenTheUserTypesTheAddress', () => {
+    // Arrange
+    const helped = { ...manual, helpVendor: 'icsee' }
+
+    // Act
+    const next = addCameraReducer(helped, { type: 'MANUAL_ENTRY_SELECTED' })
+
+    // Assert
+    expect(next.helpVendor).toBeNull()
+  })
+
+  it('addCameraReducer_ShouldKeepTheUsersHelpVendor_WhenARetriedScanRecognisesNoVendor', () => {
+    // Arrange
+    const toPrepare = {
+      ...manual,
+      selection: { kind: 'candidate' as const, index: 0 },
+      discoveryResults: [{ ...candidate, vendorFamily: null, stream: null }],
+      helpVendor: 'v380_pro',
     }
-
-    // Act
-    const next = addCameraReducer(verified, {
-      type: 'CANDIDATE_SELECTED',
-      index: 0,
-      candidate: overDvrip,
-    })
-
-    // Assert
-    expect(next.form).toMatchObject({ port: 34567, streamPath: null, streamProtocol: 'dvrip' })
-  })
-
-  it('addCameraReducer_ShouldStartFromRtsp_WhenNoProtocolServesTheCandidateStreamYet', () => {
-    // Arrange
-    const toPrepare: DiscoveredCamera = { ...candidate, streamPath: null, stream: null }
-
-    // Act
-    const next = addCameraReducer(verified, {
-      type: 'CANDIDATE_SELECTED',
-      index: 0,
-      candidate: toPrepare,
-    })
-
-    // Assert
-    expect(next.form).toMatchObject({ port: 554, streamPath: null, streamProtocol: 'rtsp' })
-  })
-
-  it('addCameraReducer_ShouldSayWhyAndKeepNoVerification_WhenTheStreamDoesNotAnswer', () => {
-    // Arrange
     const action = {
-      type: 'VERIFY_DRAFT_SUCCEEDED',
-      connected: false,
-      guidance: null,
-      message: 'Le flux ne répond pas.',
+      type: 'REFRESH_CANDIDATE_SUCCEEDED',
+      index: 0,
+      candidate: { ...candidate, vendorFamily: null },
+      message: 'La caméra est maintenant joignable.',
     } as const
 
     // Act
-    const next = addCameraReducer(verified, action)
+    const next = addCameraReducer(toPrepare, action)
 
     // Assert
-    expect(next.verification).toBeNull()
-    expect(next.error).toEqual({ message: 'Le flux ne répond pas.' })
+    expect(next.helpVendor).toBe('v380_pro')
+  })
+
+  it('addCameraReducer_ShouldKeepTheFailureAndItsDiagnostic_WhenTheCameraCannotBeCreated', () => {
+    // Arrange
+    const creating = { ...manual, creating: true }
+    const action = {
+      type: 'CREATE_FAILED',
+      message: 'Ces informations ne sont pas valides.',
+      diagnostic: 'POST /api/cameras · 400',
+    } as const
+
+    // Act
+    const next = addCameraReducer(creating, action)
+
+    // Assert
+    expect(next.creating).toBe(false)
+    expect(next.error).toEqual({
+      message: 'Ces informations ne sont pas valides.',
+      diagnostic: 'POST /api/cameras · 400',
+    })
   })
 })

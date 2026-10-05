@@ -70,6 +70,12 @@ export function CameraConnectionView() {
     presenter.onLoad(cameraId)
   }, [presenter, cameraId])
 
+  const neverDetected = camera.detectedAt === null
+  const host = camera.host
+  useEffect(() => {
+    presenter.onArrive(cameraId, host, neverDetected)
+  }, [presenter, cameraId, host, neverDetected])
+
   const saved = useMemo(() => connectionValuesOf(camera, uido.protocols), [camera, uido.protocols])
   const draft = useSettingsDraft<ConnectionValues>({ saved, labels: DRAFT_LABELS })
 
@@ -147,6 +153,7 @@ export function CameraConnectionView() {
             readError={uido.bindingsError}
             detecting={uido.detecting}
             detected={uido.detected}
+            detection={uido.detection}
             verifyingStream={uido.verifying}
             testsSuspended={testsSuspended}
             pending={uido.pending}
@@ -178,7 +185,7 @@ export function CameraConnectionView() {
             }}
             intents={{
               onRetryRead: () => presenter.onLoad(cameraId),
-              onDetect: () => void presenter.onDetect(cameraId),
+              onDetect: () => void presenter.onDetect(cameraId, camera.host),
               onVerifyStream: () => void presenter.onVerify(cameraId),
               onVerify: (capability) => void presenter.onVerifyCapability(cameraId, capability),
               onConfigure: (capability, protocol, streamPath) =>

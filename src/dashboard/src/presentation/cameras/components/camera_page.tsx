@@ -5,7 +5,7 @@ import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel } from '../cameras.formatters'
+import { formatCameraStatusLabel } from '../../../common/camera/camera_status'
 import { CameraNotFound } from './camera_not_found'
 
 // The pages of one camera, each the twin of an installation page one notch lower (ADR-39, ADR-40).
@@ -64,9 +64,7 @@ export function CameraPage({
         </Link>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="font-serif text-3xl">{camera.displayName}</h1>
-          <span className="text-sm text-muted-foreground">
-            {formatCameraStatusLabel(camera.status)}
-          </span>
+          <span className="text-sm text-muted-foreground">{formatCameraStatusLabel(camera)}</span>
         </div>
       </div>
 

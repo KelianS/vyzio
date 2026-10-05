@@ -9,6 +9,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Tests.Contracts;
 
 namespace Vyzio.Tests.Services;
 
@@ -52,26 +53,11 @@ public class DvripPtzProviderTests
     }
 
     [Fact]
-    public async Task ProveAsync_ShouldProvePtzAndRecordNativePresets_WhenAnIcseeListsThePresetItStored()
-    {
-        // Arrange
-        var presets = new FakeDvripPresets();
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
-
-        // Act
-        var proof = await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
-
-        // Assert
-        Assert.Equal(ProofOutcome.Proven, proof.Outcome);
-        Assert.True(BindingConfig.ReadBool(fake.Binding.ConfigJson, BindingConfig.SupportsNativePresets));
-    }
-
-    [Fact]
     public async Task ProveAsync_ShouldLeavePtzToConfirm_WhenTheCameraAnswersDvripButRefusesSetPreset()
     {
         // Arrange
         var presets = new FakeDvripPresets(refusesSetPreset: true);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
         fake.Binding.ConfigJson = NativePresetsConfig;
 
         // Act
@@ -87,7 +73,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(listsWhatItStores: false);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -100,7 +86,7 @@ public class DvripPtzProviderTests
     public async Task ProveAsync_ShouldLeaveThePositionsToVyzio_WhenTheCameraRefusesToListItsPresets()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(LoginOk, _ => """{"Ret":607}""");
+        await using var fake = FakeDvripCamera.Start(_ => """{"Ret":607}""");
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -113,7 +99,7 @@ public class DvripPtzProviderTests
     public async Task ProveAsync_ShouldStoreNothing_WhenTheAnswerCarriesNoPresetList()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(LoginOk, _ => OkAnswer);
+        await using var fake = FakeDvripCamera.Start(_ => OkAnswer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -128,7 +114,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(listsNullWhenEmpty: true);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -143,7 +129,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets();
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -160,7 +146,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(refusesSetPreset: true);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -174,7 +160,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(listsWhatItStores: false);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -188,7 +174,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(stored: [3, 255]);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().ProveAsync(fake.Camera, fake.Binding);
@@ -203,7 +189,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets();
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().PtzSavePresetAsync(fake.Camera, fake.Binding, PtzPreset.ParkingSlot);
@@ -217,7 +203,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(stored: [PtzPreset.SurveillanceSlot]);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         await MakeProvider().PtzGoToPresetAsync(fake.Camera, fake.Binding, PtzPreset.SurveillanceSlot);
@@ -232,7 +218,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var presets = new FakeDvripPresets(refusesSetPreset: true);
-        await using var fake = FakeDvripCamera.Start(LoginOk, presets.Answer);
+        await using var fake = FakeDvripCamera.Start(presets.Answer);
 
         // Act
         var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
@@ -365,7 +351,7 @@ public class DvripPtzProviderTests
     public async Task MoveForAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsTheMove()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Ret":103}""");
+        await using var fake = FakeDvripCamera.Start(command: """{"Ret":103}""");
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
@@ -379,7 +365,7 @@ public class DvripPtzProviderTests
     public async Task MoveForAsync_ShouldStillSendTheStop_WhenTheCameraRejectsTheMove()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Ret":103}""");
+        await using var fake = FakeDvripCamera.Start(command: """{"Ret":103}""");
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
@@ -393,7 +379,7 @@ public class DvripPtzProviderTests
     public async Task MoveForAsync_ShouldRaiseThatTheCameraRefused_WhenItsAnswerCarriesNoStatus()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Name":"OPPTZControl"}""");
+        await using var fake = FakeDvripCamera.Start(command: """{"Name":"OPPTZControl"}""");
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
@@ -407,7 +393,7 @@ public class DvripPtzProviderTests
     public async Task OpenMotionAsync_ShouldRaiseThatTheCameraRefused_WhenItRejectsTheLogin()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: """{"Ret":203}""", command: null);
+        await using var fake = FakeDvripCamera.Start(command: null, refusesLogin: true);
 
         // Act
         var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
@@ -421,7 +407,7 @@ public class DvripPtzProviderTests
     public async Task MoveForAsync_ShouldRaiseThatTheCameraIsUnreachable_WhenItHangsUpInsteadOfAnswering()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: null);
+        await using var fake = FakeDvripCamera.Start(command: null);
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
@@ -436,7 +422,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, silentFirst: 1);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer, silentFirst: 1);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
         var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         await fake.CommandsAsync(1);
@@ -455,7 +441,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
         var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         var move = await fake.CommandsAsync(1);
@@ -474,7 +460,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, clock: time);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer, clock: time);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
         var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         var move = (await fake.ReceivedAsync(1))[0];
@@ -493,7 +479,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, holdAnswers: true, clock: time);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer, holdAnswers: true, clock: time);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
         var step = motion.MoveForAsync(PtzDirection.Left, 50, ShortMove);
         var move = (await fake.ReceivedAsync(1))[0];
@@ -513,7 +499,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer);
         var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
@@ -531,7 +517,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, hangUpAt: 3);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer, hangUpAt: 3);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
         await MoveBrieflyAsync(motion, fake, time);
         await Assert.ThrowsAsync<CameraUnreachableException>(() => motion.MoveForAsync(PtzDirection.Left, 50, ShortMove));
@@ -549,7 +535,7 @@ public class DvripPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: OkAnswer, holdAnswers: true, clock: time);
+        await using var fake = FakeDvripCamera.Start(command: OkAnswer, holdAnswers: true, clock: time);
         await using var motion = await MakeProvider(time).OpenMotionAsync(fake.Camera, fake.Binding);
         var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var start = motion.StartAsync(PtzDirection.Left, 50, released.Task);
@@ -574,7 +560,7 @@ public class DvripPtzProviderTests
     public async Task StartAsync_ShouldRaiseThatTheCameraRefusedAndStopAtOnce_WhenItRejectsTheMove()
     {
         // Arrange
-        await using var fake = FakeDvripCamera.Start(login: LoginOk, command: """{"Ret":103}""");
+        await using var fake = FakeDvripCamera.Start(command: """{"Ret":103}""");
         await using var motion = await MakeProvider().OpenMotionAsync(fake.Camera, fake.Binding);
 
         // Act
@@ -585,7 +571,6 @@ public class DvripPtzProviderTests
         Assert.Equal(["DirectionRight", "DirectionUp"], await fake.CommandsAsync(2));
     }
 
-    private const string LoginOk = """{"Ret":100,"SessionID":"0x0000000B"}""";
     private const string OkAnswer = """{"Ret":100}""";
     private const string NativePresetsConfig = """{"supports_native_presets":true}""";
 
@@ -600,10 +585,10 @@ public class DvripPtzProviderTests
     }
 }
 
-// A DVRIP camera on its own loopback address (the port is fixed): answers every login, then every command on the same connection, as told.
+// A DVRIP camera on a loopback port that logs in as the captured ICSee did (#92), then answers every command on the same connection as told.
 internal sealed class FakeDvripCamera : IAsyncDisposable
 {
-    private readonly TcpListener _listener;
+    private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
     private readonly CancellationTokenSource _stop = new();
     private readonly Channel<ReceivedCommand> _commands = Channel.CreateUnbounded<ReceivedCommand>();
     private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -611,12 +596,12 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
     private readonly Task _loop;
     private int _logins;
 
-    private FakeDvripCamera(IPAddress address, Behaviour behaviour, TimeProvider clock)
+    private FakeDvripCamera(Behaviour behaviour, TimeProvider clock)
     {
-        _listener = new TcpListener(address, 34567);
         _listener.Start();
         _clock = clock;
-        Camera = new Camera { Id = "cam", Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = address.ToString() };
+        Camera = new Camera { Id = "cam", Slug = "cam", FrigateCameraName = "cam", DisplayName = "cam", Host = IPAddress.Loopback.ToString() };
+        Camera.EnsureProtocol(SupportedProtocol.Dvrip).Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
         if (!behaviour.HoldAnswers) _released.SetResult();
         _loop = ServeAsync(behaviour);
     }
@@ -630,14 +615,19 @@ internal sealed class FakeDvripCamera : IAsyncDisposable
     public int UnreadCommands => _commands.Reader.Count;
 
     // A null command hangs up at the first command, hangUpAt at that command; the first silentFirst connections never answer a command; held answers wait for ReleaseAnswers.
-    public static FakeDvripCamera Start(string login, string? command, int silentFirst = 0, int hangUpAt = 0, bool holdAnswers = false, TimeProvider? clock = null)
-        => new(new IPAddress([127, 0, (byte)Random.Shared.Next(1, 255), (byte)Random.Shared.Next(2, 255)]),
-            new Behaviour(login, command, silentFirst, command is null ? 1 : hangUpAt, holdAnswers, Answer: null), clock ?? TimeProvider.System);
+    public static FakeDvripCamera Start(string? command, int silentFirst = 0, int hangUpAt = 0, bool holdAnswers = false, TimeProvider? clock = null, bool refusesLogin = false)
+        => new(new Behaviour(CapturedLogin(refusesLogin), command, silentFirst, command is null ? 1 : hangUpAt, holdAnswers, Answer: null), clock ?? TimeProvider.System);
 
     // Answers each command as the handler says, from the request it received.
-    public static FakeDvripCamera Start(string login, Func<JsonNode, string> answer)
-        => new(new IPAddress([127, 0, (byte)Random.Shared.Next(1, 255), (byte)Random.Shared.Next(2, 255)]),
-            new Behaviour(login, Command: string.Empty, SilentFirst: 0, HangUpAt: 0, HoldAnswers: false, answer), TimeProvider.System);
+    public static FakeDvripCamera Start(Func<JsonNode, string> answer)
+        => new(new Behaviour(CapturedLogin(refuses: false), Command: string.Empty, SilentFirst: 0, HangUpAt: 0, HoldAnswers: false, answer), TimeProvider.System);
+
+    // The login answer body, without the terminator SendPacketAsync appends again.
+    private static string CapturedLogin(bool refuses)
+        => FixtureLoader.Variant(FixtureProtocol.Dvrip, CapturedVariant.Icsee)
+            .Transcript(refuses ? DvripScenario.LoginRefused : DvripScenario.Login)
+            .Messages.Single(message => message.Direction == TranscriptDirection.Received)
+            .Body!.TrimEnd('\0', '\n');
 
     public void ReleaseAnswers() => _released.TrySetResult();
 

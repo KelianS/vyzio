@@ -28,6 +28,8 @@ export interface FakeCamera {
   ptzSupported: boolean
   privacyStrategy: string
   verifiedCapabilities: string[]
+  /** Null until detection first ran: its page runs it on arrival (ADR-68 b). */
+  detectedAt: string | null
 }
 
 /** A protocol the fake camera speaks, as the Connexion page reads it (ADR-61). */
@@ -162,6 +164,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     ptzSupported: false,
     privacyStrategy: 'software_blur',
     verifiedCapabilities: [],
+    detectedAt: '2026-01-01T00:00:00Z',
     ...overrides,
   }
 }
@@ -583,6 +586,15 @@ function giveRole(streams: FakeStream[], target: FakeStream, role: FakeStream['r
   target.role = role
 }
 
+/** The first time its stream works, a camera to set up becomes a draft that waits for a restart (ADR-68 d). */
+function streamWorked(state: FakeBackendState, camera: FakeCamera | undefined) {
+  if (camera?.validationState !== 'to_set_up') return
+  camera.validationState = 'draft'
+  camera.status = 'online'
+  camera.lastSuccessfulFrameAt = new Date().toISOString()
+  state.pendingChanges = true
+}
+
 /** The protocol half of detection: what answers joins the boxes, what the camera had stays. */
 function findProtocols(state: FakeBackendState) {
   for (const found of state.discoverableProtocols) {
@@ -735,23 +747,24 @@ export async function installFakeBackend(
       return json(route, state.cameras)
     }
     if (path === '/api/cameras' && method === 'POST') {
+      // Like the real one: created from its access alone, to set up, never detected (ADR-68).
       const camera = makeFakeCamera({
         id: `camera-${nextId++}`,
         displayName: (postData?.displayName as string) ?? 'Nouvelle caméra',
         host: (postData?.host as string) ?? '192.168.1.99',
-        validationState: 'validated',
-        status: 'online',
+        validationState: 'to_set_up',
+        status: 'to_set_up',
+        previewAvailable: false,
+        needsAttention: true,
+        lastSuccessfulFrameAt: null,
+        detectedAt: null,
       })
-      // Like the real one: the camera is born with its stream capability (ADR-61).
-      const stream = postData?.stream as { protocol: string; path: string | null } | undefined
-      if (stream)
-        state.streamBinding = {
-          protocol: stream.protocol,
-          lastError: null,
-        }
+      // No protocol and no stream yet: what the camera speaks is found again by detection.
+      state.discoverableProtocols = [...state.discoverableProtocols, ...state.protocols]
+      state.protocols = []
+      state.streams = []
+      state.streamBinding = { protocol: 'rtsp', lastError: null, configured: false }
       state.cameras.push(camera)
-      // Like the real one: the catalogue changed, surveillance has not picked it up.
-      state.pendingChanges = true
       return json(route, camera)
     }
     if (path === '/api/cameras/discovery' && method === 'POST') {
@@ -783,20 +796,12 @@ export async function installFakeBackend(
       ])
     }
     if (path === '/api/cameras/vendor-assistance' && method === 'POST') {
-      return json(route, null)
-    }
-    if (path === '/api/cameras/verify-draft' && method === 'POST') {
+      // Like the real one: the chosen vendor's sheet, whatever the camera answers.
+      const body = route.request().postDataJSON() as { vendorFamily: string | null }
+      if (!body.vendorFamily) return json(route, null)
       return json(route, {
-        cameraId: 'draft',
-        displayName: (postData?.displayName as string) ?? 'Nouvelle caméra',
-        status: 'online',
-        validationState: 'draft',
-        connected: true,
-        previewAvailable: true,
-        needsAttention: false,
-        guidance: 'Flux valide. Vous pouvez maintenant ajouter cette caméra.',
-        lastReachabilityCheckAt: new Date().toISOString(),
-        lastSuccessfulFrameAt: new Date().toISOString(),
+        vendorFamily: body.vendorFamily,
+        markdown: 'Créez le compte caméra dans l’application de la caméra, puis revenez ici.',
       })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
@@ -817,6 +822,9 @@ export async function installFakeBackend(
         })
       }
       state.pendingChanges = false
+      // A camera whose stream works enters surveillance; one to set up stays out (ADR-68 d).
+      for (const entering of state.cameras.filter((c) => c.validationState === 'draft'))
+        entering.validationState = 'validated'
       return json(route, {
         applied: true,
         message: 'Configuration appliquée',
@@ -871,6 +879,7 @@ export async function installFakeBackend(
         })
       }
       if (rest === '/verify' && method === 'POST') {
+        streamWorked(state, camera)
         return json(route, {
           cameraId,
           displayName: camera?.displayName ?? cameraId,
@@ -955,6 +964,7 @@ export async function installFakeBackend(
         }
         state.streamBinding.protocol = chosen
         state.streamBinding.configured = true
+        streamWorked(state, camera)
         return json(route, streamBindingOf(state.streamBinding))
       }
       if (rest === '/capabilities/detect' && method === 'POST') {
@@ -966,7 +976,10 @@ export async function installFakeBackend(
         if (state.streamBinding.configured === false && stream) {
           state.streamBinding.protocol = stream
           state.streamBinding.configured = true
+          if (state.streams.length === 0) state.streams = layOut(state, stream, null) ?? []
+          streamWorked(state, camera)
         }
+        if (camera) camera.detectedAt = new Date().toISOString()
         return route.fulfill({ status: 204 })
       }
       if (rest === '/protocols/search' && method === 'POST') {

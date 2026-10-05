@@ -256,7 +256,7 @@ test.describe('CameraConnectionView camera without protocols', () => {
     await expect(stream.getByText('Options', { exact: true })).toHaveCount(0)
 
     await page.getByRole('button', { name: 'Détecter automatiquement' }).click()
-    await expect(page.getByText('Détection terminée.')).toBeVisible()
+    await expect(page.getByText(/^Détection terminée :/)).toBeVisible()
 
     await stream.getByText('Options', { exact: true }).click()
     await expect(stream.getByRole('combobox', { name: 'Protocole' })).toContainText('DVRIP')

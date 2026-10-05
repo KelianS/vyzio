@@ -45,6 +45,7 @@ camera and removed it in the same transcript.
    points, listed, then removed. Nothing moves the head, and privacy mode is never touched.
 4. Check what the run printed: a protocol that failed is named, and a preset left behind is said.
 5. Review the diff of the fixtures, then run the backend tests: `FixtureHygieneTests` fails on any
-   private address, MAC address or credential that is not the fixture account.
+   private address, MAC address or credential that is not the fixture account. The contract tests
+   of a replayed protocol fail until the new folder has its row of expected values in them.
 
 A firmware not seen before lands in a new folder on its own; an older one stays as it is.

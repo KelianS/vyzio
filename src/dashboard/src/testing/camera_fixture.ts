@@ -27,6 +27,8 @@ export function makeCamera(overrides: Partial<Camera> = {}): Camera {
     privacyStrategy: 'software_blur',
     connected: true,
     verifiedCapabilities: [],
+    // Detected once: only a camera just added has its page run detection on arrival (ADR-68 b).
+    detectedAt: '2026-07-05T08:00:00Z',
     ...overrides,
   }
 }

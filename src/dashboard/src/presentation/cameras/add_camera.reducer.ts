@@ -1,31 +1,18 @@
-import { StreamProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 import type { AddCameraAction } from './add_camera.actions'
 import { emptyCameraDraft, type AddCameraUido } from './add_camera.uido'
 
-// What a candidate dictates on the form; credentials stay the user's own.
+// Discovery hands over the name and the address only; credentials stay the user's own (ADR-68 a).
 function draftFromCandidate(state: AddCameraUido, candidate: DiscoveredCamera) {
-  return {
-    ...state.form,
-    displayName: candidate.displayName,
-    host: candidate.host,
-    sourceType: candidate.sourceType,
-    vendorFamily: candidate.vendorFamily,
-    // The stream discovery found ready, whatever its protocol, is the one the camera is born with (ADR-61 b).
-    port: candidate.stream?.port ?? candidate.port,
-    streamPath: candidate.stream ? candidate.stream.path : candidate.streamPath,
-    streamProtocol: candidate.stream?.protocol ?? StreamProtocol.Rtsp,
-  }
+  return { ...state.form, displayName: candidate.displayName, host: candidate.host }
 }
 
 export function addCameraReducer(state: AddCameraUido, action: AddCameraAction): AddCameraUido {
   switch (action.type) {
     case 'FORM_UPDATED':
-      // Editing invalidates the verification, which was for the previous values.
       return {
         ...state,
         form: { ...state.form, ...action.patch },
-        verification: null,
         message: null,
         error: null,
       }
@@ -35,7 +22,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'none' },
         form: emptyCameraDraft,
-        verification: null,
+        helpVendor: null,
         message: null,
         error: null,
       }
@@ -45,7 +32,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'manual' },
         form: emptyCameraDraft,
-        verification: null,
+        helpVendor: null,
         message: null,
         error: null,
       }
@@ -55,7 +42,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
-        verification: null,
+        helpVendor: action.candidate.vendorFamily,
         message: null,
         error: null,
       }
@@ -91,7 +78,8 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         discoveryResults: results,
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
-        verification: null,
+        // A later scan that recognises no vendor keeps the user's pick.
+        helpVendor: action.candidate.vendorFamily ?? state.helpVendor,
         message: action.message,
       }
     }
@@ -103,27 +91,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
       return {
         ...state,
         refreshing: false,
-        error: { message: action.message, diagnostic: action.diagnostic },
-      }
-
-    case 'VERIFY_DRAFT_STARTED':
-      return { ...state, verifying: true, message: null, error: null }
-
-    case 'VERIFY_DRAFT_SUCCEEDED':
-      return action.connected
-        ? {
-            ...state,
-            verifying: false,
-            verification: { connected: true, guidance: action.guidance },
-            message: action.message,
-          }
-        : { ...state, verifying: false, verification: null, error: { message: action.message } }
-
-    case 'VERIFY_DRAFT_FAILED':
-      return {
-        ...state,
-        verifying: false,
-        verification: null,
         error: { message: action.message, diagnostic: action.diagnostic },
       }
 
@@ -142,6 +109,9 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
 
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }
+
+    case 'HELP_VENDOR_CHOSEN':
+      return { ...state, helpVendor: action.vendorFamily }
 
     case 'VENDOR_ASSISTANCE_STARTED':
       return { ...state, vendorAssistance: { loading: true, markdown: null, error: null } }

@@ -17,14 +17,15 @@ public sealed record CameraStatusDto(
 {
     public static CameraStatusDto From(Camera camera, string? guidanceOverride = null)
     {
-        var connected = string.Equals(camera.Status, "online", StringComparison.OrdinalIgnoreCase);
+        var status = StatusOf(camera);
+        var connected = string.Equals(status, "online", StringComparison.OrdinalIgnoreCase);
         var previewAvailable = camera.LastSuccessfulFrameAt.HasValue;
         var needsAttention = !connected || !camera.IsEnabled || camera.ValidationState == CameraValidationState.Draft;
 
         return new CameraStatusDto(
             camera.Id,
             camera.DisplayName,
-            camera.Status,
+            status,
             SnakeCaseEnum.ToSnakeCase(camera.ValidationState),
             connected,
             previewAvailable,
@@ -34,11 +35,22 @@ public sealed record CameraStatusDto(
             camera.LastSuccessfulFrameAt);
     }
 
+    // "To set up" is the camera's only status until its stream first works (ADR-68 d).
+    public static string StatusOf(Camera camera)
+        => camera.ValidationState == CameraValidationState.ToSetUp
+            ? SnakeCaseEnum.ToSnakeCase(CameraValidationState.ToSetUp)
+            : camera.Status;
+
     private static string? BuildGuidance(Camera camera, bool connected, bool previewAvailable)
     {
         if (camera.ValidationState == CameraValidationState.PendingRemoval)
         {
             return "Suppression en attente. Appliquez la configuration pour finaliser le retrait dans Frigate.";
+        }
+
+        if (camera.ValidationState == CameraValidationState.ToSetUp)
+        {
+            return "Caméra à configurer : son flux vidéo n'a pas encore fonctionné. Lancez « Détecter automatiquement » ou choisissez son flux.";
         }
 
         if (camera.ValidationState == CameraValidationState.Draft)
