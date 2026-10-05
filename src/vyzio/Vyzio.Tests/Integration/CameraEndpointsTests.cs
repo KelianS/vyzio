@@ -407,8 +407,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
             "192.168.1.12",
             null,
             null,
-            "rtsp_manual",
-            "person_default"));
+            "rtsp_manual"));
 
         response.EnsureSuccessStatusCode();
         var payload = await response.Content.ReadFromJsonAsync<CameraResponse>();
@@ -531,7 +530,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Empty(refreshedCatalog!);
     }
 
-    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, string? Username, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, DateTimeOffset? DetectedAt, string? FrigateCameraName, string? VendorFamily);
+    public sealed record CameraResponse(string Id, string Slug, string DisplayName, string SourceType, string Host, string? Username, string Status, string ValidationState, bool IsEnabled, bool PreviewAvailable, bool NeedsAttention, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt, DateTimeOffset? DetectedAt, string? FrigateCameraName);
 
     public sealed record PrivacyResponse(string Id, bool PrivacyModeActive);
 

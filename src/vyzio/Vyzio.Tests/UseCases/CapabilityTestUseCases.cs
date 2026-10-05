@@ -66,7 +66,7 @@ internal static class CapabilityTestUseCases
         return enumerator;
     }
 
-    public static SeedAndProbePresetsUseCase Seed(
+    public static DetectCameraCapabilitiesUseCase Seed(
         ICameraRepository cameras,
         ICameraCapabilityBindingRepository bindings,
         ICapabilityProviderRegistry registry,

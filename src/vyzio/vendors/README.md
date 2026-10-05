@@ -61,18 +61,3 @@ Discovery names the vendor by itself only on a very strong signal: an answer tha
 vendor's proprietary protocol gives, without an account (ADR-71). Without one, the user picks the
 vendor from the list on the add screen. A protocol the vendor speaks is a capability provider, not a
 vendor entry: a new one takes its place in the protocol priority of each capability it serves.
-
----
-
-## Capability presets in the code
-
-<!-- vendor-presets:start -->
-```
-TplinkTapo → Ptz/[Onvif], ImageSettings/[Onvif], HardwarePrivacy/[TapoKlap]
-Icsee → Ptz/[Onvif, Dvrip], ImageSettings/[Dvrip]
-V380Pro → Ptz/[V380]
-```
-<!-- vendor-presets:end -->
-
-Rendered from `VendorCapabilityPresets.All` and checked by `VendorCatalogDocumentationTests`. ADR-71
-rules presets out: do not add one.

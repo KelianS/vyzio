@@ -40,7 +40,6 @@ interface CameraDto {
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string
-  vendorFamily: string | null
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
@@ -387,7 +386,6 @@ function mapCamera(camera: CameraDto): Camera {
     lastReachabilityCheckAt: camera.lastReachabilityCheckAt,
     lastSuccessfulFrameAt: camera.lastSuccessfulFrameAt,
     frigateCameraName: camera.frigateCameraName,
-    vendorFamily: camera.vendorFamily,
     privacyModeActive: camera.privacyModeActive ?? false,
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,

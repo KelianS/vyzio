@@ -2,8 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Replaces IVendorCameraAdapterFactory (ADR-22). Resolution is by (capability, protocol) —
-// a typed, compile-checked dimension — never by VendorFamily string.
+// Resolution is by (capability, protocol), never by vendor (ADR-22, ADR-71).
 public interface ICapabilityProviderRegistry
 {
     // Throws if no provider is registered for the given protocol — a missing registration
@@ -16,8 +15,6 @@ public interface ICapabilityProviderRegistry
 
     IStreamCapabilityProvider ResolveStream(SupportedProtocol protocol);
 
-    // Protocols with a registered provider for this capability, in DI registration order
-    // (used to blind-probe a capability when no vendor preset narrows the candidates, ADR-28).
-    // Empty for a capability with no providers at all.
+    // Protocols with a registered provider for this capability, in its priority order (ADR-71 b); empty for none.
     IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability);
 }

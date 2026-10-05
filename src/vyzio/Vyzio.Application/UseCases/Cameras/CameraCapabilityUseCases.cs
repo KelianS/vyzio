@@ -11,21 +11,19 @@ public sealed record CameraCapabilityBindingDto(
     bool Verified,
     DateTimeOffset? VerifiedAt,
     string? LastError,
-    bool IsPreset,
     bool IsConfigured,
     string Status,
     bool? PanInverted = null,
     bool? NativePositions = null,
     DateTimeOffset? ConfirmedAt = null)
 {
-    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding, bool isPreset = false) => new(
+    public static CameraCapabilityBindingDto From(CameraCapabilityBinding binding) => new(
         SnakeCaseEnum.ToSnakeCase(binding.Capability),
         SnakeCaseEnum.ToSnakeCase(binding.Protocol),
         binding.ConfigJson,
         binding.Verified,
         binding.VerifiedAt,
         binding.LastError,
-        IsPreset: isPreset,
         IsConfigured: true,
         // Verified says whether it is usable, Status why (ADR-66).
         Status: SnakeCaseEnum.ToSnakeCase(binding.Status),
@@ -37,14 +35,14 @@ public sealed record CameraCapabilityBindingDto(
         NativePositions: binding.Capability == CameraCapability.Ptz ? PtzPositionTier.IsNative(binding) : null,
         ConfirmedAt: binding.ConfirmedAt);
 
-    public static CameraCapabilityBindingDto FromPreset(CameraCapability capability, SupportedProtocol protocol) => new(
-        SnakeCaseEnum.ToSnakeCase(capability),
+    // The stream not chosen yet reads "to configure" over its first protocol (ADR-61).
+    public static CameraCapabilityBindingDto UnchosenStream(SupportedProtocol protocol) => new(
+        SnakeCaseEnum.ToSnakeCase(CameraCapability.Stream),
         SnakeCaseEnum.ToSnakeCase(protocol),
         ConfigJson: null,
         Verified: false,
         VerifiedAt: null,
         LastError: null,
-        IsPreset: true,
         IsConfigured: false,
         Status: SnakeCaseEnum.ToSnakeCase(CapabilityStatus.Failed));
 }
@@ -151,10 +149,7 @@ public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
     public SupportedProtocol Protocol { get; } = protocol;
 }
 
-// Manual onboarding for non-listed cameras, or manual override on a recognized vendor
-// (SPECS §2.3): creates/updates a binding then immediately probes it — a binding is never
-// offered as activatable on declaration alone. Marks the binding ManuallyConfigured so
-// SeedAndProbePresetsUseCase never silently reverts this choice back to the vendor preset (ADR-28).
+// A capability added or moved by hand, probed at once; detection never reverts the choice (ADR-28, ADR-71 b).
 // One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-61 d).
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
@@ -244,7 +239,6 @@ public sealed class GetCameraCapabilitiesUseCase(
         if (camera is null) return null;
 
         var dbBindings = await bindings.GetByCameraAsync(cameraId, ct);
-        var preset = camera.VendorFamily is { } vf ? VendorCapabilityPresets.GetByVendorFamily(vf) : null;
 
         // The stream first, every other capability depends on it; unchosen, it reads "to configure" (ADR-61).
         var stream = dbBindings.FirstOrDefault(b => b.Capability == CameraCapability.Stream);
@@ -252,30 +246,9 @@ public sealed class GetCameraCapabilitiesUseCase(
         {
             stream is not null
                 ? CameraCapabilityBindingDto.From(stream)
-                : CameraCapabilityBindingDto.FromPreset(CameraCapability.Stream, registry.GetRegisteredProtocols(CameraCapability.Stream)[0]),
+                : CameraCapabilityBindingDto.UnchosenStream(registry.GetRegisteredProtocols(CameraCapability.Stream)[0]),
         };
-
-        if (preset is not null)
-        {
-            // Preset capabilities first — existing binding if available, synthetic suggestion otherwise
-            // (first candidate protocol — the one SeedAndProbePresetsUseCase tries first, ADR-28).
-            foreach (var (capability, protocols) in preset.DefaultBindings)
-            {
-                var binding = dbBindings.FirstOrDefault(b => b.Capability == capability);
-                result.Add(binding is not null
-                    ? CameraCapabilityBindingDto.From(binding, isPreset: true)
-                    : CameraCapabilityBindingDto.FromPreset(capability, protocols[0]));
-            }
-        }
-
-        // Non-preset bindings (manually added on unlisted cameras).
-        var listed = preset?.DefaultBindings.Select(b => b.Capability).ToHashSet() ?? [];
-        listed.Add(CameraCapability.Stream);
-        foreach (var binding in dbBindings)
-        {
-            if (!listed.Contains(binding.Capability))
-                result.Add(CameraCapabilityBindingDto.From(binding));
-        }
+        result.AddRange(dbBindings.Where(b => b.Capability != CameraCapability.Stream).Select(CameraCapabilityBindingDto.From));
 
         return result;
     }

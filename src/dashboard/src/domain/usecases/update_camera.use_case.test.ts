@@ -26,7 +26,6 @@ describe('UpdateCamera', () => {
         lastReachabilityCheckAt: null,
         lastSuccessfulFrameAt: null,
         frigateCameraName: 'front_door',
-        vendorFamily: null,
       }),
       verify: vi.fn(),
       apply: vi.fn(),
@@ -43,7 +42,6 @@ describe('UpdateCamera', () => {
       username: null,
       password: null,
       sourceType: 'rtsp_manual',
-      vendorFamily: null,
     })
 
     // Assert

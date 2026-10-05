@@ -21,7 +21,6 @@ describe('GetCameras', () => {
         lastReachabilityCheckAt: null,
         lastSuccessfulFrameAt: null,
         frigateCameraName: 'front_door',
-        vendorFamily: 'tplink_tapo',
       },
     ]
 

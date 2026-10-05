@@ -155,16 +155,12 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
 
         var normalizedHost = request.Host.Trim();
         var normalizedUsername = CameraFactory.NormalizeOptional(request.Username);
-        var normalizedVendorFamily = SnakeCaseEnum.TryFromSnakeCase<VendorFamily>(request.VendorFamily, out var parsedVendorFamily)
-            ? parsedVendorFamily
-            : (VendorFamily?)null;
         var normalizedSourceType = string.IsNullOrWhiteSpace(request.SourceType) ? camera.SourceType : request.SourceType.Trim();
         var normalizedPassword = request.Password is null ? null : CameraFactory.NormalizeOptional(request.Password);
 
         var connectivityChanged = !string.Equals(camera.Host, normalizedHost, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(camera.Username, normalizedUsername, StringComparison.Ordinal)
             || !string.Equals(camera.SourceType, normalizedSourceType, StringComparison.Ordinal)
-            || camera.VendorFamily != normalizedVendorFamily
             || (normalizedPassword is not null && !string.Equals(camera.Password, normalizedPassword, StringComparison.Ordinal));
 
         var normalizedDisplayName = request.DisplayName.Trim();
@@ -177,7 +173,6 @@ public sealed class UpdateCameraUseCase(ICameraRepository cameras, IFrigateConfi
         camera.Host = normalizedHost;
         camera.Username = normalizedUsername;
         camera.SourceType = normalizedSourceType;
-        camera.VendorFamily = normalizedVendorFamily;
 
         if (normalizedPassword is not null)
         {

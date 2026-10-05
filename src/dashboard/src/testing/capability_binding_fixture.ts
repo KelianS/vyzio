@@ -17,7 +17,6 @@ export function makeCapabilityBinding(
     confirmedAt: null,
     verifiedAt: null,
     lastError: null,
-    isPreset: true,
     isConfigured: true,
     panInverted: null,
     nativePositions: null,

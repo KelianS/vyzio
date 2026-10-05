@@ -19,7 +19,6 @@ export interface FakeCamera {
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string | null
-  vendorFamily: string | null
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
@@ -155,7 +154,6 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     lastSuccessfulFrameAt: new Date().toISOString(),
     // Derived from the slug as the backend does, so each camera has its own frame-rate row.
     frigateCameraName: (overrides.slug ?? 'front-door').replaceAll('-', '_'),
-    vendorFamily: null,
     privacyModeActive: false,
     privacyModeSource: null,
     privacyVendorCut: false,
@@ -480,7 +478,6 @@ function streamBindingOf(binding: FakeBackendState['streamBinding']) {
         ? CapabilityStatus.Verified
         : CapabilityStatus.Failed,
     confirmedAt: null,
-    isPreset: false,
     isConfigured: configured,
     panInverted: null,
     nativePositions: null,
@@ -625,7 +622,6 @@ function ptzBindingOf(binding: FakePtzBinding) {
     confirmedAt: binding.confirmedAt ?? null,
     verifiedAt: '2026-01-01T00:00:00Z',
     lastError: null,
-    isPreset: false,
     isConfigured: true,
     panInverted:
       (JSON.parse(binding.configJson ?? '{}') as { pan_inverted?: boolean }).pan_inverted ?? false,

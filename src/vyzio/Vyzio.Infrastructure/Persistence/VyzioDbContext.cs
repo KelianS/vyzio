@@ -57,7 +57,6 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             // ADR-22 point 0 — enum in code, same TEXT column/values already in the database.
             camera.Property(c => c.ValidationState).HasConversion<SnakeCaseEnumConverter<CameraValidationState>>().HasMaxLength(50);
-            camera.Property(c => c.VendorFamily).HasConversion<NullableSnakeCaseEnumConverter<VendorFamily>>();
             camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
             camera.Property(c => c.PrivacyMiss).HasConversion<NullableSnakeCaseEnumConverter<PrivacyMiss>>();
             camera.Property(c => c.PrivacyStrategy).HasConversion<SnakeCaseEnumConverter<PrivacyStrategy>>();

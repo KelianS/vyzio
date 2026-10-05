@@ -353,7 +353,7 @@ public static class CamerasEndpoints
 
         group.MapPost("/{id}/capabilities/detect", async (
             string id,
-            SeedAndProbePresetsUseCase useCase,
+            DetectCameraCapabilitiesUseCase useCase,
             ICameraRepository cameras,
             CancellationToken ct) =>
         {

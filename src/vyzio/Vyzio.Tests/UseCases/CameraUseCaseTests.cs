@@ -388,7 +388,6 @@ public class CreateCameraUseCaseTests
         Assert.Equal("fixture-secret", added.Password);
         Assert.Empty(added.Protocols);
         Assert.Empty(added.Capabilities);
-        Assert.Null(added.VendorFamily);
     }
 
     [Fact]

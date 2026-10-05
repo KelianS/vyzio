@@ -36,13 +36,16 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_ShouldListStreamProtocolsInRegistrationOrder_WhenSeveralStreamProvidersAreRegistered()
+    public void GetRegisteredProtocols_ShouldListRtspBeforeDvripForTheStream_WhenDvripIsRegisteredFirst()
     {
-        var rtsp = MakeStream(SupportedProtocol.Rtsp);
-        var dvrip = MakeStream(SupportedProtocol.Dvrip);
-        var sut = new CapabilityProviderRegistry([], [], [], [rtsp, dvrip]);
+        // Arrange
+        var sut = new CapabilityProviderRegistry([], [], [], [MakeStream(SupportedProtocol.Dvrip), MakeStream(SupportedProtocol.Rtsp)]);
 
-        Assert.Equal([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip], sut.GetRegisteredProtocols(CameraCapability.Stream));
+        // Act
+        var protocols = sut.GetRegisteredProtocols(CameraCapability.Stream);
+
+        // Assert
+        Assert.Equal([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip], protocols);
     }
 
     [Fact]
@@ -155,13 +158,17 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_ShouldListPtzProtocolsInRegistrationOrder_WhenSeveralPtzProvidersAreRegistered()
+    public void GetRegisteredProtocols_ShouldListProprietaryPtzProtocolsBeforeOnvif_WhenOnvifIsRegisteredFirst()
     {
-        var onvif = MakePtz(SupportedProtocol.Onvif);
-        var dvrip = MakePtz(SupportedProtocol.Dvrip);
-        var sut = new CapabilityProviderRegistry([onvif, dvrip], [], []);
+        // Arrange
+        var sut = new CapabilityProviderRegistry(
+            [MakePtz(SupportedProtocol.Onvif), MakePtz(SupportedProtocol.Dvrip), MakePtz(SupportedProtocol.V380), MakePtz(SupportedProtocol.TapoKlap)], [], []);
 
-        Assert.Equal([SupportedProtocol.Onvif, SupportedProtocol.Dvrip], sut.GetRegisteredProtocols(CameraCapability.Ptz));
+        // Act
+        var protocols = sut.GetRegisteredProtocols(CameraCapability.Ptz);
+
+        // Assert
+        Assert.Equal([SupportedProtocol.V380, SupportedProtocol.Dvrip, SupportedProtocol.TapoKlap, SupportedProtocol.Onvif], protocols);
     }
 
     [Fact]
@@ -174,13 +181,16 @@ public class CapabilityProviderRegistryTests
     }
 
     [Fact]
-    public void GetRegisteredProtocols_ShouldListImageSettingsProtocolsInRegistrationOrder_WhenSeveralImageSettingsProvidersAreRegistered()
+    public void GetRegisteredProtocols_ShouldListDvripImageSettingsBeforeOnvif_WhenOnvifIsRegisteredFirst()
     {
-        var onvif = MakeImageSettings(SupportedProtocol.Onvif);
-        var dvrip = MakeImageSettings(SupportedProtocol.Dvrip);
-        var sut = new CapabilityProviderRegistry([], [], [onvif, dvrip]);
+        // Arrange
+        var sut = new CapabilityProviderRegistry([], [], [MakeImageSettings(SupportedProtocol.Onvif), MakeImageSettings(SupportedProtocol.Dvrip)]);
 
-        Assert.Equal([SupportedProtocol.Onvif, SupportedProtocol.Dvrip], sut.GetRegisteredProtocols(CameraCapability.ImageSettings));
+        // Act
+        var protocols = sut.GetRegisteredProtocols(CameraCapability.ImageSettings);
+
+        // Assert
+        Assert.Equal([SupportedProtocol.Dvrip, SupportedProtocol.Onvif], protocols);
     }
 
     [Fact]
