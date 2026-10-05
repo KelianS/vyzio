@@ -21,16 +21,11 @@ test('adding a camera', async ({ page }) => {
   await shoot(page.getByRole('heading', { name: 'Ajouter une caméra' }))
 
   await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
-  await shoot(page.getByRole('alertdialog').getByText(/plage configurée par défaut/))
+  await expect(page.getByRole('alertdialog').getByText(/plage configurée par défaut/)).toBeVisible()
 
   await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
   await shoot(page.getByRole('button', { name: /Caméra détectée/ }))
 
   await page.getByRole('button', { name: /Caméra détectée/ }).click()
   await shoot(page.getByRole('button', { name: 'Ajouter la caméra' }))
-
-  // The page opens on Connexion and detects the camera on arrival (ADR-68 b).
-  await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
-  await expect(page.getByText(/^Détection terminée :/)).toBeVisible()
-  await shoot(page.getByRole('button', { name: /Appliquer les changements/ }))
 })

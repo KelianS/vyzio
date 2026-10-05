@@ -14,6 +14,7 @@ import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { Camera } from '../../domain/entities/camera.entity'
+import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
@@ -69,6 +70,7 @@ export function HubView() {
     <>
       <HubOperational
         data={uido.data}
+        detectionLabels={uido.detectionLabels}
         cameras={cameras}
         apiBaseUrl={apiBaseUrl}
         systemStats={systemStats}
@@ -224,6 +226,7 @@ function HubWelcome() {
 
 interface HubOperationalProps {
   data: HubOverview
+  detectionLabels: readonly DetectionLabel[]
   cameras: Camera[]
   apiBaseUrl: string
   systemStats: SystemStats | null
@@ -237,6 +240,7 @@ interface HubOperationalProps {
 
 function HubOperational({
   data,
+  detectionLabels,
   cameras,
   apiBaseUrl,
   systemStats,
@@ -337,6 +341,7 @@ function HubOperational({
             <div className="mt-3">
               <DetectionList
                 events={data.recentEvents.slice(0, RECENT_EVENTS_MAX)}
+                labels={detectionLabels}
                 apiBaseUrl={apiBaseUrl}
                 onOpenMedia={onOpenMedia}
               />

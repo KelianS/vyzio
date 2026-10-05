@@ -30,6 +30,10 @@ export function buildHubPresenter({
         .execute()
         .then((data) => dispatch({ type: 'LOAD_SUCCEEDED', data }))
         .catch((e: unknown) => dispatch({ type: 'LOAD_FAILED', error: toAppError(e) }))
+      camerasContainer.getCameraLabels
+        .execute()
+        .then((labels) => dispatch({ type: 'LABELS_LOADED', labels }))
+        .catch((e: unknown) => toastError(toast, toAppError(e)))
     },
 
     onReloadCameras: reloadCameras,

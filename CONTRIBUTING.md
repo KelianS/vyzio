@@ -31,7 +31,7 @@ Docker commands run via `wsl docker compose ...` under the hood, since Docker is
 
 ### Documentation screenshots
 
-`task docs:capture` drives the real production build against the e2e fake backend and writes the README images to `docs/assets`. Live tiles have nothing to show there: drop a `<camera-slug>.jpg` into `src/dashboard/tools/docs-capture/stills/` to fill them, which is git-ignored on purpose since those frames are footage of someone's home.
+`task docs:capture` drives the real production build against the e2e fake backend and writes the README images to `docs/assets`. The cameras show the fake backend's royalty-free scenes, listed with their licences in [`src/dashboard/tests/e2e/fixtures/scenes/`](src/dashboard/tests/e2e/fixtures/scenes/README.md), never real footage of a home.
 
 ### Pull request screenshots
 
@@ -39,7 +39,8 @@ The rule is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Delivery gate. Write a
 `*.capture.ts` in `src/dashboard/tools/pr-capture/`, on the model of
 `tools/docs-capture/onboarding.capture.ts` (fake backend, phone viewport, a wait on what makes the
 screen recognisable), writing its images to `tools/pr-capture/out/`. The folder is git-ignored: a
-capture written for one review is not kept. Never use `docs-capture/stills` there.
+capture written for one review is not kept. A full-page shot goes through `fullPageScreenshot`
+(`tests/e2e/fixtures/`), which keeps the header at the top of the image.
 
 1. `task pr:capture` shoots the screens of the branch. For the *before* images, switch to `main`
    (the ignored capture script stays in place), shoot, prefix the images with `before-`, and switch

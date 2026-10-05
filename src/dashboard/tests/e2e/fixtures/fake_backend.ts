@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { Page, Route } from '@playwright/test'
 import {
   ASKABLE,
@@ -389,16 +391,22 @@ export interface FakeBackendState {
 
 let nextId = 1
 
-const ONE_PIXEL_GIF = Buffer.from(
-  'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7',
-  'base64',
+// Fictional royalty-free scenes, handed to the cameras in order; sources and licences in scenes/README.md.
+const SCENES = ['entrance', 'garden', 'garage', 'driveway'].map((name) =>
+  readFileSync(join(import.meta.dirname, 'scenes', `${name}.jpg`)),
 )
 
-// A room in two tones, enough for a capture to read as a picture.
-const THUMBNAIL_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
-  '<rect width="64" height="40" fill="#8aa4b8"/><rect y="40" width="64" height="24" fill="#6b5b4a"/>' +
-  '<rect x="10" y="22" width="16" height="18" fill="#3e4a56"/></svg>'
+/** What a camera films, found by any name the API gives it; an unknown one gets the first scene. */
+function sceneOf(state: FakeBackendState, name: string | undefined): Buffer {
+  const index = state.cameras.findIndex((camera) =>
+    [camera.id, camera.slug, camera.frigateCameraName].includes(name ?? ''),
+  )
+  return SCENES[Math.max(index, 0) % SCENES.length]
+}
+
+function jpeg(route: Route, body: Buffer) {
+  return route.fulfill({ status: 200, contentType: 'image/jpeg', body })
+}
 
 export function createFakeBackendState(
   overrides: Partial<FakeBackendState> = {},
@@ -864,7 +872,7 @@ export async function installFakeBackend(
       const camera = state.cameras.find((c) => c.id === cameraId)
 
       if (rest?.startsWith('/live/latest.jpg')) {
-        return route.fulfill({ status: 200, contentType: 'image/gif', body: ONE_PIXEL_GIF })
+        return jpeg(route, sceneOf(state, cameraId))
       }
       if (!rest && method === 'GET') {
         return camera ? json(route, camera) : json(route, { message: 'not found' }, 404)
@@ -1189,7 +1197,7 @@ export async function installFakeBackend(
       if (path.endsWith('/thumbnail')) {
         const presetId = Number(rest?.split('/')[3])
         return state.ptz.presets.some((p) => p.presetId === presetId && p.thumbnail)
-          ? route.fulfill({ status: 200, contentType: 'image/svg+xml', body: THUMBNAIL_SVG })
+          ? jpeg(route, sceneOf(state, cameraId))
           : json(route, {}, 404)
       }
       if (method === 'DELETE') {
@@ -1434,6 +1442,11 @@ export async function installFakeBackend(
     }
     if (path.match(/^\/api\/detection-events\/[^/]+\/identity$/) && method === 'PATCH') {
       return json(route, {})
+    }
+    const mediaMatch = path.match(/^\/api\/detection-events\/([^/]+)\/(thumbnail|snapshot)$/)
+    if (mediaMatch && method === 'GET') {
+      const event = state.detectionHistory.find((e) => e.eventId === mediaMatch[1])
+      return jpeg(route, sceneOf(state, event?.camera))
     }
 
     return json(route, { message: `unmocked: ${method} ${path}` }, 404)

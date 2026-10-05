@@ -10,7 +10,7 @@
 
 Vyzio is self-hosted home video surveillance for people who do not want to become network
 administrators. It runs on a machine you own, recognises the people who live there, and sends
-you the handful of alerts that actually matter, with no cloud account, no subscription, and
+you the handful of notifications that actually matter, with no cloud account, no subscription, and
 nothing leaving your network unless you chose to send it.
 
 It builds on [Frigate](https://frigate.video/) for local video analysis, and spends its own
@@ -23,74 +23,71 @@ a YAML file in sight.
 
 ## A look at it
 
-<img src="docs/assets/hub.png" alt="Home screen: live cameras, latest detections, alerts and system health">
+Designed for the phone first. The home screen holds the whole product: what the cameras see, who
+was recognised and when, whether notifications go out, and how the machine is doing. A tap on a
+camera opens its live view, and steers it when the camera can move.
 
-The home screen is the whole product in one page: what the cameras see, who was recognised and
-when, whether alerts are going out, and what the machine is doing. One camera is on a privacy
-schedule and says so.
+<p>
+  <img src="docs/assets/hub.jpg" width="240" alt="Home screen: live cameras, one on a privacy schedule, latest detections, notifications and system health">
+  <img src="docs/assets/live.jpg" width="240" alt="Live view of a camera, with its direction pad and position slots">
+  <img src="docs/assets/history.jpg" width="240" alt="Detection history: who was seen, where and when, each one correctable">
+</p>
 
-Adding a camera: Vyzio searches the network, and asks for nothing it can find on its own.
+Adding a camera: Vyzio searches the local network (the subnet the interface is opened from, plus
+the ranges you give it), then asks only for the camera's access.
 
 <p>
   <img src="docs/assets/onboarding-1.png" width="240" alt="Add a camera: search the network, or type the address">
-  <img src="docs/assets/onboarding-3.png" width="240" alt="One camera found, listed as ready">
-  <img src="docs/assets/onboarding-4.png" width="240" alt="Only its access is asked: name, address and account">
+  <img src="docs/assets/onboarding-2.png" width="240" alt="One camera found on the network, ready to add">
+  <img src="docs/assets/onboarding-3.png" width="240" alt="Only its access is asked: name, address and account">
 </p>
-
-Cameras, and the people the system knows about:
 
 <p>
-  <img src="docs/assets/cameras.png" width="420" alt="Camera list, each with its connection state">
-  <img src="docs/assets/people.png" width="420" alt="Known people, and what Vyzio does when it recognises them">
+  <img src="docs/assets/cameras.png" width="240" alt="Camera list, each with its connection state">
+  <img src="docs/assets/people.png" width="240" alt="Known people, and what Vyzio does when it recognises them">
 </p>
 
-> Screenshots are generated from the test fixtures (`task docs:capture`), so they hold no real
-> installation's data and can be regenerated whenever a screen changes. Live tiles and detection
-> thumbnails show a drawn stand-in: nothing here is passed off as a scene a camera saw.
+> Generated on the test fixtures by `task docs:capture`: no real installation's data. The camera
+> images are royalty-free stock scenes, with their sources in
+> [`tests/e2e/fixtures/scenes/`](src/dashboard/tests/e2e/fixtures/scenes/README.md).
 
 ---
 
 ## Features
 
-- **Local person recognition.** Faces are matched on your own machine, and Vyzio turns those
-  signals into named, readable alerts.
-- **Alerts worth reading.** Filtering and prioritisation, so a swaying branch does not wake you
-  up. Every alert says why it fired.
+- **Local person recognition.** Faces are matched on your own machine, and a detection names who
+  was seen.
+- **Notifications worth reading.** You choose which people and which cameras notify you, and
+  through which channel.
 - **Works with the IP cameras you already own.** RTSP and ONVIF, plus vendor protocols where a
   camera needs one.
-- **One place to drive every camera.** PTZ, hardware privacy mode, image settings and scheduled
-  privacy windows. No more one vendor app per camera.
+- **One place to drive every camera.** Movement, privacy mode, image settings and privacy
+  schedules. No more one vendor app per camera.
 - **Local recording.** Clips and history live on your disk, under your retention rules.
-- **Offline first.** The system keeps running without internet. Notifications need it: one that
-  fails while the network is down is not sent again
-  ([issue #51](https://github.com/KelianS/vyzio/issues/51)).
-- **Guided setup.** Network discovery finds the cameras, and the interface walks through the
-  rest. No configuration file to hand-write.
+- **Offline first.** Everything keeps running without internet except notifications, and one that
+  fails while the network is down is not sent again.
+- **Guided setup.** Network discovery finds the cameras. No configuration file to hand-write.
 
 ---
 
 ## Cameras
 
 **Any RTSP or ONVIF camera can be added**, by discovery or by typing its address. Beyond the video
-stream, Vyzio speaks the protocols of the brands below and detects what each camera can do, the same
-way whatever its brand. While adding one, the interface offers each brand's help sheet: what to
-prepare in the vendor app first.
+stream, Vyzio also speaks the proprietary protocols of a few brands, and detects what each camera
+can do the same way whatever its brand: it reads the proof from the camera, or, where none can be
+read, asks you to try the capability once and say whether it worked. The brand only picks a help
+sheet: what to prepare in the vendor app first ([`src/vyzio/vendors/`](src/vyzio/vendors/README.md)).
 
-| Brand            | Privacy mode                       | Move the camera | Image settings                    |
-| ---------------- | ---------------------------------- | --------------- | --------------------------------- |
-| TP-Link Tapo     | Turns away and stops recording      | Yes             | Brightness, contrast, sharpness, IR |
-| ICSee / XMEye    | Turns away and stops recording      | Yes             | Brightness, contrast, saturation  |
-| V380 PRO         | Turns away and stops recording      | Yes             | Not confirmed on the tested units |
+Brands whose own protocols Vyzio speaks:
 
-A **hardware cut** means Vyzio asks the camera's own firmware to close the shutter and kill the
-sensor, so nothing is filmed at all. Where a camera offers no such thing, Vyzio physically turns it
-to the parking position you saved, stops recording at the same time, and turns it back afterwards.
+| Camera        | Privacy mode                   | Move the camera | Image settings                      |
+| ------------- | ------------------------------ | --------------- | ----------------------------------- |
+| TP-Link Tapo  | Turns away and stops recording | Yes             | Brightness, contrast, sharpness, IR |
+| ICSee / XMEye | Turns away and stops recording | Yes             | Brightness, contrast, saturation    |
+| V380 PRO      | Turns away and stops recording | Yes             | Not confirmed on the tested units   |
 
-Nothing in that table is taken on trust: before Vyzio offers a capability, it reads the proof from
-the camera itself, or, where the camera offers no way to prove it, asks you to try it once and say
-whether it worked. One that fails is never offered as available, without affecting the others.
-The list grows one brand at a time; the help sheets are listed in
-[`src/vyzio/vendors/README.md`](src/vyzio/vendors/README.md).
+A camera whose firmware can cut its own sensor is asked to, so nothing is filmed at all. Otherwise
+Vyzio turns it to the parking position you saved, stops recording, and turns it back afterwards.
 
 ---
 
@@ -132,16 +129,8 @@ docker compose up -d
 
 ### Configuration
 
-Every value ships with a production-ready default. Override through `VYZIO_*` variables in
-`docker-compose.yml`:
-
-| Variable                      | Default               | Description                                             |
-| ----------------------------- | --------------------- | ------------------------------------------------------- |
-| `VYZIO_TIME_ZONE`             | system TZ             | IANA time zone, e.g. `Europe/Paris`                      |
-| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)*              | Default ranges scanned for cameras, e.g. `192.168.1.0/24` (ADR-71) |
-| `VYZIO_FRIGATE_API_BASE_URL`  | `http://frigate:5000` | Internal Frigate URL; leave alone outside custom deploys |
-
-Full list in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Every value ships with a production-ready default. The `VYZIO_*` variables that override one in
+`docker-compose.yml`, such as the time zone, are listed in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ### Recommended hardware
 
@@ -163,15 +152,15 @@ The only way back in is the machine hosting Vyzio:
 docker compose exec vyzio-api dotnet Vyzio.Api.dll reset-password
 ```
 
-The command **removes** the password and closes every open session. It does not ask for a new
-one, which would otherwise sit in your shell history. Vyzio then reopens on the password-choice
-screen for **30 minutes**, with cameras, settings and history untouched. After that it locks
-itself again, and the command has to be run once more.
+The command **removes** the password (a new one would sit in your shell history) and closes every
+session. Vyzio then offers the password choice for a limited time, cameras, settings and history
+untouched, then locks itself again
+([ADR-54](docs/adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)).
 
-> During those 30 minutes, anyone who can reach the interface on the local network can claim the
-> password. Run the command when you are ready to type one.
+> Meanwhile, anyone on the local network can claim the password: run the command when you are
+> ready to type one.
 
-Changing a password you still know needs none of this: Settings › Access, in the interface.
+A password you still know changes in the interface: `Réglages › Accès`.
 
 ---
 
@@ -198,8 +187,9 @@ Compose deployment) is in place.
 What a 1.0 still waits on is tracked in the
 [issues](https://github.com/KelianS/vyzio/issues), notably
 [per-camera areas of interest](https://github.com/KelianS/vyzio/issues/68) and
-[data export and erasure](https://github.com/KelianS/vyzio/issues/69). Read
-[`SECURITY.md`](SECURITY.md) before deploying: the home network is served in the clear, by design.
+[data export and erasure](https://github.com/KelianS/vyzio/issues/69). Access from outside the home
+is not delivered yet. Read [`SECURITY.md`](SECURITY.md) before deploying: the home network is
+served in the clear, by design.
 
 ---
 
