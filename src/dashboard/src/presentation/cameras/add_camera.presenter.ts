@@ -110,11 +110,7 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
     },
 
-    async onVendorAssistanceNeeded(
-      vendorFamily: string | null,
-      streamPath: string | null,
-      connected: boolean,
-    ): Promise<void> {
+    async onVendorAssistanceNeeded(vendorFamily: string | null): Promise<void> {
       const isLatest = nextVendorRequest()
       if (!vendorFamily) {
         dispatch({ type: 'VENDOR_ASSISTANCE_CLEARED' })
@@ -122,11 +118,7 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       }
       dispatch({ type: 'VENDOR_ASSISTANCE_STARTED' })
       try {
-        const assistance = await container.getVendorAssistance.execute({
-          vendorFamily,
-          streamPath,
-          connected,
-        })
+        const assistance = await container.getVendorAssistance.execute({ vendorFamily })
         if (isLatest()) {
           dispatch({ type: 'VENDOR_ASSISTANCE_SUCCEEDED', markdown: assistance?.markdown ?? null })
         }

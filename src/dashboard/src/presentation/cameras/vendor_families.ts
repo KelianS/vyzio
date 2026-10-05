@@ -19,6 +19,6 @@ export const NO_HELP_VENDOR = 'none'
 
 /** The add screen's help list: it only picks which vendor sheet shows (#274). */
 export const helpVendorOptions: readonly ChoiceOption[] = [
-  { value: NO_HELP_VENDOR, label: 'Je ne sais pas' },
+  { value: NO_HELP_VENDOR, label: 'Autre marque' },
   ...Object.entries(VENDOR_FAMILY_LABELS).map(([value, label]) => ({ value, label })),
 ]

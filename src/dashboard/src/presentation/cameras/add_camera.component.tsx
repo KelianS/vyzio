@@ -23,6 +23,10 @@ import { buildAddCameraPresenter } from './add_camera.presenter'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido'
 
+/** What to prepare in a camera app whatever its brand: the help when no vendor sheet is chosen. */
+const OTHER_BRAND_HELP =
+  'Ouvrez l’application de la caméra et créez-y un compte pour Vyzio. Si elle propose la vidéo locale (RTSP), activez-la.'
+
 /** Adding a camera is one task, one page (ADR-40): find it, give its access, add it; its page sets the rest (ADR-68). */
 export function AddCameraView() {
   const { cameras: container } = useAppContainer()
@@ -53,16 +57,6 @@ export function AddCameraView() {
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
-  // The vendor only picks the help sheet; it is never handed to the camera (#274).
-  const vendorFamily = uido.helpVendor
-  const streamPath = candidate?.streamPath ?? null
-  // A candidate whose stream is ready needs no activation notice, whatever its protocol.
-  const connected = Boolean(candidate?.stream)
-  useEffect(() => {
-    void presenter.onVendorAssistanceNeeded(vendorFamily, streamPath, connected)
-  }, [presenter, vendorFamily, streamPath, connected])
-  const vendorAssistance = uido.vendorAssistance
-
   const busy = uido.discovering || uido.refreshing || uido.creating
 
   // One-line summary of step 1's pick, shown once the list collapses.
@@ -80,9 +74,12 @@ export function AddCameraView() {
   const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
   // A ready camera needs no preparing, so only the other two ways in offer the help list.
   const offersHelpList = needsActivation || uido.selection.kind === 'manual'
-  const showsNotice = Boolean(
-    vendorAssistance.loading || vendorAssistance.error || vendorAssistance.markdown,
-  )
+  // The vendor only picks the help sheet; it is never handed to the camera (#274).
+  const vendorFamily = offersHelpList ? uido.helpVendor : null
+  useEffect(() => {
+    void presenter.onVendorAssistanceNeeded(vendorFamily)
+  }, [presenter, vendorFamily])
+  const vendorAssistance = uido.vendorAssistance
   const canAdd = Boolean(uido.form.displayName.trim() && uido.form.host.trim())
 
   async function add() {
@@ -251,31 +248,6 @@ export function AddCameraView() {
           </SettingsSection>
         )}
 
-        {/* Before the access: the vendor's prerequisites, such as the camera account, come first. */}
-        {(offersHelpList || showsNotice) && (
-          <SettingsSection
-            title="Aide de votre caméra"
-            lede={
-              offersHelpList
-                ? 'Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide.'
-                : undefined
-            }
-          >
-            {offersHelpList && <SettingsList settings={[helpChoice]} />}
-            {showsNotice && (
-              <div className={cn(offersHelpList && 'mt-4')}>
-                {vendorAssistance.loading ? (
-                  <p className="text-muted-foreground">Chargement…</p>
-                ) : vendorAssistance.error ? (
-                  <ErrorMessage error={vendorAssistance.error} className="text-base" />
-                ) : (
-                  <VendorNotice markdown={vendorAssistance.markdown!} />
-                )}
-              </div>
-            )}
-          </SettingsSection>
-        )}
-
         {showForm && (
           <SettingsSection
             title="Connexion"
@@ -295,6 +267,26 @@ export function AddCameraView() {
           </SettingsSection>
         )}
 
+        {/* Last, so a user who already prepared the camera never scrolls past it. */}
+        {offersHelpList && (
+          <SettingsSection
+            title="Aide de votre caméra"
+            lede="Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide."
+          >
+            <SettingsList settings={[helpChoice]} />
+            <div className="mt-4">
+              {vendorFamily === null ? (
+                <p className="text-sm">{OTHER_BRAND_HELP}</p>
+              ) : vendorAssistance.loading ? (
+                <p className="text-muted-foreground">Chargement…</p>
+              ) : vendorAssistance.error ? (
+                <ErrorMessage error={vendorAssistance.error} className="text-base" />
+              ) : vendorAssistance.markdown ? (
+                <VendorNotice markdown={vendorAssistance.markdown} />
+              ) : null}
+            </div>
+          </SettingsSection>
+        )}
         {candidate && <TechnicalFacts candidate={candidate} />}
       </SettingsPage>
 

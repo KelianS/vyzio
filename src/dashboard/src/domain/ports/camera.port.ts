@@ -19,8 +19,6 @@ import type { CameraImageSettings } from '../entities/camera_image_settings.enti
 
 export interface VendorAssistanceRequest {
   vendorFamily: string | null
-  streamPath: string | null
-  connected: boolean
 }
 
 export interface DiscoveryRequest {

@@ -19,8 +19,8 @@ describe('buildAddCameraPresenter', () => {
       dispatch,
       toast: vi.fn(),
     })
-    const first = presenter.onVendorAssistanceNeeded('icsee', null, false)
-    await presenter.onVendorAssistanceNeeded('tplink_tapo', '/stream1', true)
+    const first = presenter.onVendorAssistanceNeeded('icsee')
+    await presenter.onVendorAssistanceNeeded('tplink_tapo')
 
     // Act
     answerEarlier(notice('earlier'))

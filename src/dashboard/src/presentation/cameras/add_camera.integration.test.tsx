@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -155,7 +155,7 @@ describe('AddCameraView', () => {
     expect(screen.getByRole('combobox', { name: 'Marque' })).toHaveTextContent('TP-Link Tapo')
   })
 
-  it('onSelectManualEntry_ShouldOfferTheHelpListWithNoVendorChosen_WhenTheUserTypesTheAddress', async () => {
+  it('onSelectManualEntry_ShouldShowTheGeneralHelpForAnotherBrand_WhenTheUserTypesTheAddress', async () => {
     // Arrange
     fakeNetwork({})
     renderScreen(<AddCameraView />)
@@ -165,8 +165,41 @@ describe('AddCameraView', () => {
 
     // Assert
     expect(screen.getByText('Aide de votre caméra')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Marque' })).toHaveTextContent('Je ne sais pas')
+    expect(screen.getByRole('combobox', { name: 'Marque' })).toHaveTextContent('Autre marque')
+    expect(
+      screen.getByText(/^Ouvrez l’application de la caméra et créez-y un compte/),
+    ).toBeVisible()
   })
+
+  it.each([
+    { label: 'V380 PRO', vendorFamily: 'v380_pro' },
+    { label: 'TP-Link Tapo', vendorFamily: 'tplink_tapo' },
+    { label: 'ICSee / XMEye', vendorFamily: 'icsee' },
+  ])(
+    'onHelpVendorChosen_ShouldShowThatVendorsSheet_WhenTheCameraToPrepareCarriesADiscoveredPath ($vendorFamily)',
+    async ({ label, vendorFamily }) => {
+      // Arrange
+      const network = fakeNetwork({
+        'POST /api/cameras/discovery': ok([{ ...answeringNoStream, streamPath: '/onvif1' }]),
+        'POST /api/cameras/vendor-assistance': ok({ vendorFamily, markdown: `Fiche ${label}` }),
+      })
+      renderScreen(<AddCameraView />)
+      await searchTheNetwork()
+      await userEvent.click(await screen.findByRole('button', { name: /Boîtier ONVIF/ }))
+
+      // Act
+      await chooseHelpVendor(label)
+
+      // Assert
+      expect(await screen.findByText(`Fiche ${label}`)).toBeInTheDocument()
+      expect(network.sent).toContainEqual(
+        expect.objectContaining({
+          route: 'POST /api/cameras/vendor-assistance',
+          body: { vendorFamily },
+        }),
+      )
+    },
+  )
 
   it('onHelpVendorChosen_ShouldShowThatVendorsNoticeAndNeverSendIt_WhenTheTypedAddressIsAdded', async () => {
     // Arrange
@@ -192,7 +225,7 @@ describe('AddCameraView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'POST /api/cameras/vendor-assistance',
-        body: expect.objectContaining({ vendorFamily: 'icsee', connected: false }) as unknown,
+        body: { vendorFamily: 'icsee' },
       }),
     )
     expect(network.sent).toContainEqual(
@@ -255,11 +288,10 @@ describe('AddCameraView', () => {
     },
   )
 
-  it('onSelectCandidate_ShouldSkipTheActivationNotice_WhenTheFoundCameraIsReadyOverDvrip', async () => {
+  it('onSelectCandidate_ShouldAskForNoVendorSheet_WhenTheFoundCameraIsReadyOverDvrip', async () => {
     // Arrange
     const network = fakeNetwork({
       'POST /api/cameras/discovery': ok([{ ...overDvripOnly, vendorFamily: 'icsee' }]),
-      'POST /api/cameras/vendor-assistance': ok(null),
     })
     renderScreen(<AddCameraView />)
     await searchTheNetwork()
@@ -268,13 +300,9 @@ describe('AddCameraView', () => {
     await userEvent.click(await screen.findByRole('button', { name: /ICSee salon/ }))
 
     // Assert
-    await waitFor(() =>
-      expect(network.sent).toContainEqual(
-        expect.objectContaining({
-          route: 'POST /api/cameras/vendor-assistance',
-          body: expect.objectContaining({ connected: true }) as unknown,
-        }),
-      ),
+    expect(await screen.findByLabelText('Nom')).toBeInTheDocument()
+    expect(network.sent.map((request) => request.route)).not.toContain(
+      'POST /api/cameras/vendor-assistance',
     )
   })
 
