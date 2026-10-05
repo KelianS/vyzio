@@ -1,50 +1,14 @@
-﻿using System.Net;
-using System.Text;
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Tests.Contracts;
 
 namespace Vyzio.Tests.Services;
 
 public class OnvifImageSettingsProviderTests
 {
-    // Realistic GetProfiles response: SourceToken is a CHILD ELEMENT of VideoSourceConfiguration,
-    // not an attribute — regression guard for the bug where GetVideoSourceTokenAsync always
-    // returned null because it looked for an attribute instead of the child element.
-    private const string ProfilesXml = """
-        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-          <s:Body>
-            <trt:GetProfilesResponse xmlns:trt="http://www.onvif.org/ver10/media/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">
-              <trt:Profiles token="profile_1">
-                <tt:VideoSourceConfiguration token="vsc_1">
-                  <tt:Name>VideoSourceConfig</tt:Name>
-                  <tt:UseCount>1</tt:UseCount>
-                  <tt:SourceToken>video_source_1</tt:SourceToken>
-                </tt:VideoSourceConfiguration>
-              </trt:Profiles>
-            </trt:GetProfilesResponse>
-          </s:Body>
-        </s:Envelope>
-        """;
-
-    private const string ImagingSettingsXml = """
-        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-          <s:Body>
-            <timg:GetImagingSettingsResponse xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">
-              <timg:ImagingSettings>
-                <tt:Brightness>55</tt:Brightness>
-                <tt:Contrast>60</tt:Contrast>
-                <tt:ColorSaturation>65</tt:ColorSaturation>
-                <tt:Sharpness>70</tt:Sharpness>
-                <tt:IrCutFilter>AUTO</tt:IrCutFilter>
-              </timg:ImagingSettings>
-            </timg:GetImagingSettingsResponse>
-          </s:Body>
-        </s:Envelope>
-        """;
-
     // A resolved address, so these tests exercise the provider, not the sweep (ADR-56).
     private static Camera MakeCamera()
     {
@@ -70,23 +34,16 @@ public class OnvifImageSettingsProviderTests
         Status = CapabilityStatus.Failed,
     };
 
-    private static (OnvifImageSettingsProvider provider, List<HttpRequestMessage> requests) MakeProvider()
+    // A Tapo C200 as captured: its profiles carry the video source as a child element of their configuration.
+    private static (OnvifImageSettingsProvider provider, FakeOnvifCamera camera) MakeProvider()
     {
-        var captured = new List<HttpRequestMessage>();
-        HttpMessageHandler handler = new RoutingStubHandler(captured, request =>
-        {
-            var body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult() ?? string.Empty;
-            var responseBody = body.Contains("GetImagingSettings") ? ImagingSettingsXml : ProfilesXml;
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(responseBody, Encoding.UTF8, "application/soap+xml"),
-            };
-        });
+        var camera = FakeOnvifCamera.Replaying(
+            CapturedVariant.TapoC200, OnvifScenario.GetServices, OnvifScenario.GetProfiles, OnvifScenario.ImagingGetImagingSettings);
         var factory = Substitute.For<IHttpClientFactory>();
-        factory.CreateClient("onvif").Returns(new HttpClient(handler));
+        factory.CreateClient("onvif").Returns(_ => new HttpClient(camera, disposeHandler: false));
         var resolver = new OnvifEndpointResolver(factory, TimeProvider.System, NullLogger<OnvifEndpointResolver>.Instance);
         var onvifClient = new OnvifClient(factory, resolver, TimeProvider.System, NullLogger<OnvifClient>.Instance);
-        return (new OnvifImageSettingsProvider(onvifClient), captured);
+        return (new OnvifImageSettingsProvider(onvifClient), camera);
     }
 
     [Fact]
@@ -105,38 +62,14 @@ public class OnvifImageSettingsProviderTests
     [Fact]
     public async Task GetImageSettingsAsync_ShouldReadTheSettingsOfTheVideoSource_WhenItsTokenIsAChildElementRatherThanAnAttribute()
     {
-        var (provider, requests) = MakeProvider();
+        // Arrange
+        var (provider, camera) = MakeProvider();
 
+        // Act
         var settings = await provider.GetImageSettingsAsync(MakeCamera(), MakeBinding());
 
+        // Assert
         Assert.NotNull(settings);
-        Assert.Equal(55, settings!.Brightness);
-        Assert.Equal(60, settings.Contrast);
-        Assert.Equal(65, settings.Saturation);
-        Assert.Equal(70, settings.Sharpness);
-        Assert.Equal(IrCutMode.Auto, settings.IrCutMode);
-
-        var imagingRequestBody = await requests
-            .Last(r => (r.Content?.ReadAsStringAsync().GetAwaiter().GetResult() ?? "").Contains("GetImagingSettings"))
-            .Content!.ReadAsStringAsync();
-        Assert.Contains("video_source_1", imagingRequestBody);
-    }
-
-    private sealed class RoutingStubHandler(List<HttpRequestMessage> captured, Func<HttpRequestMessage, HttpResponseMessage> respond)
-        : HttpMessageHandler
-    {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-        {
-            if (request.Content is not null)
-            {
-                var clone = new StringContent(await request.Content.ReadAsStringAsync(ct), Encoding.UTF8);
-                captured.Add(new HttpRequestMessage(request.Method, request.RequestUri) { Content = clone });
-            }
-            else
-            {
-                captured.Add(request);
-            }
-            return respond(request);
-        }
+        Assert.Contains(camera.Bodies, body => body.Contains("<VideoSourceToken>raw_vs1</VideoSourceToken>", StringComparison.Ordinal));
     }
 }

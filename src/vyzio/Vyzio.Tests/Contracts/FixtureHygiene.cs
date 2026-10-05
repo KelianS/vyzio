@@ -31,17 +31,14 @@ internal sealed partial class FixtureHygiene
 
     public static FixtureHygiene FromNeutralValues()
     {
-        using var neutral = JsonDocument.Parse(FixtureLoader.LoadText("neutral-values.json"));
-        var root = neutral.RootElement;
-        var account = root.GetProperty("account");
-        var probe = root.GetProperty("probeAccount");
+        var neutral = FixtureLoader.Neutral;
         return new FixtureHygiene(
-            account.GetProperty("username").GetString()!,
-            probe.GetProperty("username").GetString()!,
-            [account.GetProperty("password").GetString()!, root.GetProperty("refusedPassword").GetString()!],
-            probe.GetProperty("password").GetString()!,
-            root.GetProperty("macPrefix").GetString()!,
-            root.GetProperty("dvripAdminToken").GetString()!);
+            neutral.Account.Username,
+            neutral.ProbeAccount.Username,
+            [neutral.Account.Password, neutral.RefusedPassword],
+            neutral.ProbeAccount.Password,
+            neutral.MacPrefix,
+            neutral.DvripAdminToken);
     }
 
     // The kind of each leak, never its value: a CI log is public.

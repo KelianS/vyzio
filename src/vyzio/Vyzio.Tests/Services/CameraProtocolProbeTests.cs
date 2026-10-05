@@ -8,6 +8,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.Services;
 using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Tests.Contracts;
 using Vyzio.Tests.Services.Hosting;
 
 namespace Vyzio.Tests.Services;
@@ -111,15 +112,16 @@ public sealed class CameraProtocolProbeTests
     // Login, ONVIF: one read of the device service, with the ONVIF account.
 
     [Theory]
-    [InlineData(HttpStatusCode.OK, ProtocolStatus.Answers)]
-    [InlineData(HttpStatusCode.Unauthorized, ProtocolStatus.Refused)]
-    public async Task ProbeAsync_ShouldFollowTheDeviceServiceAnswer_WhenOnvifIsFound(HttpStatusCode deviceInformation, ProtocolStatus expected)
+    [InlineData(OnvifScenario.GetDeviceInformation, ProtocolStatus.Answers)]
+    [InlineData(OnvifScenario.GetDeviceInformationRefused, ProtocolStatus.Refused)]
+    public async Task ProbeAsync_ShouldFollowTheDeviceServiceAnswer_WhenOnvifIsFound(string deviceInformation, ProtocolStatus expected)
     {
         // Arrange
         var camera = CameraOn(SupportedProtocol.Onvif, 2020, username: "viewer");
+        var tapo = FakeOnvifCamera.Replaying(CapturedVariant.TapoC200, OnvifScenario.Discovery, OnvifScenario.GetServices, deviceInformation);
 
         // Act
-        var answer = await MakeProbe(new OnvifHandler(deviceInformation)).ProbeAsync(camera, SupportedProtocol.Onvif).ObservedAsync();
+        var answer = await MakeProbe(tapo).ProbeAsync(camera, SupportedProtocol.Onvif).ObservedAsync();
 
         // Assert
         Assert.Equal(expected, answer.Status);
@@ -289,23 +291,6 @@ public sealed class CameraProtocolProbeTests
 
         // Assert
         Assert.Equal(ProtocolStatus.Refused, answer.Status);
-    }
-
-    // Answers ONVIF's unauthenticated probes, and GetDeviceInformation with the status under test.
-    private sealed class OnvifHandler(HttpStatusCode deviceInformation) : HttpMessageHandler
-    {
-        private const string DateAndTime = """
-            <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-              <s:Body><GetSystemDateAndTimeResponse xmlns="http://www.onvif.org/ver10/device/wsdl"/></s:Body>
-            </s:Envelope>
-            """;
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
-            var status = body.Contains("GetDeviceInformation", StringComparison.Ordinal) ? deviceInformation : HttpStatusCode.OK;
-            return new HttpResponseMessage(status) { Content = new StringContent(DateAndTime, Encoding.UTF8, "application/soap+xml") };
-        }
     }
 
     [Fact]
