@@ -111,7 +111,7 @@ CI reports both rates on every pull request, in one comment kept up to date, and
 |---|---|---|
 | `VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS` | `false` | Auto-detect local subnets from network interfaces |
 | `VYZIO_DISCOVERY_PROBE_HOSTS` | *(none)* | Comma-separated hosts to always probe, e.g. `192.168.1.10,192.168.1.20` |
-| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated CIDRs for unicast scan, e.g. `192.168.1.0/24` |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated default CIDRs for the unicast scan, e.g. `192.168.1.0/24`; discovery adds the /24 of the private IPv4 address the dashboard is opened by (ADR-71) |
 | `VYZIO_DISCOVERY_RTSP_PORTS` | `554` | Comma-separated RTSP ports to test |
 | `VYZIO_DISCOVERY_RTSP_PATHS` | `/stream1,/stream2,/Streaming/Channels/101,...` | Comma-separated RTSP paths to probe |
 | `VYZIO_DISCOVERY_HTTP_PORTS` | `80,443,8080` | Comma-separated HTTP ports to test |
