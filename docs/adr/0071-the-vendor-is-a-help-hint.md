@@ -31,8 +31,9 @@ has a preset path beside the blind one; and the add screen shows the vendor's he
 - Nothing records a vendor during detection, so no preset applies to a new camera, and a camera
   detected blind drops a capability it can only have confirmed.
 - The handshake fingerprinted for Tapo is the one of Tapo plugs and bulbs, not of its cameras (#88).
-- The order in which protocols are tried matters whatever the vendor: the framing of #274 reports a
-  V380 whose ONVIF PTZ answers reads without moving the head, where its proprietary protocol does.
+- The order in which protocols are tried matters whatever the vendor: on the V380, ONVIF PTZ is
+  proven by a read, yet every move freezes the firmware for 1 to 3 seconds and cannot be stopped
+  ([hardware sheet](../hardware/v380-pro.md)), where its proprietary protocol moves precisely.
 
 ## Options compared
 
