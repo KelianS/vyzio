@@ -33,8 +33,7 @@ export function buildHubPresenter({
       camerasContainer.getCameraLabels
         .execute()
         .then((labels) => dispatch({ type: 'LABELS_LOADED', labels }))
-        // Unread, a detection keeps its engine label: still readable, not worth a toast on home.
-        .catch(() => undefined)
+        .catch((e: unknown) => toastError(toast, toAppError(e)))
     },
 
     onReloadCameras: reloadCameras,

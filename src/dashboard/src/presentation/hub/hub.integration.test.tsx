@@ -17,6 +17,9 @@ const overview = {
   warnings: [],
 }
 
+// An empty catalogue: a detection keeps its engine label.
+const reference = { 'GET /api/detection-labels/camera': ok([]) }
+
 const running: SystemStats = {
   status: 'active',
   storage: { totalGb: 100, usedGb: 40, freeGb: 60 },
@@ -29,6 +32,7 @@ describe('HubView', () => {
   it('onMount_ShouldSayHowManyCamerasAreWatched_WhenTheHubAndTheCamerasAnswer', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera(), makeCamera({ id: 'camera-2', slug: 'garden' })]),
     })
@@ -46,6 +50,7 @@ describe('HubView', () => {
   it('onMount_ShouldNameADetectionInFrench_WhenTheLabelCatalogueAnswers', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera()]),
       'GET /api/detection-labels/camera': ok([
@@ -63,6 +68,7 @@ describe('HubView', () => {
   it('onOpenLive_ShouldPointAtConnexionInsteadOfTheJoystick_WhenTheOrientationIsToConfirm', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera({ ptzSupported: true, verifiedCapabilities: [] })]),
     })
@@ -82,6 +88,7 @@ describe('HubView', () => {
   it('onMount_ShouldSayVyzioDoesNotAnswer_WhenTheOverviewFails', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': failure(500),
       'GET /api/cameras': ok([makeCamera()]),
     })
@@ -98,6 +105,7 @@ describe('HubView', () => {
   it('onMount_ShouldOfferToRetry_WhenTheCameraListCannotBeRead', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': failure(503),
     })
@@ -115,6 +123,7 @@ describe('HubView', () => {
   it('onReloadCameras_ShouldShowTheCameras_WhenTheRetryReadsTheList', async () => {
     // Arrange
     const network = fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': failure(503),
     })
@@ -134,6 +143,7 @@ describe('HubView', () => {
   it('render_ShouldLeaveOutOfTheCountAndLeadToItsPage_WhenACameraIsToSetUp', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([
         makeCamera(),
@@ -163,6 +173,7 @@ describe('HubView', () => {
   it('onTogglePrivacy_ShouldCutEveryCameraAndSaySo_WhenTheUserConfirms', async () => {
     // Arrange
     const network = fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera()]),
       'POST /api/cameras/privacy/batch-toggle': ok([makeCamera({ privacyModeActive: true })]),
@@ -189,6 +200,7 @@ describe('HubView', () => {
   it('onTogglePrivacy_ShouldKeepTheRequestOpenAndSayWhy_WhenTheCameraDoesNotAnswer', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera()]),
       'POST /api/cameras/privacy/batch-toggle': failure(
@@ -216,6 +228,7 @@ describe('HubView', () => {
   it('SurveillanceCard_ShouldShowOnlyTheStateAndTheDisk_WhenSurveillanceRuns', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera()]),
       'GET /api/system/stats': ok(running),
@@ -237,6 +250,7 @@ describe('HubView', () => {
   it('SurveillanceCard_ShouldShowTheFiguresUnderTheCameraNames_WhenTheUserOpensTheDetails', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera()]),
       'GET /api/system/stats': ok(running),
@@ -258,6 +272,7 @@ describe('HubView', () => {
   it('SurveillanceCard_ShouldKeepTheDetailsClosed_WhenACameraIsOfflineAndAnotherSendsFewImages', async () => {
     // Arrange
     fakeNetwork({
+      ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([
         makeCamera(),
