@@ -38,8 +38,8 @@ the ranges you give it), then asks only for the camera's access.
 
 <p>
   <img src="docs/assets/onboarding-1.png" width="240" alt="Add a camera: search the network, or type the address">
-  <img src="docs/assets/onboarding-3.png" width="240" alt="One camera found on the network, ready to add">
-  <img src="docs/assets/onboarding-4.png" width="240" alt="Only its access is asked: name, address and account">
+  <img src="docs/assets/onboarding-2.png" width="240" alt="One camera found on the network, ready to add">
+  <img src="docs/assets/onboarding-3.png" width="240" alt="Only its access is asked: name, address and account">
 </p>
 
 <p>
