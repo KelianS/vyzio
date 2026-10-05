@@ -32,7 +32,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
 
-    public async Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
     {
         // A single target is probed as is: no range is swept (ADR-71).
         var ranges = target is null ? RangesToSweep(dashboardHost) : [];
@@ -41,7 +41,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         var result = await EnrichTechnicalDetailsAsync(_formatter.Format(identifiedCandidates), rawSignals, ct);
 
         _logger?.LogInformation("Assisted camera discovery completed with {CandidateCount} unique candidate(s).", result.Count);
-        return new CameraDiscoveryResult(ranges, result);
+        return result;
     }
 
     public IReadOnlyList<DiscoveryRange> RangesToSweep(string? dashboardHost)

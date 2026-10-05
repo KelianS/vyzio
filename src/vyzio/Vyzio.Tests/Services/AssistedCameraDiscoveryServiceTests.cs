@@ -72,7 +72,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(rtspPorts: [port]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         stopServer.Cancel();
         await serverTask;
@@ -101,7 +101,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = Discovery(
             HermeticSettings(probeCidrs: ["127.0.0.1/32"], rtspPorts: [port]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -164,7 +164,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(httpPorts: [port]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -192,7 +192,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(httpPorts: [port]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -219,7 +219,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [onvifPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -243,7 +243,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [onvifPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -267,7 +267,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [onvifPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -378,7 +378,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [port],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [port] = SupportedProtocol.Onvif }));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -395,7 +395,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = Discovery(
             HermeticSettings(probeHosts: ["c200-camera-tapo.invalid"]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         var candidate = Assert.Single(result, item => item.Host == "c200-camera-tapo.invalid");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
@@ -411,7 +411,7 @@ public class AssistedCameraDiscoveryServiceTests
             probeHosts: ["v380pro-camera.invalid"],
             vendorCatalogPath: FindRepoPath("src", "vyzio", "vendors")));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         var candidate = Assert.Single(result, item => item.Host == "v380pro-camera.invalid");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
@@ -435,7 +435,7 @@ public class AssistedCameraDiscoveryServiceTests
     {
         var sut = Discovery(HermeticSettings(probeHosts: ["MV87654321"]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         var candidate = Assert.Single(result, item => item.Host == "MV87654321");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
@@ -462,7 +462,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = Discovery(
             HermeticSettings(rtspPorts: [rtspPort], httpPorts: [httpPort]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         stopServer.Cancel();
         await Task.WhenAll(rtspServerTask, httpServerTask);
@@ -491,7 +491,7 @@ public class AssistedCameraDiscoveryServiceTests
             probeHosts: [Loopback, "c200-camera-tapo.invalid"],
             rtspPorts: [rtspPort]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         stopServer.Cancel();
         await rtspServerTask;
@@ -509,7 +509,7 @@ public class AssistedCameraDiscoveryServiceTests
     {
         var sut = Discovery(HermeticSettings());
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         var candidate = Assert.Single(result, item => item.Host == Loopback);
         Assert.Equal("network_host", candidate.DiscoverySource);
@@ -549,7 +549,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(httpPorts: [port]));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -585,7 +585,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [v380Port],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [v380Port] = SupportedProtocol.V380 }));
 
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -611,7 +611,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [v380Port] = SupportedProtocol.V380 }));
 
         // Act
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -622,29 +622,35 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_ShouldReturnTheConfiguredRangeOnly_WhenTheDashboardIsOpenedByAName()
+    public void RangesToSweep_ShouldReturnTheConfiguredRangeOnly_WhenTheDashboardIsOpenedByAName()
     {
         // Arrange
         var sut = Discovery(HermeticSettings(probeCidrs: ["127.0.0.1/32"]));
 
         // Act
-        var result = await sut.DiscoverAsync(dashboardHost: "vyzio.local").ObservedAsync();
+        var ranges = sut.RangesToSweep("vyzio.local");
 
         // Assert
-        Assert.Equal([new DiscoveryRange("127.0.0.1/32", Loopback, Loopback, DiscoveryRangeSource.Configured)], result.Ranges);
+        Assert.Equal([new DiscoveryRange("127.0.0.1/32", Loopback, Loopback, DiscoveryRangeSource.Configured)], ranges);
     }
 
     [Fact]
     public async Task DiscoverAsync_ShouldSweepNoRange_WhenASingleTargetIsGiven()
     {
         // Arrange
-        var sut = Discovery(HermeticSettings(probeCidrs: ["127.0.0.1/32"]));
+        using var listener = StartLoopbackListener();
+        var port = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = RespondRtspOkAsync(listener, stopServer.Token);
+        var sut = Discovery(HermeticSettings(probeCidrs: ["127.0.0.1/32"], rtspPorts: [port]));
 
         // Act
-        var result = await sut.DiscoverAsync(new CameraDiscoveryTarget(Loopback), "192.168.1.20").ObservedAsync();
+        var result = await sut.DiscoverAsync(new CameraDiscoveryTarget("localhost", port), "192.168.1.20").ObservedAsync();
+        stopServer.Cancel();
+        await serverTask;
 
         // Assert
-        Assert.Empty(result.Ranges);
+        Assert.DoesNotContain(result, candidate => candidate.Host == Loopback);
     }
 
     [Fact]
@@ -657,7 +663,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [icsee.Port] = SupportedProtocol.Dvrip }));
 
         // Act
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
 
         // Assert
         var candidate = Assert.Single(result, item => item.Host == Loopback);
@@ -675,7 +681,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = DiscoveryWithStreams(HermeticSettings(rtspPorts: [rtspPort]));
 
         // Act
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -697,7 +703,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [rtspPort] = SupportedProtocol.Rtsp }));
 
         // Act
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 
@@ -720,7 +726,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
         // Act
-        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        var result = await sut.DiscoverAsync().ObservedAsync();
         stopServer.Cancel();
         await serverTask;
 

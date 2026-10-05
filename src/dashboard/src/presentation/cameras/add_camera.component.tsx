@@ -219,10 +219,11 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio ne cherche que dans les adresses que
-              sa confirmation annonce, et beaucoup de caméras ne répondent qu’une fois réveillées
-              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
-              adresse sur le réseau, que l’application de la caméra ou votre box indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio ne parcourt que les plages d’adresses
+              que sa confirmation annonce, et beaucoup de caméras ne répondent qu’une fois
+              réveillées depuis leur propre application. Prenez alors{' '}
+              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que l’application de
+              la caméra ou votre box indiquent.
             </p>
             <p>
               Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
@@ -368,10 +369,12 @@ function RangesToSweep({ rangesToSweep }: { rangesToSweep: AddCameraUido['ranges
   )
 }
 
-/** The confirmation's sentence: a warning over the ranges, or how to get some when there are none. */
+/** The confirmation's sentence: a warning over the ranges once read, or how to get some when there are none. */
 function searchWarning(rangesToSweep: AddCameraUido['rangesToSweep']): string {
-  if (!rangesToSweep.loading && !rangesToSweep.error && rangesToSweep.ranges.length === 0)
-    return 'Aucune adresse n’est à parcourir : ouvrez Vyzio avec son adresse sur votre réseau (par exemple 192.168.1.10), ou saisissez l’adresse de la caméra.'
+  if (rangesToSweep.loading || rangesToSweep.error)
+    return 'Vyzio va interroger les adresses de votre réseau local pour y chercher des caméras. La recherche prend 15 à 30 secondes.'
+  if (rangesToSweep.ranges.length === 0)
+    return 'Aucune plage d’adresses n’est à parcourir : ouvrez Vyzio avec son adresse sur votre réseau (par exemple 192.168.1.10), ou saisissez l’adresse de la caméra.'
   return 'Vyzio va interroger chaque adresse de ces plages pour y chercher des caméras. La recherche prend 15 à 30 secondes.'
 }
 

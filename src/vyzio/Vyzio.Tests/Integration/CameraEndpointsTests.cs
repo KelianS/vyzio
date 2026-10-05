@@ -342,6 +342,23 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
+    public async Task Discover_ShouldHandTheHostHeaderToTheSweep_WhenTheRequestAlsoCarriesAForwardedHost()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/cameras/discovery");
+        request.Headers.Host = "192.168.1.20:8080";
+        request.Headers.Add("X-Forwarded-Host", "10.0.0.5");
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("192.168.1.20", _factory.Discovery.LastDashboardHost);
+    }
+
+    [Fact]
     public async Task DiscoveryRanges_ShouldComputeTheRangesFromTheHostHeader_WhenTheRequestAlsoCarriesAForwardedHost()
     {
         // Arrange
@@ -543,6 +560,8 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
 public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 {
+    public StubCameraDiscoveryService Discovery { get; } = new();
+
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
 
     public void ResetState()
@@ -606,7 +625,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                 options.UseSqlite(_connection)
                        .UseSnakeCaseNamingConvention());
 
-            services.AddSingleton<ICameraDiscoveryService>(new StubCameraDiscoveryService());
+            services.AddSingleton<ICameraDiscoveryService>(Discovery);
             services.AddSingleton<ICameraVerifier>(new StubCameraVerifier());
             services.AddSingleton<ICameraProtocolProbe>(new StubCameraProtocolProbe());
             services.AddSingleton<ICameraStreamEnumerator>(new StubCameraStreamEnumerator());
@@ -644,15 +663,19 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
         return Path.GetFullPath(Path.Combine(segments));
     }
 
-    private sealed class StubCameraDiscoveryService : ICameraDiscoveryService
+    public sealed class StubCameraDiscoveryService : ICameraDiscoveryService
     {
         // Answers with the dashboard host itself as the one range, so a test reads which Host reached it.
         public IReadOnlyList<DiscoveryRange> RangesToSweep(string? dashboardHost)
             => dashboardHost is null ? [] : [new DiscoveryRange($"{dashboardHost}/32", dashboardHost, dashboardHost, DiscoveryRangeSource.DashboardAddress)];
 
-        public Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
-            => Task.FromResult(new CameraDiscoveryResult(
-                [],
+        // The dashboard host the last search was handed, so a test reads which Host reached the sweep.
+        public string? LastDashboardHost { get; private set; }
+
+        public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
+        {
+            LastDashboardHost = dashboardHost;
+            return Task.FromResult<IReadOnlyList<CameraDiscoveryCandidate>>(
                 target is not null && string.Equals(target.Host, "192.168.1.10", StringComparison.OrdinalIgnoreCase)
                     ?
                     [
@@ -662,7 +685,8 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
                     [
                         new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "camera_confirmed", null, ["onvif_detected"]),
                         new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "camera_confirmed", null, ["onvif_detected"])
-                    ]));
+                    ]);
+        }
     }
 
     private sealed class StubCameraProtocolProbe : ICameraProtocolProbe

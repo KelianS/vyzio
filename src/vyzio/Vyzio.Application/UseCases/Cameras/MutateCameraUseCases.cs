@@ -17,7 +17,7 @@ public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryServ
     public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(DiscoverCamerasRequest? request = null, string? dashboardHost = null, CancellationToken ct = default)
     {
         var target = request?.ToTarget();
-        var discovery = await discoveryService.DiscoverAsync(target, dashboardHost, ct);
+        var candidates = await discoveryService.DiscoverAsync(target, dashboardHost, ct);
         var catalog = await cameras.GetAllAsync(ct);
         var configuredEndpoints = catalog
             .Where(camera => camera.StreamBinding is not null)
@@ -29,7 +29,7 @@ public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryServ
             .Select(camera => camera.Host.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        return discovery.Candidates
+        return candidates
             .Where(candidate => target is not null
                 || !(configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)) || addressesWithoutStream.Contains(candidate.Host.Trim())))
             .Select(DiscoveredCameraDto.From)

@@ -18,7 +18,7 @@ internal static class SweptDiscovery
             portFingerprints: new Dictionary<int, SupportedProtocol> { [camera.Port] = protocol },
             vendorCatalogPath: AssistedCameraDiscoveryServiceTests.FindRepoPath("src", "vyzio", "vendors"));
         var discovery = new AssistedCameraDiscoveryService(settings, BackgroundLoop.ClockAt("2026-10-04T20:00:00+00:00"));
-        var candidate = Assert.Single((await discovery.DiscoverAsync().ObservedAsync()).Candidates);
+        var candidate = Assert.Single(await discovery.DiscoverAsync().ObservedAsync());
         Assert.Equal("camera_confirmed", candidate.Qualification);
         return candidate;
     }

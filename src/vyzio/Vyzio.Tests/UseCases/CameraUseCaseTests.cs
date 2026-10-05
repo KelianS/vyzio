@@ -167,10 +167,10 @@ public class DiscoverCamerasUseCaseTests
     public async Task ExecuteAsync_ShouldReturnTheDiscoveredCandidates_WhenNoCameraIsConfiguredYet()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(new CameraDiscoveryResult([],
+        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "camera_confirmed", null, ["onvif_detected"])
-        ]));
+        ]);
 
         var result = await _sut.ExecuteAsync();
 
@@ -196,11 +196,11 @@ public class DiscoverCamerasUseCaseTests
             }.WithStream(SupportedProtocol.Rtsp)
         ]);
 
-        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(new CameraDiscoveryResult([],
+        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", null, "camera_confirmed", null, []),
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", null, "camera_confirmed", null, [])
-        ]));
+        ]);
 
         var result = await _sut.ExecuteAsync();
 
@@ -224,11 +224,11 @@ public class DiscoverCamerasUseCaseTests
                 ValidationState = CameraValidationState.ToSetUp,
             }
         ]);
-        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(new CameraDiscoveryResult([],
+        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 34567, "dvrip", null, "dvrip", null, "camera_confirmed", null, []),
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", null, "camera_confirmed", null, [])
-        ]));
+        ]);
 
         // Act
         var result = await _sut.ExecuteAsync();
@@ -253,10 +253,10 @@ public class DiscoverCamerasUseCaseTests
             }
         ]);
 
-        _discovery.DiscoverAsync(Arg.Any<CameraDiscoveryTarget>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns(new CameraDiscoveryResult([],
+        _discovery.DiscoverAsync(Arg.Any<CameraDiscoveryTarget>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", "/Streaming/Channels/101", "rtsp_describe", null, "camera_confirmed", null, ["rtsp_responding"])
-        ]));
+        ]);
 
         var result = await _sut.ExecuteAsync(new DiscoverCamerasRequest("192.168.1.10", 554));
 
@@ -270,14 +270,28 @@ public class DiscoverCamerasUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldHandTheDashboardHostToTheSweep_WhenItIsGiven()
+    {
+        // Arrange
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _discovery.DiscoverAsync(null, "192.168.1.20", Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await _sut.ExecuteAsync(dashboardHost: "192.168.1.20");
+
+        // Assert
+        await _discovery.Received(1).DiscoverAsync(null, "192.168.1.20", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldNameTheVendor_WhenTheCandidateProvesIt()
     {
         // Arrange
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(new CameraDiscoveryResult([],
+        _discovery.DiscoverAsync(null, null, Arg.Any<CancellationToken>()).Returns(
         [
             new CameraDiscoveryCandidate("Camera", "192.168.1.30", 8800, "rtsp_manual", null, "port_scan", null, "camera_confirmed", VendorFamily.V380Pro, ["camera_port_open"])
-        ]));
+        ]);
 
         // Act
         var result = await _sut.ExecuteAsync();
