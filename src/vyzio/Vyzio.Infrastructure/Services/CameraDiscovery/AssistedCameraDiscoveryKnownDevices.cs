@@ -5,14 +5,14 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
 internal static class AssistedCameraDiscoveryKnownDevices
 {
-    // The vendor comes only from a protocol no other firmware speaks; a port, hostname or web page never sets it (#274).
+    // The vendor comes only from a protocol no other firmware speaks; a port, hostname or web page never sets it (ADR-71).
     public static VendorFamily? VendorProvenBy(SupportedProtocol? confirmedProtocol) => confirmedProtocol switch
     {
         SupportedProtocol.V380 => VendorFamily.V380Pro,
         _ => null,
     };
 
-    // A name hint for the display and the "probably a camera" ranking, never for the vendor (#274).
+    // A name hint for the display and the "probably a camera" ranking, never for the vendor (ADR-71).
     public static bool LooksLikeCameraHostName(string hostName)
     {
         var normalized = hostName.ToLowerInvariant();

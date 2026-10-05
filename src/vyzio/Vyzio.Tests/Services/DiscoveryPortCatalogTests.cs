@@ -18,7 +18,7 @@ public class DiscoveryPortCatalogTests
     public void FingerprintsForPort_ShouldOfferTheExpectedProtocol_WhenThePortConventionallyCarriesIt(int port, SupportedProtocol expected)
         => Assert.Contains(DiscoveryPortCatalog.FingerprintsForPort(port), f => f.Protocol == expected);
 
-    // The cameras do not speak KLAP, the Tapo smart-home protocol: discovery never attempts it (#274).
+    // The cameras do not speak KLAP, the Tapo smart-home protocol: discovery never attempts it (ADR-71).
     [Fact]
     public void Fingerprints_ShouldNotAttemptTapoKlap_WhenTheCatalogueIsBuilt()
     {

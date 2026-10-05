@@ -9,7 +9,7 @@ public sealed record CameraDiscoveryCandidate(
     string DiscoverySource,
     string? Note,
     string Qualification,
-    // Set only on a very strong signal, and only to pick the vendor help (#274).
+    // Set only on a very strong signal, and only to pick the vendor help (ADR-71).
     VendorFamily? VendorFamily,
     IReadOnlyList<string> QualificationReasons,
     VendorDocumentation? VendorDocumentation = null,

@@ -187,7 +187,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         return ticket == 0 ? null : ticket;
     }
 
-    // UDP NVDEVSEARCH, unicast to the camera only: a broadcast may answer with another V380's number (#274).
+    // UDP NVDEVSEARCH, unicast to the camera only: a broadcast may answer with another V380's number (ADR-71).
     private static async Task<uint?> DiscoverDeviceIdAsync(string host, CancellationToken ct)
     {
         try

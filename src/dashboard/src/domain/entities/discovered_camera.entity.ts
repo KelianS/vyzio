@@ -31,7 +31,7 @@ interface DiscoveredStream {
   path: string | null
 }
 
-/** Where a swept range comes from (#251). */
+/** Where a swept range comes from (ADR-71). */
 export const DiscoveryRangeSource = {
   Configured: 'configured',
   DashboardAddress: 'dashboard_address',

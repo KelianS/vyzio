@@ -36,7 +36,7 @@ public sealed record DiscoverCamerasRequest(
             : new CameraDiscoveryTarget(Host.Trim(), Port is > 0 ? Port : null);
 }
 
-// The ranges a discovery swept, each with its source, and the candidates it found (#251).
+// The ranges a discovery swept, each with its source, and the candidates it found (ADR-71).
 public sealed record DiscoverCamerasResponse(
     IReadOnlyList<DiscoveryRangeDto> Ranges,
     IReadOnlyList<DiscoveredCameraDto> Candidates);

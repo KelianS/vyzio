@@ -37,7 +37,7 @@ public static class CamerasEndpoints
             var logger = loggerFactory.CreateLogger("CamerasDiscovery");
             logger.LogInformation("HTTP camera discovery request received.");
 
-            // The Host the dashboard was opened by, as nginx forwards it; never X-Forwarded-Host (#251).
+            // The Host the dashboard was opened by, as nginx forwards it; never X-Forwarded-Host (ADR-71).
             var result = await useCase.ExecuteAsync(request, http.Request.Host.Host, ct);
 
             logger.LogInformation("HTTP camera discovery request completed with {CandidateCount} candidate(s).", result.Candidates.Count);

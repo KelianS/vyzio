@@ -1,6 +1,6 @@
 # ADR-32 — Pipeline de découverte réseau en 3 étapes : identification / enrichissement / interprétation
 
-> Statut : Accepté
+> Statut : Accepté, modifié par [ADR-71](0071-the-vendor-is-a-help-hint.md) (la marque ne vient que d'une réponse propre à un protocole propriétaire ; ni MAC, ni multicast, ni fingerprint KLAP ; le /24 de l'adresse du tableau de bord s'ajoute aux plages balayées)
 
 ## Contexte
 

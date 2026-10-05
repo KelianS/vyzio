@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Where a swept range comes from, so the discovery screen can say it (#251).
+// Where a swept range comes from, so the discovery screen can say it (ADR-71).
 public enum DiscoveryRangeSource
 {
     Configured,

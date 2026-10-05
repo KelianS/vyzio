@@ -5,7 +5,7 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// The ranges a discovery sweeps: the configured ones, plus the /24 of the private address the dashboard was opened by (#251).
+// The ranges a discovery sweeps: the configured ones, plus the /24 of the private address the dashboard was opened by (ADR-71).
 internal static partial class DiscoveryRanges
 {
     private const int DashboardPrefix = 24;

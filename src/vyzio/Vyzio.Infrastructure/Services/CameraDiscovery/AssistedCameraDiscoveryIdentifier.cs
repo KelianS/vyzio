@@ -5,7 +5,7 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
 // ADR-32 — Stage 3 (interpretation): turns the raw, structured facts produced by
 // AssistedCameraDiscoveryProbePipeline (Stages 1-2) into product-facing conclusions: the
-// qualification tier and, on a very strong signal only, the vendor (#274).
+// qualification tier and, on a very strong signal only, the vendor (ADR-71).
 internal sealed class AssistedCameraDiscoveryIdentifier
 {
     private readonly AssistedCameraDiscoveryVendorDocumentationCatalog _documentationCatalog;

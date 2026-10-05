@@ -32,7 +32,7 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('alertdialog')).toContainText('15 à 30 secondes')
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
-    // Where the search looked is said, so a camera elsewhere is known to need its address (#251).
+    // Where the search looked is said, so a camera elsewhere is known to need its address (ADR-71).
     await expect(page.getByText(/192\.168\.1\.1 à 192\.168\.1\.254/)).toBeVisible()
 
     // The form does not exist before a camera is picked.

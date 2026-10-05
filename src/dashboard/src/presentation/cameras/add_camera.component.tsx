@@ -394,7 +394,7 @@ const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
   [DiscoveryRangeSource.DashboardAddress]: 'autour de l’adresse utilisée pour ouvrir Vyzio',
 }
 
-/** Where the last search looked, so a camera outside it is known to need its address typed (#251). */
+/** Where the last search looked, so a camera outside it is known to need its address typed (ADR-71). */
 function SweptRanges({ ranges }: { ranges: DiscoveryRange[] | null }) {
   if (!ranges) return null
   if (ranges.length === 0)

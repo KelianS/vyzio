@@ -18,7 +18,6 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 // this class only ever produces raw, structured facts (RawCameraDiscoverySignal), never a guess.
 internal sealed class AssistedCameraDiscoveryProbePipeline
 {
-
     private readonly ILogger? _logger;
     private readonly VyzioRuntimeSettings _settings;
     private readonly TimeProvider _time;
@@ -300,7 +299,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return packet;
     }
 
-    // Only V380 firmware answers the credential-free auth frame with a full auth reply, hence the vendor (#274).
+    // Only V380 firmware answers the credential-free auth frame with a full auth reply, hence the vendor (ADR-71).
     private async Task<bool> FingerprintV380Async(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
@@ -456,7 +455,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    // HTTP probe: a name and the camera ranking, never the vendor (#274); ONVIF is the sweep's job (ADR-32).
+    // HTTP probe: a name and the camera ranking, never the vendor (ADR-71); ONVIF is the sweep's job (ADR-32).
     private async Task<RawCameraDiscoverySignal?> ProbeConfiguredHttpHostAsync(string host, int port, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);

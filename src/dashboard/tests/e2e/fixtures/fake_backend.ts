@@ -756,7 +756,7 @@ export async function installFakeBackend(
     }
     if (path === '/api/cameras/discovery' && method === 'POST') {
       return json(route, {
-        // Like the real one: the configured range, then the /24 the dashboard was opened by (#251).
+        // Like the real one: the configured range, then the /24 the dashboard was opened by (ADR-71).
         ranges: [
           {
             cidr: '192.168.0.0/24',
