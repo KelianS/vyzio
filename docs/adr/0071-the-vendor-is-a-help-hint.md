@@ -14,7 +14,8 @@
 > (the vendor from a proprietary answer only; no MAC, no multicast, no KLAP fingerprint; the
 > dashboard's /24 swept),
 > [ADR-66](0066-a-capability-is-proven-by-a-read-or-confirmed-by-the-user-after-a-try.md) e) (a
-> capability to confirm is kept on every camera) and
+> capability to confirm is kept on every camera; the first candidate in priority order that proves it
+> or leaves it to confirm wins) and
 > [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) e) (a vendor chosen on the add screen,
 > for its help sheet only).
 
@@ -52,7 +53,8 @@ no detection decision depends on it, and the camera does not store it.
 **b) One detection path, a protocol priority per capability.** For each capability the candidate
 protocols are tried in one fixed order, the same for every camera, proprietary protocols first: a
 protocol made for one hardware drives it, where a generic one may answer reads without acting. The
-first proof wins within that order (ADR-66). The user still chooses by hand the protocol of each
+first protocol in that order that proves the capability or leaves it to confirm wins, so a generic
+proof never outranks a proprietary protocol that answered. The user still chooses by hand the protocol of each
 capability, and detection never overrides that choice (ADR-28).
 
 **c) A capability its protocol answered for stays to confirm.** When a candidate protocol answered

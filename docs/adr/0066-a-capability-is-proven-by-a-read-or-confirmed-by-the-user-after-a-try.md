@@ -1,7 +1,8 @@
 # ADR-66: A capability is proven by a read, or confirmed by the user after trying it
 
 > Status: Accepted, amended by [ADR-71](0071-the-vendor-is-a-help-hint.md) on e) (no preset path:
-> detection keeps a capability to confirm on every camera)
+> detection keeps a capability to confirm on every camera, and the first candidate in priority order
+> that proves it or leaves it to confirm wins)
 >
 > Amends [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) on its
 > point c) (the capability's provider probe stays the proof until #221),
@@ -79,11 +80,10 @@ while the camera is in privacy mode (it would uncover or move a camera the user 
 like every check, while the stream fails. A try over PTZ forgets the position Vyzio counts for that
 camera (ADR-60), so the next recall homes first, and the calibration stays valid.
 
-**e) Detection prefers a proof.** Among the candidate protocols, the cascade keeps the first that
-proves the capability; failing that, the first where it is to confirm; failing that, what ADR-28 did.
-No detection records a brand, so no preset applies to a new camera: detection runs blind and keeps
-only a proven one, as it drops a failed one: a camera with no sign of a motorised head gets no Orientation
-card to deal with, and the user adds it by hand, which then offers the try. A detection never brings
+**e) Detection keeps the first answer in priority order.** Among the candidate protocols, taken in
+their priority order (ADR-71 b), the cascade keeps the first that proves the capability or leaves it
+to confirm; failing both, it drops the capability: a camera with no sign of a motorised head gets no
+Orientation card to deal with, and the user adds it by hand, which then offers the try. A detection never brings
 back a capability the user rejected over a candidate: it still looks for a proof on every candidate,
 and only a proof replaces the "no"; otherwise the capability stays rejected on its protocol. Removing a
 capability forgets the answer: added again by hand, it starts to confirm.
@@ -119,8 +119,8 @@ and a card would have to reconcile them; one state names each case once.
 - ✅ A capability no read can show stays within reach: the user tries it once and it works from then on
 - ✅ Each failed card says why: the protocol, the capability missing, or the user's own "no"
 - ✅ The user answers "no" once: no check or detection asks again, and the try on purpose stays there
-- ⚠️ ICSee cameras that keep no preset, V380 heads and Tapo cameras prove nothing: detection leaves
-  those capabilities out, and added by hand they are "to confirm" until the user tries them; until
+- ⚠️ ICSee cameras that keep no preset, V380 heads and Tapo cameras prove nothing: detection keeps
+  those capabilities "to confirm" until the user tries them; until
   then no joystick and no privacy parking on them
 - ⚠️ A confirmed capability rests on the user's observation: its card says so, with the date, and a
   check that finds a proof later turns it into a proven one
