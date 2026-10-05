@@ -47,6 +47,22 @@ public sealed class V380ContractTests
         Assert.Equal(camera.Port, port.Port);
     }
 
+    // The V380 answer is the one signal strong enough to name the vendor (ADR-71).
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task DiscoverAsync_ShouldNameTheV380Vendor_WhenTheSweptPortAnswersTheCapturedFingerprint(string variant)
+    {
+        // Arrange
+        await using var camera = Replay(variant, V380Scenario.DiscoveryFingerprint);
+
+        // Act
+        var candidate = await SweptDiscovery.CandidateAsync(camera, SupportedProtocol.V380);
+
+        // Assert
+        Assert.Equal(VendorFamily.V380Pro, candidate.VendorFamily);
+        Assert.Contains("# V380 PRO", candidate.VendorDocumentation!.Markdown, StringComparison.Ordinal);
+    }
+
     [Theory]
     [MemberData(nameof(Variants))]
     public async Task CheckLoginAsync_ShouldAnswer_WhenTheCameraIsAskedWithTheFixtureAccount(string variant)

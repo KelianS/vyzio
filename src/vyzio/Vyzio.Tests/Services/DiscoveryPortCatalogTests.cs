@@ -15,19 +15,18 @@ public class DiscoveryPortCatalogTests
     [InlineData(8000, SupportedProtocol.Onvif)]
     [InlineData(8800, SupportedProtocol.V380)]
     [InlineData(34567, SupportedProtocol.Dvrip)]
-    [InlineData(443, SupportedProtocol.TapoKlap)]
     public void FingerprintsForPort_ShouldOfferTheExpectedProtocol_WhenThePortConventionallyCarriesIt(int port, SupportedProtocol expected)
         => Assert.Contains(DiscoveryPortCatalog.FingerprintsForPort(port), f => f.Protocol == expected);
 
-    // Port 80 is shared: a Tapo KLAP handshake and an ONVIF SOAP call are both worth attempting,
-    // and only the passing one qualifies the host.
+    // The cameras do not speak KLAP, the Tapo smart-home protocol: discovery never attempts it (ADR-71).
     [Fact]
-    public void FingerprintsForPort_ShouldOfferBothOnvifAndTapoKlap_WhenThePortIsShared()
+    public void Fingerprints_ShouldNotAttemptTapoKlap_WhenTheCatalogueIsBuilt()
     {
-        var protocols = DiscoveryPortCatalog.FingerprintsForPort(80).Select(f => f.Protocol).ToArray();
+        // Act
+        var protocols = DiscoveryPortCatalog.Fingerprints.Select(fingerprint => fingerprint.Protocol);
 
-        Assert.Contains(SupportedProtocol.Onvif, protocols);
-        Assert.Contains(SupportedProtocol.TapoKlap, protocols);
+        // Assert
+        Assert.DoesNotContain(SupportedProtocol.TapoKlap, protocols);
     }
 
     // A fingerprint on a port the sweep never opens is dead code: only scanned ports get probed.

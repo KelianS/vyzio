@@ -6,7 +6,7 @@ import type {
 } from '../entities/camera_protocol.entity'
 import type { Camera } from '../entities/camera.entity'
 import type { CameraStatus } from '../entities/camera_status.entity'
-import type { DiscoveredCamera } from '../entities/discovered_camera.entity'
+import type { DiscoveredCamera, DiscoveryRange } from '../entities/discovered_camera.entity'
 import type { CameraConfigurationApplyResult } from '../entities/camera_configuration_apply_result.entity'
 import type { VendorAssistance } from '../entities/vendor_assistance.entity'
 import type {
@@ -29,6 +29,8 @@ export interface DiscoveryRequest {
 export interface CameraRepository {
   getAll(): Promise<Camera[]>
   discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
+  /** The ranges a search would sweep, computed without probing anything (ADR-71). */
+  getDiscoveryRanges(): Promise<DiscoveryRange[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: NewCameraInput): Promise<Camera>
   update(cameraId: string, input: CameraUpdateInput): Promise<Camera>

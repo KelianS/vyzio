@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import {
+  DiscoveryRangeSource,
+  type DiscoveredCamera,
+} from '../../domain/entities/discovered_camera.entity'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido } from './add_camera.uido'
 
@@ -12,10 +15,7 @@ const candidate: DiscoveredCamera = {
   rtspActive: true,
   discoverySource: 'onvif',
   note: null,
-  macAddress: null,
-  isSupported: true,
   qualification: 'camera_confirmed',
-  supportLevel: 'supported',
   vendorFamily: 'tplink_tapo',
   qualificationReasons: [],
   stream: { protocol: 'rtsp', port: 554, path: '/stream1' },
@@ -119,5 +119,30 @@ describe('addCameraReducer', () => {
       message: 'Ces informations ne sont pas valides.',
       diagnostic: 'POST /api/cameras · 400',
     })
+  })
+
+  it('addCameraReducer_ShouldForgetThePreviousRanges_WhenTheConfirmationReadsThemAgain', () => {
+    // Arrange
+    const read = {
+      ...buildInitialAddCameraUido(),
+      rangesToSweep: {
+        loading: false,
+        ranges: [
+          {
+            cidr: '192.168.1.0/24',
+            firstAddress: '192.168.1.1',
+            lastAddress: '192.168.1.254',
+            source: DiscoveryRangeSource.DashboardAddress,
+          },
+        ],
+        error: null,
+      },
+    }
+
+    // Act
+    const next = addCameraReducer(read, { type: 'RANGES_TO_SWEEP_STARTED' })
+
+    // Assert
+    expect(next.rangesToSweep).toEqual({ loading: true, ranges: [], error: null })
   })
 })

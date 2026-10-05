@@ -32,16 +32,19 @@ public static class CamerasEndpoints
     {
         var group = app.MapGroup("/api/cameras");
 
-        group.MapPost("/discovery", async (DiscoverCamerasRequest? request, DiscoverCamerasUseCase useCase, ILoggerFactory loggerFactory, CancellationToken ct) =>
+        group.MapPost("/discovery", async (DiscoverCamerasRequest? request, HttpContext http, DiscoverCamerasUseCase useCase, ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
             var logger = loggerFactory.CreateLogger("CamerasDiscovery");
             logger.LogInformation("HTTP camera discovery request received.");
 
-            var result = await useCase.ExecuteAsync(request, ct);
+            var result = await useCase.ExecuteAsync(request, DashboardHost(http), ct);
 
             logger.LogInformation("HTTP camera discovery request completed with {CandidateCount} candidate(s).", result.Count);
             return Results.Ok(result);
         });
+
+        group.MapGet("/discovery/ranges", (HttpContext http, GetDiscoveryRangesUseCase useCase)
+            => Results.Ok(useCase.Execute(DashboardHost(http))));
 
         group.MapPost("/vendor-assistance", async (VendorAssistanceRequestDto request, GetVendorAssistanceUseCase useCase, CancellationToken ct) =>
         {
@@ -491,6 +494,9 @@ public static class CamerasEndpoints
 
         return app;
     }
+
+    // The Host the dashboard was opened by, as nginx forwards it; never X-Forwarded-Host (ADR-71).
+    private static string DashboardHost(HttpContext http) => http.Request.Host.Host;
 
     private static IResult GetVendorAsset(string assetPath, VyzioRuntimeSettings settings)
     {

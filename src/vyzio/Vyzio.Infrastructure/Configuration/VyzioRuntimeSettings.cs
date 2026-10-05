@@ -51,7 +51,6 @@ public class VyzioRuntimeSettings
     // not user configuration: the user shouldn't have to know a camera speaks V380 on 8800.
     public sealed class DiscoverySettings
     {
-        public bool AutoDetectLocalCidrs { get; init; }
         public IReadOnlyList<string> ProbeHosts { get; init; } = Array.Empty<string>();
         public IReadOnlyList<string> ProbeCidrs { get; init; } = Array.Empty<string>();
         public int ProbeTimeoutMs { get; init; } = 250;
@@ -69,10 +68,6 @@ public class VyzioRuntimeSettings
         // Lets a test exercise a fingerprint on an ephemeral port instead of binding the well-known
         // one, which collides with whatever already listens on the machine.
         public IReadOnlyDictionary<int, SupportedProtocol>? PortFingerprintsOverride { get; init; }
-
-        // ONVIF discovery is a WS-Discovery multicast on the real LAN: it answers with whatever
-        // cameras are around and always waits out its 2s window. Tests turn it off to stay hermetic.
-        public bool OnvifMulticastEnabled { get; init; } = true;
     }
 
     public sealed class DocumentationSettings

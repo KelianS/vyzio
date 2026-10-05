@@ -8,10 +8,9 @@ public sealed record CameraDiscoveryCandidate(
     string? StreamPath,
     string DiscoverySource,
     string? Note,
-    string? MacAddress,
     string Qualification,
-    string SupportLevel,
-    string? VendorFamily,
+    // Set only on a very strong signal, and only to pick the vendor help (ADR-71).
+    VendorFamily? VendorFamily,
     IReadOnlyList<string> QualificationReasons,
     VendorDocumentation? VendorDocumentation = null,
     DiscoveryTechnicalDetails? TechnicalDetails = null,

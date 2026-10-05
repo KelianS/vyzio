@@ -6,12 +6,18 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
+public sealed class GetDiscoveryRangesUseCase(ICameraDiscoveryService discoveryService)
+{
+    public IReadOnlyList<DiscoveryRangeDto> Execute(string? dashboardHost)
+        => discoveryService.RangesToSweep(dashboardHost).Select(DiscoveryRangeDto.From).ToList();
+}
+
 public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryService, ICameraRepository cameras)
 {
-    public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(DiscoverCamerasRequest? request = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(DiscoverCamerasRequest? request = null, string? dashboardHost = null, CancellationToken ct = default)
     {
         var target = request?.ToTarget();
-        var candidates = await discoveryService.DiscoverAsync(target, ct);
+        var candidates = await discoveryService.DiscoverAsync(target, dashboardHost, ct);
         var catalog = await cameras.GetAllAsync(ct);
         var configuredEndpoints = catalog
             .Where(camera => camera.StreamBinding is not null)

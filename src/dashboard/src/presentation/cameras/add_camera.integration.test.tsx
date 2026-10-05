@@ -15,10 +15,7 @@ const discovered = {
   rtspActive: true,
   discoverySource: 'onvif',
   note: null,
-  macAddress: null,
-  isSupported: true,
   qualification: 'confirmed',
-  supportLevel: 'supported',
   vendorFamily: 'tplink_tapo',
   qualificationReasons: [],
   stream: { protocol: 'rtsp', port: 554, path: '/stream1' },
@@ -45,6 +42,18 @@ const answeringNoStream = {
   vendorFamily: null,
   qualificationReasons: ['camera_port_open', 'onvif_port_detected'],
   stream: null,
+}
+
+// What the search confirmation reads before any search (ADR-71).
+const rangesToSweep = {
+  'GET /api/cameras/discovery/ranges': ok([
+    {
+      cidr: '192.168.1.0/24',
+      firstAddress: '192.168.1.1',
+      lastAddress: '192.168.1.254',
+      source: 'dashboard_address',
+    },
+  ]),
 }
 
 async function searchTheNetwork() {
@@ -133,6 +142,7 @@ describe('AddCameraView', () => {
   it('onSelectCandidate_ShouldShowTheVendorNotice_WhenTheFoundCameraIsStillToPrepare', async () => {
     // Arrange
     fakeNetwork({
+      ...rangesToSweep,
       'POST /api/cameras/discovery': ok([{ ...discovered, streamPath: null, stream: null }]),
       'POST /api/cameras/vendor-assistance': ok({
         vendorFamily: 'tplink_tapo',
@@ -180,6 +190,7 @@ describe('AddCameraView', () => {
     async ({ label, vendorFamily }) => {
       // Arrange
       const network = fakeNetwork({
+        ...rangesToSweep,
         'POST /api/cameras/discovery': ok([{ ...answeringNoStream, streamPath: '/onvif1' }]),
         'POST /api/cameras/vendor-assistance': ok({ vendorFamily, markdown: `Fiche ${label}` }),
       })
@@ -243,7 +254,10 @@ describe('AddCameraView', () => {
 
   it('onDiscover_ShouldNameTheVendorAsTextWithoutAPill_WhenDiscoveryRecognisesIt', async () => {
     // Arrange
-    fakeNetwork({ 'POST /api/cameras/discovery': ok([discovered, answeringNoStream]) })
+    fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([discovered, answeringNoStream]),
+    })
     renderScreen(<AddCameraView />)
 
     // Act
@@ -259,6 +273,7 @@ describe('AddCameraView', () => {
   it('onSelectCandidate_ShouldOfferNoHelpList_WhenTheFoundCameraIsReady', async () => {
     // Arrange
     fakeNetwork({
+      ...rangesToSweep,
       'POST /api/cameras/discovery': ok([discovered]),
       'POST /api/cameras/vendor-assistance': ok(null),
     })
@@ -277,7 +292,10 @@ describe('AddCameraView', () => {
     'onDiscover_ShouldMarkTheCameraReady_WhenAProtocolServesItsStream: %s',
     async (name) => {
       // Arrange
-      fakeNetwork({ 'POST /api/cameras/discovery': ok([discovered, overDvripOnly]) })
+      fakeNetwork({
+        ...rangesToSweep,
+        'POST /api/cameras/discovery': ok([discovered, overDvripOnly]),
+      })
       renderScreen(<AddCameraView />)
 
       // Act
@@ -291,6 +309,7 @@ describe('AddCameraView', () => {
   it('onSelectCandidate_ShouldAskForNoVendorSheet_WhenTheFoundCameraIsReadyOverDvrip', async () => {
     // Arrange
     const network = fakeNetwork({
+      ...rangesToSweep,
       'POST /api/cameras/discovery': ok([{ ...overDvripOnly, vendorFamily: 'icsee' }]),
     })
     renderScreen(<AddCameraView />)
@@ -308,7 +327,10 @@ describe('AddCameraView', () => {
 
   it('onDiscover_ShouldMarkTheCameraToPrepare_WhenNoProtocolServesItsStream', async () => {
     // Arrange
-    fakeNetwork({ 'POST /api/cameras/discovery': ok([answeringNoStream]) })
+    fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([answeringNoStream]),
+    })
     renderScreen(<AddCameraView />)
 
     // Act
@@ -323,6 +345,7 @@ describe('AddCameraView', () => {
   it('onCreate_ShouldHandOverTheNameAndAddressOnly_WhenADiscoveredCameraIsAdded', async () => {
     // Arrange
     const network = fakeNetwork({
+      ...rangesToSweep,
       'POST /api/cameras/discovery': ok([overDvripOnly]),
       'POST /api/cameras': ok(makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })),
       'GET /api/cameras': ok([makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })]),
@@ -346,7 +369,10 @@ describe('AddCameraView', () => {
 
   it('onSelectCandidate_ShouldAskToOpenTheCameraFirst_WhenNoProtocolServesItsStream', async () => {
     // Arrange
-    fakeNetwork({ 'POST /api/cameras/discovery': ok([answeringNoStream]) })
+    fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([answeringNoStream]),
+    })
     renderScreen(<AddCameraView />)
     await searchTheNetwork()
 
@@ -358,9 +384,91 @@ describe('AddCameraView', () => {
     expect(screen.queryByRole('button', { name: 'Ajouter la caméra' })).not.toBeInTheDocument()
   })
 
+  it('onSearchAsked_ShouldWarnAboutEveryRangeToSweepWithItsSource_WhenTheConfirmationOpens', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/cameras/discovery/ranges': ok([
+        {
+          cidr: '192.168.0.0/24',
+          firstAddress: '192.168.0.1',
+          lastAddress: '192.168.0.254',
+          source: 'configured',
+        },
+        {
+          cidr: '192.168.1.0/24',
+          firstAddress: '192.168.1.1',
+          lastAddress: '192.168.1.254',
+          source: 'dashboard_address',
+        },
+      ]),
+    })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
+
+    // Assert
+    const dialog = screen.getByRole('alertdialog')
+    expect(
+      await within(dialog).findByText('192.168.0.1 à 192.168.0.254 · plage configurée par défaut'),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByText(
+        '192.168.1.1 à 192.168.1.254 · autour de l’adresse utilisée pour ouvrir Vyzio',
+      ),
+    ).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('Vyzio va interroger chaque adresse de ces plages')
+    expect(network.sent.map((request) => request.route)).not.toContain(
+      'POST /api/cameras/discovery',
+    )
+  })
+
+  it('onDiscover_ShouldLeaveTheRangesOffTheScreen_WhenTheSearchEnds', async () => {
+    // Arrange
+    fakeNetwork({ ...rangesToSweep, 'POST /api/cameras/discovery': ok([discovered]) })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await searchTheNetwork()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Tapo C200/ })).toBeInTheDocument()
+    expect(screen.queryByText(/192\.168\.1\.1 à 192\.168\.1\.254/)).not.toBeInTheDocument()
+  })
+
+  it('onSearchAsked_ShouldSayHowToGetAddressesToSweep_WhenThereAreNone', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras/discovery/ranges': ok([]) })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
+
+    // Assert
+    expect(
+      await within(screen.getByRole('alertdialog')).findByText(
+        /^Aucune plage d’adresses n’est à parcourir/,
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onSearchAsked_ShouldSayWhyAndForSupport_WhenTheRangesCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras/discovery/ranges': failure(500) })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
+
+    // Assert
+    const dialog = screen.getByRole('alertdialog')
+    expect(await within(dialog).findByText(/^Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('GET /api/cameras/discovery/ranges · 500')
+  })
+
   it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {
     // Arrange
-    fakeNetwork({ 'POST /api/cameras/discovery': failure(500) })
+    fakeNetwork({ ...rangesToSweep, 'POST /api/cameras/discovery': failure(500) })
     renderScreen(<AddCameraView />)
     await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
 

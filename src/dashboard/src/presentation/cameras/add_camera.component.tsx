@@ -16,7 +16,10 @@ import { SettingsList } from '../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import {
+  DiscoveryRangeSource,
+  type DiscoveredCamera,
+} from '../../domain/entities/discovered_camera.entity'
 import { resolveVendorLinkTarget } from './vendor_links'
 import { formatVendorFamily, helpVendorOptions, NO_HELP_VENDOR } from './vendor_families'
 import { buildAddCameraPresenter } from './add_camera.presenter'
@@ -178,7 +181,7 @@ export function AddCameraView() {
                 <Button
                   type="button"
                   disabled={busy}
-                  onClick={() => presenter.onConfirmScanSet(true)}
+                  onClick={() => void presenter.onSearchAsked()}
                 >
                   <Radar aria-hidden="true" />
                   {uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
@@ -216,10 +219,11 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio interroge le réseau avec le protocole
-              ONVIF, que beaucoup de caméras n’annoncent pas, ou seulement une fois réveillées
-              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
-              adresse sur le réseau, que l’application de la caméra ou votre box indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio ne parcourt que les plages d’adresses
+              que sa confirmation annonce, et beaucoup de caméras ne répondent qu’une fois
+              réveillées depuis leur propre application. Prenez alors{' '}
+              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que l’application de
+              la caméra ou votre box indiquent.
             </p>
             <p>
               Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
@@ -293,7 +297,8 @@ export function AddCameraView() {
       {uido.confirmScan && (
         <ConfirmModal
           title="Rechercher les caméras du réseau ?"
-          body="Vyzio interroge tous les appareils de votre réseau local. La recherche prend 15 à 30 secondes."
+          body={searchWarning(uido.rangesToSweep)}
+          details={<RangesToSweep rangesToSweep={uido.rangesToSweep} />}
           confirmLabel="Rechercher"
           tone="confirm"
           onConfirm={async () => {
@@ -336,6 +341,43 @@ function CandidateRow({
   )
 }
 
+const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
+  [DiscoveryRangeSource.Configured]: 'plage configurée par défaut',
+  [DiscoveryRangeSource.DashboardAddress]: 'autour de l’adresse utilisée pour ouvrir Vyzio',
+}
+
+/** What the search confirmation names: every range it will sweep, with where each comes from (ADR-71). */
+function RangesToSweep({ rangesToSweep }: { rangesToSweep: AddCameraUido['rangesToSweep'] }) {
+  if (rangesToSweep.loading)
+    return <p className="text-sm text-muted-foreground">Lecture des adresses à parcourir…</p>
+  if (rangesToSweep.error)
+    return (
+      <div className="text-sm text-destructive">
+        <p>{rangesToSweep.error.message}</p>
+        {rangesToSweep.error.diagnostic && <DiagnosticLine text={rangesToSweep.error.diagnostic} />}
+      </div>
+    )
+  if (rangesToSweep.ranges.length === 0) return null
+  return (
+    <ul className="list-disc pl-5 text-left text-sm">
+      {rangesToSweep.ranges.map((range) => (
+        <li key={range.cidr}>
+          {range.firstAddress} à {range.lastAddress} · {RANGE_SOURCE_LABELS[range.source]}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** The confirmation's sentence: a warning over the ranges once read, or how to get some when there are none. */
+function searchWarning(rangesToSweep: AddCameraUido['rangesToSweep']): string {
+  if (rangesToSweep.loading || rangesToSweep.error)
+    return 'Vyzio va interroger les adresses de votre réseau local pour y chercher des caméras. La recherche prend 15 à 30 secondes.'
+  if (rangesToSweep.ranges.length === 0)
+    return 'Aucune plage d’adresses n’est à parcourir : ouvrez Vyzio avec son adresse sur votre réseau (par exemple 192.168.1.10), ou saisissez l’adresse de la caméra.'
+  return 'Vyzio va interroger chaque adresse de ces plages pour y chercher des caméras. La recherche prend 15 à 30 secondes.'
+}
+
 /** Last action's outcome: success or failure, never both. */
 function Feedback({ message, error }: { message: string | null; error: AddCameraUido['error'] }) {
   if (error)
@@ -364,23 +406,20 @@ function SelectableRow({ onSelect, children }: { onSelect: () => void; children:
   )
 }
 
-/** Raw discovery facts, kept under the closing fold — only useful to diagnose a stuck add. */
+/** Raw discovery facts, kept under the closing fold: only useful to diagnose a stuck add. */
 function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   const details = candidate.technicalDetails
   const ports = details?.detectedPorts ?? []
   const paths = details?.rtspPathsDetected ?? []
   const capabilities = details?.capabilities ?? []
 
-  if (!details?.resolvedHostName && !candidate.macAddress && !ports.length && !paths.length) {
+  if (!details?.resolvedHostName && !ports.length && !paths.length) {
     return null
   }
 
   const facts: [string, string][] = [
     ...(details?.resolvedHostName
       ? [['Nom réseau', details.resolvedHostName] as [string, string]]
-      : []),
-    ...(candidate.macAddress
-      ? [['Adresse matérielle', candidate.macAddress] as [string, string]]
       : []),
     ...(paths.length ? [['Flux détectés', paths.join(', ')] as [string, string]] : []),
     ...(ports.length

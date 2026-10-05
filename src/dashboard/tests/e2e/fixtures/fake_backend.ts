@@ -772,6 +772,23 @@ export async function installFakeBackend(
       state.cameras.push(camera)
       return json(route, camera)
     }
+    if (path === '/api/cameras/discovery/ranges' && method === 'GET') {
+      // Like the real one: the configured range, then the /24 the dashboard was opened by (ADR-71).
+      return json(route, [
+        {
+          cidr: '192.168.0.0/24',
+          firstAddress: '192.168.0.1',
+          lastAddress: '192.168.0.254',
+          source: 'configured',
+        },
+        {
+          cidr: '192.168.1.0/24',
+          firstAddress: '192.168.1.1',
+          lastAddress: '192.168.1.254',
+          source: 'dashboard_address',
+        },
+      ])
+    }
     if (path === '/api/cameras/discovery' && method === 'POST') {
       return json(route, [
         {
@@ -783,10 +800,7 @@ export async function installFakeBackend(
           rtspActive: true,
           discoverySource: 'onvif',
           note: null,
-          macAddress: 'AA:BB:CC:DD:EE:FF',
-          isSupported: true,
           qualification: 'supported',
-          supportLevel: 'full',
           vendorFamily: null,
           qualificationReasons: [],
           stream: { protocol: 'rtsp', port: 554, path: '/Streaming/Channels/101' },

@@ -110,6 +110,20 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }
 
+    case 'RANGES_TO_SWEEP_STARTED':
+      return { ...state, rangesToSweep: { loading: true, ranges: [], error: null } }
+    case 'RANGES_TO_SWEEP_SUCCEEDED':
+      return { ...state, rangesToSweep: { loading: false, ranges: action.ranges, error: null } }
+    case 'RANGES_TO_SWEEP_FAILED':
+      return {
+        ...state,
+        rangesToSweep: {
+          loading: false,
+          ranges: [],
+          error: { message: action.message, diagnostic: action.diagnostic },
+        },
+      }
+
     case 'HELP_VENDOR_CHOSEN':
       return { ...state, helpVendor: action.vendorFamily }
 

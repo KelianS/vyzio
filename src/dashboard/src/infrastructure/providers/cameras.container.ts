@@ -18,6 +18,7 @@ import { CreateCamera } from '../../domain/usecases/create_camera.use_case'
 import { DeleteCamera } from '../../domain/usecases/delete_camera.use_case'
 import { DetectCameraCapabilities } from '../../domain/usecases/detect_camera_capabilities.use_case'
 import { DiscoverCameras } from '../../domain/usecases/discover_cameras.use_case'
+import { GetDiscoveryRanges } from '../../domain/usecases/get_discovery_ranges.use_case'
 import { GetCameraCapabilities } from '../../domain/usecases/get_camera_capabilities.use_case'
 import { GetCameraDetectionConfig } from '../../domain/usecases/get_camera_detection_config.use_case'
 import { GetCameraImageSettings } from '../../domain/usecases/get_camera_image_settings.use_case'
@@ -53,6 +54,7 @@ import type { CameraStreamRepository } from '../../domain/ports/camera_stream.po
 export interface CamerasContainer {
   getCameras: GetCameras
   discoverCameras: DiscoverCameras
+  getDiscoveryRanges: GetDiscoveryRanges
   getVendorAssistance: GetVendorAssistance
   createCamera: CreateCamera
   updateCamera: UpdateCamera
@@ -109,6 +111,7 @@ export function makeCamerasContainer(
   return {
     getCameras: new GetCameras(cameraRepository),
     discoverCameras: new DiscoverCameras(cameraRepository),
+    getDiscoveryRanges: new GetDiscoveryRanges(cameraRepository),
     getVendorAssistance: new GetVendorAssistance(cameraRepository),
     createCamera: new CreateCamera(cameraRepository),
     updateCamera: new UpdateCamera(cameraRepository),

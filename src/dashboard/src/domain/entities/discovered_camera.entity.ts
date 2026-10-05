@@ -31,6 +31,22 @@ interface DiscoveredStream {
   path: string | null
 }
 
+/** Where a range to sweep comes from (ADR-71). */
+export const DiscoveryRangeSource = {
+  Configured: 'configured',
+  DashboardAddress: 'dashboard_address',
+} as const
+
+export type DiscoveryRangeSource = (typeof DiscoveryRangeSource)[keyof typeof DiscoveryRangeSource]
+
+/** One address range a search sweeps, from its first to its last address. */
+export interface DiscoveryRange {
+  cidr: string
+  firstAddress: string
+  lastAddress: string
+  source: DiscoveryRangeSource
+}
+
 export interface DiscoveredCamera {
   displayName: string
   host: string
@@ -40,10 +56,7 @@ export interface DiscoveredCamera {
   rtspActive: boolean
   discoverySource: string
   note: string | null
-  macAddress: string | null
-  isSupported: boolean
   qualification: string
-  supportLevel: string
   vendorFamily: string | null
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentation | null

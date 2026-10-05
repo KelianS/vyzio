@@ -1,6 +1,9 @@
 import type { NewCameraInput } from '../../domain/entities/camera_input.entity'
 import type { AppError } from '../../common/errors/app_error'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import type {
+  DiscoveredCamera,
+  DiscoveryRange,
+} from '../../domain/entities/discovered_camera.entity'
 
 /** What's being added: a discovered camera, or a manually typed address (ADR-40). */
 type AddCameraSelection =
@@ -30,6 +33,12 @@ export interface AddCameraUido {
   /** A failure: its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
+  /** The ranges the search will sweep, read when its confirmation opens so it can name them (ADR-71). */
+  rangesToSweep: {
+    loading: boolean
+    ranges: DiscoveryRange[]
+    error: { message: string; diagnostic?: string } | null
+  }
 
   /** Which vendor's help sheet shows: discovery's vendor, or the user's pick; never stored nor sent (#274). */
   helpVendor: string | null
@@ -50,6 +59,7 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     message: null,
     error: null,
     confirmScan: false,
+    rangesToSweep: { loading: false, ranges: [], error: null },
 
     helpVendor: null,
     vendorAssistance: { loading: false, markdown: null, error: null },
