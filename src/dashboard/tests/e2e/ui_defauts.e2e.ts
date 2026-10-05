@@ -101,16 +101,34 @@ test.describe('LiveView PTZ positions', () => {
     expect(state.ptz.presets).toHaveLength(1)
   })
 
+  // A position saved in the vendor app is held, never empty; a tap goes there and takes its thumbnail (ADR-69).
+  test('LiveView_ShouldGoToTheHeldPositionAndTakeItsThumbnail_WhenTheCameraHeldItWithoutOne', async ({
+    page,
+  }) => {
+    const state = await openLive(page, {
+      presets: [{ presetId: 2, label: 'Parking', panMs: null, tiltMs: null, thumbnail: false }],
+      currentPosition: null,
+    })
+
+    const tile = page.getByTitle(/^Parking \(appui : y aller et prendre sa miniature/)
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(3)
+
+    await tile.click()
+
+    await expect(page.getByRole('status')).toContainText('Caméra en position « Parking ».')
+    await expect.poll(() => state.ptz.presets[0].thumbnail, { timeout: 5000 }).toBe(true)
+    await expect(page.getByTitle(/^Parking \(appui : y aller, appui long/)).toBeVisible()
+  })
+
   test('LiveView_ShouldAcknowledgeAndMarkThePosition_WhenTheUserGoesToIt', async ({ page }) => {
     await openLive(page, {
       presets: [
         {
           presetId: 1,
           label: 'Surveillance',
-          native: false,
           panMs: 4,
           tiltMs: 2,
-          configured: true,
+          thumbnail: false,
         },
       ],
       currentPosition: { x: 0, y: 0 },

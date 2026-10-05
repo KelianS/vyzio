@@ -30,10 +30,9 @@ function makePreset(overrides: Partial<PtzPreset> = {}): PtzPreset {
   return {
     presetId: 1,
     label: 'Surveillance',
-    native: false,
+    thumbnail: true,
     panMs: 3,
     tiltMs: 2,
-    configured: true,
     ...overrides,
   }
 }
@@ -226,16 +225,88 @@ describe('LiveView', () => {
     expect(screen.getByRole('button', { name: 'Calibrer maintenant' })).toBeEnabled()
   })
 
-  it('onOpen_ShouldSayWhyAndForSupport_WhenThePositionsCannotBeRead', async () => {
+  it('onOpen_ShouldSayThePositionsWereNotReadAndOfferNoSlot_WhenTheCameraCannotSayWhichItHolds', async () => {
     // Arrange
-    fakeNetwork({ [PRESETS]: failure(500) })
+    fakeNetwork({ [PRESETS]: failure(502, 'camera_unreachable') })
 
     // Act
     renderLiveView()
 
     // Assert
-    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
-    expect(screen.getByText(/GET \/api\/cameras\/camera-1\/ptz\/presets · 500/)).toBeVisible()
+    expect(
+      await screen.findByText('Les positions de cette caméra n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/cameras\/camera-1\/ptz\/presets · 502/)).toBeVisible()
+    expect(screen.queryByTitle('Enregistrer la position actuelle ici')).not.toBeInTheDocument()
+  })
+
+  it('onRetryPresets_ShouldShowTheSlots_WhenTheCameraAnswersTheNextRead', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: failure(502, 'camera_unreachable') })
+    renderLiveView()
+    const retry = await screen.findByRole('button', { name: 'Réessayer' })
+    network.answer(PRESETS, presetsRead({ presets: [makePreset()] }))
+
+    // Act
+    await userEvent.click(retry)
+
+    // Assert
+    expect(await screen.findByTitle(/^Surveillance \(appui/)).toBeInTheDocument()
+    expect(screen.queryByText(/n’ont pas pu être lues/)).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldShowAHeldSlotAndNeverAnEmptyOne_WhenTheCameraHoldsAPositionWithoutThumbnail', async () => {
+    // Arrange
+    fakeNetwork({
+      [PRESETS]: presetsRead({
+        presets: [makePreset({ presetId: 2, label: 'Parking', thumbnail: false })],
+      }),
+    })
+
+    // Act
+    renderLiveView()
+
+    // Assert
+    expect(
+      await screen.findByTitle(
+        'Parking (appui : y aller et prendre sa miniature, appui long : redéfinir ici)',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getAllByTitle('Enregistrer la position actuelle ici')).toHaveLength(3)
+  })
+
+  it('onGoTo_ShouldMoveThereAndTakeTheThumbnail_WhenTheUserTapsAHeldSlotWithoutOne', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset({ thumbnail: false })] }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+    })
+    renderLiveView()
+    const tile = await screen.findByTitle(/^Surveillance \(appui : y aller et prendre sa miniature/)
+
+    // Act
+    await userEvent.click(tile)
+
+    // Assert
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: GOTO, body: { presetId: 1 } }),
+    )
+    await theThumbnailIsCaptured(network)
+  })
+
+  it('onAskOverride_ShouldAskFirst_WhenTheUserLongPressesAHeldSlotWithoutThumbnail', async () => {
+    // Arrange
+    fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset({ thumbnail: false })] }) })
+    renderLiveView()
+
+    // Act
+    fireEvent.mouseDown(await screen.findByTitle(/^Surveillance \(appui/))
+
+    // Assert
+    expect(
+      await screen.findByText('Redéfinir cette position ?', undefined, { timeout: 2000 }),
+    ).toBeInTheDocument()
   })
 
   it('onPress_ShouldSayTheCameraRefusedAndShowWhy_WhenTheCameraRefusesTheMove', async () => {

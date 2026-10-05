@@ -21,8 +21,8 @@ const rule: ScheduleRule = {
   createdAt: '2026-01-01T00:00:00Z',
 }
 
-function preset(presetId: number, configured: boolean): PtzPreset {
-  return { presetId, label: '', native: false, panMs: null, tiltMs: null, configured }
+function preset(presetId: number, thumbnail: boolean): PtzPreset {
+  return { presetId, label: '', thumbnail, panMs: null, tiltMs: null }
 }
 
 describe('cameraPrivacyReducer', () => {
@@ -32,8 +32,8 @@ describe('cameraPrivacyReducer', () => {
       saved: true,
     },
     {
-      presets: [preset(PARKING_PRESET_ID, true), preset(SURVEILLANCE_PRESET_ID, false)],
-      saved: false,
+      presets: [preset(PARKING_PRESET_ID, false), preset(SURVEILLANCE_PRESET_ID, false)],
+      saved: true,
     },
     { presets: [preset(SURVEILLANCE_PRESET_ID, true)], saved: false },
   ])(
