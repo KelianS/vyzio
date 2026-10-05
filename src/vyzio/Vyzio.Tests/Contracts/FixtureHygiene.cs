@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -107,21 +106,9 @@ internal sealed partial class FixtureHygiene
             && _passwords.Any(password => RtspDigestResponse(method, match, password) == match.Groups["response"].Value);
     }
 
-    // The V380 auth frame carries the password AES-encrypted under a key sent beside it (V380Client).
     private IEnumerable<string> V380PasswordLeaks(byte[] frame)
     {
-        const int keyLength = 16;
-        const int passwordOffset = V380Client.AuthSessionKeyOffset + keyLength;
-        if (frame.Length < passwordOffset + keyLength || BinaryPrimitives.ReadInt32LittleEndian(frame) != V380Client.AuthCommand) yield break;
-        var encrypted = frame.AsSpan(passwordOffset, keyLength);
-        if (!encrypted.ContainsAnyExcept((byte)0)) yield break;
-
-        using var sessionAes = Aes.Create();
-        sessionAes.Key = frame[V380Client.AuthSessionKeyOffset..passwordOffset];
-        using var staticAes = Aes.Create();
-        staticAes.Key = V380Client.StaticKey.ToArray();
-        var plain = staticAes.DecryptEcb(sessionAes.DecryptEcb(encrypted, PaddingMode.None), PaddingMode.None);
-        if (!_passwords.Contains(Encoding.UTF8.GetString(plain).TrimEnd('\0'))) yield return "V380 password";
+        if (V380AuthFrame.CarriesAPassword(frame) && !_passwords.Contains(V380AuthFrame.Password(frame))) yield return "V380 password";
     }
 
     private static string Bare(string mac) => mac.Replace(":", string.Empty).Replace("-", string.Empty).ToUpperInvariant();
@@ -142,8 +129,9 @@ internal sealed partial class FixtureHygiene
 #pragma warning restore CA5350
     }
 
-    private string RtspDigestResponse(string method, Match header, string password)
-        => Md5Hex($"{Md5Hex($"{_username}:{header.Groups["realm"].Value}:{password}")}:{header.Groups["nonce"].Value}:{Md5Hex($"{method}:{header.Groups["uri"].Value}")}");
+    // The Digest response the header's own username, realm, nonce and uri give with this password (RFC 2617, no qop).
+    internal static string RtspDigestResponse(string method, Match header, string password)
+        => Md5Hex($"{Md5Hex($"{header.Groups["username"].Value}:{header.Groups["realm"].Value}:{password}")}:{header.Groups["nonce"].Value}:{Md5Hex($"{method}:{header.Groups["uri"].Value}")}");
 
     private static string Md5Hex(string value)
     {
@@ -196,5 +184,5 @@ internal sealed partial class FixtureHygiene
     private static partial Regex AnyDigest();
 
     [GeneratedRegex(@"Authorization:\s*Digest\s+username=""(?<username>[^""]*)"",\s*realm=""(?<realm>[^""]*)"",\s*nonce=""(?<nonce>[^""]*)"",\s*uri=""(?<uri>[^""]*)"",\s*response=""(?<response>[^""]*)""", RegexOptions.IgnoreCase)]
-    private static partial Regex RtspDigest();
+    internal static partial Regex RtspDigest();
 }

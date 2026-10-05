@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -150,16 +151,13 @@ public sealed class CameraProtocolProbeTests
     public async Task ProbeAsync_ShouldAnswer_WhenTheRtspServiceAsksForNoAccount()
     {
         // Arrange
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var camera = CameraOn(SupportedProtocol.Rtsp, PortOf(listener));
-        var server = ServeAsync(listener, "RTSP/1.0 200 OK\r\nCSeq: 1\r\n\r\n");
+        await using var v380 = CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, CapturedVariant.V380Pro, RtspScenario.DescribeLogin);
+        var camera = v380.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, v380.Port, CapturedStreamPath.V380Pro);
 
         // Act
         var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.Rtsp).ObservedAsync();
 
         // Assert
-        await server;
         Assert.Equal(ProtocolStatus.Answers, answer.Status);
     }
 
@@ -167,18 +165,13 @@ public sealed class CameraProtocolProbeTests
     public async Task ProbeAsync_ShouldAnswer_WhenTheRtspServiceAcceptsTheDigestAccount()
     {
         // Arrange
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var camera = CameraOn(SupportedProtocol.Rtsp, PortOf(listener), username: "viewer");
-        var server = ServeAsync(listener,
-            "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Digest realm=\"cam\", nonce=\"abc\"\r\n\r\n",
-            "RTSP/1.0 200 OK\r\nCSeq: 2\r\n\r\n");
+        await using var tapo = CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, CapturedVariant.TapoC200, RtspScenario.DescribeLogin);
+        var camera = tapo.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, tapo.Port, CapturedStreamPath.TapoC200);
 
         // Act
         var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.Rtsp).ObservedAsync();
 
         // Assert
-        await server;
         Assert.Equal(ProtocolStatus.Answers, answer.Status);
     }
 
@@ -206,74 +199,61 @@ public sealed class CameraProtocolProbeTests
     public async Task ProbeAsync_ShouldBeRefused_WhenTheRtspServiceAsksForAnAccountAndNoneIsSet()
     {
         // Arrange
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var camera = CameraOn(SupportedProtocol.Rtsp, PortOf(listener));
-        var server = ServeAsync(listener, "RTSP/1.0 401 Unauthorized\r\nCSeq: 1\r\nWWW-Authenticate: Basic realm=\"cam\"\r\n\r\n");
+        await using var tapo = CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, CapturedVariant.TapoC200, RtspScenario.DescribeLogin);
+        var camera = tapo.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, tapo.Port, CapturedStreamPath.TapoC200);
+        camera.Username = null;
 
         // Act
         var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.Rtsp).ObservedAsync();
 
         // Assert
-        await server;
         Assert.Equal(ProtocolStatus.Refused, answer.Status);
     }
 
     // Login, DVRIP: the login packet, with the DVRIP account.
 
-    [Theory]
-    [InlineData(100, ProtocolStatus.Answers)]
-    [InlineData(203, ProtocolStatus.Refused)]
-    public async Task ProbeAsync_ShouldFollowTheLoginReturnCode_WhenTheDvripServiceAnswersTheLogin(int ret, ProtocolStatus expected)
+    [Fact]
+    public async Task ProbeAsync_ShouldAnswer_WhenTheDvripServiceAcceptsTheLogin()
     {
         // Arrange
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var camera = CameraOn(SupportedProtocol.Dvrip, PortOf(listener), username: "viewer");
-        var server = Task.Run(async () =>
-        {
-            // The reach dial comes first and closes at once; the login is the second connection.
-            using (await listener.AcceptTcpClientAsync()) { }
-            using var client = await listener.AcceptTcpClientAsync();
-            var stream = client.GetStream();
-            await DvripClient.ReceivePacketAsync(stream, CancellationToken.None);
-            await DvripClient.SendPacketAsync(stream, 1001, $"{{\"Ret\":{ret},\"SessionID\":\"0x00000001\"}}", 0, "0x00000001", CancellationToken.None);
-        });
+        await using var icsee = CapturedTcpCamera.Replaying(FixtureProtocol.Dvrip, CapturedVariant.Icsee, DvripScenario.Login);
 
         // Act
-        var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.Dvrip).ObservedAsync();
+        var answer = await MakeProbe().ProbeAsync(icsee.Camera(FixtureLoader.Neutral.Account.Password), SupportedProtocol.Dvrip).ObservedAsync();
 
         // Assert
-        await server;
-        Assert.Equal(expected, answer.Status);
+        Assert.Equal(ProtocolStatus.Answers, answer.Status);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_ShouldBeRefused_WhenTheDvripServiceTurnsTheLoginDown()
+    {
+        // Arrange
+        await using var icsee = CapturedTcpCamera.Replaying(FixtureProtocol.Dvrip, CapturedVariant.Icsee, DvripScenario.LoginRefused);
+
+        // Act
+        var answer = await MakeProbe().ProbeAsync(icsee.Camera(FixtureLoader.Neutral.RefusedPassword), SupportedProtocol.Dvrip).ObservedAsync();
+
+        // Assert
+        Assert.Equal(ProtocolStatus.Refused, answer.Status);
     }
 
     // Login, V380: the auth handshake with the account and the device number.
 
     [Fact]
-    public async Task ProbeAsync_ShouldBeRefused_WhenTheV380ServiceGivesNoTicket()
+    public async Task ProbeAsync_ShouldBeRefusedNamingTheDeviceNumber_WhenTheV380ServiceGivesNoTicket()
     {
         // Arrange
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var camera = CameraOn(SupportedProtocol.V380, PortOf(listener), username: "viewer");
-        camera.Protocol(SupportedProtocol.V380)!.DeviceId = 12345678;
-        var server = Task.Run(async () =>
-        {
-            using (await listener.AcceptTcpClientAsync()) { }
-            using var client = await listener.AcceptTcpClientAsync();
-            var stream = client.GetStream();
-            await stream.ReadExactlyAsync(new byte[256]);
-            await stream.WriteAsync(new byte[256]);
-        });
+        await using var v380 = CapturedTcpCamera.Replaying(FixtureProtocol.V380, CapturedVariant.V380Pro, V380Scenario.AuthRefused);
+        var camera = v380.Camera(FixtureLoader.Neutral.RefusedPassword);
+        camera.Protocol(SupportedProtocol.V380)!.DeviceId = FixtureLoader.Neutral.V380DeviceId;
 
         // Act
         var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.V380).ObservedAsync();
 
         // Assert
-        await server;
         Assert.Equal(ProtocolStatus.Refused, answer.Status);
-        Assert.Contains("12345678", answer.Error, StringComparison.Ordinal);
+        Assert.Contains(FixtureLoader.Neutral.V380DeviceId.ToString(CultureInfo.InvariantCulture), answer.Error, StringComparison.Ordinal);
     }
 
     // Login, Tapo KLAP: the handshake with the KLAP account.
