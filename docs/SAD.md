@@ -286,7 +286,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 |---|---|
 | Frigate is still 0.x: a minor can break the MQTT or REST contract. It is pinned and moved through an issue | #121 |
 | The contract with Frigate is tested against stubs, not a running Frigate | #94 |
-| DVRIP and V380 tests rely on hand-written stubs; only ONVIF replays captured exchanges | #92 |
+| Tapo KLAP is still tested against hand-written stubs; ONVIF, RTSP, DVRIP and V380 replay exchanges captured from real cameras | #88 |
 | The disk fills with recordings without warning | #64 |
 | A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
 | Discovery misses multicast announcements and MAC hints from the Docker bridge | #251 |
