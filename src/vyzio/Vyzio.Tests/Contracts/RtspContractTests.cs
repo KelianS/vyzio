@@ -12,9 +12,9 @@ public sealed class RtspContractTests
     // What each captured variant yields, written once: a new firmware folder adds one row here.
     private static readonly Dictionary<string, RtspExpectation> Expected = new()
     {
-        [CapturedVariant.TapoC200] = new(StreamPath: "/stream1", AsksForAnAccount: true),
+        [CapturedVariant.TapoC200] = new(StreamPath: CapturedStreamPath.TapoC200, AsksForAnAccount: true),
         // Serves DESCRIBE without asking for any account.
-        [CapturedVariant.V380Pro] = new(StreamPath: "/live/ch00_1", AsksForAnAccount: false),
+        [CapturedVariant.V380Pro] = new(StreamPath: CapturedStreamPath.V380Pro, AsksForAnAccount: false),
     };
 
     public static TheoryData<string> Variants => FixtureLoader.VariantNames(FixtureProtocol.Rtsp);

@@ -77,6 +77,13 @@ internal static class CapturedVariant
     public const string V380Pro = "v380-pro-hs-camera-no1";
 }
 
+// The RTSP path each captured camera was described on.
+internal static class CapturedStreamPath
+{
+    public const string TapoC200 = "/stream1";
+    public const string V380Pro = "/live/ch00_1";
+}
+
 internal enum FixtureProtocol
 {
     Onvif,

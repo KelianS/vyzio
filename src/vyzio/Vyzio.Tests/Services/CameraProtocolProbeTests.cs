@@ -152,7 +152,7 @@ public sealed class CameraProtocolProbeTests
     {
         // Arrange
         await using var v380 = CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, CapturedVariant.V380Pro, RtspScenario.DescribeLogin);
-        var camera = v380.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, v380.Port, "/live/ch00_1");
+        var camera = v380.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, v380.Port, CapturedStreamPath.V380Pro);
 
         // Act
         var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.Rtsp).ObservedAsync();
@@ -166,7 +166,7 @@ public sealed class CameraProtocolProbeTests
     {
         // Arrange
         await using var tapo = CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, CapturedVariant.TapoC200, RtspScenario.DescribeLogin);
-        var camera = tapo.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, tapo.Port, "/stream1");
+        var camera = tapo.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, tapo.Port, CapturedStreamPath.TapoC200);
 
         // Act
         var answer = await MakeProbe().ProbeAsync(camera, SupportedProtocol.Rtsp).ObservedAsync();
@@ -200,7 +200,7 @@ public sealed class CameraProtocolProbeTests
     {
         // Arrange
         await using var tapo = CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, CapturedVariant.TapoC200, RtspScenario.DescribeLogin);
-        var camera = tapo.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, tapo.Port, "/stream1");
+        var camera = tapo.Camera(FixtureLoader.Neutral.Account.Password).WithStream(SupportedProtocol.Rtsp, tapo.Port, CapturedStreamPath.TapoC200);
         camera.Username = null;
 
         // Act
