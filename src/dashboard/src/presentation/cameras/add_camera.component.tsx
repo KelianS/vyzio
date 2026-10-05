@@ -254,11 +254,7 @@ export function AddCameraView() {
         {/* Before the access: the vendor's prerequisites, such as the camera account, come first. */}
         {(offersHelpList || showsNotice) && (
           <SettingsSection
-            title={
-              offersHelpList
-                ? 'Aide de votre caméra'
-                : `Notice ${formatVendorFamily(vendorFamily) ?? 'du constructeur'}`
-            }
+            title="Aide de votre caméra"
             lede={
               offersHelpList
                 ? 'Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide.'
