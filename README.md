@@ -25,19 +25,20 @@ a YAML file in sight.
 
 Designed for the phone first. The home screen holds the whole product: what the cameras see, who
 was recognised and when, whether notifications go out, and how the machine is doing. A tap on a
-camera opens its live view and steers it.
+camera opens its live view, and steers it when the camera can move.
 
 <p>
   <img src="docs/assets/hub.jpg" width="240" alt="Home screen: live cameras, one on a privacy schedule, latest detections, notifications and system health">
-  <img src="docs/assets/live.jpg" width="240" alt="Live view of a camera, with its direction pad and saved positions">
+  <img src="docs/assets/live.jpg" width="240" alt="Live view of a camera, with its direction pad and position slots">
   <img src="docs/assets/history.jpg" width="240" alt="Detection history: who was seen, where and when, each one correctable">
 </p>
 
-Adding a camera: Vyzio searches the network, then asks only for the camera's access.
+Adding a camera: Vyzio searches the local network (the subnet the interface is opened from, plus
+the ranges you give it), then asks only for the camera's access.
 
 <p>
   <img src="docs/assets/onboarding-1.png" width="240" alt="Add a camera: search the network, or type the address">
-  <img src="docs/assets/onboarding-3.png" width="240" alt="One camera found on the network">
+  <img src="docs/assets/onboarding-3.png" width="240" alt="One camera found on the network, ready to add">
   <img src="docs/assets/onboarding-4.png" width="240" alt="Only its access is asked: name, address and account">
 </p>
 
@@ -56,8 +57,8 @@ Adding a camera: Vyzio searches the network, then asks only for the camera's acc
 
 - **Local person recognition.** Faces are matched on your own machine, and a detection names who
   was seen.
-- **Notifications worth reading.** You choose who and what notifies you, so a swaying branch does
-  not wake you up.
+- **Notifications worth reading.** You choose which people and which cameras notify you, and
+  through which channel.
 - **Works with the IP cameras you already own.** RTSP and ONVIF, plus vendor protocols where a
   camera needs one.
 - **One place to drive every camera.** Movement, privacy mode, image settings and privacy
@@ -77,7 +78,7 @@ can do the same way whatever its brand: it reads the proof from the camera, or, 
 read, asks you to try the capability once and say whether it worked. The brand only picks a help
 sheet: what to prepare in the vendor app first ([`src/vyzio/vendors/`](src/vyzio/vendors/README.md)).
 
-Measured so far ([`docs/hardware/`](docs/hardware/)):
+Brands whose own protocols Vyzio speaks:
 
 | Camera        | Privacy mode                   | Move the camera | Image settings                      |
 | ------------- | ------------------------------ | --------------- | ----------------------------------- |
@@ -152,13 +153,14 @@ docker compose exec vyzio-api dotnet Vyzio.Api.dll reset-password
 ```
 
 The command **removes** the password (a new one would sit in your shell history) and closes every
-session. Vyzio then offers the password choice for **30 minutes**, cameras, settings and history
-untouched, then locks itself again.
+session. Vyzio then offers the password choice for a limited time, cameras, settings and history
+untouched, then locks itself again
+([ADR-54](docs/adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)).
 
-> During those 30 minutes, anyone on the local network can claim the password: run the command
-> when you are ready to type one.
+> Meanwhile, anyone on the local network can claim the password: run the command when you are
+> ready to type one.
 
-A password you still know changes in the interface: Réglages › Accès.
+A password you still know changes in the interface: `Réglages › Accès`.
 
 ---
 
@@ -185,8 +187,9 @@ Compose deployment) is in place.
 What a 1.0 still waits on is tracked in the
 [issues](https://github.com/KelianS/vyzio/issues), notably
 [per-camera areas of interest](https://github.com/KelianS/vyzio/issues/68) and
-[data export and erasure](https://github.com/KelianS/vyzio/issues/69). Read
-[`SECURITY.md`](SECURITY.md) before deploying: the home network is served in the clear, by design.
+[data export and erasure](https://github.com/KelianS/vyzio/issues/69). Access from outside the home
+is not delivered yet. Read [`SECURITY.md`](SECURITY.md) before deploying: the home network is
+served in the clear, by design.
 
 ---
 

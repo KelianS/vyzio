@@ -69,6 +69,7 @@ const state = createFakeBackendState({
   detectionHistory: [
     makeFakeDetectionEvent({
       eventId: 'e1',
+      camera: 'porte_entree',
       cameraName: 'Porte d’entrée',
       identity: 'Camille',
       profileId: 'profile-1',
@@ -83,6 +84,7 @@ const state = createFakeBackendState({
     }),
     makeFakeDetectionEvent({
       eventId: 'e3',
+      camera: 'porte_entree',
       cameraName: 'Porte d’entrée',
       identity: 'Facteur',
       profileId: 'profile-2',

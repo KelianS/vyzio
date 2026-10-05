@@ -1,9 +1,6 @@
 import type { Page, PageScreenshotOptions } from '@playwright/test'
 
-/**
- * A whole-page screenshot laid out from the top. A full-page capture draws a sticky bar where the
- * scroll left it, so the header lands mid-image; the capture alone releases the bars, never the product.
- */
+/** A full-page shot with the sticky bars released, so the header stays at the top (capture only). */
 export async function fullPageScreenshot(
   page: Page,
   options: Pick<PageScreenshotOptions, 'path' | 'quality'>,
