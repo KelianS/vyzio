@@ -32,14 +32,15 @@ public static class CamerasEndpoints
     {
         var group = app.MapGroup("/api/cameras");
 
-        group.MapPost("/discovery", async (DiscoverCamerasRequest? request, DiscoverCamerasUseCase useCase, ILoggerFactory loggerFactory, CancellationToken ct) =>
+        group.MapPost("/discovery", async (DiscoverCamerasRequest? request, HttpContext http, DiscoverCamerasUseCase useCase, ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
             var logger = loggerFactory.CreateLogger("CamerasDiscovery");
             logger.LogInformation("HTTP camera discovery request received.");
 
-            var result = await useCase.ExecuteAsync(request, ct);
+            // The Host the dashboard was opened by, as nginx forwards it; never X-Forwarded-Host (#251).
+            var result = await useCase.ExecuteAsync(request, http.Request.Host.Host, ct);
 
-            logger.LogInformation("HTTP camera discovery request completed with {CandidateCount} candidate(s).", result.Count);
+            logger.LogInformation("HTTP camera discovery request completed with {CandidateCount} candidate(s).", result.Candidates.Count);
             return Results.Ok(result);
         });
 

@@ -31,6 +31,9 @@ internal sealed class V380Client(ILogger<V380Client> logger)
 
     internal const int AuthCommand = 1167;
 
+    // The opcode the camera answers the auth frame with, credentials or not (Contracts/Fixtures/v380).
+    internal const int AuthReplyCommand = 1168;
+
     // The auth frame carries the session key there, the encrypted password right after it.
     internal const int AuthSessionKeyOffset = 81;
 
@@ -184,33 +187,14 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         return ticket == 0 ? null : ticket;
     }
 
-    // UDP NVDEVSEARCH discovery. V380PtzProvider tries ONVIF first (via OnvifClient),
-    // then falls back here. This keeps V380Client free of ONVIF protocol knowledge.
+    // UDP NVDEVSEARCH, unicast to the camera only: a broadcast may answer with another V380's number (#274).
     private static async Task<uint?> DiscoverDeviceIdAsync(string host, CancellationToken ct)
-    {
-        var msg = "NVDEVSEARCH^100"u8.ToArray();
-        var id = await TrySendDiscoveryAsync(msg, host, ct);
-        if (id.HasValue) return id;
-
-        // Subnet broadcast fallback (assumes /24; adequate for most home/SMB setups).
-        var parts = host.Split('.');
-        if (parts.Length == 4)
-        {
-            var broadcast = $"{parts[0]}.{parts[1]}.{parts[2]}.255";
-            id = await TrySendDiscoveryAsync(msg, broadcast, ct);
-            if (id.HasValue) return id;
-        }
-
-        return null;
-    }
-
-    private static async Task<uint?> TrySendDiscoveryAsync(byte[] msg, string target, CancellationToken ct)
     {
         try
         {
+            var msg = "NVDEVSEARCH^100"u8.ToArray();
             using var udp = new UdpClient(0);
-            udp.EnableBroadcast = true;
-            var endpoint = new IPEndPoint(IPAddress.Parse(target), DiscoveryPort);
+            var endpoint = new IPEndPoint(IPAddress.Parse(host), DiscoveryPort);
             await udp.SendAsync(msg, endpoint, ct);
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);

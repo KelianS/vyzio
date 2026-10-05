@@ -8,19 +8,21 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryService, ICameraRepository cameras)
 {
-    public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(DiscoverCamerasRequest? request = null, CancellationToken ct = default)
+    public async Task<DiscoverCamerasResponse> ExecuteAsync(DiscoverCamerasRequest? request = null, string? dashboardHost = null, CancellationToken ct = default)
     {
         var target = request?.ToTarget();
-        var candidates = await discoveryService.DiscoverAsync(target, ct);
+        var discovery = await discoveryService.DiscoverAsync(target, dashboardHost, ct);
         var configuredEndpoints = (await cameras.GetAllAsync(ct))
             .Where(camera => camera.StreamBinding is not null)
             .Select(camera => BuildEndpointKey(camera.Host, camera.PortOf(camera.StreamBinding!.Protocol)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        return candidates
-            .Where(candidate => target is not null || !configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)))
-            .Select(DiscoveredCameraDto.From)
-            .ToList();
+        return new DiscoverCamerasResponse(
+            discovery.Ranges.Select(DiscoveryRangeDto.From).ToList(),
+            discovery.Candidates
+                .Where(candidate => target is not null || !configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)))
+                .Select(DiscoveredCameraDto.From)
+                .ToList());
     }
 
     private static string BuildEndpointKey(string host, int port)

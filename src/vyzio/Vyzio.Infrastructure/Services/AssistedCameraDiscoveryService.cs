@@ -32,14 +32,16 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         _identifier = new AssistedCameraDiscoveryIdentifier(new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger));
     }
 
-    public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, CancellationToken ct = default)
+    public async Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
     {
-        var rawSignals = await _probePipeline.DiscoverAsync(target, ct);
+        // A single target is probed as is: no range is swept (#251).
+        var ranges = target is null ? DiscoveryRanges.Resolve(_settings.Discovery.ProbeCidrs, dashboardHost) : [];
+        var rawSignals = await _probePipeline.DiscoverAsync(target, ranges, ct);
         var identifiedCandidates = _identifier.Identify(rawSignals);
         var result = await EnrichTechnicalDetailsAsync(_formatter.Format(identifiedCandidates), rawSignals, ct);
 
         _logger?.LogInformation("Assisted camera discovery completed with {CandidateCount} unique candidate(s).", result.Count);
-        return result;
+        return new CameraDiscoveryResult(ranges, result);
     }
 
     private async Task<IReadOnlyList<CameraDiscoveryCandidate>> EnrichTechnicalDetailsAsync(
@@ -157,7 +159,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         }
 
         // Protocols proven on this host: fingerprint-confirmed on an open port (ConfirmedProtocol),
-        // or identified by a handshake source (ONVIF multicast, via the protocol catalog).
+        // or identified by its source (RTSP DESCRIBE, via the protocol catalog).
         var detectedProtocols = new HashSet<SupportedProtocol>();
         foreach (var signal in signals)
         {

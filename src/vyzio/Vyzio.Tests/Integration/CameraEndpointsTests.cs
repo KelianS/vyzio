@@ -276,15 +276,35 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var response = await client.PostAsync("/api/cameras/discovery", content: null);
 
         response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<DiscoveredCameraResponse[]>();
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
 
-        var candidate = Assert.Single(payload!);
+        var candidate = Assert.Single(payload!.Candidates);
         Assert.Equal("Driveway", candidate.DisplayName);
         Assert.False(candidate.RtspActive);
-        Assert.False(candidate.IsSupported);
+        Assert.Null(candidate.VendorFamily);
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Contains("onvif_detected", candidate.QualificationReasons);
         Assert.Null(candidate.Stream);
+    }
+
+    [Fact]
+    public async Task Discover_ShouldHandTheDashboardHostToDiscovery_WhenTheRequestCarriesAHostHeader()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/cameras/discovery");
+        request.Headers.Host = "192.168.1.20:8080";
+        request.Headers.Add("X-Forwarded-Host", "10.0.0.5");
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
+        var range = Assert.Single(payload!.Ranges);
+        Assert.Equal("192.168.1.20", range.FirstAddress);
+        Assert.Equal("dashboard_address", range.Source);
     }
 
     [Fact]
@@ -297,9 +317,9 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
             554));
 
         response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<DiscoveredCameraResponse[]>();
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
 
-        var candidate = Assert.Single(payload!);
+        var candidate = Assert.Single(payload!.Candidates);
         Assert.Equal("Front Door", candidate.DisplayName);
         Assert.True(candidate.RtspActive);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
@@ -482,7 +502,11 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string? MacAddress, bool IsSupported, string Qualification, string SupportLevel, string? VendorFamily, string[] QualificationReasons, DiscoveredStreamResponse? Stream);
+    public sealed record DiscoveryResponse(DiscoveryRangeResponse[] Ranges, DiscoveredCameraResponse[] Candidates);
+
+    public sealed record DiscoveryRangeResponse(string Cidr, string FirstAddress, string LastAddress, string Source);
+
+    public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string Qualification, string? VendorFamily, string[] QualificationReasons, DiscoveredStreamResponse? Stream);
 
     public sealed record DiscoveredStreamResponse(string Protocol, int Port, string? Path);
 
@@ -600,18 +624,20 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraDiscoveryService : ICameraDiscoveryService
     {
-        public Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<CameraDiscoveryCandidate>>(
+        // Answers with the dashboard's /24 as the one swept range, so a test reads which Host reached it.
+        public Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
+            => Task.FromResult(new CameraDiscoveryResult(
+                dashboardHost is null ? [] : [new DiscoveryRange($"{dashboardHost}/32", dashboardHost, dashboardHost, DiscoveryRangeSource.DashboardAddress)],
                 target is not null && string.Equals(target.Host, "192.168.1.10", StringComparison.OrdinalIgnoreCase)
                     ?
                     [
-                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["rtsp_responding", "mac_address_observed"], Stream: new DiscoveredStream(SupportedProtocol.Rtsp, 554, "/Streaming/Channels/101"))
+                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "rtsp_manual", "/Streaming/Channels/101", "rtsp_describe", "RTSP probe refreshed for this camera.", "camera_confirmed", null, ["rtsp_responding"], Stream: new DiscoveredStream(SupportedProtocol.Rtsp, 554, "/Streaming/Channels/101"))
                     ]
                     :
                     [
-                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"]),
-                        new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "AA:BB:CC:DD:EE:FF", "camera_confirmed", "unknown", null, ["onvif_detected", "mac_address_observed"])
-                    ]);
+                        new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", null, "onvif", "ONVIF device announced.", "camera_confirmed", null, ["onvif_detected"]),
+                        new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "camera_confirmed", null, ["onvif_detected"])
+                    ]));
     }
 
     private sealed class StubCameraProtocolProbe : ICameraProtocolProbe

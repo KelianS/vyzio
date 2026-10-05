@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Time.Testing;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
+using Vyzio.Tests.Contracts;
 using Vyzio.Tests.Services.Hosting;
 
 namespace Vyzio.Tests.Services;
@@ -26,7 +28,7 @@ public class AssistedCameraDiscoveryServiceTests
     // Every probe here must land on a loopback listener this test owns, on a port the OS just
     // handed out — never a well-known one, which collides with whatever the machine happens to be
     // running. Hence the port → fingerprint mapping being declared per test rather than inherited
-    // from the catalog, and the LAN multicast being off.
+    // from the catalog.
     private static VyzioRuntimeSettings HermeticSettings(
         IReadOnlyList<string>? probeHosts = null,
         IReadOnlyList<string>? probeCidrs = null,
@@ -48,7 +50,6 @@ public class AssistedCameraDiscoveryServiceTests
                 HttpPortsOverride = httpPorts ?? [],
                 ScanPortsOverride = scanPorts ?? [],
                 PortFingerprintsOverride = portFingerprints ?? new Dictionary<int, SupportedProtocol>(),
-                OnvifMulticastEnabled = false,
                 ProbeTimeoutMs = 500,
                 MaxConcurrentProbes = 1,
             }
@@ -75,17 +76,15 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(rtspPorts: [port]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         stopServer.Cancel();
         await serverTask;
         var candidate = Assert.Single(result, item => item.Host == Loopback && item.Port == port);
         Assert.Equal("rtsp_describe", candidate.DiscoverySource);
         Assert.Equal("camera_confirmed", candidate.Qualification);
-        Assert.Equal("unknown", candidate.SupportLevel);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
         Assert.Equal("/stream1", candidate.StreamPath);
-        Assert.Null(candidate.MacAddress);
         Assert.NotNull(candidate.TechnicalDetails);
         // The detected-ports table is sourced from the catalog port sweep (fixed ports), not from
         // the RTSP DESCRIBE probe's random test port — so it's the stream path that's asserted here.
@@ -106,7 +105,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = Discovery(
             HermeticSettings(probeCidrs: ["127.0.0.1/32"], rtspPorts: [port]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -156,7 +155,7 @@ public class AssistedCameraDiscoveryServiceTests
     }, ct);
 
     [Fact]
-    public async Task DiscoverAsync_ShouldReturnALikelyTapoCamera_WhenTheWebPageCarriesATapoSignature()
+    public async Task DiscoverAsync_ShouldRankTheHostLikelyWithoutAVendor_WhenTheWebPageCarriesATapoSignature()
     {
         using var listener = StartLoopbackListener();
         var port = PortOf(listener);
@@ -169,7 +168,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(httpPorts: [port]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -177,11 +176,9 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("http_probe", candidate.DiscoverySource);
         Assert.Equal("web_setup", candidate.SourceType);
         Assert.Equal("camera_likely", candidate.Qualification);
-        Assert.Equal("guided", candidate.SupportLevel);
-        Assert.Equal("tplink_tapo", candidate.VendorFamily);
+        Assert.Null(candidate.VendorFamily);
         Assert.Contains("http_camera_signature", candidate.QualificationReasons);
         Assert.Contains("Tapo", candidate.Note);
-        Assert.Null(candidate.MacAddress);
     }
 
     [Fact]
@@ -198,7 +195,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(httpPorts: [port]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -225,7 +222,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [onvifPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -249,7 +246,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [onvifPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -273,7 +270,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [onvifPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -384,7 +381,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [port],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [port] = SupportedProtocol.Onvif }));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -396,40 +393,35 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_ShouldReturnALikelyTapoCamera_WhenOnlyTheHostnameHintsAtIt()
+    public async Task DiscoverAsync_ShouldRankTheHostLikelyWithoutAVendor_WhenOnlyTheHostnameHintsAtTapo()
     {
         var sut = Discovery(
             HermeticSettings(probeHosts: ["c200-camera-tapo.lan"]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         var candidate = Assert.Single(result, item => item.Host == "c200-camera-tapo.lan");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
         Assert.Equal("camera_likely", candidate.Qualification);
-        Assert.Equal("guided", candidate.SupportLevel);
-        Assert.Equal("tplink_tapo", candidate.VendorFamily);
+        Assert.Null(candidate.VendorFamily);
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
     }
 
     [Fact]
-    public async Task DiscoverAsync_ShouldReturnALikelyV380CameraWithItsVendorGuide_WhenOnlyTheHostnameHintsAtIt()
+    public async Task DiscoverAsync_ShouldLeaveTheVendorUnset_WhenOnlyTheHostnameNamesV380()
     {
         var sut = Discovery(HermeticSettings(
             probeHosts: ["v380pro-camera.lan"],
             vendorCatalogPath: FindRepoPath("src", "vyzio", "vendors")));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         var candidate = Assert.Single(result, item => item.Host == "v380pro-camera.lan");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
         Assert.Equal("camera_likely", candidate.Qualification);
-        Assert.Equal("guided", candidate.SupportLevel);
-        Assert.Equal("v380_pro", candidate.VendorFamily);
+        Assert.Null(candidate.VendorFamily);
+        Assert.Null(candidate.VendorDocumentation);
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
-        Assert.Contains("vendor_hint_detected", candidate.QualificationReasons);
-        Assert.NotNull(candidate.VendorDocumentation);
-        Assert.Contains("# V380 PRO", candidate.VendorDocumentation!.Markdown, StringComparison.Ordinal);
-        Assert.Contains("https://gist.github.com/SolveSoul/9be5d9599c8b4b59f7cfa4cd0ce79c9c", candidate.VendorDocumentation.Markdown, StringComparison.Ordinal);
     }
 
     private static string FindRepoPath(params string[] parts)
@@ -446,7 +438,7 @@ public class AssistedCameraDiscoveryServiceTests
     {
         var sut = Discovery(HermeticSettings(probeHosts: ["MV87654321"]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         var candidate = Assert.Single(result, item => item.Host == "MV87654321");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
@@ -473,7 +465,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = Discovery(
             HermeticSettings(rtspPorts: [rtspPort], httpPorts: [httpPort]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         stopServer.Cancel();
         await Task.WhenAll(rtspServerTask, httpServerTask);
@@ -483,7 +475,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal(rtspPort, candidate.Port);
         Assert.Equal("rtsp_describe", candidate.DiscoverySource);
         Assert.Equal("camera_confirmed", candidate.Qualification);
-        Assert.Equal("tplink_tapo", candidate.VendorFamily);
+        Assert.Null(candidate.VendorFamily);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
         Assert.Contains("http_camera_signature", candidate.QualificationReasons);
         Assert.False(string.IsNullOrWhiteSpace(candidate.TechnicalDetails?.ResolvedHostName));
@@ -502,7 +494,7 @@ public class AssistedCameraDiscoveryServiceTests
             probeHosts: [Loopback, "c200-camera-tapo.lan"],
             rtspPorts: [rtspPort]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         stopServer.Cancel();
         await rtspServerTask;
@@ -515,7 +507,7 @@ public class AssistedCameraDiscoveryServiceTests
     }
 
     // ADR-32: identification (Stage 1) is only a filter on what to enrich, never a filter on
-    // what gets shown — a host with zero matching protocol/MAC/hostname signal must still surface
+    // what gets shown: a host with zero matching protocol/hostname signal must still surface
     // as device_unknown rather than vanish (this was the actual bug behind "plenty of devices are
     // still missing, not even shown as unidentified").
     [Fact]
@@ -523,7 +515,7 @@ public class AssistedCameraDiscoveryServiceTests
     {
         var sut = Discovery(HermeticSettings());
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
         var candidate = Assert.Single(result, item => item.Host == Loopback);
         Assert.Equal("network_host", candidate.DiscoverySource);
@@ -563,7 +555,7 @@ public class AssistedCameraDiscoveryServiceTests
 
         var sut = Discovery(HermeticSettings(httpPorts: [port]));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -587,7 +579,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [dvripPort],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [dvripPort] = SupportedProtocol.Dvrip }));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -627,7 +619,7 @@ public class AssistedCameraDiscoveryServiceTests
             scanPorts: [v380Port],
             portFingerprints: new Dictionary<int, SupportedProtocol> { [v380Port] = SupportedProtocol.V380 }));
 
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -639,6 +631,125 @@ public class AssistedCameraDiscoveryServiceTests
         // No protocol confirmed → not a camera.
         Assert.Equal("device_unknown", candidate.Qualification);
     }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldSetTheV380VendorWithItsGuide_WhenTheV380ProtocolAnswers()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var v380Port = PortOf(listener);
+        var exchange = V380DiscoveryFingerprint();
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = ReplayAsync(listener, exchange.Received, stopServer.Token);
+        var sut = Discovery(HermeticSettings(
+            scanPorts: [v380Port],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [v380Port] = SupportedProtocol.V380 },
+            vendorCatalogPath: FindRepoPath("src", "vyzio", "vendors")));
+
+        // Act
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        stopServer.Cancel();
+        var sent = await serverTask;
+
+        // Assert
+        var candidate = Assert.Single(result, item => item.Host == Loopback);
+        Assert.Equal(exchange.Sent, sent);
+        Assert.Equal(VendorFamily.V380Pro, candidate.VendorFamily);
+        Assert.Contains("# V380 PRO", candidate.VendorDocumentation!.Markdown, StringComparison.Ordinal);
+        Assert.Equal("V380", Assert.Single(candidate.TechnicalDetails!.DetectedPorts).Label);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldShowAnUnidentifiedOpenPort_WhenAFullFrameIsNotTheV380AuthReply()
+    {
+        // Arrange
+        using var listener = StartLoopbackListener();
+        var v380Port = PortOf(listener);
+        using var stopServer = new CancellationTokenSource();
+        var serverTask = ReplayAsync(listener, new byte[256], stopServer.Token);
+        var sut = Discovery(HermeticSettings(
+            scanPorts: [v380Port],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [v380Port] = SupportedProtocol.V380 }));
+
+        // Act
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
+        stopServer.Cancel();
+        await serverTask;
+
+        // Assert
+        var candidate = Assert.Single(result, item => item.Host == Loopback);
+        Assert.Null(candidate.VendorFamily);
+        Assert.Equal("unknown", Assert.Single(candidate.TechnicalDetails!.DetectedPorts).Protocol);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldReturnTheConfiguredRangeOnly_WhenTheDashboardIsOpenedByAName()
+    {
+        // Arrange
+        var sut = Discovery(HermeticSettings(probeCidrs: ["127.0.0.1/32"]));
+
+        // Act
+        var result = await sut.DiscoverAsync(dashboardHost: "vyzio.local").ObservedAsync();
+
+        // Assert
+        Assert.Equal([new DiscoveryRange("127.0.0.1/32", Loopback, Loopback, DiscoveryRangeSource.Configured)], result.Ranges);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ShouldSweepNoRange_WhenASingleTargetIsGiven()
+    {
+        // Arrange
+        var sut = Discovery(HermeticSettings(probeCidrs: ["127.0.0.1/32"]));
+
+        // Act
+        var result = await sut.DiscoverAsync(new CameraDiscoveryTarget(Loopback), "192.168.1.20").ObservedAsync();
+
+        // Assert
+        Assert.Empty(result.Ranges);
+    }
+
+    // The frame discovery sends and the reply the camera gave, as captured (Contracts/Fixtures/v380).
+    private static (byte[] Sent, byte[] Received) V380DiscoveryFingerprint()
+    {
+        using var transcript = JsonDocument.Parse(FixtureLoader.LoadText($"v380/{CapturedVariant.V380Pro}/discovery-fingerprint.json"));
+        var messages = transcript.RootElement.GetProperty("messages").EnumerateArray().ToArray();
+        return (Convert.FromHexString(messages[0].GetProperty("hex").GetString()!), Convert.FromHexString(messages[1].GetProperty("hex").GetString()!));
+    }
+
+    // Answers every frame-sized request with the given bytes, and returns the last request it was sent.
+    private static Task<byte[]> ReplayAsync(TcpListener listener, byte[] reply, CancellationToken ct) => Task.Run(async () =>
+    {
+        byte[] lastRequest = [];
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                using var client = await listener.AcceptTcpClientAsync(ct);
+                using var stream = client.GetStream();
+                var received = new byte[256];
+                var total = 0;
+                while (total < received.Length)
+                {
+                    var read = await stream.ReadAsync(received.AsMemory(total), ct);
+                    if (read == 0)
+                    {
+                        break;
+                    }
+                    total += read;
+                }
+                if (total == received.Length)
+                {
+                    lastRequest = received;
+                    await stream.WriteAsync(reply, ct);
+                    await stream.FlushAsync(ct);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (SocketException) { }
+        catch (IOException) { }
+        return lastRequest;
+    }, ct);
 
     [Fact]
     public async Task DiscoverAsync_ShouldBeReadyOverDvrip_WhenOnlyDvripAnswers()
@@ -653,7 +764,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [dvripPort] = SupportedProtocol.Dvrip }));
 
         // Act
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -673,7 +784,7 @@ public class AssistedCameraDiscoveryServiceTests
         var sut = DiscoveryWithStreams(HermeticSettings(rtspPorts: [rtspPort]));
 
         // Act
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -695,7 +806,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [rtspPort] = SupportedProtocol.Rtsp }));
 
         // Act
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 
@@ -718,7 +829,7 @@ public class AssistedCameraDiscoveryServiceTests
             portFingerprints: new Dictionary<int, SupportedProtocol> { [onvifPort] = SupportedProtocol.Onvif }));
 
         // Act
-        var result = await sut.DiscoverAsync().ObservedAsync();
+        var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
         stopServer.Cancel();
         await serverTask;
 

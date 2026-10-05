@@ -44,13 +44,12 @@ internal static class DiscoveryPortCatalog
         new(SupportedProtocol.Onvif, "ONVIF", [80, 2020, 8000, 8080, 8899]),
         new(SupportedProtocol.V380, "V380", [8800]),
         new(SupportedProtocol.Dvrip, "DVRIP", [34567]),
-        new(SupportedProtocol.TapoKlap, "Tapo KLAP", [80, 443]),
     ];
 
     public static IReadOnlyList<int> Ports { get; } = ScannedPorts.Keys.Order().ToArray();
 
     // Ports where a deeper follow-up probe adds value beyond "port open": RTSP DESCRIBE (to get the
-    // real stream path) and the HTTP vendor fingerprint (title/Server header → brand hint).
+    // real stream path) and the HTTP page probe (title/Server header → a name and the camera ranking).
     public static IReadOnlyList<int> RtspProbePorts { get; } =
         Fingerprints.First(f => f.Protocol == SupportedProtocol.Rtsp).Ports;
 

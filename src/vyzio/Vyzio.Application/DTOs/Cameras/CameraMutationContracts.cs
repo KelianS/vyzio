@@ -36,6 +36,17 @@ public sealed record DiscoverCamerasRequest(
             : new CameraDiscoveryTarget(Host.Trim(), Port is > 0 ? Port : null);
 }
 
+// The ranges a discovery swept, each with its source, and the candidates it found (#251).
+public sealed record DiscoverCamerasResponse(
+    IReadOnlyList<DiscoveryRangeDto> Ranges,
+    IReadOnlyList<DiscoveredCameraDto> Candidates);
+
+public sealed record DiscoveryRangeDto(string Cidr, string FirstAddress, string LastAddress, string Source)
+{
+    public static DiscoveryRangeDto From(DiscoveryRange range)
+        => new(range.Cidr, range.FirstAddress, range.LastAddress, SnakeCaseEnum.ToSnakeCase(range.Source));
+}
+
 public sealed record DiscoveredCameraDto(
     string DisplayName,
     string Host,
@@ -45,10 +56,7 @@ public sealed record DiscoveredCameraDto(
     bool RtspActive,
     string DiscoverySource,
     string? Note,
-    string? MacAddress,
-    bool IsSupported,
     string Qualification,
-    string SupportLevel,
     string? VendorFamily,
     IReadOnlyList<string> QualificationReasons,
     VendorDocumentationDto? VendorDocumentation,
@@ -64,11 +72,8 @@ public sealed record DiscoveredCameraDto(
         !string.IsNullOrWhiteSpace(candidate.StreamPath),
         candidate.DiscoverySource,
         candidate.Note,
-        candidate.MacAddress,
-        !string.IsNullOrWhiteSpace(candidate.VendorFamily) || candidate.VendorDocumentation is not null,
         candidate.Qualification,
-        candidate.SupportLevel,
-        candidate.VendorFamily,
+        candidate.VendorFamily is { } family ? SnakeCaseEnum.ToSnakeCase(family) : null,
         candidate.QualificationReasons,
         VendorDocumentationDto.From(candidate.VendorDocumentation),
         DiscoveryTechnicalDetailsDto.From(candidate.TechnicalDetails),

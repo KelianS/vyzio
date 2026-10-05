@@ -4,5 +4,6 @@ namespace Vyzio.Core.Interfaces;
 
 public interface ICameraDiscoveryService
 {
-    Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, CancellationToken ct = default);
+    // dashboardHost: the host the user opened the dashboard by; its private /24 joins the swept ranges (#251).
+    Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default);
 }
