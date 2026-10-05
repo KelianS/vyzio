@@ -4,18 +4,12 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
 
-// The camera (identity and access) and its stream capability, the one it is born with (ADR-61).
+// The camera's access alone: no port, protocol, stream or brand; detection finds the rest (ADR-68 a).
 public sealed record CreateCameraRequest(
     string DisplayName,
     string Host,
     string? Username,
-    string? Password,
-    string? SourceType,
-    CreateCameraStreamRequest Stream,
-    string? VendorFamily = null);
-
-// The protocol carrying the stream, that protocol's port (null: its usual one) and the main path over RTSP.
-public sealed record CreateCameraStreamRequest(string Protocol, int? Port, string? Path);
+    string? Password);
 
 public sealed record UpdateCameraRequest(
     string DisplayName,
@@ -75,7 +69,7 @@ public sealed record DiscoveredCameraDto(
         DiscoveredStreamDto.From(candidate.Stream));
 }
 
-// The stream the candidate is ready with (null: to prepare), as the add form takes it.
+// The stream the candidate is ready with (null: to prepare); the add screen hands over only the address (ADR-68 a).
 public sealed record DiscoveredStreamDto(string Protocol, int Port, string? Path)
 {
     public static DiscoveredStreamDto? From(DiscoveredStream? stream)
@@ -122,10 +116,8 @@ public sealed record VendorDocumentationDto(
                 documentation.Markdown);
 }
 
-public sealed record VendorAssistanceRequestDto(
-    string? VendorFamily,
-    string? StreamPath,
-    bool Connected);
+// The add screen's help list picks the sheet; it shows whatever the camera answers (#274).
+public sealed record VendorAssistanceRequestDto(string? VendorFamily);
 
 public sealed record VendorAssistanceDto(
     string VendorFamily,

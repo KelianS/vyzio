@@ -202,4 +202,87 @@ describe('CameraPrivacyView', () => {
       }),
     )
   })
+
+  it('render_ShouldLeadToConnexion_WhenAParkingCameraStreamNeverWorked', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: {
+        ...ptzCamera,
+        privacyStrategy: 'ptz_parking',
+        status: 'to_set_up',
+        validationState: 'to_set_up',
+      },
+    })
+
+    // Assert
+    expect(
+      await screen.findByText(
+        /^Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion »/,
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('render_ShouldPointAtTheHeaderTrigger_WhenAParkingCameraWaitsForTheRestart', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: { ...ptzCamera, privacyStrategy: 'ptz_parking', validationState: 'draft' },
+    })
+
+    // Assert
+    expect(
+      await screen.findByText(/^Ses positions se règlent .* appliquez les changements, en haut/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Enregistrez d’abord ses positions/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Appliquer les changements' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('render_ShouldListParkingGreyedWithWhatItWaitsFor_WhenTheCameraIsNotInSurveillanceYet', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: { ...ptzCamera, validationState: 'draft' },
+    })
+    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
+
+    // Act
+    await userEvent.keyboard('{ArrowDown}')
+
+    // Assert
+    const parking = await screen.findByRole('option', { name: /Orientation à l’écart/ })
+    expect(parking).toHaveAttribute('aria-disabled', 'true')
+    expect(parking).toHaveTextContent(
+      /une fois la caméra en surveillance : appliquez les changements/,
+    )
+  })
+
+  it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: makeCamera({
+        ptzSupported: true,
+        privacyStrategy: 'ptz_parking',
+        validationState: 'draft',
+      }),
+    })
+
+    // Assert
+    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    expect(screen.queryByText(/^Ses positions se règlent/)).not.toBeInTheDocument()
+  })
 })

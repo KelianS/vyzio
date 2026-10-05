@@ -104,10 +104,10 @@ public sealed class UpdateCameraProtocolUseCase(
         var entry = camera.EnsureProtocol(protocol);
         // The usual port is stored as none, so a later change of the usual one reaches this camera.
         var port = request.Port is > 0 && request.Port != ProtocolPorts.Usual(protocol) ? request.Port : null;
-        var username = CameraDraftFactory.NormalizeOptional(request.Username);
+        var username = CameraFactory.NormalizeOptional(request.Username);
         var password = username is null
             ? null
-            : request.Password is null ? entry.Password : CameraDraftFactory.NormalizeOptional(request.Password);
+            : request.Password is null ? entry.Password : CameraFactory.NormalizeOptional(request.Password);
 
         var reachChanged = entry.Port != port
             || !string.Equals(entry.Username, username, StringComparison.Ordinal)
@@ -132,7 +132,7 @@ public sealed class UpdateCameraProtocolUseCase(
         if (streamChanged) CameraConnectionChange.Apply(camera);
 
         await cameras.UpdateAsync(camera, ct);
-        if (streamChanged) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        if (streamChanged) await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
 
         return CameraProtocolDto.From(entry);
     }
@@ -166,8 +166,8 @@ public sealed class AddCameraProtocolUseCase(ICameraRepository cameras, CameraPr
         var entry = camera.EnsureProtocol(protocol);
         // The usual port is stored as none, as on any other row.
         entry.Port = request.Port is > 0 && request.Port != ProtocolPorts.Usual(protocol) ? request.Port : null;
-        entry.Username = CameraDraftFactory.NormalizeOptional(request.Username);
-        entry.Password = entry.Username is null ? null : CameraDraftFactory.NormalizeOptional(request.Password);
+        entry.Username = CameraFactory.NormalizeOptional(request.Username);
+        entry.Password = entry.Username is null ? null : CameraFactory.NormalizeOptional(request.Password);
         entry.UpdatedAt = time.GetUtcNow();
 
         await protocolCheck.CheckAsync(camera, protocol, run: null, ct);
@@ -207,7 +207,8 @@ internal static class CameraConnectionChange
     public static void Apply(Camera camera)
     {
         camera.Status = "needs_attention";
-        camera.ValidationState = CameraValidationState.Draft;
+        // A camera whose stream never worked stays to set up: the state only ends on a first success (ADR-68 d).
+        if (camera.ValidationState != CameraValidationState.ToSetUp) camera.ValidationState = CameraValidationState.Draft;
         camera.IsEnabled = false;
         camera.LastReachabilityCheckAt = null;
         camera.LastSuccessfulFrameAt = null;
@@ -218,11 +219,12 @@ internal static class CameraConnectionChange
 // Writes the configuration of every camera surveillance can take up, without applying it (ADR-44).
 internal static class SurveillanceConfig
 {
-    public static async Task WriteAsync(ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier, CancellationToken ct)
+    // changed: the camera the save touched; one still to set up summons no restart (ADR-68 d).
+    public static async Task WriteAsync(Camera changed, ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier, CancellationToken ct)
     {
         var applicable = (await cameras.GetAllAsync(ct))
             .Where(c => c.IsEnabled && c.ValidationState == CameraValidationState.Validated)
             .ToList();
-        await frigateConfigApplier.WriteConfigAsync(applicable, changed: true, ct);
+        await frigateConfigApplier.WriteConfigAsync(applicable, changed: changed.ValidationState != CameraValidationState.ToSetUp, ct);
     }
 }

@@ -205,7 +205,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
         await cameras.UpdateAsync(camera, ct);
 
         var result = await probe.ExecuteAsync(cameraId, capability, ct: ct);
-        if (streamMoved) await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        if (streamMoved) await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
         return result;
     }
 }

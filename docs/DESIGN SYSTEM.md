@@ -438,12 +438,11 @@ every item of that level, and each word says one backend state, never two.
 `Pas encore vérifié` only the stream, so each agrees with its card. The camera's own status (`Connectée`, `Hors ligne`,
 `Erreur de configuration`...) is a third thing, the camera as a whole, surveillance included: it
 shows in the camera list and the page header, never on a card. One of its words is `À configurer`,
-neutral: the camera whose stream never worked
-([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md) d), which its hub tile shows too.
-Until the stream first works it is the camera's only status, in place of `Hors ligne` or
-`Erreur de configuration`; afterwards it never returns.
-The word is shared with the capability level, each level keeping one meaning for it: the header says
-the camera is not set up yet, its stream card says why.
+neutral: the camera that has not entered surveillance yet, its whole setup phase
+([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md) d), in place of `Connectée`, and
+before its stream first works in place of `Hors ligne` or `Erreur de configuration`; its hub tile
+shows it too. The word is shared with the capability level, each level keeping one meaning for it:
+the header says the camera is not set up yet, and while its stream never worked, its stream card says why.
 
 ### Editing cycle
 

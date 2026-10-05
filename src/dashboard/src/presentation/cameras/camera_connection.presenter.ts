@@ -33,6 +33,7 @@ import {
 } from './camera_connection_values'
 import { IS_STREAM } from './capability_state'
 import { addedStream } from './stream_lines'
+import { detectionResultOf } from './detection_outcome'
 
 export interface CameraConnectionPresenterContext {
   container: CamerasContainer
@@ -53,6 +54,8 @@ export function buildCameraConnectionPresenter({
   const nextStreamsRead = latestOnly()
   // Per protocol: opening a dropdown twice must not let the older answer land last.
   const nextAvailableRead: Partial<Record<StreamProtocol, () => () => boolean>> = {}
+  // Once per camera while the tab is open: a re-read list keeps detectedAt null until the reread lands.
+  const detectedOnArrival = new Set<string>()
 
   /** The stream lines of the stream card; after an action a failed reread keeps them and goes to a toast. */
   function readStreams(cameraId: string, listShown = false) {
@@ -196,6 +199,41 @@ export function buildCameraConnectionPresenter({
         const unknownStatus: never = binding.status
         return unknownStatus
       }
+    }
+  }
+
+  /** « Détecter automatiquement »: it may bind the stream, end « À configurer » and wait for a restart (ADR-68 d). */
+  async function detect(cameraId: string, host: string) {
+    dispatch({ type: 'DETECT_STARTED' })
+    try {
+      await container.detectCameraCapabilities.execute(cameraId)
+    } catch (e) {
+      toastError(toast, toAppError(e))
+      dispatch({ type: 'DETECT_FINISHED' })
+      return
+    }
+    reloadCameraList(container)
+    refreshSurveillance(hubContainer)
+    readStreams(cameraId, true)
+    // The result line is read from what detection left: its own reads, so an older one cannot land last.
+    const bindingsLatest = nextBindingsRead()
+    const protocolsLatest = nextProtocolsRead()
+    try {
+      const [bindings, protocols] = await Promise.all([
+        container.getCameraCapabilities.execute(cameraId),
+        container.getCameraProtocols.execute(cameraId),
+      ])
+      if (bindingsLatest()) dispatch({ type: 'BINDINGS_LOADED', bindings })
+      if (protocolsLatest()) dispatch({ type: 'PROTOCOLS_LOADED', protocols })
+      dispatch({ type: 'DETECT_SUCCEEDED', result: detectionResultOf(host, bindings, protocols) })
+    } catch (e) {
+      const error = toAppError(e)
+      if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
+      else toastError(toast, error)
+      // Detection ran; only what it found could not be read back.
+      dispatch({ type: 'DETECT_SUCCEEDED', result: null })
+    } finally {
+      dispatch({ type: 'DETECT_FINISHED' })
     }
   }
 
@@ -375,18 +413,13 @@ export function buildCameraConnectionPresenter({
       }
     },
 
-    async onDetect(cameraId: string) {
-      dispatch({ type: 'DETECT_STARTED' })
-      try {
-        await container.detectCameraCapabilities.execute(cameraId)
-        dispatch({ type: 'DETECT_SUCCEEDED' })
-        toast('Détection terminée.', 'success')
-        readConnection(cameraId)
-      } catch (e) {
-        toastError(toast, toAppError(e))
-      } finally {
-        dispatch({ type: 'DETECT_FINISHED' })
-      }
+    onDetect: detect,
+
+    /** A camera never detected runs detection as its page opens, shown as if the user had asked (ADR-68 b). */
+    onArrive(cameraId: string, host: string, neverDetected: boolean) {
+      if (!neverDetected || detectedOnArrival.has(cameraId)) return
+      detectedOnArrival.add(cameraId)
+      void detect(cameraId, host)
     },
 
     /** Tests the capability through the protocol; resolves true when the camera answered. */

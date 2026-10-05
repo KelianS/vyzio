@@ -10,6 +10,7 @@ import type {
   AvailableStream,
   CameraStreamLineup,
 } from '../../domain/entities/camera_stream.entity'
+import type { DetectionResult } from './detection_outcome'
 import type { CapabilityTask, StreamTask } from './camera_connection.uido'
 
 export type CameraConnectionAction =
@@ -27,7 +28,7 @@ export type CameraConnectionAction =
   | { type: 'CAMERA_GONE' }
   | { type: 'DETECT_STARTED' }
   | { type: 'DETECT_FINISHED' }
-  | { type: 'DETECT_SUCCEEDED' }
+  | { type: 'DETECT_SUCCEEDED'; result: DetectionResult | null }
   | { type: 'TASK_STARTED'; capability: Capability; task: CapabilityTask }
   | { type: 'TASK_FINISHED'; capability: Capability }
   | { type: 'QUESTION_ASKED'; capability: Capability }

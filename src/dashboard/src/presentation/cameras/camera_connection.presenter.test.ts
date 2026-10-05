@@ -33,4 +33,48 @@ describe('buildCameraConnectionPresenter', () => {
       streams: latest,
     })
   })
+
+  it('onArrive_ShouldRunDetectionOnce_WhenTheCameraWasNeverDetected', async () => {
+    // Arrange
+    const detect = vi.fn().mockResolvedValue(undefined)
+    const read = { execute: vi.fn().mockResolvedValue([]) }
+    const presenter = buildCameraConnectionPresenter({
+      container: {
+        detectCameraCapabilities: { execute: detect },
+        getCameraCapabilities: read,
+        getCameraProtocols: read,
+        getCameraStreams: { execute: vi.fn().mockResolvedValue({ streams: [] }) },
+        getCameras: read,
+      } as unknown as CamerasContainer,
+      hubContainer: { getSystemStats: { execute: vi.fn() } } as unknown as HubContainer,
+      dispatch: vi.fn(),
+      toast: vi.fn(),
+    })
+
+    // Act
+    presenter.onArrive('camera-1', '192.168.1.10', true)
+    presenter.onArrive('camera-1', '192.168.1.10', true)
+    await vi.waitFor(() => expect(detect).toHaveBeenCalled())
+
+    // Assert
+    expect(detect).toHaveBeenCalledTimes(1)
+    expect(detect).toHaveBeenCalledWith('camera-1')
+  })
+
+  it('onArrive_ShouldLeaveTheCameraAlone_WhenItWasAlreadyDetected', () => {
+    // Arrange
+    const detect = vi.fn()
+    const presenter = buildCameraConnectionPresenter({
+      container: { detectCameraCapabilities: { execute: detect } } as unknown as CamerasContainer,
+      hubContainer: {} as HubContainer,
+      dispatch: vi.fn(),
+      toast: vi.fn(),
+    })
+
+    // Act
+    presenter.onArrive('camera-1', '192.168.1.10', false)
+
+    // Assert
+    expect(detect).not.toHaveBeenCalled()
+  })
 })

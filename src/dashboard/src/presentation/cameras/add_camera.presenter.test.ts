@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { VendorAssistance } from '../../domain/entities/vendor_assistance.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
-import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { buildAddCameraPresenter } from './add_camera.presenter'
 
 function notice(markdown: string): VendorAssistance {
@@ -17,12 +16,11 @@ describe('buildAddCameraPresenter', () => {
     const dispatch = vi.fn()
     const presenter = buildAddCameraPresenter({
       container: { getVendorAssistance: { execute } } as unknown as CamerasContainer,
-      hubContainer: {} as HubContainer,
       dispatch,
       toast: vi.fn(),
     })
-    const first = presenter.onVendorAssistanceNeeded('icsee', null, false)
-    await presenter.onVendorAssistanceNeeded('tplink_tapo', '/stream1', true)
+    const first = presenter.onVendorAssistanceNeeded('icsee')
+    await presenter.onVendorAssistanceNeeded('tplink_tapo')
 
     // Act
     answerEarlier(notice('earlier'))

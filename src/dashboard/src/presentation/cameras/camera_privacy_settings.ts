@@ -2,6 +2,7 @@ import type { ChoiceOption, SettingDeclaration } from '../../common/settings/set
 import { PrivacyStrategy, type Camera } from '../../domain/entities/camera.entity'
 import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
 import { ORIENTATION } from '../../common/orientation/orientation_control'
+import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
 
 /** What the user has set up on the camera; null while it is not known. */
 export interface PrivacySetup {
@@ -27,6 +28,11 @@ const STILL_VIEWABLE = 'son image reste accessible depuis votre réseau local'
 const ORIENTATION_UNVERIFIED =
   'L’orientation de cette caméra n’est pas vérifiée : voir « Connexion ».'
 const ORIENTATION_OFF = 'L’orientation de cette caméra est désactivée : voir « Connexion ».'
+// Positions are saved from the live view, which only a camera in surveillance has (SPECS 9.3).
+const POSITIONS_WAIT_FOR_STREAM =
+  'Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion ».'
+const POSITIONS_WAIT_FOR_RESTART =
+  'Ses positions se règlent une fois la caméra en surveillance : appliquez les changements, en haut de l’écran.'
 const POSITIONS_FIRST =
   'Enregistrez d’abord ses positions Surveillance et Parking dans « Image et pilotage ».'
 const HARDWARE_UNVERIFIED =
@@ -59,6 +65,8 @@ const STRATEGIES: readonly StrategyDefinition[] = [
       // The camera only turns on a verified orientation it is allowed to use (ADR-57).
       if (!camera.verifiedCapabilities.includes(ORIENTATION)) return ORIENTATION_UNVERIFIED
       if (!camera.ptzSupported) return ORIENTATION_OFF
+      const waiting = positionsWaitOf(camera)
+      if (waiting) return waiting
       // Unknown positions do not lock it: the failed read says so, and the API refuses a missing one (ADR-57).
       return setup.positionsSaved === false ? POSITIONS_FIRST : null
     },
@@ -71,6 +79,23 @@ const STRATEGIES: readonly StrategyDefinition[] = [
       camera.verifiedCapabilities.includes(HARDWARE_PRIVACY) ? null : HARDWARE_UNVERIFIED,
   },
 ]
+
+/** What the positions wait for before the camera is in surveillance; null once it is. */
+function positionsWaitOf(camera: Camera): string | null {
+  const entry = surveillanceEntryOf(camera)
+  switch (entry) {
+    case SurveillanceEntry.Watched:
+      return null
+    case SurveillanceEntry.AwaitsStream:
+      return POSITIONS_WAIT_FOR_STREAM
+    case SurveillanceEntry.AwaitsRestart:
+      return POSITIONS_WAIT_FOR_RESTART
+    default: {
+      const unknown: never = entry
+      return unknown
+    }
+  }
+}
 
 export function buildPrivacySettings({
   camera,

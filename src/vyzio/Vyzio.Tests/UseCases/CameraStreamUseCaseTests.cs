@@ -45,7 +45,7 @@ public class CameraStreamUseCaseTests
 
     private CheckCameraStreamUseCase CheckUseCase()
     {
-        var verify = new VerifyCameraUseCase(_cameras, _bindings, _verifier, _enumerator, Check(), TimeProvider.System);
+        var verify = new VerifyCameraUseCase(_cameras, _bindings, _verifier, _enumerator, Check(), Substitute.For<IFrigateConfigApplier>(), TimeProvider.System);
         return new CheckCameraStreamUseCase(_cameras, verify, Check(), _verifier);
     }
 

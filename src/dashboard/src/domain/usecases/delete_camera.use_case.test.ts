@@ -16,7 +16,6 @@ describe('DeleteCamera', () => {
       getStatus: vi.fn(),
       discover: vi.fn(),
       create: vi.fn(),
-      verifyDraft: vi.fn(),
       verify: vi.fn(),
       apply: vi.fn(),
       applyConfiguration: vi.fn(),

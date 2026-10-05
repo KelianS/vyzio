@@ -61,10 +61,6 @@ public static class CamerasEndpoints
                 var dto = await useCase.ExecuteAsync(request, ct);
                 return Results.Created($"/api/cameras/{dto.Id}", dto);
             }
-            catch (StreamPathRequiredException ex)
-            {
-                return Results.BadRequest(new { error = "stream_path_required", message = ex.Message });
-            }
             catch (ArgumentException ex)
             {
                 return Results.BadRequest(new { error = "invalid_camera", message = ex.Message });
@@ -75,18 +71,6 @@ public static class CamerasEndpoints
         {
             var dto = await useCase.ExecuteAsync(id, request, ct);
             return dto is null ? Results.NotFound() : Results.Ok(dto);
-        });
-
-        group.MapPost("/verify-draft", async (CreateCameraRequest request, VerifyDraftCameraUseCase useCase, CancellationToken ct) =>
-        {
-            try
-            {
-                return Results.Ok(await useCase.ExecuteAsync(request, ct));
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = "invalid_camera", message = ex.Message });
-            }
         });
 
         group.MapGet("/{id}/status", async (string id, GetCameraStatusUseCase useCase, CancellationToken ct) =>

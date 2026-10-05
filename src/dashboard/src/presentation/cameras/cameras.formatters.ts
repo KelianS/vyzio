@@ -1,4 +1,3 @@
-import type { BadgeTone } from '../../common/components/badge'
 import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
 
@@ -62,24 +61,3 @@ export function formatCheckedAt(iso: string): string {
 
 /** One read, one sentence: the saved positions, wherever their read fails. */
 export const POSITIONS_UNREAD = 'Les positions de cette caméra n’ont pas pu être lues.'
-
-export function formatCameraStatusLabel(status: string): string {
-  switch (status) {
-    case CameraState.Online:
-      return 'Connectée'
-    case CameraState.Offline:
-      return 'Hors ligne'
-    case CameraState.Degraded:
-      return 'Dégradée'
-    case CameraState.ConfigError:
-      return 'Erreur de configuration'
-    default:
-      return 'À vérifier'
-  }
-}
-
-export function formatStatusTone(camera: Camera): BadgeTone {
-  if (camera.status === CameraState.Online && !camera.needsAttention) return 'ok'
-  if (camera.status === CameraState.Offline) return 'danger'
-  return 'warn'
-}
