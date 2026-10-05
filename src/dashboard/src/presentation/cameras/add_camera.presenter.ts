@@ -102,6 +102,10 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       }
     },
 
+    onHelpVendorChosen(vendorFamily: string | null) {
+      dispatch({ type: 'HELP_VENDOR_CHOSEN', vendorFamily })
+    },
+
     onConfirmScanSet(value: boolean) {
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
     },

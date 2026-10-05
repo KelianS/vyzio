@@ -22,6 +22,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'none' },
         form: emptyCameraDraft,
+        helpVendor: null,
         message: null,
         error: null,
       }
@@ -31,6 +32,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'manual' },
         form: emptyCameraDraft,
+        helpVendor: null,
         message: null,
         error: null,
       }
@@ -40,6 +42,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
+        helpVendor: action.candidate.vendorFamily,
         message: null,
         error: null,
       }
@@ -75,6 +78,8 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         discoveryResults: results,
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
+        // A later scan that recognises no vendor keeps the user's pick.
+        helpVendor: action.candidate.vendorFamily ?? state.helpVendor,
         message: action.message,
       }
     }
@@ -104,6 +109,9 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
 
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }
+
+    case 'HELP_VENDOR_CHOSEN':
+      return { ...state, helpVendor: action.vendorFamily }
 
     case 'VENDOR_ASSISTANCE_STARTED':
       return { ...state, vendorAssistance: { loading: true, markdown: null, error: null } }

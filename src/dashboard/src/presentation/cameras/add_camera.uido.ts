@@ -31,6 +31,8 @@ export interface AddCameraUido {
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
 
+  /** Which vendor's help sheet shows: discovery's vendor, or the user's pick; never stored nor sent (#274). */
+  helpVendor: string | null
   /** The vendor's notice for the brand being added, when it has one. */
   vendorAssistance: { loading: boolean; markdown: string | null; error: AppError | null }
 }
@@ -49,6 +51,7 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     error: null,
     confirmScan: false,
 
+    helpVendor: null,
     vendorAssistance: { loading: false, markdown: null, error: null },
   }
 }

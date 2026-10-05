@@ -796,7 +796,16 @@ export async function installFakeBackend(
       ])
     }
     if (path === '/api/cameras/vendor-assistance' && method === 'POST') {
-      return json(route, null)
+      // Like the real one: a sheet for a chosen vendor while the camera is not reachable yet.
+      const body = route.request().postDataJSON() as {
+        vendorFamily: string | null
+        connected: boolean
+      }
+      if (!body.vendorFamily || body.connected) return json(route, null)
+      return json(route, {
+        vendorFamily: body.vendorFamily,
+        markdown: 'Créez le compte caméra dans l’application de la caméra, puis revenez ici.',
+      })
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
       if (state.restartBreaks) {

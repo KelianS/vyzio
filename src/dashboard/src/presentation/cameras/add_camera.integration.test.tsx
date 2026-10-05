@@ -62,6 +62,12 @@ async function fillTheAccessByHand() {
   await userEvent.type(screen.getByLabelText('Mot de passe'), 'not-a-real-secret')
 }
 
+async function chooseHelpVendor(name: string) {
+  screen.getByRole('combobox', { name: 'Marque' }).focus()
+  await userEvent.keyboard('{ArrowDown}')
+  await userEvent.click(await screen.findByRole('option', { name }))
+}
+
 describe('AddCameraView', () => {
   it('onCreate_ShouldCreateTheCameraFromItsAccessAloneAndOpenIt_WhenTheTypedAddressIsAdded', async () => {
     // Arrange
@@ -103,7 +109,6 @@ describe('AddCameraView', () => {
     expect(screen.getByLabelText('Nom')).toBeInTheDocument()
     expect(screen.queryByLabelText('Port')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Marque')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vérifier la connexion' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeDisabled()
   })
@@ -147,6 +152,92 @@ describe('AddCameraView', () => {
     expect(
       await screen.findByText('Activez le compte caméra dans l’application Tapo.'),
     ).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Marque' })).toHaveTextContent('TP-Link Tapo')
+  })
+
+  it('onSelectManualEntry_ShouldOfferTheHelpListWithNoVendorChosen_WhenTheUserTypesTheAddress', async () => {
+    // Arrange
+    fakeNetwork({})
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+
+    // Assert
+    expect(screen.getByText('Aide de votre caméra')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Marque' })).toHaveTextContent('Je ne sais pas')
+  })
+
+  it('onHelpVendorChosen_ShouldShowThatVendorsNoticeAndNeverSendIt_WhenTheTypedAddressIsAdded', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'POST /api/cameras/vendor-assistance': ok({
+        vendorFamily: 'icsee',
+        markdown: 'Créez le compte caméra dans l’application ICSee.',
+      }),
+      'POST /api/cameras': ok(makeCamera({ id: 'camera-9', displayName: 'Porte' })),
+      'GET /api/cameras': ok([makeCamera({ id: 'camera-9', displayName: 'Porte' })]),
+    })
+    renderScreen(<AddCameraView />)
+    await fillTheAccessByHand()
+
+    // Act
+    await chooseHelpVendor('ICSee / XMEye')
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Créez le compte caméra dans l’application ICSee.'),
+    ).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/vendor-assistance',
+        body: expect.objectContaining({ vendorFamily: 'icsee', connected: false }) as unknown,
+      }),
+    )
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras',
+        body: {
+          displayName: 'Porte',
+          host: '192.168.1.50',
+          username: 'viewer',
+          password: 'not-a-real-secret',
+        },
+      }),
+    )
+  })
+
+  it('onDiscover_ShouldNameTheVendorAsTextWithoutAPill_WhenDiscoveryRecognisesIt', async () => {
+    // Arrange
+    fakeNetwork({ 'POST /api/cameras/discovery': ok([discovered, answeringNoStream]) })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await searchTheNetwork()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Tapo C200/ })).toHaveTextContent(
+      '192.168.1.60 · TP-Link Tapo',
+    )
+    expect(screen.getByRole('button', { name: /Boîtier ONVIF/ })).not.toHaveTextContent('Marque')
+  })
+
+  it('onSelectCandidate_ShouldOfferNoHelpList_WhenTheFoundCameraIsReady', async () => {
+    // Arrange
+    fakeNetwork({
+      'POST /api/cameras/discovery': ok([discovered]),
+      'POST /api/cameras/vendor-assistance': ok(null),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Tapo C200/ }))
+
+    // Assert
+    expect(screen.getByLabelText('Nom')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Marque' })).not.toBeInTheDocument()
   })
 
   it.each([[/Tapo C200/], [/ICSee salon/]])(

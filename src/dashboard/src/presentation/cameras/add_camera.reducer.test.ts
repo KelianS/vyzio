@@ -57,6 +57,50 @@ describe('addCameraReducer', () => {
     expect(next.selection).toEqual({ kind: 'manual' })
   })
 
+  it('addCameraReducer_ShouldPreselectTheHelpVendor_WhenDiscoveryRecognisedTheChosenCamera', () => {
+    // Arrange
+    const action = { type: 'CANDIDATE_SELECTED', index: 0, candidate } as const
+
+    // Act
+    const next = addCameraReducer(manual, action)
+
+    // Assert
+    expect(next.helpVendor).toBe('tplink_tapo')
+  })
+
+  it('addCameraReducer_ShouldClearTheHelpVendor_WhenTheUserTypesTheAddress', () => {
+    // Arrange
+    const helped = { ...manual, helpVendor: 'icsee' }
+
+    // Act
+    const next = addCameraReducer(helped, { type: 'MANUAL_ENTRY_SELECTED' })
+
+    // Assert
+    expect(next.helpVendor).toBeNull()
+  })
+
+  it('addCameraReducer_ShouldKeepTheUsersHelpVendor_WhenARetriedScanRecognisesNoVendor', () => {
+    // Arrange
+    const toPrepare = {
+      ...manual,
+      selection: { kind: 'candidate' as const, index: 0 },
+      discoveryResults: [{ ...candidate, vendorFamily: null, stream: null }],
+      helpVendor: 'v380_pro',
+    }
+    const action = {
+      type: 'REFRESH_CANDIDATE_SUCCEEDED',
+      index: 0,
+      candidate: { ...candidate, vendorFamily: null },
+      message: 'La caméra est maintenant joignable.',
+    } as const
+
+    // Act
+    const next = addCameraReducer(toPrepare, action)
+
+    // Assert
+    expect(next.helpVendor).toBe('v380_pro')
+  })
+
   it('addCameraReducer_ShouldKeepTheFailureAndItsDiagnostic_WhenTheCameraCannotBeCreated', () => {
     // Arrange
     const creating = { ...manual, creating: true }

@@ -23,6 +23,7 @@ export type AddCameraAction =
   | { type: 'CREATE_SUCCEEDED' }
   | { type: 'CREATE_FAILED'; message: string; diagnostic?: string }
   | { type: 'CONFIRM_SCAN_SET'; value: boolean }
+  | { type: 'HELP_VENDOR_CHOSEN'; vendorFamily: string | null }
   | { type: 'VENDOR_ASSISTANCE_STARTED' }
   | { type: 'VENDOR_ASSISTANCE_SUCCEEDED'; markdown: string | null }
   | { type: 'VENDOR_ASSISTANCE_FAILED'; error: AppError }

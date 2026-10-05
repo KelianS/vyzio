@@ -18,7 +18,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 import { resolveVendorLinkTarget } from './vendor_links'
-import { formatVendorFamily } from './vendor_families'
+import { formatVendorFamily, helpVendorOptions, NO_HELP_VENDOR } from './vendor_families'
 import { buildAddCameraPresenter } from './add_camera.presenter'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido'
@@ -53,8 +53,8 @@ export function AddCameraView() {
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
-  // The brand discovery recognised only picks the notice; it is never handed to the camera (ADR-68 e).
-  const vendorFamily = candidate?.vendorFamily ?? null
+  // The vendor only picks the help sheet; it is never handed to the camera (#274).
+  const vendorFamily = uido.helpVendor
   const streamPath = candidate?.streamPath ?? null
   // A candidate whose stream is ready needs no activation notice, whatever its protocol.
   const connected = Boolean(candidate?.stream)
@@ -69,9 +69,7 @@ export function AddCameraView() {
   const chosen = candidate
     ? {
         title: candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName,
-        detail: [candidate.host, formatVendorFamily(candidate.vendorFamily)]
-          .filter(Boolean)
-          .join(' · '),
+        detail: candidateDetail(candidate),
       }
     : uido.selection.kind === 'manual'
       ? { title: 'Adresse saisie à la main', detail: uido.form.host || 'Adresse à renseigner' }
@@ -80,6 +78,11 @@ export function AddCameraView() {
   // No protocol serves the stream yet: the camera must be opened from its app first.
   const needsActivation = Boolean(candidate && !candidate.stream)
   const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
+  // A ready camera needs no preparing, so only the other two ways in offer the help list.
+  const offersHelpList = needsActivation || uido.selection.kind === 'manual'
+  const showsNotice = Boolean(
+    vendorAssistance.loading || vendorAssistance.error || vendorAssistance.markdown,
+  )
   const canAdd = Boolean(uido.form.displayName.trim() && uido.form.host.trim())
 
   async function add() {
@@ -118,6 +121,15 @@ export function AddCameraView() {
       onChange: (value) => presenter.onFormChanged({ password: (value as string) || null }),
     },
   ]
+
+  const helpChoice: SettingDeclaration = {
+    id: 'add-help-vendor',
+    label: 'Marque',
+    nature: { kind: 'choice', options: helpVendorOptions },
+    value: vendorFamily ?? NO_HELP_VENDOR,
+    onChange: (value) =>
+      presenter.onHelpVendorChosen(value === NO_HELP_VENDOR ? null : (value as string)),
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -239,6 +251,35 @@ export function AddCameraView() {
           </SettingsSection>
         )}
 
+        {/* Before the access: the vendor's prerequisites, such as the camera account, come first. */}
+        {(offersHelpList || showsNotice) && (
+          <SettingsSection
+            title={
+              offersHelpList
+                ? 'Aide de votre caméra'
+                : `Notice ${formatVendorFamily(vendorFamily) ?? 'du constructeur'}`
+            }
+            lede={
+              offersHelpList
+                ? 'Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide.'
+                : undefined
+            }
+          >
+            {offersHelpList && <SettingsList settings={[helpChoice]} />}
+            {showsNotice && (
+              <div className={cn(offersHelpList && 'mt-4')}>
+                {vendorAssistance.loading ? (
+                  <p className="text-muted-foreground">Chargement…</p>
+                ) : vendorAssistance.error ? (
+                  <ErrorMessage error={vendorAssistance.error} className="text-base" />
+                ) : (
+                  <VendorNotice markdown={vendorAssistance.markdown!} />
+                )}
+              </div>
+            )}
+          </SettingsSection>
+        )}
+
         {showForm && (
           <SettingsSection
             title="Connexion"
@@ -255,20 +296,6 @@ export function AddCameraView() {
                 {uido.creating ? 'Ajout…' : 'Ajouter la caméra'}
               </Button>
             </div>
-          </SettingsSection>
-        )}
-
-        {(vendorAssistance.loading || vendorAssistance.error || vendorAssistance.markdown) && (
-          <SettingsSection
-            title={`Notice ${formatVendorFamily(vendorFamily) ?? 'du constructeur'}`}
-          >
-            {vendorAssistance.loading ? (
-              <p className="text-muted-foreground">Chargement…</p>
-            ) : vendorAssistance.error ? (
-              <ErrorMessage error={vendorAssistance.error} className="text-base" />
-            ) : (
-              <VendorNotice markdown={vendorAssistance.markdown!} />
-            )}
           </SettingsSection>
         )}
 
@@ -292,6 +319,11 @@ export function AddCameraView() {
   )
 }
 
+/** The address, then the vendor as text, only when discovery recognised it (#274). */
+function candidateDetail(candidate: DiscoveredCamera): string {
+  return [candidate.host, formatVendorFamily(candidate.vendorFamily)].filter(Boolean).join(' · ')
+}
+
 function CandidateRow({
   candidate,
   onSelect,
@@ -300,22 +332,13 @@ function CandidateRow({
   onSelect: () => void
 }) {
   const title = candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
-  const vendor = formatVendorFamily(candidate.vendorFamily)
-  // Vendor docs count as recognition even when the brand itself isn't named.
-  const recognised = Boolean(vendor || candidate.vendorDocumentation?.markdown?.trim())
 
   return (
     <li>
       <SelectableRow onSelect={onSelect}>
         <span className="block font-medium">{title}</span>
-        <span className="block text-sm text-muted-foreground">{candidate.host}</span>
-        {/* Ces deux pastilles disent le degre de confiance : la marque
-            reconnue, et l'appareil pret a etre ajoute. Sans elles il faut
-            ouvrir chaque candidat pour savoir lequel a une chance. */}
+        <span className="block text-sm text-muted-foreground">{candidateDetail(candidate)}</span>
         <span className="mt-1.5 flex flex-wrap gap-1.5">
-          <Badge tone={recognised ? 'ok' : 'neutral'}>
-            {vendor ?? (recognised ? 'Marque connue' : 'Marque inconnue')}
-          </Badge>
           <Badge tone={candidate.stream ? 'ok' : 'warn'}>
             {candidate.stream ? 'Prête' : 'À préparer'}
           </Badge>

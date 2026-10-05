@@ -132,6 +132,19 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('spinbutton', { name: 'Port' })).toHaveCount(0)
   })
 
+  test('AddCameraView_ShouldShowTheChosenVendorsHelp_WhenTheUserTypesTheAddress', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/settings/cameras/ajout')
+
+    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('combobox', { name: 'Marque' }).click()
+    await page.getByRole('option', { name: 'V380 PRO' }).click()
+
+    await expect(page.getByText('Créez le compte caméra dans l’application')).toBeVisible()
+  })
+
   test('AddCameraView_ShouldFoldTheListAndLetItReopen_WhenTheUserChoosesACamera', async ({
     page,
   }) => {
@@ -141,10 +154,10 @@ test.describe('AddCameraView', () => {
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
-    // Confidence reads without opening: known brand, and camera reachable.
+    // Readiness reads without opening; an unrecognised vendor shows nothing (#274).
     const candidate = page.getByRole('button', { name: /Caméra détectée/ })
-    await expect(candidate).toContainText('Marque inconnue')
     await expect(candidate).toContainText('Prête')
+    await expect(candidate).not.toContainText('Marque')
 
     await candidate.click()
 
