@@ -42,7 +42,17 @@ public sealed class PtzPositionCommandHandler(
         var camera = CommandCameraLookup.Resolve(motorised, invocation.Argument(CameraParameter));
         if (camera is null) return WhichCamera(motorised);
 
-        var (known, _, _) = await presets.ExecuteAsync(camera.Id, ct);
+        IReadOnlyList<PtzHeldSlot> known;
+        try
+        {
+            (known, _, _) = await presets.ExecuteAsync(camera.Id, ct);
+        }
+        // Unread is not missing: the camera did not say which positions it keeps (ADR-69 g).
+        catch (CameraCommandException)
+        {
+            return CommandResult.Text($"Je n'ai pas pu lire les positions de {camera.DisplayName}", ["Reessayez dans un instant."]);
+        }
+
         if (known.Count == 0)
             return CommandResult.Text($"{camera.DisplayName} n'a aucune position enregistree",
                 ["Enregistrez-en une depuis l'interface."]);
@@ -55,7 +65,7 @@ public sealed class PtzPositionCommandHandler(
             : CommandResult.Text($"Je n'ai pas pu orienter {camera.DisplayName}", ["Reessayez dans un instant."]);
     }
 
-    private static PtzPreset? Resolve(IReadOnlyList<PtzPreset> presets, string? asked)
+    private static PtzHeldSlot? Resolve(IReadOnlyList<PtzHeldSlot> presets, string? asked)
     {
         if (asked is null) return null;
 
@@ -75,7 +85,7 @@ public sealed class PtzPositionCommandHandler(
                 RemoteCommandName.PtzPosition,
                 new Dictionary<string, string> { [CameraParameter] = camera.Slug }))]);
 
-    private static CommandResult WhichPosition(CameraDto camera, IReadOnlyList<PtzPreset> known)
+    private static CommandResult WhichPosition(CameraDto camera, IReadOnlyList<PtzHeldSlot> known)
         => new(
             ChannelMessage.Plain($"Ou doit regarder {camera.DisplayName} ?"),
             FollowUps: [.. known.Select(preset => new CommandFollowUp(

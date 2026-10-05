@@ -48,9 +48,7 @@ function presetsRead(currentPosition: { x: number; y: number } | null, calibrate
 }
 
 const onePresetSaved = ok({
-  presets: [
-    { presetId: 1, label: 'Surveillance', native: false, panMs: 3, tiltMs: 2, configured: true },
-  ],
+  presets: [{ presetId: 1, label: 'Surveillance', thumbnail: true, panMs: 3, tiltMs: 2 }],
   calibrated: true,
   currentPosition: null,
 })

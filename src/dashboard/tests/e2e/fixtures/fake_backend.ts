@@ -378,10 +378,9 @@ export interface FakeBackendState {
     presets: {
       presetId: number
       label: string
-      native: boolean
       panMs: number | null
       tiltMs: number | null
-      configured: boolean
+      thumbnail: boolean
     }[]
     calibrated: boolean
     currentPosition: { x: number; y: number } | null
@@ -396,6 +395,12 @@ const ONE_PIXEL_GIF = Buffer.from(
   'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7',
   'base64',
 )
+
+// A room in two tones, enough for a capture to read as a picture.
+const THUMBNAIL_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+  '<rect width="64" height="40" fill="#8aa4b8"/><rect y="40" width="64" height="24" fill="#6b5b4a"/>' +
+  '<rect x="10" y="22" width="16" height="18" fill="#3e4a56"/></svg>'
 
 export function createFakeBackendState(
   overrides: Partial<FakeBackendState> = {},
@@ -933,15 +938,18 @@ export async function installFakeBackend(
           {
             presetId,
             label: `Position ${presetId}`,
-            native: false,
             panMs: position.x,
             tiltMs: position.y,
-            configured: true,
+            thumbnail: false,
           },
         ]
         return json(route, {})
       }
       if (rest?.startsWith('/ptz/presets/') && rest.endsWith('/snapshot')) {
+        const presetId = Number(rest.split('/')[3])
+        state.ptz.presets = state.ptz.presets.map((p) =>
+          p.presetId === presetId ? { ...p, thumbnail: true } : p,
+        )
         return json(route, {})
       }
 
@@ -1167,8 +1175,12 @@ export async function installFakeBackend(
           irCutMode: 'auto',
         })
       }
+      // Like the real one: a slot serves a thumbnail only once one was taken (SPECS 9.4).
       if (path.endsWith('/thumbnail')) {
-        return json(route, {}, 404)
+        const presetId = Number(rest?.split('/')[3])
+        return state.ptz.presets.some((p) => p.presetId === presetId && p.thumbnail)
+          ? route.fulfill({ status: 200, contentType: 'image/svg+xml', body: THUMBNAIL_SVG })
+          : json(route, {}, 404)
       }
       if (method === 'DELETE') {
         state.cameras = state.cameras.filter((c) => c.id !== cameraId)

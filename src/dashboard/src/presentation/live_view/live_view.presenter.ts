@@ -115,6 +115,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     // Moving to another camera keeps the view mounted: only the latest read may answer.
     onOpen(cameraId: string) {
       const isLatest = nextPresetsRead()
+      dispatch({ type: 'PRESETS_STARTED' })
       container.getPtzPresets
         .execute(cameraId)
         .then(({ presets, calibrated, currentPosition }) => {

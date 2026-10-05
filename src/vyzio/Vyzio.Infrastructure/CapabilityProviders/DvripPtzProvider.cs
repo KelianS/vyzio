@@ -19,8 +19,8 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
     private const string StopCommand = "DirectionUp";
     private const int StopStep = 5;
     private const string PresetList = "Uart.PTZPreset.[0]";
-    // Slots 1 to 4 are Vyzio's; an ICSee keeps presets on ids up to 255 (docs/hardware/icsee.md, ADR-64).
-    private const int FirstSpareSlot = 5;
+    // The slots are Vyzio's; an ICSee keeps presets on ids up to 255 (docs/hardware/icsee.md, ADR-64).
+    private const int FirstSpareSlot = PtzPreset.LastSlot + 1;
     private const int LastSlot = 255;
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
@@ -122,6 +122,12 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
 
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => await ExecutePtzAsync(camera, "SetPreset", presetId, step: 0, ct);
+
+    public async Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    {
+        await using var session = await OpenSessionAsync(camera, ct);
+        return await ReadStoredPresetsAsync(session, camera, ct);
+    }
 
     // The login happens here, before the move, and the session is held until the move ends (ADR-60).
     public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)

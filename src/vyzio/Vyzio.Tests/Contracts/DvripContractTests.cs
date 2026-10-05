@@ -24,7 +24,8 @@ public sealed class DvripContractTests
             RefusedLoginRet: 203,
             DeviceModel: "IPC_GK7201V300_LPG-G3-WQ",
             Proof: ProofOutcome.Proven,
-            NativePresets: true),
+            NativePresets: true,
+            HeldPresets: [1, 2]),
     };
 
     public static TheoryData<string> Variants => FixtureLoader.VariantNames(FixtureProtocol.Dvrip);
@@ -137,6 +138,21 @@ public sealed class DvripContractTests
         Assert.Empty(camera.Unasked);
     }
 
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task ReadPresetsAsync_ShouldReadTheSlotsTheCameraHolds_WhenTheCameraListsItsPresets(string variant)
+    {
+        // Arrange
+        await using var camera = Replay(variant, DvripScenario.PtzPresetList);
+        var binding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Dvrip };
+
+        // Act
+        var held = await PtzProvider().ReadPresetsAsync(camera.Camera(FixtureLoader.Neutral.Account.Password), binding);
+
+        // Assert
+        Assert.Equal(Expected[variant].HeldPresets.ToHashSet(), held);
+    }
+
     private static CapturedTcpCamera Replay(string variant, params string[] scenarios)
         => CapturedTcpCamera.Replaying(FixtureProtocol.Dvrip, variant, scenarios);
 
@@ -150,5 +166,6 @@ public sealed class DvripContractTests
         int RefusedLoginRet,
         string DeviceModel,
         ProofOutcome Proof,
-        bool NativePresets);
+        bool NativePresets,
+        int[] HeldPresets);
 }

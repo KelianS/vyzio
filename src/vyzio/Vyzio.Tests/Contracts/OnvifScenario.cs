@@ -12,5 +12,6 @@ internal static class OnvifScenario
     public const string PtzGetConfigurationOptions = "ptz-get-configuration-options";
     public const string PtzGetStatus = "ptz-get-status";
     public const string PtzGetPresets = "ptz-get-presets";
+    public const string PtzSetPresetAndRemove = "ptz-set-preset-and-remove";
     public const string ImagingGetImagingSettings = "imaging-get-imaging-settings";
 }

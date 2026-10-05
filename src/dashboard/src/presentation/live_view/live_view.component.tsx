@@ -40,7 +40,7 @@ export function LiveView({
 
   useEffect(() => presenter.onClose, [presenter])
 
-  const labelOf = (presetId: number) => presetLabel(uido.presets, presetId)
+  const labelOf = (presetId: number) => presetLabel(uido.presets ?? [], presetId)
 
   const control = (): ReactNode => {
     switch (orientation) {
@@ -69,6 +69,7 @@ export function LiveView({
                 presenter.onConfirmOverride(cameraId, presetId, labelOf(presetId))
               }
               onCalibrate={() => void presenter.onCalibrate(cameraId)}
+              onRetryPresets={() => presenter.onOpen(cameraId)}
             />
           </div>
         )

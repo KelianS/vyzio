@@ -10,10 +10,9 @@ function ptzCameraWithOneSavedPosition() {
       {
         presetId: 1,
         label: 'Surveillance',
-        native: false,
         panMs: 3,
         tiltMs: 2,
-        configured: true,
+        thumbnail: false,
       },
     ],
     calibrated: true,

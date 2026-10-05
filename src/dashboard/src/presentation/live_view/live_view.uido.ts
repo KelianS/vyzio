@@ -7,7 +7,8 @@ export type PtzDirection = 'Up' | 'Down' | 'Left' | 'Right'
 export type PresetActivity = 'idle' | 'saving' | 'going'
 
 export interface LiveViewUido {
-  presets: PtzPreset[]
+  /** The slots that hold a position; null until read, so no slot passes for empty before the camera answers (ADR-69). */
+  presets: PtzPreset[] | null
   presetsError: AppError | null
   /** Without a reference the camera does not know where it stands: saved positions are inert. */
   calibrated: boolean
@@ -23,7 +24,7 @@ export interface LiveViewUido {
 
 export function buildInitialLiveViewUido(): LiveViewUido {
   return {
-    presets: [],
+    presets: null,
     presetsError: null,
     calibrated: true,
     calibrating: false,
