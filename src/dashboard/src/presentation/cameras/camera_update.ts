@@ -12,7 +12,6 @@ export function cameraUpdate(
     username: camera.username ?? null,
     // A null password keeps the saved one.
     password: null,
-    vendorFamily: camera.vendorFamily,
     sourceType: camera.sourceType,
     ptzSupported: camera.ptzSupported,
     ...edited,

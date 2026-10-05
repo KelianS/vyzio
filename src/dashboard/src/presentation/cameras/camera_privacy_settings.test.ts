@@ -86,7 +86,7 @@ describe('buildPrivacySettings', () => {
 
   it('buildPrivacySettings_ShouldGreyTheHardwareCut_WhenItIsNotVerified', () => {
     // Arrange & Act
-    const setting = strategyOf(camera({ vendorFamily: 'tplink_tapo' }), true)
+    const setting = strategyOf(camera(), true)
 
     // Assert
     expect(optionOf(setting, PrivacyStrategy.Hardware)?.unavailable).toContain(HARDWARE_UNVERIFIED)

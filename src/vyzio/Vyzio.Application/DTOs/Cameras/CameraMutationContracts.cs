@@ -17,7 +17,6 @@ public sealed record UpdateCameraRequest(
     string? Username,
     string? Password,
     string? SourceType,
-    string? VendorFamily = null,
     bool? PtzSupported = null);
 
 public sealed record DiscoverCamerasRequest(

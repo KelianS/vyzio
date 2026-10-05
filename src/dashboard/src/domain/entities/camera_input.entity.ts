@@ -4,7 +4,6 @@ export interface CameraUpdateInput {
   host: string
   username: string | null
   password: string | null
-  vendorFamily?: string | null
   sourceType: string
   ptzSupported?: boolean | null
 }

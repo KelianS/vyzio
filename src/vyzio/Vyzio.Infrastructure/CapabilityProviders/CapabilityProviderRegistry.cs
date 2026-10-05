@@ -3,8 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// Resolves capability providers by (capability, protocol) — a typed, compile-checked
-// dimension — never by VendorFamily string (ADR-22). Replaces IVendorCameraAdapterFactory.
+// Resolves capability providers by (capability, protocol), never by vendor (ADR-22, ADR-71).
 public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
 {
     private readonly IReadOnlyDictionary<SupportedProtocol, IPtzCapabilityProvider> _ptzProviders;
@@ -32,12 +31,11 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         _imageSettingsProviders = imageSettings.ToDictionary(p => p.Protocol);
         _streamProviders = stream.ToDictionary(p => p.Protocol);
 
-        // Preserves DI registration order (ServiceCollectionExtensions), not dictionary enumeration
-        // order — blind detection (ADR-28) tries the richest/standard protocol first (ONVIF).
-        _ptzProtocolOrder = ptz.Select(p => p.Protocol).ToList();
-        _privacyProtocolOrder = privacy.Select(p => p.Protocol).ToList();
-        _imageSettingsProtocolOrder = imageSettings.Select(p => p.Protocol).ToList();
-        _streamProtocolOrder = stream.Select(p => p.Protocol).ToList();
+        // Detection tries them in this order, whatever order they were registered in (ADR-71 b).
+        _ptzProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.Ptz, ptz.Select(p => p.Protocol));
+        _privacyProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.HardwarePrivacy, privacy.Select(p => p.Protocol));
+        _imageSettingsProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.ImageSettings, imageSettings.Select(p => p.Protocol));
+        _streamProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.Stream, stream.Select(p => p.Protocol));
     }
 
     public IPtzCapabilityProvider ResolvePtz(SupportedProtocol protocol)

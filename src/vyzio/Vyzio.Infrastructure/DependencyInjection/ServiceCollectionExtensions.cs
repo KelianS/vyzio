@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
         // Singleton: one move at a time per camera holds across requests, a held move included (ADR-60).
         services.AddSingleton<PtzMoveRunner>();
 
-        // Capability providers (ADR-22) — resolved by (capability, protocol), not VendorFamily.
+        // Capability providers (ADR-22), resolved by (capability, protocol), never by vendor (ADR-71).
         // Scoped: TapoKlapProvider authenticates per-request and the registry follows the same
         // lifetime to avoid captive dependencies.
         services.AddScoped<ICameraCapabilityBindingRepository, CameraCapabilityBindingRepository>();
@@ -78,7 +78,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IImageSettingsCapabilityProvider, OnvifImageSettingsProvider>();
         services.AddScoped<IImageSettingsCapabilityProvider, DvripImageSettingsProvider>();
-        // Stream is a first-class capability (ADR-32): RTSP first (standard), then DVRIP fallback.
+        // Stream is a first-class capability (ADR-32); its order is CapabilityProtocolPriority's.
         services.AddScoped<IStreamCapabilityProvider, RtspStreamProvider>();
         services.AddScoped<IStreamCapabilityProvider, DvripStreamProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();

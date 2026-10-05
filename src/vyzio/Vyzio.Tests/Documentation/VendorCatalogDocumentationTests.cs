@@ -14,22 +14,6 @@ public sealed class VendorCatalogDocumentationTests
     private static readonly string Readme =
         File.ReadAllText(Path.Combine(VendorsDirectory, "README.md")).Replace("\r\n", "\n");
 
-    [Fact]
-    public void VendorCatalogReadme_ShouldRenderTheCapabilityBlock_WhenPresetsAreDeclaredInCode()
-    {
-        var expected = string.Join('\n', VendorCapabilityPresets.All.Select(preset =>
-            $"{preset.VendorFamily} → " + string.Join(", ", preset.DefaultBindings.Select(binding =>
-                $"{binding.Capability}/[{string.Join(", ", binding.Protocols)}]"))));
-
-        var block = Regex.Match(
-            Readme,
-            @"<!-- vendor-presets:start -->\n```\n(?<block>.*?)\n```\n<!-- vendor-presets:end -->",
-            RegexOptions.Singleline);
-
-        Assert.True(block.Success, "The vendor-presets markers are missing from vendors/README.md.");
-        Assert.Equal(expected, block.Groups["block"].Value);
-    }
-
     [Theory]
     [MemberData(nameof(EveryVendorFamily))]
     public void VendorCatalogReadme_ShouldCarryASheetAndATableRow_WhenAVendorFamilyIsDeclared(VendorFamily family)

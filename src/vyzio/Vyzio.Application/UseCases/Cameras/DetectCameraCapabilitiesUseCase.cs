@@ -4,16 +4,8 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// A1 (ADR-22): For cameras with a known VendorFamily, creates preset bindings that are missing
-// then probes each one so the capability section is pre-filled on first open.
-// A3 (ADR-28): For cameras without a VendorFamily, blind-probes every capability against every
-// protocol that has a registered provider — same cascade as a vendor preset, just built from
-// the registry instead of a curated list, since there's no vendor to narrow the candidates.
-// Unlike the preset path, a capability that fails every candidate is deleted rather than left
-// as a broken row — a preset's guess about a recognized vendor is worth surfacing as "not
-// configured yet", but a blind guess on an unrecognized camera is not worth cluttering the UI.
-// Each candidate protocol is asked once whether it answers, and a capability only tries those that do (ADR-61).
-public sealed class SeedAndProbePresetsUseCase(
+// One detection for every camera, whatever its vendor: the protocols once, then each capability over those that answer (ADR-61, ADR-71 b).
+public sealed class DetectCameraCapabilitiesUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
     ProbeCameraCapabilityUseCase probe,
@@ -42,10 +34,8 @@ public sealed class SeedAndProbePresetsUseCase(
         if (await bindings.GetAsync(cameraId, CameraCapability.Stream, ct) is null)
             await BindStreamAsync(cameraId, registry.GetRegisteredProtocols(CameraCapability.Stream), run, ct);
 
-        var plan = detectionPlan.StepsFor(camera);
-
-        foreach (var (capability, protocols, deleteIfUnverified) in plan)
-            await SeedAndProbeCapabilityAsync(cameraId, capability, protocols, deleteIfUnverified, run, ct);
+        foreach (var (capability, protocols) in detectionPlan.Steps())
+            await DetectCapabilityAsync(cameraId, capability, protocols, run, ct);
 
         await DropSilentTriesAsync(cameraId, ct);
 
@@ -59,11 +49,13 @@ public sealed class SeedAndProbePresetsUseCase(
 
     private static bool Answers(Camera camera, SupportedProtocol protocol) => camera.Protocol(protocol)?.Answers == true;
 
-    private async Task SeedAndProbeCapabilityAsync(
+    private static bool OutrankedByAnAnswer(Camera? camera, IReadOnlyList<SupportedProtocol> protocols, SupportedProtocol current)
+        => camera is not null && protocols.TakeWhile(protocol => protocol != current).Any(protocol => Answers(camera, protocol));
+
+    private async Task DetectCapabilityAsync(
         string cameraId,
         CameraCapability capability,
         IReadOnlyList<SupportedProtocol> protocols,
-        bool deleteIfUnverified,
         ProtocolCheckRun run,
         CancellationToken ct)
     {
@@ -78,8 +70,9 @@ public sealed class SeedAndProbePresetsUseCase(
             return;
         }
 
-        // Proven or confirmed by the user on a protocol still a candidate: only checked again, the confirmation kept (ADR-66 c).
-        if (existing is not null && (existing.Verified || existing.ConfirmedAt is not null) && protocols.Contains(existing.Protocol))
+        // Confirmed by the user, or proven with no higher-priority candidate answering now: only checked again (ADR-66 c, ADR-71 b).
+        if (existing is not null && protocols.Contains(existing.Protocol)
+            && (existing.ConfirmedAt is not null || (existing.Verified && !OutrankedByAnAnswer(camera, protocols, existing.Protocol))))
         {
             await probe.ExecuteAsync(cameraId, capability, ct: ct, run: run);
             return;
@@ -95,21 +88,16 @@ public sealed class SeedAndProbePresetsUseCase(
             return;
         }
 
-        // The first candidate that proves it, otherwise the first where it is to confirm (ADR-66 e).
+        // In priority order, the first candidate that proves it or leaves it to confirm wins (ADR-71 b).
         CameraCapabilityBindingDto? result = null;
-        SupportedProtocol? toConfirm = null;
         foreach (var protocol in candidates)
         {
             (existing, result) = await TryCapabilityAsync(cameraId, capability, existing, protocol, run, ct);
-            if (result?.Verified == true) break;
-            if (toConfirm is null && IsToConfirm(result)) toConfirm = protocol;
+            if (result?.Verified == true || IsToConfirm(result)) break;
         }
 
-        if (result?.Verified != true && toConfirm is { } first && existing?.Protocol != first)
-            (existing, result) = await TryCapabilityAsync(cameraId, capability, existing, first, run, ct);
-
-        // A blind detection keeps only what the camera showed; a capability to confirm is added by hand (ADR-66 e).
-        if (deleteIfUnverified && result?.Verified != true)
+        // A capability its protocol answered for stays to confirm; one no candidate shows is not worth a card (ADR-71 c).
+        if (result?.Verified != true && !IsToConfirm(result))
             await bindings.DeleteAsync(cameraId, capability, ct);
     }
 
