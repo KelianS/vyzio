@@ -19,21 +19,25 @@ declare global {
   }
 }
 
-// The codecs go2rtc may send, offered only when this browser plays them (go2rtc's own player list).
+// The codecs go2rtc may send, offered only when this browser plays them: go2rtc knows these exact strings only.
 const CODECS = [
   'avc1.640029',
   'avc1.64002A',
   'avc1.640033',
   'hvc1.1.6.L153.B0',
-  // Lower H.265 levels too: a browser may refuse the highest one and still play a camera's sub-stream.
-  'hvc1.1.6.L120.90',
-  'hvc1.1.6.L93.B0',
-  'hev1.1.6.L93.B0',
   'mp4a.40.2',
   'mp4a.40.5',
   'flac',
   'opus',
 ]
+// go2rtc names every H.265 stream by its one string; a browser refusing that level may still play a lower one.
+const H265_TOKEN = 'hvc1.1.6.L153.B0'
+const H265_LEVELS = [H265_TOKEN, 'hvc1.1.6.L120.90', 'hvc1.1.6.L93.B0', 'hev1.1.6.L93.B0']
+
+function h265Playable(isTypeSupported: (mime: string) => boolean): string | undefined {
+  return H265_LEVELS.find((codec) => isTypeSupported(`video/mp4; codecs="${codec}"`))
+}
+const CODECS_NOT_MATCHED = /codecs not matched/
 const VIDEO_CODEC = /^(avc1|hvc1|hev1)\b/
 const AUDIO_CODEC = /^(mp4a|flac|opus)\b/
 
@@ -66,7 +70,16 @@ export function liveStreamUrl(
 
 /** The codecs this browser plays among those go2rtc may send. */
 export function playableCodecs(isTypeSupported: (mime: string) => boolean): string[] {
-  return CODECS.filter((codec) => isTypeSupported(`video/mp4; codecs="${codec}"`))
+  const h265 = h265Playable(isTypeSupported)
+  return CODECS.filter((codec) =>
+    codec === H265_TOKEN ? h265 !== undefined : isTypeSupported(`video/mp4; codecs="${codec}"`),
+  )
+}
+
+/** go2rtc's answer, its H.265 string swapped for one this browser accepts. */
+export function playableMime(mime: string, isTypeSupported: (mime: string) => boolean): string {
+  const h265 = h265Playable(isTypeSupported)
+  return h265 ? mime.replace(H265_TOKEN, h265) : mime
 }
 
 /** The tracks go2rtc announced in the MIME type it answered. */
@@ -253,7 +266,8 @@ export class MseLiveStream implements LiveStreamPort {
       flush()
     }
 
-    function onAnswer(mime: string) {
+    function onAnswer(answered: string) {
+      const mime = playableMime(answered, (type) => env.isTypeSupported(type))
       const tracks = tracksOf(mime)
       if (!tracks.video || !env.isTypeSupported(mime)) {
         fail('unsupported_codec', `mse ${mime}`)
@@ -273,7 +287,11 @@ export class MseLiveStream implements LiveStreamPort {
           onAnswer(message.value)
           return
         case 'error':
-          fail('unreachable', message.value)
+          // go2rtc's only way to say the camera's codec is none the browser offered.
+          fail(
+            CODECS_NOT_MATCHED.test(message.value) ? 'unsupported_codec' : 'unreachable',
+            message.value,
+          )
           return
         default:
           return

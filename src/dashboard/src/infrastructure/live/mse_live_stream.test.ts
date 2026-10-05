@@ -6,6 +6,7 @@ import {
   failureOfClose,
   liveStreamUrl,
   playableCodecs,
+  playableMime,
   tracksOf,
   type MseEnvironment,
 } from './mse_live_stream'
@@ -66,6 +67,27 @@ describe('playableCodecs', () => {
 
     // Assert
     expect(codecs).toEqual(['avc1.640029', 'avc1.64002A', 'avc1.640033', 'flac'])
+  })
+})
+
+describe('H.265', () => {
+  // A browser that plays H.265 below the level go2rtc names.
+  const lowLevelsOnly = (mime: string) => /avc1|L93/.test(mime)
+
+  it('playableCodecs_ShouldOfferGo2rtcsH265String_WhenTheBrowserPlaysALowerLevel', () => {
+    // Arrange & Act
+    const codecs = playableCodecs(lowLevelsOnly)
+
+    // Assert
+    expect(codecs).toEqual(['avc1.640029', 'avc1.64002A', 'avc1.640033', 'hvc1.1.6.L153.B0'])
+  })
+
+  it('playableMime_ShouldSwapGo2rtcsH265StringForThePlayableLevel_WhenItAnswersH265', () => {
+    // Arrange & Act
+    const mime = playableMime('video/mp4; codecs="hvc1.1.6.L153.B0,flac"', lowLevelsOnly)
+
+    // Assert
+    expect(mime).toBe('video/mp4; codecs="hvc1.1.6.L93.B0,flac"')
   })
 })
 
@@ -205,6 +227,17 @@ describe('MseLiveStream', () => {
         diagnostic: 'live cam1 low: streams: dial tcp 192.168.1.20:554: connection refused',
       },
     ])
+  })
+
+  it('open_ShouldFailAsUnsupportedCodec_WhenGo2rtcMatchesNoCodecTheBrowserOffered', () => {
+    // Arrange
+    const { socket, reports } = open()
+
+    // Act
+    socket?.error('mse: streams: codecs not matched: video:H265, audio:PCMA => video:H264')
+
+    // Assert
+    expect(reports[0]).toMatchObject({ kind: 'failed', failure: 'unsupported_codec' })
   })
 
   it('open_ShouldIgnoreTheMessage_WhenGo2rtcSendsSomethingElseThanJson', () => {
