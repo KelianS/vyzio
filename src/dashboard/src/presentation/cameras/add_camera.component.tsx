@@ -200,7 +200,7 @@ export function AddCameraView() {
 
               <Feedback message={uido.message} error={uido.error} />
 
-              {uido.sweptRanges?.length === 0 && <NothingSwept />}
+              {uido.sweptRanges?.length === 0 && unclaimed.length === 0 && <NothingSwept />}
 
               {/* La liste ne contient plus que ce que la recherche a trouve. */}
               {unclaimed.length > 0 && (
@@ -222,11 +222,11 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio cherche seulement dans les adresses
-              listées dans Avancé après la recherche, et beaucoup de caméras ne répondent qu’une
-              fois réveillées depuis leur propre application. Prenez alors{' '}
-              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que l’application de
-              la caméra ou votre box indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio ne cherche pas dans toutes les
+              adresses du réseau (après une recherche, Avancé dit lesquelles), et beaucoup de
+              caméras ne répondent qu’une fois réveillées depuis leur propre application. Prenez
+              alors <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que
+              l’application de la caméra ou votre box indiquent.
             </p>
             <p>
               Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
@@ -300,7 +300,7 @@ export function AddCameraView() {
       {uido.confirmScan && (
         <ConfirmModal
           title="Rechercher les caméras du réseau ?"
-          body="Vyzio interroge tous les appareils de votre réseau local. La recherche prend 15 à 30 secondes."
+          body="Vyzio interroge les appareils de votre réseau local. La recherche prend 15 à 30 secondes."
           confirmLabel="Rechercher"
           tone="confirm"
           onConfirm={async () => {

@@ -432,6 +432,19 @@ describe('AddCameraView', () => {
     expect(await screen.findByText(/Aucune adresse n’a été parcourue/)).toBeInTheDocument()
   })
 
+  it('onDiscover_ShouldNotSayNothingWasSwept_WhenListedHostsStillFoundACamera', async () => {
+    // Arrange
+    fakeNetwork({ 'POST /api/cameras/discovery': ok({ ranges: [], candidates: [discovered] }) })
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await searchTheNetwork()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Tapo C200/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Aucune adresse n’a été parcourue/)).not.toBeInTheDocument()
+  })
+
   it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {
     // Arrange
     fakeNetwork({ 'POST /api/cameras/discovery': failure(500) })

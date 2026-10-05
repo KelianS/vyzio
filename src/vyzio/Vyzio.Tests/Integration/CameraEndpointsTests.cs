@@ -648,7 +648,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraDiscoveryService : ICameraDiscoveryService
     {
-        // Answers with the dashboard's /24 as the one swept range, so a test reads which Host reached it.
+        // Answers with the dashboard host itself as the one swept range, so a test reads which Host reached it.
         public Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
             => Task.FromResult(new CameraDiscoveryResult(
                 dashboardHost is null ? [] : [new DiscoveryRange($"{dashboardHost}/32", dashboardHost, dashboardHost, DiscoveryRangeSource.DashboardAddress)],
