@@ -4,10 +4,9 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 const saved = (presetId: number) => ({
   presetId,
   label: `Position ${presetId}`,
-  native: false,
   panMs: 0,
   tiltMs: 0,
-  configured: true,
+  thumbnail: false,
 })
 
 // Turning away promises a move there and back: both positions come first (ADR-57).

@@ -8,8 +8,7 @@ import type { CameraPrivacyUido } from './camera_privacy.uido'
 
 // Parking needs both positions: it pivots to one and comes back to the other (ADR-57).
 function positionsSaved(presets: PtzPreset[]): boolean {
-  const saved = (slot: number) =>
-    presets.some((preset) => preset.presetId === slot && preset.configured)
+  const saved = (slot: number) => presets.some((preset) => preset.presetId === slot)
   return saved(PARKING_PRESET_ID) && saved(SURVEILLANCE_PRESET_ID)
 }
 

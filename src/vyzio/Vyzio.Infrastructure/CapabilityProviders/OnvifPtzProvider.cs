@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
     // A described PTZ configuration is the proof; silence or a refusal fails the check, never reads as missing (ADR-66 a).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
-        var (token, configToken) = await onvif.GetFirstProfileAsync(camera, ct, throwOnFailure: true);
+        var (token, configToken, nodeToken) = await onvif.GetFirstProfileAsync(camera, ct, throwOnFailure: true);
         _profileCache[camera.Id] = token;
         _ptzConfigCache[camera.Id] = configToken;
 
@@ -47,12 +48,12 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             return CapabilityProof.Missing($"ONVIF: {camera.Host} answered GetConfigurationOptions without PTZ configuration options.");
         _capabilitiesCache[camera.Id] = caps;
 
-        // Detect native preset support (ADR-25 Branch A/B routing).
-        var presetsCount = await onvif.GetPresetsCountAsync(camera, token, ct);
-        var supportsNativePresets = presetsCount > 0;
+        // Room for one preset on the profile's node is the native tier, even with none saved; it never weighs on the proof (ADR-69 f).
+        var maximum = nodeToken is null ? null : await onvif.GetMaximumNumberOfPresetsAsync(camera, nodeToken, ct);
+        var supportsNativePresets = maximum > 0;
         NativePresetsFlag.Record(binding, supportsNativePresets);
-        logger.LogDebug("ONVIF PTZ probe for {Camera}: {Count} presets found, SupportsNativePresets={Supported}.",
-            camera.DisplayName, presetsCount, supportsNativePresets);
+        logger.LogDebug("ONVIF PTZ probe for {Camera}: node {Node} keeps up to {Maximum} presets, SupportsNativePresets={Supported}.",
+            camera.DisplayName, nodeToken ?? "undescribed", maximum?.ToString(CultureInfo.InvariantCulture) ?? "?", supportsNativePresets);
 
         return CapabilityProof.Proven();
     }
@@ -63,10 +64,25 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         await onvif.GotoPresetAsync(camera, token, presetId, ct);
     }
 
+    // A camera that files the preset under another token refused the slot's number (ADR-69 b).
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
-        await onvif.SetPresetAsync(camera, token, presetId, ct);
+        var stored = await onvif.SetPresetAsync(camera, token, presetId, ct);
+        var asked = presetId.ToString(CultureInfo.InvariantCulture);
+        if (stored is not null && stored != asked)
+            throw new CameraCommandRefusedException($"ONVIF SetPreset on {camera.Host}: asked for preset token {asked}, the camera stored it under {stored}.");
+    }
+
+    // Tokens that are not a number name no slot (ADR-69 b).
+    public async Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+    {
+        var token = await GetProfileTokenAsync(camera, ct);
+        var tokens = await onvif.GetPresetTokensAsync(camera, token, ct);
+        return tokens
+            .Select(preset => int.TryParse(preset, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : 0)
+            .Where(number => number > 0)
+            .ToHashSet();
     }
 
     // The profile and its PTZ options are read here, before the move, so that no move waits on them (ADR-60).
@@ -113,7 +129,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         if (_profileCache.TryGetValue(camera.Id, out var cached))
             return cached;
 
-        var (profileToken, ptzConfigToken) = await onvif.GetFirstProfileAsync(camera, ct);
+        var (profileToken, ptzConfigToken, _) = await onvif.GetFirstProfileAsync(camera, ct);
         _profileCache[camera.Id] = profileToken;
         _ptzConfigCache[camera.Id] = ptzConfigToken;
         return profileToken;

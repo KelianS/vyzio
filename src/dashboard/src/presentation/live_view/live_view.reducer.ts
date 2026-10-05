@@ -17,6 +17,9 @@ function withActivity(state: LiveViewUido, presetId: number, activity: PresetAct
 
 export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): LiveViewUido {
   switch (action.type) {
+    // A retry hides the failure while the camera is asked again, without showing a slot as empty.
+    case 'PRESETS_STARTED':
+      return { ...state, presets: null, presetsError: null }
     case 'PRESETS_LOADED':
       return {
         ...state,
@@ -25,8 +28,9 @@ export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): Li
         activePresetId: matchPreset(action.presets, action.currentPosition),
         presetsError: null,
       }
+    // Unread is not empty: the slots give way to the failure (ADR-69 g).
     case 'PRESETS_FAILED':
-      return { ...state, presetsError: action.error }
+      return { ...state, presets: null, presetsError: action.error }
 
     // Moving means leaving the saved position.
     case 'MOVE_STARTED':
@@ -52,6 +56,10 @@ export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): Li
     case 'THUMBNAIL_CAPTURED':
       return {
         ...state,
+        presets:
+          state.presets?.map((p) =>
+            p.presetId === action.presetId ? { ...p, thumbnail: true } : p,
+          ) ?? null,
         thumbnailVersions: { ...state.thumbnailVersions, [action.presetId]: action.version },
       }
 

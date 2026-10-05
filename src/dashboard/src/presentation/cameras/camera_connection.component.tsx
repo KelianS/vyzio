@@ -100,7 +100,7 @@ export function CameraConnectionView() {
     },
   ]
 
-  // How Vyzio reaches the camera itself: rare, in the Avancé fold (DESIGN SYSTEM § Capability cards).
+  // How Vyzio reaches the camera itself: rare, in the Avancé fold (DESIGN SYSTEM § Folds).
   const access: SettingDeclaration[] = [
     {
       id: 'connection-host',
@@ -279,7 +279,7 @@ export function CameraConnectionView() {
                 >
                   {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
                 </Button>
-                {/* Adding by hand is the way out when the search finds nothing (DESIGN SYSTEM § Capability cards). */}
+                {/* Adding by hand is the way out when the search finds nothing (SPECS 2.3). */}
                 <AddProtocol
                   protocols={uido.protocols}
                   open={uido.protocolFormOpen}

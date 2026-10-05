@@ -79,7 +79,7 @@ apply to it, with the way to the calendar.
 **The calendar is the `Planification` settings rubric**, a week and one range editor serving every type.
 The editor's fields are declared settings (ADR-43): an existing rule follows the editing cycle of
 ADR-41, and a new one is added by its own button, like a person or a camera. How the two screens
-read is the DESIGN SYSTEM's (§ Calendar and range editor). The week marks the current moment in
+read is [SPECS](../SPECS.md) 7.3. The week marks the current moment in
 the installation's clock, which the server answers, because the device consulting may sit in
 another time zone.
 

@@ -1,10 +1,11 @@
 import { useRef, useState, type ReactNode, type TouchEvent } from 'react'
-import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Plus } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight, MapPin, Plus } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { Button } from '../../../common/ui/button'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
-import { ErrorMessage } from '../../../common/components/error_message'
+import { ReadFailure } from '../../../common/components/error_message'
 import { isReservedPreset, type PtzPreset } from '../../../domain/entities/ptz_preset.entity'
+import { POSITIONS_UNREAD } from '../../cameras/cameras.formatters'
 import { presetLabel } from '../live_view.formatters'
 import type { LiveViewUido, PresetActivity, PtzDirection } from '../live_view.uido'
 
@@ -56,6 +57,14 @@ function DirButton({
 // On a saved position a tap goes there and a long press redefines it; on an empty one a tap saves it.
 const LONG_PRESS_MS = 600
 
+/** What a tile says on hover, by whether its slot holds a position and has its thumbnail (SPECS 9.3). */
+function tileTitle(preset: PtzPreset | undefined, editable: boolean): string {
+  if (!preset) return editable ? 'Enregistrer la position actuelle ici' : 'Non définie'
+  return preset.thumbnail
+    ? `${preset.label} (appui : y aller, appui long : redéfinir ici)`
+    : `${preset.label} (appui : y aller et prendre sa miniature, appui long : redéfinir ici)`
+}
+
 function PresetTile({
   preset,
   reserved,
@@ -106,13 +115,7 @@ function PresetTile({
       type="button"
       disabled={BUSY[state] || (!preset && !editable)}
       aria-pressed={preset ? active : undefined}
-      title={
-        preset
-          ? `${preset.label} (appui : y aller, appui long : redéfinir ici)`
-          : editable
-            ? 'Enregistrer la position actuelle ici'
-            : 'Non définie'
-      }
+      title={tileTitle(preset, editable)}
       onMouseDown={start}
       onMouseUp={() => end(true)}
       onMouseLeave={() => end(false)}
@@ -130,20 +133,21 @@ function PresetTile({
         'disabled:opacity-60',
       )}
     >
-      {preset ? (
-        thumbSrc && (
-          <img
-            key={thumbSrc}
-            src={thumbSrc}
-            alt=""
-            className="size-full object-cover"
-            style={thumbLoaded ? undefined : { visibility: 'hidden' }}
-            onLoad={onThumbLoad}
-            onError={() => {}}
-          />
-        )
-      ) : (
+      {!preset ? (
         <Plus className="mx-auto size-4 text-muted-foreground" aria-hidden="true" />
+      ) : thumbSrc ? (
+        <img
+          key={thumbSrc}
+          src={thumbSrc}
+          alt=""
+          className="size-full object-cover"
+          style={thumbLoaded ? undefined : { visibility: 'hidden' }}
+          onLoad={onThumbLoad}
+          onError={() => {}}
+        />
+      ) : (
+        // Held by the camera before any thumbnail: a position, never the sign of an empty slot (SPECS 9.4).
+        <MapPin className="mx-auto size-4 text-foreground" aria-hidden="true" />
       )}
       {reserved && (
         <span
@@ -172,6 +176,7 @@ interface PtzControlPanelProps {
   onCancelOverride: () => void
   onConfirmOverride: (presetId: number) => Promise<void>
   onCalibrate: () => void
+  onRetryPresets: () => void
 }
 
 /** The joystick and the saved positions, below the live picture. */
@@ -187,6 +192,7 @@ export function PtzControlPanel({
   onCancelOverride,
   onConfirmOverride,
   onCalibrate,
+  onRetryPresets,
 }: PtzControlPanelProps) {
   const { presets, calibrated, activePresetId } = uido
   const [loadedThumbs, setLoadedThumbs] = useState<Record<string, boolean>>({})
@@ -206,7 +212,7 @@ export function PtzControlPanel({
   const buttonSize = 'size-[34px]'
   const overridePreset =
     uido.overridePresetId !== null
-      ? presets.find((p) => p.presetId === uido.overridePresetId)
+      ? presets?.find((p) => p.presetId === uido.overridePresetId)
       : undefined
 
   return (
@@ -231,10 +237,16 @@ export function PtzControlPanel({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 sm:items-start">
-        {uido.presetsError && <ErrorMessage error={uido.presetsError} />}
+        {uido.presetsError && (
+          <ReadFailure
+            error={uido.presetsError}
+            onRetry={onRetryPresets}
+            subject={POSITIONS_UNREAD}
+          />
+        )}
 
         {/* Without a reference the saved positions are inert, and nothing else said so. */}
-        {!calibrated && (
+        {presets && !calibrated && (
           <div className="flex flex-col items-center gap-2 rounded-inset border border-border bg-muted/40 p-2.5 sm:items-start">
             <p className="text-sm text-muted-foreground">
               Cette caméra n’a pas de position de référence : les positions enregistrées ne sont pas
@@ -252,43 +264,46 @@ export function PtzControlPanel({
           </div>
         )}
 
-        <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
-          {ALL_PRESET_IDS.map((presetId) => {
-            const preset = presets.find((p) => p.presetId === presetId)
-            const version = uido.thumbnailVersions[presetId] ?? 1
-            const thumbKey = `${presetId}:${version}`
-            const thumbSrc = preset
-              ? `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/thumbnail?t=${version}`
-              : null
+        {/* No slot is offered while the camera has not said which ones it holds (ADR-69 g). */}
+        {presets && (
+          <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
+            {ALL_PRESET_IDS.map((presetId) => {
+              const preset = presets.find((p) => p.presetId === presetId)
+              const version = uido.thumbnailVersions[presetId] ?? 1
+              const thumbKey = `${presetId}:${version}`
+              const thumbSrc = preset?.thumbnail
+                ? `${apiBaseUrl}/api/cameras/${cameraId}/ptz/presets/${presetId}/thumbnail?t=${version}`
+                : null
 
-            return (
-              <div key={presetId} className="flex w-16 flex-col items-center gap-1">
-                <PresetTile
-                  preset={preset}
-                  reserved={isReservedPreset(presetId)}
-                  active={activePresetId === presetId}
-                  thumbSrc={thumbSrc}
-                  thumbLoaded={!!loadedThumbs[thumbKey]}
-                  onThumbLoad={() => setLoadedThumbs((v) => ({ ...v, [thumbKey]: true }))}
-                  state={uido.activities[presetId] ?? 'idle'}
-                  editable={calibrated}
-                  onGoto={() => onGoTo(presetId)}
-                  onSave={() => (preset ? onAskOverride(presetId) : onSave(presetId))}
-                />
-                <span
-                  className={cn(
-                    'w-full text-center text-[11px] leading-tight',
-                    activePresetId === presetId
-                      ? 'font-medium text-foreground'
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {presetLabel(presets, presetId)}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+              return (
+                <div key={presetId} className="flex w-16 flex-col items-center gap-1">
+                  <PresetTile
+                    preset={preset}
+                    reserved={isReservedPreset(presetId)}
+                    active={activePresetId === presetId}
+                    thumbSrc={thumbSrc}
+                    thumbLoaded={!!loadedThumbs[thumbKey]}
+                    onThumbLoad={() => setLoadedThumbs((v) => ({ ...v, [thumbKey]: true }))}
+                    state={uido.activities[presetId] ?? 'idle'}
+                    editable={calibrated}
+                    onGoto={() => onGoTo(presetId)}
+                    onSave={() => (preset ? onAskOverride(presetId) : onSave(presetId))}
+                  />
+                  <span
+                    className={cn(
+                      'w-full text-center text-[11px] leading-tight',
+                      activePresetId === presetId
+                        ? 'font-medium text-foreground'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {presetLabel(presets, presetId)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {overridePreset && (

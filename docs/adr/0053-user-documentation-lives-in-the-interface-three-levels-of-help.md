@@ -110,4 +110,4 @@ une feature livrable est documentée **dans l'écran qui la porte**.
   le nom qui se suffit, le déclencheur explicite, le coût toujours visible — est inchangé et reste le
   foyer de l'anatomie d'un réglage.
 - **Le design system gagne un composant et une règle** : le panneau « En savoir plus » et le budget de
-  deux phrases, dont le foyer est [`DESIGN SYSTEM.md`](../DESIGN%20SYSTEM.md) § Aide.
+  deux phrases, dont le foyer est [`DESIGN SYSTEM.md`](../DESIGN%20SYSTEM.md) § Help.

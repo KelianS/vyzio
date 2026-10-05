@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AppErrorKind, type AppError } from '../../common/errors/app_error'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
 import { liveViewReducer } from './live_view.reducer'
 import { buildInitialLiveViewUido } from './live_view.uido'
@@ -6,11 +7,12 @@ import { buildInitialLiveViewUido } from './live_view.uido'
 const parking: PtzPreset = {
   presetId: 2,
   label: 'Parking',
-  native: false,
+  thumbnail: false,
   panMs: 7,
   tiltMs: 4,
-  configured: true,
 }
+
+const readError: AppError = { kind: AppErrorKind.Server, status: 502 }
 
 describe('liveViewReducer', () => {
   it.each([
@@ -35,4 +37,37 @@ describe('liveViewReducer', () => {
       expect(next.activePresetId).toBe(active)
     },
   )
+
+  it('liveViewReducer_ShouldForgetTheSlots_WhenTheCameraCannotSayWhichItHolds', () => {
+    // Arrange
+    const state = liveViewReducer(buildInitialLiveViewUido(), {
+      type: 'PRESETS_LOADED',
+      presets: [parking],
+      calibrated: true,
+      currentPosition: null,
+    })
+
+    // Act
+    const next = liveViewReducer(state, { type: 'PRESETS_FAILED', error: readError })
+
+    // Assert
+    expect(next.presets).toBeNull()
+    expect(next.presetsError).toBe(readError)
+  })
+
+  it('liveViewReducer_ShouldShowTheHeldSlotWithItsThumbnail_WhenTheCaptureLands', () => {
+    // Arrange
+    const state = liveViewReducer(buildInitialLiveViewUido(), {
+      type: 'PRESETS_LOADED',
+      presets: [parking],
+      calibrated: true,
+      currentPosition: null,
+    })
+
+    // Act
+    const next = liveViewReducer(state, { type: 'THUMBNAIL_CAPTURED', presetId: 2, version: 9 })
+
+    // Assert
+    expect(next.presets).toEqual([{ ...parking, thumbnail: true }])
+  })
 })

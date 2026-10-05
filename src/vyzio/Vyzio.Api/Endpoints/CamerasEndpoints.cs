@@ -193,22 +193,21 @@ public static class CamerasEndpoints
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
-        // Returns all configured PTZ presets for a camera, plus calibration state and current position (ADR-25).
+        // The slots that hold a position, read from the camera when it keeps them, plus calibration state and current position (ADR-69).
         group.MapGet("/{id}/ptz/presets", async (string id, GetPtzPresetsUseCase useCase, CancellationToken ct) =>
         {
-            var (list, calibrated, pos) = await useCase.ExecuteAsync(id, ct);
+            var (held, calibrated, pos) = await useCase.ExecuteAsync(id, ct);
             return Results.Ok(new
             {
                 calibrated,
                 currentPosition = pos is { } p ? new { x = p.X, y = p.Y } : null,
-                presets = list.Select(p => new
+                presets = held.Select(slot => new
                 {
-                    presetId = p.PresetId,
-                    label = p.Label,
-                    native = p.Native,
-                    panMs = p.PanMs,
-                    tiltMs = p.TiltMs,
-                    configured = true,
+                    presetId = slot.PresetId,
+                    label = slot.Label,
+                    thumbnail = slot.Thumbnail,
+                    panMs = slot.PanMs,
+                    tiltMs = slot.TiltMs,
                 }),
             });
         });

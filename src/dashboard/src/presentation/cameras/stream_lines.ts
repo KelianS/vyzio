@@ -13,7 +13,7 @@ import type {
 import { CAPABILITY_STATE_PILLS, CapabilityState, type StatePill } from './capability_state'
 import { PROTOCOL_LABELS } from './protocol_labels'
 
-/** Where a stream line stands, its pill (DESIGN SYSTEM § Capability cards, stream lines). */
+/** Where a stream line stands, its pill (SPECS 2.3). */
 export const StreamLineState = {
   Working: 'working',
   Failed: 'failed',
@@ -21,7 +21,7 @@ export const StreamLineState = {
 } as const
 export type StreamLineState = (typeof StreamLineState)[keyof typeof StreamLineState]
 
-/** A stream line speaks the capability level's words (DESIGN SYSTEM § UX vocabulary, States). */
+/** A stream line speaks the capability level's words (SPECS 2.3). */
 export const STREAM_LINE_PILLS: Record<StreamLineState, StatePill> = {
   working: CAPABILITY_STATE_PILLS.working,
   failed: CAPABILITY_STATE_PILLS.failed,

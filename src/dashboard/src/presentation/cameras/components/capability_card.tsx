@@ -3,7 +3,7 @@ import { Badge } from '../../../common/components/badge'
 import { Fold } from '../../../common/components/fold'
 import type { StatePill } from '../capability_state'
 
-/** One capability, in the anatomy every card shares: title, state pill, state line, settings, actions (DESIGN SYSTEM § Capability cards). */
+/** One capability, in the anatomy every card shares: title, state pill, state line, settings, actions (DESIGN SYSTEM § Cards). */
 export function CapabilityCard({
   title,
   pill,

@@ -97,6 +97,37 @@ test.describe('Failed reads', () => {
     await expect(page.getByText('Caméra introuvable')).toHaveCount(0)
   })
 
+  // Unread is not empty: no slot is offered until the camera says which positions it keeps (ADR-69).
+  test('LiveView_ShouldOfferNoSlotThenShowThem_WhenThePositionsAreReadOnRetry', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        cameras: [
+          makeFakeCamera({
+            displayName: 'Salon',
+            ptzSupported: true,
+            verifiedCapabilities: ['ptz'],
+          }),
+        ],
+      }),
+    )
+    await failRead(page, '/api/cameras/camera-1/ptz/presets')
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Salon' }).click()
+
+    await expect(
+      page.getByText('Les positions de cette caméra n’ont pas pu être lues.'),
+    ).toBeVisible()
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(0)
+
+    await page.unroute('**/api/cameras/camera-1/ptz/presets')
+    await page.getByRole('button', { name: 'Réessayer' }).click()
+
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(4)
+  })
+
   test('ReadFailure_ShouldShowTheList_WhenRetriedOnceTheServerAnswers', async ({ page }) => {
     await installFakeBackend(
       page,

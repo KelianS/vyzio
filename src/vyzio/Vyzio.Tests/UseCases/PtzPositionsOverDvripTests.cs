@@ -19,6 +19,7 @@ public class PtzPositionsOverDvripTests
     private readonly IPtzCapabilityProvider _dvrip = Substitute.For<IPtzCapabilityProvider>();
     private readonly IPtzMotion _dvripMotion = Substitute.For<IPtzMotion>();
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
+    private readonly IPtzThumbnailStore _thumbnails = Substitute.For<IPtzThumbnailStore>();
     private readonly PtzManagedPositions _positions = new(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance);
     private readonly Camera _camera = new() { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "192.168.1.10" };
     private readonly CameraCapabilityBinding _binding = new()
@@ -50,7 +51,9 @@ public class PtzPositionsOverDvripTests
         await new PtzStopMoveUseCase(_positions).ExecuteAsync("cam1");
     }
 
-    private async Task<bool> IsCalibrated() => (await new GetPtzPresetsUseCase(_presets, _bindings, _positions).ExecuteAsync("cam1")).Calibrated;
+    private Task<PtzSlots> ReadSlots() => new GetPtzPresetsUseCase(_cameras, _bindings, _registry, _presets, _thumbnails, _positions).ExecuteAsync("cam1");
+
+    private async Task<bool> IsCalibrated() => (await ReadSlots()).Calibrated;
 
     [Fact]
     public async Task ExecuteAsync_ShouldHomeTheCameraAndReportItCalibrated_WhenItsPtzIsBoundToDvrip()
@@ -91,12 +94,12 @@ public class PtzPositionsOverDvripTests
         await Press("Down");
 
         // Act
-        var saved = await new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.SurveillanceSlot);
+        var saved = await Save(PtzPreset.SurveillanceSlot);
 
         // Assert
         Assert.True(saved);
         await _presets.Received(1).UpsertAsync(
-            Arg.Is<PtzPreset>(p => p.PresetId == PtzPreset.SurveillanceSlot && !p.Native && p.PanMs == 200 && p.TiltMs == 100),
+            Arg.Is<PtzPreset>(p => p.PresetId == PtzPreset.SurveillanceSlot && p.PanMs == 200 && p.TiltMs == 100),
             Arg.Any<CancellationToken>());
         await _dvrip.DidNotReceive().PtzSavePresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
@@ -111,7 +114,7 @@ public class PtzPositionsOverDvripTests
         _dvripMotion.ClearReceivedCalls();
 
         // Act
-        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+        var reached = await GoTo(PtzPreset.ParkingSlot);
 
         // Assert
         Assert.True(reached);
@@ -127,25 +130,24 @@ public class PtzPositionsOverDvripTests
         _binding.ConfigJson = NativePresetsConfig;
 
         // Act
-        var saved = await new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.SurveillanceSlot);
+        var saved = await Save(PtzPreset.SurveillanceSlot);
 
         // Assert
         Assert.True(saved);
         await _dvrip.Received(1).PtzSavePresetAsync(_camera, _binding, PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>());
-        await _presets.Received(1).UpsertAsync(Arg.Is<PtzPreset>(p => p.PresetId == PtzPreset.SurveillanceSlot && p.Native), Arg.Any<CancellationToken>());
+        await _presets.DidNotReceive().UpsertAsync(Arg.Any<PtzPreset>(), Arg.Any<CancellationToken>());
         await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRecallThePositionStoredInTheCamera_WhenTheCameraKeepsNativePresets()
+    public async Task ExecuteAsync_ShouldRecallThePositionStoredInTheCamera_WhenTheCameraHoldsThatSlot()
     {
         // Arrange
         _binding.ConfigJson = NativePresetsConfig;
-        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
-            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, Native = true });
+        CameraHolds(PtzPreset.ParkingSlot);
 
         // Act
-        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+        var reached = await GoTo(PtzPreset.ParkingSlot);
 
         // Assert
         Assert.True(reached);
@@ -154,15 +156,16 @@ public class PtzPositionsOverDvripTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenThePositionWasCountedBeforeTheCameraKeptNativePresets()
+    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenOnlyVyzioCountedThePositionAndTheCameraDoesNotHoldIt()
     {
         // Arrange
         _binding.ConfigJson = NativePresetsConfig;
+        CameraHolds(PtzPreset.SurveillanceSlot);
         _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
             .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 300, TiltMs = 100 });
 
         // Act
-        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+        var reached = await GoTo(PtzPreset.ParkingSlot);
 
         // Assert
         Assert.False(reached);
@@ -171,38 +174,96 @@ public class PtzPositionsOverDvripTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenThePositionWasStoredInTheCameraBeforeItLostNativePresets()
+    public async Task ExecuteAsync_ShouldAnswerNotSavedAndStayStill_WhenVyzioCountsThePositionsAndNoRowHoldsTheSlot()
     {
         // Arrange
-        _presets.GetAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>())
-            .Returns(new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, Native = true });
         await Calibrate();
         _dvripMotion.ClearReceivedCalls();
 
         // Act
-        var reached = await new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", PtzPreset.ParkingSlot);
+        var reached = await GoTo(PtzPreset.ParkingSlot);
 
         // Assert
         Assert.False(reached);
         await _dvripMotion.DidNotReceive().MoveForAsync(Arg.Any<PtzDirection>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
-        await _dvrip.DidNotReceive().PtzGoToPresetAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _dvrip.DidNotReceive().ReadPresetsAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldListOnlyThePositionsTheCameraKeeps_WhenTheCameraKeepsNativePresets()
+    public async Task ExecuteAsync_ShouldListTheSlotsTheCameraHoldsWithoutTheRowsVyzioCounted_WhenTheCameraKeepsNativePresets()
     {
         // Arrange
         _binding.ConfigJson = NativePresetsConfig;
+        CameraHolds(PtzPreset.SurveillanceSlot, PtzPreset.LastSlot + 3);
         _presets.GetAllAsync("cam1", Arg.Any<CancellationToken>()).Returns([
-            new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.SurveillanceSlot, Native = true },
             new PtzPreset { CameraId = "cam1", PresetId = PtzPreset.ParkingSlot, PanMs = 300, TiltMs = 100 },
         ]);
 
         // Act
-        var (presets, _, _) = await new GetPtzPresetsUseCase(_presets, _bindings, _positions).ExecuteAsync("cam1");
+        var slots = await ReadSlots();
 
         // Assert
-        Assert.Equal([PtzPreset.SurveillanceSlot], presets.Select(preset => preset.PresetId));
+        Assert.Equal([PtzPreset.SurveillanceSlot], slots.Held.Select(slot => slot.PresetId));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldShowAHeldSlotWithoutThumbnail_WhenTheCameraHoldsAPresetVyzioNeverCaptured()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        CameraHolds(PtzPreset.ParkingSlot);
+
+        // Act
+        var slots = await ReadSlots();
+
+        // Assert
+        Assert.Equal(new PtzHeldSlot(PtzPreset.ParkingSlot, "Parking", Thumbnail: false), Assert.Single(slots.Held));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldShowTheHeldSlotWithItsThumbnail_WhenOneWasTakenThere()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        CameraHolds(PtzPreset.SurveillanceSlot);
+        _thumbnails.ExistsAsync("cam1", PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>()).Returns(true);
+
+        // Act
+        var slots = await ReadSlots();
+
+        // Assert
+        Assert.Equal(new PtzHeldSlot(PtzPreset.SurveillanceSlot, "Surveillance", Thumbnail: true), Assert.Single(slots.Held));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldDropTheThumbnailsOfTheSlotsTheCameraReadsEmpty_WhenTheCameraKeepsNativePresets()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        CameraHolds(PtzPreset.SurveillanceSlot);
+
+        // Act
+        await ReadSlots();
+
+        // Assert
+        await _thumbnails.Received(1).DeleteAsync("cam1", PtzPreset.ParkingSlot, Arg.Any<CancellationToken>());
+        await _thumbnails.DidNotReceive().DeleteAsync("cam1", PtzPreset.SurveillanceSlot, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRaiseTheFailedReadAndDropNoThumbnail_WhenTheCameraCannotSayWhichPresetsItHolds()
+    {
+        // Arrange
+        _binding.ConfigJson = NativePresetsConfig;
+        _dvrip.ReadPresetsAsync(_camera, _binding, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new CameraUnreachableException("DVRIP: no answer from 192.168.1.10"));
+
+        // Act
+        var error = await Record.ExceptionAsync(ReadSlots);
+
+        // Assert
+        Assert.IsType<CameraUnreachableException>(error);
+        await _thumbnails.DidNotReceive().DeleteAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -218,4 +279,13 @@ public class PtzPositionsOverDvripTests
         Assert.True(calibrated);
         await _dvrip.DidNotReceive().OpenMotionAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
+
+    private void CameraHolds(params int[] presets)
+        => _dvrip.ReadPresetsAsync(_camera, _binding, Arg.Any<CancellationToken>()).Returns(presets.ToHashSet());
+
+    private Task<bool> Save(int presetId)
+        => new PtzSavePresetUseCase(_cameras, _bindings, _registry, _presets, _thumbnails, _positions).ExecuteAsync("cam1", presetId);
+
+    private Task<bool> GoTo(int presetId)
+        => new PtzGoToPresetUseCase(_cameras, _bindings, _registry, _presets, _positions).ExecuteAsync("cam1", presetId);
 }

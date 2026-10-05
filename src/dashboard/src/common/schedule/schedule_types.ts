@@ -8,13 +8,13 @@ import {
 /** Where the house's calendar lives (ADR-63). */
 export const SCHEDULES_PATH = '/settings/planification'
 
-/** A rule type in the interface's words: the same name, icon and effect everywhere (DESIGN SYSTEM). */
+/** A rule type in the interface's words: the same name, icon and effect everywhere (DESIGN SYSTEM § Shared words). */
 interface ScheduleTypeCopy {
   readonly name: string
   readonly effect: string
   readonly icon: LucideIcon
   readonly targetKind: ScheduleTargetKind
-  /** The calendar's fill, a pattern as well as a colour (DESIGN SYSTEM § Calendar). */
+  /** The calendar's fill, a pattern as well as a colour (DESIGN SYSTEM § Palette). */
   readonly fill: string
 }
 

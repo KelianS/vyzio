@@ -2,6 +2,7 @@ import type { AppError } from '../../common/errors/app_error'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
 
 export type LiveViewAction =
+  | { type: 'PRESETS_STARTED' }
   | {
       type: 'PRESETS_LOADED'
       presets: PtzPreset[]

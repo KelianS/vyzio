@@ -1,11 +1,12 @@
+/** A slot that holds a position, whether the camera keeps it or Vyzio counts it (ADR-69). */
 export interface PtzPreset {
   presetId: number
   label: string
-  native: boolean
-  /** Milliseconds of motion right, then down, from the up-left limit (ADR-60). */
+  /** Whether its thumbnail was taken: a held slot without one is never shown as empty (SPECS 9.4). */
+  thumbnail: boolean
+  /** Milliseconds of motion right, then down, from the up-left limit, when Vyzio counts it (ADR-60). */
   panMs: number | null
   tiltMs: number | null
-  configured: boolean
 }
 
 /** Where privacy parking sends the camera, and where it brings it back (ADR-57). */
