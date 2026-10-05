@@ -116,10 +116,8 @@ public sealed record VendorDocumentationDto(
                 documentation.Markdown);
 }
 
-public sealed record VendorAssistanceRequestDto(
-    string? VendorFamily,
-    string? StreamPath,
-    bool Connected);
+// The add screen's help list picks the sheet; it shows whatever the camera answers (#274).
+public sealed record VendorAssistanceRequestDto(string? VendorFamily);
 
 public sealed record VendorAssistanceDto(
     string VendorFamily,

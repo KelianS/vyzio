@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
@@ -38,7 +38,7 @@ public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAs
 {
     public async Task<VendorAssistanceDto?> ExecuteAsync(VendorAssistanceRequestDto request, CancellationToken ct = default)
     {
-        var documentation = await vendorAssistanceService.GetAssistanceAsync(request.VendorFamily, request.StreamPath, request.Connected, ct);
+        var documentation = await vendorAssistanceService.GetAssistanceAsync(request.VendorFamily, ct);
         return VendorAssistanceDto.From(documentation);
     }
 }

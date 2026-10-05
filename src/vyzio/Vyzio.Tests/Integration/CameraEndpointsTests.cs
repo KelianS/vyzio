@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +13,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Persistence;
+using Vyzio.Infrastructure.Services;
 
 namespace Vyzio.Tests.Integration;
 
@@ -380,22 +381,24 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         Assert.Equal("draft", payload.ValidationState);
     }
 
-    [Fact]
-    public async Task GetVendorAssistance_ShouldReturnTheVendorMarkdown_WhenAKnownVendorFamilyIsAsked()
+    [Theory]
+    [InlineData("v380_pro")]
+    [InlineData("tplink_tapo")]
+    [InlineData("icsee")]
+    public async Task GetVendorAssistance_ShouldReturnTheVendorSheet_WhenTheAddScreenPicksAVendor(string vendorFamily)
     {
+        // Arrange
         using var client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/cameras/vendor-assistance", new VendorAssistanceRequestDto(
-            "v380_pro",
-            null,
-            false));
+        // Act
+        var response = await client.PostAsJsonAsync("/api/cameras/vendor-assistance", new VendorAssistanceRequestDto(vendorFamily));
 
+        // Assert
         response.EnsureSuccessStatusCode();
         var payload = await response.Content.ReadFromJsonAsync<VendorAssistanceResponse>();
-
         Assert.NotNull(payload);
-        Assert.Equal("v380_pro", payload!.VendorFamily);
-        Assert.Contains("# V380 PRO", payload.Markdown);
+        Assert.Equal(vendorFamily, payload!.VendorFamily);
+        Assert.False(string.IsNullOrWhiteSpace(payload.Markdown));
     }
 
     [Fact]
@@ -586,7 +589,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<ICameraProtocolProbe>(new StubCameraProtocolProbe());
             services.AddSingleton<ICameraStreamEnumerator>(new StubCameraStreamEnumerator());
             services.AddSingleton<IFrigateConfigApplier>(new StubFrigateConfigApplier());
-            services.AddSingleton<IVendorAssistanceService>(new StubVendorAssistanceService());
+            services.AddSingleton<IVendorAssistanceService, CameraVendorAssistanceService>();
 
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
@@ -674,11 +677,4 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
         public bool HasPendingChanges => false;
     }
 
-    private sealed class StubVendorAssistanceService : IVendorAssistanceService
-    {
-        public Task<VendorDocumentation?> GetAssistanceAsync(string? vendorFamily, string? streamPath, bool connected, CancellationToken ct = default)
-            => Task.FromResult(vendorFamily == "v380_pro" && string.IsNullOrWhiteSpace(streamPath) && !connected
-                ? new VendorDocumentation(vendorFamily, "# V380 PRO\n\nNotice RTSP de test.")
-                : null);
-    }
 }

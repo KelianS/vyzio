@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using NSubstitute;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.UseCases.Cameras;
@@ -280,10 +280,10 @@ public class GetVendorAssistanceUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldReturnTheMarkdown_WhenTheVendorNeedsRtspAssistance()
     {
-        _vendorAssistance.GetAssistanceAsync("v380_pro", null, false, Arg.Any<CancellationToken>())
+        _vendorAssistance.GetAssistanceAsync("v380_pro", Arg.Any<CancellationToken>())
             .Returns(new VendorDocumentation("v380_pro", "# V380 PRO\n\nNotice RTSP de test."));
 
-        var result = await _sut.ExecuteAsync(new VendorAssistanceRequestDto("v380_pro", null, false));
+        var result = await _sut.ExecuteAsync(new VendorAssistanceRequestDto("v380_pro"));
 
         Assert.NotNull(result);
         Assert.Equal("v380_pro", result!.VendorFamily);
