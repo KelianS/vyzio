@@ -23,8 +23,8 @@ public sealed class OnvifContractTests
             PtzConfigurationToken: "PTZTOKEN",
             RelativeMove: true,
             Position: (0.177353f, -0.713568f),
-            PresetCount: 4,
-            NativePresets: true,
+            PtzNodeToken: "PTZNODETOKEN",
+            HeldPresets: [1, 2, 3, 4],
             ImageSettings: new CameraImageSettings(50, 50, 50, 50, IrCutMode.Auto),
             WrongPassword: ProtocolStatus.Refused),
         // Answers GetDeviceInformation whatever the password, and implements neither PTZ status, presets nor imaging.
@@ -36,8 +36,8 @@ public sealed class OnvifContractTests
             PtzConfigurationToken: "Anv_ptz_0",
             RelativeMove: false,
             Position: null,
-            PresetCount: 0,
-            NativePresets: false,
+            PtzNodeToken: "Anv_ptz_node_0",
+            HeldPresets: null,
             ImageSettings: null,
             WrongPassword: ProtocolStatus.Answers),
     };
@@ -45,6 +45,10 @@ public sealed class OnvifContractTests
     public static TheoryData<string> Variants => FixtureLoader.VariantNames(FixtureProtocol.Onvif);
 
     public static TheoryData<string> VariantsWithImaging => [.. Expected.Where(row => row.Value.ImageSettings is not null).Select(row => row.Key)];
+
+    public static TheoryData<string> VariantsListingPresets => [.. Expected.Where(row => row.Value.HeldPresets is not null).Select(row => row.Key)];
+
+    public static TheoryData<string> VariantsRefusingPresets => [.. Expected.Where(row => row.Value.HeldPresets is null).Select(row => row.Key)];
 
     public static TheoryData<string> VariantsWithoutImaging => [.. Expected.Where(row => row.Value.ImageSettings is null).Select(row => row.Key)];
 
@@ -136,10 +140,44 @@ public sealed class OnvifContractTests
 
     [Theory]
     [MemberData(nameof(Variants))]
-    public async Task ProveAsync_ShouldProvePtzAndRecordItsNativePresets_WhenTheCameraDescribesItsPtz(string variant)
+    public async Task ProveAsync_ShouldProvePtzAndAskTheProfilesNodeForItsRoom_WhenTheCameraDescribesItsPtz(string variant)
     {
         // Arrange
-        var peer = Replay(variant, OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets);
+        var peer = Replay(variant, OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions);
+
+        // Act
+        var proof = await PtzProviderOver(peer).ProveAsync(FixtureCamera(), PtzBinding());
+
+        // Assert
+        Assert.Equal(ProofOutcome.Proven, proof.Outcome);
+        Assert.Contains(peer.Bodies, body => body.Contains($"<ConfigurationToken>{Expected[variant].PtzConfigurationToken}</ConfigurationToken>", StringComparison.Ordinal));
+        Assert.Contains(peer.Bodies, body => body.Contains($"<NodeToken>{Expected[variant].PtzNodeToken}</NodeToken>", StringComparison.Ordinal));
+    }
+
+    // GetNode is not captured yet: its answer is hand-written (FakeOnvifCamera.NodeXml), the rest is the Tapo replay.
+    [Theory]
+    [InlineData(8, true)]
+    [InlineData(0, false)]
+    public async Task ProveAsync_ShouldPutTheCameraOnTheNativeTierByAReadAlone_WhenItsNodeReportsItsRoomForPresets(int room, bool native)
+    {
+        // Arrange
+        var peer = Replay(CapturedVariant.TapoC200, OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions)
+            .Answering("GetNode", FakeOnvifCamera.NodeXml(room));
+        var binding = PtzBinding();
+
+        // Act
+        await PtzProviderOver(peer).ProveAsync(FixtureCamera(), binding);
+
+        // Assert
+        Assert.Equal(native, BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
+        Assert.DoesNotContain(peer.Bodies, body => body.Contains("<SetPreset", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ProveAsync_ShouldLeaveThePositionsToVyzio_WhenTheCameraDoesNotDescribeItsNode()
+    {
+        // Arrange
+        var peer = Replay(CapturedVariant.TapoC200, OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions);
         var binding = PtzBinding();
 
         // Act
@@ -147,8 +185,7 @@ public sealed class OnvifContractTests
 
         // Assert
         Assert.Equal(ProofOutcome.Proven, proof.Outcome);
-        Assert.Contains(peer.Bodies, body => body.Contains($"<ConfigurationToken>{Expected[variant].PtzConfigurationToken}</ConfigurationToken>", StringComparison.Ordinal));
-        Assert.Equal(Expected[variant].NativePresets, BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
+        Assert.False(BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets));
     }
 
     [Theory]
@@ -181,17 +218,61 @@ public sealed class OnvifContractTests
     }
 
     [Theory]
-    [MemberData(nameof(Variants))]
-    public async Task GetPresetsCountAsync_ShouldCountTheCapturedPresets_WhenTheCameraListsThem(string variant)
+    [MemberData(nameof(VariantsListingPresets))]
+    public async Task ReadPresetsAsync_ShouldReadTheSlotsTheCameraHolds_WhenTheCameraListsItsPresets(string variant)
     {
         // Arrange
-        var client = ClientOver(Replay(variant, OnvifScenario.PtzGetPresets));
+        var provider = PtzProviderOver(Replay(variant, OnvifScenario.GetProfiles, OnvifScenario.PtzGetPresets));
 
         // Act
-        var count = await client.GetPresetsCountAsync(FixtureCamera(), Expected[variant].FirstProfile.Token, CancellationToken.None);
+        var held = await provider.ReadPresetsAsync(FixtureCamera(), PtzBinding());
 
         // Assert
-        Assert.Equal(Expected[variant].PresetCount, count);
+        Assert.Equal(Expected[variant].HeldPresets!.ToHashSet(), held);
+    }
+
+    [Theory]
+    [MemberData(nameof(VariantsRefusingPresets))]
+    public async Task ReadPresetsAsync_ShouldRaiseTheCameraRefusal_WhenTheCameraDoesNotImplementPresets(string variant)
+    {
+        // Arrange
+        var provider = PtzProviderOver(Replay(variant, OnvifScenario.GetProfiles, OnvifScenario.PtzGetPresets));
+
+        // Act
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(() => provider.ReadPresetsAsync(FixtureCamera(), PtzBinding()));
+
+        // Assert
+        Assert.Contains("not implemented", error.Message, StringComparison.Ordinal);
+    }
+
+    // The capture stored preset 5 and the camera answered token 5.
+    [Fact]
+    public async Task PtzSavePresetAsync_ShouldStoreThePreset_WhenTheCameraFilesItUnderTheAskedNumber()
+    {
+        // Arrange
+        var peer = Replay(CapturedVariant.TapoC200, OnvifScenario.GetProfiles, OnvifScenario.PtzSetPresetAndRemove);
+
+        // Act
+        var error = await Record.ExceptionAsync(() => PtzProviderOver(peer).PtzSavePresetAsync(FixtureCamera(), PtzBinding(), 5));
+
+        // Assert
+        Assert.Null(error);
+        Assert.Contains(peer.Bodies, body => body.Contains("<PresetToken>5</PresetToken>", StringComparison.Ordinal));
+    }
+
+    // The same captured answer, token 5, read back for a request of slot 2: a camera that picks its own number.
+    [Fact]
+    public async Task PtzSavePresetAsync_ShouldRaiseWhichNumberTheCameraKept_WhenTheCameraFilesThePresetUnderAnotherToken()
+    {
+        // Arrange
+        var peer = Replay(CapturedVariant.TapoC200, OnvifScenario.GetProfiles, OnvifScenario.PtzSetPresetAndRemove);
+
+        // Act
+        var error = await Assert.ThrowsAsync<CameraCommandRefusedException>(
+            () => PtzProviderOver(peer).PtzSavePresetAsync(FixtureCamera(), PtzBinding(), PtzPreset.ParkingSlot));
+
+        // Assert
+        Assert.Contains("asked for preset token 2, the camera stored it under 5", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -274,8 +355,8 @@ public sealed class OnvifContractTests
         string PtzConfigurationToken,
         bool RelativeMove,
         (float Pan, float Tilt)? Position,
-        int PresetCount,
-        bool NativePresets,
+        string PtzNodeToken,
+        int[]? HeldPresets,
         CameraImageSettings? ImageSettings,
         ProtocolStatus WrongPassword);
 }

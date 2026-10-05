@@ -50,6 +50,21 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
         </s:Envelope>
         """;
 
+    // No capture holds a GetNode answer yet: the shape of the ONVIF PTZ specification, with the room a test gives it.
+    public static string NodeXml(int maximumPresets) => $"""
+        <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+          <s:Body>
+            <tptz:GetNodeResponse xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">
+              <tptz:PTZNode token="node_1" FixedHomePosition="false">
+                <tt:Name>node_1</tt:Name>
+                <tt:MaximumNumberOfPresets>{maximumPresets}</tt:MaximumNumberOfPresets>
+                <tt:HomeSupported>false</tt:HomeSupported>
+              </tptz:PTZNode>
+            </tptz:GetNodeResponse>
+          </s:Body>
+        </s:Envelope>
+        """;
+
     // Carries an ONVIF marker, so a port sweep recognises the camera (ADR-56).
     private const string EmptyAnswerXml = """
         <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><s:Body/></s:Envelope>
@@ -98,6 +113,13 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
                 .GroupBy(exchange => ActionOf(exchange.Request.Body ?? string.Empty))
                 .ToDictionary(group => group.Key, group => group.Select(exchange => Answer.Captured(exchange.Response)).ToArray()),
             unanswered: action => MoveCommands.Contains(action) ? Answer.Soap(EmptyAnswerXml) : Answer.NotCaptured(variant, action));
+    }
+
+    // A hand-written answer to an action no capture holds, beside the captured ones.
+    public FakeOnvifCamera Answering(string action, string body)
+    {
+        _answers[action] = [Answer.Soap(body)];
+        return this;
     }
 
     private static IEnumerable<(TranscriptMessage Request, TranscriptMessage Response)> Exchanges(string variant, string scenario, IReadOnlyList<TranscriptMessage> messages)

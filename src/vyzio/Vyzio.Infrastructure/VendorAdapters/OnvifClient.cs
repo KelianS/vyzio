@@ -81,14 +81,15 @@ internal sealed class OnvifClient(
         }
     }
 
-    // Returns the first media profile's token, and its PTZ configuration token or null when it has none.
-    public async Task<(string ProfileToken, string? PtzConfigToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct, bool throwOnFailure = false)
+    // Returns the first media profile's token, and its PTZ configuration and node tokens or null when it has none.
+    public async Task<(string ProfileToken, string? PtzConfigToken, string? PtzNodeToken)> GetFirstProfileAsync(Camera camera, CancellationToken ct, bool throwOnFailure = false)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
         var xml = await PostSoapAsync(camera, OnvifService.Media, body, ct, throwOnFailure: throwOnFailure);
 
         var profileToken = "profile1";
         string? ptzConfigToken = null;
+        string? ptzNodeToken = null;
 
         if (xml is not null)
         {
@@ -98,9 +99,9 @@ internal sealed class OnvifClient(
                 XNamespace trt = "http://www.onvif.org/ver10/media/wsdl";
                 var profile = doc.Descendants(trt + "Profiles").FirstOrDefault();
                 profileToken = profile?.Attribute("token")?.Value ?? profileToken;
-                ptzConfigToken = profile?.Descendants()
-                                         .FirstOrDefault(e => e.Name.LocalName == "PTZConfiguration")
-                                         ?.Attribute("token")?.Value;
+                var ptzConfiguration = profile?.Descendants().FirstOrDefault(e => e.Name.LocalName == "PTZConfiguration");
+                ptzConfigToken = ptzConfiguration?.Attribute("token")?.Value;
+                ptzNodeToken = ptzConfiguration is null ? null : Child(ptzConfiguration, "NodeToken")?.Value;
             }
             catch (XmlException ex)
             {
@@ -108,7 +109,7 @@ internal sealed class OnvifClient(
             }
         }
 
-        return (profileToken, ptzConfigToken);
+        return (profileToken, ptzConfigToken, string.IsNullOrWhiteSpace(ptzNodeToken) ? null : ptzNodeToken);
     }
 
     // Returns every media profile with its video source and encoder settings (ADR-38). Tolerates a
@@ -289,7 +290,8 @@ internal sealed class OnvifClient(
         return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
     }
 
-    public Task SetPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
+    // Returns the token the camera says it stored the preset under, null when its answer names none.
+    public async Task<string?> SetPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
     {
         var body = $"""
             <SetPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
@@ -298,7 +300,15 @@ internal sealed class OnvifClient(
               <PresetName>vyzio_home</PresetName>
             </SetPreset>
             """;
-        return SendCommandAsync(camera, OnvifService.Ptz, body, ct);
+        var xml = await PostSoapAsync(camera, OnvifService.Ptz, body, ct, throwOnFailure: true);
+        try
+        {
+            return XDocument.Parse(xml!).Descendants().FirstOrDefault(e => e.Name.LocalName == "PresetToken")?.Value;
+        }
+        catch (XmlException ex)
+        {
+            throw new CameraCommandRefusedException($"ONVIF SetPreset answer from {camera.Host} unreadable ({ex.Message}).", ex);
+        }
     }
 
     public Task GotoPresetAsync(Camera camera, string profileToken, int presetId, CancellationToken ct)
@@ -405,23 +415,48 @@ internal sealed class OnvifClient(
             soapAction: "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings");
     }
 
-    // Returns the count of presets reported by the camera. Used at probe time to set SupportsNativePresets (ADR-25).
-    // Returns 0 on error or empty list — both indicate no native preset support.
-    public async Task<int> GetPresetsCountAsync(Camera camera, string profileToken, CancellationToken ct)
+    // The tokens of the presets the camera keeps; silence, a refusal or an unreadable answer is raised, never read as none (ADR-69 g).
+    public async Task<IReadOnlyList<string>> GetPresetTokensAsync(Camera camera, string profileToken, CancellationToken ct)
     {
         var body = $"""
             <GetPresets xmlns="http://www.onvif.org/ver20/ptz/wsdl">
               <ProfileToken>{profileToken}</ProfileToken>
             </GetPresets>
             """;
-        var xml = await PostSoapAsync(camera, OnvifService.Ptz, body, ct);
-        if (xml is null) return 0;
+        var xml = await PostSoapAsync(camera, OnvifService.Ptz, body, ct, throwOnFailure: true);
         try
         {
-            var doc = XDocument.Parse(xml);
-            return doc.Descendants().Count(e => e.Name.LocalName == "Preset");
+            return [.. XDocument.Parse(xml!).Descendants()
+                .Where(e => e.Name.LocalName == "Preset")
+                .Select(e => e.Attribute("token")?.Value)
+                .OfType<string>()];
         }
-        catch { return 0; }
+        catch (XmlException ex)
+        {
+            throw new CameraCommandRefusedException($"ONVIF GetPresets answer from {camera.Host} unreadable ({ex.Message}).", ex);
+        }
+    }
+
+    // How many presets the PTZ node can keep, null when the camera does not describe it (ADR-69 f).
+    public async Task<int?> GetMaximumNumberOfPresetsAsync(Camera camera, string nodeToken, CancellationToken ct)
+    {
+        var body = $"""
+            <GetNode xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+              <NodeToken>{nodeToken}</NodeToken>
+            </GetNode>
+            """;
+        var xml = await PostSoapAsync(camera, OnvifService.Ptz, body, ct);
+        if (xml is null) return null;
+        try
+        {
+            var maximum = XDocument.Parse(xml).Descendants().FirstOrDefault(e => e.Name.LocalName == "MaximumNumberOfPresets")?.Value;
+            return int.TryParse(maximum, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) ? count : null;
+        }
+        catch (XmlException ex)
+        {
+            logger.LogDebug(ex, "ONVIF GetNode answer unreadable for {Host}.", camera.Host);
+            return null;
+        }
     }
 
     private async Task SendCommandAsync(

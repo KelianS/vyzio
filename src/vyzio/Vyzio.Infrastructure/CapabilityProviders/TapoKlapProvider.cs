@@ -81,6 +81,10 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
+    // Its probe never puts the camera on the native tier: a call is a wiring mistake, never an empty list (ADR-69 g).
+    public Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => throw new NotSupportedException($"{SupportedProtocol.TapoKlap} keeps no native presets to read.");
+
     // The direction mapping comes from community KLAP documentation, unconfirmed on Tapo pan-tilt hardware: probe-gated, never seeded (ADR-22).
     internal static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
     {

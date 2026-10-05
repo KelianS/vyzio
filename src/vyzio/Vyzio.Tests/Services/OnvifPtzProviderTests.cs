@@ -426,6 +426,43 @@ public class OnvifPtzProviderTests
         Assert.DoesNotContain(camera.Bodies, body => body.Contains("<Stop", StringComparison.Ordinal));
     }
 
+    // Hand-written: no captured camera names a preset with a token that is not a number.
+    [Fact]
+    public async Task ReadPresetsAsync_ShouldIgnoreTheTokensThatNameNoNumber_WhenTheCameraListsThem()
+    {
+        // Arrange
+        const string presets = """
+            <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+              <s:Body>
+                <tptz:GetPresetsResponse xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
+                  <tptz:Preset token="home"/>
+                  <tptz:Preset token="2"/>
+                </tptz:GetPresetsResponse>
+              </s:Body>
+            </s:Envelope>
+            """;
+        var provider = MakeProviderFor(new FakeOnvifCamera(FakeOnvifCamera.ProfileWithPtzXml, FakeOnvifCamera.PtzOptionsXml, presets));
+
+        // Act
+        var held = await provider.ReadPresetsAsync(MakeCamera(), MakeBinding());
+
+        // Assert
+        Assert.Equal([2], held);
+    }
+
+    [Fact]
+    public async Task ReadPresetsAsync_ShouldRaiseRatherThanReadNone_WhenTheAnswerIsUnreadable()
+    {
+        // Arrange
+        var provider = MakeProviderFor(new FakeOnvifCamera(FakeOnvifCamera.ProfileWithPtzXml, FakeOnvifCamera.PtzOptionsXml, "not xml"));
+
+        // Act
+        var error = await Record.ExceptionAsync(() => provider.ReadPresetsAsync(MakeCamera(), MakeBinding()));
+
+        // Assert
+        Assert.IsType<CameraCommandRefusedException>(error);
+    }
+
     [Fact]
     public async Task MoveForAsync_ShouldMoveThenStop_WhenTheCameraRefusesThePtzConfigurationOptions()
     {
@@ -471,7 +508,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldNeverMoveTheCamera_WhenItVerifiesPtz()
     {
         // Arrange
-        var camera = TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets);
+        var camera = TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions).Answering("GetNode", FakeOnvifCamera.NodeXml(8));
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -487,7 +524,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldKeepThePanSwap_WhenItRecordsNativePresets()
     {
         // Arrange
-        var provider = MakeProviderFor(TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets));
+        var provider = MakeProviderFor(TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions).Answering("GetNode", FakeOnvifCamera.NodeXml(8)));
         var binding = MakeBinding();
         binding.ConfigJson = """{"pan_inverted":true}""";
 
@@ -503,7 +540,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldWriteAFreshConfig_WhenTheStoredOneIsUnreadable()
     {
         // Arrange
-        var provider = MakeProviderFor(TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets));
+        var provider = MakeProviderFor(TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions).Answering("GetNode", FakeOnvifCamera.NodeXml(8)));
         var binding = MakeBinding();
         binding.ConfigJson = "not json";
 

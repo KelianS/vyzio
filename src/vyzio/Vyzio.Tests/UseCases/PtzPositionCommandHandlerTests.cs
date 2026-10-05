@@ -24,7 +24,7 @@ public class PtzPositionCommandHandlerTests
 
         return new PtzPositionCommandHandler(
             new GetCamerasUseCase(_cameras, _bindings),
-            new GetPtzPresetsUseCase(_presets, _bindings, _positions),
+            new GetPtzPresetsUseCase(_cameras, _bindings, _providers, _presets, Substitute.For<IPtzThumbnailStore>(), _positions),
             new PtzGoToPresetUseCase(_cameras, _bindings, _providers, _presets, _positions));
     }
 
@@ -103,5 +103,31 @@ public class PtzPositionCommandHandlerTests
 
         Assert.Contains("pas pu orienter", byName.Message.Headline);
         Assert.Contains("pas pu orienter", byTap.Message.Headline);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSayThePositionsCouldNotBeRead_WhenTheCameraCannotSayWhichPresetsItHolds()
+    {
+        // Arrange
+        var camera = Motorised("jardin", "Jardin");
+        var provider = Substitute.For<IPtzCapabilityProvider>();
+        _providers.ResolvePtz(SupportedProtocol.Onvif).Returns(provider);
+        _bindings.GetAsync(camera.Id, CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(new CameraCapabilityBinding
+        {
+            CameraId = camera.Id,
+            Capability = CameraCapability.Ptz,
+            Protocol = SupportedProtocol.Onvif,
+            Status = CapabilityStatus.Verified,
+            ConfigJson = """{"supports_native_presets":true}""",
+        });
+        provider.ReadPresetsAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<IReadOnlySet<int>>(new CameraUnreachableException("ONVIF Ptz: no answer")));
+        var sut = CreateSut(camera);
+
+        // Act
+        var result = await sut.ExecuteAsync(Ask("jardin"));
+
+        // Assert
+        Assert.Contains("pas pu lire les positions", result.Message.Headline);
     }
 }

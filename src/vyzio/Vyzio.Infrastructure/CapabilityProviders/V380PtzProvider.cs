@@ -82,6 +82,10 @@ internal sealed class V380PtzProvider(
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
+    // Its probe never puts the camera on the native tier: a call is a wiring mistake, never an empty list (ADR-69 g).
+    public Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
+        => throw new NotSupportedException($"{Protocol} keeps no native presets to read.");
+
 #pragma warning disable format // Aligned as a table so each row reads against the others.
     private static ReadOnlySpan<byte> DirectionToPacket(PtzDirection direction) => direction switch
     {

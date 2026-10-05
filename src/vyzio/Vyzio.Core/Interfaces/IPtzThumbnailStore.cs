@@ -4,4 +4,6 @@ public interface IPtzThumbnailStore
 {
     Task SaveAsync(string cameraId, int presetId, byte[] jpeg, CancellationToken ct = default);
     Task<Stream?> TryGetAsync(string cameraId, int presetId, CancellationToken ct = default);
+    Task<bool> ExistsAsync(string cameraId, int presetId, CancellationToken ct = default);
+    Task DeleteAsync(string cameraId, int presetId, CancellationToken ct = default);
 }
