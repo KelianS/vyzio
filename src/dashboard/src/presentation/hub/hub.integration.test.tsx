@@ -47,6 +47,23 @@ describe('HubView', () => {
     expect(screen.getByText('Détection « person »')).toBeInTheDocument()
   })
 
+  it('onMount_ShouldWarnAndKeepTheEngineLabel_WhenTheLabelCatalogueFails', async () => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/detection-labels/camera': failure(500),
+    })
+
+    // Act
+    renderScreen(<HubView />)
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(screen.getByText('Détection « person »')).toBeInTheDocument()
+  })
+
   it('onMount_ShouldNameADetectionInFrench_WhenTheLabelCatalogueAnswers', async () => {
     // Arrange
     fakeNetwork({
