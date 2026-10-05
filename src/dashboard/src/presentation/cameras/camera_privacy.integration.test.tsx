@@ -266,6 +266,7 @@ describe('CameraPrivacyView', () => {
       /une fois la caméra en surveillance : appliquez les changements/,
     )
   })
+
   it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
