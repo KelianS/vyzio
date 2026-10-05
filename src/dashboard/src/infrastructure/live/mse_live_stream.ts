@@ -130,6 +130,20 @@ export class MseLiveStream implements LiveStreamPort {
     quality: LiveQuality,
     onPlayback: (playback: LivePlayback) => void,
   ): () => void {
+    // A browser that fails to decode the camera's sound gets the same stream once more, video only.
+    let stop = this.start(video, cameraId, quality, onPlayback, () => {
+      stop = this.start(video, cameraId, quality, onPlayback, null)
+    })
+    return () => stop()
+  }
+
+  private start(
+    video: HTMLVideoElement,
+    cameraId: string,
+    quality: LiveQuality,
+    onPlayback: (playback: LivePlayback) => void,
+    retryWithoutAudio: (() => void) | null,
+  ): () => void {
     const { env } = this
     // The line support reads under the sentence: which stream was asked, and what answered (SPECS 1.5).
     const failed = (failure: LiveFailure, detail: string): LivePlayback => ({
@@ -143,7 +157,9 @@ export class MseLiveStream implements LiveStreamPort {
       onPlayback(failed('unsupported_browser', 'MediaSource unavailable'))
       return () => undefined
     }
-    const codecs = playableCodecs((mime) => env.isTypeSupported(mime))
+    const codecs = playableCodecs((mime) => env.isTypeSupported(mime)).filter(
+      (codec) => retryWithoutAudio !== null || !AUDIO_CODEC.test(codec),
+    )
     if (!codecs.some((codec) => VIDEO_CODEC.test(codec))) {
       onPlayback(failed('unsupported_codec', 'no H.264 nor H.265 in MSE'))
       return () => undefined
@@ -165,6 +181,7 @@ export class MseLiveStream implements LiveStreamPort {
     function release() {
       ended = true
       clearTimeout(firstSegment)
+      video.removeEventListener('error', onMediaError)
       if (socket) {
         socket.onclose = null
         socket.onmessage = null
@@ -178,6 +195,18 @@ export class MseLiveStream implements LiveStreamPort {
       if (ended) return
       release()
       onPlayback(failed(failure, detail))
+    }
+
+    // A decode failure closes the source, so the cause is read from the video, not from the next append.
+    function onMediaError() {
+      if (ended) return
+      if (retryWithoutAudio && hasAudio) {
+        release()
+        retryWithoutAudio()
+        return
+      }
+      const error = video.error
+      fail('unsupported_codec', `media error ${error?.code ?? '?'}: ${error?.message ?? ''}`.trim())
     }
 
     function keepLive() {
@@ -197,7 +226,8 @@ export class MseLiveStream implements LiveStreamPort {
         try {
           buffer.appendBuffer(next)
         } catch (e) {
-          fail('unreachable', e instanceof Error ? e.message : String(e))
+          if (video.error) onMediaError()
+          else fail('unreachable', e instanceof Error ? e.message : String(e))
         }
         return
       }
@@ -272,6 +302,7 @@ export class MseLiveStream implements LiveStreamPort {
       { once: true },
     )
     env.attach(video, source, media.managed)
+    video.addEventListener('error', onMediaError)
 
     return () => {
       if (!ended) release()

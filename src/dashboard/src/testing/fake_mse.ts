@@ -92,17 +92,29 @@ export class FakeSocket {
   }
 }
 
+/** A video element the test can make fail, as the browser does on a decode error. */
+export type FakeVideo = HTMLVideoElement & { fail(code: number, message: string): void }
+
 /** A video element reduced to what the stream touches; a range makes it hold that much picture. */
-export function fakeVideo(range?: { start: number; end: number; currentTime: number }) {
-  return {
+export function fakeVideo(range?: { start: number; end: number; currentTime: number }): FakeVideo {
+  const listeners = new Map<string, () => void>()
+  const video = {
     buffered: range
       ? { length: 1, start: () => range.start, end: () => range.end }
       : { length: 0, start: () => 0, end: () => 0 },
     currentTime: range?.currentTime ?? 0,
     srcObject: null,
+    error: null as { code: number; message: string } | null,
     play: vi.fn(() => Promise.resolve()),
     removeAttribute: vi.fn(),
-  } as unknown as HTMLVideoElement
+    addEventListener: (type: string, listener: () => void) => listeners.set(type, listener),
+    removeEventListener: (type: string) => listeners.delete(type),
+    fail: (code: number, message: string) => {
+      video.error = { code, message }
+      listeners.get('error')?.()
+    },
+  }
+  return video as unknown as FakeVideo
 }
 
 export function fakeEnvironment(source = new FakeMediaSource()): MseEnvironment & {

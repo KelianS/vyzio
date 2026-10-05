@@ -269,4 +269,48 @@ describe('MseLiveStream', () => {
     expect(socket?.closed).toBe(true)
     expect(reports).toEqual([])
   })
+
+  it('open_ShouldTryAgainWithoutSound_WhenTheBrowserFailsToDecodeAStreamWithAudio', async () => {
+    // Arrange
+    const video = fakeVideo()
+    const { socket, reports } = open(fakeEnvironment(), video)
+    socket?.open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Act
+    video.fail(3, 'PIPELINE_ERROR_DECODE')
+    const retried = FakeSocket.opened.at(-1)
+    retried?.open()
+
+    // Assert
+    expect(socket?.closed).toBe(true)
+    expect(JSON.parse(retried?.sent[0] ?? '')).toEqual({
+      type: 'mse',
+      value: 'avc1.640029,avc1.64002A,avc1.640033',
+    })
+    expect(reports).toEqual([{ kind: 'playing', hasAudio: true }])
+  })
+
+  it('open_ShouldSayTheDecodeError_WhenTheVideoOnlyStreamFailsToo', async () => {
+    // Arrange
+    const video = fakeVideo()
+    const { socket, reports } = open(fakeEnvironment(), video)
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+    video.fail(3, 'PIPELINE_ERROR_DECODE')
+    FakeSocket.opened.at(-1)?.answer('video/mp4; codecs="avc1.64001E"')
+
+    // Act
+    video.fail(3, 'PIPELINE_ERROR_DECODE')
+
+    // Assert
+    expect(reports.at(-1)).toEqual({
+      kind: 'failed',
+      failure: 'unsupported_codec',
+      diagnostic: 'live cam1 low: media error 3: PIPELINE_ERROR_DECODE',
+    })
+  })
 })
