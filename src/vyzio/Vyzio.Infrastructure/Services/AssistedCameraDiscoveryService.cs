@@ -35,7 +35,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
     public async Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
     {
         // A single target is probed as is: no range is swept (#251).
-        var ranges = target is null ? DiscoveryRanges.Resolve(_settings.Discovery.ProbeCidrs, dashboardHost) : [];
+        var ranges = target is null ? DiscoveryRanges.Swept(_settings.Discovery, dashboardHost) : [];
         var rawSignals = await _probePipeline.DiscoverAsync(target, ranges, ct);
         var identifiedCandidates = _identifier.Identify(rawSignals);
         var result = await EnrichTechnicalDetailsAsync(_formatter.Format(identifiedCandidates), rawSignals, ct);

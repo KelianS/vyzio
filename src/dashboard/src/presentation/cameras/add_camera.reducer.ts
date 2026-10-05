@@ -60,8 +60,9 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         error: null,
       }
 
+    // The previous search's ranges would sit next to this one's failure.
     case 'DISCOVERY_STARTED':
-      return { ...state, discovering: true, message: null, error: null }
+      return { ...state, discovering: true, sweptRanges: null, message: null, error: null }
 
     // Auto-selecting the first result would open a form for a camera nobody looked at yet.
     case 'DISCOVERY_SUCCEEDED':

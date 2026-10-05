@@ -178,7 +178,8 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("camera_likely", candidate.Qualification);
         Assert.Null(candidate.VendorFamily);
         Assert.Contains("http_camera_signature", candidate.QualificationReasons);
-        Assert.Contains("Tapo", candidate.Note);
+        Assert.Equal("Tapo Camera", candidate.DisplayName);
+        Assert.DoesNotContain("Tapo", candidate.Note);
     }
 
     [Fact]
@@ -506,10 +507,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("camera_likely", result[1].Qualification);
     }
 
-    // ADR-32: identification (Stage 1) is only a filter on what to enrich, never a filter on
-    // what gets shown: a host with zero matching protocol/hostname signal must still surface
-    // as device_unknown rather than vanish (this was the actual bug behind "plenty of devices are
-    // still missing, not even shown as unidentified").
+    // Identification filters what to enrich, never what is shown (ADR-32).
     [Fact]
     public async Task DiscoverAsync_ShouldStillShowTheHostAsUnknown_WhenAnIdentifiedHostMatchesNoSignal()
     {

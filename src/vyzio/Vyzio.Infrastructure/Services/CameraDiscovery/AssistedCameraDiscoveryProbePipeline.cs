@@ -18,7 +18,6 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 // this class only ever produces raw, structured facts (RawCameraDiscoverySignal), never a guess.
 internal sealed class AssistedCameraDiscoveryProbePipeline
 {
-    private const int MaxConfiguredProbeHosts = 1024;
 
     private readonly ILogger? _logger;
     private readonly VyzioRuntimeSettings _settings;
@@ -57,8 +56,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             identifiedHosts.Count,
             string.Join(',', identifiedHosts));
 
-        // ADR-32: identification filters what to enrich, never what is shown: every identified host
-        // surfaces at least as device_unknown, and Stage 2 signals for it outrank this baseline.
+        // Every identified host surfaces, at least as device_unknown; Stage 2 signals outrank it (ADR-32).
         var identificationSignals = identifiedHosts
             .Select(host => BuildRawSignal(
                 ToDisplayName(host),
@@ -72,8 +70,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 []))
             .ToList();
 
-        // Stage 2 (ADR-32): the port sweep is the single source of open ports and protocols; the
-        // follow-up probes add a stream path (RTSP), a name and the camera ranking (HTTP, hostname).
+        // Stage 2 (ADR-32): the sweep finds ports and protocols, the probes add a path, a name and a ranking.
         var portScanTask = DiscoverPortScanSignalsAsync(identifiedHosts, ct);
         var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(identifiedHosts, RtspProbePorts, ct);
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(identifiedHosts, HttpProbePorts, ct);
@@ -303,8 +300,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return packet;
     }
 
-    // V380 native (port 8800): the credential-free auth frame (device 0) must come back as a full
-    // 256-byte auth reply (opcode 1168): only V380 firmware answers so, hence it sets the vendor (#274).
+    // Only V380 firmware answers the credential-free auth frame with a full auth reply, hence the vendor (#274).
     private async Task<bool> FingerprintV380Async(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
@@ -493,25 +489,13 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             }
         }
 
-        var sweptHosts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sweptHosts = ranges
+            .SelectMany(DiscoveryRanges.Hosts)
+            .Where(host => !explicitSeen.Contains(host))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        // The dashboard's /24 first: it is the network the user is on, so the cap never cuts it.
-        var ordered = ranges.OrderBy(range => range.Source == DiscoveryRangeSource.DashboardAddress ? 0 : 1);
-        foreach (var host in ordered.SelectMany(DiscoveryRanges.Hosts))
-        {
-            if (explicitSeen.Count + sweptHosts.Count >= MaxConfiguredProbeHosts)
-            {
-                _logger?.LogWarning("Discovery stops at {MaxHosts} hosts: the remaining addresses of the swept ranges are left out.", MaxConfiguredProbeHosts);
-                break;
-            }
-
-            if (!explicitSeen.Contains(host))
-            {
-                sweptHosts.Add(host);
-            }
-        }
-
-        return new ConfiguredHosts(explicitHosts, sweptHosts.ToList());
+        return new ConfiguredHosts(explicitHosts, sweptHosts);
     }
 
     // ADR-32 — Stage 1 (identification): decide which hosts are worth enriching at all, before
@@ -770,20 +754,6 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             .Split(':', 2)[1]
             .Trim();
 
-        if (fingerprint.Contains("tapo") || fingerprint.Contains("tp-link") || fingerprint.Contains("tplink"))
-        {
-            return BuildRawSignal(
-                "Camera TP-Link Tapo",
-                host,
-                port,
-                "web_setup",
-                null,
-                "http_probe",
-                $"Interface web TP-Link Tapo détectée sur {host}:{port}. RTSP et ONVIF sont souvent désactivés d'origine et à activer dans l'application Tapo.",
-                null,
-                ["http_camera_signature"]);
-        }
-
         if (fingerprint.Contains("onvif"))
         {
             return BuildRawSignal(
@@ -887,6 +857,9 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             "axis",
             "icsee",
             "xmeye",
+            "tapo",
+            "tp-link",
+            "tplink",
         };
 
         return markers.Any(marker => combined.Contains(marker, StringComparison.OrdinalIgnoreCase));

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.RegularExpressions;
 using Vyzio.Core.Entities;
+using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
@@ -8,6 +9,13 @@ namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 internal static partial class DiscoveryRanges
 {
     private const int DashboardPrefix = 24;
+
+    // Addresses one discovery tries at most, named hosts included: a /16 would be 65,000 pings.
+    public const int MaxHosts = 1024;
+
+    // What a sweep goes through: the resolved ranges, cut to the addresses the named hosts leave under the cap.
+    public static IReadOnlyList<DiscoveryRange> Swept(VyzioRuntimeSettings.DiscoverySettings settings, string? dashboardHost)
+        => WithinCap(Resolve(settings.ProbeCidrs, dashboardHost), MaxHosts - settings.ProbeHosts.Count);
 
     public static IReadOnlyList<DiscoveryRange> Resolve(IReadOnlyList<string> configuredCidrs, string? dashboardHost)
     {
@@ -42,13 +50,34 @@ internal static partial class DiscoveryRanges
         return $"{ToIPAddress(ToUInt32(address) & mask)}/{DashboardPrefix}";
     }
 
-    // Every host address of the range, network and broadcast left out below a /31.
+    // The ranges as swept under the host cap: the dashboard's /24 first, then cut where the cap falls, so the screen shows only what was tried.
+    public static IReadOnlyList<DiscoveryRange> WithinCap(IReadOnlyList<DiscoveryRange> ranges, int cap)
+    {
+        var swept = new List<DiscoveryRange>();
+        var remaining = (long)Math.Max(cap, 0);
+        foreach (var range in ranges.OrderBy(range => range.Source == DiscoveryRangeSource.DashboardAddress ? 0 : 1))
+        {
+            if (remaining == 0)
+            {
+                break;
+            }
+
+            var first = ToUInt32(IPAddress.Parse(range.FirstAddress));
+            var count = Math.Min((long)ToUInt32(IPAddress.Parse(range.LastAddress)) - first + 1, remaining);
+            swept.Add(range with { LastAddress = ToIPAddress((uint)(first + count - 1)).ToString() });
+            remaining -= count;
+        }
+
+        return swept;
+    }
+
+    // Every address from the range's first to its last.
     public static IEnumerable<string> Hosts(DiscoveryRange range)
     {
-        var span = HostSpan(range.Cidr)!.Value;
-        for (var value = span.Start; value < span.EndExclusive; value++)
+        var last = ToUInt32(IPAddress.Parse(range.LastAddress));
+        for (var value = (ulong)ToUInt32(IPAddress.Parse(range.FirstAddress)); value <= last; value++)
         {
-            yield return ToIPAddress(value).ToString();
+            yield return ToIPAddress((uint)value).ToString();
         }
     }
 

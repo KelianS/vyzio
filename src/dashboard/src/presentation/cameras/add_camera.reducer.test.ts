@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import {
+  DiscoveryRangeSource,
+  type DiscoveredCamera,
+} from '../../domain/entities/discovered_camera.entity'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido } from './add_camera.uido'
 
@@ -105,5 +108,26 @@ describe('addCameraReducer', () => {
     // Assert
     expect(next.verification).toBeNull()
     expect(next.error).toEqual({ message: 'Le flux ne répond pas.' })
+  })
+
+  it('addCameraReducer_ShouldForgetThePreviousRanges_WhenANewSearchStarts', () => {
+    // Arrange
+    const searched = {
+      ...buildInitialAddCameraUido(),
+      sweptRanges: [
+        {
+          cidr: '192.168.1.0/24',
+          firstAddress: '192.168.1.1',
+          lastAddress: '192.168.1.254',
+          source: DiscoveryRangeSource.DashboardAddress,
+        },
+      ],
+    }
+
+    // Act
+    const next = addCameraReducer(searched, { type: 'DISCOVERY_STARTED' })
+
+    // Assert
+    expect(next.sweptRanges).toBeNull()
   })
 })

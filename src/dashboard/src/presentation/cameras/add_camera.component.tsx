@@ -262,11 +262,11 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio ne cherche que dans les adresses
-              qu’il affiche après la recherche, et beaucoup de caméras ne répondent qu’une fois
-              réveillées depuis leur propre application. Prenez alors{' '}
-              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, son port, et le chemin
-              du flux, que l’application de la caméra ou sa notice indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio cherche dans les adresses qu’il
+              affiche après la recherche, et beaucoup de caméras ne répondent qu’une fois réveillées
+              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
+              adresse sur le réseau, son port, et le chemin du flux, que l’application de la caméra
+              ou sa notice indiquent.
             </p>
             <p>
               Si la vérification échoue, ce sont presque toujours l’adresse, le port, le chemin ou
@@ -390,13 +390,20 @@ function CandidateRow({
 }
 
 const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
-  [DiscoveryRangeSource.Configured]: 'réglage de l’installation',
-  [DiscoveryRangeSource.DashboardAddress]: 'réseau depuis lequel vous ouvrez Vyzio',
+  [DiscoveryRangeSource.Configured]: 'plage configurée par défaut',
+  [DiscoveryRangeSource.DashboardAddress]: 'autour de l’adresse utilisée pour ouvrir Vyzio',
 }
 
 /** Where the last search looked, so a camera outside it is known to need its address typed (#251). */
-function SweptRanges({ ranges }: { ranges: DiscoveryRange[] }) {
-  if (ranges.length === 0) return null
+function SweptRanges({ ranges }: { ranges: DiscoveryRange[] | null }) {
+  if (!ranges) return null
+  if (ranges.length === 0)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Aucune adresse n’a été parcourue : ouvrez Vyzio avec son adresse sur votre réseau (par
+        exemple 192.168.1.10), ou saisissez l’adresse de la caméra.
+      </p>
+    )
   return (
     <div className="text-sm text-muted-foreground">
       <p>Adresses parcourues :</p>

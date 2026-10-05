@@ -40,8 +40,8 @@ export interface AddCameraUido {
   form: AddCameraForm
 
   discoveryResults: DiscoveredCamera[]
-  /** The ranges the last search went through, shown so the user knows where it looked (#251). */
-  sweptRanges: DiscoveryRange[]
+  /** The ranges the last search went through, shown so the user knows where it looked; null before any search (#251). */
+  sweptRanges: DiscoveryRange[] | null
   discovering: boolean
   refreshing: boolean
   verifying: boolean
@@ -65,7 +65,7 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     form: emptyCameraDraft,
 
     discoveryResults: [],
-    sweptRanges: [],
+    sweptRanges: null,
     discovering: false,
     refreshing: false,
     verifying: false,

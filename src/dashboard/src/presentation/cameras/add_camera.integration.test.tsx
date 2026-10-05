@@ -274,11 +274,28 @@ describe('AddCameraView', () => {
 
     // Assert
     expect(
-      await screen.findByText('192.168.0.1 à 192.168.0.254 · réglage de l’installation'),
+      await screen.findByText('192.168.0.1 à 192.168.0.254 · plage configurée par défaut'),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('192.168.1.1 à 192.168.1.254 · réseau depuis lequel vous ouvrez Vyzio'),
+      screen.getByText(
+        '192.168.1.1 à 192.168.1.254 · autour de l’adresse utilisée pour ouvrir Vyzio',
+      ),
     ).toBeInTheDocument()
+  })
+
+  it('onDiscover_ShouldSayHowToGetASearch_WhenNoRangeWasSwept', async () => {
+    // Arrange
+    fakeNetwork({ 'POST /api/cameras/discovery': ok({ ranges: [], candidates: [] }) })
+    renderScreen(<AddCameraView />)
+    await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
+
+    // Act
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Rechercher' }),
+    )
+
+    // Assert
+    expect(await screen.findByText(/Aucune adresse n’a été parcourue/)).toBeInTheDocument()
   })
 
   it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {

@@ -1,4 +1,5 @@
 using Vyzio.Core.Entities;
+using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services.CameraDiscovery;
 
 namespace Vyzio.Tests.Services;
@@ -89,6 +90,47 @@ public class DiscoveryRangesTests
 
         // Assert
         Assert.Empty(ranges);
+    }
+
+    [Fact]
+    public void Swept_ShouldAddTheDashboardSubnet_WhenTheDashboardIsOpenedByAPrivateAddress()
+    {
+        // Arrange
+        var settings = new VyzioRuntimeSettings.DiscoverySettings { ProbeCidrs = ["192.168.0.0/24"] };
+
+        // Act
+        var ranges = DiscoveryRanges.Swept(settings, "192.168.1.20");
+
+        // Assert
+        Assert.Contains(ranges, range => range.Cidr == "192.168.1.0/24" && range.Source == DiscoveryRangeSource.DashboardAddress);
+    }
+
+    [Fact]
+    public void Swept_ShouldShowOnlyTheAddressesTried_WhenAConfiguredRangeGoesPastTheCap()
+    {
+        // Arrange
+        var settings = new VyzioRuntimeSettings.DiscoverySettings { ProbeCidrs = ["10.0.0.0/16"], ProbeHosts = ["10.1.0.9"] };
+
+        // Act
+        var ranges = DiscoveryRanges.Swept(settings, null);
+
+        // Assert
+        var range = Assert.Single(ranges);
+        Assert.Equal("10.0.0.1", range.FirstAddress);
+        Assert.Equal("10.0.3.255", range.LastAddress);
+    }
+
+    [Fact]
+    public void WithinCap_ShouldSweepTheDashboardSubnetFirst_WhenTheCapCutsTheRanges()
+    {
+        // Arrange
+        var ranges = DiscoveryRanges.Resolve(["192.168.0.0/24"], "192.168.1.20");
+
+        // Act
+        var swept = DiscoveryRanges.WithinCap(ranges, 254);
+
+        // Assert
+        Assert.Equal(DiscoveryRangeSource.DashboardAddress, Assert.Single(swept).Source);
     }
 
     [Fact]
