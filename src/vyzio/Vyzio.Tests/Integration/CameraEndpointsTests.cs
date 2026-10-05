@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -382,10 +382,10 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Theory]
-    [InlineData("v380_pro")]
-    [InlineData("tplink_tapo")]
-    [InlineData("icsee")]
-    public async Task GetVendorAssistance_ShouldReturnTheVendorSheet_WhenTheAddScreenPicksAVendor(string vendorFamily)
+    [InlineData("v380_pro", "# V380 PRO")]
+    [InlineData("tplink_tapo", "# TP-Link Tapo")]
+    [InlineData("icsee", "# ICSee / XMEye")]
+    public async Task GetVendorAssistance_ShouldReturnTheVendorSheet_WhenTheAddScreenPicksAVendor(string vendorFamily, string heading)
     {
         // Arrange
         using var client = _factory.CreateClient();
@@ -398,7 +398,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var payload = await response.Content.ReadFromJsonAsync<VendorAssistanceResponse>();
         Assert.NotNull(payload);
         Assert.Equal(vendorFamily, payload!.VendorFamily);
-        Assert.False(string.IsNullOrWhiteSpace(payload.Markdown));
+        Assert.StartsWith(heading, payload.Markdown);
     }
 
     [Fact]

@@ -8,19 +8,12 @@ import { ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { PrivacyStrategy, type Camera } from '../../domain/entities/camera.entity'
+import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
-import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
-import { LiveViewNeed } from './live_view_need'
-import { surveillanceEntryOf } from '../../common/camera/camera_status'
-import {
-  OrientationControl,
-  orientationControlOf,
-} from '../../common/orientation/orientation_control'
 import { buildPrivacySettings, STRATEGY_LABEL } from './camera_privacy_settings'
 import { POSITIONS_UNREAD } from './cameras.formatters'
 import { buildCameraPrivacyPresenter } from './camera_privacy.presenter'
@@ -75,15 +68,6 @@ export function CameraPrivacyView() {
             subject={POSITIONS_UNREAD}
           />
         )}
-        {/* Orientation à l'écart needs positions, saved from the live view (SPECS 9.3). */}
-        {draft.values.strategy === PrivacyStrategy.PtzParking &&
-          orientationControlOf(camera) === OrientationControl.Usable && (
-            <SurveillanceFirstNotice
-              cameraId={camera.id}
-              entry={surveillanceEntryOf(camera)}
-              need={LiveViewNeed.ParkingOrientation}
-            />
-          )}
 
         <SettingsSection title="Plages horaires">
           <ScheduleCountLine

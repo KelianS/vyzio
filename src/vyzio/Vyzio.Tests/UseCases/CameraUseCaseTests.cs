@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using NSubstitute;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.UseCases.Cameras;

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;

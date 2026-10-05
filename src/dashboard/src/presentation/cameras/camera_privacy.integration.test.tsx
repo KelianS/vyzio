@@ -220,12 +220,10 @@ describe('CameraPrivacyView', () => {
 
     // Assert
     expect(
-      await screen.findByText(/^Ses positions se règlent une fois son flux vidéo fonctionnel/),
+      await screen.findByText(
+        /^Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion »/,
+      ),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-1/connexion',
-    )
   })
 
   it('render_ShouldPointAtTheHeaderTrigger_WhenAParkingCameraWaitsForTheRestart', async () => {
@@ -240,28 +238,34 @@ describe('CameraPrivacyView', () => {
 
     // Assert
     expect(
-      await screen.findByText('Ses positions se règlent une fois les changements appliqués.'),
+      await screen.findByText(/^Ses positions se règlent .* appliquez les changements, en haut/),
     ).toBeInTheDocument()
+    expect(screen.queryByText(/Enregistrez d’abord ses positions/)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Appliquer les changements' }),
     ).not.toBeInTheDocument()
   })
 
-  it('render_ShouldSayNothingOfThePositions_WhenAnotherStrategyIsChosen', async () => {
+  it('render_ShouldListParkingGreyedWithWhatItWaitsFor_WhenTheCameraIsNotInSurveillanceYet', async () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
-
-    // Act
     renderScreen(<CameraPrivacyView />, {
       ...PRIVACY_TAB,
-      outletContext: { ...ptzCamera, privacyStrategy: 'software_blur', validationState: 'draft' },
+      outletContext: { ...ptzCamera, validationState: 'draft' },
     })
+    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
+
+    // Act
+    await userEvent.keyboard('{ArrowDown}')
 
     // Assert
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
-    expect(screen.queryByText(/^Ses positions se règlent/)).not.toBeInTheDocument()
+    const parking = await screen.findByRole('option', { name: /Orientation à l’écart/ })
+    expect(parking).toHaveAttribute('aria-disabled', 'true')
+    expect(parking).toHaveTextContent(
+      /une fois la caméra en surveillance : appliquez les changements/,
+    )
   })
-
   it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })

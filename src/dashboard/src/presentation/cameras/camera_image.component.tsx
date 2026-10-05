@@ -25,7 +25,6 @@ import {
 import { ReadFailure } from '../../common/components/error_message'
 import { PtzCalibrationSection } from './components/ptz_calibration_section'
 import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
-import { LiveViewNeed } from './live_view_need'
 import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
 import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraImagePresenter } from './camera_image.presenter'
@@ -81,13 +80,7 @@ export function CameraImageView() {
       case OrientationControl.Usable:
         // Positions are saved from the live view, which only a camera in surveillance has (SPECS 9.3).
         if (entry !== SurveillanceEntry.Watched)
-          return (
-            <SurveillanceFirstNotice
-              cameraId={cameraId}
-              entry={entry}
-              need={LiveViewNeed.Positions}
-            />
-          )
+          return <SurveillanceFirstNotice cameraId={cameraId} entry={entry} />
         return (
           <>
             <PtzCalibrationSection
