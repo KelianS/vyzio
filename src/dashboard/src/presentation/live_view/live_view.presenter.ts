@@ -2,6 +2,8 @@ import type { ToastTone } from '../../common/components/toast'
 import { ApiErrorCode, toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
+import type { LiveQuality } from '../../domain/entities/camera.entity'
+import type { LivePlayback } from '../../domain/entities/live_playback.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { LiveViewAction } from './live_view.actions'
 import type { PtzDirection } from './live_view.uido'
@@ -112,6 +114,23 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   }
 
   return {
+    openStream(
+      video: HTMLVideoElement,
+      cameraId: string,
+      quality: LiveQuality,
+      onPlayback: (playback: LivePlayback) => void,
+    ) {
+      return container.openLiveStream.execute(video, cameraId, quality, onPlayback)
+    },
+
+    onChooseQuality(quality: LiveQuality) {
+      dispatch({ type: 'QUALITY_CHOSEN', quality })
+    },
+
+    onToggleSound() {
+      dispatch({ type: 'SOUND_TOGGLED' })
+    },
+
     // Moving to another camera keeps the view mounted: only the latest read may answer.
     onOpen(cameraId: string) {
       const isLatest = nextPresetsRead()

@@ -14,6 +14,7 @@ import { HttpScheduleRepository } from '../repositories/schedule.repository'
 import { HttpSystemRepository } from '../repositories/system.repository'
 import { makeAccessContainer, type AccessContainer } from './access.container'
 import { makeCamerasContainer, type CamerasContainer } from './cameras.container'
+import { MseLiveStream } from '../live/mse_live_stream'
 import {
   makeDetectionHistoryContainer,
   type DetectionHistoryContainer,
@@ -60,6 +61,7 @@ function makeAppContainer(): AppContainer {
       cameraLabelsRepository,
       recordingSettingsRepository,
       new HttpCameraStreamRepository(runtime.apiBaseUrl),
+      new MseLiveStream(runtime.apiBaseUrl),
     ),
     profiles: makeProfilesContainer(profileRepository),
     notifications: makeNotificationsContainer(

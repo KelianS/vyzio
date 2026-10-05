@@ -303,6 +303,8 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux pouvoir utiliser le systeme depuis un navigateur sur telephone ou ordinateur.
 
+> **En tant qu'utilisateur**, je veux voir ce que filme une camera en video fluide, avec le son quand elle en a, pour suivre ce qui se passe au moment ou ca se passe.
+
 > **En tant qu'utilisateur non-technicien**, je veux trouver un reglage sans savoir comment le produit est construit.
 
 > **En tant qu'utilisateur exigeant**, je veux acceder aux reglages fins sans qu'ils encombrent le parcours courant.
@@ -325,6 +327,10 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - **tout reglage doit avoir un emplacement previsible**, deductible du domaine qu'il gouverne, sans que l'utilisateur ait a connaitre l'organisation interne du produit ;
 - l'utilisateur doit savoir **sans explication** si un reglage vaut pour toute l'installation ou pour une seule camera, et retrouver le meme reglage aux deux portees sous la meme forme ;
 - les reglages rares doivent rester **atteignables sans mode a activer** : ils sont mis en profondeur, jamais masques derriere un palier « expert » ;
+- la vue en direct d'une camera montre une **video fluide**, a peu pres une seconde derriere la scene, en qualite economique a l'ouverture ; l'utilisateur passe en haute qualite le temps de la regarder, sans que ce choix soit retenu ni change le reglage de la camera ; une camera qui n'a qu'une qualite n'offre pas ce choix ;
+- le son de la vue en direct est coupe a l'ouverture et s'active d'un geste ; une camera dont le navigateur ne lit pas le son n'offre pas ce geste ;
+- regarder le direct ne doit pas perturber la surveillance de la camera ;
+- si la video ne peut pas etre lue, parce que le navigateur ne la lit pas ou que le flux n'arrive pas, la vue en direct montre une image rafraichie chaque seconde, dit pourquoi en une phrase et propose de reessayer quand la cause peut passer ; en mode vie privee, ou pour une camera qui n'existe plus, elle le dit sans image ; les vignettes restent des images rafraichies ;
 - l'interface doit etre **concue pour le telephone d'abord**, le grand ecran developpant la meme structure ; les actions principales doivent rester faisables sur les deux ;
 - modifier un reglage ne doit produire **aucun effet** tant que l'utilisateur n'a pas valide ; avant de valider, il doit voir **ce qu'il a modifie** et pouvoir **renoncer** ;
 - enregistrer un reglage doit **rendre la main immediatement** et ne jamais interrompre la surveillance de sa propre initiative ;

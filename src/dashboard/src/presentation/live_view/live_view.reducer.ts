@@ -17,6 +17,11 @@ function withActivity(state: LiveViewUido, presetId: number, activity: PresetAct
 
 export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): LiveViewUido {
   switch (action.type) {
+    case 'QUALITY_CHOSEN':
+      return { ...state, quality: action.quality }
+    case 'SOUND_TOGGLED':
+      return { ...state, soundOn: !state.soundOn }
+
     // A retry hides the failure while the camera is asked again, without showing a slot as empty.
     case 'PRESETS_STARTED':
       return { ...state, presets: null, presetsError: null }

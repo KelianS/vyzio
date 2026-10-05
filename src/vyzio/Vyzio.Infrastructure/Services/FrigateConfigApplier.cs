@@ -135,11 +135,7 @@ public sealed class FrigateConfigApplier(
         RecordingSettings installation)
     {
         // A camera whose stream has no protocol yet has nothing to hand to Frigate (ADR-61).
-        var validatedCameras = cameras
-            .Where(camera => camera.IsEnabled)
-            .Where(camera => camera.ValidationState == CameraValidationState.Validated)
-            .Where(camera => camera.StreamBinding is not null)
-            .ToList();
+        var validatedCameras = cameras.Where(camera => camera.InSurveillance).ToList();
 
         var plan = detectorPlanner.Plan(validatedCameras.Count);
         var detectorKind = plan.Kind;
@@ -162,7 +158,7 @@ public sealed class FrigateConfigApplier(
                         Enabled = !camera.PrivacyModeActive,
                         Ffmpeg = new FrigateFfmpegConfig
                         {
-                            Inputs = BuildInputs(camera, frigateKey),
+                            Inputs = BuildInputs(camera),
                         },
                         Detect = new FrigateDetectConfig
                         {
@@ -223,22 +219,20 @@ public sealed class FrigateConfigApplier(
             };
         }
 
-        // Build go2rtc section for DVRIP cameras — go2rtc bridges dvrip:// → rtsp://127.0.0.1:8554/{slug}.
-        // One bridge per stream Frigate consumes, else separate detect and record would share one decoded stream.
-        var dvripStreams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        // One go2rtc stream per stream Frigate or the live view reads holds the camera's only connection for it (ADR-72 a).
+        var streams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var camera in validatedCameras)
         {
-            var frigateKey = camera.FrigateCameraName;
-            foreach (var stream in DistinctRoleStreams(camera).Where(stream => ProtocolOf(camera, stream) == SupportedProtocol.Dvrip))
+            foreach (var stream in DistinctRoleStreams(camera).Concat(camera.LiveStreams).Distinct())
             {
-                dvripStreams[Go2rtcStreamName(frigateKey, stream)] = [BuildDvripUrl(camera, stream)];
+                streams[Go2rtcStreams.Name(camera.FrigateCameraName, stream)] = [Go2rtcStreams.Source(camera, stream)];
             }
         }
 
         // Always written: without candidates, Frigate gives go2rtc a STUN one, which would ask a public server (ADR-70).
         var go2rtc = new FrigateGo2rtcConfig
         {
-            Streams = dvripStreams.Count > 0 ? dvripStreams : null,
+            Streams = streams.Count > 0 ? streams : null,
             Webrtc = new FrigateWebrtcConfig { Candidates = [], IceServers = [] },
         };
 
@@ -324,29 +318,26 @@ public sealed class FrigateConfigApplier(
             : null;
 
     // One input per role, as Frigate requires: one when a stream carries both, two otherwise (ADR-38, ADR-65 g).
-    private static List<FrigateInputConfig> BuildInputs(Camera camera, string frigateKey)
+    private static List<FrigateInputConfig> BuildInputs(Camera camera)
     {
         var recording = camera.RecordStream;
         var detect = camera.DetectStream;
 
         if (recording is null || detect is null || ReferenceEquals(recording, detect) || recording.Id == detect.Id)
         {
-            return
-            [
-                new FrigateInputConfig
-                {
-                    Path = BuildStreamUrl(camera, recording, frigateKey),
-                    Roles = ["detect", "record"],
-                }
-            ];
+            return [Input(camera, recording, ["detect", "record"])];
         }
 
-        return
-        [
-            new FrigateInputConfig { Path = BuildStreamUrl(camera, detect, frigateKey), Roles = ["detect"] },
-            new FrigateInputConfig { Path = BuildStreamUrl(camera, recording, frigateKey), Roles = ["record"] },
-        ];
+        return [Input(camera, detect, ["detect"]), Input(camera, recording, ["record"])];
     }
+
+    // Frigate reads every stream back from go2rtc, never from the camera itself (ADR-72 a).
+    private static FrigateInputConfig Input(Camera camera, CameraStream? stream, List<string> roles) => new()
+    {
+        Path = Go2rtcStreams.Restream(Go2rtcStreams.Name(camera.FrigateCameraName, stream)),
+        InputArgs = "preset-rtsp-restream",
+        Roles = roles,
+    };
 
     // The streams Frigate will actually consume — one when both roles share a stream, two otherwise.
     private static IEnumerable<CameraStream?> DistinctRoleStreams(Camera camera)
@@ -357,72 +348,6 @@ public sealed class FrigateConfigApplier(
         yield return recording;
         if (recording is not null && detect is not null && recording.Id != detect.Id)
             yield return detect;
-    }
-
-    // DVRIP streams reach Frigate through go2rtc, so their name has to stay stable and unique per
-    // role-carrying stream; RTSP streams are addressed directly on the camera.
-    private static string BuildStreamUrl(Camera camera, CameraStream? stream, string frigateKey)
-        => ProtocolOf(camera, stream) == SupportedProtocol.Dvrip
-            ? $"rtsp://127.0.0.1:8554/{Go2rtcStreamName(frigateKey, stream)}"
-            : BuildRtspUrl(camera, stream?.Path);
-
-    // Each input is built from its own stream's protocol (ADR-65 g).
-    private static SupportedProtocol ProtocolOf(Camera camera, CameraStream? stream)
-        => stream?.Protocol ?? camera.StreamBinding!.Protocol;
-
-    // A bridge is named by its stream's rank, stable and unique per camera; the first rank takes the plain camera name.
-    private static string Go2rtcStreamName(string frigateKey, CameraStream? stream)
-        => stream is null or { Ordinal: 0 } ? frigateKey : $"{frigateKey}_{stream.Ordinal}";
-
-    private static string BuildDvripUrl(Camera camera, CameraStream? stream)
-    {
-        var builder = new UriBuilder("dvrip", camera.Host, camera.PortOf(SupportedProtocol.Dvrip));
-        var account = camera.CredentialsFor(SupportedProtocol.Dvrip);
-        if (!string.IsNullOrWhiteSpace(account.Username))
-        {
-            builder.UserName = account.Username;
-            builder.Password = account.Password ?? string.Empty;
-        }
-
-        // The DVRIP sub-stream is selected by query, not by path (`?channel=0&subtype=1`).
-        var path = stream?.Path;
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            builder.Query = path.TrimStart('/', '?');
-        }
-
-        return builder.Uri.ToString();
-    }
-
-    private static string BuildRtspUrl(Camera camera, string? streamPath)
-    {
-        var separatorIndex = streamPath?.IndexOf('?') ?? -1;
-        var builder = new UriBuilder("rtsp", camera.Host, camera.PortOf(SupportedProtocol.Rtsp))
-        {
-            Path = (separatorIndex >= 0 ? streamPath![..separatorIndex] : streamPath)?.TrimStart('/') ?? string.Empty,
-            Query = separatorIndex >= 0 ? streamPath![(separatorIndex + 1)..] : string.Empty,
-        };
-
-        var address = builder.Uri.ToString();
-        var account = camera.CredentialsFor(SupportedProtocol.Rtsp);
-        if (string.IsNullOrWhiteSpace(account.Username)) return address;
-
-        var scheme = $"{builder.Scheme}://";
-        return $"{scheme}{FrigateInputUserInfo(account.Username, account.Password ?? string.Empty)}@{address[scheme.Length..]}";
-    }
-
-    // Frigate URL-encodes a password its pattern recognises, so pre-encoding it would double it (#91).
-    private static string FrigateInputUserInfo(string username, string password)
-    {
-        if (password.Length == 0) return Uri.EscapeDataString(username);
-
-        var frigateEncodesPassword = username.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-')
-            && !password.Any(char.IsWhiteSpace);
-
-        // The input path also goes through Python str.format for {FRIGATE_*} variables.
-        return frigateEncodesPassword
-            ? $"{username}:{password.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal)}"
-            : $"{Uri.EscapeDataString(username)}:{Uri.EscapeDataString(password)}";
     }
 
     private sealed class FrigateDocument
@@ -575,6 +500,7 @@ public sealed class FrigateConfigApplier(
     private sealed class FrigateInputConfig
     {
         public required string Path { get; init; }
+        public string? InputArgs { get; init; }
         public required List<string> Roles { get; init; }
     }
 

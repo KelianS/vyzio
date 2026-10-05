@@ -1,7 +1,10 @@
 import type { AppError } from '../../common/errors/app_error'
+import type { LiveQuality } from '../../domain/entities/camera.entity'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
 
 export type LiveViewAction =
+  | { type: 'QUALITY_CHOSEN'; quality: LiveQuality }
+  | { type: 'SOUND_TOGGLED' }
   | { type: 'PRESETS_STARTED' }
   | {
       type: 'PRESETS_LOADED'

@@ -1,6 +1,8 @@
 # ADR-16 — Accès au flux live : polling latest.jpg via Vyzio, Frigate non exposé
 
-> Statut : Accepté
+> Statut : Accepté, la vue live devient un flux vidéo par
+> [ADR-72](0072-the-live-view-is-a-video-stream-relayed-by-the-api-from-go2rtc.md) ; l'image
+> rafraîchie reste pour les vignettes et comme repli.
 
 ## Contexte
 

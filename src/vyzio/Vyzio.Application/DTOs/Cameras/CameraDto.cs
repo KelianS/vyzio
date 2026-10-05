@@ -26,7 +26,8 @@ public sealed record CameraDto(
     string? PrivacyMissDetail,
     bool PtzSupported,
     string PrivacyStrategy,
-    IReadOnlyList<string> VerifiedCapabilities)
+    IReadOnlyList<string> VerifiedCapabilities,
+    IReadOnlyList<string> LiveQualities)
 {
     public static CameraDto From(Camera camera, IEnumerable<CameraCapabilityBinding>? verifiedBindings = null) => new(
         camera.Id,
@@ -54,5 +55,6 @@ public sealed record CameraDto(
         verifiedBindings?
             .Where(b => b.CameraId == camera.Id)
             .Select(b => SnakeCaseEnum.ToSnakeCase(b.Capability))
-            .ToList() ?? []);
+            .ToList() ?? [],
+        camera.LiveQualities.Select(SnakeCaseEnum.ToSnakeCase).ToList());
 }

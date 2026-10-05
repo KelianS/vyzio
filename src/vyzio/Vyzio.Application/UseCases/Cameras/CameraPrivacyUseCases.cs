@@ -15,6 +15,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
     IFrigateConfigApplier frigateConfig,
     IPtzPresetRepository presets,
     PtzManagedPositions positions,
+    ILiveStreamRelay live,
     ILogger<ToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
@@ -32,6 +33,8 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, CancellationToken.None);
+        // Once saved, so no new live view opens behind the cut; the open ones stop now, not at Frigate's restart (ADR-72 b).
+        if (active) live.Cut(camera.Id);
 
         var allCameras = await cameras.GetAllAsync(CancellationToken.None);
         await frigateConfig.ApplyAsync(allCameras, CancellationToken.None);
@@ -47,6 +50,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     IFrigateConfigApplier frigateConfig,
     IPtzPresetRepository presets,
     PtzManagedPositions positions,
+    ILiveStreamRelay live,
     ILogger<BatchToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
@@ -71,6 +75,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
 
                 camera.UpdatedAt = DateTimeOffset.UtcNow;
                 await cameras.UpdateAsync(camera, CancellationToken.None);
+                if (active) live.Cut(camera.Id);
                 updated.Add(CameraDto.From(camera));
             }
         }
