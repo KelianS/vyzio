@@ -1,5 +1,6 @@
 import { test, expect, type Locator } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
+import { fullPageScreenshot } from './fixtures/full_page_screenshot'
 
 /**
  * The WCAG contrast ratio between an element and the background it covers - the only
@@ -78,7 +79,7 @@ test.describe('Base styles', () => {
       .evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
     expect(cardRadius).toBe('24px')
 
-    await page.screenshot({ path: 'test-results/socle-hub.png', fullPage: true })
+    await fullPageScreenshot(page, { path: 'test-results/socle-hub.png' })
 
     // A status pill has to read. The old ones painted their text light for a dark
     // panel: laid on a light surface, they became invisible - and `toBeVisible()`
@@ -97,6 +98,6 @@ test.describe('Base styles', () => {
         .or(page.getByRole('heading', { name: 'Frigate inaccessible' }))
         .first(),
     ).toBeVisible()
-    await page.screenshot({ path: 'test-results/socle-parametres.png', fullPage: true })
+    await fullPageScreenshot(page, { path: 'test-results/socle-parametres.png' })
   })
 })
