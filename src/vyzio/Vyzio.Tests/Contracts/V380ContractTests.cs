@@ -60,6 +60,7 @@ public sealed class V380ContractTests
 
         // Assert
         Assert.Equal(VendorFamily.V380Pro, candidate.VendorFamily);
+        Assert.Contains("# V380 PRO", candidate.VendorDocumentation!.Markdown, StringComparison.Ordinal);
     }
 
     [Theory]

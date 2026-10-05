@@ -424,7 +424,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Contains("hostname_camera_hint", candidate.QualificationReasons);
     }
 
-    private static string FindRepoPath(params string[] parts)
+    internal static string FindRepoPath(params string[] parts)
     {
         var segments = new[] { AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".." }
             .Concat(parts)
