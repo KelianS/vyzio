@@ -11,3 +11,4 @@ architecture.
 | 2026-09-25 | While privacy mode is on, an ONVIF PTZ command gets a malformed HTTP answer, not a SOAP fault |
 | 2026-09-25 | After 10 failed logins, the account cools down for about 25 minutes |
 | 2026-09-25 | KLAP takes the Tapo cloud account; RTSP and ONVIF take the camera's local account |
+| 2026-09-02 | `nmap` finds TCP 80 closed and 443 open; `/app/handshake1` on 443 answers `{"error_code":-40210}`, not the binary KLAP handshake of Tapo plugs (#88) |

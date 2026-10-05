@@ -8,6 +8,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.VendorAdapters;
+using Vyzio.Tests.Contracts;
 
 namespace Vyzio.Tests.Services;
 
@@ -285,7 +286,11 @@ public class OnvifPtzProviderTests
         Assert.Contains($"y=\"{expectedTilt}\"", moveBody);
     }
 
-    private static OnvifPtzProvider MakeProviderFor(FakeOnvifPtzCamera camera, TimeProvider? time = null)
+    // A Tapo C200 as captured, found at the address MakeCamera already carries.
+    private static FakeOnvifCamera TapoC200(params string[] scenarios)
+        => FakeOnvifCamera.Replaying(CapturedVariant.TapoC200, [OnvifScenario.GetServices, .. scenarios]);
+
+    private static OnvifPtzProvider MakeProviderFor(FakeOnvifCamera camera, TimeProvider? time = null)
     {
         var clock = time ?? TimeProvider.System;
         var factory = Substitute.For<IHttpClientFactory>();
@@ -300,7 +305,7 @@ public class OnvifPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml) { Clock = time, HoldsMoveAnswers = true };
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithoutPtzXml, FakeOnvifCamera.PtzOptionsXml) { Clock = time, HoldsMoveAnswers = true };
         await using var motion = await MakeProviderFor(camera, time).OpenMotionAsync(MakeCamera(), MakeBinding());
         var step = motion.MoveForAsync(PtzDirection.Left, 10, ShortMove);
         var moved = await camera.NextArrivalAsync("ContinuousMove").WaitAsync(TimeSpan.FromSeconds(10));
@@ -320,7 +325,7 @@ public class OnvifPtzProviderTests
     {
         // Arrange
         var time = new FakeTimeProvider();
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml) { Clock = time, HoldsMoveAnswers = true };
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithoutPtzXml, FakeOnvifCamera.PtzOptionsXml) { Clock = time, HoldsMoveAnswers = true };
         await using var motion = await MakeProviderFor(camera, time).OpenMotionAsync(MakeCamera(), MakeBinding());
         var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var start = motion.StartAsync(PtzDirection.Left, 10, released.Task);
@@ -343,7 +348,7 @@ public class OnvifPtzProviderTests
     public async Task StoppedAsync_ShouldCountEveryRelativeMoveOfTheHold_WhenThePtzOptionsOfferRelativeMove()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsWithRelativeMoveXml);
+        var camera = TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions);
         await using var motion = await MakeProviderFor(camera).OpenMotionAsync(MakeCamera(), MakeBinding());
         var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Assert.True(await motion.StartAsync(PtzDirection.Left, 10, released.Task));
@@ -358,25 +363,10 @@ public class OnvifPtzProviderTests
     }
 
     [Fact]
-    public async Task ProveAsync_ShouldProvePtz_WhenTheProfileDescribesAPtzConfiguration()
-    {
-        // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml);
-        var provider = MakeProviderFor(camera);
-
-        // Act
-        var result = await provider.ProveAsync(MakeCamera(), MakeBinding());
-
-        // Assert
-        Assert.Equal(ProofOutcome.Proven, result.Outcome);
-        Assert.Contains(camera.Bodies, body => body.Contains("<ConfigurationToken>ptz_cfg_1</ConfigurationToken>", StringComparison.Ordinal));
-    }
-
-    [Fact]
     public async Task ProveAsync_ShouldFindPtzMissingWithoutGuessingAToken_WhenTheCameraAnswersOnvifWithoutAPtzConfiguration()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml);
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithoutPtzXml, FakeOnvifCamera.PtzOptionsXml);
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -391,7 +381,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldFindPtzMissingWithoutAskingPtzOptions_WhenTheCameraListsNoProfile()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera("<s:Envelope/>", FakeOnvifPtzCamera.PtzOptionsXml);
+        var camera = new FakeOnvifCamera("<s:Envelope/>", FakeOnvifCamera.PtzOptionsXml);
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -406,7 +396,7 @@ public class OnvifPtzProviderTests
     public async Task MoveForAsync_ShouldMoveThenStopWithoutAskingPtzOptions_WhenTheProfileCarriesNoPtzConfiguration()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithoutPtzXml, FakeOnvifPtzCamera.PtzOptionsXml);
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithoutPtzXml, FakeOnvifCamera.PtzOptionsXml);
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -423,7 +413,7 @@ public class OnvifPtzProviderTests
     public async Task MoveForAsync_ShouldSendARelativeMoveOnly_WhenThePtzOptionsOfferRelativeMove()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsWithRelativeMoveXml);
+        var camera = TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions);
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -440,7 +430,7 @@ public class OnvifPtzProviderTests
     public async Task MoveForAsync_ShouldMoveThenStop_WhenTheCameraRefusesThePtzConfigurationOptions()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, configurationOptions: null);
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithPtzXml, configurationOptions: null);
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -456,7 +446,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldFailTheCheck_WhenTheCameraRefusesThePtzConfigurationOptions()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, configurationOptions: null);
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithPtzXml, configurationOptions: null);
         var provider = MakeProviderFor(camera);
 
         // Act & Assert
@@ -467,7 +457,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldFindPtzMissing_WhenTheOptionsAnswerDescribesNoPtz()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, "<s:Envelope/>");
+        var camera = new FakeOnvifCamera(FakeOnvifCamera.ProfileWithPtzXml, "<s:Envelope/>");
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -481,7 +471,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldNeverMoveTheCamera_WhenItVerifiesPtz()
     {
         // Arrange
-        var camera = new FakeOnvifPtzCamera(FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml, FakeOnvifPtzCamera.OnePresetXml);
+        var camera = TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets);
         var provider = MakeProviderFor(camera);
 
         // Act
@@ -497,8 +487,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldKeepThePanSwap_WhenItRecordsNativePresets()
     {
         // Arrange
-        var provider = MakeProviderFor(new FakeOnvifPtzCamera(
-            FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml, FakeOnvifPtzCamera.OnePresetXml));
+        var provider = MakeProviderFor(TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets));
         var binding = MakeBinding();
         binding.ConfigJson = """{"pan_inverted":true}""";
 
@@ -514,8 +503,7 @@ public class OnvifPtzProviderTests
     public async Task ProveAsync_ShouldWriteAFreshConfig_WhenTheStoredOneIsUnreadable()
     {
         // Arrange
-        var provider = MakeProviderFor(new FakeOnvifPtzCamera(
-            FakeOnvifPtzCamera.ProfileWithPtzXml, FakeOnvifPtzCamera.PtzOptionsXml, FakeOnvifPtzCamera.OnePresetXml));
+        var provider = MakeProviderFor(TapoC200(OnvifScenario.GetProfiles, OnvifScenario.PtzGetConfigurationOptions, OnvifScenario.PtzGetPresets));
         var binding = MakeBinding();
         binding.ConfigJson = "not json";
 
