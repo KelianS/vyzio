@@ -8,7 +8,7 @@ import { ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
+import { PrivacyStrategy, type Camera } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpPanel } from '../../common/components/help_panel'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
@@ -76,13 +76,14 @@ export function CameraPrivacyView() {
           />
         )}
         {/* Orientation à l'écart needs positions, saved from the live view (SPECS 9.3). */}
-        {orientationControlOf(camera) === OrientationControl.Usable && (
-          <SurveillanceFirstNotice
-            cameraId={camera.id}
-            entry={surveillanceEntryOf(camera)}
-            need={LiveViewNeed.ParkingOrientation}
-          />
-        )}
+        {draft.values.strategy === PrivacyStrategy.PtzParking &&
+          orientationControlOf(camera) === OrientationControl.Usable && (
+            <SurveillanceFirstNotice
+              cameraId={camera.id}
+              entry={surveillanceEntryOf(camera)}
+              need={LiveViewNeed.ParkingOrientation}
+            />
+          )}
 
         <SettingsSection title="Plages horaires">
           <ScheduleCountLine
