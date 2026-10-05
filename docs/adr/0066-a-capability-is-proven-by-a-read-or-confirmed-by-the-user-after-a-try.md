@@ -11,7 +11,7 @@
 > [ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)
 > on what `Verified` records (only a probe's result), and
 > [ADR-28](0028-cascading-multi-protocol-capability-detection-and-the-manuallyconfigured-flag.md) on
-> what the cascade keeps (the first candidate that verifies).
+> what the cascade keeps (the first candidate, in priority order, that proves it or leaves it to confirm).
 
 ## Context
 
