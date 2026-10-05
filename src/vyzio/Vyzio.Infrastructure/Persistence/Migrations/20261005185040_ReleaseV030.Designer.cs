@@ -11,8 +11,8 @@ using Vyzio.Infrastructure.Persistence;
 namespace Vyzio.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VyzioDbContext))]
-    [Migration("20261005174405_NativePresetsLiveInTheCamera")]
-    partial class NativePresetsLiveInTheCamera
+    [Migration("20261005185040_ReleaseV030")]
+    partial class ReleaseV030
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -195,10 +195,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("validation_state");
-
-                    b.Property<string>("VendorFamily")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("vendor_family");
 
                     b.HasKey("Id")
                         .HasName("pk_cameras");
