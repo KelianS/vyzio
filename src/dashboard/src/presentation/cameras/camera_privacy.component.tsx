@@ -15,12 +15,12 @@ import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
 import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
+import { LiveViewNeed } from './live_view_need'
 import { surveillanceEntryOf } from '../../common/camera/camera_status'
 import {
   OrientationControl,
   orientationControlOf,
 } from '../../common/orientation/orientation_control'
-import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { buildPrivacySettings, STRATEGY_LABEL } from './camera_privacy_settings'
 import { POSITIONS_UNREAD } from './cameras.formatters'
 import { buildCameraPrivacyPresenter } from './camera_privacy.presenter'
@@ -80,7 +80,7 @@ export function CameraPrivacyView() {
           <SurveillanceFirstNotice
             cameraId={camera.id}
             entry={surveillanceEntryOf(camera)}
-            restartTrigger={<RestartSurveillanceTrigger />}
+            need={LiveViewNeed.ParkingOrientation}
           />
         )}
 

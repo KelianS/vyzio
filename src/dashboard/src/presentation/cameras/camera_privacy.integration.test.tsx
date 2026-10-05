@@ -223,6 +223,27 @@ describe('CameraPrivacyView', () => {
     )
   })
 
+  it('render_ShouldPointAtTheHeaderTrigger_WhenAParkingCameraWaitsForTheRestart', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, {
+      ...PRIVACY_TAB,
+      outletContext: { ...ptzCamera, validationState: 'draft' },
+    })
+
+    // Assert
+    expect(
+      await screen.findByText(
+        /^Les positions de l’orientation à l’écart se règlent depuis la vue live.*appliquez les changements, en haut de l’écran/,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Appliquer les changements' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })

@@ -25,8 +25,8 @@ import {
 import { ReadFailure } from '../../common/components/error_message'
 import { PtzCalibrationSection } from './components/ptz_calibration_section'
 import { SurveillanceFirstNotice } from './components/surveillance_first_notice'
+import { LiveViewNeed } from './live_view_need'
 import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
-import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraImagePresenter } from './camera_image.presenter'
 import { cameraImageReducer } from './camera_image.reducer'
@@ -85,7 +85,7 @@ export function CameraImageView() {
             <SurveillanceFirstNotice
               cameraId={cameraId}
               entry={entry}
-              restartTrigger={<RestartSurveillanceTrigger />}
+              need={LiveViewNeed.Positions}
             />
           )
         return (

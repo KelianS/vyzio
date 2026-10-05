@@ -434,7 +434,7 @@ describe('CameraImageView', () => {
     expect(screen.getByRole('dialog', { name: /^Pilotage/ })).toBeInTheDocument()
   })
 
-  it('render_ShouldSaySurveillanceMustStartFirstWithTheTrigger_WhenTheCameraIsNotInSurveillanceYet', async () => {
+  it('render_ShouldPointAtTheHeaderTrigger_WhenTheCameraIsNotInSurveillanceYet', async () => {
     // Arrange
     fakeNetwork({ [PRESETS]: presetsRead(null), 'GET /api/system/stats': PENDING_STATS })
     renderScreen(<CameraImageView />, imageTab({ ...ptzCamera, validationState: 'draft' }))
@@ -445,10 +445,12 @@ describe('CameraImageView', () => {
     // Assert
     expect(
       await screen.findByText(
-        /s’ouvre une fois la caméra en surveillance : appliquez les changements/,
+        /s’ouvre une fois la caméra en surveillance : appliquez les changements, en haut de l’écran/,
       ),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Appliquer les changements' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Appliquer les changements' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
   })
 })
