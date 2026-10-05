@@ -88,8 +88,8 @@ public sealed class Go2rtcLiveStreamRelayTests : IAsyncDisposable
     }
 
     [Theory]
-    [InlineData(LiveQuality.Low, "ws://frigate:5000/live/mse/api/ws?src=front_door_1")]
-    [InlineData(LiveQuality.High, "ws://frigate:5000/live/mse/api/ws?src=front_door")]
+    [InlineData(LiveQuality.Low, "ws://frigate:5000/live/mse/api/ws?src=front_door_1")] // nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket -- Frigate's internal port, inside the Docker network
+    [InlineData(LiveQuality.High, "ws://frigate:5000/live/mse/api/ws?src=front_door")] // nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket -- Frigate's internal port, inside the Docker network
     public async Task RelayAsync_ShouldAskGo2rtcForTheQualitysStream_WhenTheViewerOpens(LiveQuality quality, string expected)
     {
         // Arrange

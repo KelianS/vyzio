@@ -37,7 +37,7 @@ describe('liveStreamUrl', () => {
     {
       base: '',
       page: 'http://hub.lan:8080/',
-      expected: 'ws://hub.lan:8080/api/cameras/cam%201/live/ws?quality=low',
+      expected: 'ws://hub.lan:8080/api/cameras/cam%201/live/ws?quality=low', // nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket -- the home network is plain HTTP (ADR-67)
     },
     {
       base: '',
@@ -47,7 +47,7 @@ describe('liveStreamUrl', () => {
     {
       base: 'http://api:8443',
       page: 'http://hub.lan/',
-      expected: 'ws://api:8443/api/cameras/cam%201/live/ws?quality=low',
+      expected: 'ws://api:8443/api/cameras/cam%201/live/ws?quality=low', // nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket -- the home network is plain HTTP (ADR-67)
     },
   ])(
     'liveStreamUrl_ShouldPointAtTheCamerasSocket_WhenThePageIs $page',
@@ -156,7 +156,7 @@ describe('MseLiveStream', () => {
     socket?.open()
 
     // Assert
-    expect(socket?.url).toBe('ws://hub.lan/api/cameras/cam1/live/ws?quality=low')
+    expect(socket?.url).toBe('ws://hub.lan/api/cameras/cam1/live/ws?quality=low') // nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket -- the home network is plain HTTP (ADR-67)
     expect(socket?.binaryType).toBe('arraybuffer')
     expect(JSON.parse(socket?.sent[0] ?? '')).toEqual({
       type: 'mse',
