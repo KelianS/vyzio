@@ -8,6 +8,7 @@ import {
   makeStreamLineup,
 } from '../../testing/camera_stream_fixture'
 import { CapabilityStatus } from '../../domain/entities/camera_capability_binding.entity'
+import { DetectionOutcome } from './detection_outcome'
 import { cameraConnectionReducer } from './camera_connection.reducer'
 import {
   buildInitialCameraConnectionUido,
@@ -276,13 +277,39 @@ describe('cameraConnectionReducer', () => {
   it('cameraConnectionReducer_ShouldRememberDetectionRan_WhenItSucceeds', () => {
     // Arrange
     const state = buildInitialCameraConnectionUido()
+    const result = { outcome: DetectionOutcome.NothingAnswers, diagnostic: 'RTSP : timeout' }
 
     // Act
-    const next = cameraConnectionReducer(state, { type: 'DETECT_SUCCEEDED' })
+    const next = cameraConnectionReducer(state, { type: 'DETECT_SUCCEEDED', result })
 
     // Assert
     expect(next.detected).toBe(true)
+    expect(next.detection).toEqual(result)
   })
+
+  it.each([
+    { type: 'DETECT_STARTED' },
+    { type: 'VERIFY_STARTED' },
+    { type: 'SAVE_STARTED' },
+    { type: 'TASK_STARTED', capability: 'stream', task: 'configure' },
+    { type: 'PROTOCOL_CHECK_STARTED', protocol: 'rtsp' },
+    { type: 'PROTOCOL_SEARCH_STARTED' },
+  ] as const)(
+    'cameraConnectionReducer_ShouldDropTheLastDetectionResult_WhenTheConnectionIsActedOnAgain ($type)',
+    (action) => {
+      // Arrange
+      const state = {
+        ...buildInitialCameraConnectionUido(),
+        detection: { outcome: DetectionOutcome.NothingAnswers, diagnostic: null },
+      }
+
+      // Act
+      const next = cameraConnectionReducer(state, action)
+
+      // Assert
+      expect(next.detection).toBeNull()
+    },
+  )
 
   it('cameraConnectionReducer_ShouldNotClaimDetectionRan_WhenItOnlyFinishes', () => {
     // Arrange

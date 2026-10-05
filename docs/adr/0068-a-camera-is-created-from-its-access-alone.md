@@ -61,16 +61,17 @@ they start. Detection binds the stream as ADR-61 b) already does for a camera wi
 leaves the stream unchosen because the camera answers over RTSP without listing its streams, the
 stream card asks for the path (ADR-65 e).
 
-**d) "To set up" is a camera state.** A camera whose stream never worked reads as to be set up,
-wherever its status shows: the camera list, its page header, and the hub, where its tile leads to its
+**d) "To set up" is a camera state.** A camera reads as to be set up until it enters surveillance:
+while its stream never worked, and while its stream works but the restart has not taken it in yet.
+It reads so wherever its status shows: the camera list, its page header, and the hub, where its tile leads to its
 page and attempts no image. It enters the generated configuration once its stream works, and
 surveillance through the restart trigger, which concerns it only from then on. The settings that need no stream
 (detection, retention, privacy) are saved meanwhile and applied when it enters surveillance.
 
-The state lasts only until the stream first works, and while it lasts it is the camera's status:
-offline or a configuration error mean nothing before a first success. It never comes back: once the
-stream has worked, a later failure, a change of stream protocol included, reads as the usual offline
-or error states, since what was added is trusted. Until then the camera is a target like any other
+Before the stream first works, the state is the camera's only status: offline or a configuration
+error mean nothing before a first success. It never comes back once the camera is in surveillance,
+and once the stream has worked, a later failure, a change of stream protocol included, reads as the usual offline
+or error states, since what was added is trusted. Until it enters surveillance the camera is a target like any other
 for schedules and the cameras a person's notifications are filtered by, which take effect once it
 enters surveillance; it has no live view, and the history has nothing for it.
 

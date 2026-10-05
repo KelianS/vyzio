@@ -72,6 +72,9 @@ public class Camera
 
     public DateTimeOffset? LastSuccessfulFrameAt { get; set; }
 
+    // When detection last ran; null tells the page to run it on arrival (ADR-68 b).
+    public DateTimeOffset? DetectedAt { get; set; }
+
     // The key this camera answers to in Frigate. Set at onboarding and on every rename, never null:
     // Frigate keys refuse dashes, so it is never the slug itself.
     [Required, MaxLength(200)]

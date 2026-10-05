@@ -28,6 +28,21 @@ describe('CamerasView', () => {
     expect(screen.getByRole('link', { name: 'Ajouter une caméra' })).toBeInTheDocument()
   })
 
+  it.each([LIST, OPEN_CAMERA])(
+    'render_ShouldSayItIsToSetUp_WhenTheCameraStreamNeverWorked ($url)',
+    async (address) => {
+      // Arrange
+      fakeNetwork({ 'GET /api/cameras': ok([makeCamera({ status: 'to_set_up' })]) })
+      renderScreen(<CamerasView />, address)
+
+      // Act
+      await readTheCameraList()
+
+      // Assert
+      expect(screen.getByText('À configurer')).toBeInTheDocument()
+    },
+  )
+
   it('render_ShouldSayThereIsNoCameraYet_WhenTheListIsEmpty', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([]) })

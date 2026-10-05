@@ -2,12 +2,9 @@ import type { ToastTone } from '../../common/components/toast'
 import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
-import type { CameraDraftInput } from '../../domain/entities/camera_draft_input.entity'
 import type { AddCameraForm } from './add_camera.uido'
 import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
-import type { HubContainer } from '../../infrastructure/providers/hub.container'
-import { refreshSurveillance } from '../surveillance/surveillance_refresh'
 import { reloadCameraList } from './camera_list_reload'
 import type { AddCameraAction } from './add_camera.actions'
 
@@ -17,32 +14,13 @@ function failureOf(e: unknown): { message: string; diagnostic?: string } {
   return { message: appErrorMessage(error), diagnostic: appErrorDiagnostic(error) }
 }
 
-/** The form as the camera is born: its access, and its stream over the protocol the form chose (ADR-61). */
-function draftOf(form: AddCameraForm): CameraDraftInput {
-  return {
-    displayName: form.displayName,
-    host: form.host,
-    username: form.username,
-    password: form.password,
-    vendorFamily: form.vendorFamily,
-    sourceType: form.sourceType,
-    stream: { protocol: form.streamProtocol, port: form.port, path: form.streamPath },
-  }
-}
-
 export interface AddCameraPresenterContext {
   container: CamerasContainer
-  hubContainer: HubContainer
   dispatch: (action: AddCameraAction) => void
   toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
 
-export function buildAddCameraPresenter({
-  container,
-  hubContainer,
-  dispatch,
-  toast,
-}: AddCameraPresenterContext) {
+export function buildAddCameraPresenter({ container, dispatch, toast }: AddCameraPresenterContext) {
   // Only the latest request may answer: an earlier one would show another brand's notice.
   const nextVendorRequest = latestOnly()
 
@@ -110,45 +88,14 @@ export function buildAddCameraPresenter({
       }
     },
 
-    async onVerifyDraft(form: AddCameraForm): Promise<void> {
-      dispatch({ type: 'VERIFY_DRAFT_STARTED' })
-      try {
-        const status = await container.verifyDraftCamera.execute(draftOf(form))
-        dispatch({
-          type: 'VERIFY_DRAFT_SUCCEEDED',
-          connected: status.connected,
-          guidance: status.guidance,
-          message: status.connected
-            ? (status.guidance ?? 'Caméra joignable. Vous pouvez l’ajouter.')
-            : (status.guidance ?? 'Caméra injoignable — vérifiez ces informations.'),
-        })
-      } catch (e) {
-        dispatch({ type: 'VERIFY_DRAFT_FAILED', ...failureOf(e) })
-      }
-    },
-
-    /** Returns the created camera's id so the screen can open it, or `null` on failure. */
-    async onCreate(
-      checkedOnceAdded: boolean,
-      verified: boolean,
-      form: AddCameraForm,
-    ): Promise<string | null> {
-      if (!checkedOnceAdded && !verified) {
-        dispatch({
-          type: 'CREATE_FAILED',
-          message: 'Vérifiez la connexion avant d’ajouter la caméra.',
-        })
-        return null
-      }
+    /** Creates the camera from its access alone; returns its id so the screen opens its page, or `null` on failure (ADR-68 a). */
+    async onCreate(form: AddCameraForm): Promise<string | null> {
       dispatch({ type: 'CREATE_STARTED' })
       try {
-        const created = await container.createCamera.execute(draftOf(form))
-        // Post-create verification confirms the camera as the server saved it.
-        const status = await container.verifyCamera.execute(created.id)
+        const created = await container.createCamera.execute(form)
         reloadCameraList(container)
-        refreshSurveillance(hubContainer)
         dispatch({ type: 'CREATE_SUCCEEDED' })
-        toast(status.guidance ?? `« ${created.displayName} » ajoutée.`, 'success')
+        toast(`« ${created.displayName} » ajoutée.`, 'success')
         return created.id
       } catch (e) {
         dispatch({ type: 'CREATE_FAILED', ...failureOf(e) })
@@ -156,15 +103,15 @@ export function buildAddCameraPresenter({
       }
     },
 
+    onHelpVendorChosen(vendorFamily: string | null) {
+      dispatch({ type: 'HELP_VENDOR_CHOSEN', vendorFamily })
+    },
+
     onConfirmScanSet(value: boolean) {
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
     },
 
-    async onVendorAssistanceNeeded(
-      vendorFamily: string | null,
-      streamPath: string | null,
-      connected: boolean,
-    ): Promise<void> {
+    async onVendorAssistanceNeeded(vendorFamily: string | null): Promise<void> {
       const isLatest = nextVendorRequest()
       if (!vendorFamily) {
         dispatch({ type: 'VENDOR_ASSISTANCE_CLEARED' })
@@ -172,11 +119,7 @@ export function buildAddCameraPresenter({
       }
       dispatch({ type: 'VENDOR_ASSISTANCE_STARTED' })
       try {
-        const assistance = await container.getVendorAssistance.execute({
-          vendorFamily,
-          streamPath,
-          connected,
-        })
+        const assistance = await container.getVendorAssistance.execute({ vendorFamily })
         if (isLatest()) {
           dispatch({ type: 'VENDOR_ASSISTANCE_SUCCEEDED', markdown: assistance?.markdown ?? null })
         }

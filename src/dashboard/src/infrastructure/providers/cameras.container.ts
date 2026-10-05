@@ -44,7 +44,6 @@ import { SetPrivacyStrategy } from '../../domain/usecases/set_privacy_strategy.u
 import { ToggleCameraPrivacyMode } from '../../domain/usecases/toggle_camera_privacy_mode.use_case'
 import { UpdateCamera } from '../../domain/usecases/update_camera.use_case'
 import { VerifyCamera } from '../../domain/usecases/verify_camera.use_case'
-import { VerifyDraftCamera } from '../../domain/usecases/verify_draft_camera.use_case'
 import type { CameraRepository } from '../../domain/ports/camera.port'
 import type { ProfileRepository } from '../../domain/ports/profile.port'
 import type { DetectionLabelsRepository } from '../../domain/usecases/get_detection_labels.use_case'
@@ -57,7 +56,6 @@ export interface CamerasContainer {
   getVendorAssistance: GetVendorAssistance
   createCamera: CreateCamera
   updateCamera: UpdateCamera
-  verifyDraftCamera: VerifyDraftCamera
   verifyCamera: VerifyCamera
   restartSurveillance: RestartSurveillance
   deleteCamera: DeleteCamera
@@ -114,7 +112,6 @@ export function makeCamerasContainer(
     getVendorAssistance: new GetVendorAssistance(cameraRepository),
     createCamera: new CreateCamera(cameraRepository),
     updateCamera: new UpdateCamera(cameraRepository),
-    verifyDraftCamera: new VerifyDraftCamera(cameraRepository),
     verifyCamera: new VerifyCamera(cameraRepository),
     restartSurveillance: new RestartSurveillance(cameraRepository),
     deleteCamera: new DeleteCamera(cameraRepository),

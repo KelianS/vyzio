@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router'
-import { TriangleAlert, WifiOff } from 'lucide-react'
+import { ChevronRight, TriangleAlert, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
 import { privacyBadge, privacyMissLabel } from '../privacy/privacy_status'
 import { PrivacyStateIcon } from '../privacy/privacy_state_icon'
 import { cn } from '../ui/utils'
 import { liveFrameUrl, liveWaitMessage } from './live_frame'
 import { LiveWaitVeil } from './live_wait_veil'
+import {
+  SurveillanceEntry,
+  formatCameraStatusLabel,
+  surveillanceEntryOf,
+} from '../camera/camera_status'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
 
@@ -32,7 +37,10 @@ export function CameraLiveThumbnail({
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
-  const expandable = Boolean(onExpand) && !camera.privacyModeActive
+  // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-68 d).
+  const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
+  const polling = !camera.privacyModeActive && camera.connected && !unwatched
+  const expandable = Boolean(onExpand) && !camera.privacyModeActive && !unwatched
 
   // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
   const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
@@ -43,7 +51,7 @@ export function CameraLiveThumbnail({
   }
 
   useEffect(() => {
-    if (!camera.privacyModeActive && camera.connected) {
+    if (polling) {
       intervalRef.current = setInterval(() => {
         setImgSrc(liveFrameUrl(apiBaseUrl, camera.id))
       }, 1000)
@@ -52,7 +60,7 @@ export function CameraLiveThumbnail({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [camera.id, camera.privacyModeActive, camera.connected, apiBaseUrl])
+  }, [camera.id, polling, apiBaseUrl])
 
   const waitMessage = liveWaitMessage(frigateStatus, imageError)
   const privacy = privacyBadge(camera)
@@ -87,6 +95,15 @@ export function CameraLiveThumbnail({
             <PrivacyStateIcon kind={privacy.kind} className="size-5" />
             <span className="text-sm font-medium">{privacy.text}</span>
           </div>
+        ) : unwatched ? (
+          <Link
+            to={`/settings/cameras/${camera.id}`}
+            aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
+            className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+          >
+            {formatCameraStatusLabel(camera)}
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
         ) : deviceOffline ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
             <WifiOff className="size-4" aria-hidden="true" />
@@ -114,7 +131,9 @@ export function CameraLiveThumbnail({
         <span
           className={cn(
             'size-2 shrink-0 rounded-full',
-            camera.privacyModeActive || deviceOffline ? 'bg-muted-foreground/40' : 'bg-success',
+            camera.privacyModeActive || deviceOffline || unwatched
+              ? 'bg-muted-foreground/40'
+              : 'bg-success',
           )}
           aria-hidden="true"
         />

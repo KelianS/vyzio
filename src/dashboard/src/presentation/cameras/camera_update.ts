@@ -1,5 +1,5 @@
 import type { Camera } from '../../domain/entities/camera.entity'
-import type { CameraUpdateInput } from '../../domain/entities/camera_draft_input.entity'
+import type { CameraUpdateInput } from '../../domain/entities/camera_input.entity'
 
 /** The whole camera as an update expects it, with the fields a screen edits laid over. */
 export function cameraUpdate(

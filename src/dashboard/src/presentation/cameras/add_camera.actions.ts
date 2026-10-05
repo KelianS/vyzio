@@ -27,13 +27,11 @@ export type AddCameraAction =
     }
   | { type: 'REFRESH_CANDIDATE_NO_CHANGE'; message: string }
   | { type: 'REFRESH_CANDIDATE_FAILED'; message: string; diagnostic?: string }
-  | { type: 'VERIFY_DRAFT_STARTED' }
-  | { type: 'VERIFY_DRAFT_SUCCEEDED'; connected: boolean; guidance: string | null; message: string }
-  | { type: 'VERIFY_DRAFT_FAILED'; message: string; diagnostic?: string }
   | { type: 'CREATE_STARTED' }
   | { type: 'CREATE_SUCCEEDED' }
   | { type: 'CREATE_FAILED'; message: string; diagnostic?: string }
   | { type: 'CONFIRM_SCAN_SET'; value: boolean }
+  | { type: 'HELP_VENDOR_CHOSEN'; vendorFamily: string | null }
   | { type: 'VENDOR_ASSISTANCE_STARTED' }
   | { type: 'VENDOR_ASSISTANCE_SUCCEEDED'; markdown: string | null }
   | { type: 'VENDOR_ASSISTANCE_FAILED'; error: AppError }

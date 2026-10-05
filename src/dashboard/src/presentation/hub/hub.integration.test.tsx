@@ -114,6 +114,35 @@ describe('HubView', () => {
     ).toBeInTheDocument()
   })
 
+  it('render_ShouldLeaveOutOfTheCountAndLeadToItsPage_WhenACameraIsToSetUp', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([
+        makeCamera(),
+        makeCamera({
+          id: 'camera-2',
+          displayName: 'Garage',
+          status: 'to_set_up',
+          validationState: 'to_set_up',
+          connected: false,
+        }),
+      ]),
+    })
+
+    // Act
+    renderScreen(<HubView />)
+
+    // Assert
+    expect(
+      await screen.findByRole('heading', { name: '1 caméra sous surveillance' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'À configurer : Garage' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-2',
+    )
+  })
+
   it('onTogglePrivacy_ShouldCutEveryCameraAndSaySo_WhenTheUserConfirms', async () => {
     // Arrange
     const network = fakeNetwork({

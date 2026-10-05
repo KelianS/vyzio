@@ -17,23 +17,11 @@ public sealed class CameraVendorAssistanceService : IVendorAssistanceService
         _catalog = new AssistedCameraDiscoveryVendorDocumentationCatalog(settings.Documentation.VendorCatalogPath, logger);
     }
 
-    public Task<VendorDocumentation?> GetAssistanceAsync(string? vendorFamily, string? streamPath, bool connected, CancellationToken ct = default)
+    public Task<VendorDocumentation?> GetAssistanceAsync(string? vendorFamily, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(vendorFamily))
         {
             _logger.LogInformation("Vendor assistance skipped: vendor is unknown.");
-            return Task.FromResult<VendorDocumentation?>(null);
-        }
-
-        if (!string.IsNullOrWhiteSpace(streamPath))
-        {
-            _logger.LogInformation("Vendor assistance skipped for {VendorFamily}: RTSP stream path already configured.", vendorFamily);
-            return Task.FromResult<VendorDocumentation?>(null);
-        }
-
-        if (connected)
-        {
-            _logger.LogInformation("Vendor assistance skipped for {VendorFamily}: camera already connected.", vendorFamily);
             return Task.FromResult<VendorDocumentation?>(null);
         }
 

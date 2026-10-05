@@ -24,6 +24,16 @@ export const CameraState = {
   Offline: 'offline',
   Degraded: 'degraded',
   ConfigError: 'config_error',
+  /** Its stream never worked: the only status it has until then (ADR-68 d). */
+  ToSetUp: 'to_set_up',
+} as const
+
+/** Where a camera stands towards surveillance; only a validated one is in it (ADR-23, ADR-68 d). */
+export const CameraValidation = {
+  ToSetUp: 'to_set_up',
+  Draft: 'draft',
+  Validated: 'validated',
+  PendingRemoval: 'pending_removal',
 } as const
 
 export interface Camera {
@@ -51,4 +61,6 @@ export interface Camera {
   ptzSupported: boolean
   privacyStrategy: PrivacyStrategy
   verifiedCapabilities: string[]
+  /** When detection last finished; null: never, so its page runs it on arrival (ADR-68 b). */
+  detectedAt: string | null
 }

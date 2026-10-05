@@ -21,27 +21,24 @@ import {
   type DiscoveredCamera,
   type DiscoveryRange,
 } from '../../domain/entities/discovered_camera.entity'
-import { asksStreamPath } from './stream_lines'
 import { resolveVendorLinkTarget } from './vendor_links'
-import {
-  VENDOR_FAMILY_OPTIONS,
-  formatVendorFamily,
-  fromVendorChoice,
-  toVendorChoice,
-} from './vendor_families'
+import { formatVendorFamily, helpVendorOptions, NO_HELP_VENDOR } from './vendor_families'
 import { buildAddCameraPresenter } from './add_camera.presenter'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido'
 
-/** Adding a camera is one task, one page (ADR-40): find, fill in, verify, add — technical facts under "Advanced". */
+/** What to prepare in a camera app whatever its brand: the help when no vendor sheet is chosen. */
+const OTHER_BRAND_HELP =
+  'Ouvrez l’application de la caméra et créez-y un compte pour Vyzio. Si elle propose la vidéo locale (RTSP), activez-la.'
+
+/** Adding a camera is one task, one page (ADR-40): find it, give its access, add it; its page sets the rest (ADR-68). */
 export function AddCameraView() {
-  const { cameras: container, hub: hubContainer } = useAppContainer()
+  const { cameras: container } = useAppContainer()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [uido, dispatch] = useReducer(addCameraReducer, undefined, buildInitialAddCameraUido)
   const presenter = usePresenter(buildAddCameraPresenter, {
     container,
-    hubContainer,
     dispatch,
     toast,
   })
@@ -64,23 +61,13 @@ export function AddCameraView() {
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
-  const vendorFamily = uido.form.vendorFamily ?? null
-  // A candidate whose stream is ready needs no activation notice, whatever its protocol.
-  const connected = (uido.verification?.connected ?? false) || Boolean(candidate?.stream)
-  useEffect(() => {
-    void presenter.onVendorAssistanceNeeded(vendorFamily, uido.form.streamPath, connected)
-  }, [presenter, vendorFamily, uido.form.streamPath, connected])
-  const vendorAssistance = uido.vendorAssistance
-
-  const busy = uido.discovering || uido.refreshing || uido.verifying || uido.creating
+  const busy = uido.discovering || uido.refreshing || uido.creating
 
   // One-line summary of step 1's pick, shown once the list collapses.
   const chosen = candidate
     ? {
         title: candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName,
-        detail: [candidate.host, formatVendorFamily(candidate.vendorFamily)]
-          .filter(Boolean)
-          .join(' · '),
+        detail: candidateDetail(candidate),
       }
     : uido.selection.kind === 'manual'
       ? { title: 'Adresse saisie à la main', detail: uido.form.host || 'Adresse à renseigner' }
@@ -89,24 +76,18 @@ export function AddCameraView() {
   // No protocol serves the stream yet: the camera must be opened from its app first.
   const needsActivation = Boolean(candidate && !candidate.stream)
   const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
-  const hasPath = asksStreamPath(uido.form.streamProtocol)
-  const canVerify =
-    showForm &&
-    !needsActivation &&
-    Boolean(
-      uido.form.displayName.trim() &&
-      uido.form.host.trim() &&
-      (!hasPath || uido.form.streamPath?.trim()),
-    )
-  // Over a pathless stream, adding does not wait for a draft check: the camera is checked once added.
-  const canAdd = Boolean(uido.verification?.connected) || !hasPath
+  // A ready camera needs no preparing, so only the other two ways in offer the help list.
+  const offersHelpList = needsActivation || uido.selection.kind === 'manual'
+  // The vendor only picks the help sheet; it is never handed to the camera (#274).
+  const vendorFamily = offersHelpList ? uido.helpVendor : null
+  useEffect(() => {
+    void presenter.onVendorAssistanceNeeded(vendorFamily)
+  }, [presenter, vendorFamily])
+  const vendorAssistance = uido.vendorAssistance
+  const canAdd = Boolean(uido.form.displayName.trim() && uido.form.host.trim())
 
   async function add() {
-    const createdId = await presenter.onCreate(
-      !hasPath,
-      Boolean(uido.verification?.connected),
-      uido.form,
-    )
+    const createdId = await presenter.onCreate(uido.form)
     if (createdId) void navigate(`/settings/cameras/${createdId}`)
   }
 
@@ -127,27 +108,6 @@ export function AddCameraView() {
       onChange: (value) => presenter.onFormChanged({ host: value as string }),
     },
     {
-      id: 'add-port',
-      label: 'Port',
-      nature: { kind: 'number', unit: '', min: 1, max: 65535 },
-      value: uido.form.port,
-      onChange: (value) => presenter.onFormChanged({ port: value as number }),
-    },
-  ]
-
-  if (hasPath) {
-    declarations.push({
-      id: 'add-stream-path',
-      label: 'Chemin du flux',
-      nature: { kind: 'text', placeholder: '/stream1' },
-      help: 'Vyzio le demande à la caméra quand elle sait répondre. Ne le renseignez que si elle n’a pas été reconnue.',
-      value: uido.form.streamPath ?? '',
-      onChange: (value) => presenter.onFormChanged({ streamPath: (value as string) || null }),
-    })
-  }
-
-  declarations.push(
-    {
       id: 'add-username',
       label: 'Identifiant',
       nature: { kind: 'text' },
@@ -161,16 +121,16 @@ export function AddCameraView() {
       value: uido.form.password ?? '',
       onChange: (value) => presenter.onFormChanged({ password: (value as string) || null }),
     },
-    {
-      id: 'add-vendor',
-      label: 'Marque',
-      nature: { kind: 'choice', options: VENDOR_FAMILY_OPTIONS },
-      help: 'Renseignée, elle donne accès aux réglages propres à cette marque. Vyzio la reconnaît seul la plupart du temps.',
-      value: toVendorChoice(uido.form.vendorFamily),
-      onChange: (value) =>
-        presenter.onFormChanged({ vendorFamily: fromVendorChoice(value as string) }),
-    },
-  )
+  ]
+
+  const helpChoice: SettingDeclaration = {
+    id: 'add-help-vendor',
+    label: 'Marque',
+    nature: { kind: 'choice', options: helpVendorOptions },
+    value: vendorFamily ?? NO_HELP_VENDOR,
+    onChange: (value) =>
+      presenter.onHelpVendorChosen(value === NO_HELP_VENDOR ? null : (value as string)),
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -240,7 +200,7 @@ export function AddCameraView() {
 
               <Feedback message={uido.message} error={uido.error} />
 
-              <SweptRanges ranges={uido.sweptRanges} />
+              {uido.sweptRanges?.length === 0 && <NothingSwept />}
 
               {/* La liste ne contient plus que ce que la recherche a trouve. */}
               {unclaimed.length > 0 && (
@@ -262,16 +222,15 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio cherche dans les adresses qu’il
-              affiche après la recherche, et beaucoup de caméras ne répondent qu’une fois réveillées
-              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
-              adresse sur le réseau, son port, et le chemin du flux, que l’application de la caméra
-              ou sa notice indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio cherche seulement dans les adresses
+              listées dans Avancé après la recherche, et beaucoup de caméras ne répondent qu’une
+              fois réveillées depuis leur propre application. Prenez alors{' '}
+              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que l’application de
+              la caméra ou votre box indiquent.
             </p>
             <p>
-              Si la vérification échoue, ce sont presque toujours l’adresse, le port, le chemin ou
-              les identifiants : reprenez-les sur la caméra elle-même. Une caméra sur batterie doit
-              être réveillée avant de répondre.
+              Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
+              Une caméra sur batterie doit être réveillée avant de répondre.
             </p>
           </HelpPanel>
         </SettingsSection>
@@ -297,7 +256,10 @@ export function AddCameraView() {
         )}
 
         {showForm && (
-          <SettingsSection title="Connexion" lede="Comment Vyzio joindra cette caméra.">
+          <SettingsSection
+            title="Connexion"
+            lede="Son nom, son adresse et son compte : Vyzio trouve le reste une fois la caméra ajoutée."
+          >
             <SettingsList settings={declarations} />
 
             <div className="mt-4">
@@ -305,16 +267,6 @@ export function AddCameraView() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || !canVerify}
-                onClick={() => void presenter.onVerifyDraft(uido.form)}
-              >
-                {uido.verifying ? 'Vérification…' : 'Vérifier la connexion'}
-              </Button>
-              {/* L'ajout reste offert mais ferme tant que rien n'a repondu :
-                  griser sans expliquer laisserait chercher ce qui manque. */}
               <Button type="button" disabled={busy || !canAdd} onClick={() => void add()}>
                 {uido.creating ? 'Ajout…' : 'Ajouter la caméra'}
               </Button>
@@ -322,21 +274,27 @@ export function AddCameraView() {
           </SettingsSection>
         )}
 
-        {(vendorAssistance.loading || vendorAssistance.error || vendorAssistance.markdown) && (
+        {/* Last, so a user who already prepared the camera never scrolls past it. */}
+        {offersHelpList && (
           <SettingsSection
-            title={`Notice ${formatVendorFamily(uido.form.vendorFamily ?? null) ?? 'du constructeur'}`}
+            title="Aide de votre caméra"
+            lede="Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide."
           >
-            {vendorAssistance.loading ? (
-              <p className="text-muted-foreground">Chargement…</p>
-            ) : vendorAssistance.error ? (
-              <ErrorMessage error={vendorAssistance.error} className="text-base" />
-            ) : (
-              <VendorNotice markdown={vendorAssistance.markdown!} />
-            )}
+            <SettingsList settings={[helpChoice]} />
+            <div className="mt-4">
+              {vendorFamily === null ? (
+                <p className="text-sm">{OTHER_BRAND_HELP}</p>
+              ) : vendorAssistance.loading ? (
+                <p className="text-muted-foreground">Chargement…</p>
+              ) : vendorAssistance.error ? (
+                <ErrorMessage error={vendorAssistance.error} className="text-base" />
+              ) : vendorAssistance.markdown ? (
+                <VendorNotice markdown={vendorAssistance.markdown} />
+              ) : null}
+            </div>
           </SettingsSection>
         )}
-
-        {candidate && <TechnicalFacts candidate={candidate} />}
+        <AdvancedFacts ranges={uido.sweptRanges} candidate={candidate} />
       </SettingsPage>
 
       {uido.confirmScan && (
@@ -356,6 +314,11 @@ export function AddCameraView() {
   )
 }
 
+/** The address, then the vendor as text, only when discovery recognised it (#274). */
+function candidateDetail(candidate: DiscoveredCamera): string {
+  return [candidate.host, formatVendorFamily(candidate.vendorFamily)].filter(Boolean).join(' · ')
+}
+
 function CandidateRow({
   candidate,
   onSelect,
@@ -364,22 +327,13 @@ function CandidateRow({
   onSelect: () => void
 }) {
   const title = candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
-  const vendor = formatVendorFamily(candidate.vendorFamily)
-  // Vendor docs count as recognition even when the brand itself isn't named.
-  const recognised = Boolean(vendor || candidate.vendorDocumentation?.markdown?.trim())
 
   return (
     <li>
       <SelectableRow onSelect={onSelect}>
         <span className="block font-medium">{title}</span>
-        <span className="block text-sm text-muted-foreground">{candidate.host}</span>
-        {/* Ces deux pastilles disent le degre de confiance : la marque
-            reconnue, et l'appareil pret a etre ajoute. Sans elles il faut
-            ouvrir chaque candidat pour savoir lequel a une chance. */}
+        <span className="block text-sm text-muted-foreground">{candidateDetail(candidate)}</span>
         <span className="mt-1.5 flex flex-wrap gap-1.5">
-          <Badge tone={recognised ? 'ok' : 'neutral'}>
-            {vendor ?? (recognised ? 'Marque connue' : 'Marque inconnue')}
-          </Badge>
           <Badge tone={candidate.stream ? 'ok' : 'warn'}>
             {candidate.stream ? 'Prête' : 'À préparer'}
           </Badge>
@@ -394,19 +348,21 @@ const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
   [DiscoveryRangeSource.DashboardAddress]: 'autour de l’adresse utilisée pour ouvrir Vyzio',
 }
 
-/** Where the last search looked, so a camera outside it is known to need its address typed (ADR-71). */
-function SweptRanges({ ranges }: { ranges: DiscoveryRange[] | null }) {
-  if (!ranges) return null
-  if (ranges.length === 0)
-    return (
-      <p className="text-sm text-muted-foreground">
-        Aucune adresse n’a été parcourue : ouvrez Vyzio avec son adresse sur votre réseau (par
-        exemple 192.168.1.10), ou saisissez l’adresse de la caméra.
-      </p>
-    )
+/** A search that swept nothing says how to get one, in the main flow since it is the next step. */
+function NothingSwept() {
   return (
-    <div className="text-sm text-muted-foreground">
-      <p>Adresses parcourues :</p>
+    <p className="text-sm text-muted-foreground">
+      Aucune adresse n’a été parcourue : ouvrez Vyzio avec son adresse sur votre réseau (par exemple
+      192.168.1.10), ou saisissez l’adresse de la caméra.
+    </p>
+  )
+}
+
+/** Where the last search looked, so a camera outside it is known to need its address typed (ADR-71). */
+function SweptRanges({ ranges }: { ranges: DiscoveryRange[] }) {
+  return (
+    <div className="text-sm">
+      <p className="text-muted-foreground">Adresses parcourues par la recherche :</p>
       <ul className="mt-1 list-disc pl-5">
         {ranges.map((range) => (
           <li key={range.cidr}>
@@ -446,18 +402,47 @@ function SelectableRow({ onSelect, children }: { onSelect: () => void; children:
   )
 }
 
-/** Raw discovery facts, kept under the closing fold — only useful to diagnose a stuck add. */
-function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
+/** The page's closing fold: where the search looked, then the chosen camera's raw facts. */
+function AdvancedFacts({
+  ranges,
+  candidate,
+}: {
+  ranges: DiscoveryRange[] | null
+  candidate: DiscoveredCamera | null
+}) {
+  const facts = candidate ? technicalFacts(candidate) : []
+  const sweptRanges = ranges?.length ? ranges : null
+  if (!sweptRanges && !facts.length) return null
+
+  return (
+    <AdvancedFold>
+      <div className="flex flex-col gap-4">
+        {sweptRanges && <SweptRanges ranges={sweptRanges} />}
+        {facts.length > 0 && (
+          <dl className="divide-y divide-border text-sm">
+            {facts.map(([term, value]) => (
+              <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
+                <dt className="text-muted-foreground">{term}</dt>
+                <dd className="wrap-anywhere">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
+    </AdvancedFold>
+  )
+}
+
+/** Raw discovery facts, only useful to diagnose a stuck add. */
+function technicalFacts(candidate: DiscoveredCamera): [string, string][] {
   const details = candidate.technicalDetails
   const ports = details?.detectedPorts ?? []
   const paths = details?.rtspPathsDetected ?? []
   const capabilities = details?.capabilities ?? []
 
-  if (!details?.resolvedHostName && !ports.length && !paths.length) {
-    return null
-  }
+  if (!details?.resolvedHostName && !ports.length && !paths.length) return []
 
-  const facts: [string, string][] = [
+  return [
     ...(details?.resolvedHostName
       ? [['Nom réseau', details.resolvedHostName] as [string, string]]
       : []),
@@ -474,19 +459,6 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
       (capability) => [capability.label, capability.protocolLabels.join(', ')] as [string, string],
     ),
   ]
-
-  return (
-    <AdvancedFold>
-      <dl className="divide-y divide-border text-sm">
-        {facts.map(([term, value]) => (
-          <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
-            <dt className="text-muted-foreground">{term}</dt>
-            <dd className="wrap-anywhere">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </AdvancedFold>
-  )
 }
 
 function VendorNotice({ markdown }: { markdown: string }) {

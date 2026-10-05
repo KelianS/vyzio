@@ -48,6 +48,13 @@ public sealed class SeedAndProbePresetsUseCase(
             await SeedAndProbeCapabilityAsync(cameraId, capability, protocols, deleteIfUnverified, run, ct);
 
         await DropSilentTriesAsync(cameraId, ct);
+
+        // Once detected, the page no longer runs detection on arrival (ADR-68 b).
+        if (await cameras.GetByIdAsync(cameraId, ct) is { } detected)
+        {
+            detected.DetectedAt = time.GetUtcNow();
+            await cameras.UpdateAsync(detected, ct);
+        }
     }
 
     private static bool Answers(Camera camera, SupportedProtocol protocol) => camera.Protocol(protocol)?.Answers == true;
@@ -186,7 +193,7 @@ public sealed class SeedAndProbePresetsUseCase(
         if (!verified && fallback is { } first && first != lastTried)
             await TryStreamAsync(camera, binding, first, run, ct);
 
-        await SurveillanceConfig.WriteAsync(cameras, frigateConfigApplier, ct);
+        await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
     }
 
     // Null when no stream could be laid out over the protocol: RTSP is only bound with the streams the camera lists (ADR-65 e).

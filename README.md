@@ -34,7 +34,7 @@ Adding a camera: Vyzio searches the network, and asks for nothing it can find on
 <p>
   <img src="docs/assets/onboarding-1.png" width="240" alt="Add a camera: search the network, or type the address">
   <img src="docs/assets/onboarding-3.png" width="240" alt="One camera found, listed as ready">
-  <img src="docs/assets/onboarding-4.png" width="240" alt="Stream verified before the camera is added">
+  <img src="docs/assets/onboarding-4.png" width="240" alt="Only its access is asked: name, address and account">
 </p>
 
 Cameras, and the people the system knows about:

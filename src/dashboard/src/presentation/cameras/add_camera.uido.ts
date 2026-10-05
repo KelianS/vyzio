@@ -1,5 +1,5 @@
+import type { NewCameraInput } from '../../domain/entities/camera_input.entity'
 import type { AppError } from '../../common/errors/app_error'
-import type { StreamProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import type {
   DiscoveredCamera,
   DiscoveryRange,
@@ -10,29 +10,14 @@ type AddCameraSelection =
   /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
 
-/** The add form as the user fills it, flat; the stream fields become the camera's stream capability (ADR-61). */
-export interface AddCameraForm {
-  displayName: string
-  host: string
-  port: number
-  username: string | null
-  password: string | null
-  streamPath: string | null
-  vendorFamily?: string | null
-  sourceType: string
-  streamProtocol: StreamProtocol
-}
+/** The add form: the camera's access alone, its page's detection finds the rest (ADR-68 a). */
+export type AddCameraForm = NewCameraInput
 
 export const emptyCameraDraft: AddCameraForm = {
   displayName: '',
   host: '',
-  port: 554,
   username: null,
   password: null,
-  streamPath: null,
-  vendorFamily: null,
-  sourceType: 'rtsp_manual',
-  streamProtocol: 'rtsp',
 }
 
 export interface AddCameraUido {
@@ -44,17 +29,15 @@ export interface AddCameraUido {
   sweptRanges: DiscoveryRange[] | null
   discovering: boolean
   refreshing: boolean
-  verifying: boolean
   creating: boolean
-
-  /** Last draft-verification result; any edit invalidates it. */
-  verification: { connected: boolean; guidance: string | null } | null
 
   message: string | null
   /** A failure: its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
 
+  /** Which vendor's help sheet shows: discovery's vendor, or the user's pick; never stored nor sent (#274). */
+  helpVendor: string | null
   /** The vendor's notice for the brand being added, when it has one. */
   vendorAssistance: { loading: boolean; markdown: string | null; error: AppError | null }
 }
@@ -68,15 +51,13 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     sweptRanges: null,
     discovering: false,
     refreshing: false,
-    verifying: false,
     creating: false,
-
-    verification: null,
 
     message: null,
     error: null,
     confirmScan: false,
 
+    helpVendor: null,
     vendorAssistance: { loading: false, markdown: null, error: null },
   }
 }

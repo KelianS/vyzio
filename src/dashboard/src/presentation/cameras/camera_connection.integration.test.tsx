@@ -619,16 +619,69 @@ describe('CameraConnectionView', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('onDetect_ShouldSayTheDetectionIsDone_WhenItFinishes', async () => {
+  it('onDetect_ShouldSayTheStreamWorks_WhenDetectionFoundIt', async () => {
     // Arrange
-    connectionNetwork({ [BINDINGS]: ok([]), [DETECT]: ok() })
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]), [DETECT]: ok() })
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Act
     await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
 
     // Assert
-    expect(await screen.findByText('Détection terminée.')).toBeInTheDocument()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Détection terminée : le flux vidéo de la caméra fonctionne.',
+    )
+  })
+
+  it('onDetect_ShouldSayNothingAnswersWithWhatEachProtocolSaid_WhenNoProtocolAnswers', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([]),
+      [PROTOCOLS]: ok([protocolRow({ status: 'unreachable', lastError: 'timeout' })]),
+      [DETECT]: ok(),
+    })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
+
+    // Assert
+    const result = await screen.findByRole('status')
+    expect(result).toHaveTextContent(/^Rien ne répond à cette adresse/)
+    expect(result).toHaveTextContent('RTSP : timeout')
+    expect(screen.queryByText(/Détection terminée/)).not.toBeInTheDocument()
+  })
+
+  it('onArrive_ShouldRunDetectionAndShowItRunning_WhenTheCameraWasNeverDetected', async () => {
+    // Arrange
+    const network = connectionNetwork({
+      [BINDINGS]: ok([]),
+      [DETECT]: late(ok(), 5000),
+      [CAMERAS]: ok([makeCamera()]),
+      [STATS]: ok(null),
+    })
+
+    // Act
+    renderScreen(
+      <CameraConnectionView />,
+      connectionTab(makeCamera({ status: 'to_set_up', detectedAt: null })),
+    )
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Détection…' })).toBeDisabled()
+    expect(network.sent.filter((request) => request.route === DETECT)).toHaveLength(1)
+  })
+
+  it('onArrive_ShouldNotRunDetection_WhenTheCameraWasAlreadyDetected', async () => {
+    // Arrange
+    const network = connectionNetwork({ [BINDINGS]: ok([]) })
+
+    // Act
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Détecter automatiquement' })).toBeEnabled()
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: DETECT }))
   })
 
   it('onConfigure_ShouldSayTheConnectionWorks_WhenTheCameraAnswers', async () => {
