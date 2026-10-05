@@ -78,4 +78,26 @@ describe('CameraLiveThumbnail', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(document.querySelector('.bg-success')).toBeNull()
   })
+
+  it.each([
+    { connected: true, status: 'online', buttons: 1 },
+    { connected: false, status: 'offline', buttons: 0 },
+  ])(
+    'CameraLiveThumbnail_ShouldOpenTheLiveViewOnlyWhenTheCameraAnswers_WhenItIs $status',
+    ({ connected, status, buttons }) => {
+      // Arrange & Act
+      render(
+        <MemoryRouter>
+          <CameraLiveThumbnail
+            camera={makeCamera({ connected, status })}
+            apiBaseUrl=""
+            onExpand={() => undefined}
+          />
+        </MemoryRouter>,
+      )
+
+      // Assert
+      expect(screen.queryAllByRole('button', { name: 'Front Door' })).toHaveLength(buttons)
+    },
+  )
 })

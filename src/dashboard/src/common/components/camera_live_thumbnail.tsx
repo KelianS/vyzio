@@ -40,7 +40,8 @@ export function CameraLiveThumbnail({
   // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-68 d).
   const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
   const polling = !camera.privacyModeActive && camera.connected && !unwatched
-  const expandable = Boolean(onExpand) && !camera.privacyModeActive && !unwatched
+  // An offline camera opens no live view: it would only wait for a stream that cannot come (SPECS 2.2).
+  const expandable = Boolean(onExpand) && !camera.privacyModeActive && !unwatched && !deviceOffline
 
   // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
   const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`

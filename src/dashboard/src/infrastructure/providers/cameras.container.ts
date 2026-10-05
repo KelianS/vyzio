@@ -50,6 +50,8 @@ import type { ProfileRepository } from '../../domain/ports/profile.port'
 import type { DetectionLabelsRepository } from '../../domain/usecases/get_detection_labels.use_case'
 import type { RecordingSettingsRepository } from '../../domain/ports/recording_settings.port'
 import type { CameraStreamRepository } from '../../domain/ports/camera_stream.port'
+import type { LiveStreamPort } from '../../domain/ports/live_stream.port'
+import { OpenLiveStream } from '../../domain/usecases/open_live_stream.use_case'
 
 export interface CamerasContainer {
   getCameras: GetCameras
@@ -99,6 +101,7 @@ export interface CamerasContainer {
   ptzSaveCurrentAsPreset: PtzSaveCurrentAsPreset
   ptzCalibrate: PtzCalibrate
   capturePtzPresetThumbnail: CapturePtzPresetThumbnail
+  openLiveStream: OpenLiveStream
 }
 
 export function makeCamerasContainer(
@@ -107,8 +110,10 @@ export function makeCamerasContainer(
   cameraLabelsRepository: DetectionLabelsRepository,
   recordingSettingsRepository: RecordingSettingsRepository,
   cameraStreamRepository: CameraStreamRepository,
+  liveStream: LiveStreamPort,
 ): CamerasContainer {
   return {
+    openLiveStream: new OpenLiveStream(liveStream),
     getCameras: new GetCameras(cameraRepository),
     discoverCameras: new DiscoverCameras(cameraRepository),
     getDiscoveryRanges: new GetDiscoveryRanges(cameraRepository),

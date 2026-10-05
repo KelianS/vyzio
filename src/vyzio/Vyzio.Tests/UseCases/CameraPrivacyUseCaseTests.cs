@@ -18,6 +18,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
     private readonly IPtzMotion _ptzMotion = Substitute.For<IPtzMotion>();
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
     private readonly ILogger<ToggleCameraPrivacyModeUseCase> _logger = Substitute.For<ILogger<ToggleCameraPrivacyModeUseCase>>();
+    private readonly ILiveStreamRelay _live = Substitute.For<ILiveStreamRelay>();
     private readonly ToggleCameraPrivacyModeUseCase _sut;
 
     public ToggleCameraPrivacyModeUseCaseTests()
@@ -29,7 +30,7 @@ public class ToggleCameraPrivacyModeUseCaseTests
             .Returns(call => new PtzPreset { CameraId = "cam1", PresetId = call.ArgAt<int>(1) });
         _ptzProvider.ReadPresetsAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>())
             .Returns(new HashSet<int> { PtzPreset.SurveillanceSlot, PtzPreset.ParkingSlot });
-        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _logger);
+        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _live, _logger);
     }
 
     private static Camera MakeCamera(string id = "cam1", PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()
@@ -67,6 +68,38 @@ public class ToggleCameraPrivacyModeUseCaseTests
         Assert.NotNull(result);
         Assert.True(result!.PrivacyVendorCut);
         await _privacyProvider.Received(1).SetPrivacyModeAsync(camera, binding, true, Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public async Task ExecuteAsync_ShouldCutTheOpenLiveViewsOnlyWhenPrivacyTurnsOn_WhenTheModeChanges(bool active, int cuts)
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active);
+
+        // Assert
+        _live.Received(cuts).Cut("cam1");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCutTheLiveViewsAfterSavingPrivacy_WhenPrivacyTurnsOn()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active: true);
+
+        // Assert
+        Received.InOrder(() =>
+        {
+            _cameras.UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+            _live.Cut("cam1");
+        });
     }
 
     [Fact]
@@ -463,11 +496,12 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     private readonly IFrigateConfigApplier _frigateConfig = Substitute.For<IFrigateConfigApplier>();
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly BatchToggleCameraPrivacyModeUseCase _sut;
+    private readonly ILiveStreamRelay _live = Substitute.For<ILiveStreamRelay>();
 
     public BatchToggleCameraPrivacyModeUseCaseTests()
     {
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
-        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance));
+        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _live);
     }
 
     private static Camera MakeCamera(string id, PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()
@@ -479,6 +513,39 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
         Host = "192.168.1.10",
         PrivacyStrategy = strategy,
     };
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public async Task ExecuteAsync_ShouldCutEachCamerasOpenLiveViewsOnlyWhenPrivacyTurnsOn_WhenTheBatchChangesTheMode(bool active, int cuts)
+    {
+        // Arrange
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera("cam1"), MakeCamera("cam2")]);
+
+        // Act
+        await _sut.ExecuteAsync(["cam1", "cam2"], active);
+
+        // Assert
+        _live.Received(cuts).Cut("cam1");
+        _live.Received(cuts).Cut("cam2");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCutEachCameraAfterSavingIt_WhenTheBatchTurnsPrivacyOn()
+    {
+        // Arrange
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera("cam1")]);
+
+        // Act
+        await _sut.ExecuteAsync(["cam1"], active: true);
+
+        // Assert
+        Received.InOrder(() =>
+        {
+            _cameras.UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+            _live.Cut("cam1");
+        });
+    }
 
     [Fact]
     public async Task ExecuteAsync_ShouldReloadTheDetectionConfigOnce_WhenSeveralCamerasAreToggledTogether()

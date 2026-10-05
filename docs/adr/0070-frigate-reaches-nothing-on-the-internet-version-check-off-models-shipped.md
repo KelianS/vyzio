@@ -26,7 +26,7 @@ generates (#250):
 - **WebRTC.** go2rtc, inside the Frigate container, runs a WebRTC server. When the configuration
   names no candidates, Frigate adds a STUN candidate to it (its go2rtc `create_config.py`), and go2rtc
   keeps a public STUN server by default. The first WebRTC session would ask that server for the
-  hub's public address. Vyzio never opens one, its live view is a refreshed still image (ADR-16), but
+  hub's public address. Vyzio never opens one, its live view plays MSE, not WebRTC (ADR-72), but
   nothing in the configuration forbids it.
 
 The three files come from one release of a repository kept by a Frigate maintainer, published under
@@ -75,8 +75,8 @@ own ADR. The face models' licences are in the context; the landmark model's miss
 the owner with the change that ships it.
 
 **d) WebRTC is neutralised.** The generated configuration gives go2rtc no WebRTC candidates and no
-ICE servers, so no STUN request ever leaves the hub. The live view does not use WebRTC (ADR-16); a
-real stream (#47) would decide its own transport in its own ADR.
+ICE servers, so no STUN request ever leaves the hub. The live view plays go2rtc's MSE stream through
+the API, not WebRTC (ADR-72).
 
 **e) It is kept true at each Frigate upgrade.** Moving Frigate to a new version means reading its
 outbound calls again against this rule: a new default that reaches the internet is turned off in the

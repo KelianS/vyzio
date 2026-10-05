@@ -135,14 +135,33 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.False(applier.HasPendingChanges);
     }
 
-    [Fact]
-    public async Task ApplyAsync_ShouldEmitNoGo2rtcStream_WhenEveryCameraStreamsOverRtsp()
-    {
-        var yaml = await ApplyAndReadYamlAsync([MakeValidatedCamera("front-door")]);
+    // Every camera goes through go2rtc, which holds its one connection per stream (ADR-72 a).
 
-        Assert.Null(FindNode(yaml, "go2rtc", "streams"));
-        Assert.DoesNotContain("127.0.0.1:8554", yaml, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("rtsp://", yaml, StringComparison.OrdinalIgnoreCase);
+    [Fact]
+    public async Task ApplyAsync_ShouldDeclareTheStreamInGo2rtc_WhenACameraStreamsOverRtsp()
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal(["rtsp://192.168.1.10:554/stream1"], ReadGo2rtcSources(yaml, "front_door"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldReadTheVideoBackFromGo2rtc_WhenACameraStreamsOverRtsp()
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal(["rtsp://127.0.0.1:8554/front_door?video"], ReadInputPaths(yaml, "front_door"));
+        Assert.Contains("input_args: preset-rtsp-restream", yaml, StringComparison.Ordinal);
     }
 
     // Nothing Frigate starts on its own may reach the internet (ADR-70).
@@ -243,19 +262,17 @@ public sealed class FrigateConfigApplierTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldBridgeOnlyTheDvripCamera_WhenRtspAndDvripCamerasAreMixed()
+    public async Task ApplyAsync_ShouldDeclareEachCameraWithItsOwnProtocol_WhenRtspAndDvripCamerasAreMixed()
     {
-        var yaml = await ApplyAndReadYamlAsync(
-        [
-            MakeValidatedCamera("front-door"),
-            MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null),
-        ]);
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door"), MakeValidatedCamera("garden", SupportedProtocol.Dvrip, null)];
 
-        Assert.Contains("go2rtc:", yaml, StringComparison.OrdinalIgnoreCase);
-        // dvrip camera appears in go2rtc streams
-        Assert.Contains("dvrip://", yaml, StringComparison.OrdinalIgnoreCase);
-        // rtsp camera uses direct path (not via go2rtc)
-        Assert.Contains("rtsp://192.168.1.10", yaml, StringComparison.OrdinalIgnoreCase);
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal(["rtsp://192.168.1.10:554/stream1"], ReadGo2rtcSources(yaml, "front_door"));
+        Assert.Equal(["dvrip://192.168.1.10:34567/"], ReadGo2rtcSources(yaml, "garden"));
     }
 
     [Fact]
@@ -423,29 +440,32 @@ public sealed class FrigateConfigApplierTests : IDisposable
     [Fact]
     public async Task ApplyAsync_ShouldPutBothRolesOnTheMainStream_WhenTheOtherStreamHoldsNoRole()
     {
+        // Arrange
         var camera = MakeValidatedCamera("front-door");
         AddStream(camera, "/stream2", StreamRole.None, 640, 360);
 
+        // Act
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
-        Assert.DoesNotContain("stream2", yaml, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+        // Assert
+        Assert.Contains("- detect", yaml, StringComparison.Ordinal);
+        Assert.Equal(["rtsp://127.0.0.1:8554/front_door?video"], ReadInputPaths(yaml, "front_door"));
     }
 
     [Fact]
     public async Task ApplyAsync_ShouldDetectOnTheSubStreamAndRecordOnTheMain_WhenTheUserGivesDetectionToTheSubStream()
     {
+        // Arrange
         var camera = MakeValidatedCamera("front-door");
         AddStream(camera, "/stream2", StreamRole.Detect, 640, 360);
 
+        // Act
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
-        var detectIndex = yaml.IndexOf("stream2", StringComparison.OrdinalIgnoreCase);
-        var recordIndex = yaml.IndexOf("stream1", StringComparison.OrdinalIgnoreCase);
-        Assert.True(detectIndex >= 0 && recordIndex >= 0);
-        // detect input is emitted first, record second — each with a single role.
-        Assert.True(detectIndex < recordIndex);
-        Assert.Contains("640", yaml, StringComparison.OrdinalIgnoreCase);
+        // Assert
+        Assert.Equal(["rtsp://127.0.0.1:8554/front_door_1?video", "rtsp://127.0.0.1:8554/front_door?video"], ReadInputPaths(yaml, "front_door"));
+        Assert.Equal(["rtsp://192.168.1.10:554/stream2"], ReadGo2rtcSources(yaml, "front_door_1"));
+        Assert.Equal("640", ScalarAt(yaml, "cameras", "front_door", "detect", "width"));
     }
 
     [Fact]
@@ -459,27 +479,26 @@ public sealed class FrigateConfigApplierTests : IDisposable
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
         // Assert
-        Assert.Equal(0, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
-        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream2"));
+        Assert.Equal(["rtsp://127.0.0.1:8554/front_door_1?video"], ReadInputPaths(yaml, "front_door"));
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldDetectOnTheRecordingStream_WhenNoOtherStreamHoldsARole()
+    public async Task ApplyAsync_ShouldDetectOnTheRecordingStreamAndDeclareTheOtherForTheLiveView_WhenItWorksWithoutARole()
     {
         // Arrange
         var camera = MakeValidatedCamera("front-door");
-        AddStream(camera, "/stream2", StreamRole.None, 640, 360);
+        AddStream(camera, "/stream2", StreamRole.None, 640, 360).Verified = true;
 
         // Act
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
         // Assert
-        Assert.DoesNotContain("stream2", yaml, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, CountOccurrences(yaml, "rtsp://192.168.1.10:554/stream1"));
+        Assert.Equal(["rtsp://127.0.0.1:8554/front_door?video"], ReadInputPaths(yaml, "front_door"));
+        Assert.Equal(["rtsp://192.168.1.10:554/stream2"], ReadGo2rtcSources(yaml, "front_door_1"));
     }
 
     [Fact]
-    public async Task ApplyAsync_ShouldBridgeOnlyTheDvripStream_WhenTheDetectStreamGoesOverAnotherProtocol()
+    public async Task ApplyAsync_ShouldDeclareEachStreamWithItsOwnProtocol_WhenTheDetectStreamGoesOverDvrip()
     {
         // Arrange
         var camera = MakeValidatedCamera("front-door");
@@ -686,52 +705,49 @@ public sealed class FrigateConfigApplierTests : IDisposable
         return inputs.Select(input => (string)((Dictionary<object, object>)input)["path"]).ToList();
     }
 
-    [Theory]
-    [InlineData("Pass1?")]
-    [InlineData("p@ss")]
-    [InlineData("p#ss")]
-    [InlineData("p:ss")]
-    [InlineData("p/ss")]
-    [InlineData("100%")]
-    public async Task ApplyAsync_ShouldWriteThePasswordRaw_WhenFrigateEncodesItItself(string password)
+    private static List<string> ReadGo2rtcSources(string yaml, string streamName)
     {
-        var camera = MakeValidatedCamera("front-door");
-        camera.Username = "viewer";
-        camera.Password = password;
-
-        var yaml = await ApplyAndReadYamlAsync([camera]);
-
-        Assert.All(ReadInputPaths(yaml, "front_door"),
-            path => Assert.Equal($"rtsp://viewer:{password}@192.168.1.10:554/stream1", path));
+        var document = new YamlDotNet.Serialization.DeserializerBuilder().Build().Deserialize<Dictionary<string, object>>(yaml);
+        var streams = (Dictionary<object, object>)((Dictionary<object, object>)document["go2rtc"])["streams"];
+        return ((List<object>)streams[streamName]).Cast<string>().ToList();
     }
 
-    [Fact]
-    public async Task ApplyAsync_ShouldDoubleTheBraces_WhenThePasswordContainsOne()
-    {
-        var camera = MakeValidatedCamera("front-door");
-        camera.Username = "viewer";
-        camera.Password = "p{ss}";
-
-        var yaml = await ApplyAndReadYamlAsync([camera]);
-
-        Assert.All(ReadInputPaths(yaml, "front_door"),
-            path => Assert.Equal("rtsp://viewer:p{{ss}}@192.168.1.10:554/stream1", path));
-    }
-
+    // go2rtc parses the source as a URL, so the account is percent-encoded whatever it holds.
     [Theory]
-    [InlineData("john.doe", "Pass1?", "john.doe:Pass1%3F")]
-    [InlineData("viewer", "pass word", "viewer:pass%20word")]
+    [InlineData("viewer", "Pass1?", "viewer:Pass1%3F")]
+    [InlineData("viewer", "p@ss", "viewer:p%40ss")]
+    [InlineData("viewer", "p/ss", "viewer:p%2Fss")]
+    [InlineData("viewer", "p{ss}", "viewer:p%7Bss%7D")]
+    [InlineData("viewer", "100%", "viewer:100%25")]
+    [InlineData("john.doe", "pass word", "john.doe:pass%20word")]
     [InlineData("viewer", "", "viewer")]
-    public async Task ApplyAsync_ShouldPercentEncodeTheCredentials_WhenFrigateWouldLeaveThemAsWritten(
+    public async Task ApplyAsync_ShouldPercentEncodeTheAccount_WhenTheStreamIsDeclaredInGo2rtc(
         string username, string password, string expectedUserInfo)
     {
+        // Arrange
         var camera = MakeValidatedCamera("front-door");
         camera.Username = username;
         camera.Password = password;
 
+        // Act
         var yaml = await ApplyAndReadYamlAsync([camera]);
 
-        Assert.All(ReadInputPaths(yaml, "front_door"),
-            path => Assert.Equal($"rtsp://{expectedUserInfo}@192.168.1.10:554/stream1", path));
+        // Assert
+        Assert.Equal([$"rtsp://{expectedUserInfo}@192.168.1.10:554/stream1"], ReadGo2rtcSources(yaml, "front_door"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldKeepTheAccountOutOfFrigatesInputs_WhenTheCameraHasOne()
+    {
+        // Arrange
+        var camera = MakeValidatedCamera("front-door");
+        camera.Username = "viewer";
+        camera.Password = "secret";
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync([camera]);
+
+        // Assert
+        Assert.All(ReadInputPaths(yaml, "front_door"), path => Assert.DoesNotContain("secret", path, StringComparison.Ordinal));
     }
 }

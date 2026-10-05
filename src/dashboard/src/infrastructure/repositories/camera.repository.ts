@@ -1,5 +1,10 @@
 import type { CameraUpdateInput, NewCameraInput } from '../../domain/entities/camera_input.entity'
-import { CameraState, PrivacyMiss, type Camera } from '../../domain/entities/camera.entity'
+import {
+  CameraState,
+  PrivacyMiss,
+  type Camera,
+  type LiveQuality,
+} from '../../domain/entities/camera.entity'
 import type {
   CameraProtocol,
   CameraProtocolAddition,
@@ -48,6 +53,7 @@ interface CameraDto {
   ptzSupported: boolean
   privacyStrategy: string
   verifiedCapabilities: string[]
+  liveQualities: LiveQuality[]
   detectedAt: string | null
 }
 
@@ -394,6 +400,7 @@ function mapCamera(camera: CameraDto): Camera {
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: camera.privacyStrategy as Camera['privacyStrategy'],
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
+    liveQualities: camera.liveQualities,
     detectedAt: camera.detectedAt,
     connected: camera.status === CameraState.Online,
   }

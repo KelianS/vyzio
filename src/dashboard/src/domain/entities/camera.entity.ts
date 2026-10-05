@@ -36,6 +36,14 @@ export const CameraValidation = {
   PendingRemoval: 'pending_removal',
 } as const
 
+/** The live view's qualities (ADR-72 c): the low one first, the high one when recording runs on another stream. */
+export const LiveQuality = {
+  Low: 'low',
+  High: 'high',
+} as const
+
+export type LiveQuality = (typeof LiveQuality)[keyof typeof LiveQuality]
+
 export interface Camera {
   id: string
   slug: string
@@ -60,6 +68,8 @@ export interface Camera {
   ptzSupported: boolean
   privacyStrategy: PrivacyStrategy
   verifiedCapabilities: string[]
+  /** The qualities its live view offers; empty while it is not in surveillance. */
+  liveQualities: LiveQuality[]
   /** When detection last finished; null: never, so its page runs it on arrival (ADR-68 b). */
   detectedAt: string | null
 }

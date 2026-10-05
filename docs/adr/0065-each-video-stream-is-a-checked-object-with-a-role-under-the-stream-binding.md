@@ -1,6 +1,6 @@
 # ADR-65: Each video stream is a checked object with a role, under the stream binding
 
-> Status: Accepted, amended by [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (point e: no stream path entered when the camera is added, none required)
+> Status: Accepted, amended by [ADR-68](0068-a-camera-is-created-from-its-access-alone.md) (point e: no stream path entered when the camera is added, none required) and by [ADR-72](0072-the-live-view-is-a-video-stream-relayed-by-the-api-from-go2rtc.md) (point g: the stream's protocol, port and account build go2rtc's source, every Frigate input reads go2rtc back)
 >
 > Amends [ADR-38](0038-camera-stream-model-one-stream-one-quality-separate-detect-and-record-roles.md)
 > on who holds the `record` and `detect` roles (a role per stream instead of the most detailed stream

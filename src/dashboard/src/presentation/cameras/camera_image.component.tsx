@@ -100,6 +100,7 @@ export function CameraImageView() {
                   cameraId={cameraId}
                   label={camera.displayName}
                   orientation={orientation}
+                  qualities={camera.liveQualities}
                 />
               </Overlay>
             )}

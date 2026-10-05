@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
 import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
+import { FakeSocket, stubBrowserMse } from '../../testing/fake_mse'
+import type { LiveQuality } from '../../domain/entities/camera.entity'
 import { LiveView } from './live_view.component'
 import { OrientationControl } from '../../common/orientation/orientation_control'
 
@@ -60,7 +62,12 @@ async function sentWithin(network: ReturnType<typeof fakeNetwork>, route: string
 
 function renderLiveView() {
   return renderScreen(
-    <LiveView cameraId="camera-1" label="Front Door" orientation={OrientationControl.Usable} />,
+    <LiveView
+      cameraId="camera-1"
+      label="Front Door"
+      orientation={OrientationControl.Usable}
+      qualities={['low']}
+    />,
   )
 }
 
@@ -71,7 +78,12 @@ describe('LiveView', () => {
 
     // Act
     renderScreen(
-      <LiveView cameraId="camera-1" label="Front Door" orientation={OrientationControl.Unusable} />,
+      <LiveView
+        cameraId="camera-1"
+        label="Front Door"
+        orientation={OrientationControl.Unusable}
+        qualities={['low']}
+      />,
     )
 
     // Assert
@@ -92,7 +104,12 @@ describe('LiveView', () => {
 
     // Act
     renderScreen(
-      <LiveView cameraId="camera-1" label="Front Door" orientation={OrientationControl.Off} />,
+      <LiveView
+        cameraId="camera-1"
+        label="Front Door"
+        orientation={OrientationControl.Off}
+        qualities={['low']}
+      />,
     )
 
     // Assert
@@ -571,5 +588,164 @@ describe('LiveView', () => {
 
     // Assert
     await sentWithin(network, STOP)
+  })
+})
+
+describe('LiveView video', () => {
+  const H264_AAC = 'video/mp4; codecs="avc1.64001E,mp4a.40.2"'
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function renderVideo(qualities: LiveQuality[] = ['low', 'high']) {
+    fakeNetwork({})
+    return renderScreen(
+      <LiveView
+        cameraId="camera-1"
+        label="Front Door"
+        orientation={OrientationControl.Off}
+        qualities={qualities}
+      />,
+    )
+  }
+
+  // go2rtc answers with H.264 and AAC, then sends a first segment.
+  async function theStreamPlays(sockets = 1) {
+    await waitFor(() => expect(FakeSocket.opened).toHaveLength(sockets))
+    const socket = FakeSocket.latest()
+    socket.open()
+    socket.answer(H264_AAC)
+    socket.segment()
+    return socket
+  }
+
+  it('LiveView_ShouldShowTheRefreshedPictureAndSayWhy_WhenTheBrowserCannotPlayVideo', () => {
+    // Arrange & Act
+    renderVideo()
+
+    // Assert
+    expect(
+      screen.getByText(
+        'Ce navigateur ne lit pas la vidéo en direct : image rafraîchie chaque seconde.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('live camera-1 low: MediaSource unavailable')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Front Door' })).toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldPlayTheLowQualityMutedFirst_WhenOpened', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+
+    // Act
+    const socket = await theStreamPlays()
+
+    // Assert
+    expect(socket.url).toContain('/api/cameras/camera-1/live/ws?quality=low')
+    expect(await screen.findByRole('button', { name: 'Activer le son' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Haute qualité' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByLabelText<HTMLVideoElement>('Front Door').muted).toBe(true)
+  })
+
+  it('LiveView_ShouldOpenTheHighQuality_WhenTheUserPressesHd', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+    await theStreamPlays()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Haute qualité' }))
+
+    // Assert
+    await waitFor(() => expect(FakeSocket.latest().url).toContain('quality=high'))
+    expect(FakeSocket.opened[0].closed).toBe(true)
+  })
+
+  it('LiveView_ShouldReopenTheStreamWithItsSound_WhenTheUserTurnsTheSoundOn', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+    const muted = await theStreamPlays()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Activer le son' }))
+    const withSound = await theStreamPlays(2)
+
+    // Assert
+    expect(muted.closed).toBe(true)
+    expect(JSON.parse(withSound.sent[0]).value).toContain('mp4a.40.2')
+    expect(await screen.findByRole('button', { name: 'Couper le son' })).toBeInTheDocument()
+    expect(screen.getByLabelText<HTMLVideoElement>('Front Door').muted).toBe(false)
+  })
+  it('LiveView_ShouldOfferNoQualitySwitch_WhenTheCameraHasOneQuality', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo(['low'])
+
+    // Act
+    await theStreamPlays()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Activer le son' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Haute qualité' })).not.toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldReconnect_WhenAPlayingStreamIsCut', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+    const first = await theStreamPlays()
+    await screen.findByRole('button', { name: 'Activer le son' })
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    // Act
+    act(() => first.hangUp(1006))
+    const waiting = screen.getByText('Reconnexion…')
+    act(() => vi.advanceTimersByTime(2000))
+    vi.useRealTimers()
+
+    // Assert
+    expect(waiting).toBeInTheDocument()
+    await waitFor(() => expect(FakeSocket.opened).toHaveLength(2))
+  })
+
+  it('LiveView_ShouldSayWhyAndOfferARetry_WhenTheStreamDoesNotArrive', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+    await waitFor(() => expect(FakeSocket.opened.length).toBeGreaterThan(0))
+    FakeSocket.latest().error('streams: dial tcp: connection refused')
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      screen.queryByText('La vidéo n’arrive pas : image rafraîchie chaque seconde.'),
+    ).not.toBeInTheDocument()
+    await waitFor(() => expect(FakeSocket.opened).toHaveLength(2))
+  })
+
+  it('LiveView_ShouldSayPrivacyModeWithoutAPicture_WhenTheApiRefusesForPrivacy', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+    await waitFor(() => expect(FakeSocket.opened.length).toBeGreaterThan(0))
+
+    // Act
+    FakeSocket.latest().hangUp(4409, 'privacy_mode')
+
+    // Assert
+    expect(
+      await screen.findByText('Mode vie privée : la vue en direct est arrêtée.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Front Door' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 })

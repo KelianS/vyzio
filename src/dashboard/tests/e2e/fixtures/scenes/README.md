@@ -7,6 +7,9 @@ Every file is a public-domain dedication (CC0 1.0), so it is redistributed witho
 constraints. Each was cropped to 16:9, downscaled to 1024 x 576 and re-encoded without its metadata.
 Add a scene only with a licence as free, and record it here.
 
+`entrance.mp4` is one second of `entrance.jpg`, encoded as fragmented H.264 at 640 x 360 without
+sound or metadata: the stream the fake backend sends to the live view. It carries that scene's licence.
+
 | File           | Title                                         | Author         | Source                                                                                                           | Licence                                                       |
 | -------------- | --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `entrance.jpg` | Nichols House, Sylva, NC (45818604715)        | Warren LeMay   | [Wikimedia Commons](<https://commons.wikimedia.org/wiki/File:Nichols_House,_Sylva,_NC_(45818604715).jpg>)        | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |

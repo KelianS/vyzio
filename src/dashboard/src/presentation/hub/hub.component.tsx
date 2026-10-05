@@ -13,7 +13,7 @@ import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
-import type { Camera } from '../../domain/entities/camera.entity'
+import type { Camera, LiveQuality } from '../../domain/entities/camera.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
@@ -35,7 +35,13 @@ const RECENT_EVENTS_MAX = 5
 
 type ModalMedia =
   | { type: 'image' | 'video'; url: string }
-  | { type: 'live'; cameraId: string; label: string; orientation: OrientationControl }
+  | {
+      type: 'live'
+      cameraId: string
+      label: string
+      orientation: OrientationControl
+      qualities: LiveQuality[]
+    }
 
 export function HubView() {
   const { apiBaseUrl, hub: container, cameras: camerasContainer } = useAppContainer()
@@ -85,6 +91,7 @@ export function HubView() {
             cameraId: camera.id,
             label: camera.displayName,
             orientation: orientationControlOf(camera),
+            qualities: camera.liveQualities,
           })
         }
       />
@@ -96,6 +103,7 @@ export function HubView() {
               cameraId={modalMedia.cameraId}
               label={modalMedia.label}
               orientation={modalMedia.orientation}
+              qualities={modalMedia.qualities}
             />
           ) : modalMedia.type === 'image' ? (
             <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />

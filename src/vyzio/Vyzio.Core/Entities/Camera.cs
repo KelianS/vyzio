@@ -121,6 +121,38 @@ public class Camera
     [NotMapped]
     public CameraStream? DetectStream => Streams.FirstOrDefault(stream => stream.Detects) ?? RecordStream;
 
+    // What Frigate is handed: an enabled camera in surveillance whose stream has a protocol (ADR-61, ADR-68 d).
+    [NotMapped]
+    public bool InSurveillance
+        => IsEnabled && ValidationState == CameraValidationState.Validated && StreamBinding is not null;
+
+    // At most two streams, so watching never opens a third connection: the role streams, plus a verified one when the roles share a stream (ADR-72 c).
+    [NotMapped]
+    public IReadOnlyList<CameraStream> LiveStreams
+    {
+        get
+        {
+            var roles = Streams.Where(stream => stream.Records || stream.Detects).Take(2).ToList();
+            var candidates = roles.Count > 1 ? roles
+                : roles.Concat(Streams.Where(stream => stream.Verified && !roles.Contains(stream)).Take(1)).ToList();
+            return candidates.All(stream => stream.HasKnownResolution)
+                ? candidates.OrderBy(stream => (long)stream.Width!.Value * stream.Height!.Value).ToList()
+                : candidates.OrderByDescending(stream => stream.Ordinal).ToList();
+        }
+    }
+
+    [NotMapped]
+    public IReadOnlyList<LiveQuality> LiveQualities
+        => !InSurveillance ? [] : LiveStreams.Count > 1 ? [LiveQuality.Low, LiveQuality.High] : [LiveQuality.Low];
+
+    // Low is the smaller of the live streams, High the larger; null for a binding whose streams were never laid out.
+    public CameraStream? LiveStream(LiveQuality quality)
+    {
+        var live = LiveStreams;
+        if (live.Count == 0) return null;
+        return quality == LiveQuality.High ? live[^1] : live[0];
+    }
+
     [NotMapped]
     public bool DetectsOnRecordingStream => RecordStream is not null && !Streams.Any(stream => stream.Detects);
 

@@ -53,6 +53,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ApplyCameraConfigurationUseCase>();
         services.AddScoped<DeleteCameraUseCase>();
         services.AddScoped<GetCamerasUseCase>();
+        services.AddScoped<OpenLiveStreamUseCase>();
         services.AddScoped<GetCameraStatusUseCase>();
         services.AddScoped<GetCameraDetectionConfigUseCase>();
         services.AddScoped<SaveCameraDetectionConfigUseCase>();

@@ -70,4 +70,28 @@ describe('liveViewReducer', () => {
     // Assert
     expect(next.presets).toEqual([{ ...parking, thumbnail: true }])
   })
+
+  it('liveViewReducer_ShouldWatchTheChosenQuality_WhenTheUserSwitchesIt', () => {
+    // Arrange
+    const state = buildInitialLiveViewUido()
+
+    // Act
+    const next = liveViewReducer(state, { type: 'QUALITY_CHOSEN', quality: 'high' })
+
+    // Assert
+    expect(state.quality).toBe('low')
+    expect(next.quality).toBe('high')
+  })
+
+  it('liveViewReducer_ShouldTurnTheSoundOnThenOff_WhenTheUserTogglesItTwice', () => {
+    // Arrange
+    const state = buildInitialLiveViewUido()
+
+    // Act
+    const on = liveViewReducer(state, { type: 'SOUND_TOGGLED' })
+    const off = liveViewReducer(on, { type: 'SOUND_TOGGLED' })
+
+    // Assert
+    expect([state.soundOn, on.soundOn, off.soundOn]).toEqual([false, true, false])
+  })
 })

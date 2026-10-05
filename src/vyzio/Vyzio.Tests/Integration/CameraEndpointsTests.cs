@@ -1,6 +1,8 @@
 ﻿using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.WebSockets;
+using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -9,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Configuration;
@@ -538,6 +541,107 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record RetentionResponse(RetentionWindowResponse EventClip);
 
+    // The live socket (ADR-72 b): refused with a close code, relayed otherwise.
+
+    private async Task<WebSocket> OpenLiveAsync(string path)
+    {
+        var client = _factory.Server.CreateWebSocketClient();
+        client.ConfigureRequest = request => request.Headers.Cookie = SignedInTestClient.Cookie;
+        return await client.ConnectAsync(new Uri(_factory.Server.BaseAddress, path), CancellationToken.None);
+    }
+
+    private static async Task<(WebSocketReceiveResult Result, string Text)> ReceiveTextAsync(WebSocket socket)
+    {
+        var buffer = new byte[1024];
+        var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+        return (result, Encoding.UTF8.GetString(buffer, 0, result.Count));
+    }
+
+    [Fact]
+    public async Task LiveStream_ShouldRelayTheSocket_WhenTheCameraIsInSurveillance()
+    {
+        // Arrange
+        using var socket = await OpenLiveAsync("/api/cameras/camera-1/live/ws");
+
+        // Act
+        var (_, text) = await ReceiveTextAsync(socket);
+
+        // Assert
+        Assert.Equal("relayed front_door low", text);
+    }
+
+    [Theory]
+    [InlineData("/api/cameras/missing/live/ws", LiveStreamClose.UnknownCamera)]
+    [InlineData("/api/cameras/camera-1/live/ws?quality=high", LiveStreamClose.NoStream)]
+    public async Task LiveStream_ShouldCloseWithItsCode_WhenTheStreamIsRefused(string path, LiveStreamClose expected)
+    {
+        // Arrange
+        using var socket = await OpenLiveAsync(path);
+
+        // Act
+        var (result, _) = await ReceiveTextAsync(socket);
+
+        // Assert
+        Assert.Equal(WebSocketMessageType.Close, result.MessageType);
+        Assert.Equal((WebSocketCloseStatus)expected, result.CloseStatus);
+    }
+
+    [Fact]
+    public async Task LiveStream_ShouldCloseWithThePrivacyCode_WhenTheCameraIsInPrivacyMode()
+    {
+        // Arrange
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();
+            (await db.Cameras.SingleAsync(camera => camera.Id == "camera-1")).PrivacyModeActive = true;
+            await db.SaveChangesAsync();
+        }
+        using var socket = await OpenLiveAsync("/api/cameras/camera-1/live/ws");
+
+        // Act
+        var (result, _) = await ReceiveTextAsync(socket);
+
+        // Assert
+        Assert.Equal((WebSocketCloseStatus)LiveStreamClose.PrivacyMode, result.CloseStatus);
+    }
+
+    [Fact]
+    public async Task LiveStream_ShouldRefuseWithItsCode_WhenTheRequestIsNotAWebSocket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/cameras/camera-1/live/ws");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("websocket_expected", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LiveStream_ShouldRefuseTheHandshake_WhenTheQualityIsUnknown()
+    {
+        // Arrange & Act
+        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => OpenLiveAsync("/api/cameras/camera-1/live/ws?quality=ultra"));
+
+        // Assert
+        Assert.Contains("400", refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetCameras_ShouldListTheLiveQualities_WhenTheCameraIsInSurveillance()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var listed = await client.GetStringAsync("/api/cameras");
+
+        // Assert
+        Assert.Contains("\"liveQualities\":[\"low\"]", listed, StringComparison.Ordinal);
+    }
+
     public sealed record RetentionWindowResponse(int? Override);
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
@@ -560,6 +664,21 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 {
     public StubCameraDiscoveryService Discovery { get; } = new();
+
+    // Answers with the stream and quality it was asked for, then hangs up.
+    private sealed class StubLiveStreamRelay : ILiveStreamRelay
+    {
+        public async Task RelayAsync(Camera camera, LiveQuality quality, WebSocket viewer, CancellationToken ct = default)
+        {
+            var text = $"relayed {camera.FrigateCameraName} {SnakeCaseEnum.ToSnakeCase(quality)}";
+            await viewer.SendAsync(Encoding.UTF8.GetBytes(text), WebSocketMessageType.Text, true, ct);
+            await viewer.CloseAsync(WebSocketCloseStatus.NormalClosure, null, ct);
+        }
+
+        public void Cut(string cameraId)
+        {
+        }
+    }
 
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
 
@@ -611,6 +730,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<ICameraStreamEnumerator>();
             services.RemoveAll<IFrigateConfigApplier>();
             services.RemoveAll<IVendorAssistanceService>();
+            services.RemoveAll<ILiveStreamRelay>();
             services.RemoveAll<VyzioRuntimeSettings>();
             services.AddSingleton(new VyzioRuntimeSettings
             {
@@ -630,6 +750,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<ICameraStreamEnumerator>(new StubCameraStreamEnumerator());
             services.AddSingleton<IFrigateConfigApplier>(new StubFrigateConfigApplier());
             services.AddSingleton<IVendorAssistanceService, CameraVendorAssistanceService>();
+            services.AddSingleton<ILiveStreamRelay, StubLiveStreamRelay>();
 
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<VyzioDbContext>();

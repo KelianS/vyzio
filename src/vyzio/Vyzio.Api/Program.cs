@@ -131,6 +131,8 @@ app.UseExceptionHandler();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+// The live view's socket (ADR-72); pings keep an idle stream open through the dashboard's proxy.
+app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
 
 // The container probes: they must answer before anyone has installed anything.
 app.MapHealth();

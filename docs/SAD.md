@@ -14,12 +14,12 @@ usable by a non-technical household and keeps it invisible.
 
 | Attribute | Requirement | Architectural impact | Answered by |
 |---|---|---|---|
-| Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) 8.2) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate opens no flow to the internet, and any of its features that would reach it needs its own decision (§ 4) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50, ADR-70 |
+| Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) 8.2) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate opens no flow to the internet, and any of its features that would reach it needs its own decision (§ 4) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50, ADR-70, ADR-72 |
 | Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) 5.3) | No cloud service in any critical path; the messaging channels and remote access need internet; no model is downloaded at run time, those Frigate does not carry ship with Vyzio | ADR-01, ADR-06, ADR-09, ADR-34, ADR-70 |
 | Target hardware | A modest machine at home: a mini PC, a Raspberry Pi 5, a NAS | One Compose stack, one database file, the detector picked from the hardware found, with a CPU fallback | ADR-06, ADR-34, ADR-37 |
-| Latency | A person signalled while still in view ([SPECS](SPECS.md) 5.2) | Vyzio adds no step on the image path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards | ADR-03, ADR-04 |
+| Latency | A person signalled while still in view ([SPECS](SPECS.md) 5.2); the live view about a second behind the scene ([SPECS](SPECS.md) 7.2) | Vyzio adds no step on the detection path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards. The live view's only step is the API's relay, which copies go2rtc's stream without decoding it | ADR-03, ADR-04, ADR-72 |
 | Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) 1.3) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-12, ADR-22, ADR-28, ADR-44, ADR-61 |
-| Resilience | A lost camera or a restarting Frigate is visible, never silent ([SPECS](SPECS.md) 2.2) | The API stays alive while Frigate restarts; camera reachability is watched apart from Frigate; Vyzio observes and shows, it never removes or reloads a camera on its own | ADR-23, ADR-55 |
+| Resilience | A lost camera or a restarting Frigate is visible, never silent ([SPECS](SPECS.md) 2.2) | The API stays alive while Frigate restarts; camera reachability is watched apart from Frigate; Vyzio observes and shows, it never removes or reloads a camera on its own; go2rtc carries every camera, so its stop stops them all | ADR-23, ADR-55, ADR-72 |
 | Diagnosable errors | A plain sentence, then the detail support needs ([SPECS](SPECS.md) 1.5) | A camera that refuses is told apart from one that cannot be reached, from the protocol client up to the screen | ADR-56 |
 
 ---
@@ -61,37 +61,37 @@ flowchart TB
         mqtt["MQTT broker"]
         subgraph frig["Frigate container"]
             frigate["Frigate<br/>video pipeline"]
-            go2rtc["go2rtc<br/>DVRIP bridge"]
+            go2rtc["go2rtc<br/>camera streams"]
         end
     end
     cams["Cameras"]
     chan["Messaging services"]
     docker["Docker engine<br/>of the host"]
 
-    browser -- HTTP --> dash
-    dash -- "HTTP, API and health" --> api
+    browser -- "HTTP, WebSocket" --> dash
+    dash -- "HTTP and WebSocket, API and health" --> api
     api --- db
     api -- "HTTP REST" --> frigate
+    api -- "WebSocket, live view" --> go2rtc
     frigate -- "MQTT events" --> mqtt
     mqtt -- "MQTT events" --> api
     api -- "MQTT live tuning" --> mqtt
     api -- "writes the configuration<br/>(shared volume)" --> frigate
     api -- "restart" --> docker
-    frigate -- RTSP --> cams
     frigate -- RTSP --> go2rtc
-    go2rtc -- DVRIP --> cams
+    go2rtc -- "RTSP, DVRIP" --> cams
     api -- "ONVIF, RTSP, DVRIP,<br/>V380, Tapo KLAP" --> cams
     api -- "HTTPS, WebSocket" --> chan
 ```
 
 | Container | Responsibility | Does not | Shaped by |
 |---|---|---|---|
-| Dashboard | Serves the interface and relays the API and the liveness probe; the only service published to the user | Hold state, reach Frigate or a camera | ADR-08, ADR-40, ADR-42, ADR-53, ADR-55 |
-| API | The product: cameras (protocols, capabilities, streams, PTZ, privacy), the Frigate configuration and its application, profiles, notifications and commands, history read from Frigate, the owner account and sessions; the one authentication boundary | Decode video, detect, record, or keep a detection | ADR-04, ADR-07, ADR-12, ADR-22, ADR-49, ADR-50, ADR-54, ADR-61 |
+| Dashboard | Serves the interface and relays the API and the liveness probe; the only service published to the user | Hold state, reach Frigate or a camera | ADR-08, ADR-40, ADR-42, ADR-53, ADR-55, ADR-72 |
+| API | The product: cameras (protocols, capabilities, streams, PTZ, privacy), the Frigate configuration and its application, the live view relayed to the browser, profiles, notifications and commands, history read from Frigate, the owner account and sessions; the one authentication boundary | Decode video, detect, record, or keep a detection | ADR-04, ADR-07, ADR-12, ADR-22, ADR-49, ADR-50, ADR-54, ADR-61, ADR-72 |
 | Database | Vyzio's own data (§ 6) | Hold a detection, a frame or an embedding | ADR-06, ADR-49 |
 | MQTT broker | The event bus between Frigate and Vyzio | Leave the Docker network, persist anything | ADR-04, ADR-35 |
 | Frigate | Ingests the streams, detects, recognises faces, records, keeps clips and events, serves frames and media to the API | Get reached by the user, decide what is signalled, hold Vyzio's data | ADR-01, ADR-03, ADR-34, ADR-37, ADR-39 |
-| go2rtc (inside the Frigate container) | Turns a DVRIP camera into a stream Frigate reads like any other | Get configured by the user | ADR-19 |
+| go2rtc (inside the Frigate container) | Holds one connection per camera stream, shared by Frigate and the live view; turns a DVRIP camera into RTSP; serves the live stream as MP4 over a WebSocket | Get configured by the user, get reached by the browser | ADR-19, ADR-72 |
 
 
 ---
@@ -102,12 +102,12 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 
 | Source | Direction | Destination | Protocol | Port | Authentication |
 |---|---|---|---|---|---|
-| Browser, home network | to | Dashboard | HTTP, in the clear by design (ADR-67) | 8080, the one published port | Owner session cookie (ADR-54) |
-| Dashboard | to | API, Docker network | HTTP | 8443 | The owner session cookie, passed through |
-| API | to | Frigate, Docker network | HTTP REST | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
+| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080, the one published port | Owner session cookie (ADR-54) |
+| Dashboard | to | API, Docker network | HTTP, WebSocket | 8443 | The owner session cookie, passed through |
+| API | to | Frigate, Docker network | HTTP REST; WebSocket to go2rtc for the live view (ADR-72) | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
 | Frigate | to | MQTT broker, Docker network | MQTT | 1883 | None, anonymous |
 | API | to and from | MQTT broker, Docker network | MQTT: subscribes to events, publishes live tuning | 1883 | None, anonymous |
-| Frigate | to | Camera | RTSP | 554 by default, set per camera | Camera account, written in the generated configuration |
+| go2rtc | to | Camera | RTSP | 554 by default, set per camera | Camera account, written in the generated configuration |
 | go2rtc | to | Camera | DVRIP | 34567 by default, set per camera | Camera account, DVRIP login |
 | Frigate | to | go2rtc, inside its container | RTSP | 8554, loopback | None |
 | API | to | Camera | ONVIF (SOAP over HTTP) | Asked of the camera, swept over the usual ONVIF ports when unknown (ADR-56) | WS-Security digest; the search for the endpoint presents no account |
@@ -272,7 +272,8 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Someone on the home network opens the interface | Owner account, server session in an `httpOnly` cookie, revocable, login rate limited (ADR-54) |
 | Someone on the home network reads the traffic | Accepted: the home network is served over HTTP, its confidentiality is that network's; from outside, only the overlay's encrypted tunnel (ADR-67) |
 | A copy of the database file or of the generated Frigate configuration | Password hashed; camera accounts readable in both, channel tokens in the database (#247) |
-| Frigate reached directly | Bound to the host's loopback, every access through the API (ADR-16, ADR-17) |
+| Frigate reached directly | Bound to the host's loopback, every access through the API, the live socket included (ADR-16, ADR-17, ADR-72) |
+| A camera account read from a live stream's error | The relay removes every camera account from go2rtc's messages before they reach the browser (ADR-72) |
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
 | A command from a stranger on a messaging channel | Only paired, revocable conversations are heard; anything else is ignored without an answer (ADR-50) |
 | A camera account locked out by guesses | Discovery and the ONVIF endpoint search present no account (ADR-32, ADR-56) |
@@ -291,6 +292,6 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | The disk fills with recordings without warning | #64 |
 | A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
 | Discovery sweeps only the configured ranges and the dashboard address's /24: a camera on another subnet is found only by typing its address | #251 |
-| The live view is a refreshed still image (ADR-16); a real stream would add a flow from the hub to the browser | #47 |
+| go2rtc carries every camera: if it stops, detection, recording and the live view stop together (ADR-72) | #288 |
 | The user cannot yet export or erase their data | #69 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |

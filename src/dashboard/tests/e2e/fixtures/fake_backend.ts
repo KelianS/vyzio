@@ -29,6 +29,8 @@ export interface FakeCamera {
   ptzSupported: boolean
   privacyStrategy: string
   verifiedCapabilities: string[]
+  /** The live view's qualities (ADR-72 c). */
+  liveQualities: string[]
   /** Null until detection first ran: its page runs it on arrival (ADR-68 b). */
   detectedAt: string | null
 }
@@ -164,6 +166,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     ptzSupported: false,
     privacyStrategy: 'software_blur',
     verifiedCapabilities: [],
+    liveQualities: ['low', 'high'],
     detectedAt: '2026-01-01T00:00:00Z',
     ...overrides,
   }
@@ -312,6 +315,10 @@ function scheduleRefusal(body: Pick<FakeScheduleRule, 'targetIds' | 'startTime' 
 
 export interface FakeBackendState {
   cameras: FakeCamera[]
+  /** Every live socket the interface opened, by address (ADR-72). */
+  liveSockets: string[]
+  /** Set, the API refuses every live socket with this close code. */
+  liveRefusal?: number
   /** Where the installation stands on its password, and where this browser stands with it. */
   access: FakeAccessState
   /** Saved settings that surveillance has not picked up yet (ADR-44). */
@@ -396,6 +403,10 @@ const SCENES = ['entrance', 'garden', 'garage', 'driveway'].map((name) =>
   readFileSync(join(import.meta.dirname, 'scenes', `${name}.jpg`)),
 )
 
+// One second of the entrance scene, H.264 in fragmented MP4, the way go2rtc sends a stream over MSE.
+const LIVE_CLIP = readFileSync(join(import.meta.dirname, 'scenes', 'entrance.mp4'))
+const LIVE_CLIP_MIME = 'video/mp4; codecs="avc1.42C01E"'
+
 /** What a camera films, found by any name the API gives it; an unknown one gets the first scene. */
 function sceneOf(state: FakeBackendState, name: string | undefined): Buffer {
   const index = state.cameras.findIndex((camera) =>
@@ -413,6 +424,7 @@ export function createFakeBackendState(
 ): FakeBackendState {
   return {
     cameras: [makeFakeCamera()],
+    liveSockets: [],
     // Installed and unlocked by default: every test would otherwise walk through the same door (ADR-54).
     access: { installed: true, signedIn: true },
     pendingChanges: false,
@@ -656,6 +668,19 @@ export async function installFakeBackend(
   page: Page,
   state: FakeBackendState = createFakeBackendState(),
 ) {
+  // go2rtc's side of the live socket: answers the codec request, then sends the clip (ADR-72).
+  await page.routeWebSocket(/\/api\/cameras\/[^/]+\/live\/ws/, (socket) => {
+    state.liveSockets.push(socket.url())
+    socket.onMessage(() => {
+      if (state.liveRefusal) {
+        void socket.close({ code: state.liveRefusal, reason: 'refused' })
+        return
+      }
+      socket.send(JSON.stringify({ type: 'mse', value: LIVE_CLIP_MIME }))
+      socket.send(LIVE_CLIP)
+    })
+  })
+
   await page.route('**/api/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())

@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<ICameraDiscoveryService, AssistedCameraDiscoveryService>();
+        services.AddSingleton<ILiveStreamRelay, Go2rtcLiveStreamRelay>();
         services.AddScoped<ICameraVerifier, RtspCameraVerifier>();
         services.AddScoped<IFrigateConfigApplier, FrigateConfigApplier>();
         services.AddScoped<ICameraStreamEnumerator, CameraStreamEnumerator>();

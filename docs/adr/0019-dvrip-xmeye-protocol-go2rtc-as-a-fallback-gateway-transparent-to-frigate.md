@@ -1,7 +1,9 @@
 # ADR-19 — Protocole dvrip/XMEye : go2rtc comme passerelle de fallback, transparent pour Frigate
 
 > Statut : Accepté, la place du transport du flux (`Camera.StreamProtocol`) est modifiée par
-> [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md).
+> [ADR-61](0061-camera-connection-data-on-three-levels-access-protocols-capabilities.md) ; go2rtc porte
+> toutes les caméras, pas seulement DVRIP, selon
+> [ADR-72](0072-the-live-view-is-a-video-stream-relayed-by-the-api-from-go2rtc.md).
 
 ## Contexte
 

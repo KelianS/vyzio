@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.StaticFiles;
+﻿using System.Net.WebSockets;
+using Microsoft.AspNetCore.StaticFiles;
 using Vyzio.Core.Interfaces;
 using Vyzio.Application.DTOs.Cameras;
 using Vyzio.Application.DTOs.Profiles;
@@ -132,6 +133,39 @@ public static class CamerasEndpoints
             if (frame is null) return Results.NotFound();
 
             return Results.File(frame, "image/jpeg");
+        });
+
+        // Live video: a socket relayed to go2rtc, refused with a close code the interface names (ADR-72 b).
+        group.MapGet("/{id}/live/ws", async (
+            string id,
+            string? quality,
+            HttpContext http,
+            OpenLiveStreamUseCase open,
+            ILiveStreamRelay relay,
+            CancellationToken ct) =>
+        {
+            if (!http.WebSockets.IsWebSocketRequest)
+                return Results.BadRequest(new { error = "websocket_expected", message = "The live stream is served over a WebSocket." });
+            var liveQuality = LiveQuality.Low;
+            if (quality is not null && !SnakeCaseEnum.TryFromSnakeCase(quality, out liveQuality))
+                return Results.BadRequest(new { error = "unknown_quality", message = $"Unknown live quality '{quality}'." });
+
+            using var socket = await http.WebSockets.AcceptWebSocketAsync();
+            var opening = await open.ExecuteAsync(id, liveQuality, ct);
+            if (opening.Camera is null)
+            {
+                var close = opening.Refusal switch
+                {
+                    LiveStreamRefusal.UnknownCamera => LiveStreamClose.UnknownCamera,
+                    LiveStreamRefusal.PrivacyMode => LiveStreamClose.PrivacyMode,
+                    _ => LiveStreamClose.NoStream,
+                };
+                await socket.CloseAsync((WebSocketCloseStatus)close, SnakeCaseEnum.ToSnakeCase(close), CancellationToken.None);
+                return Results.Empty;
+            }
+
+            await relay.RelayAsync(opening.Camera, liveQuality, socket, ct);
+            return Results.Empty;
         });
 
         // Privacy mode — toggle unitaire
