@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Time.Testing;
@@ -24,10 +24,7 @@ public class AssistedCameraDiscoveryServiceTests
     private AssistedCameraDiscoveryService DiscoveryWithStreams(VyzioRuntimeSettings settings)
         => new(settings, _time, new CapabilityProviderRegistry([], [], [], [new RtspStreamProvider(), new DvripStreamProvider()]));
 
-    // Every probe here must land on a loopback listener this test owns, on a port the OS just
-    // handed out — never a well-known one, which collides with whatever the machine happens to be
-    // running. Hence the port → fingerprint mapping being declared per test rather than inherited
-    // from the catalog.
+    // Probes land on loopback listeners on OS-assigned ports and hostnames end in .invalid, so no test reaches the LAN.
     internal static VyzioRuntimeSettings HermeticSettings(
         IReadOnlyList<string>? probeHosts = null,
         IReadOnlyList<string>? probeCidrs = null,
@@ -396,11 +393,11 @@ public class AssistedCameraDiscoveryServiceTests
     public async Task DiscoverAsync_ShouldRankTheHostLikelyWithoutAVendor_WhenOnlyTheHostnameHintsAtTapo()
     {
         var sut = Discovery(
-            HermeticSettings(probeHosts: ["c200-camera-tapo.lan"]));
+            HermeticSettings(probeHosts: ["c200-camera-tapo.invalid"]));
 
         var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
-        var candidate = Assert.Single(result, item => item.Host == "c200-camera-tapo.lan");
+        var candidate = Assert.Single(result, item => item.Host == "c200-camera-tapo.invalid");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
         Assert.Equal("camera_likely", candidate.Qualification);
         Assert.Null(candidate.VendorFamily);
@@ -411,12 +408,12 @@ public class AssistedCameraDiscoveryServiceTests
     public async Task DiscoverAsync_ShouldLeaveTheVendorUnset_WhenOnlyTheHostnameNamesV380()
     {
         var sut = Discovery(HermeticSettings(
-            probeHosts: ["v380pro-camera.lan"],
+            probeHosts: ["v380pro-camera.invalid"],
             vendorCatalogPath: FindRepoPath("src", "vyzio", "vendors")));
 
         var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
 
-        var candidate = Assert.Single(result, item => item.Host == "v380pro-camera.lan");
+        var candidate = Assert.Single(result, item => item.Host == "v380pro-camera.invalid");
         Assert.Equal("hostname_probe", candidate.DiscoverySource);
         Assert.Equal("camera_likely", candidate.Qualification);
         Assert.Null(candidate.VendorFamily);
@@ -491,7 +488,7 @@ public class AssistedCameraDiscoveryServiceTests
         var rtspServerTask = RespondRtspOkAsync(listener, stopServer.Token);
 
         var sut = Discovery(HermeticSettings(
-            probeHosts: [Loopback, "c200-camera-tapo.lan"],
+            probeHosts: [Loopback, "c200-camera-tapo.invalid"],
             rtspPorts: [rtspPort]));
 
         var result = (await sut.DiscoverAsync().ObservedAsync()).Candidates;
@@ -502,7 +499,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal(2, result.Count);
         Assert.Equal(Loopback, result[0].Host);
         Assert.Equal("camera_confirmed", result[0].Qualification);
-        Assert.Equal("c200-camera-tapo.lan", result[1].Host);
+        Assert.Equal("c200-camera-tapo.invalid", result[1].Host);
         Assert.Equal("camera_likely", result[1].Qualification);
     }
 
