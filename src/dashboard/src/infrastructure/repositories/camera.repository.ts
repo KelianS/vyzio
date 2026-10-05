@@ -7,7 +7,10 @@ import type {
 } from '../../domain/entities/camera_protocol.entity'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/camera_configuration_apply_result.entity'
 import type { CameraStatus } from '../../domain/entities/camera_status.entity'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import type {
+  DiscoveredCamera,
+  DiscoveryRange,
+} from '../../domain/entities/discovered_camera.entity'
 import type { VendorAssistance } from '../../domain/entities/vendor_assistance.entity'
 import type { CameraRepository } from '../../domain/ports/camera.port'
 import type { DiscoveryRequest } from '../../domain/ports/camera.port'
@@ -37,7 +40,6 @@ interface CameraDto {
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
   frigateCameraName: string
-  vendorFamily: string | null
   privacyModeActive: boolean
   privacyModeSource: 'manual' | 'schedule' | null
   privacyVendorCut: boolean
@@ -71,10 +73,7 @@ interface DiscoveredCameraDto {
   rtspActive: boolean
   discoverySource: string
   note: string | null
-  macAddress: string | null
-  isSupported: boolean
   qualification: string
-  supportLevel: string
   vendorFamily: string | null
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentationDto | null
@@ -138,6 +137,10 @@ export class HttpCameraRepository implements CameraRepository {
       input,
     )
     return payload.map(mapDiscoveredCamera)
+  }
+
+  async getDiscoveryRanges(): Promise<DiscoveryRange[]> {
+    return fetchJson<DiscoveryRange[]>(`${this.apiBaseUrl}/api/cameras/discovery/ranges`)
   }
 
   async getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null> {
@@ -383,7 +386,6 @@ function mapCamera(camera: CameraDto): Camera {
     lastReachabilityCheckAt: camera.lastReachabilityCheckAt,
     lastSuccessfulFrameAt: camera.lastSuccessfulFrameAt,
     frigateCameraName: camera.frigateCameraName,
-    vendorFamily: camera.vendorFamily,
     privacyModeActive: camera.privacyModeActive ?? false,
     privacyModeSource: camera.privacyModeSource ?? null,
     privacyVendorCut: camera.privacyVendorCut ?? false,
@@ -422,10 +424,7 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     rtspActive: camera.rtspActive,
     discoverySource: camera.discoverySource,
     note: camera.note,
-    macAddress: camera.macAddress,
-    isSupported: camera.isSupported,
     qualification: camera.qualification,
-    supportLevel: camera.supportLevel,
     vendorFamily: camera.vendorFamily,
     qualificationReasons: camera.qualificationReasons,
     stream: camera.stream,

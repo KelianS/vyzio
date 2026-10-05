@@ -10,9 +10,6 @@ public static class VyzioConfigLoader
         static int EnvInt(string name, int @default) =>
             int.TryParse(Env(name), out var i) ? i : @default;
 
-        static bool EnvBool(string name, bool @default = false) =>
-            Env(name) is { Length: > 0 } raw ? bool.TryParse(raw, out var b) && b : @default;
-
         static string[] EnvList(string name, string[]? @default = null) =>
             Env(name) is { Length: > 0 } raw
                 ? raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -45,7 +42,6 @@ public static class VyzioConfigLoader
             },
             Discovery = new VyzioRuntimeSettings.DiscoverySettings
             {
-                AutoDetectLocalCidrs = EnvBool("VYZIO_DISCOVERY_AUTO_DETECT_LOCAL_CIDRS"),
                 ProbeHosts = EnvList("VYZIO_DISCOVERY_PROBE_HOSTS"),
                 ProbeCidrs = EnvList("VYZIO_DISCOVERY_PROBE_CIDRS"),
                 ProbeTimeoutMs = probeTimeoutMs is < 50 or > 5000 ? 250 : probeTimeoutMs,

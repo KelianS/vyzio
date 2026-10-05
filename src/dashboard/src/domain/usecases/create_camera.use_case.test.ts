@@ -20,7 +20,6 @@ describe('CreateCamera', () => {
       lastReachabilityCheckAt: null,
       lastSuccessfulFrameAt: null,
       frigateCameraName: 'front_door',
-      vendorFamily: null,
     }
 
     const repository = {

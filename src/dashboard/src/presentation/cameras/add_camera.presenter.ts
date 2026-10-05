@@ -110,6 +110,18 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
     },
 
+    /** Opens the search confirmation and reads the ranges it will sweep, so it can name them (ADR-71). */
+    async onSearchAsked(): Promise<void> {
+      dispatch({ type: 'CONFIRM_SCAN_SET', value: true })
+      dispatch({ type: 'RANGES_TO_SWEEP_STARTED' })
+      try {
+        const ranges = await container.getDiscoveryRanges.execute()
+        dispatch({ type: 'RANGES_TO_SWEEP_SUCCEEDED', ranges })
+      } catch (e) {
+        dispatch({ type: 'RANGES_TO_SWEEP_FAILED', ...failureOf(e) })
+      }
+    },
+
     async onVendorAssistanceNeeded(vendorFamily: string | null): Promise<void> {
       const isLatest = nextVendorRequest()
       if (!vendorFamily) {

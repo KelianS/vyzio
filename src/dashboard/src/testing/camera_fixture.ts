@@ -17,7 +17,6 @@ export function makeCamera(overrides: Partial<Camera> = {}): Camera {
     lastReachabilityCheckAt: '2026-07-05T08:00:00Z',
     lastSuccessfulFrameAt: null,
     frigateCameraName: 'front_door',
-    vendorFamily: null,
     privacyModeActive: false,
     privacyModeSource: null,
     privacyVendorCut: false,

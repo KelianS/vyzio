@@ -10,7 +10,6 @@ internal sealed record RawCameraDiscoverySignal(
     string? StreamPath,
     string DiscoverySource,
     string? Note,
-    string? MacAddress,
     string? ResolvedHostName,
     IReadOnlyList<string> Signals,
     // Set by the port sweep (ADR-32) once a fingerprint has confirmed which protocol actually

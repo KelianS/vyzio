@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from 'react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
 import type { VariantProps } from 'class-variance-authority'
 import {
   AlertDialog,
@@ -19,6 +19,8 @@ type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>['variant']>
 interface ConfirmModalProps {
   title: string
   body: string
+  /** What the question is about, under its sentence: a list the body cannot hold. */
+  details?: ReactNode
   /** A failure behind the question: the line support reads (SPECS 1.5). */
   diagnostic?: string
   confirmLabel: string
@@ -40,6 +42,7 @@ const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant
 export function ConfirmModal({
   title,
   body,
+  details,
   diagnostic,
   confirmLabel,
   cancelLabel = 'Annuler',
@@ -73,6 +76,7 @@ export function ConfirmModal({
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{body}</AlertDialogDescription>
+          {details}
           {diagnostic && <DiagnosticLine text={diagnostic} />}
         </AlertDialogHeader>
         <AlertDialogFooter>

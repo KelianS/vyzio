@@ -445,7 +445,6 @@ public class SearchCameraProtocolsUseCaseTests
         FrigateCameraName = "cam1",
         DisplayName = "cam1",
         Host = "192.168.1.10",
-        VendorFamily = VendorFamily.Icsee,
     };
 
     [Fact]

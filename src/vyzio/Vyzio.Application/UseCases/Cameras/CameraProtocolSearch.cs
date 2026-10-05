@@ -3,30 +3,24 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-public sealed record DetectionStep(CameraCapability Capability, IReadOnlyList<SupportedProtocol> Protocols, bool DeleteIfUnverified);
+public sealed record DetectionStep(CameraCapability Capability, IReadOnlyList<SupportedProtocol> Protocols);
 
-// What detection tries on a camera: its vendor's preset, otherwise every registered provider (ADR-28).
+// What detection tries on every camera, whatever its vendor: each capability over its protocols, in priority order (ADR-71 b).
 public sealed class DetectionPlan(ICapabilityProviderRegistry registry)
 {
-    private static readonly CameraCapability[] BlindProbeCapabilities =
+    private static readonly CameraCapability[] DetectedCapabilities =
         [CameraCapability.Ptz, CameraCapability.HardwarePrivacy, CameraCapability.ImageSettings];
 
-    // A preset's guess is kept unverified with its reason; a blind guess that fails is not worth a card.
-    public IReadOnlyList<DetectionStep> StepsFor(Camera camera)
-    {
-        var preset = camera.VendorFamily is { } vf ? VendorCapabilityPresets.GetByVendorFamily(vf) : null;
-        return preset is not null
-            ? preset.DefaultBindings.Select(b => new DetectionStep(b.Capability, b.Protocols, DeleteIfUnverified: false)).ToList()
-            : BlindProbeCapabilities
-                .Select(capability => new DetectionStep(capability, registry.GetRegisteredProtocols(capability), DeleteIfUnverified: true))
-                .Where(step => step.Protocols.Count > 0)
-                .ToList();
-    }
+    public IReadOnlyList<DetectionStep> Steps()
+        => DetectedCapabilities
+            .Select(capability => new DetectionStep(capability, registry.GetRegisteredProtocols(capability)))
+            .Where(step => step.Protocols.Count > 0)
+            .ToList();
 
     // The stream's protocols first, in their order, then every protocol a step names.
-    public IReadOnlyList<SupportedProtocol> CandidateProtocols(Camera camera)
+    public IReadOnlyList<SupportedProtocol> CandidateProtocols()
         => registry.GetRegisteredProtocols(CameraCapability.Stream)
-            .Concat(StepsFor(camera).SelectMany(step => step.Protocols))
+            .Concat(Steps().SelectMany(step => step.Protocols))
             .Distinct()
             .ToList();
 }
@@ -38,7 +32,7 @@ public sealed class CameraProtocolSearch(DetectionPlan plan, CameraProtocolCheck
     public async Task RunAsync(Camera camera, ProtocolCheckRun run, CancellationToken ct)
     {
         var present = camera.Protocols.Select(entry => entry.Protocol).ToList();
-        foreach (var protocol in plan.CandidateProtocols(camera).Concat(present).Distinct())
+        foreach (var protocol in plan.CandidateProtocols().Concat(present).Distinct())
             await protocolCheck.CheckAsync(camera, protocol, run, ct);
     }
 }

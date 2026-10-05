@@ -40,8 +40,6 @@ public class Camera
     [MaxLength(200)]
     public string? DeviceId { get; set; }
 
-    public VendorFamily? VendorFamily { get; set; }
-
     // JSON array of active detection labels e.g. ["person","dog"]. Null defaults to ["person"].
     [MaxLength(500)]
     public string? DetectionLabelsJson { get; set; }

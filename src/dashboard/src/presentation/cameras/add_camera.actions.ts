@@ -1,6 +1,9 @@
 import type { AppError } from '../../common/errors/app_error'
 import type { AddCameraForm } from './add_camera.uido'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import type {
+  DiscoveredCamera,
+  DiscoveryRange,
+} from '../../domain/entities/discovered_camera.entity'
 
 export type AddCameraAction =
   | { type: 'FORM_UPDATED'; patch: Partial<AddCameraForm> }
@@ -23,6 +26,9 @@ export type AddCameraAction =
   | { type: 'CREATE_SUCCEEDED' }
   | { type: 'CREATE_FAILED'; message: string; diagnostic?: string }
   | { type: 'CONFIRM_SCAN_SET'; value: boolean }
+  | { type: 'RANGES_TO_SWEEP_STARTED' }
+  | { type: 'RANGES_TO_SWEEP_SUCCEEDED'; ranges: DiscoveryRange[] }
+  | { type: 'RANGES_TO_SWEEP_FAILED'; message: string; diagnostic?: string }
   | { type: 'HELP_VENDOR_CHOSEN'; vendorFamily: string | null }
   | { type: 'VENDOR_ASSISTANCE_STARTED' }
   | { type: 'VENDOR_ASSISTANCE_SUCCEEDED'; markdown: string | null }

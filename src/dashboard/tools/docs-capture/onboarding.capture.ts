@@ -21,7 +21,7 @@ test('adding a camera', async ({ page }) => {
   await shoot(page.getByRole('heading', { name: 'Ajouter une caméra' }))
 
   await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
-  await expect(page.getByRole('alertdialog')).toBeVisible()
+  await expect(page.getByRole('alertdialog').getByText(/plage configurée par défaut/)).toBeVisible()
 
   await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
   await shoot(page.getByRole('button', { name: /Caméra détectée/ }))

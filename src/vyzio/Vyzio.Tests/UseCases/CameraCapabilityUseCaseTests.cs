@@ -615,7 +615,7 @@ public class ProbeCameraCapabilityUseCasePtzSupportedTests
     }
 }
 
-public class SeedAndProbePresetsUseCaseTests
+public class DetectCameraCapabilitiesUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
@@ -624,15 +624,14 @@ public class SeedAndProbePresetsUseCaseTests
     private readonly IPtzCapabilityProvider _ptzProvider = Substitute.For<IPtzCapabilityProvider>();
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly IImageSettingsCapabilityProvider _imageSettingsProvider = Substitute.For<IImageSettingsCapabilityProvider>();
-    private readonly SeedAndProbePresetsUseCase _sut;
+    private readonly DetectCameraCapabilitiesUseCase _sut;
 
-    public SeedAndProbePresetsUseCaseTests()
+    public DetectCameraCapabilitiesUseCaseTests()
     {
         _registry.ResolvePtz(Arg.Any<SupportedProtocol>()).Returns(_ptzProvider);
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
         _registry.ResolveImageSettings(Arg.Any<SupportedProtocol>()).Returns(_imageSettingsProvider);
-        // Blind-probe path (unlisted camera, ADR-28): no candidates by default — tests that
-        // exercise it stub the specific capability's candidate list explicitly.
+        // No candidate by default: each test names the protocols registered for the capability it detects.
         _registry.GetRegisteredProtocols(Arg.Any<CameraCapability>()).Returns([]);
         _sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache);
     }
@@ -650,7 +649,7 @@ public class SeedAndProbePresetsUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldForgetWhereTheCameraAnsweredOnce_WhenDetectingEveryCapability()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         camera.SetProtocolEndpoint(SupportedProtocol.Onvif, "http://h:8899/onvif/device_service");
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
@@ -678,10 +677,13 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldSeedAndProbeEveryPresetBinding_WhenTheVendorIsKnown()
+    public async Task ExecuteAsync_ShouldDetectEveryCapability_WhenEachHasARegisteredProtocol()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif]);
+        _registry.GetRegisteredProtocols(CameraCapability.ImageSettings).Returns([SupportedProtocol.Onvif]);
+        _registry.GetRegisteredProtocols(CameraCapability.HardwarePrivacy).Returns([SupportedProtocol.TapoKlap]);
         _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>()).Returns((CameraCapabilityBinding?)null);
         // After SaveAsync, GetAsync returns the saved binding for the probe step
         _bindings.GetAsync("cam1", CameraCapability.HardwarePrivacy, Arg.Any<CancellationToken>())
@@ -699,14 +701,14 @@ public class SeedAndProbePresetsUseCaseTests
 
         await _sut.ExecuteAsync("cam1");
 
-        // Three preset bindings: one SaveAsync each to create, one each to persist the probe result
+        // Three capabilities: one SaveAsync each to create, one each to persist the probe result
         await _bindings.Received(6).SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldRemoveTheTentativePtzBinding_WhenNoBlindCandidateVerifiesOnAnUnlistedCamera()
+    public async Task ExecuteAsync_ShouldRemoveTheTentativePtzBinding_WhenTheCameraShowsItMissing()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif]);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>())
@@ -722,9 +724,9 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldKeepThePtzBinding_WhenABlindCandidateVerifiesOnAnUnlistedCamera()
+    public async Task ExecuteAsync_ShouldKeepThePtzBinding_WhenACandidateProvesIt()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null, PtzSupported = false };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", PtzSupported = false };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif]);
         var tentativeBinding = new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif };
@@ -739,9 +741,9 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldTryEveryRegisteredProtocolInOrder_WhenTheCameraIsUnlisted()
+    public async Task ExecuteAsync_ShouldTryEveryRegisteredProtocolInOrder_WhenTheFirstOnesShowItMissing()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif, SupportedProtocol.Dvrip, SupportedProtocol.TapoKlap]);
 
@@ -766,9 +768,9 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldBlindProbeImageSettingsAndHardwarePrivacyToo_WhenTheCameraIsUnlisted()
+    public async Task ExecuteAsync_ShouldDetectImageSettingsAndHardwarePrivacyToo_WhenTheirProtocolsAreRegistered()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.ImageSettings).Returns([SupportedProtocol.Onvif]);
         _registry.GetRegisteredProtocols(CameraCapability.HardwarePrivacy).Returns([SupportedProtocol.TapoKlap]);
@@ -790,9 +792,9 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldProbeNothing_WhenNoProtocolIsRegisteredForAnUnlistedCamera()
+    public async Task ExecuteAsync_ShouldProbeNothing_WhenNoProtocolIsRegistered()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         // Default stub already returns [] for every capability — nothing should be probed at all.
 
@@ -801,13 +803,12 @@ public class SeedAndProbePresetsUseCaseTests
         await _bindings.DidNotReceive().SaveAsync(Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>());
     }
 
-    // ADR-28: Icsee declares Ptz candidates [Onvif, Dvrip] in priority order — cascade must
-    // try Onvif first and fall back to Dvrip only if Onvif fails to verify.
     [Fact]
     public async Task ExecuteAsync_ShouldCascadeToTheNextCandidateProtocol_WhenTheFirstFailsToVerify()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif, SupportedProtocol.Dvrip]);
 
         CameraCapabilityBinding? stored = null;
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(_ => stored);
@@ -829,7 +830,7 @@ public class SeedAndProbePresetsUseCaseTests
     [Fact]
     public async Task ExecuteAsync_ShouldNeverChangeTheProtocol_WhenTheBindingWasConfiguredManually()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         var manual = new CameraCapabilityBinding
         {
             CameraId = "cam1",
@@ -839,6 +840,7 @@ public class SeedAndProbePresetsUseCaseTests
             ManuallyConfigured = true,
         };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Dvrip, SupportedProtocol.Onvif]);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(manual);
         _ptzProvider.ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(CapabilityProof.Missing("The camera answered without the capability."));
 
@@ -856,8 +858,10 @@ public class SeedAndProbePresetsUseCaseTests
         // Arrange
         var answers = CapabilityTestUseCases.AnsweringProbe();
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.TplinkTapo };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif]);
+        _registry.GetRegisteredProtocols(CameraCapability.ImageSettings).Returns([SupportedProtocol.Onvif]);
 
         // Act
         await sut.ExecuteAsync("cam1");
@@ -874,8 +878,9 @@ public class SeedAndProbePresetsUseCaseTests
         answers.ProbeAsync(Arg.Any<Camera>(), SupportedProtocol.Onvif, Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("No ONVIF service answered on h."));
         answers.ProbeAsync(Arg.Any<Camera>(), SupportedProtocol.Dvrip, Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Answers());
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif, SupportedProtocol.Dvrip]);
         CameraCapabilityBinding? stored = null;
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(_ => stored);
         _bindings.When(b => b.SaveAsync(Arg.Is<CameraCapabilityBinding>(x => x.Capability == CameraCapability.Ptz), Arg.Any<CancellationToken>()))
@@ -898,8 +903,9 @@ public class SeedAndProbePresetsUseCaseTests
         answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
         answers.ProbeAsync(Arg.Any<Camera>(), SupportedProtocol.Dvrip, Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Answers());
         _registry.GetRegisteredProtocols(CameraCapability.Stream).Returns([SupportedProtocol.Rtsp, SupportedProtocol.Dvrip]);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Onvif, SupportedProtocol.Dvrip]);
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         var stored = new Dictionary<CameraCapability, CameraCapabilityBinding>();
         _bindings.GetAsync("cam1", Arg.Any<CameraCapability>(), Arg.Any<CancellationToken>())
@@ -1035,7 +1041,7 @@ public class SeedAndProbePresetsUseCaseTests
         var answers = Substitute.For<ICameraProtocolProbe>();
         answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.V380]);
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
@@ -1054,7 +1060,7 @@ public class SeedAndProbePresetsUseCaseTests
         var answers = Substitute.For<ICameraProtocolProbe>();
         answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null }
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" }
             .WithStream(SupportedProtocol.Rtsp);
         camera.EnsureProtocol(SupportedProtocol.Dvrip);
         StreamLineup.Add(camera.StreamBinding!, SupportedProtocol.Dvrip, CameraStream.DvripSecondaryQuery, StreamRole.Detect);
@@ -1077,7 +1083,7 @@ public class SeedAndProbePresetsUseCaseTests
         var answers = Substitute.For<ICameraProtocolProbe>();
         answers.ProbeAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>()).Returns(ProtocolAnswer.Unreachable("silent"));
         var sut = CapabilityTestUseCases.Seed(_cameras, _bindings, _registry, _endpointCache, answers);
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = null };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         camera.EnsureProtocol(SupportedProtocol.V380).DeviceId = 87654321;
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.V380]);
@@ -1091,9 +1097,9 @@ public class SeedAndProbePresetsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldKeepTheVerifiedProtocol_WhenThePresetStillCoversIt()
+    public async Task ExecuteAsync_ShouldKeepTheVerifiedProtocol_WhenNoHigherCandidateAnswers()
     {
-        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h", VendorFamily = VendorFamily.Icsee };
+        var camera = new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "h" };
         var verified = new CameraCapabilityBinding
         {
             CameraId = "cam1",
@@ -1103,6 +1109,7 @@ public class SeedAndProbePresetsUseCaseTests
         };
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
         _bindings.GetAsync("cam1", CameraCapability.Ptz, Arg.Any<CancellationToken>()).Returns(verified);
+        _registry.GetRegisteredProtocols(CameraCapability.Ptz).Returns([SupportedProtocol.Dvrip, SupportedProtocol.Onvif]);
         _ptzProvider.ProveAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>()).Returns(CapabilityProof.Proven());
 
         await _sut.ExecuteAsync("cam1");
@@ -1124,14 +1131,13 @@ public class GetCameraCapabilitiesUseCaseTests
         _sut = new GetCameraCapabilitiesUseCase(_cameras, _bindings, registry);
     }
 
-    private static Camera MakeCamera(string id = "cam1", VendorFamily? vendorFamily = null) => new()
+    private static Camera MakeCamera(string id = "cam1") => new()
     {
         Id = id,
         Slug = id,
         FrigateCameraName = id.Replace('-', '_'),
         DisplayName = id,
         Host = "h",
-        VendorFamily = vendorFamily,
     };
 
     [Fact]
@@ -1145,7 +1151,7 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldListTheStreamToConfigure_WhenTheCameraHasNoBindingAndNoVendor()
+    public async Task ExecuteAsync_ShouldListTheStreamAloneToConfigure_WhenTheCameraHasNoBinding()
     {
         // Arrange
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
@@ -1180,55 +1186,22 @@ public class GetCameraCapabilitiesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldMapBindingsAsConfiguredAndNotPreset_WhenTheCameraHasNoVendor()
+    public async Task ExecuteAsync_ShouldListEveryBindingAsConfigured_WhenTheCameraHasThem()
     {
+        // Arrange
         _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
         _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([
             new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.Ptz, Protocol = SupportedProtocol.Onvif, Status = CapabilityStatus.Verified },
-            new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.HardwarePrivacy, Protocol = SupportedProtocol.TapoKlap, Status = CapabilityStatus.Failed },
+            new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.HardwarePrivacy, Protocol = SupportedProtocol.TapoKlap, Status = CapabilityStatus.ToConfirm },
         ]);
 
+        // Act
         var result = await _sut.ExecuteAsync("cam1");
 
+        // Assert
         Assert.Equal(3, result!.Count);
-        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "onvif" && b.Verified && !b.IsPreset && b.IsConfigured);
-        Assert.Contains(result, b => b.Capability == "hardware_privacy" && b.Protocol == "tapo_klap" && !b.Verified && !b.IsPreset && b.IsConfigured);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldIncludeThePresetSuggestions_WhenNoBindingExistsYet()
-    {
-        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(vendorFamily: VendorFamily.TplinkTapo));
-        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([]);
-
-        var result = await _sut.ExecuteAsync("cam1");
-
-        // The stream, then the TplinkTapo preset: Ptz/Onvif + ImageSettings/Onvif + HardwarePrivacy/TapoKlap (ADR-56)
-        Assert.Equal(4, result!.Count);
-        Assert.Contains(result, b => b.Capability == "hardware_privacy" && b.Protocol == "tapo_klap" && b.IsPreset && !b.IsConfigured && !b.Verified);
-        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "onvif" && b.IsPreset && !b.IsConfigured && !b.Verified);
-        Assert.Contains(result, b => b.Capability == "image_settings" && b.Protocol == "onvif" && b.IsPreset && !b.IsConfigured && !b.Verified);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldMarkAnExistingBindingAsPreset_WhenTheVendorPresetListsIt()
-    {
-        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera(vendorFamily: VendorFamily.TplinkTapo));
-        _bindings.GetByCameraAsync("cam1", Arg.Any<CancellationToken>()).Returns([
-            new CameraCapabilityBinding { CameraId = "cam1", Capability = CameraCapability.HardwarePrivacy, Protocol = SupportedProtocol.TapoKlap, Status = CapabilityStatus.Verified },
-        ]);
-
-        var result = await _sut.ExecuteAsync("cam1");
-
-        // The stream; Ptz and ImageSettings unconfigured give preset entries; HardwarePrivacy configured is both.
-        Assert.Equal(4, result!.Count);
-        var privacyDto = result.First(b => b.Capability == "hardware_privacy");
-        Assert.True(privacyDto.IsPreset);
-        Assert.True(privacyDto.IsConfigured);
-        Assert.True(privacyDto.Verified);
-        var ptzDto = result.First(b => b.Capability == "ptz");
-        Assert.True(ptzDto.IsPreset);
-        Assert.False(ptzDto.IsConfigured);
+        Assert.Contains(result, b => b.Capability == "ptz" && b.Protocol == "onvif" && b.Verified && b.IsConfigured);
+        Assert.Contains(result, b => b.Capability == "hardware_privacy" && b.Protocol == "tapo_klap" && b.Status == "to_confirm" && b.IsConfigured);
     }
 }
 
