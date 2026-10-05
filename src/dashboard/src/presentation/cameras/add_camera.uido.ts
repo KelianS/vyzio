@@ -25,8 +25,6 @@ export interface AddCameraUido {
   form: AddCameraForm
 
   discoveryResults: DiscoveredCamera[]
-  /** The ranges the last search went through, shown so the user knows where it looked; null before any search (ADR-71). */
-  sweptRanges: DiscoveryRange[] | null
   discovering: boolean
   refreshing: boolean
   creating: boolean
@@ -35,6 +33,12 @@ export interface AddCameraUido {
   /** A failure: its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
+  /** The ranges the search will sweep, read when its confirmation opens so it can name them (ADR-71). */
+  rangesToSweep: {
+    loading: boolean
+    ranges: DiscoveryRange[]
+    error: { message: string; diagnostic?: string } | null
+  }
 
   /** Which vendor's help sheet shows: discovery's vendor, or the user's pick; never stored nor sent (#274). */
   helpVendor: string | null
@@ -48,7 +52,6 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     form: emptyCameraDraft,
 
     discoveryResults: [],
-    sweptRanges: null,
     discovering: false,
     refreshing: false,
     creating: false,
@@ -56,6 +59,7 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     message: null,
     error: null,
     confirmScan: false,
+    rangesToSweep: { loading: false, ranges: [], error: null },
 
     helpVendor: null,
     vendorAssistance: { loading: false, markdown: null, error: null },

@@ -45,11 +45,10 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
     async onDiscover(): Promise<void> {
       dispatch({ type: 'DISCOVERY_STARTED' })
       try {
-        const { ranges, candidates } = await container.discoverCameras.execute()
+        const candidates = await container.discoverCameras.execute()
         dispatch({
           type: 'DISCOVERY_SUCCEEDED',
           candidates,
-          ranges,
           message:
             candidates.length > 0
               ? `${candidates.length} caméra(s) trouvée(s).`
@@ -63,7 +62,7 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
     async onRefreshCandidate(index: number, candidate: DiscoveredCamera): Promise<void> {
       dispatch({ type: 'REFRESH_CANDIDATE_STARTED' })
       try {
-        const { candidates } = await container.discoverCameras.execute({
+        const candidates = await container.discoverCameras.execute({
           host: candidate.host,
           port: candidate.port,
         })
@@ -109,6 +108,18 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
 
     onConfirmScanSet(value: boolean) {
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
+    },
+
+    /** Opens the search confirmation and reads the ranges it will sweep, so it can name them (ADR-71). */
+    async onSearchAsked(): Promise<void> {
+      dispatch({ type: 'CONFIRM_SCAN_SET', value: true })
+      dispatch({ type: 'RANGES_TO_SWEEP_STARTED' })
+      try {
+        const ranges = await container.getDiscoveryRanges.execute()
+        dispatch({ type: 'RANGES_TO_SWEEP_SUCCEEDED', ranges })
+      } catch (e) {
+        dispatch({ type: 'RANGES_TO_SWEEP_FAILED', ...failureOf(e) })
+      }
     },
 
     async onVendorAssistanceNeeded(vendorFamily: string | null): Promise<void> {

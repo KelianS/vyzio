@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
 
         // Camera use cases
         services.AddScoped<DiscoverCamerasUseCase>();
+        services.AddScoped<GetDiscoveryRangesUseCase>();
         services.AddScoped<GetVendorAssistanceUseCase>();
         services.AddScoped<CreateCameraUseCase>();
         services.AddScoped<UpdateCameraUseCase>();

@@ -19,7 +19,6 @@ import { useRootStore } from '../../infrastructure/store/root.store'
 import {
   DiscoveryRangeSource,
   type DiscoveredCamera,
-  type DiscoveryRange,
 } from '../../domain/entities/discovered_camera.entity'
 import { resolveVendorLinkTarget } from './vendor_links'
 import { formatVendorFamily, helpVendorOptions, NO_HELP_VENDOR } from './vendor_families'
@@ -182,7 +181,7 @@ export function AddCameraView() {
                 <Button
                   type="button"
                   disabled={busy}
-                  onClick={() => presenter.onConfirmScanSet(true)}
+                  onClick={() => void presenter.onSearchAsked()}
                 >
                   <Radar aria-hidden="true" />
                   {uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
@@ -199,8 +198,6 @@ export function AddCameraView() {
               </div>
 
               <Feedback message={uido.message} error={uido.error} />
-
-              {uido.sweptRanges?.length === 0 && unclaimed.length === 0 && <NothingSwept />}
 
               {/* La liste ne contient plus que ce que la recherche a trouve. */}
               {unclaimed.length > 0 && (
@@ -222,11 +219,10 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio ne cherche pas dans toutes les
-              adresses du réseau (après une recherche, Avancé dit lesquelles), et beaucoup de
-              caméras ne répondent qu’une fois réveillées depuis leur propre application. Prenez
-              alors <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que
-              l’application de la caméra ou votre box indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio ne cherche que dans les adresses que
+              sa confirmation annonce, et beaucoup de caméras ne répondent qu’une fois réveillées
+              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
+              adresse sur le réseau, que l’application de la caméra ou votre box indiquent.
             </p>
             <p>
               Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
@@ -294,13 +290,14 @@ export function AddCameraView() {
             </div>
           </SettingsSection>
         )}
-        <AdvancedFacts ranges={uido.sweptRanges} candidate={candidate} />
+        {candidate && <TechnicalFacts candidate={candidate} />}
       </SettingsPage>
 
       {uido.confirmScan && (
         <ConfirmModal
           title="Rechercher les caméras du réseau ?"
-          body="Vyzio interroge les appareils de votre réseau local. La recherche prend 15 à 30 secondes."
+          body={searchWarning(uido.rangesToSweep)}
+          details={<RangesToSweep rangesToSweep={uido.rangesToSweep} />}
           confirmLabel="Rechercher"
           tone="confirm"
           onConfirm={async () => {
@@ -348,30 +345,34 @@ const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
   [DiscoveryRangeSource.DashboardAddress]: 'autour de l’adresse utilisée pour ouvrir Vyzio',
 }
 
-/** A search that swept nothing says how to get one, in the main flow since it is the next step. */
-function NothingSwept() {
+/** What the search confirmation names: every range it will sweep, with where each comes from (ADR-71). */
+function RangesToSweep({ rangesToSweep }: { rangesToSweep: AddCameraUido['rangesToSweep'] }) {
+  if (rangesToSweep.loading)
+    return <p className="text-sm text-muted-foreground">Lecture des adresses à parcourir…</p>
+  if (rangesToSweep.error)
+    return (
+      <div className="text-sm text-destructive">
+        <p>{rangesToSweep.error.message}</p>
+        {rangesToSweep.error.diagnostic && <DiagnosticLine text={rangesToSweep.error.diagnostic} />}
+      </div>
+    )
+  if (rangesToSweep.ranges.length === 0) return null
   return (
-    <p className="text-sm text-muted-foreground">
-      Aucune adresse n’a été parcourue : ouvrez Vyzio avec son adresse sur votre réseau (par exemple
-      192.168.1.10), ou saisissez l’adresse de la caméra.
-    </p>
+    <ul className="list-disc pl-5 text-left text-sm">
+      {rangesToSweep.ranges.map((range) => (
+        <li key={range.cidr}>
+          {range.firstAddress} à {range.lastAddress} · {RANGE_SOURCE_LABELS[range.source]}
+        </li>
+      ))}
+    </ul>
   )
 }
 
-/** Where the last search looked, so a camera outside it is known to need its address typed (ADR-71). */
-function SweptRanges({ ranges }: { ranges: DiscoveryRange[] }) {
-  return (
-    <div className="text-sm">
-      <p className="text-muted-foreground">Adresses parcourues par la recherche :</p>
-      <ul className="mt-1 list-disc pl-5">
-        {ranges.map((range) => (
-          <li key={range.cidr}>
-            {range.firstAddress} à {range.lastAddress} · {RANGE_SOURCE_LABELS[range.source]}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+/** The confirmation's sentence: a warning over the ranges, or how to get some when there are none. */
+function searchWarning(rangesToSweep: AddCameraUido['rangesToSweep']): string {
+  if (!rangesToSweep.loading && !rangesToSweep.error && rangesToSweep.ranges.length === 0)
+    return 'Aucune adresse n’est à parcourir : ouvrez Vyzio avec son adresse sur votre réseau (par exemple 192.168.1.10), ou saisissez l’adresse de la caméra.'
+  return 'Vyzio va interroger chaque adresse de ces plages pour y chercher des caméras. La recherche prend 15 à 30 secondes.'
 }
 
 /** Last action's outcome: success or failure, never both. */
@@ -402,47 +403,18 @@ function SelectableRow({ onSelect, children }: { onSelect: () => void; children:
   )
 }
 
-/** The page's closing fold: where the search looked, then the chosen camera's raw facts. */
-function AdvancedFacts({
-  ranges,
-  candidate,
-}: {
-  ranges: DiscoveryRange[] | null
-  candidate: DiscoveredCamera | null
-}) {
-  const facts = candidate ? technicalFacts(candidate) : []
-  const sweptRanges = ranges?.length ? ranges : null
-  if (!sweptRanges && !facts.length) return null
-
-  return (
-    <AdvancedFold>
-      <div className="flex flex-col gap-4">
-        {sweptRanges && <SweptRanges ranges={sweptRanges} />}
-        {facts.length > 0 && (
-          <dl className="divide-y divide-border text-sm">
-            {facts.map(([term, value]) => (
-              <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
-                <dt className="text-muted-foreground">{term}</dt>
-                <dd className="wrap-anywhere">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-      </div>
-    </AdvancedFold>
-  )
-}
-
-/** Raw discovery facts, only useful to diagnose a stuck add. */
-function technicalFacts(candidate: DiscoveredCamera): [string, string][] {
+/** Raw discovery facts, kept under the closing fold: only useful to diagnose a stuck add. */
+function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   const details = candidate.technicalDetails
   const ports = details?.detectedPorts ?? []
   const paths = details?.rtspPathsDetected ?? []
   const capabilities = details?.capabilities ?? []
 
-  if (!details?.resolvedHostName && !ports.length && !paths.length) return []
+  if (!details?.resolvedHostName && !ports.length && !paths.length) {
+    return null
+  }
 
-  return [
+  const facts: [string, string][] = [
     ...(details?.resolvedHostName
       ? [['Nom réseau', details.resolvedHostName] as [string, string]]
       : []),
@@ -459,6 +431,19 @@ function technicalFacts(candidate: DiscoveredCamera): [string, string][] {
       (capability) => [capability.label, capability.protocolLabels.join(', ')] as [string, string],
     ),
   ]
+
+  return (
+    <AdvancedFold>
+      <dl className="divide-y divide-border text-sm">
+        {facts.map(([term, value]) => (
+          <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
+            <dt className="text-muted-foreground">{term}</dt>
+            <dd className="wrap-anywhere">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </AdvancedFold>
+  )
 }
 
 function VendorNotice({ markdown }: { markdown: string }) {

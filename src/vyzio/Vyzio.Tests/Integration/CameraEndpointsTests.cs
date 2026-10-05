@@ -330,9 +330,9 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         var response = await client.PostAsync("/api/cameras/discovery", content: null);
 
         response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveredCameraResponse[]>();
 
-        var candidate = Assert.Single(payload!.Candidates);
+        var candidate = Assert.Single(payload!);
         Assert.Equal("Driveway", candidate.DisplayName);
         Assert.False(candidate.RtspActive);
         Assert.Null(candidate.VendorFamily);
@@ -342,11 +342,11 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task Discover_ShouldHandTheDashboardHostToDiscovery_WhenTheRequestCarriesAHostHeader()
+    public async Task DiscoveryRanges_ShouldComputeTheRangesFromTheHostHeader_WhenTheRequestAlsoCarriesAForwardedHost()
     {
         // Arrange
         using var client = _factory.CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/cameras/discovery");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/cameras/discovery/ranges");
         request.Headers.Host = "192.168.1.20:8080";
         request.Headers.Add("X-Forwarded-Host", "10.0.0.5");
 
@@ -355,8 +355,8 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
-        var range = Assert.Single(payload!.Ranges);
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveryRangeResponse[]>();
+        var range = Assert.Single(payload!);
         Assert.Equal("192.168.1.20", range.FirstAddress);
         Assert.Equal("dashboard_address", range.Source);
     }
@@ -371,9 +371,9 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
             554));
 
         response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<DiscoveredCameraResponse[]>();
 
-        var candidate = Assert.Single(payload!.Candidates);
+        var candidate = Assert.Single(payload!);
         Assert.Equal("Front Door", candidate.DisplayName);
         Assert.True(candidate.RtspActive);
         Assert.Contains("rtsp_responding", candidate.QualificationReasons);
@@ -526,8 +526,6 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record CameraStatusResponse(string CameraId, string DisplayName, string Status, string ValidationState, bool Connected, bool PreviewAvailable, bool NeedsAttention, string? Guidance, DateTimeOffset? LastReachabilityCheckAt, DateTimeOffset? LastSuccessfulFrameAt);
 
-    public sealed record DiscoveryResponse(DiscoveryRangeResponse[] Ranges, DiscoveredCameraResponse[] Candidates);
-
     public sealed record DiscoveryRangeResponse(string Cidr, string FirstAddress, string LastAddress, string Source);
 
     public sealed record DiscoveredCameraResponse(string DisplayName, string Host, int Port, string SourceType, string? StreamPath, bool RtspActive, string DiscoverySource, string? Note, string Qualification, string? VendorFamily, string[] QualificationReasons, DiscoveredStreamResponse? Stream);
@@ -648,10 +646,13 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
 
     private sealed class StubCameraDiscoveryService : ICameraDiscoveryService
     {
-        // Answers with the dashboard host itself as the one swept range, so a test reads which Host reached it.
+        // Answers with the dashboard host itself as the one range, so a test reads which Host reached it.
+        public IReadOnlyList<DiscoveryRange> RangesToSweep(string? dashboardHost)
+            => dashboardHost is null ? [] : [new DiscoveryRange($"{dashboardHost}/32", dashboardHost, dashboardHost, DiscoveryRangeSource.DashboardAddress)];
+
         public Task<CameraDiscoveryResult> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
             => Task.FromResult(new CameraDiscoveryResult(
-                dashboardHost is null ? [] : [new DiscoveryRange($"{dashboardHost}/32", dashboardHost, dashboardHost, DiscoveryRangeSource.DashboardAddress)],
+                [],
                 target is not null && string.Equals(target.Host, "192.168.1.10", StringComparison.OrdinalIgnoreCase)
                     ?
                     [

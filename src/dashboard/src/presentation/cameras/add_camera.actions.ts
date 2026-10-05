@@ -11,12 +11,7 @@ export type AddCameraAction =
   | { type: 'SELECTION_CLEARED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }
   | { type: 'DISCOVERY_STARTED' }
-  | {
-      type: 'DISCOVERY_SUCCEEDED'
-      candidates: DiscoveredCamera[]
-      ranges: DiscoveryRange[]
-      message: string
-    }
+  | { type: 'DISCOVERY_SUCCEEDED'; candidates: DiscoveredCamera[]; message: string }
   | { type: 'DISCOVERY_FAILED'; message: string; diagnostic?: string }
   | { type: 'REFRESH_CANDIDATE_STARTED' }
   | {
@@ -31,6 +26,9 @@ export type AddCameraAction =
   | { type: 'CREATE_SUCCEEDED' }
   | { type: 'CREATE_FAILED'; message: string; diagnostic?: string }
   | { type: 'CONFIRM_SCAN_SET'; value: boolean }
+  | { type: 'RANGES_TO_SWEEP_STARTED' }
+  | { type: 'RANGES_TO_SWEEP_SUCCEEDED'; ranges: DiscoveryRange[] }
+  | { type: 'RANGES_TO_SWEEP_FAILED'; message: string; diagnostic?: string }
   | { type: 'HELP_VENDOR_CHOSEN'; vendorFamily: string | null }
   | { type: 'VENDOR_ASSISTANCE_STARTED' }
   | { type: 'VENDOR_ASSISTANCE_SUCCEEDED'; markdown: string | null }

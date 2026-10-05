@@ -24,7 +24,7 @@ describe('DiscoverCameras', () => {
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
-      discover: vi.fn().mockResolvedValue({ ranges: [], candidates }),
+      discover: vi.fn().mockResolvedValue(candidates),
       create: vi.fn(),
       update: vi.fn(),
       verify: vi.fn(),
@@ -40,7 +40,7 @@ describe('DiscoverCameras', () => {
     const result = await useCase.execute()
 
     // Assert
-    expect(result).toEqual({ ranges: [], candidates })
+    expect(result).toEqual(candidates)
     expect(repository.discover).toHaveBeenCalledOnce()
   })
 
@@ -49,7 +49,7 @@ describe('DiscoverCameras', () => {
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
-      discover: vi.fn().mockResolvedValue({ ranges: [], candidates: [] }),
+      discover: vi.fn().mockResolvedValue([]),
       create: vi.fn(),
       update: vi.fn(),
       verify: vi.fn(),
@@ -65,7 +65,7 @@ describe('DiscoverCameras', () => {
     const result = await useCase.execute({ host: '192.168.1.20', port: 554 })
 
     // Assert
-    expect(result).toEqual({ ranges: [], candidates: [] })
+    expect(result).toEqual([])
     expect(repository.discover).toHaveBeenCalledWith({ host: '192.168.1.20', port: 554 })
   })
 })

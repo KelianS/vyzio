@@ -6,9 +6,15 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
+public sealed class GetDiscoveryRangesUseCase(ICameraDiscoveryService discoveryService)
+{
+    public IReadOnlyList<DiscoveryRangeDto> Execute(string? dashboardHost)
+        => discoveryService.RangesToSweep(dashboardHost).Select(DiscoveryRangeDto.From).ToList();
+}
+
 public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryService, ICameraRepository cameras)
 {
-    public async Task<DiscoverCamerasResponse> ExecuteAsync(DiscoverCamerasRequest? request = null, string? dashboardHost = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<DiscoveredCameraDto>> ExecuteAsync(DiscoverCamerasRequest? request = null, string? dashboardHost = null, CancellationToken ct = default)
     {
         var target = request?.ToTarget();
         var discovery = await discoveryService.DiscoverAsync(target, dashboardHost, ct);
@@ -23,13 +29,11 @@ public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryServ
             .Select(camera => camera.Host.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        return new DiscoverCamerasResponse(
-            discovery.Ranges.Select(DiscoveryRangeDto.From).ToList(),
-            discovery.Candidates
-                .Where(candidate => target is not null
-                    || !(configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)) || addressesWithoutStream.Contains(candidate.Host.Trim())))
-                .Select(DiscoveredCameraDto.From)
-                .ToList());
+        return discovery.Candidates
+            .Where(candidate => target is not null
+                || !(configuredEndpoints.Contains(BuildEndpointKey(candidate.Host, candidate.Port)) || addressesWithoutStream.Contains(candidate.Host.Trim())))
+            .Select(DiscoveredCameraDto.From)
+            .ToList();
     }
 
     private static string BuildEndpointKey(string host, int port)

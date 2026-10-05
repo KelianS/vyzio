@@ -47,9 +47,8 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         error: null,
       }
 
-    // The previous search's ranges would sit next to this one's failure.
     case 'DISCOVERY_STARTED':
-      return { ...state, discovering: true, sweptRanges: null, message: null, error: null }
+      return { ...state, discovering: true, message: null, error: null }
 
     // Auto-selecting the first result would open a form for a camera nobody looked at yet.
     case 'DISCOVERY_SUCCEEDED':
@@ -57,7 +56,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         discovering: false,
         discoveryResults: action.candidates,
-        sweptRanges: action.ranges,
         message: action.message,
       }
 
@@ -111,6 +109,20 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
 
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }
+
+    case 'RANGES_TO_SWEEP_STARTED':
+      return { ...state, rangesToSweep: { loading: true, ranges: [], error: null } }
+    case 'RANGES_TO_SWEEP_SUCCEEDED':
+      return { ...state, rangesToSweep: { loading: false, ranges: action.ranges, error: null } }
+    case 'RANGES_TO_SWEEP_FAILED':
+      return {
+        ...state,
+        rangesToSweep: {
+          loading: false,
+          ranges: [],
+          error: { message: action.message, diagnostic: action.diagnostic },
+        },
+      }
 
     case 'HELP_VENDOR_CHOSEN':
       return { ...state, helpVendor: action.vendorFamily }

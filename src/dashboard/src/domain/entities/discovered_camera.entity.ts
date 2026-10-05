@@ -31,7 +31,7 @@ interface DiscoveredStream {
   path: string | null
 }
 
-/** Where a swept range comes from (ADR-71). */
+/** Where a range to sweep comes from (ADR-71). */
 export const DiscoveryRangeSource = {
   Configured: 'configured',
   DashboardAddress: 'dashboard_address',
@@ -39,18 +39,12 @@ export const DiscoveryRangeSource = {
 
 export type DiscoveryRangeSource = (typeof DiscoveryRangeSource)[keyof typeof DiscoveryRangeSource]
 
-/** One address range a discovery swept, from its first to its last address. */
+/** One address range a search sweeps, from its first to its last address. */
 export interface DiscoveryRange {
   cidr: string
   firstAddress: string
   lastAddress: string
   source: DiscoveryRangeSource
-}
-
-/** What a discovery returns: the ranges it swept (none for a single address) and what it found. */
-export interface DiscoveryResult {
-  ranges: DiscoveryRange[]
-  candidates: DiscoveredCamera[]
 }
 
 export interface DiscoveredCamera {

@@ -172,7 +172,7 @@ public class DiscoverCamerasUseCaseTests
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", "ONVIF device announced.", "camera_confirmed", null, ["onvif_detected"])
         ]));
 
-        var result = (await _sut.ExecuteAsync()).Candidates;
+        var result = await _sut.ExecuteAsync();
 
         var candidate = Assert.Single(result);
         Assert.Equal("Driveway", candidate.DisplayName);
@@ -202,7 +202,7 @@ public class DiscoverCamerasUseCaseTests
             new CameraDiscoveryCandidate("Driveway", "192.168.1.20", 554, "onvif", null, "onvif", null, "camera_confirmed", null, [])
         ]));
 
-        var result = (await _sut.ExecuteAsync()).Candidates;
+        var result = await _sut.ExecuteAsync();
 
         var candidate = Assert.Single(result);
         Assert.Equal("Driveway", candidate.DisplayName);
@@ -231,7 +231,7 @@ public class DiscoverCamerasUseCaseTests
         ]));
 
         // Act
-        var result = (await _sut.ExecuteAsync()).Candidates;
+        var result = await _sut.ExecuteAsync();
 
         // Assert
         var candidate = Assert.Single(result);
@@ -258,7 +258,7 @@ public class DiscoverCamerasUseCaseTests
             new CameraDiscoveryCandidate("Front Door", "192.168.1.10", 554, "onvif", "/Streaming/Channels/101", "rtsp_describe", null, "camera_confirmed", null, ["rtsp_responding"])
         ]));
 
-        var result = (await _sut.ExecuteAsync(new DiscoverCamerasRequest("192.168.1.10", 554))).Candidates;
+        var result = await _sut.ExecuteAsync(new DiscoverCamerasRequest("192.168.1.10", 554));
 
         var candidate = Assert.Single(result);
         Assert.Equal("Front Door", candidate.DisplayName);
@@ -267,22 +267,6 @@ public class DiscoverCamerasUseCaseTests
             Arg.Is<CameraDiscoveryTarget>(target => target.Host == "192.168.1.10" && target.Port == 554),
             Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldReturnTheSweptRangesWithTheirSource_WhenTheDashboardHostIsGiven()
-    {
-        // Arrange
-        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _discovery.DiscoverAsync(null, "192.168.1.20", Arg.Any<CancellationToken>()).Returns(new CameraDiscoveryResult(
-            [new DiscoveryRange("192.168.1.0/24", "192.168.1.1", "192.168.1.254", DiscoveryRangeSource.DashboardAddress)],
-            []));
-
-        // Act
-        var result = await _sut.ExecuteAsync(dashboardHost: "192.168.1.20");
-
-        // Assert
-        Assert.Equal(new DiscoveryRangeDto("192.168.1.0/24", "192.168.1.1", "192.168.1.254", "dashboard_address"), Assert.Single(result.Ranges));
     }
 
     [Fact]
@@ -299,7 +283,30 @@ public class DiscoverCamerasUseCaseTests
         var result = await _sut.ExecuteAsync();
 
         // Assert
-        Assert.Equal("v380_pro", Assert.Single(result.Candidates).VendorFamily);
+        Assert.Equal("v380_pro", Assert.Single(result).VendorFamily);
+    }
+}
+
+public class GetDiscoveryRangesUseCaseTests
+{
+    private readonly ICameraDiscoveryService _discovery = Substitute.For<ICameraDiscoveryService>();
+    private readonly GetDiscoveryRangesUseCase _sut;
+
+    public GetDiscoveryRangesUseCaseTests() => _sut = new GetDiscoveryRangesUseCase(_discovery);
+
+    [Fact]
+    public async Task Execute_ShouldReturnTheRangesToSweepWithTheirSourceWithoutProbing_WhenTheDashboardHostIsGiven()
+    {
+        // Arrange
+        _discovery.RangesToSweep("192.168.1.20").Returns(
+            [new DiscoveryRange("192.168.1.0/24", "192.168.1.1", "192.168.1.254", DiscoveryRangeSource.DashboardAddress)]);
+
+        // Act
+        var result = _sut.Execute("192.168.1.20");
+
+        // Assert
+        Assert.Equal(new DiscoveryRangeDto("192.168.1.0/24", "192.168.1.1", "192.168.1.254", "dashboard_address"), Assert.Single(result));
+        await _discovery.DidNotReceiveWithAnyArgs().DiscoverAsync(default, default, default);
     }
 }
 

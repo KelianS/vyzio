@@ -10,7 +10,6 @@ import type { CameraStatus } from '../../domain/entities/camera_status.entity'
 import type {
   DiscoveredCamera,
   DiscoveryRange,
-  DiscoveryResult,
 } from '../../domain/entities/discovered_camera.entity'
 import type { VendorAssistance } from '../../domain/entities/vendor_assistance.entity'
 import type { CameraRepository } from '../../domain/ports/camera.port'
@@ -64,11 +63,6 @@ interface CameraStatusDto {
   guidance: string | null
   lastReachabilityCheckAt: string | null
   lastSuccessfulFrameAt: string | null
-}
-
-interface DiscoverCamerasDto {
-  ranges: DiscoveryRange[]
-  candidates: DiscoveredCameraDto[]
 }
 
 interface DiscoveredCameraDto {
@@ -138,12 +132,16 @@ export class HttpCameraRepository implements CameraRepository {
     return payload.map(mapCamera)
   }
 
-  async discover(input?: DiscoveryRequest): Promise<DiscoveryResult> {
-    const payload = await postJson<DiscoverCamerasDto>(
+  async discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]> {
+    const payload = await postJson<DiscoveredCameraDto[]>(
       `${this.apiBaseUrl}/api/cameras/discovery`,
       input,
     )
-    return { ranges: payload.ranges, candidates: payload.candidates.map(mapDiscoveredCamera) }
+    return payload.map(mapDiscoveredCamera)
+  }
+
+  async getDiscoveryRanges(): Promise<DiscoveryRange[]> {
+    return fetchJson<DiscoveryRange[]>(`${this.apiBaseUrl}/api/cameras/discovery/ranges`)
   }
 
   async getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null> {

@@ -121,24 +121,28 @@ describe('addCameraReducer', () => {
     })
   })
 
-  it('addCameraReducer_ShouldForgetThePreviousRanges_WhenANewSearchStarts', () => {
+  it('addCameraReducer_ShouldForgetThePreviousRanges_WhenTheConfirmationReadsThemAgain', () => {
     // Arrange
-    const searched = {
+    const read = {
       ...buildInitialAddCameraUido(),
-      sweptRanges: [
-        {
-          cidr: '192.168.1.0/24',
-          firstAddress: '192.168.1.1',
-          lastAddress: '192.168.1.254',
-          source: DiscoveryRangeSource.DashboardAddress,
-        },
-      ],
+      rangesToSweep: {
+        loading: false,
+        ranges: [
+          {
+            cidr: '192.168.1.0/24',
+            firstAddress: '192.168.1.1',
+            lastAddress: '192.168.1.254',
+            source: DiscoveryRangeSource.DashboardAddress,
+          },
+        ],
+        error: null,
+      },
     }
 
     // Act
-    const next = addCameraReducer(searched, { type: 'DISCOVERY_STARTED' })
+    const next = addCameraReducer(read, { type: 'RANGES_TO_SWEEP_STARTED' })
 
     // Assert
-    expect(next.sweptRanges).toBeNull()
+    expect(next.rangesToSweep).toEqual({ loading: true, ranges: [], error: null })
   })
 })

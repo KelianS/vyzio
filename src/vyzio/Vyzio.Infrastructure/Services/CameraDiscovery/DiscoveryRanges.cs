@@ -50,7 +50,7 @@ internal static partial class DiscoveryRanges
         return $"{ToIPAddress(ToUInt32(address) & mask)}/{DashboardPrefix}";
     }
 
-    // The ranges as swept under the host cap: the dashboard's /24 first, then cut where the cap falls, so the screen shows only what was tried.
+    // The ranges as swept under the host cap: the dashboard's /24 first, then cut where the cap falls, so the search confirmation shows only what will be tried.
     public static IReadOnlyList<DiscoveryRange> WithinCap(IReadOnlyList<DiscoveryRange> ranges, int cap)
     {
         var swept = new List<DiscoveryRange>();

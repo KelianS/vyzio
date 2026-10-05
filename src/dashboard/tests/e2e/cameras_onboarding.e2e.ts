@@ -32,14 +32,13 @@ test.describe('AddCameraView', () => {
     await page.goto('/settings/cameras/ajout')
     await expect(page.getByRole('heading', { name: 'Ajouter une caméra' })).toBeVisible()
 
-    // The cost of the search is announced before starting it.
+    // The cost of the search and every range it will sweep are announced before starting it (ADR-71).
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
-    await expect(page.getByRole('alertdialog')).toContainText('15 à 30 secondes')
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
-
-    // Where the search looked is said in Avancé, so a camera elsewhere is known to need its address (ADR-71).
-    await page.getByText('Avancé', { exact: true }).click()
-    await expect(page.getByText(/192\.168\.1\.1 à 192\.168\.1\.254/)).toBeVisible()
+    const confirmation = page.getByRole('alertdialog')
+    await expect(confirmation).toContainText('15 à 30 secondes')
+    await expect(confirmation.getByText(/192\.168\.1\.1 à 192\.168\.1\.254/)).toBeVisible()
+    await confirmation.getByRole('button', { name: 'Rechercher' }).click()
+    await expect(page.getByText(/192\.168\.1\.1 à 192\.168\.1\.254/)).toHaveCount(0)
 
     // The form does not exist before a camera is picked.
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveCount(0)
@@ -105,7 +104,7 @@ test.describe('AddCameraView', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
     // A camera that answers DVRIP and has no RTSP stream.
     await page.route('**/api/cameras/discovery', (route) =>
-      route.fulfill({ json: { ranges: [], candidates: [dvripOnlyCandidate] } }),
+      route.fulfill({ json: [dvripOnlyCandidate] }),
     )
     await page.goto('/settings/cameras/ajout')
 
