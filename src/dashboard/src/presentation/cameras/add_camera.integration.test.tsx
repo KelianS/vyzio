@@ -28,10 +28,7 @@ const discovered = {
   rtspActive: true,
   discoverySource: 'onvif',
   note: null,
-  macAddress: null,
-  isSupported: true,
   qualification: 'confirmed',
-  supportLevel: 'supported',
   vendorFamily: 'tplink_tapo',
   qualificationReasons: [],
   stream: { protocol: 'rtsp', port: 554, path: '/stream1' },
@@ -119,7 +116,10 @@ describe('AddCameraView', () => {
   it('onSelectCandidate_ShouldShowTheVendorNotice_WhenTheFoundCameraIsStillToPrepare', async () => {
     // Arrange
     fakeNetwork({
-      'POST /api/cameras/discovery': ok([{ ...discovered, streamPath: null, stream: null }]),
+      'POST /api/cameras/discovery': ok({
+        ranges: [],
+        candidates: [{ ...discovered, streamPath: null, stream: null }],
+      }),
       'POST /api/cameras/vendor-assistance': ok({
         vendorFamily: 'tplink_tapo',
         markdown: 'Activez le compte caméra dans l’application Tapo.',
@@ -144,7 +144,9 @@ describe('AddCameraView', () => {
     'onDiscover_ShouldMarkTheCameraReady_WhenAProtocolServesItsStream: %s',
     async (name) => {
       // Arrange
-      fakeNetwork({ 'POST /api/cameras/discovery': ok([discovered, overDvripOnly]) })
+      fakeNetwork({
+        'POST /api/cameras/discovery': ok({ ranges: [], candidates: [discovered, overDvripOnly] }),
+      })
       renderScreen(<AddCameraView />)
 
       // Act
@@ -158,7 +160,10 @@ describe('AddCameraView', () => {
   it('onSelectCandidate_ShouldSkipTheActivationNotice_WhenTheFoundCameraIsReadyOverDvrip', async () => {
     // Arrange
     const network = fakeNetwork({
-      'POST /api/cameras/discovery': ok([{ ...overDvripOnly, vendorFamily: 'icsee' }]),
+      'POST /api/cameras/discovery': ok({
+        ranges: [],
+        candidates: [{ ...overDvripOnly, vendorFamily: 'icsee' }],
+      }),
       'POST /api/cameras/vendor-assistance': ok(null),
     })
     renderScreen(<AddCameraView />)
@@ -180,7 +185,9 @@ describe('AddCameraView', () => {
 
   it('onDiscover_ShouldMarkTheCameraToPrepare_WhenNoProtocolServesItsStream', async () => {
     // Arrange
-    fakeNetwork({ 'POST /api/cameras/discovery': ok([answeringNoStream]) })
+    fakeNetwork({
+      'POST /api/cameras/discovery': ok({ ranges: [], candidates: [answeringNoStream] }),
+    })
     renderScreen(<AddCameraView />)
 
     // Act
@@ -195,7 +202,7 @@ describe('AddCameraView', () => {
   it('onCreate_ShouldAddTheCameraOverDvripWithoutAPath_WhenItsStreamIsReadyOverDvripOnly', async () => {
     // Arrange
     const network = fakeNetwork({
-      'POST /api/cameras/discovery': ok([overDvripOnly]),
+      'POST /api/cameras/discovery': ok({ ranges: [], candidates: [overDvripOnly] }),
       'POST /api/cameras': ok(makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })),
       'POST /api/cameras/camera-9/verify': ok(reachable),
       'GET /api/cameras': ok([makeCamera({ id: 'camera-9', displayName: 'ICSee salon' })]),
@@ -222,7 +229,9 @@ describe('AddCameraView', () => {
 
   it('onSelectCandidate_ShouldAskToOpenTheCameraFirst_WhenNoProtocolServesItsStream', async () => {
     // Arrange
-    fakeNetwork({ 'POST /api/cameras/discovery': ok([answeringNoStream]) })
+    fakeNetwork({
+      'POST /api/cameras/discovery': ok({ ranges: [], candidates: [answeringNoStream] }),
+    })
     renderScreen(<AddCameraView />)
     await searchTheNetwork()
 
@@ -232,6 +241,44 @@ describe('AddCameraView', () => {
     // Assert
     expect(screen.getByText('Cette caméra n’est pas encore joignable')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Ajouter la caméra' })).not.toBeInTheDocument()
+  })
+
+  it('onDiscover_ShouldListTheSweptRangesWithTheirSource_WhenTheSearchEnds', async () => {
+    // Arrange
+    fakeNetwork({
+      'POST /api/cameras/discovery': ok({
+        ranges: [
+          {
+            cidr: '192.168.0.0/24',
+            firstAddress: '192.168.0.1',
+            lastAddress: '192.168.0.254',
+            source: 'configured',
+          },
+          {
+            cidr: '192.168.1.0/24',
+            firstAddress: '192.168.1.1',
+            lastAddress: '192.168.1.254',
+            source: 'dashboard_address',
+          },
+        ],
+        candidates: [],
+      }),
+    })
+    renderScreen(<AddCameraView />)
+    await userEvent.click(screen.getByRole('button', { name: 'Rechercher sur le réseau' }))
+
+    // Act
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Rechercher' }),
+    )
+
+    // Assert
+    expect(
+      await screen.findByText('192.168.0.1 à 192.168.0.254 · réglage de l’installation'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('192.168.1.1 à 192.168.1.254 · réseau depuis lequel vous ouvrez Vyzio'),
+    ).toBeInTheDocument()
   })
 
   it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {

@@ -1,6 +1,9 @@
 import type { AppError } from '../../common/errors/app_error'
 import type { StreamProtocol } from '../../domain/entities/camera_capability_binding.entity'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import type {
+  DiscoveredCamera,
+  DiscoveryRange,
+} from '../../domain/entities/discovered_camera.entity'
 
 /** What's being added: a discovered camera, or a manually typed address (ADR-40). */
 type AddCameraSelection =
@@ -37,6 +40,8 @@ export interface AddCameraUido {
   form: AddCameraForm
 
   discoveryResults: DiscoveredCamera[]
+  /** The ranges the last search went through, shown so the user knows where it looked (#251). */
+  sweptRanges: DiscoveryRange[]
   discovering: boolean
   refreshing: boolean
   verifying: boolean
@@ -60,6 +65,7 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     form: emptyCameraDraft,
 
     discoveryResults: [],
+    sweptRanges: [],
     discovering: false,
     refreshing: false,
     verifying: false,

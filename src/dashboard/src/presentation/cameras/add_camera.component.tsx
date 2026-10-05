@@ -16,7 +16,11 @@ import { SettingsList } from '../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import {
+  DiscoveryRangeSource,
+  type DiscoveredCamera,
+  type DiscoveryRange,
+} from '../../domain/entities/discovered_camera.entity'
 import { asksStreamPath } from './stream_lines'
 import { resolveVendorLinkTarget } from './vendor_links'
 import {
@@ -236,6 +240,8 @@ export function AddCameraView() {
 
               <Feedback message={uido.message} error={uido.error} />
 
+              <SweptRanges ranges={uido.sweptRanges} />
+
               {/* La liste ne contient plus que ce que la recherche a trouve. */}
               {unclaimed.length > 0 && (
                 <ul className="divide-y divide-border border-y border-border">
@@ -256,11 +262,11 @@ export function AddCameraView() {
 
           <HelpPanel title="La recherche ne trouve pas ma caméra ?">
             <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio interroge le réseau avec le protocole
-              ONVIF, que beaucoup de caméras n’annoncent pas, ou seulement une fois réveillées
-              depuis leur propre application. Prenez alors <em>Saisir l’adresse moi-même</em> : son
-              adresse sur le réseau, son port, et le chemin du flux, que l’application de la caméra
-              ou sa notice indiquent.
+              C’est fréquent et ce n’est pas une panne : Vyzio ne cherche que dans les adresses
+              qu’il affiche après la recherche, et beaucoup de caméras ne répondent qu’une fois
+              réveillées depuis leur propre application. Prenez alors{' '}
+              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, son port, et le chemin
+              du flux, que l’application de la caméra ou sa notice indiquent.
             </p>
             <p>
               Si la vérification échoue, ce sont presque toujours l’adresse, le port, le chemin ou
@@ -383,6 +389,28 @@ function CandidateRow({
   )
 }
 
+const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
+  [DiscoveryRangeSource.Configured]: 'réglage de l’installation',
+  [DiscoveryRangeSource.DashboardAddress]: 'réseau depuis lequel vous ouvrez Vyzio',
+}
+
+/** Where the last search looked, so a camera outside it is known to need its address typed (#251). */
+function SweptRanges({ ranges }: { ranges: DiscoveryRange[] }) {
+  if (ranges.length === 0) return null
+  return (
+    <div className="text-sm text-muted-foreground">
+      <p>Adresses parcourues :</p>
+      <ul className="mt-1 list-disc pl-5">
+        {ranges.map((range) => (
+          <li key={range.cidr}>
+            {range.firstAddress} à {range.lastAddress} · {RANGE_SOURCE_LABELS[range.source]}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /** Last action's outcome: success or failure, never both. */
 function Feedback({ message, error }: { message: string | null; error: AddCameraUido['error'] }) {
   if (error)
@@ -418,16 +446,13 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   const paths = details?.rtspPathsDetected ?? []
   const capabilities = details?.capabilities ?? []
 
-  if (!details?.resolvedHostName && !candidate.macAddress && !ports.length && !paths.length) {
+  if (!details?.resolvedHostName && !ports.length && !paths.length) {
     return null
   }
 
   const facts: [string, string][] = [
     ...(details?.resolvedHostName
       ? [['Nom réseau', details.resolvedHostName] as [string, string]]
-      : []),
-    ...(candidate.macAddress
-      ? [['Adresse matérielle', candidate.macAddress] as [string, string]]
       : []),
     ...(paths.length ? [['Flux détectés', paths.join(', ')] as [string, string]] : []),
     ...(ports.length

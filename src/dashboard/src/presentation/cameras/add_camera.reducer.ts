@@ -69,6 +69,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         discovering: false,
         discoveryResults: action.candidates,
+        sweptRanges: action.ranges,
         message: action.message,
       }
 

@@ -755,32 +755,46 @@ export async function installFakeBackend(
       return json(route, camera)
     }
     if (path === '/api/cameras/discovery' && method === 'POST') {
-      return json(route, [
-        {
-          displayName: 'Caméra détectée',
-          host: '192.168.1.77',
-          port: 554,
-          sourceType: 'rtsp_manual',
-          streamPath: '/Streaming/Channels/101',
-          rtspActive: true,
-          discoverySource: 'onvif',
-          note: null,
-          macAddress: 'AA:BB:CC:DD:EE:FF',
-          isSupported: true,
-          qualification: 'supported',
-          supportLevel: 'full',
-          vendorFamily: null,
-          qualificationReasons: [],
-          stream: { protocol: 'rtsp', port: 554, path: '/Streaming/Channels/101' },
-          vendorDocumentation: null,
-          technicalDetails: {
-            resolvedHostName: null,
-            detectedPorts: [{ protocol: 'onvif', label: 'ONVIF', port: 80 }],
-            rtspPathsDetected: ['/Streaming/Channels/101'],
-            capabilities: [],
+      return json(route, {
+        // Like the real one: the configured range, then the /24 the dashboard was opened by (#251).
+        ranges: [
+          {
+            cidr: '192.168.0.0/24',
+            firstAddress: '192.168.0.1',
+            lastAddress: '192.168.0.254',
+            source: 'configured',
           },
-        },
-      ])
+          {
+            cidr: '192.168.1.0/24',
+            firstAddress: '192.168.1.1',
+            lastAddress: '192.168.1.254',
+            source: 'dashboard_address',
+          },
+        ],
+        candidates: [
+          {
+            displayName: 'Caméra détectée',
+            host: '192.168.1.77',
+            port: 554,
+            sourceType: 'rtsp_manual',
+            streamPath: '/Streaming/Channels/101',
+            rtspActive: true,
+            discoverySource: 'onvif',
+            note: null,
+            qualification: 'supported',
+            vendorFamily: null,
+            qualificationReasons: [],
+            stream: { protocol: 'rtsp', port: 554, path: '/Streaming/Channels/101' },
+            vendorDocumentation: null,
+            technicalDetails: {
+              resolvedHostName: null,
+              detectedPorts: [{ protocol: 'onvif', label: 'ONVIF', port: 80 }],
+              rtspPathsDetected: ['/Streaming/Channels/101'],
+              capabilities: [],
+            },
+          },
+        ],
+      })
     }
     if (path === '/api/cameras/vendor-assistance' && method === 'POST') {
       return json(route, null)

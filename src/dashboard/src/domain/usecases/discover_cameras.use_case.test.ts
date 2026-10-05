@@ -15,10 +15,7 @@ describe('DiscoverCameras', () => {
         rtspActive: false,
         discoverySource: 'onvif',
         note: 'ONVIF device announced.',
-        macAddress: null,
-        isSupported: false,
         qualification: 'camera_confirmed',
-        supportLevel: 'unknown',
         vendorFamily: null,
         qualificationReasons: ['onvif_detected'],
       },
@@ -27,7 +24,7 @@ describe('DiscoverCameras', () => {
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
-      discover: vi.fn().mockResolvedValue(candidates),
+      discover: vi.fn().mockResolvedValue({ ranges: [], candidates }),
       create: vi.fn(),
       update: vi.fn(),
       verifyDraft: vi.fn(),
@@ -44,7 +41,7 @@ describe('DiscoverCameras', () => {
     const result = await useCase.execute()
 
     // Assert
-    expect(result).toEqual(candidates)
+    expect(result).toEqual({ ranges: [], candidates })
     expect(repository.discover).toHaveBeenCalledOnce()
   })
 
@@ -53,7 +50,7 @@ describe('DiscoverCameras', () => {
     const repository = {
       getAll: vi.fn(),
       getStatus: vi.fn(),
-      discover: vi.fn().mockResolvedValue([]),
+      discover: vi.fn().mockResolvedValue({ ranges: [], candidates: [] }),
       create: vi.fn(),
       update: vi.fn(),
       verifyDraft: vi.fn(),
@@ -70,7 +67,7 @@ describe('DiscoverCameras', () => {
     const result = await useCase.execute({ host: '192.168.1.20', port: 554 })
 
     // Assert
-    expect(result).toEqual([])
+    expect(result).toEqual({ ranges: [], candidates: [] })
     expect(repository.discover).toHaveBeenCalledWith({ host: '192.168.1.20', port: 554 })
   })
 })

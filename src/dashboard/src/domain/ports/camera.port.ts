@@ -6,7 +6,7 @@ import type {
 } from '../entities/camera_protocol.entity'
 import type { Camera } from '../entities/camera.entity'
 import type { CameraStatus } from '../entities/camera_status.entity'
-import type { DiscoveredCamera } from '../entities/discovered_camera.entity'
+import type { DiscoveryResult } from '../entities/discovered_camera.entity'
 import type { CameraConfigurationApplyResult } from '../entities/camera_configuration_apply_result.entity'
 import type { VendorAssistance } from '../entities/vendor_assistance.entity'
 import type {
@@ -30,7 +30,7 @@ export interface DiscoveryRequest {
 
 export interface CameraRepository {
   getAll(): Promise<Camera[]>
-  discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
+  discover(input?: DiscoveryRequest): Promise<DiscoveryResult>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: CameraDraftInput): Promise<Camera>
   update(cameraId: string, input: CameraUpdateInput): Promise<Camera>

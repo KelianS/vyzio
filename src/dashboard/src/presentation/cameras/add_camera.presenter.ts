@@ -67,10 +67,11 @@ export function buildAddCameraPresenter({
     async onDiscover(): Promise<void> {
       dispatch({ type: 'DISCOVERY_STARTED' })
       try {
-        const candidates = await container.discoverCameras.execute()
+        const { ranges, candidates } = await container.discoverCameras.execute()
         dispatch({
           type: 'DISCOVERY_SUCCEEDED',
           candidates,
+          ranges,
           message:
             candidates.length > 0
               ? `${candidates.length} caméra(s) trouvée(s).`
@@ -84,7 +85,7 @@ export function buildAddCameraPresenter({
     async onRefreshCandidate(index: number, candidate: DiscoveredCamera): Promise<void> {
       dispatch({ type: 'REFRESH_CANDIDATE_STARTED' })
       try {
-        const candidates = await container.discoverCameras.execute({
+        const { candidates } = await container.discoverCameras.execute({
           host: candidate.host,
           port: candidate.port,
         })

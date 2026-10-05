@@ -10,10 +10,7 @@ const dvripOnlyCandidate = {
   rtspActive: false,
   discoverySource: 'port_scan',
   note: null,
-  macAddress: null,
-  isSupported: false,
   qualification: 'camera_confirmed',
-  supportLevel: 'unknown',
   vendorFamily: null,
   qualificationReasons: ['camera_port_open', 'dvrip_port_detected'],
   vendorDocumentation: null,
@@ -56,7 +53,7 @@ test.describe('AddCameraView', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
     // A camera that answers DVRIP and has no RTSP stream.
     await page.route('**/api/cameras/discovery', (route) =>
-      route.fulfill({ json: [dvripOnlyCandidate] }),
+      route.fulfill({ json: { ranges: [], candidates: [dvripOnlyCandidate] } }),
     )
     await page.goto('/settings/cameras/ajout')
 

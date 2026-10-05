@@ -10,7 +10,11 @@ import type {
 } from '../../domain/entities/camera_protocol.entity'
 import type { CameraConfigurationApplyResult } from '../../domain/entities/camera_configuration_apply_result.entity'
 import type { CameraStatus } from '../../domain/entities/camera_status.entity'
-import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.entity'
+import type {
+  DiscoveredCamera,
+  DiscoveryRange,
+  DiscoveryResult,
+} from '../../domain/entities/discovered_camera.entity'
 import type { VendorAssistance } from '../../domain/entities/vendor_assistance.entity'
 import type { CameraRepository } from '../../domain/ports/camera.port'
 import type { DiscoveryRequest } from '../../domain/ports/camera.port'
@@ -64,6 +68,11 @@ interface CameraStatusDto {
   lastSuccessfulFrameAt: string | null
 }
 
+interface DiscoverCamerasDto {
+  ranges: DiscoveryRange[]
+  candidates: DiscoveredCameraDto[]
+}
+
 interface DiscoveredCameraDto {
   displayName: string
   host: string
@@ -73,10 +82,7 @@ interface DiscoveredCameraDto {
   rtspActive: boolean
   discoverySource: string
   note: string | null
-  macAddress: string | null
-  isSupported: boolean
   qualification: string
-  supportLevel: string
   vendorFamily: string | null
   qualificationReasons: string[]
   vendorDocumentation?: VendorDocumentationDto | null
@@ -134,12 +140,12 @@ export class HttpCameraRepository implements CameraRepository {
     return payload.map(mapCamera)
   }
 
-  async discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]> {
-    const payload = await postJson<DiscoveredCameraDto[]>(
+  async discover(input?: DiscoveryRequest): Promise<DiscoveryResult> {
+    const payload = await postJson<DiscoverCamerasDto>(
       `${this.apiBaseUrl}/api/cameras/discovery`,
       input,
     )
-    return payload.map(mapDiscoveredCamera)
+    return { ranges: payload.ranges, candidates: payload.candidates.map(mapDiscoveredCamera) }
   }
 
   async getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null> {
@@ -431,10 +437,7 @@ function mapDiscoveredCamera(camera: DiscoveredCameraDto): DiscoveredCamera {
     rtspActive: camera.rtspActive,
     discoverySource: camera.discoverySource,
     note: camera.note,
-    macAddress: camera.macAddress,
-    isSupported: camera.isSupported,
     qualification: camera.qualification,
-    supportLevel: camera.supportLevel,
     vendorFamily: camera.vendorFamily,
     qualificationReasons: camera.qualificationReasons,
     stream: camera.stream,
