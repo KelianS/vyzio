@@ -236,7 +236,7 @@ h3 {
   color: var(--ink-strong);
 }
 
-/* A calendar fill told apart by its pattern, never by colour alone (DESIGN SYSTEM § Calendar). */
+/* A calendar fill told apart by its pattern, never by colour alone (DESIGN SYSTEM § Palette). */
 @utility bg-stripes {
   background-image: repeating-linear-gradient(135deg, var(--accent) 0 5px, var(--card) 5px 9px);
 }

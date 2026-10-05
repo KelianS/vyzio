@@ -32,7 +32,7 @@ review agents of [`.claude/agents/`](.claude/agents/). Never merge: that stays w
 | How a component works in detail (the *how*) | the code and its tests, which name their ADR |
 | What a camera model was measured to do | [`docs/hardware/`](docs/hardware/), one dated sheet per model |
 | Execution order, slicing, priorities | the [GitHub issues](https://github.com/KelianS/vyzio/issues) (`gh issue list`) |
-| Dashboard UI: buttons, status pills, modals, tokens | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
+| Dashboard UI: tokens, components, reusable patterns, shared UI words | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
 | How to use a delivered feature | the screen that carries it, in code, [ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) |
 | Process, workflow, documentation governance | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
 | Setup, docker, environment variables, tasks | [`CONTRIBUTING.md`](CONTRIBUTING.md) |

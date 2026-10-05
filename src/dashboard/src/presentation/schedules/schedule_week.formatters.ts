@@ -54,7 +54,7 @@ export interface BarBlock {
   readonly lane: number
 }
 
-/** A day's entries placed on its 24-hour bar, overlapping ones stacked in lanes (DESIGN SYSTEM § Calendar). */
+/** A day's entries placed on its 24-hour bar, overlapping ones stacked in lanes (SPECS 7.3). */
 export function barOf(entries: readonly WeekEntry[]): { blocks: BarBlock[]; lanes: number } {
   const laneEnds: number[] = []
   const blocks = entries.map((entry) => {
@@ -71,7 +71,7 @@ export function barOf(entries: readonly WeekEntry[]): { blocks: BarBlock[]; lane
   return { blocks, lanes: Math.max(1, laneEnds.length) }
 }
 
-/** The times of an entry, in the words of the week (DESIGN SYSTEM § Calendar). */
+/** The times of an entry, in the words of the week (SPECS 7.3). */
 export function entryTimes(entry: WeekEntry): string {
   const { startTime, endTime } = entry.rule
   if (entry.tail) return `jusqu’à ${endTime}, depuis la veille`
