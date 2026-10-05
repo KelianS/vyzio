@@ -3,7 +3,7 @@ import { CameraState, CameraValidation, type Camera } from '../../domain/entitie
 
 type CameraStatusFacts = Pick<Camera, 'status' | 'validationState'>
 
-// Its stream works but surveillance has not taken it in: « Connectée » would say it is watched (ADR-68 d).
+// Its stream works but surveillance has not taken it in: still in its setup phase, not « Connectée » (ADR-68 d).
 function waitsForRestart(camera: CameraStatusFacts): boolean {
   return (
     camera.status === CameraState.Online &&
@@ -13,7 +13,7 @@ function waitsForRestart(camera: CameraStatusFacts): boolean {
 
 /** The camera's own status, in the words of the camera list, its page header and its hub tile. */
 export function formatCameraStatusLabel(camera: CameraStatusFacts): string {
-  if (waitsForRestart(camera)) return 'Pas encore surveillée'
+  if (waitsForRestart(camera)) return 'À configurer'
   switch (camera.status) {
     case CameraState.Online:
       return 'Connectée'

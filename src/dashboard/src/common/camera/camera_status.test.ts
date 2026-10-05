@@ -34,14 +34,14 @@ describe('formatCameraStatusLabel', () => {
     expect(label).toBe('À configurer')
   })
 
-  it('formatCameraStatusLabel_ShouldSayItIsNotWatchedYet_WhenItsStreamWorksButSurveillanceHasNotTakenItIn', () => {
+  it('formatCameraStatusLabel_ShouldStillSayItIsToSetUp_WhenItsStreamWorksButSurveillanceHasNotTakenItIn', () => {
     // Arrange & Act
     const label = formatCameraStatusLabel(
       makeCamera({ status: 'online', validationState: 'draft' }),
     )
 
     // Assert
-    expect(label).toBe('Pas encore surveillée')
+    expect(label).toBe('À configurer')
   })
 
   it.each([

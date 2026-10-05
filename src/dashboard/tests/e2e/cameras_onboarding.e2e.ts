@@ -63,8 +63,8 @@ test.describe('AddCameraView', () => {
       .getByRole('listitem')
       .filter({ hasText: 'Flux vidéo' })
     await expect(stream.getByText('Fonctionne')).toBeVisible()
-    // Its stream works, surveillance has not taken it in yet: the restart does (ADR-68 d).
-    await expect(page.getByText('Pas encore surveillée')).toBeVisible()
+    // Its stream works, but it stays to set up until the restart takes it in (ADR-68 d).
+    await expect(page.getByText('À configurer')).toBeVisible()
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })
 
