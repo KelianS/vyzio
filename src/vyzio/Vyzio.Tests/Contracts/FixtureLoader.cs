@@ -72,6 +72,7 @@ internal static class FixtureLoader
 // The captured variants tests name; one camera keeps the same folder name under each protocol.
 internal static class CapturedVariant
 {
+    public const string Icsee = "icsee-v5.04.c02.000959tc.10000.140835.0000000";
     public const string TapoC200 = "tapo-c200-1.9.1-build-260326-rel.26771n";
     public const string V380Pro = "v380-pro-hs-camera-no1";
 }
@@ -100,21 +101,36 @@ internal sealed record FixtureVariant(
     public override string ToString() => Name;
 }
 
-// The messages of one scenario, in the order they crossed the wire; a later protocol adds the fields it reads.
+// The messages of one scenario, in the order they crossed the wire.
 internal sealed record Transcript(IReadOnlyList<TranscriptMessage> Messages);
 
-// An HTTP message as recorded; a response without a status is a failure event the capture tool wrote instead.
+// One message as recorded: an HTTP request or response, or a TCP frame as text, hex or a DVRIP header and body; a capture with an event holds no bytes.
 internal sealed record TranscriptMessage(
     TranscriptDirection Direction,
-    int? Status,
-    string? Reason,
-    IReadOnlyList<IReadOnlyList<string>>? Headers,
-    string? Body);
+    int? Status = null,
+    string? Reason = null,
+    IReadOnlyList<IReadOnlyList<string>>? Headers = null,
+    string? Body = null,
+    string? Header = null,
+    string? Hex = null,
+    string? Text = null,
+    TranscriptEvent? Event = null);
 
+// Request and response for HTTP, sent and received for raw TCP.
 internal enum TranscriptDirection
 {
     Request,
     Response,
+    Sent,
+    Received,
+}
+
+// What the camera did instead of answering, recorded so a replay reproduces it.
+internal enum TranscriptEvent
+{
+    Silence,
+    Closed,
+    Unreachable,
 }
 
 // The stable stand-ins the capture tool writes in place of every private value (neutral-values.json).
@@ -124,6 +140,7 @@ internal sealed record NeutralValues(
     FixtureAccount ProbeAccount,
     string CameraHost,
     string MacPrefix,
-    string DvripAdminToken);
+    string DvripAdminToken,
+    uint V380DeviceId);
 
 internal sealed record FixtureAccount(string Username, string Password);

@@ -6,6 +6,7 @@ using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.CapabilityProviders;
 using Vyzio.Infrastructure.Configuration;
 using Vyzio.Infrastructure.Services;
+using Vyzio.Tests.Contracts;
 using Vyzio.Tests.Services.Hosting;
 
 namespace Vyzio.Tests.Services;
@@ -27,7 +28,7 @@ public class AssistedCameraDiscoveryServiceTests
     // handed out — never a well-known one, which collides with whatever the machine happens to be
     // running. Hence the port → fingerprint mapping being declared per test rather than inherited
     // from the catalog, and the LAN multicast being off.
-    private static VyzioRuntimeSettings HermeticSettings(
+    internal static VyzioRuntimeSettings HermeticSettings(
         IReadOnlyList<string>? probeHosts = null,
         IReadOnlyList<string>? probeCidrs = null,
         IReadOnlyList<int>? rtspPorts = null,
@@ -571,34 +572,6 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("http_service", candidate.DiscoverySource);
     }
 
-    // ADR-32: the "nmap" port sweep + fingerprint. An open port that passes the DVRIP fingerprint
-    // (0xFF magic reply) surfaces the host as a confirmed camera with a Port|Protocol enrichment
-    // row. Same mechanism that lets V380 be detected on its own port.
-    [Fact]
-    public async Task DiscoverAsync_ShouldConfirmTheCamera_WhenASweptPortPassesTheDvripFingerprint()
-    {
-        using var listener = StartLoopbackListener();
-        var dvripPort = PortOf(listener);
-
-        using var stopServer = new CancellationTokenSource();
-        var serverTask = RespondDvripAsync(listener, stopServer.Token);
-
-        var sut = Discovery(HermeticSettings(
-            scanPorts: [dvripPort],
-            portFingerprints: new Dictionary<int, SupportedProtocol> { [dvripPort] = SupportedProtocol.Dvrip }));
-
-        var result = await sut.DiscoverAsync().ObservedAsync();
-        stopServer.Cancel();
-        await serverTask;
-
-        var candidate = Assert.Single(result, item => item.Host == Loopback);
-        Assert.Equal("camera_confirmed", candidate.Qualification);
-        var port = Assert.Single(candidate.TechnicalDetails!.DetectedPorts);
-        Assert.Equal(dvripPort, port.Port);
-        Assert.Equal("DVRIP", port.Label);
-        Assert.Equal("Dvrip", port.Protocol);
-    }
-
     // ADR-32: an open port whose fingerprint fails is NOT mislabelled — it surfaces as an
     // "unidentified open port" (this is the Tapo-isn't-V380 fix). Here a dumb listener never
     // completes the V380 handshake, so it must show up unidentified, not as V380.
@@ -644,22 +617,17 @@ public class AssistedCameraDiscoveryServiceTests
     public async Task DiscoverAsync_ShouldBeReadyOverDvrip_WhenOnlyDvripAnswers()
     {
         // Arrange
-        using var listener = StartLoopbackListener();
-        var dvripPort = PortOf(listener);
-        using var stopServer = new CancellationTokenSource();
-        var serverTask = RespondDvripAsync(listener, stopServer.Token);
+        await using var icsee = CapturedTcpCamera.Replaying(FixtureProtocol.Dvrip, CapturedVariant.Icsee, DvripScenario.DiscoveryBanner);
         var sut = DiscoveryWithStreams(HermeticSettings(
-            scanPorts: [dvripPort],
-            portFingerprints: new Dictionary<int, SupportedProtocol> { [dvripPort] = SupportedProtocol.Dvrip }));
+            scanPorts: [icsee.Port],
+            portFingerprints: new Dictionary<int, SupportedProtocol> { [icsee.Port] = SupportedProtocol.Dvrip }));
 
         // Act
         var result = await sut.DiscoverAsync().ObservedAsync();
-        stopServer.Cancel();
-        await serverTask;
 
         // Assert
         var candidate = Assert.Single(result, item => item.Host == Loopback);
-        Assert.Equal(new DiscoveredStream(SupportedProtocol.Dvrip, dvripPort, null), candidate.Stream);
+        Assert.Equal(new DiscoveredStream(SupportedProtocol.Dvrip, icsee.Port, null), candidate.Stream);
     }
 
     [Fact]
@@ -727,23 +695,4 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("camera_confirmed", candidate.Qualification);
         Assert.Null(candidate.Stream);
     }
-
-    // Loop-accept helper: answers every request with the DVRIP 0xFF magic the fingerprint checks.
-    private static Task RespondDvripAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
-    {
-        try
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                using var client = await listener.AcceptTcpClientAsync(ct);
-                using var stream = client.GetStream();
-                var buffer = new byte[128];
-                _ = await stream.ReadAsync(buffer, ct);
-                await stream.WriteAsync(new byte[] { 0xFF, 0x01, 0x00, 0x00 }, ct);
-                await stream.FlushAsync(ct);
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (System.Net.Sockets.SocketException) { }
-    }, ct);
 }
