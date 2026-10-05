@@ -5,6 +5,7 @@ architecture.
 
 | Recorded | Measurement |
 |---|---|
+| 2026-10-04 | A DVRIP login with no valid account is answered (message 1001) `{"Name": "", "Ret": 205, "SessionID": "0x00000000"}`: nothing in it names the vendor or the model |
 | 2026-10-04 | A battery unit (firmware `V5.04.C02.000959TC.10000.140835.0000000`), woken through the vendor app, answers on DVRIP only: the ONVIF and RTSP ports stay closed while it is awake |
 | 2026-09-27 | `SetPreset` and `GotoPreset` answer `Ret` 100; a recall lands on the same framing every time, and three presets recall distinctly in any order |
 | 2026-09-27 | `Uart.PTZPreset.[0]` lists the stored presets as `[{"Id": n}, ...]`; a new preset appears right after `SetPreset`, and `ClearPreset` removes it; with no preset stored, the list may read `null` |

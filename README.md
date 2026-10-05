@@ -72,8 +72,9 @@ Cameras, and the people the system knows about:
 ## Cameras
 
 **Any RTSP or ONVIF camera can be added**, by discovery or by typing its address. Beyond the video
-stream, the brands below are recognised on sight and arrive pre-configured, because Vyzio already
-knows how to drive them:
+stream, Vyzio speaks the protocols of the brands below and detects what each camera can do, the same
+way whatever its brand. While adding one, the interface offers each brand's help sheet: what to
+prepare in the vendor app first.
 
 | Brand            | Privacy mode                       | Move the camera | Image settings                    |
 | ---------------- | ---------------------------------- | --------------- | --------------------------------- |
@@ -88,7 +89,7 @@ to the parking position you saved, stops recording at the same time, and turns i
 Nothing in that table is taken on trust: before Vyzio offers a capability, it reads the proof from
 the camera itself, or, where the camera offers no way to prove it, asks you to try it once and say
 whether it worked. One that fails is never offered as available, without affecting the others.
-The list grows one brand at a time, and the full detail, protocol by protocol, is in
+The list grows one brand at a time; the help sheets are listed in
 [`src/vyzio/vendors/README.md`](src/vyzio/vendors/README.md).
 
 ---
@@ -137,7 +138,7 @@ Every value ships with a production-ready default. Override through `VYZIO_*` va
 | Variable                      | Default               | Description                                             |
 | ----------------------------- | --------------------- | ------------------------------------------------------- |
 | `VYZIO_TIME_ZONE`             | system TZ             | IANA time zone, e.g. `Europe/Paris`                      |
-| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)*              | Network range scanned for cameras, e.g. `192.168.1.0/24` |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)*              | Default ranges scanned for cameras, e.g. `192.168.1.0/24` (ADR-71) |
 | `VYZIO_FRIGATE_API_BASE_URL`  | `http://frigate:5000` | Internal Frigate URL; leave alone outside custom deploys |
 
 Full list in [`CONTRIBUTING.md`](CONTRIBUTING.md).
