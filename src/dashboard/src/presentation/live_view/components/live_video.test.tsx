@@ -38,7 +38,7 @@ describe('LiveVideo', () => {
         quality="high"
         qualities={['low', 'high']}
         soundOn={false}
-        onOpen={(_video, _camera, _quality, onPlayback) => {
+        onOpen={(_video, _camera, _quality, _sound, onPlayback) => {
           onPlayback({
             kind: 'failed',
             failure: 'no_quality',

@@ -5,6 +5,7 @@ export type LiveFailure =
 /** Where the live video stands; an interrupted stream played before, and is opened again. */
 export type LivePlayback =
   | { kind: 'connecting' }
-  | { kind: 'playing'; hasAudio: boolean }
+  /** soundOffered: a gesture may turn the sound on, the browser playing it and the stream carrying it as far as known. */
+  | { kind: 'playing'; soundOffered: boolean }
   | { kind: 'interrupted' }
   | { kind: 'failed'; failure: LiveFailure; diagnostic: string }

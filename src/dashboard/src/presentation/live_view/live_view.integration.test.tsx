@@ -611,8 +611,8 @@ describe('LiveView video', () => {
   }
 
   // go2rtc answers with H.264 and AAC, then sends a first segment.
-  async function theStreamPlays() {
-    await waitFor(() => expect(FakeSocket.opened.length).toBeGreaterThan(0))
+  async function theStreamPlays(sockets = 1) {
+    await waitFor(() => expect(FakeSocket.opened).toHaveLength(sockets))
     const socket = FakeSocket.latest()
     socket.open()
     socket.answer(H264_AAC)
@@ -666,20 +666,22 @@ describe('LiveView video', () => {
     expect(FakeSocket.opened[0].closed).toBe(true)
   })
 
-  it('LiveView_ShouldTurnTheSoundOn_WhenTheUserAsksForIt', async () => {
+  it('LiveView_ShouldReopenTheStreamWithItsSound_WhenTheUserTurnsTheSoundOn', async () => {
     // Arrange
     stubBrowserMse()
     renderVideo()
-    await theStreamPlays()
+    const muted = await theStreamPlays()
 
     // Act
     await userEvent.click(await screen.findByRole('button', { name: 'Activer le son' }))
+    const withSound = await theStreamPlays(2)
 
     // Assert
-    expect(screen.getByRole('button', { name: 'Couper le son' })).toBeInTheDocument()
+    expect(muted.closed).toBe(true)
+    expect(JSON.parse(withSound.sent[0]).value).toContain('mp4a.40.2')
+    expect(await screen.findByRole('button', { name: 'Couper le son' })).toBeInTheDocument()
     expect(screen.getByLabelText<HTMLVideoElement>('Front Door').muted).toBe(false)
   })
-
   it('LiveView_ShouldOfferNoQualitySwitch_WhenTheCameraHasOneQuality', async () => {
     // Arrange
     stubBrowserMse()

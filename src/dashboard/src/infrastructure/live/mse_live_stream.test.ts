@@ -12,10 +12,12 @@ import {
 
 const H264_AAC = 'video/mp4; codecs="avc1.64001E,mp4a.40.2"'
 
-function open(env: MseEnvironment = fakeEnvironment(), video = fakeVideo()) {
+function open(env: MseEnvironment = fakeEnvironment(), video = fakeVideo(), withSound = true) {
   FakeSocket.opened = []
   const reports: LivePlayback[] = []
-  const stop = new MseLiveStream('', env).open(video, 'cam1', 'low', (p) => reports.push(p))
+  const stop = new MseLiveStream('', env).open(video, 'cam1', 'low', withSound, (p) =>
+    reports.push(p),
+  )
   return { reports, stop, video, socket: FakeSocket.opened.at(-1) }
 }
 
@@ -153,7 +155,7 @@ describe('MseLiveStream', () => {
     // Assert
     expect(env.source.mime).toBe(H264_AAC)
     expect(env.source.buffer?.appended).toHaveLength(1)
-    expect(reports).toEqual([{ kind: 'playing', hasAudio: true }])
+    expect(reports).toEqual([{ kind: 'playing', soundOffered: true }])
   })
 
   it('open_ShouldJumpBackToTheLiveEdge_WhenThePictureFallsBehind', async () => {
@@ -290,7 +292,7 @@ describe('MseLiveStream', () => {
       type: 'mse',
       value: 'avc1.640029,avc1.64002A,avc1.640033',
     })
-    expect(reports).toEqual([{ kind: 'playing', hasAudio: true }])
+    expect(reports).toEqual([{ kind: 'playing', soundOffered: true }])
   })
 
   it('open_ShouldSayTheDecodeError_WhenTheVideoOnlyStreamFailsToo', async () => {
@@ -312,5 +314,36 @@ describe('MseLiveStream', () => {
       failure: 'unsupported_codec',
       diagnostic: 'live cam1 low: media error 3: PIPELINE_ERROR_DECODE',
     })
+  })
+
+  it('open_ShouldAskForTheVideoAloneAndOfferTheSound_WhenTheSoundIsOff', async () => {
+    // Arrange
+    const { socket, reports } = open(fakeEnvironment(), fakeVideo(), false)
+    socket?.open()
+
+    // Act
+    socket?.answer('video/mp4; codecs="avc1.64001E"')
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Assert
+    expect(JSON.parse(socket?.sent[0] ?? '')).toEqual({
+      type: 'mse',
+      value: 'avc1.640029,avc1.64002A,avc1.640033',
+    })
+    expect(reports).toEqual([{ kind: 'playing', soundOffered: true }])
+  })
+
+  it('open_ShouldOfferNoSound_WhenTheStreamAskedWithSoundCarriesNone', async () => {
+    // Arrange
+    const { socket, reports } = open()
+
+    // Act
+    socket?.answer('video/mp4; codecs="avc1.64001E"')
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Assert
+    expect(reports).toEqual([{ kind: 'playing', soundOffered: false }])
   })
 })

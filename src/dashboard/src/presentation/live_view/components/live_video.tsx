@@ -125,6 +125,7 @@ export function LiveVideo({
     video: HTMLVideoElement,
     cameraId: string,
     quality: LiveQuality,
+    withSound: boolean,
     onPlayback: (playback: LivePlayback) => void,
   ) => () => void
   onChooseQuality: (quality: LiveQuality) => void
@@ -134,13 +135,13 @@ export function LiveVideo({
   const [playback, setPlayback] = useState<LivePlayback>({ kind: 'connecting' })
   const [attempt, setAttempt] = useState(0)
 
-  // Opened again on a new quality, a retry, an interruption, and when surveillance comes back from a restart.
+  // Opened again on a new quality or sound, a retry, an interruption, and when surveillance comes back from a restart.
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     setPlayback({ kind: 'connecting' })
-    return onOpen(video, cameraId, quality, setPlayback)
-  }, [onOpen, cameraId, quality, attempt, frigateStatus])
+    return onOpen(video, cameraId, quality, soundOn, setPlayback)
+  }, [onOpen, cameraId, quality, soundOn, attempt, frigateStatus])
 
   // A quality the camera no longer offers gives way to the one it still has.
   useEffect(() => {
@@ -178,7 +179,7 @@ export function LiveVideo({
       case 'playing':
         return (
           <div className="absolute right-2 bottom-2 flex gap-2">
-            {playback.hasAudio && (
+            {playback.soundOffered && (
               <button
                 type="button"
                 className={CONTROL}

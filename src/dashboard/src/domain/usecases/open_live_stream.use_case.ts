@@ -9,8 +9,9 @@ export class OpenLiveStream {
     video: HTMLVideoElement,
     cameraId: string,
     quality: LiveQuality,
+    withSound: boolean,
     onPlayback: (playback: LivePlayback) => void,
   ): () => void {
-    return this.stream.open(video, cameraId, quality, onPlayback)
+    return this.stream.open(video, cameraId, quality, withSound, onPlayback)
   }
 }

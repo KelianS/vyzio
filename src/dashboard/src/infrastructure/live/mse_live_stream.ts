@@ -25,6 +25,10 @@ const CODECS = [
   'avc1.64002A',
   'avc1.640033',
   'hvc1.1.6.L153.B0',
+  // Lower H.265 levels too: a browser may refuse the highest one and still play a camera's sub-stream.
+  'hvc1.1.6.L120.90',
+  'hvc1.1.6.L93.B0',
+  'hev1.1.6.L93.B0',
   'mp4a.40.2',
   'mp4a.40.5',
   'flac',
@@ -128,19 +132,22 @@ export class MseLiveStream implements LiveStreamPort {
     video: HTMLVideoElement,
     cameraId: string,
     quality: LiveQuality,
+    withSound: boolean,
     onPlayback: (playback: LivePlayback) => void,
   ): () => void {
     // A browser that fails to decode the camera's sound gets the same stream once more, video only.
-    let stop = this.start(video, cameraId, quality, onPlayback, () => {
-      stop = this.start(video, cameraId, quality, onPlayback, null)
+    let stop = this.start(video, cameraId, quality, withSound, onPlayback, () => {
+      stop = this.start(video, cameraId, quality, false, onPlayback, null)
     })
     return () => stop()
   }
 
+  // Sound only on demand: a camera that pauses its sound while it moves would freeze the picture, both tracks sharing one buffer.
   private start(
     video: HTMLVideoElement,
     cameraId: string,
     quality: LiveQuality,
+    withSound: boolean,
     onPlayback: (playback: LivePlayback) => void,
     retryWithoutAudio: (() => void) | null,
   ): () => void {
@@ -157,9 +164,10 @@ export class MseLiveStream implements LiveStreamPort {
       onPlayback(failed('unsupported_browser', 'MediaSource unavailable'))
       return () => undefined
     }
-    const codecs = playableCodecs((mime) => env.isTypeSupported(mime)).filter(
-      (codec) => retryWithoutAudio !== null || !AUDIO_CODEC.test(codec),
-    )
+    const playable = playableCodecs((mime) => env.isTypeSupported(mime))
+    const codecs = playable.filter((codec) => withSound || !AUDIO_CODEC.test(codec))
+    // Muted, the stream is asked without sound, so a sound the browser could play is only offered.
+    const soundPlayable = playable.some((codec) => AUDIO_CODEC.test(codec))
     if (!codecs.some((codec) => VIDEO_CODEC.test(codec))) {
       onPlayback(failed('unsupported_codec', 'no H.264 nor H.265 in MSE'))
       return () => undefined
@@ -200,7 +208,7 @@ export class MseLiveStream implements LiveStreamPort {
     // A decode failure closes the source, so the cause is read from the video, not from the next append.
     function onMediaError() {
       if (ended) return
-      if (retryWithoutAudio && hasAudio) {
+      if (withSound && retryWithoutAudio && hasAudio) {
         release()
         retryWithoutAudio()
         return
@@ -238,7 +246,7 @@ export class MseLiveStream implements LiveStreamPort {
       if (!playing) {
         playing = true
         clearTimeout(firstSegment)
-        onPlayback({ kind: 'playing', hasAudio })
+        onPlayback({ kind: 'playing', soundOffered: withSound ? hasAudio : soundPlayable })
         // Muted autoplay is allowed everywhere; a refusal leaves the picture on its first frame.
         void video.play().catch(() => undefined)
       }

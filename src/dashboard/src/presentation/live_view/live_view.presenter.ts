@@ -118,9 +118,10 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
       video: HTMLVideoElement,
       cameraId: string,
       quality: LiveQuality,
+      withSound: boolean,
       onPlayback: (playback: LivePlayback) => void,
     ) {
-      return container.openLiveStream.execute(video, cameraId, quality, onPlayback)
+      return container.openLiveStream.execute(video, cameraId, quality, withSound, onPlayback)
     },
 
     onChooseQuality(quality: LiveQuality) {
