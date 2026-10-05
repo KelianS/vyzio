@@ -20,15 +20,26 @@ const event = (overrides: Partial<DetectionEvent>): DetectionEvent => ({
 describe('formatEventTitle', () => {
   it('formatEventTitle_ShouldShowTheNameAlone_WhenTheEventCarriesAnIdentity', () => {
     // Arrange & Act
-    const title = formatEventTitle(event({ identity: 'Paul' }))
+    const title = formatEventTitle(event({ identity: 'Paul' }), [])
 
     // Assert
     expect(title).toBe('Paul')
   })
 
-  it('formatEventTitle_ShouldNameTheDetectionInFrench_WhenNobodyWasRecognised', () => {
+  it('formatEventTitle_ShouldNameTheDetectionInFrench_WhenTheCatalogueKnowsItsLabel', () => {
+    // Arrange
+    const labels = [{ value: 'car', displayName: 'Voiture', emoji: '🚗' }]
+
+    // Act
+    const title = formatEventTitle(event({ identity: null, label: 'car' }), labels)
+
+    // Assert
+    expect(title).toBe('Détection « Voiture »')
+  })
+
+  it('formatEventTitle_ShouldKeepTheEngineLabel_WhenTheCatalogueDoesNotKnowIt', () => {
     // Arrange & Act
-    const title = formatEventTitle(event({ identity: null, label: 'car' }))
+    const title = formatEventTitle(event({ identity: null, label: 'car' }), [])
 
     // Assert
     expect(title).toBe('Détection « car »')

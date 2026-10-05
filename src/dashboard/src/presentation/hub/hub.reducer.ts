@@ -9,6 +9,8 @@ export function hubReducer(state: HubUido, action: HubAction): HubUido {
       return { ...state, loading: false, data: action.data }
     case 'LOAD_FAILED':
       return { ...state, loading: false, error: action.error }
+    case 'LABELS_LOADED':
+      return { ...state, detectionLabels: action.labels }
     case 'PRIVACY_PENDING_SET':
       return { ...state, privacyPending: action.request }
     case 'PRIVACY_TOGGLE_STARTED':

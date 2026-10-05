@@ -43,6 +43,23 @@ describe('HubView', () => {
     expect(screen.getByText('Détection « person »')).toBeInTheDocument()
   })
 
+  it('onMount_ShouldNameADetectionInFrench_WhenTheLabelCatalogueAnswers', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/hub/overview': ok(overview),
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/detection-labels/camera': ok([
+        { value: 'person', displayName: 'Personne', emoji: '🚶' },
+      ]),
+    })
+
+    // Act
+    renderScreen(<HubView />)
+
+    // Assert
+    expect(await screen.findByText('Détection « Personne »')).toBeInTheDocument()
+  })
+
   it('onOpenLive_ShouldPointAtConnexionInsteadOfTheJoystick_WhenTheOrientationIsToConfirm', async () => {
     // Arrange
     fakeNetwork({

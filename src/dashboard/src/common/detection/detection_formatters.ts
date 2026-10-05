@@ -1,4 +1,5 @@
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
+import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 
 // Only these detections carry an identity: the backend resolves them to person_known/person_unknown,
 // and gives one to no other kind. Attaching a profile to a cat produces unusable data.
@@ -41,13 +42,15 @@ export function formatEventTime(value: string): string {
   return isToday ? timeFormatter.format(date) : dateTimeFormatter.format(date)
 }
 
-export function formatEventTitle(event: DetectionEvent): string {
+/** The labels are the server's catalogue, the one home of their French names; an unknown one shows as sent. */
+export function formatEventTitle(event: DetectionEvent, labels: readonly DetectionLabel[]): string {
   // The name alone: a participle would need the person's gender, which Vyzio does not hold.
   if (event.identity) {
     return event.identity
   }
 
-  return `Détection « ${event.label} »`
+  const name = labels.find((label) => label.value === event.label)?.displayName ?? event.label
+  return `Détection « ${name} »`
 }
 
 /** Where, when, and how sure - the certainty only shows when the engine gave one. */
