@@ -215,7 +215,9 @@ describe('CameraPrivacyView', () => {
 
     // Assert
     expect(
-      await screen.findByText(/s’ouvre une fois la caméra en surveillance, et son flux vidéo/),
+      await screen.findByText(
+        /^Les positions de l’orientation à l’écart.*en surveillance, et son flux vidéo/,
+      ),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
       'href',
