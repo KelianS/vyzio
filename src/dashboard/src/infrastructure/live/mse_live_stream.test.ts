@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LivePlayback } from '../../domain/entities/live_playback.entity'
-import { FakeSocket, fakeEnvironment, fakeVideo } from '../../testing/fake_mse'
+import { FakeSocket, clock, fakeEnvironment, fakeVideo } from '../../testing/fake_mse'
 import {
   MseLiveStream,
   failureOfClose,
@@ -15,6 +15,7 @@ const H264_AAC = 'video/mp4; codecs="avc1.64001E,mp4a.40.2"'
 
 function open(env: MseEnvironment = fakeEnvironment(), video = fakeVideo(), withSound = true) {
   FakeSocket.opened = []
+  clock.now = 0
   const reports: LivePlayback[] = []
   const stop = new MseLiveStream('', env).open(video, 'cam1', 'low', withSound, (p) =>
     reports.push(p),
@@ -379,4 +380,27 @@ describe('MseLiveStream', () => {
     // Assert
     expect(reports).toEqual([{ kind: 'playing', soundOffered: false }])
   })
+
+  it.each([
+    { withSound: true, last: { kind: 'interrupted' } },
+    { withSound: false, last: { kind: 'playing', soundOffered: true } },
+  ])(
+    'open_ShouldReopenOnlyASoundStream_WhenThePictureFallsBehindTheClock (sound: $withSound)',
+    async ({ withSound, last }) => {
+      // Arrange
+      const video = fakeVideo({ start: 0, end: 1, currentTime: 0.9 })
+      const { socket, reports } = open(fakeEnvironment(), video, withSound)
+      socket?.answer(H264_AAC)
+      socket?.segment()
+      await flushMicrotasks()
+
+      // Act
+      clock.now = 3000
+      socket?.segment()
+      await flushMicrotasks()
+
+      // Assert
+      expect(reports.at(-1)).toEqual(last)
+    },
+  )
 })

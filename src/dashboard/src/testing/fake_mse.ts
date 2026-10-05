@@ -117,6 +117,9 @@ export function fakeVideo(range?: { start: number; end: number; currentTime: num
   return video as unknown as FakeVideo
 }
 
+/** The steady clock the fake environment reads, moved by the test. */
+export const clock = { now: 0 }
+
 export function fakeEnvironment(source = new FakeMediaSource()): MseEnvironment & {
   source: FakeMediaSource
 } {
@@ -127,6 +130,7 @@ export function fakeEnvironment(source = new FakeMediaSource()): MseEnvironment 
     isTypeSupported: (mime) => FakeMediaSource.isTypeSupported(mime),
     attach: () => source.open(),
     pageUrl: () => 'http://hub.lan/',
+    now: () => clock.now,
   }
 }
 

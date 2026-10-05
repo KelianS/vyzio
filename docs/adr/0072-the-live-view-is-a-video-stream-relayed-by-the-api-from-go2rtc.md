@@ -63,8 +63,9 @@ offers.
 **d) Sound only while it is on.** The player asks for the codecs the browser plays; go2rtc answers
 with the tracks it will send. The view opens muted and asks for the video alone; turning the sound on
 opens the stream again with it. Both tracks share one buffer, so a camera that pauses its sound, as
-some do while they move, freezes the picture: muted, nothing waits on a sound nobody hears. A browser
-that fails to decode the sound gets the video alone. No ffmpeg transcode is configured, so watching
+some do while they move, freezes the picture and leaves it behind for good: muted, nothing waits on a
+sound nobody hears, and with the sound on, a picture fallen behind the clock opens the stream again.
+A browser that fails to decode the sound gets the video alone. No ffmpeg transcode is configured, so watching
 costs no CPU beyond the relay.
 
 **e) The refreshed frame is the fallback.** When the browser cannot play the video, or the stream

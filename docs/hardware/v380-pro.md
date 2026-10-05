@@ -5,6 +5,7 @@ architecture.
 
 | Recorded | Measurement |
 |---|---|
+| 2026-10-05 | The camera stops sending sound while it moves: through go2rtc 1.9.10, the sound track's timestamps run on without the gap, so after several moves it lagged the video by 26 s over 4 minutes |
 | 2026-10-05 | Through go2rtc 1.9.10, the main stream is H.264 1920 x 1080 and the sub-stream H.264 640 x 480, both with AAC audio that MSE plays as sent |
 | 2026-10-05 | An ONVIF PTZ move turns the camera for 1 to 3 seconds and cannot be stopped: the firmware answers nothing during that time (stop and other commands tried), so ONVIF PTZ is unusable for precise control; a firmware defect, reported by the owner |
 | 2026-10-04 | On port 8800, the authentication frame (command 1167) sent with no account and device number 0 is answered by a 256-byte frame of command 1168, a signature the 2026-05-14 row did not find |

@@ -10,6 +10,8 @@ export interface MseEnvironment {
   isTypeSupported(mime: string): boolean
   attach(video: HTMLVideoElement, source: MediaSource, managed: boolean): void
   pageUrl(): string
+  /** Milliseconds on a steady clock. */
+  now(): number
 }
 
 declare global {
@@ -54,6 +56,8 @@ const FIRST_SEGMENT_MS = 10_000
 const MAX_LAG_S = 1.5
 const LIVE_EDGE_S = 0.3
 const KEPT_BUFFER_S = 10
+// The picture falling this far behind the clock means the sound held it back: the stream is opened again.
+const MAX_DRIFT_S = 2.5
 
 /** The socket address of a camera's live stream, on the same host as the page. */
 export function liveStreamUrl(
@@ -118,6 +122,7 @@ function browserEnvironment(): MseEnvironment {
       }
     },
     pageUrl: () => window.location.href,
+    now: () => performance.now(),
   }
 }
 
@@ -194,6 +199,7 @@ export class MseLiveStream implements LiveStreamPort {
     let hasAudio = false
     let playing = false
     let ended = false
+    let clockStart: { wall: number; media: number } | null = null
     const firstSegment = setTimeout(
       () => fail('unreachable', `no video within ${FIRST_SEGMENT_MS / 1000} s`),
       FIRST_SEGMENT_MS,
@@ -230,8 +236,25 @@ export class MseLiveStream implements LiveStreamPort {
       fail('unsupported_codec', `media error ${error?.code ?? '?'}: ${error?.message ?? ''}`.trim())
     }
 
+    // A camera that pauses its sound, as the V380 does while it moves, leaves the audio timeline behind for good.
+    function keepInStepWithTheClock(): boolean {
+      if (!withSound) return true
+      const now = env.now()
+      // Measured from the first frame shown: waiting for the camera's key frame is not drift.
+      if (clockStart === null) {
+        if (video.currentTime > 0) clockStart = { wall: now, media: video.currentTime }
+        return true
+      }
+      const behind = (now - clockStart.wall) / 1000 - (video.currentTime - clockStart.media)
+      if (behind <= MAX_DRIFT_S) return true
+      release()
+      onPlayback({ kind: 'interrupted' })
+      return false
+    }
+
     function keepLive() {
       if (!buffer || video.buffered.length === 0) return
+      if (!keepInStepWithTheClock()) return
       const end = video.buffered.end(video.buffered.length - 1)
       if (end - video.currentTime > MAX_LAG_S) video.currentTime = end - LIVE_EDGE_S
       const start = video.buffered.start(0)
