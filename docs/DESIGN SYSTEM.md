@@ -439,12 +439,10 @@ every item of that level, and each word says one backend state, never two.
 `Erreur de configuration`...) is a third thing, the camera as a whole, surveillance included: it
 shows in the camera list and the page header, never on a card. One of its words is `À configurer`,
 neutral: the camera that has not entered surveillance yet, its whole setup phase
-([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md) d): its stream never worked, or it
-works and the restart has not taken the camera in yet, in place of `Connectée`; its hub tile shows it too.
-Until the stream first works it is the camera's only status, in place of `Hors ligne` or
-`Erreur de configuration`; once the camera is in surveillance it never returns.
-The word is shared with the capability level, each level keeping one meaning for it: the header says
-the camera is not set up yet, its stream card says why.
+([ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md) d), in place of `Connectée`, and
+before its stream first works in place of `Hors ligne` or `Erreur de configuration`; its hub tile
+shows it too. The word is shared with the capability level, each level keeping one meaning for it:
+the header says the camera is not set up yet, and while its stream never worked, its stream card says why.
 
 ### Editing cycle
 
